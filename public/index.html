@@ -2310,6 +2310,77 @@ ul{list-style:none}
   border:none;cursor:pointer;margin-top:8px;transition:background .12s;
 }
 
+/* ─── Auth Modal Redesign — clean, neat, professional ───────────
+   Scoped to #authModal only so no other modal in the app is
+   affected. Main goals: stop every input value / tab label from
+   defaulting to brand-red text (looked noisy), add breathing room,
+   a calmer neutral palette, subtle depth, and a clearer visual
+   hierarchy between "chrome" (tabs, labels) and real content. */
+#authModal .add-modal{
+  max-width:420px;
+  padding:26px 26px 24px;
+  border-radius:20px;
+  box-shadow:0 28px 64px -16px rgba(0,0,0,.28),0 0 0 1px rgba(0,0,0,.04);
+}
+#authModal .add-modal-header{margin-bottom:20px;padding-right:44px}
+#authModal .add-modal-title{font-size:19px;font-weight:800;letter-spacing:-.01em;color:var(--text)}
+#authModal .modal-close{
+  position:absolute;top:18px;right:18px;
+  width:30px;height:30px;
+  background:var(--bg-2);box-shadow:none;
+  border:1px solid var(--border);
+}
+#authModal .modal-close:hover{background:var(--border);transform:none}
+#authModal .modal-close svg{stroke:var(--text-2);width:13px;height:13px;stroke-width:2.3}
+
+#authModal .auth-tabs{background:var(--bg-3);border-radius:12px;padding:4px;margin-bottom:20px}
+#authModal .auth-tab{padding:10px 0;font-size:13.5px;border-radius:9px;font-weight:600}
+#authModal .auth-tab.active{box-shadow:0 2px 8px rgba(0,0,0,.09)}
+
+#authModal #authSignupTypeField > .form-label{margin-bottom:8px}
+#authModal #authTypeTabsRow{margin-bottom:18px!important}
+#authModal #authTypeTabsRow .auth-tab{padding:12px 8px}
+
+#authModal .form-label{font-size:12px;font-weight:700;color:var(--text-2);letter-spacing:.01em;margin-bottom:6px}
+#authModal .form-group{margin-bottom:15px}
+#authModal .form-row{gap:14px}
+#authModal .form-input{
+  color:var(--text);
+  border:1.5px solid var(--border);
+  border-radius:10px;
+  padding:10px 13px;font-size:13.5px;
+  background:var(--bg-2);
+  transition:border-color .15s,box-shadow .15s,background .15s;
+}
+#authModal .form-input::placeholder{color:var(--text-3)}
+#authModal .form-input:focus{
+  border-color:var(--brand);background:var(--bg);
+  box-shadow:0 0 0 3px var(--brand-light);
+}
+
+#authModal .auth-photo-row{
+  align-items:center;gap:14px;margin-bottom:20px;
+  padding:12px 14px;background:var(--bg-2);border:1px solid var(--border);border-radius:14px;
+}
+#authModal .auth-photo-preview{
+  width:52px;height:52px;box-shadow:none;border:1.5px solid var(--border-2);
+}
+#authModal .img-btns{gap:8px}
+#authModal .img-btn-sec{border-radius:9px;font-weight:700;background:var(--bg)}
+
+#authModal #authForgotRow{margin-bottom:14px}
+
+#authModal .form-submit{
+  border-radius:11px;padding:12.5px;font-size:14px;letter-spacing:.01em;
+  box-shadow:0 10px 22px -8px rgba(224,58,82,.55);
+  transition:background .15s,transform .12s,box-shadow .15s;
+}
+#authModal .form-submit:hover{background:var(--brand-hover);transform:translateY(-1px);box-shadow:0 12px 26px -8px rgba(224,58,82,.6)}
+#authModal .form-submit:active{transform:translateY(0)}
+
+#authModal .auth-foot{margin-top:16px;font-size:12.5px;color:var(--text-3)}
+#authModal .field-error-text{margin:-8px 0 12px}
+
 /* ─── Auth Modal (Log in / Sign up) ────────────── */
 .auth-tabs{display:flex;gap:4px;background:var(--bg-2);border-radius:10px;padding:4px;margin-bottom:18px}
 .auth-tabs.has-error{box-shadow:0 0 0 1.5px var(--brand);background:var(--brand-light)}
