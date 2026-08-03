@@ -968,6 +968,26 @@ async function notifyUser(userId, { type, title, message, meta }) {
   }
 }
 
+// Extra fields folded into a visit_status notification's meta so the
+// frontend can offer an "Add to calendar" action straight off the
+// notification, without a follow-up API call. Best-effort — a listing that
+// was since deleted just means an emptier calendar event, not a broken
+// status-change notification.
+async function visitCalendarMeta(visit) {
+  try {
+    const { doc: property } = await findListingById(visit.propertyId, { lean: true });
+    return {
+      visitDate:    visit.visitDate,
+      visitTime:    visit.visitTime,
+      propertyName: (property && property.owner    && property.owner.propertyName) || '',
+      propertyArea: (property && property.location && property.location.area)      || '',
+      propertyCode: (property && property.propertyId) || '',
+    };
+  } catch (err) {
+    return { visitDate: visit.visitDate, visitTime: visit.visitTime, propertyName: '', propertyArea: '', propertyCode: '' };
+  }
+}
+
 // ── Helpers ──
 function formatPrice(price, status) {
   const num = Number(price);
@@ -1455,6 +1475,24 @@ app.post('/api/visits', visitLimiter, requireUser, async (req, res) => {
       { new: true, select: 'visitCount' }
     ).lean();
 
+    // Drop a notification for the visit itself (not just later status
+    // changes) — this is what lets the notification panel offer an
+    // "Add to calendar" action right away, before an owner/admin has
+    // confirmed anything. `property` was already fetched above via
+    // findListingById, so no extra query is needed here.
+    await notifyUser(visit.userId, {
+      type: 'visit_status',
+      title: 'Visit requested',
+      message: `Your visit request for ${visitDate} at ${visitTime} has been saved and is awaiting confirmation.`,
+      meta: {
+        visitId: visit.visitId, mongoId: String(visit._id), status: 'Pending',
+        visitDate, visitTime,
+        propertyName: (property.owner    && property.owner.propertyName) || '',
+        propertyArea: (property.location && property.location.area)      || '',
+        propertyCode: property.propertyId || '',
+      },
+    });
+
     res.status(201).json({
       message: 'Visit request saved',
       visit,
@@ -1653,7 +1691,7 @@ app.patch('/api/admin/visits/:id/status', requireAdmin, async (req, res) => {
         type: 'visit_status',
         title: `Visit ${statusText}`,
         message: `Your visit scheduled for ${visit.visitDate} at ${visit.visitTime} has been ${statusText}.`,
-        meta: { visitId: visit.visitId, mongoId: String(visit._id), status },
+        meta: { visitId: visit.visitId, mongoId: String(visit._id), status, ...(await visitCalendarMeta(visit)) },
       });
     }
 
@@ -1872,7 +1910,7 @@ app.patch('/api/appointments/:id', requireAdmin, async (req, res) => {
         type: 'visit_status',
         title: `Visit ${statusText}`,
         message: `Your visit scheduled for ${visit.visitDate} at ${visit.visitTime} has been ${statusText}.`,
-        meta: { visitId: visit.visitId, mongoId: String(visit._id), status: mapped },
+        meta: { visitId: visit.visitId, mongoId: String(visit._id), status: mapped, ...(await visitCalendarMeta(visit)) },
       });
     }
 
