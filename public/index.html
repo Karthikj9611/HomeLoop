@@ -2312,6 +2312,7 @@ ul{list-style:none}
 
 /* ─── Auth Modal (Log in / Sign up) ────────────── */
 .auth-tabs{display:flex;gap:4px;background:var(--bg-2);border-radius:10px;padding:4px;margin-bottom:18px}
+.auth-tabs.has-error{box-shadow:0 0 0 1.5px var(--brand);background:var(--brand-light)}
 .auth-tab{
   flex:1;text-align:center;padding:9px 0;border-radius:8px;
   font-size:13px;font-weight:600;color:var(--text-2);cursor:pointer;
@@ -5011,11 +5012,12 @@ ul{list-style:none}
 
     <div id="authFormStep">
       <div id="authSignupTypeField" style="display:none">
-        <label class="form-label">I am a</label>
+        <label class="form-label">I am a <span style="color:var(--brand)">*</span></label>
         <div class="auth-tabs" id="authTypeTabsRow" style="margin-bottom:16px">
-          <div class="auth-tab active" id="authTypeCustomer" onclick="selectAccountType('customer')">Looking for a home</div>
+          <div class="auth-tab" id="authTypeCustomer" onclick="selectAccountType('customer')">Looking for a home</div>
           <div class="auth-tab" id="authTypeOwner" onclick="selectAccountType('owner')">Property owner</div>
         </div>
+        <div class="field-error-text" id="authTypeError" style="display:none;margin:-10px 0 12px">Please select whether you're looking for a home or a property owner</div>
       </div>
       <div id="authSignupPhotoField" style="display:none">
         <label class="form-label">Profile photo (optional)</label>
@@ -5040,12 +5042,12 @@ ul{list-style:none}
       <div id="authSignupNameField" style="display:none">
         <div class="form-row">
           <div class="form-group">
-            <label class="form-label">First name</label>
-            <input class="form-input" type="text" id="auth-firstname" />
+            <label class="form-label">First name <span style="color:var(--brand)">*</span></label>
+            <input class="form-input" type="text" id="auth-firstname" oninput="saveSignupDraft()" />
           </div>
           <div class="form-group">
-            <label class="form-label">Last name</label>
-            <input class="form-input" type="text" id="auth-lastname" />
+            <label class="form-label">Last name <span style="color:var(--brand)">*</span></label>
+            <input class="form-input" type="text" id="auth-lastname" oninput="saveSignupDraft()" />
           </div>
         </div>
       </div>
@@ -5058,23 +5060,44 @@ ul{list-style:none}
       <div id="authSignupContactFields" style="display:none">
         <div class="form-row">
           <div class="form-group">
-            <label class="form-label">Email</label>
-            <input class="form-input" type="email" id="auth-email" />
+            <label class="form-label">Email <span style="color:var(--brand)">*</span></label>
+            <input class="form-input" type="email" id="auth-email" oninput="saveSignupDraft()" />
           </div>
           <div class="form-group">
-            <label class="form-label">Mobile number</label>
-            <input class="form-input" type="tel" id="auth-mobile" inputmode="numeric" maxlength="10" oninput="sanitizeMobileInput(this)" />
+            <label class="form-label">Mobile number <span style="color:var(--brand)">*</span></label>
+            <input class="form-input" type="tel" id="auth-mobile" inputmode="numeric" maxlength="10" oninput="sanitizeMobileInput(this); saveSignupDraft()" />
           </div>
         </div>
       </div>
       <div class="form-group">
-        <label class="form-label">Password</label>
+        <label class="form-label">Password <span style="color:var(--brand)">*</span></label>
         <input class="form-input" type="password" id="auth-password" />
       </div>
       <div id="authSignupConfirmField" style="display:none">
         <div class="form-group">
-          <label class="form-label">Re-enter password</label>
+          <label class="form-label">Re-enter password <span style="color:var(--brand)">*</span></label>
           <input class="form-input" type="password" id="auth-confirm-password" />
+        </div>
+      </div>
+
+      <!-- ── Email verification — appears in place, right in the signup form,
+           once "Sign up" is submitted and a code has been emailed. Nothing
+           else on the form is swapped out or hidden behind a separate step;
+           the other fields just lock (see setSignupFieldsDisabled) until the
+           code is confirmed or "Edit details" is clicked. ── -->
+      <div id="authSignupOtpField" style="display:none">
+        <p style="font-size:12px;color:var(--text-2);margin:2px 0 10px;line-height:1.5">
+          Code sent to <strong id="authOtpEmailLabel"></strong>.
+        </p>
+        <div class="form-group">
+          <label class="form-label">Verification code <span style="color:var(--brand)">*</span></label>
+          <input class="form-input" type="text" id="auth-otp" inputmode="numeric" maxlength="6"
+                 style="letter-spacing:6px;font-weight:700;text-align:center"
+                 oninput="this.value=this.value.replace(/\D/g,'').slice(0,6)" />
+        </div>
+        <div class="auth-foot" style="display:flex;justify-content:space-between;gap:10px;margin-bottom:4px">
+          <a onclick="cancelSignupOtp()">&larr; Edit details</a>
+          <a id="authOtpResendLink" onclick="resendSignupOtp()">Resend code</a>
         </div>
       </div>
       <div id="authForgotRow" style="text-align:right;margin-bottom:6px">
@@ -5084,25 +5107,6 @@ ul{list-style:none}
       <button class="form-submit" id="authSubmitBtn" onclick="submitAuth()">Log in</button>
 
       <div class="auth-foot" id="authFoot">New to <span class="brandname">Home<span class="bn-accent">Loop</span></span>? <a onclick="switchAuthTab('signup')">Sign up</a></div>
-    </div>
-
-    <!-- ── Signup email verification step — shown after "Sign up" is submitted,
-         in place of the form above, until the emailed code is confirmed. ── -->
-    <div id="authOtpStep" style="display:none">
-      <p style="font-size:13px;color:var(--text-2);margin:0 0 14px;line-height:1.5">
-        We've sent a 6-digit code to <strong id="authOtpEmailLabel"></strong>. Enter it below to verify your email and finish creating your account.
-      </p>
-      <div class="form-group">
-        <label class="form-label">Verification code</label>
-        <input class="form-input" type="text" id="auth-otp" inputmode="numeric" maxlength="6"
-               style="letter-spacing:6px;font-weight:700;text-align:center"
-               oninput="this.value=this.value.replace(/\D/g,'').slice(0,6)" />
-      </div>
-      <button class="form-submit" id="authOtpVerifyBtn" onclick="verifySignupOtp()">Verify &amp; create account</button>
-      <div class="auth-foot" style="display:flex;justify-content:space-between;gap:10px">
-        <a onclick="backToSignupForm()">&larr; Change details</a>
-        <a id="authOtpResendLink" onclick="resendSignupOtp()">Resend code</a>
-      </div>
     </div>
   </div>
 </div>
@@ -9990,13 +9994,17 @@ function switchAuthTab(tab) {
     ? 'New to <span class="brandname">Home<span class="bn-accent">Loop</span></span>? <a onclick="switchAuthTab(\'signup\')">Sign up</a>'
     : 'Already have an account? <a onclick="switchAuthTab(\'login\')">Log in</a>';
 }
-// Which of the two signup account types is currently selected — defaults to
-// 'customer' (the "Looking for a home" tab is active by default in the HTML).
-let selectedAccountType = 'customer';
+// Which of the two signup account types is currently selected — starts
+// unselected (neither tab has 'active' in the HTML); submitAuth() requires
+// this to be set before a signup can go through.
+let selectedAccountType = null;
 function selectAccountType(type) {
   selectedAccountType = type;
   document.getElementById('authTypeCustomer').classList.toggle('active', type === 'customer');
   document.getElementById('authTypeOwner').classList.toggle('active', type === 'owner');
+  document.getElementById('authTypeTabsRow').classList.remove('has-error');
+  document.getElementById('authTypeError').style.display = 'none';
+  saveSignupDraft();
 }
 
 // Signup profile photo — captured live via the front camera or picked from
@@ -10013,6 +10021,7 @@ function resetAuthProfilePic() {
   const fileInput = document.getElementById('auth-photo-file');
   if (camInput) camInput.value = '';
   if (fileInput) fileInput.value = '';
+  saveSignupDraft();
 }
 async function addAuthProfilePic(input) {
   const file = (input.files || [])[0];
@@ -10037,9 +10046,61 @@ async function addAuthProfilePic(input) {
           + '<span class="auth-photo-remove" onclick="event.stopPropagation();resetAuthProfilePic()" title="Remove photo">'
           + '<svg viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></span>';
       }
+      saveSignupDraft();
     }
   } catch (err) {
     showToast(err.message || 'Could not upload photo. Please try again.');
+    if (preview) preview.innerHTML = AUTH_PHOTO_PLACEHOLDER;
+  }
+}
+
+// ── Signup draft — persists first/last name, email, mobile, account type and
+// profile photo to localStorage as the person types, so a page refresh mid-
+// signup doesn't lose what they've entered. Restored whenever the auth modal
+// opens or the tab is switched (see backToSignupForm), cleared only once the
+// account is actually created. Password/confirm-password are deliberately
+// left out of the draft — not stored in localStorage even short-term.
+const SIGNUP_DRAFT_KEY = 'homeloop_signup_draft';
+function saveSignupDraft() {
+  const draft = {
+    firstName:  document.getElementById('auth-firstname').value,
+    lastName:   document.getElementById('auth-lastname').value,
+    email:      document.getElementById('auth-email').value,
+    mobile:     document.getElementById('auth-mobile').value,
+    accountType: selectedAccountType,
+    profilePic: authProfilePicUrl || null,
+  };
+  try { localStorage.setItem(SIGNUP_DRAFT_KEY, JSON.stringify(draft)); } catch (err) { /* storage unavailable — draft just won't persist */ }
+}
+function clearSignupDraft() {
+  try { localStorage.removeItem(SIGNUP_DRAFT_KEY); } catch (err) { /* ignore */ }
+}
+function restoreSignupDraft() {
+  let draft = null;
+  try { draft = JSON.parse(localStorage.getItem(SIGNUP_DRAFT_KEY) || 'null'); } catch (err) { draft = null; }
+
+  document.getElementById('auth-firstname').value = (draft && draft.firstName) || '';
+  document.getElementById('auth-lastname').value  = (draft && draft.lastName)  || '';
+  document.getElementById('auth-email').value     = (draft && draft.email)     || '';
+  document.getElementById('auth-mobile').value    = (draft && draft.mobile)    || '';
+
+  selectedAccountType = (draft && draft.accountType) || null;
+  document.getElementById('authTypeCustomer').classList.toggle('active', selectedAccountType === 'customer');
+  document.getElementById('authTypeOwner').classList.toggle('active', selectedAccountType === 'owner');
+  document.getElementById('authTypeTabsRow').classList.remove('has-error');
+  document.getElementById('authTypeError').style.display = 'none';
+
+  if (draft && draft.profilePic) {
+    authProfilePicUrl = draft.profilePic;
+    const preview = document.getElementById('authPhotoPreview');
+    if (preview) {
+      preview.innerHTML = '<img src="' + draft.profilePic + '" alt="Profile photo"/>'
+        + '<span class="auth-photo-remove" onclick="event.stopPropagation();resetAuthProfilePic()" title="Remove photo">'
+        + '<svg viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></span>';
+    }
+  } else {
+    authProfilePicUrl = null;
+    const preview = document.getElementById('authPhotoPreview');
     if (preview) preview.innerHTML = AUTH_PHOTO_PLACEHOLDER;
   }
 }
@@ -10052,7 +10113,12 @@ async function submitAuth() {
   const btn = document.getElementById('authSubmitBtn');
   if (btn.disabled) return; // already submitting — ignore extra clicks/taps
 
-  const isLogin  = document.getElementById('authTabLogin').classList.contains('active');
+  const isLogin = document.getElementById('authTabLogin').classList.contains('active');
+
+  // Second click after a code's already been sent — same button now verifies
+  // it and creates the account, instead of re-sending/re-validating details.
+  if (!isLogin && pendingSignupBody) { return verifySignupOtp(); }
+
   const password = document.getElementById('auth-password').value;
 
   let body;
@@ -10062,6 +10128,12 @@ async function submitAuth() {
     if (!contact || !password) { showToast('Please fill in your details'); return; }
     body = { contact, password };
   } else {
+    if (!selectedAccountType) {
+      document.getElementById('authTypeTabsRow').classList.add('has-error');
+      document.getElementById('authTypeError').style.display = '';
+      document.getElementById('authTypeTabsRow').scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
     const firstName       = document.getElementById('auth-firstname').value.trim();
     const lastName        = document.getElementById('auth-lastname').value.trim();
     const email            = document.getElementById('auth-email').value.trim();
@@ -10092,13 +10164,14 @@ async function submitAuth() {
       const otpData = await otpRes.json();
       if (!otpRes.ok) { showToast(otpData.message || 'Could not send verification code'); return; }
 
+      // Reveal the code field right in the same form (no separate step/modal) —
+      // lock the rest of the details so an edit mid-verification can't drift
+      // from what the emailed code was actually sent for.
       pendingSignupBody = body;
       document.getElementById('authOtpEmailLabel').textContent = body.email;
       document.getElementById('auth-otp').value = '';
-      document.getElementById('authFormStep').style.display = 'none';
-      document.getElementById('authTabsRow').style.display = 'none';
-      document.getElementById('authOtpStep').style.display = '';
-      document.getElementById('authModalTitle').textContent = 'Verify your email';
+      document.getElementById('authSignupOtpField').style.display = '';
+      setSignupFieldsDisabled(true);
       return;
     }
 
@@ -10117,7 +10190,7 @@ async function submitAuth() {
     showToast('Network error. Please try again.');
   } finally {
     btn.disabled = false;
-    btn.textContent = isLogin ? 'Log in' : 'Sign up';
+    btn.textContent = isLogin ? 'Log in' : (pendingSignupBody ? 'Verify & create account' : 'Sign up');
   }
 }
 
@@ -10131,18 +10204,20 @@ function finishAuthSuccess(data) {
     profilePhoto: data.profilePhoto || '',
     userKey: data.userKey
   }));
+  clearSignupDraft();
   closeAuthModal();
   updateNavAuth();
   switchFilterIdentity();
   showToast(data.message);
 }
 
-// Called from the OTP step's "Verify & create account" button.
+// Called via submitAuth() once a code has already been sent (second click
+// of the same "Sign up" button, now reading "Verify & create account").
 async function verifySignupOtp() {
-  const btn = document.getElementById('authOtpVerifyBtn');
+  const btn = document.getElementById('authSubmitBtn');
   if (btn.disabled) return; // already submitting — ignore extra clicks/taps
 
-  if (!pendingSignupBody) { backToSignupForm(); return; }
+  if (!pendingSignupBody) { cancelSignupOtp(); return; }
   const otp = document.getElementById('auth-otp').value.trim();
   if (!/^\d{6}$/.test(otp)) { showToast('Enter the 6-digit code from your email'); return; }
 
@@ -10173,11 +10248,11 @@ async function verifySignupOtp() {
     showToast('Network error. Please try again.');
   } finally {
     btn.disabled = false;
-    btn.textContent = 'Verify & create account';
+    btn.textContent = pendingSignupBody ? 'Verify & create account' : 'Sign up';
   }
 }
 
-// "Resend code" link on the OTP step.
+// "Resend code" link, shown alongside the inline verification field.
 async function resendSignupOtp() {
   if (!pendingSignupBody) return;
   const link = document.getElementById('authOtpResendLink');
@@ -10199,19 +10274,38 @@ async function resendSignupOtp() {
   }
 }
 
-// "← Change details" link on the OTP step, and the reset called whenever the
-// modal opens/closes or the login/signup tab is switched.
+// Locks/unlocks the signup detail fields while a verification code is
+// pending — prevents editing the email (or anything else) out from under a
+// code that's already been sent for the original details.
+function setSignupFieldsDisabled(disabled) {
+  ['auth-firstname', 'auth-lastname', 'auth-email', 'auth-mobile', 'auth-password', 'auth-confirm-password'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.disabled = disabled;
+  });
+  const typeTabs = document.getElementById('authTypeTabsRow');
+  if (typeTabs) { typeTabs.style.pointerEvents = disabled ? 'none' : ''; typeTabs.style.opacity = disabled ? '0.6' : ''; }
+}
+
+// "← Edit details" link on the inline verification field — drops back to an
+// editable form without wiping what was already filled in (profile photo
+// included), unlike the full reset backToSignupForm() below does.
+function cancelSignupOtp() {
+  pendingSignupBody = null;
+  document.getElementById('authSignupOtpField').style.display = 'none';
+  setSignupFieldsDisabled(false);
+  document.getElementById('authSubmitBtn').textContent = 'Sign up';
+}
+
+// Full reset — called whenever the auth modal opens/closes or the login/
+// signup tab is switched.
 function backToSignupForm() {
   pendingSignupBody = null;
-  resetAuthProfilePic();
-  const otpStep = document.getElementById('authOtpStep');
-  if (otpStep) otpStep.style.display = 'none';
-  const formStep = document.getElementById('authFormStep');
-  if (formStep) formStep.style.display = '';
-  const tabsRow = document.getElementById('authTabsRow');
-  if (tabsRow) tabsRow.style.display = '';
+  restoreSignupDraft();
+  document.getElementById('authSignupOtpField').style.display = 'none';
+  setSignupFieldsDisabled(false);
   const isLogin = document.getElementById('authTabLogin')?.classList.contains('active');
   document.getElementById('authModalTitle').textContent = isLogin ? 'Welcome back' : 'Create your account';
+  document.getElementById('authSubmitBtn').textContent = isLogin ? 'Log in' : 'Sign up';
 }
 
 /* ═══════════════════════════════════════════════
