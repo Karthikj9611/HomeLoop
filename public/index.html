@@ -9285,7 +9285,7 @@ function openWhatsApp(propId) {
     return;
   }
   const phone = rawPhone.length === 10 ? '91' + rawPhone : rawPhone;
-  const propertyUrl = `${window.location.origin}${window.location.pathname}?property=${p.id}`;
+  const propertyUrl = `${window.location.origin}/property/${p.id}`;
   const msg = `Hi, I'm interested in "${p.propertyId}" (${p.location?.area}) listed on HomeLoop. Is it still available?\n\nView listing: ${propertyUrl}`;
   const url = 'https://wa.me/' + phone + '?text=' + encodeURIComponent(msg);
   window.open(url, '_blank', 'noopener');
@@ -12032,8 +12032,12 @@ document.addEventListener('DOMContentLoaded', function() {
     if (!ok) return;
     initNearbyLocation(); // ask for location once listings are in, so "Near me first" has data to sort
 
-    // ── Deep-link: auto-open property from URL param ──
-    const _dlParam = new URLSearchParams(window.location.search).get('property');
+    // ── Deep-link: auto-open property from URL ──
+    // Supports both the current `/property/:id` path (server-rendered, used
+    // by openWhatsApp() for a rich share preview) and the older `?property=`
+    // query string (kept so previously-shared links still open correctly).
+    const _dlPathMatch = window.location.pathname.match(/^\/property\/([a-fA-F0-9]{24})$/);
+    const _dlParam = _dlPathMatch ? _dlPathMatch[1] : new URLSearchParams(window.location.search).get('property');
     if (_dlParam) {
       const _dlProp = PROPERTIES.find(x => String(x.id) === _dlParam);
       if (_dlProp) openDetail(_dlProp.id);

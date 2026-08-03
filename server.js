@@ -5,6 +5,7 @@ const helmet     = require('helmet');
 const mongoose   = require('mongoose');
 const cors       = require('cors');
 const path       = require('path');
+const fs         = require('fs');
 const crypto     = require('crypto');
 const rateLimit  = require('express-rate-limit');
 const bcrypt     = require('bcryptjs');
@@ -1403,6 +1404,116 @@ app.post('/api/properties/:id/view', viewLimiter, async (req, res) => {
   } catch (err) {
     console.error('POST /api/properties/:id/view error:', err);
     res.status(500).json({ message: 'Error recording view' });
+  }
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// ── GET /property/:id — server-rendered OG preview + SPA shell ──
+// WhatsApp/FB/Google crawlers don't run JS, so a plain fetch of `/` only ever
+// sees the generic HomeLoop title/description — never a specific listing's
+// photo/price/area, no matter what query string or path was shared. This
+// route reads the same index.html served at `/`, swaps in listing-specific
+// <title>/description/OG/Twitter tags server-side (so the crawler sees them
+// in the initial HTML), then sends it as-is — the page's existing client JS
+// still runs identically afterwards and opens the listing modal itself (see
+// the path-based deep-link check added to the DOMContentLoaded handler in
+// index.html). openWhatsApp() in index.html builds links in this
+// `/property/:id` form now instead of the old `?property=` query string;
+// old `?property=` links still open the right listing client-side (unchanged
+// logic) but won't get a rich preview, since that only happens server-side here.
+// Falls back to the untouched generic shell for a bad/unverified/booked id,
+// so a stale or malformed link just degrades to the normal homepage instead
+// of erroring.
+// ────────────────────────────────────────────────────────────────────────────
+const INDEX_HTML_PATH = path.join(__dirname, 'public', 'index.html');
+
+function escapeHtmlAttr(str) {
+  return String(str || '')
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+app.get('/property/:id', async (req, res, next) => {
+  let html;
+  try {
+    html = await fs.promises.readFile(INDEX_HTML_PATH, 'utf8');
+  } catch (readErr) {
+    console.error('GET /property/:id — could not read index.html:', readErr.message);
+    return next(); // let the 404/static handlers deal with it, same as any other unmatched route
+  }
+
+  try {
+    const { id } = req.params;
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      // Same public-visibility rule as GET /api/properties: only verified,
+      // non-booked listings are eligible for a rich preview.
+      const results = await Promise.all(
+        LISTING_MODEL_LIST.map(M => M.findOne({ _id: id, verified: true, booked: { $ne: true } }).lean())
+      );
+      const doc = results.find(Boolean);
+
+      if (doc) {
+        const area   = (doc.location && doc.location.area) || 'Bangalore';
+        const status = (doc.basic && doc.basic.status) || 'For Rent';
+        const bhk    = (doc.property && doc.property.bhk) ? `${doc.property.bhk} BHK ` : '';
+        const type   = (doc.property && doc.property.type)
+          ? `${doc.property.type} `
+          : (status === 'PG' ? 'PG ' : status === 'Short Stay' ? 'Stay ' : 'Property ');
+        const price  = formatPrice((doc.price || {}).rent, status);
+
+        const title = `${bhk}${type}for ${status} in ${area}, Bangalore \u2013 \u20B9${price} | HomeLoop`;
+        const descSource = (doc.media && doc.media.desc && doc.media.desc.trim())
+          ? doc.media.desc
+          : `${bhk}${type}available for ${status} in ${area}, Bangalore. View photos, price and contact details on HomeLoop.`;
+        const description = String(descSource).replace(/\s+/g, ' ').trim().slice(0, 200);
+
+        const firstImage = (doc.media && Array.isArray(doc.media.images) && doc.media.images[0]) || '';
+        // media.images entries are relative paths served by GET /uploads/:id
+        // (e.g. "/uploads/123-abc.webp") — OG needs an absolute URL, so
+        // resolve against this request's own host.
+        const origin = `${req.protocol}://${req.get('host')}`;
+        const imageUrl = firstImage ? `${origin}${firstImage}` : `${origin}/og-default.png`;
+        // NOTE: add a real /public/og-default.png (1200x630 recommended) as
+        // the fallback preview image for listings with no photos yet — a
+        // missing file here just means those previews show no image.
+        const pageUrl = `${origin}/property/${id}`;
+
+        const safeTitle = escapeHtmlAttr(title);
+        const safeDesc  = escapeHtmlAttr(description);
+        const safeImage = escapeHtmlAttr(imageUrl);
+        const safeUrl   = escapeHtmlAttr(pageUrl);
+
+        html = html.replace(/<title>[\s\S]*?<\/title>/i, `<title>${safeTitle}</title>`);
+        html = html.replace(/<meta name="description" content="[^"]*"\s*\/?>/i,
+          `<meta name="description" content="${safeDesc}" />`);
+
+        const ogTags = `
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="${safeTitle}" />
+  <meta property="og:description" content="${safeDesc}" />
+  <meta property="og:image" content="${safeImage}" />
+  <meta property="og:url" content="${safeUrl}" />
+  <meta property="og:site_name" content="HomeLoop" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="${safeTitle}" />
+  <meta name="twitter:description" content="${safeDesc}" />
+  <meta name="twitter:image" content="${safeImage}" />
+</head>`;
+        html = html.replace('</head>', ogTags);
+      }
+      // Unverified/booked/nonexistent id → doc is null, generic shell goes out untouched below.
+    }
+
+    // Listing data (price, verified, booked) can change, so don't let a CDN
+    // or browser cache a preview that goes stale.
+    res.set('Cache-Control', 'no-cache');
+    res.send(html);
+  } catch (err) {
+    console.error('GET /property/:id error:', err);
+    res.set('Cache-Control', 'no-cache');
+    res.send(html); // still serve the generic shell rather than a hard error page
   }
 });
 
