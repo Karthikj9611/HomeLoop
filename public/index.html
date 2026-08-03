@@ -228,8 +228,16 @@ ul{list-style:none}
   align-items:center;
   gap:6px;
   padding:8px 16px;
-  flex-wrap:nowrap;        /* changed */
-  overflow-x:auto;         /* allow horizontal scroll */
+}
+/* The filter chips themselves scroll horizontally in here — .fd-bar-right
+   (total count + Clear all) sits outside this element, in .filter-dd-bar
+   directly, so it stays pinned to the right edge instead of scrolling out
+   of view once there are enough chips to overflow (e.g. the PG filter set). */
+.fd-scroll{
+  display:flex;align-items:center;gap:6px;
+  flex:1;min-width:0;
+  flex-wrap:nowrap;
+  overflow-x:auto;
   white-space:nowrap;
   overscroll-behavior-x:contain;
 }
@@ -316,7 +324,7 @@ ul{list-style:none}
 }
 .fd-apply-btn:hover{background:var(--brand-hover)}
 /* Clear-all + count chip in bar */
-.fd-bar-right{display:flex;align-items:center;gap:6px;margin-left:auto;flex-shrink:0;padding-left:8px;border-left:1px solid var(--border)}
+.fd-bar-right{display:flex;align-items:center;gap:6px;flex-shrink:0;padding-left:8px;border-left:1px solid var(--border)}
 .fd-clear-all{font-size:12px;color:var(--text-3);background:none;border:none;cursor:pointer;white-space:nowrap}
 .fd-clear-all:hover{color:var(--brand)}
 .fd-total-badge{display:none;background:var(--brand);color:#fff;border-radius:99px;font-size:11px;font-weight:700;padding:2px 8px}
@@ -3276,6 +3284,7 @@ ul{list-style:none}
 <!-- ─── Filter Bar ──────────────────────────────── -->
 <!-- ─── Filter Dropdown Bar ──────────────────────── -->
 <div class="filter-dd-bar" id="filterDdBar">
+<div class="fd-scroll" id="fdScroll">
 
 
   
@@ -3751,6 +3760,7 @@ ul{list-style:none}
   </div>
 
   <!-- Bar right side: total count + clear all -->
+  </div>
   <div class="fd-bar-right">
     <span class="fd-total-badge" id="fdTotalBadge"></span>
     <button class="fd-clear-all" id="fdClearAll" onclick="clearFilters()" style="display:none">Clear all</button>
