@@ -662,8 +662,8 @@ ul{list-style:none}
 .prop-icon-badge.prop-compare-float.disabled{opacity:.45;cursor:not-allowed}
 .prop-icon-badge.prop-compare-float.disabled:hover{background:rgba(255,255,255,.92);transform:none}
 .prop-body{padding:13px 14px 12px;flex:1;min-width:0;display:flex;flex-direction:column}
-.prop-price-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:3px;margin-bottom:4px}
-.prop-price-chips{display:grid;gap:6px;margin-top:3px;margin-bottom:4px}
+.prop-price-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px;margin-bottom:0}
+.prop-price-chips{display:grid;gap:6px;margin-top:8px;margin-bottom:0}
 .prop-price-chips .price-chip{
   display:flex;align-items:center;justify-content:flex-start;gap:4px;
   background:var(--bg-2);border:1.5px solid var(--border);border-radius:9px;
@@ -714,7 +714,7 @@ ul{list-style:none}
 .prop-verified-badge svg{width:11px;height:11px;stroke:none;fill:#1b6b4f;flex-shrink:0}
 .prop-loc{
   display:flex;align-items:center;gap:4px;
-  font-size:12px;color:var(--text-3);margin-top:3px;
+  font-size:12px;color:var(--text-3);margin-top:8px;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
   justify-content:space-between;
 }
@@ -726,31 +726,31 @@ ul{list-style:none}
 .prop-loc-avail svg{width:12px;height:12px;stroke:#a85c6e;fill:none;stroke-width:2;flex-shrink:0}
 .prop-loc svg{width:13px;height:13px;stroke:#a85c6e;fill:#a85c6e;fill-opacity:.12;stroke-width:2;flex-shrink:0}
 .prop-loc span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-/* ── Modern icon stat row (replaces verbose pill tags) ── */
+/* ── Modern icon stat row (badge-style, matching the chip pills below) ── */
 .prop-stats{
   display:flex;align-items:center;flex-wrap:nowrap;
-  gap:3px 0;margin-top:10px;
+  gap:6px;margin-top:8px;
   overflow-x:auto;-ms-overflow-style:none;scrollbar-width:none;
   cursor:grab;
 }
 .prop-stats.is-dragging{cursor:grabbing;scroll-behavior:auto;user-select:none}
 .prop-stats::-webkit-scrollbar{display:none}
 .prop-stat{
-  display:flex;align-items:center;gap:0;
+  display:flex;align-items:center;gap:6px;
   font-size:12px;font-weight:700;color:var(--text-2);
-  padding:0 9px 0 0;flex-shrink:0;white-space:nowrap;
+  background:var(--bg-2);border:1.5px solid var(--border);border-radius:9px;
+  padding:4px 10px 4px 4px;flex-shrink:0;white-space:nowrap;
 }
-.prop-stat:not(:last-child){margin-right:0}
 .prop-stat svg{width:14px;height:14px;stroke:var(--text-3);fill:none;stroke-width:1.8;flex-shrink:0}
 .prop-stat-icon{
   font-size:12px;line-height:1;flex-shrink:0;
-  width:23px;height:23px;border-radius:8px;
+  width:22px;height:22px;border-radius:7px;
   display:flex;align-items:center;justify-content:center;
   box-shadow:
     0 1px 3px rgba(0,0,0,.10),
     inset 0 1px 1px rgba(255,255,255,.6);
 }
-.prop-stat.is-off{color:var(--text-3);font-weight:500}
+.prop-stat.is-off{color:var(--text-3);font-weight:500;background:transparent;border-color:var(--border-2)}
 .prop-stat.is-off .prop-stat-icon{opacity:.4;filter:grayscale(.4);box-shadow:none}
 .prop-stat.is-off svg{stroke:var(--border-2)}
 .icon-bed{background:linear-gradient(145deg,#f8f0f0,#efdfe0)}
@@ -759,7 +759,7 @@ ul{list-style:none}
 .icon-bike{background:linear-gradient(145deg,#f8f0f0,#efdfe0)}
 .icon-area{background:linear-gradient(145deg,#f8f0f0,#efdfe0)}
 .icon-lift{background:linear-gradient(145deg,#f8f0f0,#efdfe0)}
-.prop-chip-row{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.prop-chip-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 /* Single-row, horizontally slidable variant (Furnished / Maintenance / Available
    From) — no wrapping to a 2nd line, scrolls sideways instead, same hidden-
    scrollbar treatment as .prop-stats, and can be auto-advanced by JS. */
@@ -778,7 +778,7 @@ ul{list-style:none}
 .prop-card:not(.list-view) .prop-chip-row-scroll{
   display:grid;
   grid-auto-flow:column;
-  grid-auto-columns:calc(50% - 2.5px);
+  grid-auto-columns:calc(50% - 3px);
   scroll-snap-type:x mandatory;
 }
 .prop-card:not(.list-view) .prop-chip-row-scroll .prop-chip{
@@ -803,10 +803,10 @@ ul{list-style:none}
 .prop-id{font-size:12px;font-family:monospace;color:var(--text-3);margin-top:2px;letter-spacing:.02em}
 .prop-desc-preview{margin-top:8px;font-size:12px;line-height:1.4;color:var(--text-3);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .prop-chip{
-  display:inline-flex;align-items:center;gap:0;
+  display:inline-flex;align-items:center;gap:4px;
   font-size:12px;font-weight:700;color:var(--text-2);
   background:var(--bg-2);border:1.5px solid var(--border);
-  padding:3px 10px 3px 4px;border-radius:9px;
+  padding:5px 10px;border-radius:9px;
 }
 .prop-chip svg{width:11px;height:11px;stroke:var(--text-3);fill:none;stroke-width:2;flex-shrink:0}
 .prop-chip-icon{
@@ -846,7 +846,7 @@ ul{list-style:none}
 
 .chip-sscouples{background:#faf1f2;border-color:#eed9dc}
 .chip-amenity{background:#faf1f2;border-color:#eed9dc;color:#a85c6e}
-.prop-amenity-row{margin-top:5px}
+.prop-amenity-row{margin-top:8px}
 .chip-video{background:#faf1f2;border-color:#eed9dc;color:#c9975c;font-weight:700}
 .prop-chip-lbl{color:var(--brand);font-weight:600}
 .prop-chip-val{color:var(--text);font-weight:600}
@@ -3122,6 +3122,21 @@ ul{list-style:none}
   .prop-stat-icon{width:19px;height:19px}
   .prop-chip{font-size:11px;padding:2px 8px 2px 3px}
   .chip-ico-wrap{width:16px;height:16px}
+  /* 3-up price rows (rent + maintenance + deposit) get too narrow on the
+     2-up mobile card to fit equal thirds — fall back to the same "2 chips
+     per page, scroll for more" treatment already used by the other chip
+     rows instead of squeezing/truncating all three into one line. */
+  .prop-price-chips.price-chips-scroll{
+    grid-template-columns:none!important;
+    display:grid;grid-auto-flow:column;
+    grid-auto-columns:calc(50% - 3px);
+    overflow-x:auto;-ms-overflow-style:none;scrollbar-width:none;
+    scroll-snap-type:x mandatory;cursor:grab;
+  }
+  .prop-price-chips.price-chips-scroll::-webkit-scrollbar{display:none}
+  .prop-price-chips.price-chips-scroll .price-chip{
+    scroll-snap-align:start;width:100%;
+  }
 
   /* Quick-action row already renders as equal-size icon-only buttons at
      every width (see base .prop-qa-btn/.prop-qa-icon rules) — on mobile we
@@ -6908,31 +6923,32 @@ function cardHTML(p, compact) {
           ${availableFmt}
         </span>` : ''}
       </div>
-      ${priceChipsHTML(p, pType, deposit, maintenance, leaseDur)}
-	  
-      <div class="prop-stats">
-        <span class="prop-stat" title="Configuration">
+	  <div class="prop-stats">
+        ${(() => { const bhkVal = String(p.property?.bhk || '').replace(/\s*BHK\s*$/i, '').trim(); return (parseFloat(bhkVal) > 0) ? `<span class="prop-stat" title="Configuration">
           <span class="prop-stat-icon icon-bed">🛏️</span>
-          ${String(p.property?.bhk || '').replace(/\s*BHK\s*$/i, '').trim()}
-        </span>
-        <span class="prop-stat" title="Bathrooms">
+          ${bhkVal}
+        </span>` : ''; })()}
+        ${bathrooms > 0 ? `<span class="prop-stat" title="Bathrooms">
           <span class="prop-stat-icon icon-bath">🚿</span>
           ${bathrooms}
-        </span>
-        <span class="prop-stat${carpark?'':' is-off'}" title="${carCount>0?carCount+' car parking spot'+(carCount>1?'s':''):'No car parking'}">
+        </span>` : ''}
+        ${carCount > 0 ? `<span class="prop-stat" title="${carCount+' car parking spot'+(carCount>1?'s':'')}">
           <span class="prop-stat-icon icon-car">🚗</span>
-          ${carCount>0?carCount:''}
-        </span>
-        <span class="prop-stat${bikepark?'':' is-off'}" title="${bikeCount>0?bikeCount+' bike parking spot'+(bikeCount>1?'s':''):'No bike parking'}">
+          ${carCount}
+        </span>` : ''}
+        ${bikeCount > 0 ? `<span class="prop-stat" title="${bikeCount+' bike parking spot'+(bikeCount>1?'s':'')}">
           <span class="prop-stat-icon icon-bike">🏍️</span>
-          ${bikeCount>0?bikeCount:''}
-        </span>
+          ${bikeCount}
+        </span>` : ''}
         ${areaSqft ? `<span class="prop-stat" title="Built-up area">
           <span class="prop-stat-icon icon-area">📐</span>
           ${areaSqft} sqft
         </span>` : ''}
         ${lift ? `<span class="prop-stat" title="Lift available"><span class="prop-stat-icon icon-lift">🛗</span></span>` : ''}
       </div>
+      ${priceChipsHTML(p, pType, deposit, maintenance, leaseDur)}
+	  
+      
       <div class="prop-chip-row prop-chip-row-scroll">
         <span class="prop-chip chip-furnish" title="Furnishing">
           <span class="prop-chip-icon icon-furnish">🛋️</span>
@@ -7103,26 +7119,26 @@ function shortlistCardHTML(p) {
       </div>
       ${priceChipsHTML(p, pType, deposit, maintenance, leaseDur)}
       <div class="prop-stats">
-        <span class="prop-stat" title="Configuration">
+        ${(() => { const bhkVal = String(p.property?.bhk || '').replace(/\s*BHK\s*$/i, '').trim(); return (parseFloat(bhkVal) > 0) ? `<span class="prop-stat" title="Configuration">
           <span class="prop-stat-icon icon-bed">🛏️</span>
-          ${String(p.property?.bhk || '').replace(/\s*BHK\s*$/i, '').trim()}
-        </span>
-        <span class="prop-stat" title="Bathrooms">
+          ${bhkVal}
+        </span>` : ''; })()}
+        ${bathrooms > 0 ? `<span class="prop-stat" title="Bathrooms">
           <span class="prop-stat-icon icon-bath">🚿</span>
           ${bathrooms}
-        </span>
+        </span>` : ''}
         <span class="prop-stat" title="Furnishing">
           <span class="prop-stat-icon icon-furnish">🛋️</span>
           ${p.property?.furnish ?? p.pg?.furnish ?? p.shortStay?.furnish}
         </span>
-        <span class="prop-stat${carpark?'':' is-off'}" title="${carCount>0?carCount+' car parking spot'+(carCount>1?'s':''):'No car parking'}">
+        ${carCount > 0 ? `<span class="prop-stat" title="${carCount+' car parking spot'+(carCount>1?'s':'')}">
           <span class="prop-stat-icon icon-car">🚗</span>
-          ${carCount>0?carCount:''}
-        </span>
-        <span class="prop-stat${bikepark?'':' is-off'}" title="${bikeCount>0?bikeCount+' bike parking spot'+(bikeCount>1?'s':''):'No bike parking'}">
+          ${carCount}
+        </span>` : ''}
+        ${bikeCount > 0 ? `<span class="prop-stat" title="${bikeCount+' bike parking spot'+(bikeCount>1?'s':'')}">
           <span class="prop-stat-icon icon-bike">🏍️</span>
-          ${bikeCount>0?bikeCount:''}
-        </span>
+          ${bikeCount}
+        </span>` : ''}
         ${lift ? `<span class="prop-stat" title="Lift available"><span class="prop-stat-icon icon-lift">🛗</span></span>` : ''}
       </div>
       ${(waterLabel || electricLabel) ? `<div class="prop-chip-row prop-chip-row-scroll">
@@ -8238,7 +8254,7 @@ function priceChipsHTML(p, pType, deposit, maintenance, leaseDur) {
     if (maintChip) chips.push(maintChip);
     if (depositChip) chips.push(depositChip);
   }
-  return `<div class="prop-price-chips" style="grid-template-columns:repeat(${chips.length},1fr)">${chips.join('')}</div>`;
+  return `<div class="prop-price-chips${chips.length>2?' price-chips-scroll':''}" style="grid-template-columns:repeat(${chips.length},1fr)">${chips.join('')}</div>`;
 }
 
 // Abbreviates lease-duration strings for the tight "20L/2yrs" price display,
