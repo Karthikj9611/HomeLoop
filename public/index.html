@@ -663,6 +663,14 @@ ul{list-style:none}
 .prop-icon-badge.prop-compare-float.disabled:hover{background:rgba(255,255,255,.92);transform:none}
 .prop-body{padding:13px 14px 12px;flex:1;min-width:0;display:flex;flex-direction:column}
 .prop-price-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:3px;margin-bottom:4px}
+.prop-price-chips{display:grid;gap:6px;margin-top:3px;margin-bottom:4px}
+.prop-price-chips .price-chip{
+  display:flex;align-items:center;justify-content:flex-start;gap:4px;
+  background:var(--bg-2);border:1.5px solid var(--border);border-radius:9px;
+  padding:5px 10px;min-width:0;overflow:hidden;white-space:nowrap;
+}
+.price-chip .prop-price{font-size:12px}
+.price-chip svg{width:12px;height:12px;stroke:#a85c6e;fill:none;stroke-width:2;flex-shrink:0}
 .prop-price{
   font-size:12px;font-weight:800;
   background:linear-gradient(120deg,#ff4d67,#e03a52 60%,#c72e43);
@@ -671,6 +679,7 @@ ul{list-style:none}
   min-width:0;
 }
 .prop-price-unit{font-size:12px;font-weight:600;color:var(--brand);-webkit-text-fill-color:var(--brand)}
+.prop-price-extras{display:flex;align-items:center;gap:10px;flex-shrink:0}
 .prop-deposit-inline{
   display:flex;align-items:center;gap:4px;flex-shrink:0;
   font-size:12px;font-weight:600;color:var(--text-2);white-space:nowrap;
@@ -727,7 +736,7 @@ ul{list-style:none}
 .prop-stats.is-dragging{cursor:grabbing;scroll-behavior:auto;user-select:none}
 .prop-stats::-webkit-scrollbar{display:none}
 .prop-stat{
-  display:flex;align-items:center;gap:5px;
+  display:flex;align-items:center;gap:0;
   font-size:12px;font-weight:700;color:var(--text-2);
   padding:0 9px 0 0;flex-shrink:0;white-space:nowrap;
 }
@@ -769,12 +778,12 @@ ul{list-style:none}
 .prop-card:not(.list-view) .prop-chip-row-scroll{
   display:grid;
   grid-auto-flow:column;
-  grid-auto-columns:minmax(calc(50% - 2.5px),1fr);
+  grid-auto-columns:calc(50% - 2.5px);
   scroll-snap-type:x mandatory;
 }
 .prop-card:not(.list-view) .prop-chip-row-scroll .prop-chip{
   scroll-snap-align:start;
-  justify-content:center;
+  justify-content:flex-start;
   width:100%;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
@@ -788,57 +797,53 @@ ul{list-style:none}
 }
 .prop-card.list-view .prop-chip-row-scroll .prop-chip{
   width:100%;
-  justify-content:center;
+  justify-content:flex-start;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
 .prop-id{font-size:12px;font-family:monospace;color:var(--text-3);margin-top:2px;letter-spacing:.02em}
 .prop-desc-preview{margin-top:8px;font-size:12px;line-height:1.4;color:var(--text-3);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .prop-chip{
-  display:inline-flex;align-items:center;gap:6px;
+  display:inline-flex;align-items:center;gap:0;
   font-size:12px;font-weight:700;color:var(--text-2);
   background:var(--bg-2);border:1.5px solid var(--border);
   padding:3px 10px 3px 4px;border-radius:9px;
 }
 .prop-chip svg{width:11px;height:11px;stroke:var(--text-3);fill:none;stroke-width:2;flex-shrink:0}
 .prop-chip-icon{
-  font-size:11px;line-height:1;flex-shrink:0;
-  width:20px;height:20px;border-radius:7px;
-  display:flex;align-items:center;justify-content:center;
-  box-shadow:0 1px 3px rgba(0,0,0,.10),inset 0 1px 1px rgba(255,255,255,.6);
+  font-size:12px;line-height:1;flex-shrink:0;
+  display:inline-flex;align-items:center;justify-content:center;
 }
 .chip-ico-wrap{
-  width:20px;height:20px;border-radius:7px;
-  display:flex;align-items:center;justify-content:center;flex-shrink:0;
-  box-shadow:0 1px 3px rgba(0,0,0,.10),inset 0 1px 1px rgba(255,255,255,.6);
+  display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;
 }
-.chip-ico-wrap svg{width:12px;height:12px;stroke:#fff;fill:none;stroke-width:2.2}
+.chip-ico-wrap svg{width:12px;height:12px;stroke:#a85c6e;fill:none;stroke-width:2.2}
 .icon-maint svg{stroke:#a85c6e}
 .icon-avail svg{stroke:#8a6b7a}
 .icon-water svg{stroke:#8a6b7a}
 .icon-electric svg{stroke:#a85c6e}
-.icon-furnish{background:linear-gradient(145deg,#f8f0f0,#efdfe0)}
+
 .chip-furnish{background:#faf1f2;border-color:#eed9dc}
-.icon-maint{background:linear-gradient(145deg,#f8f0f0,#efdfe0)}
+
 .chip-maint{background:#faf1f2;border-color:#eed9dc;color:#a85c6e}
-.icon-avail{background:linear-gradient(145deg,#f8f0f0,#efdfe0)}
+
 .chip-avail{background:#faf1f2;border-color:#eed9dc;color:#8a6b7a}
-.icon-water{background:linear-gradient(145deg,#f8f0f0,#efdfe0)}
+
 .chip-water{background:#faf1f2;border-color:#eed9dc;color:#8a6b7a}
-.icon-electric{background:linear-gradient(145deg,#f8f0f0,#efdfe0)}
+
 .chip-electric{background:#faf1f2;border-color:#eed9dc;color:#a85c6e}
-.icon-gender{background:linear-gradient(145deg,#f8f0f0,#efdfe0)}
+
 .chip-gender{background:#faf1f2;border-color:#eed9dc}
-.icon-room{background:linear-gradient(145deg,#f8f0f0,#efdfe0)}
+
 .chip-room{background:#faf1f2;border-color:#eed9dc}
-.icon-meals{background:linear-gradient(145deg,#f8f0f0,#efdfe0)}
+
 .chip-meals{background:#faf1f2;border-color:#eed9dc}
-.icon-occupancy{background:linear-gradient(145deg,#f8f0f0,#efdfe0)}
+
 .chip-occupancy{background:#faf1f2;border-color:#eed9dc}
-.icon-ss24hrs{background:linear-gradient(145deg,#f8f0f0,#efdfe0)}
+
 .chip-ss24hrs{background:#faf1f2;border-color:#eed9dc}
-.icon-sscancel{background:linear-gradient(145deg,#f8f0f0,#efdfe0)}
+
 .chip-sscancel{background:#faf1f2;border-color:#eed9dc}
-.icon-sscouples{background:linear-gradient(145deg,#f8f0f0,#efdfe0)}
+
 .chip-sscouples{background:#faf1f2;border-color:#eed9dc}
 .chip-amenity{background:#faf1f2;border-color:#eed9dc;color:#a85c6e}
 .prop-amenity-row{margin-top:5px}
@@ -3116,7 +3121,7 @@ ul{list-style:none}
   .prop-stat{font-size:11px;padding:0 6px 0 0}
   .prop-stat-icon{width:19px;height:19px}
   .prop-chip{font-size:11px;padding:2px 8px 2px 3px}
-  .prop-chip-icon,.chip-ico-wrap{width:16px;height:16px}
+  .chip-ico-wrap{width:16px;height:16px}
 
   /* Quick-action row already renders as equal-size icon-only buttons at
      every width (see base .prop-qa-btn/.prop-qa-icon rules) — on mobile we
@@ -6893,18 +6898,6 @@ function cardHTML(p, compact) {
         <span class="prop-title-text">${esc(p.propertyId || 'Untitled listing')}</span>
         ${ptype ? `<span class="prop-title-buildtype" title="${esc(ptype)}">${esc(ptype)}</span>` : ''}
       </div>
-      <div class="prop-price-row">
-        <div class="prop-price">${fmtRupee(p.price?.rent||0)}<span class="prop-price-unit">/${pType === 'Lease' ? (fmtLeaseDur(leaseDur) || 'Lease') : pType === 'ShortStay' ? ' Day' : 'Mo'}</span></div>
-        ${pType === 'ShortStay' ? '' : pType === 'Lease'
-          ? (maintenance > 0 ? `<div class="prop-deposit-inline" title="Monthly maintenance">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-              <span class="prop-deposit-val">${fmtRupee(maintenance)}/M</span>
-            </div>` : '')
-          : `<div class="prop-deposit-inline" title="Security deposit">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="6" width="20" height="13" rx="2"/><circle cx="12" cy="12.5" r="2.5"/></svg>
-          <span class="prop-deposit-val">${fmtRupee(deposit)}</span><span class="prop-deposit-lbl">SD</span>
-        </div>`}
-      </div>
       <div class="prop-loc">
         <span class="prop-loc-area">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
@@ -6915,6 +6908,7 @@ function cardHTML(p, compact) {
           ${availableFmt}
         </span>` : ''}
       </div>
+      ${priceChipsHTML(p, pType, deposit, maintenance, leaseDur)}
 	  
       <div class="prop-stats">
         <span class="prop-stat" title="Configuration">
@@ -6947,10 +6941,6 @@ function cardHTML(p, compact) {
         ${isPGCard && pg.room ? `<span class="prop-chip chip-room" title="Room type">
           <span class="prop-chip-icon icon-room">🛏️</span>
           ${esc(pg.room)}
-        </span>` : ''}
-        ${(maintenance > 0 && pType !== 'Lease') ? `<span class="prop-chip chip-maint" title="Monthly maintenance">
-          <span class="chip-ico-wrap icon-maint"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>
-          ${fmtRupee(maintenance)}/M
         </span>` : ''}
         ${isPGCard && pg.gender ? `<span class="prop-chip chip-gender" title="Gender preference">
           <span class="prop-chip-icon icon-gender">🚻</span>
@@ -7101,18 +7091,6 @@ function shortlistCardHTML(p) {
       <div class="prop-title" title="${esc(p.propertyId)}">
         <span class="prop-title-text">${esc(p.propertyId || 'Untitled listing')}</span>
       </div>
-      <div class="prop-price-row">
-        <div class="prop-price">${fmtRupee(p.price?.rent||0)}<span class="prop-price-unit">/${pType === 'Lease' ? (fmtLeaseDur(leaseDur) || 'Lease') : pType === 'ShortStay' ? ' Day' : 'Mo'}</span></div>
-        ${pType === 'ShortStay' ? '' : pType === 'Lease'
-          ? (maintenance > 0 ? `<div class="prop-deposit-inline" title="Monthly maintenance">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-              <span class="prop-deposit-val">${fmtRupee(maintenance)}/M</span>
-            </div>` : '')
-          : `<div class="prop-deposit-inline" title="Security deposit">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="6" width="20" height="13" rx="2"/><circle cx="12" cy="12.5" r="2.5"/></svg>
-          <span class="prop-deposit-val">${fmtRupee(deposit)}</span><span class="prop-deposit-lbl">SD</span>
-        </div>`}
-      </div>
       <div class="prop-loc">
         <span class="prop-loc-area">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
@@ -7123,6 +7101,7 @@ function shortlistCardHTML(p) {
           ${availableFmt}
         </span>` : ''}
       </div>
+      ${priceChipsHTML(p, pType, deposit, maintenance, leaseDur)}
       <div class="prop-stats">
         <span class="prop-stat" title="Configuration">
           <span class="prop-stat-icon icon-bed">🛏️</span>
@@ -7146,11 +7125,7 @@ function shortlistCardHTML(p) {
         </span>
         ${lift ? `<span class="prop-stat" title="Lift available"><span class="prop-stat-icon icon-lift">🛗</span></span>` : ''}
       </div>
-      ${((maintenance > 0 && pType !== 'Lease') || waterLabel || electricLabel) ? `<div class="prop-chip-row prop-chip-row-scroll">
-        ${(maintenance > 0 && pType !== 'Lease') ? `<span class="prop-chip chip-maint" title="Monthly maintenance">
-          <span class="chip-ico-wrap icon-maint"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>
-          ${fmtRupee(maintenance)}/M
-        </span>` : ''}
+      ${(waterLabel || electricLabel) ? `<div class="prop-chip-row prop-chip-row-scroll">
       </div>` : ''}
       ${amenityTagsHTML(p)}
       <div class="prop-footer">
@@ -8232,6 +8207,38 @@ function fmtRupee(n) {
   if (n >= 100000)   return '₹' + trim(n/100000) + 'L';
   if (n >= 1000)     return '₹' + trim(n/1000) + 'K';
   return '₹' + n;
+}
+
+// Builds the price row as equally-divided chip cells: rent always shown,
+// plus maintenance and/or security deposit when applicable. Column count
+// (and therefore each chip's width) adapts to how many are actually present
+// — 1 (rent alone), 2 (rent + one of maintenance/deposit), or 3 (all three).
+function priceChipsHTML(p, pType, deposit, maintenance, leaseDur) {
+  const rentUnit = pType === 'Lease' ? (fmtLeaseDur(leaseDur) || 'Lease') : pType === 'ShortStay' ? ' Day' : 'Mo';
+  const maintSvg = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>';
+
+  const rentChip = `<div class="prop-chip price-chip price-chip-rent">
+    <span class="prop-price">${fmtRupee(p.price?.rent||0)}<span class="prop-price-unit">/${rentUnit}</span></span>
+  </div>`;
+  const maintChip = maintenance > 0 ? `<div class="prop-chip price-chip" title="Monthly maintenance">
+    <span class="chip-ico-wrap icon-maint">${maintSvg}</span>
+    <span class="prop-deposit-val">${fmtRupee(maintenance)}/M</span>
+  </div>` : '';
+  const depositChip = deposit > 0 ? `<div class="prop-chip price-chip" title="Security deposit">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="6" width="20" height="13" rx="2"/><circle cx="12" cy="12.5" r="2.5"/></svg>
+    <span class="prop-deposit-val">${fmtRupee(deposit)}</span><span class="prop-deposit-lbl">SD</span>
+  </div>` : '';
+
+  const chips = [rentChip];
+  if (pType === 'ShortStay') {
+    // rent only
+  } else if (pType === 'Lease') {
+    if (maintChip) chips.push(maintChip);
+  } else {
+    if (maintChip) chips.push(maintChip);
+    if (depositChip) chips.push(depositChip);
+  }
+  return `<div class="prop-price-chips" style="grid-template-columns:repeat(${chips.length},1fr)">${chips.join('')}</div>`;
 }
 
 // Abbreviates lease-duration strings for the tight "20L/2yrs" price display,
