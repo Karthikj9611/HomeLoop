@@ -575,35 +575,63 @@ ul{list-style:none}
    right at the bottom, edge-to-edge, in the card's brand rose. */
 .prop-img-price{
   position:absolute;left:0;right:0;bottom:0;z-index:2;
-  padding:8px 13px 9px;
-  background:linear-gradient(90deg,#e03a52,#c72e43);
+  padding:5px 14px;
+  background:linear-gradient(135deg,#ea4b63 0%,#d4324c 55%,#a8253a 100%);
   pointer-events:auto;
   overflow-x:auto;overflow-y:hidden;-ms-overflow-style:none;scrollbar-width:none;
 }
 .prop-img-price::-webkit-scrollbar{display:none}
-.prop-img:has(.prop-img-price) .slide-dots{bottom:50px}
+.prop-img:has(.prop-img-price) .slide-dots{bottom:38px}
 .prop-img-price .prop-price-chips,
 .prop-img-price .prop-price-chips.price-chips-scroll{
-  display:flex;flex-wrap:nowrap;align-items:center;gap:14px;
+  display:flex;flex-wrap:nowrap;align-items:center;gap:0;
   grid-template-columns:none;margin:0;padding:0;border:none;
-  overflow:visible;width:max-content;
+  overflow:visible;width:100%;
 }
-.prop-img-price .price-chip{
-  flex-wrap:nowrap;white-space:nowrap;
-  background:none;border-radius:0;padding:0;box-shadow:none;border:none;
+.prop-img-price .prop-price-chips .price-chip{
+  flex:0 0 auto;min-width:0;justify-content:center;
+  align-items:center;flex-wrap:nowrap;white-space:nowrap;
+  background:none;border-radius:0;padding:0 8px;box-shadow:none;border:none;
+  gap:8px;position:relative;
 }
-.prop-img-price .price-chip-rent{background:none;padding:0}
+/* Equal-thirds division only when all three chips (rent + maintenance +
+   deposit) are present. When deposit (or maintenance) is missing, chips
+   keep their natural width and stay left-packed — the leftover ribbon
+   space is left empty instead of being stretched to fill it. */
+.prop-img-price .prop-price-chips:has(> .price-chip:nth-child(3)) .price-chip{
+  flex:1 1 0;
+}
+/* Hairline divider between segments — clean separation without heavy
+   borders or boxed chip backgrounds. */
+.prop-img-price .prop-price-chips .price-chip:not(:first-child)::before{
+  content:'';position:absolute;left:0;top:50%;transform:translateY(-50%);
+  width:1px;height:18px;background:rgba(255,255,255,.25);
+}
+.prop-img-price .prop-price-chips .price-chip-rent{background:none;padding:0 8px 0 0}
+/* Icon badge: soft frosted-glass square, same size across all three so
+   none reads bigger or flatter than the others. */
+.prop-img-price .price-ico-3d{
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  width:18px;height:18px;border-radius:6px;
+  background:rgba(255,255,255,.16);
+  border:1px solid rgba(255,255,255,.3);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.25);
+}
+.prop-img-price .price-ico-3d svg{width:10px;height:10px;stroke:#fff;fill:none;stroke-width:2.1}
+.prop-img-price .price-text-stack{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;line-height:1.2;min-width:0}
 .prop-img-price .prop-price{
   background:none;color:#fff;-webkit-text-fill-color:#fff;
-  text-shadow:none;font-size:15px;white-space:nowrap;font-weight:800;
+  text-shadow:none;font-size:14.5px;white-space:nowrap;font-weight:800;letter-spacing:-.01em;
 }
-.prop-img-price .prop-price-unit{color:rgba(255,255,255,.8);-webkit-text-fill-color:rgba(255,255,255,.8);font-size:11.5px;font-weight:600}
-/* All three chips (rent/maintenance/deposit) read at the same size and
-   weight on the ribbon — rent is only distinguished by coming first, not
-   by being visually bigger, so the row reads as one consistent line. */
-.prop-img-price .prop-price-chips .prop-deposit-val{font-size:15px;font-weight:800;color:#fff}
-.prop-img-price .prop-price-chips .prop-deposit-lbl{font-size:11.5px;font-weight:600;color:rgba(255,255,255,.8)}
-.prop-img-price .chip-ico-wrap svg,
+.prop-img-price .prop-price-unit{display:none}
+/* Ribbon shows icon + value only — unit/label text (Mo, Maint, SD) is
+   dropped here; the fuller labelled version still applies elsewhere
+   (e.g. the shortlist panel's compact card) since priceChipsHTML() is shared. */
+.prop-img-price .prop-price-chips .prop-deposit-lbl{display:none}
+/* Rent leads the row (bigger, boldest); maintenance/deposit read as
+   quieter supporting figures stacked value-over-label. */
+.prop-img-price .prop-price-chips .prop-deposit-val{font-size:13.5px;font-weight:800;color:#fff;letter-spacing:-.01em}
+.prop-img-price .prop-price-chips .prop-deposit-lbl{font-size:10px;font-weight:600;color:rgba(255,255,255,.72);letter-spacing:.03em;text-transform:uppercase;margin-top:1px}
 .prop-img-price .price-chip svg{stroke:#fff;opacity:.9}
 /* The ribbon's own width (not the browser viewport) decides full vs. short
    labels — a narrow card in a multi-column desktop grid needs the same
@@ -612,7 +640,6 @@ ul{list-style:none}
 @container prop-img-box (max-width:310px){
   .prop-img-price .unit-full{display:none}
   .prop-img-price .unit-short{display:inline}
-  .prop-img-price .prop-price-chips{gap:9px}
 }
 .prop-img .img-slide{transition:transform .5s cubic-bezier(.2,.7,.3,1)}
 
@@ -796,17 +823,19 @@ ul{list-style:none}
 .prop-loc{
   display:flex;align-items:center;gap:4px;
   font-size:12.5px;font-weight:500;color:var(--text-2);margin-top:7px;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
   justify-content:space-between;
 }
-.prop-loc-area{display:flex;align-items:center;gap:4px;overflow:hidden;min-width:0}
+/* The area name is the only part allowed to shrink/ellipsis; the date
+   badge (.prop-loc-avail) is flex-shrink:0 so it always renders in full
+   instead of being clipped mid-character when space runs tight. */
+.prop-loc-area{display:flex;align-items:center;gap:4px;overflow:hidden;min-width:0;flex:1 1 auto}
 .prop-loc-avail{
   display:flex;align-items:center;gap:3px;flex-shrink:0;
   color:#a85c6e;font-weight:600;white-space:nowrap;
 }
 .prop-loc-avail svg{width:12px;height:12px;stroke:#a85c6e;fill:none;stroke-width:2;flex-shrink:0}
 .prop-loc svg{width:13px;height:13px;stroke:#a85c6e;fill:#a85c6e;fill-opacity:.12;stroke-width:2;flex-shrink:0}
-.prop-loc span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.prop-loc-area span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;flex:1 1 auto;display:block}
 /* ── Flat spec readout — plain icon+value pairs split by hairline dividers.
    No boxes, but back to one slidable row (scroll/drag) instead of wrapping,
    so it doesn't break onto a second line when there are several stats. ── */
@@ -815,6 +844,10 @@ ul{list-style:none}
   gap:0;margin-top:10px;
   overflow-x:auto;-ms-overflow-style:none;scrollbar-width:none;
   cursor:grab;
+  /* Soft fade at the trailing edge so an overflowing last item reads as
+     "scroll for more" instead of a raw, abrupt cut-off. */
+  mask-image:linear-gradient(to right,#000 92%,transparent 100%);
+  -webkit-mask-image:linear-gradient(to right,#000 92%,transparent 100%);
 }
 .prop-stats.is-dragging{cursor:grabbing;scroll-behavior:auto;user-select:none}
 .prop-stats::-webkit-scrollbar{display:none}
@@ -843,6 +876,10 @@ ul{list-style:none}
   flex-wrap:nowrap;overflow-x:auto;-ms-overflow-style:none;scrollbar-width:none;
   scroll-behavior:smooth;
   cursor:grab;
+  /* Same trailing fade as .prop-stats — signals scrollability instead of
+     looking like a broken/truncated amenity chip. */
+  mask-image:linear-gradient(to right,#000 92%,transparent 100%);
+  -webkit-mask-image:linear-gradient(to right,#000 92%,transparent 100%);
 }
 .prop-chip-row-scroll.is-dragging{cursor:grabbing;scroll-behavior:auto;user-select:none}
 .prop-chip-row-scroll::-webkit-scrollbar{display:none}
@@ -851,13 +888,13 @@ ul{list-style:none}
 .prop-desc-preview{margin-top:8px;font-size:12px;line-height:1.4;color:var(--text-3);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .prop-chip{
   display:inline-flex;align-items:center;gap:5px;
-  font-size:12px;font-weight:700;color:var(--text-2);
+  font-size:12.5px;font-weight:700;color:var(--text-2);
   background:var(--bg-2);border:1px solid transparent;
   padding:6px 11px;border-radius:9px;
 }
 .prop-chip svg{width:11px;height:11px;stroke:var(--text-3);fill:none;stroke-width:2;flex-shrink:0}
 .prop-chip-icon{
-  font-size:12px;line-height:1;flex-shrink:0;
+  font-size:13px;line-height:1;flex-shrink:0;
   display:inline-flex;align-items:center;justify-content:center;
 }
 .chip-ico-wrap{
@@ -3148,6 +3185,11 @@ ul{list-style:none}
   .ad-slide-icon{font-size:18px}
   .ad-slide-cta{font-size:11px;padding:5px 12px}
   .prop-grid{grid-template-columns:1fr 1fr;gap:10px;padding:0 12px}
+  /* 2-up mobile card image needs more vertical room than the 4/3 desktop
+     ratio — the floating right-badge stack (heart, views, promoted,
+     verified) can run 4 icons deep and was crowding/overlapping the price
+     ribbon at the image's bottom edge. Taller ratio gives it clearance. */
+  .prop-grid:not(.list-view) .prop-img{aspect-ratio:3/4}
   .prop-card{min-height:0}
   .view-toggle{display:none}
   .prop-grid.list-view,.prop-grid{grid-template-columns:1fr 1fr;gap:10px}
@@ -8281,18 +8323,27 @@ function priceChipsHTML(p, pType, deposit, maintenance, leaseDur) {
   const rentUnitShort = pType === 'Lease' ? (fmtLeaseDur(leaseDur) || 'Lease') : pType === 'ShortStay' ? ' Day' : 'Mo';
   const maintSvg = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>';
   const rentSvg = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M9 21v-6h6v6"/></svg>';
+  const depositSvg = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="6" width="20" height="13" rx="2"/><circle cx="12" cy="12.5" r="2.5"/></svg>';
 
   const rentChip = `<div class="prop-chip price-chip price-chip-rent">
-    <span class="chip-ico-wrap icon-rent">${rentSvg}</span>
-    <span class="prop-price">${fmtRupee(p.price?.rent||0)}<span class="prop-price-unit">/<span class="unit-full">${rentUnit}</span><span class="unit-short">${rentUnitShort}</span></span></span>
+    <span class="price-ico-3d">${rentSvg}</span>
+    <span class="price-text-stack">
+      <span class="prop-price">${fmtRupee(p.price?.rent||0)}<span class="prop-price-unit">/<span class="unit-full">${rentUnit}</span><span class="unit-short">${rentUnitShort}</span></span></span>
+    </span>
   </div>`;
   const maintChip = maintenance > 0 ? `<div class="prop-chip price-chip" title="Monthly maintenance">
-    <span class="chip-ico-wrap icon-maint">${maintSvg}</span>
-    <span class="prop-deposit-val">${fmtRupee(maintenance)}</span><span class="prop-deposit-lbl"><span class="unit-full">Maintenance</span><span class="unit-short">Maint</span></span>
+    <span class="price-ico-3d">${maintSvg}</span>
+    <span class="price-text-stack">
+      <span class="prop-deposit-val">${fmtRupee(maintenance)}</span>
+      <span class="prop-deposit-lbl"><span class="unit-full">Maintenance</span><span class="unit-short">Maint</span></span>
+    </span>
   </div>` : '';
   const depositChip = deposit > 0 ? `<div class="prop-chip price-chip" title="Security deposit">
-    <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="6" width="20" height="13" rx="2"/><circle cx="12" cy="12.5" r="2.5"/></svg>
-    <span class="prop-deposit-val">${fmtRupee(deposit)}</span><span class="prop-deposit-lbl"><span class="unit-full">Deposit</span><span class="unit-short">SD</span></span>
+    <span class="price-ico-3d">${depositSvg}</span>
+    <span class="price-text-stack">
+      <span class="prop-deposit-val">${fmtRupee(deposit)}</span>
+      <span class="prop-deposit-lbl"><span class="unit-full">Deposit</span><span class="unit-short">SD</span></span>
+    </span>
   </div>` : '';
 
   const chips = [rentChip];
