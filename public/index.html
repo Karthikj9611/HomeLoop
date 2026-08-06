@@ -580,6 +580,13 @@ ul{list-style:none}
   pointer-events:auto;
   overflow-x:auto;overflow-y:hidden;-ms-overflow-style:none;scrollbar-width:none;
 }
+/* Fewer than 3 chips (no deposit, or no maintenance): the colored bar
+   hugs its content instead of stretching the full image width, so the
+   property photo shows through the rest of the strip. */
+.prop-img-price.prop-img-price-fit{
+  right:auto;width:max-content;max-width:100%;
+  border-radius:0 12px 0 0;
+}
 .prop-img-price::-webkit-scrollbar{display:none}
 .prop-img:has(.prop-img-price) .slide-dots{bottom:38px}
 .prop-img-price .prop-price-chips,
@@ -598,7 +605,7 @@ ul{list-style:none}
    deposit) are present. When deposit (or maintenance) is missing, chips
    keep their natural width and stay left-packed — the leftover ribbon
    space is left empty instead of being stretched to fill it. */
-.prop-img-price .prop-price-chips:has(> .price-chip:nth-child(3)) .price-chip{
+.prop-img-price .prop-price-chips.price-chips-scroll .price-chip{
   flex:1 1 0;
 }
 /* Hairline divider between segments — clean separation without heavy
@@ -6981,7 +6988,7 @@ function cardHTML(p, compact) {
   return `<div class="prop-card${listClass}${compactClass}${promotedClass} type-${pType.toLowerCase()}" onclick="openDetail('${p.id}')">
     <div class="prop-img" style="background:${bg}" data-idx="0">
       ${buildImgSlider(p, fg, '-grid')}
-      <div class="prop-img-price">${priceChipsHTML(p, pType, deposit, maintenance, leaseDur)}</div>
+      ${priceChipsHTML(p, pType, deposit, maintenance, leaseDur, {ribbon:true})}
       <div class="prop-card-top-row">
         <div class="prop-left-badges">
           ${(!compact && !['Rent','Lease','PG','ShortStay'].includes(currentTab)) ? `<span class="prop-badge-type badge-${pType.toLowerCase()}">${pType}</span>` : ''}
@@ -8318,7 +8325,7 @@ function fmtRupee(n) {
 // plus maintenance and/or security deposit when applicable. Column count
 // (and therefore each chip's width) adapts to how many are actually present
 // — 1 (rent alone), 2 (rent + one of maintenance/deposit), or 3 (all three).
-function priceChipsHTML(p, pType, deposit, maintenance, leaseDur) {
+function priceChipsHTML(p, pType, deposit, maintenance, leaseDur, opts) {
   const rentUnit = pType === 'Lease' ? (fmtLeaseDur(leaseDur) || 'Lease') : pType === 'ShortStay' ? ' Day' : 'Month';
   const rentUnitShort = pType === 'Lease' ? (fmtLeaseDur(leaseDur) || 'Lease') : pType === 'ShortStay' ? ' Day' : 'Mo';
   const maintSvg = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>';
@@ -8355,7 +8362,17 @@ function priceChipsHTML(p, pType, deposit, maintenance, leaseDur) {
     if (maintChip) chips.push(maintChip);
     if (depositChip) chips.push(depositChip);
   }
-  return `<div class="prop-price-chips${chips.length>2?' price-chips-scroll':''}" style="grid-template-columns:repeat(${chips.length},1fr)">${chips.join('')}</div>`;
+  const gridCols = chips.length === 3 ? `repeat(3,1fr)` : `repeat(${chips.length},auto)`;
+  const inner = `<div class="prop-price-chips${chips.length>2?' price-chips-scroll':''}" style="grid-template-columns:${gridCols}">${chips.join('')}</div>`;
+  if (opts && opts.ribbon) {
+    // Ribbon mode: the pink background itself should only cover as much
+    // width as the chips need — with fewer than 3 chips (no deposit, or
+    // no maintenance) it hugs its content instead of stretching the full
+    // image width, so the property photo shows through the rest.
+    const fitClass = chips.length < 3 ? ' prop-img-price-fit' : '';
+    return `<div class="prop-img-price${fitClass}">${inner}</div>`;
+  }
+  return inner;
 }
 
 // Abbreviates lease-duration strings for the tight "20L/2yrs" price display,
