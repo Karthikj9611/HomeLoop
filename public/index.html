@@ -580,9 +580,11 @@ ul{list-style:none}
   pointer-events:auto;
   overflow-x:auto;overflow-y:hidden;-ms-overflow-style:none;scrollbar-width:none;
 }
-/* Fewer than 3 chips (no deposit, or no maintenance): the colored bar
-   hugs its content instead of stretching the full image width, so the
-   property photo shows through the rest of the strip. */
+/* Only a single chip (rent alone, e.g. Short Stay): the colored bar hugs
+   its content instead of stretching the full image width, so the
+   property photo shows through the rest of the strip. With 2+ chips the
+   bar spans full width and they divide it equally (see .price-chips-equal
+   below). */
 .prop-img-price.prop-img-price-fit{
   right:auto;width:max-content;max-width:100%;
   border-radius:0 12px 0 0;
@@ -601,11 +603,10 @@ ul{list-style:none}
   background:none;border-radius:0;padding:0 8px;box-shadow:none;border:none;
   gap:8px;position:relative;
 }
-/* Equal-thirds division only when all three chips (rent + maintenance +
-   deposit) are present. When deposit (or maintenance) is missing, chips
-   keep their natural width and stay left-packed — the leftover ribbon
-   space is left empty instead of being stretched to fill it. */
-.prop-img-price .prop-price-chips.price-chips-scroll .price-chip{
+/* Equal division applies whenever there are 2 or more chips (rent +
+   maintenance, or rent + maintenance + deposit) — only a lone rent chip
+   stays at its natural width (see .prop-img-price-fit above). */
+.prop-img-price .prop-price-chips.price-chips-equal .price-chip{
   flex:1 1 0;
 }
 /* Hairline divider between segments — clean separation without heavy
@@ -3221,6 +3222,26 @@ ul{list-style:none}
   /* 3-up price rows (rent + maintenance + deposit) just wrap onto a second
      line on the narrower 2-up mobile card, same borderless block as desktop. */
   .prop-price-chips.price-chips-scroll{gap:4px 12px}
+  /* Ribbon (pink bar on the image): on mobile, when all 3 chips are present
+     keep them in a single row showing 2 at a time, and let the row scroll/
+     slide sideways to reveal the 3rd instead of squeezing all 3 into equal
+     thirds. */
+  .prop-img-price .prop-price-chips.price-chips-scroll{
+    display:grid;grid-auto-flow:column;grid-auto-columns:50%;
+    overflow-x:auto;-ms-overflow-style:none;scrollbar-width:none;
+    scroll-snap-type:x mandatory;cursor:grab;width:100%;
+    /* Same trailing fade as .prop-stats/.prop-chip-row-scroll — signals
+       there's more to scroll instead of looking like an abrupt cut-off. */
+    mask-image:linear-gradient(to right,#000 92%,transparent 100%);
+    -webkit-mask-image:linear-gradient(to right,#000 92%,transparent 100%);
+  }
+  .prop-img-price .prop-price-chips.price-chips-scroll.is-dragging{
+    cursor:grabbing;scroll-behavior:auto;user-select:none;
+  }
+  .prop-img-price .prop-price-chips.price-chips-scroll::-webkit-scrollbar{display:none}
+  .prop-img-price .prop-price-chips.price-chips-scroll .price-chip{
+    flex:none;width:100%;scroll-snap-align:start;justify-content:flex-start;
+  }
   /* Mobile: swap to the short unit/label variant (Mo/Maint/SD) and keep
      each price chip on a single line instead of wrapping. */
   .unit-full{display:none}
@@ -8362,14 +8383,15 @@ function priceChipsHTML(p, pType, deposit, maintenance, leaseDur, opts) {
     if (maintChip) chips.push(maintChip);
     if (depositChip) chips.push(depositChip);
   }
-  const gridCols = chips.length === 3 ? `repeat(3,1fr)` : `repeat(${chips.length},auto)`;
-  const inner = `<div class="prop-price-chips${chips.length>2?' price-chips-scroll':''}" style="grid-template-columns:${gridCols}">${chips.join('')}</div>`;
+  const gridCols = chips.length >= 2 ? `repeat(${chips.length},1fr)` : `repeat(${chips.length},auto)`;
+  const equalClass = chips.length >= 2 ? ' price-chips-equal' : '';
+  const scrollClass = chips.length > 2 ? ' price-chips-scroll' : '';
+  const inner = `<div class="prop-price-chips${scrollClass}${equalClass}" style="grid-template-columns:${gridCols}">${chips.join('')}</div>`;
   if (opts && opts.ribbon) {
-    // Ribbon mode: the pink background itself should only cover as much
-    // width as the chips need — with fewer than 3 chips (no deposit, or
-    // no maintenance) it hugs its content instead of stretching the full
-    // image width, so the property photo shows through the rest.
-    const fitClass = chips.length < 3 ? ' prop-img-price-fit' : '';
+    // Ribbon mode: only a single chip (rent alone, e.g. Short Stay) hugs its
+    // content — with 2 or 3 chips the bar spans the full image width and
+    // the chips divide it equally.
+    const fitClass = chips.length < 2 ? ' prop-img-price-fit' : '';
     return `<div class="prop-img-price${fitClass}">${inner}</div>`;
   }
   return inner;
