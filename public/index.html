@@ -3188,37 +3188,51 @@ ul{list-style:none}
   .main{padding:14px 0 24px}
   .main.needs-nav-clear{padding-bottom:calc(56px + env(safe-area-inset-bottom) + 24px)}
   .results-header{padding:0 12px}
-  .ad-banner{height:52px}
+  .ad-banner{height:44px}
   .ad-slide{padding:0 14px;gap:10px;font-size:12.5px}
   .ad-slide-icon{font-size:18px}
   .ad-slide-cta{font-size:11px;padding:5px 12px}
-  .prop-grid{grid-template-columns:1fr 1fr;gap:10px;padding:0 12px}
-  /* 2-up mobile card image needs more vertical room than the 4/3 desktop
-     ratio — the floating right-badge stack (heart, views, promoted,
-     verified) can run 4 icons deep and was crowding/overlapping the price
-     ribbon at the image's bottom edge. Taller ratio gives it clearance. */
-  .prop-grid:not(.list-view) .prop-img{aspect-ratio:3/4}
+  /* A few px back from the chrome around the grid (banner/section header)
+     so more of the screen's height goes to the cards themselves. */
+  .section-divider{padding:10px 16px 6px}
+  .prop-grid{grid-template-columns:1fr 1fr;gap:8px;padding:0 12px}
+  /* Shorter, closer-to-square ratio than the old 3/4 — that height, combined
+     with the title/location/stats/amenity-chip block below it, only left
+     room for ~1.5 cards per screen (one huge card, then the next barely
+     starting). Squaring the image off and dropping the amenity-chip row
+     below (see .prop-chip-row-scroll rule further down) shrinks each card
+     enough that a 2x2 grid — 4 listings — fits in the first screen instead
+     of 1-2. The floating right-badge stack (heart/views/promoted/verified)
+     still fits fine at this ratio since it only needs ~140px of height. */
+  .prop-grid:not(.list-view) .prop-img{aspect-ratio:1/1}
   .prop-card{min-height:0}
   .view-toggle{display:none}
-  .prop-grid.list-view,.prop-grid{grid-template-columns:1fr 1fr;gap:10px}
+  .prop-grid.list-view{grid-template-columns:1fr 1fr;gap:10px}
   .prop-card.list-view{flex-direction:column}
   .prop-card.list-view .prop-img{width:100%;aspect-ratio:4/3;height:auto;min-height:0;border-radius:16px 16px 0 0}
 
   /* Compact sizing for the 2-up mobile card so title/price/deposit/buttons
      don't get squeezed or overflow the narrower card width. */
-  .prop-body{padding:10px 10px 10px}
+  .prop-body{padding:8px 8px 8px}
   .prop-title{font-size:11px}
   .prop-price{font-size:11px}
   .prop-price-unit{font-size:11px}
   .prop-deposit-inline{font-size:11px;gap:3px}
   .prop-deposit-inline svg{width:10px;height:10px}
   .prop-price-row{flex-wrap:wrap;row-gap:2px}
-  .prop-loc{font-size:11px}
-  .prop-stats{gap:2px 0;margin-top:7px}
+  .prop-loc{font-size:11px;margin-top:4px}
+  .prop-stats{gap:2px 0;margin-top:5px}
   .prop-stat{font-size:11px;padding:0 6px 0 0}
   .prop-stat-icon{width:19px;height:19px}
   .prop-chip{font-size:11px;padding:2px 8px 2px 3px}
   .chip-ico-wrap{width:16px;height:16px}
+  /* The amenity/furnishing chip row (furnish, room type, meals, etc.) is
+     the least essential info on the card and was the extra row that pushed
+     each card past the height needed for 4-per-screen. Full detail is one
+     tap away in the listing page, so hide it on this compact 2-up grid
+     only — .prop-stats (bed/bath/parking/area) stays, since that's the
+     info people actually scan cards for. */
+  .prop-grid:not(.list-view) .prop-card:not(.list-view) .prop-chip-row-scroll{display:none}
   /* 3-up price rows (rent + maintenance + deposit) just wrap onto a second
      line on the narrower 2-up mobile card, same borderless block as desktop. */
   .prop-price-chips.price-chips-scroll{gap:4px 12px}
