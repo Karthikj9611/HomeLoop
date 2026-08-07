@@ -12457,35 +12457,40 @@ document.addEventListener('DOMContentLoaded', function() {
   start();
 });
 
-/* ─── Auto-refresh the property-card icon/chip rows (stats + furnished/
+/* ─── Auto-slide the property-card icon/chip rows (stats + furnished/
    maintenance/available chips) every 20s when they overflow their card
-   width. Rather than visibly sliding the row sideways (an obvious scrolling
-   motion) or fading fully to blank (a noticeable empty flash), we softly
-   blur + dim the row, jump the scroll position straight to the next "page"
-   while it's blurred, then sharpen back in — content stays visible the
-   whole time, it just quietly refreshes. All cards flip together in
-   lockstep — a single global phase toggles between "start" and "end" each
-   tick. Users can still drag/scroll them manually at any time. Runs
-   globally so it picks up newly rendered cards each tick. */
+   width. Rather than jumping (a jarring snap) or fading/blurring, we
+   smoothly animate scrollLeft over ~2.5s so the row visibly, gently
+   glides across to reveal the rest of the row, then glides back on the
+   next tick. Users can still drag/scroll them manually at any time, and
+   a manual drag cancels any in-progress auto-slide. Runs globally so it
+   picks up newly rendered cards each tick. */
 let _propRowPhase = false;
+function _easeInOutSine(t){ return -(Math.cos(Math.PI * t) - 1) / 2; }
+function _slowSlide(row, target, duration){
+  if (row._slideRAF) cancelAnimationFrame(row._slideRAF);
+  const start = row.scrollLeft;
+  const dist = target - start;
+  if (Math.abs(dist) < 2) return;
+  const prevBehavior = row.style.scrollBehavior;
+  row.style.scrollBehavior = 'auto'; // let our RAF loop control motion, not CSS smooth-scroll
+  const t0 = performance.now();
+  function step(now){
+    if (row.classList.contains('is-dragging')) { row._slideRAF = null; row.style.scrollBehavior = prevBehavior; return; } // manual drag wins
+    const p = Math.min(1, (now - t0) / duration);
+    row.scrollLeft = start + dist * _easeInOutSine(p);
+    if (p < 1) row._slideRAF = requestAnimationFrame(step);
+    else { row._slideRAF = null; row.style.scrollBehavior = prevBehavior; }
+  }
+  row._slideRAF = requestAnimationFrame(step);
+}
 function _autoSlidePropRows(){
   _propRowPhase = !_propRowPhase;
   document.querySelectorAll('.prop-stats, .prop-chip-row-scroll, .price-chips-scroll').forEach(row => {
     if (row.scrollWidth <= row.clientWidth + 4) return;
     if (row.classList.contains('is-dragging')) return; // don't fight a manual drag
     const target = _propRowPhase ? row.scrollWidth - row.clientWidth : 0;
-    if (Math.abs(target - row.scrollLeft) < 2) return;
-    row.style.transition = 'filter .35s ease, opacity .35s ease';
-    row.style.filter = 'blur(5px)';
-    row.style.opacity = '.6';
-    setTimeout(() => {
-      const prevBehavior = row.style.scrollBehavior;
-      row.style.scrollBehavior = 'auto';
-      row.scrollLeft = target;
-      row.style.scrollBehavior = prevBehavior;
-      row.style.filter = 'none';
-      row.style.opacity = '1';
-    }, 350);
+    _slowSlide(row, target, 32000);
   });
 }
 /* ─── Manual drag-to-scroll for the stat/chip rows on desktop ───────────
@@ -12497,9 +12502,14 @@ function _autoSlidePropRows(){
 (function(){
   let drag = null;
   let justDragged = false;
+  document.addEventListener('touchstart', function(e){
+    const row = e.target.closest('.prop-stats, .prop-chip-row-scroll, .price-chips-scroll');
+    if (row && row._slideRAF) { cancelAnimationFrame(row._slideRAF); row._slideRAF = null; }
+  }, {passive:true});
   document.addEventListener('mousedown', function(e){
     const row = e.target.closest('.prop-stats, .prop-chip-row-scroll, .price-chips-scroll');
     if (!row || row.scrollWidth <= row.clientWidth + 4) return;
+    if (row._slideRAF) { cancelAnimationFrame(row._slideRAF); row._slideRAF = null; }
     drag = { row, startX: e.pageX, startScroll: row.scrollLeft, moved: false };
     row.classList.add('is-dragging');
   });
@@ -12523,7 +12533,7 @@ function _autoSlidePropRows(){
     if (justDragged) { e.stopPropagation(); e.preventDefault(); justDragged = false; }
   }, true);
 })();
-setInterval(_autoSlidePropRows, 20000);
+setInterval(_autoSlidePropRows, 32000);
 
 /* ─── Reviews carousel ──────────────────────────────────────────────
    The right-hand review panel shows one card at a time (so its height
