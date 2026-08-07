@@ -592,7 +592,7 @@ ul{list-style:none}
 .prop-img:has(.prop-img-price) .slide-dots{bottom:38px}
 .prop-img-price .prop-price-chips,
 .prop-img-price .prop-price-chips.price-chips-scroll{
-  display:flex;flex-wrap:nowrap;align-items:center;gap:0;
+  display:flex;flex-wrap:nowrap;align-items:baseline;gap:0;
   grid-template-columns:none;margin:0;padding:0;border:none;
   overflow:visible;width:100%;
 }
@@ -640,15 +640,20 @@ ul{list-style:none}
   background:none;color:#fff;-webkit-text-fill-color:#fff;
   text-shadow:none;font-size:14.5px;white-space:nowrap;font-weight:800;letter-spacing:-.01em;
 }
-.prop-img-price .prop-price-unit{display:none}
-/* Ribbon shows icon + value only — unit/label text (Mo, Maint, SD) is
-   dropped here; the fuller labelled version still applies elsewhere
-   (e.g. the shortlist panel's compact card) since priceChipsHTML() is shared. */
-.prop-img-price .prop-price-chips .prop-deposit-lbl{display:none}
+.prop-img-price .prop-price-unit{
+  display:inline;font-size:11px;font-weight:600;color:rgba(255,255,255,.85);
+  -webkit-text-fill-color:rgba(255,255,255,.85);margin-left:3px;
+}
+/* Ribbon now shows the full unit/label text (Month, Maintenance, Deposit) —
+   the fuller labelled version already applies elsewhere (e.g. the shortlist
+   panel's compact card) since priceChipsHTML() is shared. */
 /* Rent leads the row (bigger, boldest); maintenance/deposit read as
-   quieter supporting figures stacked value-over-label. */
-.prop-img-price .prop-price-chips .prop-deposit-val{font-size:13.5px;font-weight:800;color:#fff;letter-spacing:-.01em}
-.prop-img-price .prop-price-chips .prop-deposit-lbl{font-size:10px;font-weight:600;color:rgba(255,255,255,.72);letter-spacing:.03em;text-transform:uppercase;margin-top:1px}
+   quieter supporting figures inline with their value, not stacked. */
+.prop-img-price .prop-price-chips .price-chip:not(:first-child) .price-text-stack{
+  flex-direction:row;align-items:baseline;gap:3px;
+}
+.prop-img-price .prop-price-chips .prop-deposit-val{font-size:12.5px;font-weight:800;color:#fff;letter-spacing:-.01em}
+.prop-img-price .prop-price-chips .prop-deposit-lbl{display:inline;font-size:9.5px;font-weight:600;color:rgba(255,255,255,.72);letter-spacing:.03em;text-transform:uppercase;margin-top:0}
 .prop-img-price .price-chip svg{stroke:#fff;opacity:.9}
 /* The ribbon's own width (not the browser viewport) decides full vs. short
    labels — a narrow card in a multi-column desktop grid needs the same
@@ -8464,9 +8469,9 @@ function priceChipsHTML(p, pType, deposit, maintenance, leaseDur, opts) {
 function fmtLeaseDur(s) {
   if (!s) return '';
   let m = s.match(/^(\d+)\s*Year/i);
-  if (m) return m[1] + 'yrs';
+  if (m) return m[1] + ' Yrs';
   m = s.match(/^(\d+)(\+?)\s*Month/i);
-  if (m) return m[1] + m[2] + 'mo';
+  if (m) return m[1] + m[2] + ' Mo';
   return s;
 }
 
