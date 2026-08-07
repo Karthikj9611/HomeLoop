@@ -574,7 +574,7 @@ ul{list-style:none}
    right at the bottom, edge-to-edge, in the card's brand rose. */
 .prop-img-price{
   position:absolute;left:0;right:0;bottom:0;z-index:2;
-  padding:5px 14px;
+  padding:5px 15px;
   background:linear-gradient(135deg,#ea4b63 0%,#d4324c 55%,#a8253a 100%);
   pointer-events:auto;
   overflow-x:auto;overflow-y:hidden;-ms-overflow-style:none;scrollbar-width:none;
@@ -602,6 +602,19 @@ ul{list-style:none}
   background:none;border-radius:0;padding:0 8px;box-shadow:none;border:none;
   gap:8px;position:relative;
 }
+/* First chip (rent) hugs the ribbon's left edge instead of centering in
+   its equal-width column, so its icon lines up with the id/location icons
+   in the rows below rather than sitting indented relative to them. */
+.prop-img-price .prop-price-chips .price-chip:first-child{
+  justify-content:flex-start;
+}
+/* Last chip (maintenance, or deposit when both present) hugs the LEFT of
+   its own 50% column — matching how the type/available-in text starts at
+   the left of its grid column below, not flush against the container's
+   right edge. */
+.prop-img-price .prop-price-chips .price-chip:last-child:not(:only-child){
+  justify-content:flex-start;
+}
 /* Equal division applies whenever there are 2 or more chips (rent +
    maintenance, or rent + maintenance + deposit) — only a lone rent chip
    stays at its natural width (see .prop-img-price-fit above). */
@@ -615,16 +628,13 @@ ul{list-style:none}
   width:1px;height:18px;background:rgba(255,255,255,.25);
 }
 .prop-img-price .prop-price-chips .price-chip-rent{background:none;padding:0 8px 0 0}
-/* Icon badge: soft frosted-glass square, same size across all three so
-   none reads bigger or flatter than the others. */
+/* Bare icon, no badge box — matches the plain stroke-icon treatment used
+   by the id/type/location icons below, just in white for contrast on the
+   ribbon's colored background, instead of a separate frosted-glass chip. */
 .prop-img-price .price-ico-3d{
-  display:flex;align-items:center;justify-content:center;flex-shrink:0;
-  width:18px;height:18px;border-radius:6px;
-  background:rgba(255,255,255,.16);
-  border:1px solid rgba(255,255,255,.3);
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.25);
+  display:none;
 }
-.prop-img-price .price-ico-3d svg{width:10px;height:10px;stroke:#fff;fill:none;stroke-width:2.1}
+.prop-img-price .price-ico-3d svg{width:12px;height:12px;stroke:#fff;fill:none;stroke-width:2}
 .prop-img-price .price-text-stack{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;line-height:1.2;min-width:0}
 .prop-img-price .prop-price{
   background:none;color:#fff;-webkit-text-fill-color:#fff;
@@ -813,7 +823,7 @@ ul{list-style:none}
   justify-content:space-between;
 }
 .prop-meta{
-  display:grid;grid-template-columns:minmax(0,1fr) auto;
+  display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);
   align-items:center;column-gap:8px;row-gap:5px;
 }
 .prop-meta .prop-title,
@@ -823,16 +833,16 @@ ul{list-style:none}
   white-space:nowrap;text-overflow:ellipsis;
 }
 .prop-title-text{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.prop-title-icon{width:11px;height:11px;stroke:#a85c6e;fill:#a85c6e;fill-opacity:.12;stroke-width:2;flex-shrink:0}
+.prop-title-icon{width:11px;height:11px;stroke:#a85c6e;fill:#a85c6e;fill-opacity:.12;stroke-width:2;flex-shrink:0;display:none}
 .prop-title-buildtype{
-  justify-self:start;flex-shrink:0;
+  justify-self:start;min-width:0;overflow:hidden;
   font-size:11px;font-weight:600;color:var(--text-2);
   background:none;box-shadow:none;
   padding:0;border-radius:0;
-  white-space:nowrap;
+  white-space:nowrap;text-overflow:ellipsis;
   display:inline-flex;align-items:center;gap:3px;
 }
-.prop-title-buildtype svg{width:10.5px;height:10.5px;margin-left:1px;stroke:#a85c6e;fill:none;stroke-width:2;flex-shrink:0}
+.prop-title-buildtype svg{width:10.5px;height:10.5px;margin-left:1px;stroke:#a85c6e;fill:none;stroke-width:2;flex-shrink:0;display:none}
 .prop-card.prop-card-promoted .prop-title-buildtype{
   background:none;box-shadow:none;
 }
@@ -856,8 +866,8 @@ ul{list-style:none}
   font-size:11.5px;
   color:#a85c6e;font-weight:600;white-space:nowrap;
 }
-.prop-loc-avail svg{width:11px;height:11px;stroke:#a85c6e;fill:none;stroke-width:2;flex-shrink:0}
-.prop-loc svg{width:11px;height:11px;stroke:#a85c6e;fill:#a85c6e;fill-opacity:.12;stroke-width:2;flex-shrink:0}
+.prop-loc-avail svg{width:11px;height:11px;stroke:#a85c6e;fill:none;stroke-width:2;flex-shrink:0;display:none}
+.prop-loc svg{width:11px;height:11px;stroke:#a85c6e;fill:#a85c6e;fill-opacity:.12;stroke-width:2;flex-shrink:0;display:none}
 .prop-loc-area span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;flex:1 1 auto;display:block}
 /* ── Flat spec readout — plain icon+value pairs split by hairline dividers.
    No boxes, but back to one slidable row (scroll/drag) instead of wrapping,
@@ -3239,6 +3249,10 @@ ul{list-style:none}
   /* Compact sizing for the 2-up mobile card so title/price/deposit/buttons
      don't get squeezed or overflow the narrower card width. */
   .prop-body{padding:8px 8px 8px}
+  /* Ribbon padding must shrink in lockstep with .prop-body's, or the price
+     row's icon sits ~7px right of the id/location icons below it at this
+     width. */
+  .prop-img-price{padding:5px 8px}
   .prop-title{font-size:11px}
   .prop-price{font-size:11px}
   .prop-price-unit{font-size:11px}
@@ -7210,6 +7224,7 @@ function shortlistCardHTML(p) {
   const leaseDur = p.terms?.lease || '';
   const waterLabel = p.price?.water || '';
   const electricLabel = p.price?.electricity || '';
+  const ptype = p.property?.type || pgSL.type || p.shortStay?.type || '';
   const available = isPGCardSL ? (pgSL.available || '') : (p.property?.available || '');
   const availableFmt = available ? (() => {
     const d = new Date(available);
@@ -7242,6 +7257,7 @@ function shortlistCardHTML(p) {
   return `<div class="prop-card type-${pType.toLowerCase()}" onclick="openDetail('${p.id}')">
     <div class="prop-img" style="background:${bg}" data-idx="0">
       ${buildImgSlider(p, fg, '-sl')}
+      ${priceChipsHTML(p, pType, deposit, maintenance, leaseDur, {ribbon:true})}
       <div class="prop-card-top-row">
         <div class="prop-left-badges">
         </div>
@@ -7262,8 +7278,13 @@ function shortlistCardHTML(p) {
       </div>
     </div>
     <div class="prop-body">
+      <div class="prop-meta">
       <div class="prop-title" title="${esc(p.propertyId)}">
-        <span class="prop-title-text">${esc(p.propertyId || 'Untitled listing')}</span>
+        <span class="prop-title-id">
+          <svg viewBox="0 0 24 24" aria-hidden="true" class="prop-title-icon"><path d="M20.59 13.41L11 3.83A2 2 0 0 0 9.59 3.24L4 3a1 1 0 0 0-1 1l.24 5.59a2 2 0 0 0 .59 1.41l9.58 9.58a2 2 0 0 0 2.83 0l4.35-4.35a2 2 0 0 0 0-2.82z"/><circle cx="7.5" cy="7.5" r="1.4"/></svg>
+          <span class="prop-title-text">${esc(p.propertyId || 'Untitled listing')}</span>
+        </span>
+        ${ptype ? `<span class="prop-title-buildtype" title="${esc(ptype)}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21h18M6 21V7l6-4 6 4v14M10 21v-5h4v5"/></svg>${esc(ptype)}</span>` : ''}
       </div>
       <div class="prop-loc">
         <span class="prop-loc-area">
@@ -7275,7 +7296,7 @@ function shortlistCardHTML(p) {
           ${availableFmt}
         </span>` : ''}
       </div>
-      ${priceChipsHTML(p, pType, deposit, maintenance, leaseDur)}
+      </div>
       <div class="prop-stats">
         ${(() => { const bhkVal = String(p.property?.bhk || '').replace(/\s*BHK\s*$/i, '').trim(); return (parseFloat(bhkVal) > 0) ? `<span class="prop-stat" title="Configuration">
           <span class="prop-stat-icon icon-bed">🛏️</span>
