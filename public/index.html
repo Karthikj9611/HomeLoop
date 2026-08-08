@@ -1588,7 +1588,18 @@ ul{list-style:none}
 .recently-viewed-section{padding-bottom:4px}
 .recently-viewed-clear{background:none;border:none;color:var(--text-2);font-size:13px;cursor:pointer;padding:4px 6px}
 .recently-viewed-clear:hover{color:var(--brand)}
-.rv-card{position:relative;border:1px solid var(--border);border-radius:16px;overflow:hidden;cursor:pointer;background:var(--bg);transition:box-shadow .15s,transform .15s}
+.recently-viewed-strip{
+  display:flex;
+  gap:16px;
+  padding:16px 20px 8px;
+  overflow-x:auto;
+  scrollbar-width:thin;
+  overscroll-behavior-x:contain;
+}
+.recently-viewed-strip::-webkit-scrollbar{height:6px}
+.recently-viewed-strip::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+.recently-viewed-strip .prop-card{flex:0 0 var(--rv-card-w, 260px)}
+.rv-card{position:relative;flex:0 0 var(--rv-card-w, 260px);border:1px solid var(--border);border-radius:16px;overflow:hidden;cursor:pointer;background:var(--bg);transition:box-shadow .15s,transform .15s}
 .rv-card:hover{box-shadow:0 4px 14px rgba(0,0,0,.08);transform:translateY(-1px)}
 .rv-card-thumb{width:100%;aspect-ratio:4/3;background-size:cover;background-position:center;background-color:var(--bg-2);display:flex;align-items:center;justify-content:center;color:var(--text-3);font-size:12px}
 .rv-card-body{padding:8px 10px}
@@ -3294,7 +3305,8 @@ ul{list-style:none}
      enough that a 2x2 grid — 4 listings — fits in the first screen instead
      of 1-2. The floating right-badge stack (heart/views/promoted/verified)
      still fits fine at this ratio since it only needs ~140px of height. */
-  .prop-grid:not(.list-view) .prop-img{aspect-ratio:1/1}
+  .prop-grid:not(.list-view) .prop-img,
+  .recently-viewed-strip .prop-img{aspect-ratio:1/1}
   .prop-card{min-height:0}
   .view-toggle{display:none}
   .prop-grid.list-view{grid-template-columns:1fr 1fr;gap:10px}
@@ -4140,7 +4152,7 @@ ul{list-style:none}
       </div>
       <button class="recently-viewed-clear" onclick="clearRecentlyViewed()" style="position:absolute;right:20px;top:50%;transform:translateY(-50%)">Clear all</button>
     </div>
-    <div class="prop-grid" id="recentlyViewedStrip"></div>
+    <div class="recently-viewed-strip" id="recentlyViewedStrip"></div>
   </div>
 
   <div id="promotedSection">
@@ -6521,7 +6533,22 @@ function renderRecentlyViewed() {
   }
   section.style.display = '';
   strip.innerHTML = ids.map(id => recentlyViewedCardHTML(recentlyViewedData[id])).join('');
+  requestAnimationFrame(syncRecentlyViewedCardWidth);
 }
+// Keeps Recently Viewed cards exactly as wide as the real property cards
+// currently on screen (the property grid is fluid — auto-fill(minmax(260px,1fr))
+// — so its rendered card width changes with viewport size). Reads one live
+// .prop-card's actual width and pushes it into a CSS var the rv-card flex-basis
+// uses, so the horizontally-scrollable strip always matches, on any screen size.
+function syncRecentlyViewedCardWidth() {
+  const sample = document.querySelector('.prop-grid .prop-card');
+  const strip = document.getElementById('recentlyViewedStrip');
+  if (!sample || !strip) return;
+  const w = sample.getBoundingClientRect().width;
+  if (w > 0) strip.style.setProperty('--rv-card-w', w + 'px');
+}
+window.addEventListener('resize', () => { clearTimeout(window._rvWidthTimer); window._rvWidthTimer = setTimeout(syncRecentlyViewedCardWidth, 150); });
+
 let compareSet = new Set();
 let compareDiffOnly = false;
 function toggleCompareDiffOnly(){
