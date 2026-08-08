@@ -6280,6 +6280,13 @@ function buildVideoEmbed(url) {
    DATA
 ═══════════════════════════════════════════════ */
 let PROPERTIES = [];
+// Recently Viewed renders its cards through the same styling as PROPERTIES
+// (via cardHTML), so it must not render until the initial fetch has actually
+// resolved — otherwise it briefly falls back to the plain snapshot-card style
+// for every entry (PROPERTIES is still empty), then flashes to the real card
+// look once data arrives. Set true (success or failure) at the end of the
+// first fetchProperties() call.
+let _initialPropertiesFetchDone = false;
 
 
 /* ─── View counts (DB-backed) ───────────────────
@@ -6475,6 +6482,11 @@ function recentlyViewedCardHTML(rv) {
 function renderRecentlyViewed() {
   const section = document.getElementById('recentlyViewedSection');
   if (!section) return;
+  // Don't render until the initial properties fetch has resolved — otherwise
+  // every entry falls back to the plain snapshot-card style (PROPERTIES is
+  // still empty) and then flashes to the real card look once data arrives.
+  // Just stay hidden for this one extra beat instead.
+  if (!_initialPropertiesFetchDone) { section.style.display = 'none'; return; }
   const strip = document.getElementById('recentlyViewedStrip');
   // One-time migration: entries saved before "name" stored the Property ID
   // (or rendered while PROPERTIES hadn't loaded yet) get corrected in place
@@ -12466,6 +12478,8 @@ async function fetchProperties() {
       restoreFilterStateBeforeBuild();
       _initialFilterRestoreDone = true;
     }
+    _initialPropertiesFetchDone = true;
+    renderRecentlyViewed(); // now unblocked — falls back to snapshot cards for this session
     return false;
   }
   if (!_initialFilterRestoreDone) {
@@ -12474,6 +12488,7 @@ async function fetchProperties() {
   }
   buildFilterOptions();
   renderCards();
+  _initialPropertiesFetchDone = true;
   renderRecentlyViewed();
   return true;
 }
