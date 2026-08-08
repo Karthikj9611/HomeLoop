@@ -56,7 +56,7 @@
   .form-panel{
     background:var(--panel);
     border-right:1px solid var(--line);
-    padding:24px 24px 110px;
+    padding:24px;
     overflow-y:auto;
   }
   .brand-row{
@@ -204,12 +204,26 @@
   .field textarea:read-only{cursor:not-allowed;color:var(--ink-2)}
   .field textarea:read-only:focus{box-shadow:none;border-color:var(--line-2);background:var(--tint)}
   .phone-wrap{position:relative}
-  .phone-wrap input{padding-left:38px}
+  .phone-wrap input{padding-left:38px;padding-right:40px}
   .phone-wrap .cc{
     position:absolute;left:12px;top:50%;transform:translateY(-50%);
     font-size:13px;color:var(--ink-3);
     pointer-events:none;
   }
+  .contact-pick-btn{
+    position:absolute;top:50%;right:6px;transform:translateY(-50%);
+    width:28px;height:28px;border-radius:50%;border:none;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+    background:linear-gradient(150deg,#ff8a9a 0%,var(--brand) 55%,var(--brand-hover) 100%);
+    box-shadow:0 2px 5px rgba(224,58,82,.45),inset 0 1px 1px rgba(255,255,255,.55),inset 0 -2px 2px rgba(0,0,0,.18);
+    color:#fff;transition:transform .12s,box-shadow .12s;
+  }
+  .contact-pick-btn:hover{transform:translateY(-50%) scale(1.08)}
+  .contact-pick-btn:active{
+    transform:translateY(-50%) scale(.94);
+    box-shadow:0 1px 2px rgba(224,58,82,.4),inset 0 1px 2px rgba(0,0,0,.25);
+  }
+  .contact-pick-btn svg{width:14px;height:14px;filter:drop-shadow(0 1px 0.5px rgba(0,0,0,.15))}
   .amt-wrap{position:relative}
   .amt-wrap input{padding-left:25px}
   .amt-wrap .cur{
@@ -244,18 +258,11 @@
   .multi-fields.show{display:grid}
 
   .download-bar{
-    position:fixed;bottom:0;left:0;width:380px;
-    background:rgba(255,255,255,.92);
-    backdrop-filter:blur(10px);
-    -webkit-backdrop-filter:blur(10px);
-    border-top:1px solid var(--line);
-    border-right:1px solid var(--line);
-    padding:16px 24px;
-    z-index:20;
+    margin-top:12px;
   }
   .total-preview{
     display:flex;justify-content:space-between;align-items:baseline;
-    font-size:11.5px;color:var(--ink-3);margin-bottom:10px;
+    font-size:11.5px;color:var(--ink-3);margin-bottom:14px;
     text-transform:uppercase;letter-spacing:.05em;font-weight:600;
   }
   .total-preview b{
@@ -493,6 +500,9 @@
           <div class="phone-wrap">
             <span class="cc">+91</span>
             <input id="landlordMobile" type="tel" inputmode="numeric" maxlength="10" required />
+            <button type="button" class="contact-pick-btn" onclick="pickContactFromDevice('landlordMobile','landlordName')" title="Pick from contacts">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            </button>
           </div>
         </div>
         <div class="field">
@@ -526,6 +536,9 @@
           <div class="phone-wrap">
             <span class="cc">+91</span>
             <input id="tenantMobile" type="tel" inputmode="numeric" maxlength="10" required />
+            <button type="button" class="contact-pick-btn" onclick="pickContactFromDevice('tenantMobile','tenantName')" title="Pick from contacts">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            </button>
           </div>
         </div>
         <div class="field">
@@ -668,17 +681,20 @@
     </div>
 
     <div class="download-bar">
-      <div class="total-preview">
-        <span>Total per receipt</span>
-        <b id="totalPreview">₹0</b>
+      <div class="card" style="--ic-bg:var(--ok-bg);--ic-fg:var(--ok);padding-bottom:18px">
+        <div class="section-label"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>Summary &amp; download</div>
+        <div class="total-preview">
+          <span>Total per receipt</span>
+          <b id="totalPreview">₹0</b>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn-download" id="downloadBtn">⬇ Download</button>
+          <button class="btn-whatsapp" id="whatsappBtn" title="Share PDF on WhatsApp"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.5 14.4c-.3-.15-1.7-.85-2-.95-.27-.1-.46-.15-.66.15-.2.3-.75.95-.92 1.15-.17.2-.34.22-.63.07-.3-.15-1.24-.46-2.36-1.46-.87-.78-1.46-1.74-1.63-2.03-.17-.3-.02-.46.13-.6.13-.13.3-.34.44-.5.15-.17.2-.3.3-.5.1-.2.05-.37-.02-.52-.07-.15-.66-1.6-.91-2.18-.24-.58-.48-.5-.66-.5-.17-.01-.37-.01-.56-.01-.2 0-.52.07-.79.37-.27.3-1.04 1.02-1.04 2.48 0 1.46 1.06 2.87 1.21 3.07.15.2 2.09 3.2 5.08 4.48.71.31 1.26.49 1.69.62.71.23 1.36.2 1.87.12.57-.08 1.7-.7 1.94-1.36.24-.67.24-1.24.17-1.36-.07-.12-.26-.2-.56-.35Z"/><path d="M12 2C6.48 2 2 6.48 2 12c0 1.86.5 3.6 1.38 5.1L2 22l5.05-1.35C8.5 21.5 10.2 22 12 22c5.52 0 10-4.48 10-10S17.52 2 12 2Zm0 18.15c-1.6 0-3.1-.44-4.4-1.2l-.32-.19-3 .8.8-2.93-.2-.32A8.14 8.14 0 0 1 3.85 12c0-4.5 3.66-8.15 8.15-8.15S20.15 7.5 20.15 12 16.5 20.15 12 20.15Z"/></svg>Share</button>
+          <button class="btn-clear" id="clearBtn" title="Clear all fields">🗑 Clear</button>
+        </div>
+        <div class="share-status" id="shareStatus"></div>
+        <div class="err" id="errMsg">Fill in tenant name, landlord name, rent amount and rent period to enable download.</div>
       </div>
-      <div style="display:flex;gap:8px">
-        <button class="btn-download" id="downloadBtn">⬇ Download</button>
-        <button class="btn-whatsapp" id="whatsappBtn" title="Share PDF on WhatsApp"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.5 14.4c-.3-.15-1.7-.85-2-.95-.27-.1-.46-.15-.66.15-.2.3-.75.95-.92 1.15-.17.2-.34.22-.63.07-.3-.15-1.24-.46-2.36-1.46-.87-.78-1.46-1.74-1.63-2.03-.17-.3-.02-.46.13-.6.13-.13.3-.34.44-.5.15-.17.2-.3.3-.5.1-.2.05-.37-.02-.52-.07-.15-.66-1.6-.91-2.18-.24-.58-.48-.5-.66-.5-.17-.01-.37-.01-.56-.01-.2 0-.52.07-.79.37-.27.3-1.04 1.02-1.04 2.48 0 1.46 1.06 2.87 1.21 3.07.15.2 2.09 3.2 5.08 4.48.71.31 1.26.49 1.69.62.71.23 1.36.2 1.87.12.57-.08 1.7-.7 1.94-1.36.24-.67.24-1.24.17-1.36-.07-.12-.26-.2-.56-.35Z"/><path d="M12 2C6.48 2 2 6.48 2 12c0 1.86.5 3.6 1.38 5.1L2 22l5.05-1.35C8.5 21.5 10.2 22 12 22c5.52 0 10-4.48 10-10S17.52 2 12 2Zm0 18.15c-1.6 0-3.1-.44-4.4-1.2l-.32-.19-3 .8.8-2.93-.2-.32A8.14 8.14 0 0 1 3.85 12c0-4.5 3.66-8.15 8.15-8.15S20.15 7.5 20.15 12 16.5 20.15 12 20.15Z"/></svg>Share</button>
-        <button class="btn-clear" id="clearBtn" title="Clear all fields">🗑 Clear</button>
-      </div>
-      <div class="share-status" id="shareStatus"></div>
-      <div class="err" id="errMsg">Fill in tenant name, landlord name, rent amount and rent period to enable download.</div>
     </div>
   </div>
 
@@ -888,10 +904,12 @@
 
   function periodsToRender(d){
     if(!d.isMulti){
-      if(!d.periodFrom || !d.periodTo) return [];
+      // Always show a preview sheet, even before dates are filled in — the
+      // receipt renderer already falls back to '—' for empty period/date
+      // fields, so an untouched form still previews a blank-template receipt.
       return [{from:d.periodFrom, to:d.periodTo}];
     }
-    if(!d.multiFrom || !d.multiTo) return [];
+    if(!d.multiFrom || !d.multiTo) return [{from:'', to:''}];
     const arr = [];
     for(let i=0;i<d.monthsCount;i++){
       arr.push({from: addMonthsToDate(d.multiFrom, i), to: addMonthsToDate(d.multiTo, i)});
@@ -1135,6 +1153,45 @@
       this.value = this.value.replace(/\D/g,'').slice(0,10);
     });
   });
+
+  // Lets the person pick a number straight from their phone's contacts
+  // instead of typing it. Uses the browser Contact Picker API, which only
+  // exists on some mobile browsers (e.g. Chrome on Android) over HTTPS —
+  // everywhere else we just tell them to type the number in manually.
+  async function pickContactFromDevice(fieldId, nameFieldId){
+    if(!('contacts' in navigator && 'ContactsManager' in window)){
+      alert("Contact picker isn't supported on this device/browser — please type the number in.");
+      return;
+    }
+    try{
+      const contacts = await navigator.contacts.select(['tel','name'], {multiple:false});
+      if(!contacts || !contacts.length) return;
+      const picked = contacts[0];
+      const rawTel = (picked.tel && picked.tel[0]) || '';
+      let digits = rawTel.replace(/\D/g,'').slice(-10);
+      while(digits.length && !/[6-9]/.test(digits[0])) digits = digits.slice(1);
+      if(!digits){
+        alert('That contact has no usable mobile number.');
+        return;
+      }
+      const field = $(fieldId);
+      if(field){
+        field.value = digits;
+        field.dispatchEvent(new Event('input', {bubbles:true}));
+      }
+      if(nameFieldId && picked.name && picked.name[0]){
+        const nameField = $(nameFieldId);
+        if(nameField){
+          nameField.value = picked.name[0];
+          nameField.dispatchEvent(new Event('input', {bubbles:true}));
+        }
+      }
+    }catch(err){
+      if(err && err.name !== 'AbortError'){
+        alert('Could not read that contact — please type the number in.');
+      }
+    }
+  }
 
   $('sameAsLandlordAddress').addEventListener('change', function(){
     applyAddressSync();
