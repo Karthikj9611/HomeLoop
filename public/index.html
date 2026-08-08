@@ -634,26 +634,26 @@ ul{list-style:none}
   display:none;
 }
 .prop-img-price .price-ico-3d svg{width:12px;height:12px;stroke:#fff;fill:none;stroke-width:2}
-.prop-img-price .price-text-stack{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;line-height:1.2;min-width:0}
-.prop-img-price .prop-price-chips .price-chip:last-child:not(:only-child) .price-text-stack{align-items:flex-end}
+.prop-img-price .price-text-stack{display:block;line-height:1.2;min-width:0}
+.prop-img-price .prop-price-chips .price-chip:last-child:not(:only-child) .price-text-stack{text-align:right}
 .prop-img-price .prop-price{
   background:none;color:#fff;-webkit-text-fill-color:#fff;
   text-shadow:none;font-size:14.5px;white-space:nowrap;font-weight:800;letter-spacing:-.01em;
 }
 .prop-img-price .prop-price-unit{
-  display:inline;font-size:11px;font-weight:600;color:rgba(255,255,255,.85);
+  font-size:11px;font-weight:600;color:rgba(255,255,255,.85);
   -webkit-text-fill-color:rgba(255,255,255,.85);margin-left:3px;
 }
 /* Ribbon now shows the full unit/label text (Month, Maintenance, Deposit) —
    the fuller labelled version already applies elsewhere (e.g. the shortlist
    panel's compact card) since priceChipsHTML() is shared. */
 /* Rent leads the row (bigger, boldest); maintenance/deposit read as
-   quieter supporting figures inline with their value, not stacked. */
-.prop-img-price .prop-price-chips .price-chip:not(:first-child) .price-text-stack{
-  flex-direction:row;align-items:baseline;gap:3px;
-}
+   quieter supporting figures inline with their value on the same text
+   baseline — plain inline text flow, not flexbox, so the browser's own
+   font-metrics-aware baseline alignment lines them up (box-alignment like
+   flex-start/center ignores font metrics and drifts with size). */
 .prop-img-price .prop-price-chips .prop-deposit-val{font-size:12.5px;font-weight:800;color:#fff;letter-spacing:-.01em}
-.prop-img-price .prop-price-chips .prop-deposit-lbl{display:inline;font-size:9.5px;font-weight:600;color:rgba(255,255,255,.72);letter-spacing:.03em;text-transform:uppercase;margin-top:0}
+.prop-img-price .prop-price-chips .prop-deposit-lbl{font-size:9.5px;font-weight:600;color:rgba(255,255,255,.72);letter-spacing:.03em;text-transform:uppercase;margin-left:3px}
 .prop-img-price .price-chip svg{stroke:#fff;opacity:.9}
 /* The ribbon's own width (not the browser viewport) decides full vs. short
    labels — a narrow card in a multi-column desktop grid needs the same
@@ -662,6 +662,13 @@ ul{list-style:none}
 @container prop-img-box (max-width:310px){
   .prop-img-price .unit-full{display:none}
   .prop-img-price .unit-short{display:inline}
+  /* ...except rent's unit and the deposit label, which always stay full
+     text ("Month" / "Deposit") even on a narrow ribbon — only maintenance
+     keeps shortening to "Maint" at this width. */
+  .prop-img-price .prop-price-unit .unit-full,
+  .prop-img-price .price-chip[title="Security deposit"] .unit-full{display:inline}
+  .prop-img-price .prop-price-unit .unit-short,
+  .prop-img-price .price-chip[title="Security deposit"] .unit-short{display:none}
 }
 .prop-img .img-slide{transition:transform .5s cubic-bezier(.2,.7,.3,1)}
 
@@ -3301,6 +3308,13 @@ ul{list-style:none}
      each price chip on a single line instead of wrapping. */
   .unit-full{display:none}
   .unit-short{display:inline}
+  /* ...except rent's unit and the deposit label in the ribbon, which stay
+     full text ("Month" / "Deposit") even here — only maintenance shortens
+     to "Maint" at this width. */
+  .prop-img-price .prop-price-unit .unit-full,
+  .prop-img-price .price-chip[title="Security deposit"] .unit-full{display:inline}
+  .prop-img-price .prop-price-unit .unit-short,
+  .prop-img-price .price-chip[title="Security deposit"] .unit-short{display:none}
   .prop-price-chips .price-chip{flex-wrap:nowrap;white-space:nowrap}
 
   /* Quick-action row already renders as equal-size icon-only buttons at
@@ -7126,6 +7140,10 @@ function cardHTML(p, compact) {
           <span class="prop-stat-icon icon-area">📐</span>
           ${areaSqft} sqft
         </span>` : ''}
+        ${maintenance > 0 ? `<span class="prop-stat" title="Monthly maintenance">
+          <span class="prop-stat-icon icon-maint">🔧</span>
+          ${fmtRupee(maintenance)} Maint
+        </span>` : ''}
         ${lift ? `<span class="prop-stat" title="Lift available"><span class="prop-stat-icon icon-lift">🛗</span></span>` : ''}
         <span class="prop-chip chip-furnish" title="Furnishing">
           <span class="prop-chip-icon icon-furnish">🛋️</span>
@@ -8439,13 +8457,14 @@ function priceChipsHTML(p, pType, deposit, maintenance, leaseDur, opts) {
     </span>
   </div>` : '';
 
+  const inRibbon = !!(opts && opts.ribbon);
   const chips = [rentChip];
   if (pType === 'ShortStay') {
     // rent only
   } else if (pType === 'Lease') {
-    if (maintChip) chips.push(maintChip);
+    if (maintChip && !inRibbon) chips.push(maintChip);
   } else {
-    if (maintChip) chips.push(maintChip);
+    if (maintChip && !inRibbon) chips.push(maintChip);
     if (depositChip) chips.push(depositChip);
   }
   const gridCols = chips.length >= 2 ? `repeat(${chips.length},1fr)` : `repeat(${chips.length},auto)`;
