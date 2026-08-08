@@ -882,17 +882,13 @@ ul{list-style:none}
 .prop-loc svg{width:11px;height:11px;stroke:#a85c6e;fill:#a85c6e;fill-opacity:.12;stroke-width:2;flex-shrink:0;display:none}
 .prop-loc-area span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;flex:1 1 auto;display:block}
 /* ── Flat spec readout — plain icon+value pairs split by hairline dividers.
-   No boxes, but back to one slidable row (scroll/drag) instead of wrapping,
-   so it doesn't break onto a second line when there are several stats. ── */
+   Static single line (no slide/drag anymore): whatever doesn't fit is
+   collapsed behind a "+N" chip that opens the complete row centered in a
+   popup, instead of the row sliding/scrolling to reveal the rest. ── */
 .prop-stats{
   display:flex;align-items:center;flex-wrap:nowrap;
   gap:0;margin-top:10px;
-  overflow-x:auto;-ms-overflow-style:none;scrollbar-width:none;
-  cursor:grab;
-  /* Soft fade at the trailing edge so an overflowing last item reads as
-     "scroll for more" instead of a raw, abrupt cut-off. */
-  mask-image:linear-gradient(to right,#000 92%,transparent 100%);
-  -webkit-mask-image:linear-gradient(to right,#000 92%,transparent 100%);
+  overflow:hidden;
 }
 .prop-stats .prop-chip{
   flex-shrink:0;margin-left:0;
@@ -904,8 +900,18 @@ ul{list-style:none}
   content:'';position:absolute;left:0;top:3px;bottom:3px;width:1px;background:var(--border);
 }
 .prop-stats .prop-chip-icon{font-size:13px}
-.prop-stats.is-dragging{cursor:grabbing;scroll-behavior:auto;user-select:none}
-.prop-stats::-webkit-scrollbar{display:none}
+/* "+N" affordance chip appended when the row's items don't all fit —
+   click opens the full stats/amenity row centered in a popup. */
+.prop-stats-more{
+  flex-shrink:0;display:flex;align-items:center;
+  font-size:12.5px;font-weight:700;color:var(--brand);
+  padding:2px 10px 2px 12px;position:relative;white-space:nowrap;
+  cursor:pointer;margin-left:auto;
+}
+.prop-stats-more::before{
+  content:'';position:absolute;left:0;top:3px;bottom:3px;width:1px;background:var(--border);
+}
+.prop-stats-more:hover{color:var(--brand-hover)}
 .prop-stat{
   display:flex;align-items:center;gap:5px;
   font-size:12.5px;font-weight:600;color:var(--text-2);
@@ -1245,6 +1251,45 @@ ul{list-style:none}
 .confirm-ok-btn:hover{background:var(--brand-hover)}
 .confirm-ok-btn.info{background:#2563eb}
 .confirm-ok-btn.info:hover{background:#1d4ed8}
+
+/* ── Stats popup (opened from the "+N" chip on a card's spec row) ──
+   Shows every icon+value in that row, centered, instead of the row
+   sliding/scrolling sideways to reveal the rest. Styled to match the
+   existing confirm-card / modal-amenity conventions used elsewhere. ── */
+#statsPopupOverlay{
+  position:fixed;inset:0;z-index:1200;
+  background:rgba(20,16,17,.55);
+  display:none;align-items:center;justify-content:center;
+  padding:16px;backdrop-filter:blur(2px);
+}
+#statsPopupOverlay.open{display:flex}
+.stats-popup-card{
+  background:var(--bg);border-radius:var(--radius-xl);
+  width:100%;max-width:380px;
+  padding:24px 24px 20px;
+  box-shadow:0 24px 70px rgba(0,0,0,.28);
+  animation:modalIn .22s cubic-bezier(.2,.7,.3,1);
+}
+.stats-popup-title{font-size:1.05rem;font-weight:800;color:var(--text);margin-bottom:14px}
+.stats-popup-body{
+  display:flex;flex-wrap:wrap;align-items:center;
+  gap:8px;max-height:60vh;overflow-y:auto;
+}
+.stats-popup-body .prop-stat,.stats-popup-body .prop-chip{
+  display:flex;align-items:center;justify-content:center;gap:5px;
+  background:var(--bg-2);border:1px solid var(--border);
+  border-radius:14px;padding:7px 12px;
+  font-size:12px;font-weight:500;color:var(--text-2);
+  line-height:1.3;
+}
+.stats-popup-body .prop-stat::before,.stats-popup-body .prop-chip::before{display:none}
+.stats-popup-body .prop-stat-icon,.stats-popup-body .prop-chip-icon{font-size:13px}
+.stats-popup-close{
+  margin-top:18px;width:100%;padding:11px;border-radius:var(--radius);border:none;
+  background:var(--bg-3);color:var(--text-2);font-size:.86rem;font-weight:700;
+  cursor:pointer;transition:all .15s;
+}
+.stats-popup-close:hover{background:var(--border-2);color:var(--text)}
 .modal{
   background:var(--bg);border-radius:var(--radius-xl);
   width:100%;max-width:720px;max-height:92vh;
@@ -6599,6 +6644,10 @@ function renderCards() {
       paginationHTML(key, page, items.length);
   });
 
+  // Collapse each card's spec row down to what actually fits, now that
+  // the fresh markup is in the DOM and real widths are known.
+  requestAnimationFrame(processAllStatsRows);
+
   // Premium Services / Honest Reviews cards are fixed-width horizontal
   // scroll strips, but property cards are a fluid CSS Grid (auto-fill) —
   // their real rendered width changes with viewport size and column count
@@ -7452,6 +7501,7 @@ function renderShortlistPanel() {
     return;
   }
   list.innerHTML = ids.map(id => shortlistCardHTML(shortlistedData[id])).join('');
+  requestAnimationFrame(processAllStatsRows);
 }
 
 
@@ -12555,7 +12605,7 @@ function _slowSlide(row, target, duration){
 }
 function _autoSlidePropRows(){
   _propRowPhase = !_propRowPhase;
-  document.querySelectorAll('.prop-stats, .prop-chip-row-scroll, .price-chips-scroll').forEach(row => {
+  document.querySelectorAll('.prop-chip-row-scroll, .price-chips-scroll').forEach(row => {
     if (row.scrollWidth <= row.clientWidth + 4) return;
     if (row.classList.contains('is-dragging')) return; // don't fight a manual drag
     const target = _propRowPhase ? row.scrollWidth - row.clientWidth : 0;
@@ -12572,11 +12622,11 @@ function _autoSlidePropRows(){
   let drag = null;
   let justDragged = false;
   document.addEventListener('touchstart', function(e){
-    const row = e.target.closest('.prop-stats, .prop-chip-row-scroll, .price-chips-scroll');
+    const row = e.target.closest('.prop-chip-row-scroll, .price-chips-scroll');
     if (row && row._slideRAF) { cancelAnimationFrame(row._slideRAF); row._slideRAF = null; }
   }, {passive:true});
   document.addEventListener('mousedown', function(e){
-    const row = e.target.closest('.prop-stats, .prop-chip-row-scroll, .price-chips-scroll');
+    const row = e.target.closest('.prop-chip-row-scroll, .price-chips-scroll');
     if (!row || row.scrollWidth <= row.clientWidth + 4) return;
     if (row._slideRAF) { cancelAnimationFrame(row._slideRAF); row._slideRAF = null; }
     drag = { row, startX: e.pageX, startScroll: row.scrollLeft, moved: false };
@@ -12603,6 +12653,54 @@ function _autoSlidePropRows(){
   }, true);
 })();
 setInterval(_autoSlidePropRows, 32000);
+
+/* ─── Card spec row ("prop-stats") overflow → "+N" popup ────────────────
+   The row no longer slides/scrolls; whatever doesn't fit on one line is
+   hidden and collapsed into a "+N" chip. Clicking it opens the complete
+   row (every item, not just the hidden ones) centered in a popup. Runs
+   after every renderCards() and on resize, since prop-stats width is
+   fluid with the grid's column count. */
+function processStatsRow(row){
+  // Cache the row's full original item list (once) so re-processing on
+  // resize, or opening the popup, always has the complete set — not just
+  // whatever happens to still be in the DOM after a previous pass hid some.
+  if (!row._allItemsHTML) {
+    row._allItemsHTML = Array.from(row.children).map(el => el.outerHTML);
+  }
+  row.innerHTML = row._allItemsHTML.join('');
+  if (row.scrollWidth <= row.clientWidth + 1) return; // everything already fits
+
+  const moreChip = document.createElement('span');
+  moreChip.className = 'prop-stats-more';
+  moreChip.onclick = function(e){ e.stopPropagation(); openStatsPopup(row); };
+  row.appendChild(moreChip);
+
+  const items = Array.from(row.children).filter(el => el !== moreChip);
+  let hidden = 0;
+  for (let i = items.length - 1; i >= 0 && row.scrollWidth > row.clientWidth; i--) {
+    items[i].style.display = 'none';
+    hidden++;
+    moreChip.textContent = 'More +' + hidden;
+  }
+}
+function processAllStatsRows(){
+  document.querySelectorAll('.prop-stats').forEach(processStatsRow);
+}
+function openStatsPopup(row){
+  document.getElementById('statsPopupBody').innerHTML = row._allItemsHTML.join('');
+  document.getElementById('statsPopupOverlay').classList.add('open');
+}
+function closeStatsPopup(){
+  document.getElementById('statsPopupOverlay').classList.remove('open');
+}
+document.addEventListener('keydown', function(e){
+  if (e.key === 'Escape') closeStatsPopup();
+});
+let _statsRowResizeTimer = null;
+window.addEventListener('resize', function(){
+  clearTimeout(_statsRowResizeTimer);
+  _statsRowResizeTimer = setTimeout(processAllStatsRows, 150);
+});
 
 /* ─── Reviews carousel ──────────────────────────────────────────────
    The right-hand review panel shows one card at a time (so its height
@@ -13412,6 +13510,15 @@ document.addEventListener('keydown',function(e){
   <div style="position:relative;max-width:100%;max-height:90vh;display:flex;">
     <img id="imgZoomSrc" src="" alt="Zoomed image">
     <div id="imgZoomCaption"></div>
+  </div>
+</div>
+
+<!-- ── Stats popup (full spec row, opened from a card's "+N" chip) ── -->
+<div id="statsPopupOverlay" onclick="if(event.target===this)closeStatsPopup()">
+  <div class="stats-popup-card">
+    <div class="stats-popup-title">All details</div>
+    <div class="stats-popup-body" id="statsPopupBody"></div>
+    <button class="stats-popup-close" onclick="closeStatsPopup()">Close</button>
   </div>
 </div>
 
