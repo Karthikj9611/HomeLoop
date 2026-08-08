@@ -1605,23 +1605,7 @@ ul{list-style:none}
 .rv-card-title{font-size:13px;font-weight:600;color:var(--text-1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .rv-card-sub{font-size:12px;color:var(--text-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
 .rv-card-price{font-size:13px;font-weight:700;color:var(--text-1);margin-top:4px}
-.rv-card-remove{position:absolute;top:6px;right:6px;width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,.92);border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:2}
-.rv-card-remove svg{width:12px;height:12px;stroke:var(--text-2);stroke-width:2.4;fill:none}
-.rv-card-remove:hover svg{stroke:var(--brand)}
 .recently-viewed-strip .prop-card{flex:0 0 var(--rv-card-w, 260px)}
-.prop-rv-remove{
-  width:30px;height:30px;border-radius:50%;
-  background:rgba(255,255,255,.94);backdrop-filter:blur(8px);
-  border:1px solid rgba(255,255,255,.6);
-  box-shadow:0 2px 8px rgba(20,16,17,.16);
-  display:flex;align-items:center;justify-content:center;
-  cursor:pointer;transition:background .15s,transform .15s ease;
-  flex-shrink:0;padding:0;
-}
-.prop-rv-remove:hover{background:#fff;transform:scale(1.08)}
-.prop-rv-remove:active{transform:scale(.95)}
-.prop-rv-remove svg{width:14px;height:14px;stroke:var(--text-2);stroke-width:2.4;fill:none}
-.prop-rv-remove:hover svg{stroke:var(--brand)}
 
 
 /* ─── Shortlist Panel ──────────────────────────── */
@@ -6480,23 +6464,17 @@ function clearRecentlyViewed() {
 function recentlyViewedCardHTML(rv) {
   // When the property is still live, render it with the exact same card
   // used by the main grid/shortlist (image ribbon, badges, stats, chips) so
-  // recently-viewed matches everywhere else — just with a remove button
-  // added into the card's left-badge slot.
+  // recently-viewed matches everywhere else. No per-card remove button —
+  // removal is handled by the section's "Clear all" only.
   const live = PROPERTIES.find(x => x.id === rv.id);
   if (live) {
-    const removeBtn = `<button class="prop-rv-remove" onclick="event.stopPropagation();removeRecentlyViewed('${rv.id}')" aria-label="Remove from recently viewed">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-    </button>`;
-    return cardHTML(live, false, removeBtn);
+    return cardHTML(live, false);
   }
   // Fallback for stale/deleted entries no longer in PROPERTIES — only the
   // small saved snapshot is available, so use the lightweight thumb card.
   const thumb = rv.img ? `style="background-image:url('${safeUrl(rv.img)}')"` : '';
   const rent = rv.rent != null ? fmtRupee(rv.rent) : '—';
   return `<div class="rv-card" onclick="openDetail('${rv.id}')">
-    <button class="rv-card-remove" onclick="event.stopPropagation();removeRecentlyViewed('${rv.id}')" aria-label="Remove from recently viewed">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-    </button>
     <div class="rv-card-thumb" ${thumb}>${rv.img ? '' : 'No photo'}</div>
     <div class="rv-card-body">
       <div class="rv-card-title">${esc(rv.name)}</div>
