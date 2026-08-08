@@ -499,12 +499,12 @@ ul{list-style:none}
   }
   .prop-card.list-view .prop-img{
     width:100%;aspect-ratio:4/3;height:auto;min-height:0;
-    border-radius:16px 16px 0 0;
+    border-radius:0;
   }
 }
 .prop-card{
   background:var(--bg);
-  border-radius:20px;
+  border-radius:0;
   border:1px solid rgba(20,16,17,.07);
   box-shadow:0 1px 2px rgba(20,16,17,.03),0 1px 3px rgba(20,16,17,.04);
   overflow:visible;
@@ -518,7 +518,7 @@ ul{list-style:none}
 }
 .prop-card::before{
   content:'';position:absolute;top:0;left:0;right:0;height:3px;
-  border-radius:20px 20px 0 0;z-index:3;pointer-events:none;
+  border-radius:0;z-index:3;pointer-events:none;
   background:linear-gradient(90deg,#8a6b7a,#a85c6e);
   opacity:.9;
 }
@@ -560,7 +560,7 @@ ul{list-style:none}
   overflow:hidden;
   background:var(--bg-3);
   flex-shrink:0;
-  border-radius:20px 20px 0 0;
+  border-radius:0;
   container-type:inline-size;
   container-name:prop-img-box;
 }
@@ -671,7 +671,7 @@ ul{list-style:none}
 }
 .prop-img .img-slide{transition:transform .5s cubic-bezier(.2,.7,.3,1)}
 
-.prop-card.list-view .prop-img{width:230px;aspect-ratio:unset;height:auto;min-height:150px;border-radius:20px 0 0 20px}
+.prop-card.list-view .prop-img{width:230px;aspect-ratio:unset;height:auto;min-height:150px;border-radius:0}
 .prop-img-placeholder{
   position:absolute;inset:0;
   display:flex;align-items:center;justify-content:center;
@@ -2100,7 +2100,6 @@ ul{list-style:none}
 .services-section{
   padding:8px 20px 32px;
   background:var(--bg);
-  border-top:1px solid var(--border);
 }
 .services-head{max-width:680px;margin:0 auto 6px;text-align:center}
 .services-title{font-size:30px;font-weight:800;color:var(--text);letter-spacing:-.3px}
@@ -3311,7 +3310,7 @@ ul{list-style:none}
   .view-toggle{display:none}
   .prop-grid.list-view{grid-template-columns:1fr 1fr;gap:10px}
   .prop-card.list-view{flex-direction:column}
-  .prop-card.list-view .prop-img{width:100%;aspect-ratio:4/3;height:auto;min-height:0;border-radius:16px 16px 0 0}
+  .prop-card.list-view .prop-img{width:100%;aspect-ratio:4/3;height:auto;min-height:0;border-radius:0}
 
   /* Compact sizing for the 2-up mobile card so title/price/deposit/buttons
      don't get squeezed or overflow the narrower card width. */
