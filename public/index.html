@@ -517,15 +517,8 @@ ul{list-style:none}
   min-width:0;
 }
 .prop-card::before{
-  content:'';position:absolute;top:0;left:0;right:0;height:3px;
-  border-radius:0;z-index:3;pointer-events:none;
-  background:linear-gradient(90deg,#8a6b7a,#a85c6e);
-  opacity:.9;
+  display:none;
 }
-.prop-card.type-rent::before{background:linear-gradient(90deg,#a85c6e,#c98a9a)}
-.prop-card.type-lease::before{background:linear-gradient(90deg,#8a6b7a,#a893a0)}
-.prop-card.type-pg::before{background:linear-gradient(90deg,#6b3d4a,#8a5c68)}
-.prop-card.type-shortstay::before{background:linear-gradient(90deg,#3d7a7e,#5c9a9e)}
 .prop-card:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
 /* ─── Promoted cards get their own gold/rose gradient treatment, overriding
    the type-based top strip, plus a matching border glow so they read as a
@@ -539,9 +532,7 @@ ul{list-style:none}
   border-color:#d9a488;
 }
 .prop-card.prop-card-promoted::before{
-  background:linear-gradient(90deg,#d9a488,#eec9c0,#c98a9a);
-  height:4px;
-  opacity:1;
+  display:none;
 }
 .prop-card:hover{
   box-shadow:0 20px 40px -8px rgba(90,60,70,.16),0 6px 16px rgba(20,16,17,.05);
