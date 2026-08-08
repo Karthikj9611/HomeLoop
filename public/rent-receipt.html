@@ -179,6 +179,49 @@
     background-repeat:no-repeat; background-position:right 12px center; padding-right:30px;
   }
   .row2{display:grid;grid-template-columns:1fr;gap:10px}
+  .other-charge-row{
+    display:grid;
+    grid-template-columns:1fr 1fr auto;
+    gap:10px;
+    align-items:start;
+    margin-bottom:13px;
+  }
+  .other-charge-row .field{margin-bottom:0}
+  .other-charge-row .remove-other-btn{
+    width:34px;height:34px;
+    margin-top:22px;
+    border:1px solid var(--line-2);
+    border-radius:9px;
+    background:var(--tint);
+    color:var(--ink-3);
+    cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+    flex-shrink:0;
+    transition:border-color .12s, color .12s, background .12s;
+  }
+  .other-charge-row .remove-other-btn:hover{
+    border-color:var(--brand);
+    color:var(--brand);
+    background:var(--brand-light);
+  }
+  .other-charge-row .remove-other-btn svg{width:13px;height:13px}
+  .add-other-btn{
+    display:flex;align-items:center;justify-content:center;gap:6px;
+    width:100%;
+    padding:9px 12px;
+    font-size:12px;
+    font-weight:600;
+    font-family:inherit;
+    color:var(--brand);
+    background:var(--brand-light);
+    border:1px dashed var(--brand);
+    border-radius:9px;
+    cursor:pointer;
+    margin-bottom:13px;
+    transition:background .12s, border-color .12s;
+  }
+  .add-other-btn:hover{background:#fde3e7}
+  .add-other-btn svg{flex-shrink:0}
   .field textarea{
     width:100%;
     padding:10px 12px;
@@ -624,18 +667,12 @@
           <input id="maintenanceCharge" type="number" min="0" />
           </div>
         </div>
-        <div class="field amt-field">
-          <label>Other</label>
-          <div class="amt-wrap">
-          <span class="cur">₹</span>
-          <input id="otherChargeAmount" type="number" min="0" />
-          </div>
-        </div>
       </div>
-      <div class="field">
-        <label>Label</label>
-        <input id="otherChargeLabel" />
-      </div>
+      <div id="otherChargesList"></div>
+      <button type="button" id="addOtherChargeBtn" class="add-other-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M12 5v14M5 12h14"/></svg>
+        Add another charge
+      </button>
     </div>
 
     <div class="card" style="--ic-bg:var(--teal-bg);--ic-fg:var(--teal)">
@@ -722,6 +759,56 @@
 (function(){
 
   const $ = id => document.getElementById(id);
+
+  // ---------- Dynamic "other charges" rows ----------
+  let otherChargeSeq = 0;
+
+  function otherChargeRowHTML(idx, amount, label){
+    return `
+      <div class="other-charge-row" data-idx="${idx}">
+        <div class="field">
+          <label>Label</label>
+          <input type="text" class="otherChargeLabel" value="${label != null ? label.replace(/"/g,'&quot;') : ''}" />
+        </div>
+        <div class="field amt-field">
+          <label>Amount</label>
+          <div class="amt-wrap">
+          <span class="cur">₹</span>
+          <input type="number" min="0" class="otherChargeAmount" value="${amount != null ? amount : ''}" />
+          </div>
+        </div>
+        <button type="button" class="remove-other-btn" title="Remove this charge">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      </div>`;
+  }
+
+  function addOtherChargeRow(amount, label){
+    const wrap = document.createElement('div');
+    wrap.innerHTML = otherChargeRowHTML(otherChargeSeq++, amount, label);
+    const rowEl = wrap.firstElementChild;
+    $('otherChargesList').appendChild(rowEl);
+    wireOtherChargeRow(rowEl);
+    return rowEl;
+  }
+
+  function wireOtherChargeRow(rowEl){
+    rowEl.querySelectorAll('input').forEach(el=>{
+      el.addEventListener('input', () => { render(); saveForm(); });
+    });
+    rowEl.querySelector('.remove-other-btn').addEventListener('click', () => {
+      rowEl.remove();
+      render();
+      saveForm();
+    });
+  }
+
+  function getOtherCharges(){
+    return Array.from(document.querySelectorAll('#otherChargesList .other-charge-row')).map(row => ({
+      amount: parseFloat(row.querySelector('.otherChargeAmount').value) || 0,
+      label: row.querySelector('.otherChargeLabel').value.trim()
+    }));
+  }
 
   const ones = ['','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten',
     'Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen'];
@@ -810,8 +897,7 @@
       sanitaryCharge: parseFloat($('sanitaryCharge').value) || 0,
       parkingCharge: parseFloat($('parkingCharge').value) || 0,
       maintenanceCharge: parseFloat($('maintenanceCharge').value) || 0,
-      otherChargeAmount: parseFloat($('otherChargeAmount').value) || 0,
-      otherChargeLabel: $('otherChargeLabel').value.trim() || 'Other charges',
+      otherCharges: getOtherCharges(),
       paymentMode: $('paymentMode').value,
       paymentDate: $('paymentDate').value,
       isMulti: $('multiToggle').checked,
@@ -831,7 +917,9 @@
     if(d.sanitaryCharge) items.push({label:'Sanitary / Cleaning charges', amount:d.sanitaryCharge, color:'var(--ok)', bg:'var(--ok-bg)', icon:'🧹'});
     if(d.parkingCharge) items.push({label:'Parking charges', amount:d.parkingCharge, color:'var(--purple)', bg:'var(--purple-bg)', icon:'🅿️'});
     if(d.maintenanceCharge) items.push({label:'Maintenance charges', amount:d.maintenanceCharge, color:'var(--teal)', bg:'var(--teal-bg)', icon:'🔧'});
-    if(d.otherChargeAmount) items.push({label:d.otherChargeLabel, amount:d.otherChargeAmount, color:'var(--ink-3)', bg:'var(--tint)', icon:'📌'});
+    (d.otherCharges || []).forEach(oc => {
+      if(oc.amount) items.push({label:oc.label, amount:oc.amount, color:'var(--ink-3)', bg:'var(--tint)', icon:'🏷️'});
+    });
     return items;
   }
   function totalAmount(d){
@@ -1094,7 +1182,7 @@
   const FIELD_IDS = ['tenantName','tenantMobile','tenantEmail','landlordName','landlordMobile',
     'landlordEmail','landlordBuildingName','landlordAddress','landlordPAN','buildingName','propertyAddress','rentAmount',
     'paymentMode','electricityCharge','waterCharge','sanitaryCharge','parkingCharge','maintenanceCharge',
-    'otherChargeAmount','otherChargeLabel','periodFrom','periodTo','multiFrom','multiTo','monthsCount',
+    'periodFrom','periodTo','multiFrom','multiTo','monthsCount',
     'paymentDate'];
   const CHECKBOX_IDS = ['multiToggle','sameAsLandlordAddress'];
   const STORAGE_KEY = 'rentReceiptFormData_v1';
@@ -1115,6 +1203,7 @@
       const data = {};
       FIELD_IDS.forEach(id => data[id] = $(id).value);
       CHECKBOX_IDS.forEach(id => data[id] = $(id).checked);
+      data.otherCharges = getOtherCharges();
       localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
     }catch(e){ /* storage unavailable — form just won't persist */ }
   }
@@ -1125,6 +1214,10 @@
       const data = JSON.parse(raw);
       FIELD_IDS.forEach(id => { if(data[id] !== undefined) $(id).value = data[id]; });
       CHECKBOX_IDS.forEach(id => { if(data[id] !== undefined) $(id).checked = data[id]; });
+      $('otherChargesList').innerHTML = '';
+      if(Array.isArray(data.otherCharges) && data.otherCharges.length){
+        data.otherCharges.forEach(oc => addOtherChargeRow(oc.amount || '', oc.label || ''));
+      }
       applyAddressSync();
       return true;
     }catch(e){ return false; }
@@ -1138,6 +1231,7 @@
     $('paymentDate').value = toISODateLocal(new Date());
     $('singleFields').style.display = 'block';
     $('multiFields').classList.remove('show');
+    $('otherChargesList').innerHTML = '';
     applyAddressSync();
     render();
     saveForm();
@@ -1213,6 +1307,12 @@
     saveForm();
   });
 
+  $('addOtherChargeBtn').addEventListener('click', function(){
+    addOtherChargeRow('', '');
+    render();
+    saveForm();
+  });
+
   $('downloadBtn').addEventListener('click', downloadPDF);
   $('whatsappBtn').addEventListener('click', sharePDF);
   $('clearBtn').addEventListener('click', function(){
@@ -1234,6 +1334,10 @@
   if(wasRestored){
     $('singleFields').style.display = $('multiToggle').checked ? 'none' : 'block';
     $('multiFields').classList.toggle('show', $('multiToggle').checked);
+  }
+
+  if(!$('otherChargesList').children.length){
+    addOtherChargeRow('', '');
   }
 
   render();
