@@ -6964,21 +6964,37 @@ function pHasLift(p) {
 /* Icon per amenity, keyed by its base label (unit suffix like " ×3" stripped
    before lookup). Falls back to a generic check icon for custom/"extra"
    amenities not in this list. */
+// Custom line-icon SVGs (matching the app's existing stroke-icon style) for
+// amenities that have no accurate dedicated emoji — a generic ❄️/🧊/🥘-style
+// stand-in doesn't actually depict the object, so these are hand-drawn
+// instead. Icons below with an exact emoji already available (bed, sofa,
+// elevator, gym, meals, wifi symbol, gas flame, water drop) keep the emoji.
+const AMENITY_SVG = {
+  'ac': '<svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="6" rx="1.5"/><path d="M5 11v3M9 11v4M13 11v3M17 11v4M21 11v3"/><path d="M4 20c2-2 4-2 6 0s4 2 6 0 4-2 6 0"/></svg>',
+  'washing machine': '<svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="12" cy="13.5" r="5.5"/><circle cx="12" cy="13.5" r="2.5"/><circle cx="7" cy="6.5" r="0.9"/><circle cx="10.5" cy="6.5" r="0.9"/></svg>',
+  'refrigerator': '<svg viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="5" y1="9" x2="19" y2="9"/><line x1="8" y1="4.5" x2="8" y2="7"/><line x1="8" y1="11.5" x2="8" y2="14"/></svg>',
+  'microwave': '<svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="1.5"/><rect x="4" y="8.3" width="12" height="7.4" rx="1"/><circle cx="19" cy="10" r="1.2"/><line x1="17.4" y1="14" x2="20.6" y2="14"/></svg>',
+  'geyser': '<svg viewBox="0 0 24 24"><rect x="7" y="3" width="10" height="16" rx="5"/><line x1="12" y1="19" x2="12" y2="22"/><circle cx="12" cy="8" r="1"/><path d="M9 22h6"/></svg>',
+  'cupboards': '<svg viewBox="0 0 24 24"><rect x="3" y="2" width="18" height="20" rx="1.5"/><line x1="12" y1="2" x2="12" y2="22"/><line x1="9" y1="11" x2="9" y2="13"/><line x1="15" y1="11" x2="15" y2="13"/></svg>',
+  'balcony': '<svg viewBox="0 0 24 24"><line x1="2" y1="6" x2="22" y2="6"/><line x1="2" y1="10" x2="22" y2="10"/><line x1="4" y1="10" x2="4" y2="20"/><line x1="8" y1="10" x2="8" y2="20"/><line x1="12" y1="10" x2="12" y2="20"/><line x1="16" y1="10" x2="16" y2="20"/><line x1="20" y1="10" x2="20" y2="20"/><line x1="2" y1="20" x2="22" y2="20"/></svg>',
+  'cctv': '<svg viewBox="0 0 24 24"><rect x="3" y="8" width="12" height="7" rx="1.5"/><circle cx="17.5" cy="11.5" r="3.5"/><path d="M3 8L1 6M3 15l-2 2"/></svg>',
+  'power backup': '<svg viewBox="0 0 24 24"><rect x="2" y="7" width="18" height="10" rx="2"/><line x1="22" y1="10" x2="22" y2="14"/><path d="M13 9l-4 5h3l-1 4 4-5h-3z"/></svg>',
+};
 const AMENITY_ICONS = {
-  'wi-fi': '📶',
-  'ac': '❄️',
-  'washing machine': '🧺',
-  'refrigerator': '🧊',
-  'microwave': '🥘',
-  'geyser': '🚿',
-  'cupboards': '🗄️',
+  'wi-fi': '🛜',
+  'ac': AMENITY_SVG.ac,
+  'washing machine': AMENITY_SVG['washing machine'],
+  'refrigerator': AMENITY_SVG.refrigerator,
+  'microwave': AMENITY_SVG.microwave,
+  'geyser': AMENITY_SVG.geyser,
+  'cupboards': AMENITY_SVG.cupboards,
   'bed': '🛏️',
   'sofa': '🛋️',
   'elevator': '🛗',
-  'balcony': '🌇',
+  'balcony': AMENITY_SVG.balcony,
   'gym': '🏋️',
-  'cctv': '📹',
-  'power backup': '🔌',
+  'cctv': AMENITY_SVG.cctv,
+  'power backup': AMENITY_SVG['power backup'],
   'garden': '🌳',
   'laundry': '👕',
   'meals included': '🍽️',
@@ -6989,14 +7005,22 @@ function amenityIcon(label) {
   const base = label.replace(/\s*×\d+\s*$/, '').trim().toLowerCase();
   if (AMENITY_ICONS[base]) return AMENITY_ICONS[base];
   // Fallback: keyword match for custom/free-text amenities hosts type in
-  // themselves, so they still get a sensible icon instead of the generic ✅.
+  // themselves, so they still get a sensible, closely-related icon instead
+  // of the generic 🏠 — covers the common extras seen in Indian rental
+  // listings beyond the fixed checklist above.
   const KEYWORD_ICONS = [
-    [/park/, '🅿️'], [/water/, '💧'], [/\btv\b|television/, '📺'],
-    [/internet|broadband|wifi|wi-fi/, '📶'], [/security guard|watchman|guard/, '💂'],
+    [/park/, '🅿️'], [/24.?7.*water|water supply|hot water|water\b/, '💧'], [/\btv\b|television/, '📺'],
+    [/internet|broadband|wifi|wi-fi/, '🛜'], [/security guard|watchman|guard|gated/, '💂'],
     [/pool|swim/, '🏊'], [/play area|kids/, '🧒'], [/club\s?house/, '🏛️'],
     [/intercom/, '☎️'], [/fire/, '🧯'], [/solar/, '☀️'], [/pet/, '🐾'],
-    [/store|storage/, '📦'], [/curtain/, '🪟'], [/dining/, '🍽️'],
+    [/store|storage|servant/, '📦'], [/curtain/, '🪟'], [/dining/, '🍽️'],
     [/kitchen|modular/, '🍳'], [/dish\s?washer/, '🧽'], [/chimney/, '💨'],
+    [/house\s?keep|maid|cleaning/, '🧹'], [/puja|prayer/, '🙏'], [/study/, '📚'],
+    [/false ceiling/, '🏠'], [/vastu/, '🧭'], [/terrace|rooftop/, '🌆'],
+    [/yoga|meditation/, '🧘'], [/jogging|track|walk/, '🚶'], [/temple/, '🛕'],
+    [/school/, '🏫'], [/hospital|clinic/, '🏥'], [/metro|bus stop|transit/, '🚏'],
+    [/mall|shopping/, '🛍️'], [/lawn|lush/, '🌿'], [/rain\s?water/, '🌧️'],
+    [/sewage|stp/, '♻️'], [/generator/, '🔋'], [/wardrobe|closet/, '🚪'],
   ];
   for (const [re, icon] of KEYWORD_ICONS) if (re.test(base)) return icon;
   return '🏠';
@@ -7142,7 +7166,7 @@ function cardHTML(p, compact) {
         </span>` : ''}
         ${maintenance > 0 ? `<span class="prop-stat" title="Monthly maintenance">
           <span class="prop-stat-icon icon-maint">🔧</span>
-          ${fmtRupee(maintenance)} Maint
+          ${fmtRupee(maintenance)}
         </span>` : ''}
         ${lift ? `<span class="prop-stat" title="Lift available"><span class="prop-stat-icon icon-lift">🛗</span></span>` : ''}
         <span class="prop-chip chip-furnish" title="Furnishing">
