@@ -1264,22 +1264,28 @@ ul{list-style:none}
 #statsPopupOverlay.open{display:flex}
 .stats-popup-card{
   background:var(--bg);border-radius:var(--radius-xl);
-  width:100%;max-width:380px;
+  width:100%;max-width:560px;
   padding:24px 24px 20px;
   box-shadow:0 24px 70px rgba(0,0,0,.28);
   animation:modalIn .22s cubic-bezier(.2,.7,.3,1);
 }
 .stats-popup-title{font-size:1.05rem;font-weight:800;color:var(--text);margin-bottom:14px}
 .stats-popup-body{
-  display:flex;flex-wrap:wrap;align-items:center;
+  display:grid;grid-template-columns:repeat(3,1fr);
   gap:8px;max-height:60vh;overflow-y:auto;
 }
 .stats-popup-body .prop-stat,.stats-popup-body .prop-chip{
   display:flex;align-items:center;justify-content:center;gap:5px;
   background:var(--bg-2);border:1px solid var(--border);
-  border-radius:14px;padding:7px 12px;
+  border-radius:14px;padding:7px 10px;
   font-size:12px;font-weight:500;color:var(--text-2);
-  line-height:1.3;
+  line-height:1.3;white-space:normal;text-align:center;
+}
+.stats-popup-body .prop-stat-label{
+  color:var(--text-3);font-weight:500;
+}
+@media (max-width:640px){
+  .stats-popup-body{grid-template-columns:repeat(2,1fr)}
 }
 .stats-popup-body .prop-stat::before,.stats-popup-body .prop-chip::before{display:none}
 .stats-popup-body .prop-stat-icon,.stats-popup-body .prop-chip-icon{font-size:13px}
@@ -12687,8 +12693,29 @@ function processStatsRow(row){
 function processAllStatsRows(){
   document.querySelectorAll('.prop-stats').forEach(processStatsRow);
 }
+const STAT_ICON_LABELS = {
+  'icon-bed': 'Bedrooms',
+  'icon-bath': 'Bathrooms',
+  'icon-car': 'Car Parking',
+  'icon-bike': 'Bike Parking',
+  'icon-area': 'Area',
+  'icon-maint': 'Maintenance',
+  'icon-lift': 'Lift'
+};
 function openStatsPopup(row){
-  document.getElementById('statsPopupBody').innerHTML = row._allItemsHTML.join('');
+  const wrap = document.createElement('div');
+  wrap.innerHTML = row._allItemsHTML.join('');
+  wrap.querySelectorAll('.prop-stat').forEach(el => {
+    const iconEl = el.querySelector('.prop-stat-icon');
+    if (!iconEl) return;
+    const iconClass = Array.from(iconEl.classList).find(c => STAT_ICON_LABELS[c]);
+    if (!iconClass) return;
+    const labelSpan = document.createElement('span');
+    labelSpan.className = 'prop-stat-label';
+    labelSpan.textContent = STAT_ICON_LABELS[iconClass];
+    el.appendChild(labelSpan);
+  });
+  document.getElementById('statsPopupBody').innerHTML = wrap.innerHTML;
   document.getElementById('statsPopupOverlay').classList.add('open');
 }
 function closeStatsPopup(){
