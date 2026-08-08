@@ -3321,7 +3321,8 @@ ul{list-style:none}
      enough that a 2x2 grid — 4 listings — fits in the first screen instead
      of 1-2. The floating right-badge stack (heart/views/promoted/verified)
      still fits fine at this ratio since it only needs ~140px of height. */
-  .prop-grid:not(.list-view) .prop-img{aspect-ratio:1/1}
+  .prop-grid:not(.list-view) .prop-img,
+  .recently-viewed-strip .prop-img{aspect-ratio:1/1}
   .prop-card{min-height:0}
   .view-toggle{display:none}
   .prop-grid.list-view{grid-template-columns:1fr 1fr;gap:10px}
