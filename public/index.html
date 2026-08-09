@@ -1584,8 +1584,8 @@ ul{list-style:none}
 
 /* ─── Recently Viewed ──────────────────────────── */
 .recently-viewed-section{padding-bottom:4px}
-.recently-viewed-clear{background:none;border:none;color:var(--text-2);font-size:13px;cursor:pointer;padding:4px 6px}
-.recently-viewed-clear:hover{color:var(--brand)}
+.recently-viewed-clear{background:none;border:none;color:var(--brand);font-size:13px;font-weight:600;cursor:pointer;padding:4px 6px;white-space:nowrap;display:flex;align-items:center;gap:4px}
+.recently-viewed-clear:hover{opacity:.75}
 .recently-viewed-strip{
   display:flex;
   gap:16px;
@@ -4141,14 +4141,17 @@ ul{list-style:none}
   </div>
 
   <div id="recentlyViewedSection" class="recently-viewed-section" style="display:none">
-    <div class="section-divider" style="position:relative">
-      <div class="section-divider-inner">
+    <div class="section-divider" style="display:flex;align-items:center;gap:10px">
+      <div class="section-divider-inner" style="flex:1;min-width:0">
         <span class="section-divider-label promoted-label">
           <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:4px"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
           Recently viewed
         </span>
       </div>
-      <button class="recently-viewed-clear" onclick="clearRecentlyViewed()" style="position:absolute;right:20px;top:50%;transform:translateY(-50%)">Clear all</button>
+      <button class="recently-viewed-clear" onclick="clearRecentlyViewed()" style="flex-shrink:0">
+        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/></svg>
+        Clear all
+      </button>
     </div>
     <div class="recently-viewed-strip" id="recentlyViewedStrip"></div>
   </div>
