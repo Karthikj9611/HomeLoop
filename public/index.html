@@ -878,6 +878,7 @@ ul{list-style:none}
 .prop-loc-avail svg{width:11px;height:11px;stroke:#a85c6e;fill:none;stroke-width:2;flex-shrink:0;display:none}
 .prop-loc svg{width:11px;height:11px;stroke:#a85c6e;fill:#a85c6e;fill-opacity:.12;stroke-width:2;flex-shrink:0;display:none}
 .prop-loc-area span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;flex:1 1 auto;display:block}
+.prop-loc-area .prop-loc-short{display:none}
 /* ── Flat spec readout — plain icon+value pairs split by hairline dividers.
    Static single line (no slide/drag anymore): whatever doesn't fit is
    collapsed behind a "+N" chip that opens the complete row centered in a
@@ -3325,6 +3326,8 @@ ul{list-style:none}
   .prop-deposit-inline svg{width:10px;height:10px}
   .prop-price-row{flex-wrap:wrap;row-gap:2px}
   .prop-loc{font-size:11px;margin-top:4px}
+  .prop-loc-area .prop-loc-full{display:none}
+  .prop-loc-area .prop-loc-short{display:block}
   .prop-stats{gap:2px 0;margin-top:5px}
   .prop-stat{font-size:11px;padding:0 6px 0 0}
   .prop-stat-icon{width:19px;height:19px}
@@ -6232,6 +6235,12 @@ function esc(v) {
 function escMultiline(v) {
   return esc(v).replace(/\n/g, '<br>');
 }
+// For location text like "HSR Layout, 6th Block" — the part before the first
+// comma, used on mobile property cards where width is tight and the full
+// "Area, Sub-area" string wraps or gets ellipsis-truncated mid-word.
+function locShort(v) {
+  return String(v || '').split(',')[0].trim();
+}
 // Only allows http/https URLs through to an href/src; anything else (javascript:, data:, etc.) is dropped.
 function safeUrl(v) {
   if (!v) return '';
@@ -7228,7 +7237,7 @@ function cardHTML(p, compact, extraLeftBadge) {
       <div class="prop-loc">
         <span class="prop-loc-area">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-          <span>${esc(p.location?.area)}</span>
+          <span class="prop-loc-full">${esc(p.location?.area)}</span><span class="prop-loc-short">${esc(locShort(p.location?.area))}</span>
         </span>
         ${availableFmt ? `<span class="prop-loc-avail" title="Available from">
           <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
@@ -7429,7 +7438,7 @@ function shortlistCardHTML(p) {
       <div class="prop-loc">
         <span class="prop-loc-area">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-          <span>${esc(p.location?.area)}</span>
+          <span class="prop-loc-full">${esc(p.location?.area)}</span><span class="prop-loc-short">${esc(locShort(p.location?.area))}</span>
         </span>
         ${availableFmt ? `<span class="prop-loc-avail" title="Available from">
           <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
