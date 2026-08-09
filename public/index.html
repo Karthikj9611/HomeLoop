@@ -3309,6 +3309,7 @@ ul{list-style:none}
   .prop-grid.list-view{grid-template-columns:1fr 1fr;gap:10px}
   .prop-card.list-view{flex-direction:column}
   .prop-card.list-view .prop-img{width:100%;aspect-ratio:4/3;height:auto;min-height:0;border-radius:0}
+  .recently-viewed-strip{gap:10px;padding:10px 12px 4px}
 
   /* Compact sizing for the 2-up mobile card so title/price/deposit/buttons
      don't get squeezed or overflow the narrower card width. */
@@ -6537,10 +6538,27 @@ function renderRecentlyViewed() {
 // — so its rendered card width changes with viewport size). Reads one live
 // .prop-card's actual width and pushes it into a CSS var the rv-card flex-basis
 // uses, so the horizontally-scrollable strip always matches, on any screen size.
+//
+// On narrow (mobile) screens the strip instead sizes each card to exactly
+// half the visible strip width (minus the gap), so precisely 2 cards divide
+// the screen evenly with no partial third card peeking in — while staying
+// horizontally scrollable/slidable to reach the rest.
 function syncRecentlyViewedCardWidth() {
-  const sample = document.querySelector('.prop-grid .prop-card');
   const strip = document.getElementById('recentlyViewedStrip');
-  if (!sample || !strip) return;
+  if (!strip) return;
+  const isMobile = window.innerWidth <= 768;
+  if (isMobile) {
+    const cs = getComputedStyle(strip);
+    const gap = parseFloat(cs.columnGap || cs.gap) || 10;
+    const padL = parseFloat(cs.paddingLeft) || 0;
+    const padR = parseFloat(cs.paddingRight) || 0;
+    const available = strip.clientWidth - padL - padR - gap;
+    const w = available / 2;
+    if (w > 0) strip.style.setProperty('--rv-card-w', w + 'px');
+    return;
+  }
+  const sample = document.querySelector('.prop-grid .prop-card');
+  if (!sample) return;
   const w = sample.getBoundingClientRect().width;
   if (w > 0) strip.style.setProperty('--rv-card-w', w + 'px');
 }
