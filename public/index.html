@@ -901,18 +901,18 @@ ul{list-style:none}
    click opens the full stats/amenity row centered in a popup. */
 .prop-stats-more{
   flex-shrink:0;display:flex;align-items:center;
-  font-size:11.5px;font-weight:700;color:var(--brand);
-  padding:4px 12px;position:relative;white-space:nowrap;
+  font-size:12.5px;font-weight:600;color:var(--brand);
+  position:relative;white-space:nowrap;
   cursor:pointer;margin-left:auto;
-  background:var(--brand-light);
-  border:1px solid rgba(224,58,82,.25);
-  border-radius:6px;
-  transition:background .15s,border-color .15s,transform .1s;
+  background:none;border:none;padding:0;
+  text-align:right;
+  text-decoration:underline;text-underline-offset:2px;
+}
+.prop-stats-more-chevron{
+  width:11px;height:11px;flex-shrink:0;
 }
 .prop-stats-more:hover{
   color:var(--brand-hover);
-  background:rgba(224,58,82,.14);
-  border-color:rgba(224,58,82,.4);
 }
 .prop-stats-more:active{transform:scale(.96)}
 .prop-stat{
@@ -12677,6 +12677,7 @@ function processStatsRow(row){
   const moreChip = document.createElement('span');
   moreChip.className = 'prop-stats-more';
   moreChip.onclick = function(e){ e.stopPropagation(); openStatsPopup(row); };
+  moreChip.textContent = 'More';
   row.appendChild(moreChip);
 
   const items = Array.from(row.children).filter(el => el !== moreChip);
@@ -12684,7 +12685,6 @@ function processStatsRow(row){
   for (let i = items.length - 1; i >= 0 && row.scrollWidth > row.clientWidth; i--) {
     items[i].style.display = 'none';
     hidden++;
-    moreChip.textContent = 'More';
   }
 }
 function processAllStatsRows(){
