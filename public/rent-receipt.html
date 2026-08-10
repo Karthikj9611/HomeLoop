@@ -1090,15 +1090,6 @@
     $('shareStatus').classList.remove('show');
   }
 
-  // Turns a raw phone number into WhatsApp's expected digits-only, country-coded format.
-  // Defaults to India (+91) for bare 10-digit numbers, since that's this form's primary audience.
-  function toWhatsAppNumber(raw){
-    const digits = (raw || '').replace(/\D/g, '');
-    if(!digits) return '';
-    if(digits.length === 10) return '91' + digits;
-    return digits;
-  }
-
   async function downloadPDF(){
     const d = getFormData();
     if(!validate(d)){
@@ -1162,17 +1153,14 @@
 
     if(!sharedNatively){
       // Desktop browsers can't attach a file to a WhatsApp chat programmatically,
-      // so download the PDF and open the chat pre-filled with a note to attach it.
+      // so download the PDF and open WhatsApp pre-filled with a note to attach it.
+      // No recipient is pre-selected — the person picks who to send it to
+      // themselves, same as the native share sheet above.
       pdf.save(fname);
-      const waNumber = toWhatsAppNumber(d.tenantMobile);
       const msg = 'Hi ' + (d.tenantName || '') + ', here is your rent receipt — attaching the PDF that just downloaded (' + fname + ').';
-      const waUrl = waNumber
-        ? 'https://wa.me/' + waNumber + '?text=' + encodeURIComponent(msg)
-        : 'https://wa.me/?text=' + encodeURIComponent(msg);
+      const waUrl = 'https://wa.me/?text=' + encodeURIComponent(msg);
       window.open(waUrl, '_blank');
-      showShareStatus(waNumber
-        ? 'PDF downloaded and WhatsApp chat opened — attach the file from your downloads.'
-        : 'PDF downloaded and WhatsApp opened — add the tenant\'s mobile number next time to open their chat directly. Attach the file from your downloads.');
+      showShareStatus('PDF downloaded and WhatsApp opened — pick who to send it to, then attach the file from your downloads.');
     }
 
     waBtn.dataset.generating = '0';
