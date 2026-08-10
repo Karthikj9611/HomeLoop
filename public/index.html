@@ -6140,7 +6140,7 @@ ul{list-style:none}
       <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
       List Short Stay Property
     </div>
-    <div class="menu-item" onclick="toggleMenuPanel(); openSubmitVideoModal();">
+    <div class="menu-item" onclick="toggleMenuPanel(); openSubmitVideoModal();" style="display:none">
       <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
       Post Your Video Review
     </div>
@@ -7258,7 +7258,7 @@ function cardHTML(p, compact, extraLeftBadge) {
           ${bhkVal}
         </span>` : ''; })()}
         ${bathrooms > 0 ? `<span class="prop-stat" title="Bathrooms">
-          <span class="prop-stat-icon icon-bath">🚿</span>
+          <span class="prop-stat-icon icon-bath">🚽</span>
           ${bathrooms}
         </span>` : ''}
         ${carCount > 0 ? `<span class="prop-stat" title="${carCount+' car parking spot'+(carCount>1?'s':'')}">
@@ -7459,7 +7459,7 @@ function shortlistCardHTML(p) {
           ${bhkVal}
         </span>` : ''; })()}
         ${bathrooms > 0 ? `<span class="prop-stat" title="Bathrooms">
-          <span class="prop-stat-icon icon-bath">🚿</span>
+          <span class="prop-stat-icon icon-bath">🚽</span>
           ${bathrooms}
         </span>` : ''}
         <span class="prop-stat" title="Furnishing">
