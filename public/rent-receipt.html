@@ -1248,11 +1248,70 @@
     });
   });
 
-  // Lets the person pick a number straight from their phone's contacts
-  // instead of typing it. Uses the browser Contact Picker API, which only
-  // exists on some mobile browsers (e.g. Chrome on Android) over HTTPS —
-  // everywhere else we just tell them to type the number in manually.
-  async function pickContactFromDevice(fieldId, nameFieldId){
+  // Lets the person pick a number straight from their phone's contacts.
+  // This tool runs inside an <iframe>, and the browser's Contact Picker
+  // API (navigator.contacts.select) only works from a top-level browsing
+  // context — calling it directly in here throws "Failed to execute
+  // 'select' on 'ContactsManager'". So instead we post a message up to
+  // the parent page, which runs the actual picker (it has top-level
+  // access) and posts the result back to us.
+  let pendingContactPick = null; // {fieldId, nameFieldId} while a pick is in flight
+
+  // Declared inside this file's wrapping IIFE, but called from inline
+  // onclick="pickContactFromDevice(...)" attributes in the HTML — those
+  // look up the function in global scope, so it must be attached to
+  // window explicitly or the button throws "not defined".
+  window.pickContactFromDevice = pickContactFromDevice;
+
+  function pickContactFromDevice(fieldId, nameFieldId){
+    console.log('[kr-rr] pickContactFromDevice called', {fieldId, nameFieldId, inIframe: window.parent !== window});
+    if(window.parent === window){
+      // Not embedded in an iframe (e.g. opened standalone) — call directly.
+      console.log('[kr-rr] not in an iframe, using direct picker');
+      pickContactFromDeviceDirect(fieldId, nameFieldId);
+      return;
+    }
+    pendingContactPick = { fieldId, nameFieldId };
+    console.log('[kr-rr] posting kr-rr-pick-contact to parent');
+    window.parent.postMessage({ type: 'kr-rr-pick-contact' }, '*');
+  }
+
+  window.addEventListener('message', function(e){
+    const data = e.data;
+    if(!data || (data.type !== 'kr-rr-contact-picked' && data.type !== 'kr-rr-contact-pick-error')) return;
+    console.log('[kr-rr] received from parent:', data);
+    if(!pendingContactPick) { console.log('[kr-rr] ...but no pending pick, ignoring'); return; }
+    const { fieldId, nameFieldId } = pendingContactPick;
+    pendingContactPick = null;
+
+    if(data.type === 'kr-rr-contact-pick-error'){
+      alert(data.message || "Contact picker isn't supported on this device/browser — please type the number in.");
+      return;
+    }
+
+    let digits = (data.tel || '').replace(/\D/g,'').slice(-10);
+    while(digits.length && !/[6-9]/.test(digits[0])) digits = digits.slice(1);
+    if(!digits){
+      alert('That contact has no usable mobile number.');
+      return;
+    }
+    const field = $(fieldId);
+    if(field){
+      field.value = digits;
+      field.dispatchEvent(new Event('input', {bubbles:true}));
+    }
+    if(nameFieldId && data.name){
+      const nameField = $(nameFieldId);
+      if(nameField){
+        nameField.value = data.name;
+        nameField.dispatchEvent(new Event('input', {bubbles:true}));
+      }
+    }
+    console.log('[kr-rr] field(s) filled with', digits);
+  });
+
+  // Fallback for when this page is opened standalone (not inside the iframe).
+  async function pickContactFromDeviceDirect(fieldId, nameFieldId){
     if(!('contacts' in navigator && 'ContactsManager' in window)){
       alert("Contact picker isn't supported on this device/browser — please type the number in.");
       return;
