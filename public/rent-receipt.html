@@ -1334,6 +1334,19 @@
     }
   }
 
+  $('periodFrom').addEventListener('change', function(){
+    if(!this.value) return;
+    $('periodTo').value = monthPeriod(this.value).to;
+    render();
+    saveForm();
+  });
+  $('multiFrom').addEventListener('change', function(){
+    if(!this.value) return;
+    $('multiTo').value = monthPeriod(this.value).to;
+    render();
+    saveForm();
+  });
+
   $('sameAsLandlordAddress').addEventListener('change', function(){
     applyAddressSync();
     render();
@@ -1381,6 +1394,13 @@
   if(wasRestored){
     $('singleFields').style.display = $('multiToggle').checked ? 'none' : 'block';
     $('multiFields').classList.toggle('show', $('multiToggle').checked);
+  }
+
+  // Default the payment date to today so the user doesn't have to pick it
+  // manually — they can still change it. Only applies on a fresh form;
+  // a restored/saved value (even one the user cleared to blank) is left as-is.
+  if(!wasRestored && !$('paymentDate').value){
+    $('paymentDate').value = toISODateLocal(new Date());
   }
 
   if(!$('otherChargesList').children.length){
