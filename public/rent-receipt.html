@@ -138,6 +138,19 @@
   .section-label .ic svg{width:12px;height:12px;stroke-width:2.2}
   .section-label .hint{text-transform:none;letter-spacing:0;font-weight:500;color:var(--ink-3);font-size:10.5px}
   .field{margin-bottom:13px}
+  .field.field-error input,
+  .field.field-error select,
+  .field.field-error textarea{
+    border-color:var(--brand) !important;
+    background:var(--brand-light) !important;
+    box-shadow:0 0 0 3px color-mix(in srgb, var(--brand) 14%, transparent) !important;
+  }
+  .field-error-msg{
+    font-size:10.5px;
+    font-weight:600;
+    color:var(--brand);
+    margin-top:5px;
+  }
   .field label{
     display:block;
     font-size:11.5px;
@@ -578,11 +591,11 @@
         </div>
       </div>
       <div class="field">
-        <label>Building</label>
+        <label>Building <span class="req">*</span></label>
         <input id="landlordBuildingName" />
       </div>
       <div class="field">
-        <label>Address</label>
+        <label>Address <span class="req">*</span></label>
         <textarea id="landlordAddress" rows="3"></textarea>
       </div>
       <div class="field">
@@ -618,11 +631,15 @@
     <div class="card" style="--ic-bg:var(--brand-light);--ic-fg:var(--brand)">
       <div class="section-label"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11.5 12 4l8 7.5"/><path d="M6 10v9a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-9"/><path d="M10 20v-6h4v6"/></svg></span>Property &amp; rent</div>
       <div class="field">
-        <label>Building</label>
+        <label>Building <span class="req">*</span></label>
         <input id="buildingName" />
+        <label class="inline-check">
+          <input type="checkbox" id="sameAsLandlordBuilding" />
+          Same as landlord building
+        </label>
       </div>
       <div class="field">
-        <label>Address</label>
+        <label>Address <span class="req">*</span></label>
         <textarea id="propertyAddress" rows="3"></textarea>
         <label class="inline-check">
           <input type="checkbox" id="sameAsLandlordAddress" />
@@ -638,7 +655,7 @@
           </div>
         </div>
         <div class="field">
-          <label>Mode</label>
+          <label>Mode <span class="req">*</span></label>
           <select id="paymentMode">
             <option>Cash</option>
             <option selected>NEFT</option>
@@ -754,7 +771,7 @@
           <button class="btn-clear" id="clearBtn" title="Clear all fields">🗑 Clear</button>
         </div>
         <div class="share-status" id="shareStatus"></div>
-        <div class="err" id="errMsg">Fill in tenant name, landlord name, rent amount and rent period to enable download.</div>
+        <div class="err" id="errMsg">Fill in tenant name, landlord name, mobile numbers, owner building &amp; address, property building &amp; address, payment mode, rent amount and rent period to enable download.</div>
       </div>
     </div>
   </div>
@@ -1039,12 +1056,98 @@
     return arr;
   }
 
+  const REQUIRED_FIELD_MESSAGES = {
+    tenantName: 'Tenant name is required',
+    tenantMobile: 'Valid 10-digit mobile number is required',
+    landlordName: 'Owner name is required',
+    landlordMobile: 'Valid 10-digit mobile number is required',
+    landlordBuildingName: 'Building is required',
+    landlordAddress: 'Address is required',
+    buildingName: 'Building is required',
+    propertyAddress: 'Address is required',
+    paymentMode: 'Payment mode is required',
+    rentAmount: 'Rent amount is required',
+    periodFrom: 'From date is required',
+    periodTo: 'To date is required',
+    multiFrom: 'From date is required',
+    multiTo: 'To date is required'
+  };
+
+  function isFieldValid(id, d){
+    if(id === 'tenantMobile' || id === 'landlordMobile') return /^\d{10}$/.test(d[id]);
+    return !!(d[id] && String(d[id]).trim());
+  }
+
+  function getMissingFields(d){
+    const missing = [];
+    ['tenantName','landlordName','tenantMobile','landlordMobile','landlordBuildingName','landlordAddress','buildingName','propertyAddress','paymentMode','rentAmount']
+      .forEach(id => { if(!isFieldValid(id, d)) missing.push(id); });
+    if(d.isMulti){
+      if(!isFieldValid('multiFrom', d)) missing.push('multiFrom');
+      if(!isFieldValid('multiTo', d)) missing.push('multiTo');
+    } else {
+      if(!isFieldValid('periodFrom', d)) missing.push('periodFrom');
+      if(!isFieldValid('periodTo', d)) missing.push('periodTo');
+    }
+    return missing;
+  }
+
   function validate(d){
-    if(!d.tenantName || !d.landlordName || !d.rentAmount) return false;
-    if(!/^\d{10}$/.test(d.tenantMobile) || !/^\d{10}$/.test(d.landlordMobile)) return false;
-    if(d.isMulti){ if(!d.multiFrom || !d.multiTo) return false; }
-    else { if(!d.periodFrom || !d.periodTo) return false; }
-    return true;
+    return getMissingFields(d).length === 0;
+  }
+
+  function fieldWrap(id){
+    const el = $(id);
+    return el ? el.closest('.field') : null;
+  }
+
+  function setFieldError(id, msg){
+    const wrap = fieldWrap(id);
+    if(!wrap) return;
+    wrap.classList.add('field-error');
+    let msgEl = wrap.querySelector('.field-error-msg');
+    if(!msgEl){
+      msgEl = document.createElement('div');
+      msgEl.className = 'field-error-msg';
+      wrap.appendChild(msgEl);
+    }
+    msgEl.textContent = msg;
+  }
+
+  function clearFieldError(id){
+    const wrap = fieldWrap(id);
+    if(!wrap) return;
+    wrap.classList.remove('field-error');
+    const msgEl = wrap.querySelector('.field-error-msg');
+    if(msgEl) msgEl.remove();
+  }
+
+  function clearAllFieldErrors(){
+    document.querySelectorAll('.field.field-error').forEach(wrap => {
+      wrap.classList.remove('field-error');
+      const msgEl = wrap.querySelector('.field-error-msg');
+      if(msgEl) msgEl.remove();
+    });
+  }
+
+  // As the person fixes a field, drop its error state immediately rather
+  // than waiting for the next download/share attempt.
+  function refreshFieldErrorsLive(d){
+    Object.keys(REQUIRED_FIELD_MESSAGES).forEach(id => {
+      const wrap = fieldWrap(id);
+      if(wrap && wrap.classList.contains('field-error') && isFieldValid(id, d)){
+        clearFieldError(id);
+      }
+    });
+  }
+
+  function showFieldErrors(missingIds){
+    missingIds.forEach(id => setFieldError(id, REQUIRED_FIELD_MESSAGES[id] || 'This field is required'));
+    const firstEl = $(missingIds[0]);
+    if(firstEl){
+      firstEl.scrollIntoView({behavior:'smooth', block:'center'});
+      firstEl.focus({preventScroll:true});
+    }
   }
 
   function updateDownloadState(d){
@@ -1058,6 +1161,7 @@
       waBtn.disabled = !valid;
     }
     $('errMsg').classList.toggle('show', !valid);
+    refreshFieldErrorsLive(d);
   }
 
   function render(){
@@ -1126,11 +1230,14 @@
 
   async function downloadPDF(){
     const d = getFormData();
-    if(!validate(d)){
+    const missing = getMissingFields(d);
+    if(missing.length){
       $('errMsg').classList.add('show');
+      showFieldErrors(missing);
       return;
     }
     $('errMsg').classList.remove('show');
+    clearAllFieldErrors();
 
     const btn = $('downloadBtn');
     btn.dataset.generating = '1';
@@ -1147,11 +1254,14 @@
 
   async function sharePDF(){
     const d = getFormData();
-    if(!validate(d)){
+    const missing = getMissingFields(d);
+    if(missing.length){
       $('errMsg').classList.add('show');
+      showFieldErrors(missing);
       return;
     }
     $('errMsg').classList.remove('show');
+    clearAllFieldErrors();
     hideShareStatus();
 
     const waBtn = $('whatsappBtn');
@@ -1206,7 +1316,7 @@
     'paymentMode','electricityCharge','waterCharge','sanitaryCharge','parkingCharge','maintenanceCharge',
     'periodFrom','periodTo','multiFrom','multiTo','monthsCount',
     'paymentDate'];
-  const CHECKBOX_IDS = ['multiToggle','sameAsLandlordAddress'];
+  const CHECKBOX_IDS = ['multiToggle','sameAsLandlordAddress','sameAsLandlordBuilding'];
   const STORAGE_KEY = 'rentReceiptFormData_v1';
 
   function applyAddressSync(){
@@ -1217,6 +1327,17 @@
       propInput.readOnly = true;
     } else {
       propInput.readOnly = false;
+    }
+  }
+
+  function applyBuildingSync(){
+    const same = $('sameAsLandlordBuilding').checked;
+    const buildingInput = $('buildingName');
+    if(same){
+      buildingInput.value = $('landlordBuildingName').value;
+      buildingInput.readOnly = true;
+    } else {
+      buildingInput.readOnly = false;
     }
   }
 
@@ -1241,6 +1362,7 @@
         data.otherCharges.forEach(oc => addOtherChargeRow(oc.amount || '', oc.label || ''));
       }
       applyAddressSync();
+      applyBuildingSync();
       return true;
     }catch(e){ return false; }
   }
@@ -1255,6 +1377,7 @@
     $('multiFields').classList.remove('show');
     $('otherChargesList').innerHTML = '';
     applyAddressSync();
+    applyBuildingSync();
     render();
     saveForm();
   }
@@ -1389,6 +1512,19 @@
   $('landlordAddress').addEventListener('input', function(){
     if($('sameAsLandlordAddress').checked){
       applyAddressSync();
+      render();
+      saveForm();
+    }
+  });
+
+  $('sameAsLandlordBuilding').addEventListener('change', function(){
+    applyBuildingSync();
+    render();
+    saveForm();
+  });
+  $('landlordBuildingName').addEventListener('input', function(){
+    if($('sameAsLandlordBuilding').checked){
+      applyBuildingSync();
       render();
       saveForm();
     }
