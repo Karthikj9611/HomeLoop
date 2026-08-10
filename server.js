@@ -3126,12 +3126,15 @@ const PaymentSettings = mongoose.model('PaymentSettings', PaymentSettingsSchema)
 // account either via PUT /api/admin/payment-settings once that screen
 // exists, or by editing this object directly, then delete this block.
 const DUMMY_PAYMENT_DETAILS = {
-  upiId:             '9611459960@yescred', // ⚠️ placeholder — replace with your real UPI ID
-  qrImageUrl:        '',                        // left blank on purpose: a fake QR image would be scannable and misleading
-  bankAccountName:   'HomeLoop',       // ⚠️ placeholder
-  bankAccountNumber: '50100537331106',             // ⚠️ placeholder
-  bankIfsc:          'HDFC0000133',              // ⚠️ placeholder
-  paymentPhone:      '9611459960',               // ⚠️ placeholder
+  upiId:             '8553261336@sbi',
+  qrImageUrl:        '',
+  bankAccountName:   'Prashanth B',
+  bankAccountNumber: '45271244115',
+  bankAccountType:   'Savings Account',
+  bankName:          'SBI',
+  bankBranch:        'PBB BELLANDUR',
+  bankIfsc:          'SBIN0017608',
+  paymentPhone:      '8553261336',
 };
 app.get('/api/payment-settings', async (req, res) => {
   try {
