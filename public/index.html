@@ -3380,8 +3380,9 @@ ul{list-style:none}
   .prop-loc-area .prop-loc-full{display:none}
   .prop-loc-area .prop-loc-short{display:block}
   .prop-stats{gap:2px 0;margin-top:5px}
-  .prop-stat{font-size:11px;padding:0 6px 0 0}
-  .prop-stat-icon{width:19px;height:19px}
+  .prop-stat{font-size:11px;padding:0 4px 0 0;gap:3px}
+  .prop-stat-icon{width:15px;height:15px;font-size:11px}
+  .prop-stats-more{font-size:11px}
   .prop-chip{font-size:11px;padding:2px 8px 2px 3px}
   .chip-ico-wrap{width:16px;height:16px}
   /* The amenity/furnishing chips (furnish, room type, meals, etc.) now live
@@ -8668,7 +8669,7 @@ function priceChipsHTML(p, pType, deposit, maintenance, leaseDur, opts) {
 function fmtLeaseDur(s) {
   if (!s) return '';
   let m = s.match(/^(\d+)\s*Year/i);
-  if (m) return m[1] + ' Yrs';
+  if (m) return m[1] + ' Year' + (m[1] === '1' ? '' : 's');
   m = s.match(/^(\d+)(\+?)\s*Month/i);
   if (m) return m[1] + m[2] + ' Mo';
   return s;
