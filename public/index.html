@@ -6698,14 +6698,21 @@ function renderCards() {
   }
   empty.classList.remove('show');
 
-  const promoted = list.filter(p => p.promoted);
+  // On the Promoted tab, `list` is already scoped to promoted items only,
+  // so every card would land in both the "Promoted listings" highlight
+  // bucket AND its own Rent/Lease/PG/Short Stay section — pure duplication.
+  // Skip the highlight bucket there and let items fall through to their
+  // normal type sections. On "All", `list` spans every type, so keeping
+  // promoted items in both the highlights section and their type section
+  // is intentional (that's what makes that view comprehensive).
+  const promoted = currentTab === 'Promoted' ? [] : list.filter(p => p.promoted);
   // On a single-type tab (Rent/Lease/PG/ShortStay), `list` is already
   // scoped to just that type, so the "promoted" and typed buckets below
   // would otherwise be drawing from the exact same set — showing every
   // promoted item twice. Exclude that overlap only on those tabs; on
-  // All/Promoted, `list` spans multiple types and showing a promoted
+  // All, `list` spans multiple types and showing a promoted
   // property in both the highlights section and its type section is
-  // intentional (that's what makes those views comprehensive).
+  // intentional (that's what makes that view comprehensive).
   const dedupe = ['Rent', 'Lease', 'PG', 'ShortStay'].includes(currentTab);
   const groups = {
     promoted,
