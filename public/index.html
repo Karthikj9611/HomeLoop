@@ -633,11 +633,11 @@ ul{list-style:none}
 .prop-img-price .price-ico-3d svg{width:12px;height:12px;stroke:#fff;fill:none;stroke-width:2}
 .prop-img-price .price-text-stack{display:block;line-height:1.2;min-width:0}
 .prop-img-price .prop-price-chips .price-chip:last-child:not(:only-child) .price-text-stack{text-align:right}
-.prop-img-price .prop-price{
+.prop-img-price .prop-price-chips .price-chip .prop-price{
   background:none;color:#fff;-webkit-text-fill-color:#fff;
-  text-shadow:none;font-size:14.5px;white-space:nowrap;font-weight:800;letter-spacing:-.01em;
+  text-shadow:none;font-size:11px;white-space:nowrap;font-weight:800;letter-spacing:-.01em;
 }
-.prop-img-price .prop-price-unit{
+.prop-img-price .prop-price-chips .price-chip .prop-price-unit{
   font-size:11px;font-weight:600;color:rgba(255,255,255,.85);
   -webkit-text-fill-color:rgba(255,255,255,.85);margin-left:3px;
 }
@@ -649,8 +649,8 @@ ul{list-style:none}
    baseline — plain inline text flow, not flexbox, so the browser's own
    font-metrics-aware baseline alignment lines them up (box-alignment like
    flex-start/center ignores font metrics and drifts with size). */
-.prop-img-price .prop-price-chips .prop-deposit-val{font-size:12.5px;font-weight:800;color:#fff;letter-spacing:-.01em}
-.prop-img-price .prop-price-chips .prop-deposit-lbl{font-size:9.5px;font-weight:600;color:rgba(255,255,255,.72);letter-spacing:.03em;text-transform:uppercase;margin-left:3px}
+.prop-img-price .prop-price-chips .prop-deposit-val{font-size:11px;font-weight:800;color:#fff;letter-spacing:-.01em}
+.prop-img-price .prop-price-chips .prop-deposit-lbl{font-size:11px;font-weight:600;color:rgba(255,255,255,.72);letter-spacing:.03em;margin-left:3px}
 .prop-img-price .price-chip svg{stroke:#fff;opacity:.9}
 /* The ribbon's own width (not the browser viewport) decides full vs. short
    labels — a narrow card in a multi-column desktop grid needs the same
@@ -804,6 +804,9 @@ ul{list-style:none}
 .prop-price-chips .prop-deposit-val{font-size:13px;color:var(--text)}
 .prop-price-chips .prop-deposit-lbl{font-size:11px}
 .unit-short{display:none}
+/* Desktop default: show the full comma-separated rupee amount (₹30,000);
+   the abbreviated K/L/Cr form is mobile-only (see max-width:640px block). */
+.amt-short{display:none}
 .price-chip svg{width:12px;height:12px;stroke:#a85c6e;fill:none;stroke-width:2;flex-shrink:0}
 .prop-price{
   font-size:15px;font-weight:800;
@@ -3364,6 +3367,10 @@ ul{list-style:none}
      each price chip on a single line instead of wrapping. */
   .unit-full{display:none}
   .unit-short{display:inline}
+  /* Mobile: abbreviate the rupee amount (₹1L) instead of the full figure —
+     the compact 2-up card doesn't have room for ₹1,00,000. */
+  .amt-full{display:none}
+  .amt-short{display:inline}
   /* ...except rent's unit and the deposit label in the ribbon, which stay
      full text ("Month" / "Deposit") even here — only maintenance shortens
      to "Maint" at this width. */
@@ -8530,6 +8537,19 @@ function fmtRupee(n) {
   return '₹' + n;
 }
 
+// Responsive rupee amount: shows the full comma-separated figure (₹30,000)
+// on desktop, and falls back to fmtRupee()'s abbreviated K/L/Cr form
+// (₹1L) on mobile, where card width is tight. Both spans are always
+// rendered; CSS (.amt-full / .amt-short, see the max-width:640px block)
+// decides which one is visible — same pattern as .unit-full/.unit-short.
+function fmtRupeeResponsive(n, noSymbol) {
+  n = Number(n) || 0;
+  const sym = noSymbol ? '' : '₹';
+  const full = sym + n.toLocaleString('en-IN');
+  const short = (noSymbol ? fmtRupee(n).replace('₹','') : fmtRupee(n));
+  return `<span class="amt-full">${full}</span><span class="amt-short">${short}</span>`;
+}
+
 // Builds the price row as equally-divided chip cells: rent always shown,
 // plus maintenance and/or security deposit when applicable. Column count
 // (and therefore each chip's width) adapts to how many are actually present
@@ -8544,20 +8564,20 @@ function priceChipsHTML(p, pType, deposit, maintenance, leaseDur, opts) {
   const rentChip = `<div class="prop-chip price-chip price-chip-rent">
     <span class="price-ico-3d">${rentSvg}</span>
     <span class="price-text-stack">
-      <span class="prop-price">${fmtRupee(p.price?.rent||0)}<span class="prop-price-unit">/<span class="unit-full">${rentUnit}</span><span class="unit-short">${rentUnitShort}</span></span></span>
+      <span class="prop-price">${fmtRupeeResponsive(p.price?.rent||0, true)}<span class="prop-price-unit">/ <span class="unit-full">${rentUnit}</span><span class="unit-short">${rentUnitShort}</span></span></span>
     </span>
   </div>`;
   const maintChip = maintenance > 0 ? `<div class="prop-chip price-chip" title="Monthly maintenance">
     <span class="price-ico-3d">${maintSvg}</span>
     <span class="price-text-stack">
-      <span class="prop-deposit-val">${fmtRupee(maintenance)}</span>
+      <span class="prop-deposit-val">${fmtRupeeResponsive(maintenance, true)}</span>
       <span class="prop-deposit-lbl"><span class="unit-full">Maintenance</span><span class="unit-short">Maint</span></span>
     </span>
   </div>` : '';
   const depositChip = deposit > 0 ? `<div class="prop-chip price-chip" title="Security deposit">
     <span class="price-ico-3d">${depositSvg}</span>
     <span class="price-text-stack">
-      <span class="prop-deposit-val">${fmtRupee(deposit)}</span>
+      <span class="prop-deposit-val">${fmtRupeeResponsive(deposit, true)}</span>
       <span class="prop-deposit-lbl"><span class="unit-full">Deposit</span><span class="unit-short">SD</span></span>
     </span>
   </div>` : '';
