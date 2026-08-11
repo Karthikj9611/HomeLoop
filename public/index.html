@@ -6610,6 +6610,7 @@ function renderRecentlyViewed() {
   section.style.display = '';
   strip.innerHTML = ids.map(id => recentlyViewedCardHTML(recentlyViewedData[id])).join('');
   requestAnimationFrame(syncRecentlyViewedCardWidth);
+  requestAnimationFrame(processAllStatsRows);
 }
 // Keeps Recently Viewed cards exactly as wide as the real property cards
 // currently on screen (the property grid is fluid — auto-fill(minmax(260px,1fr))
@@ -12714,12 +12715,14 @@ function _autoSlidePropRows(){
 })();
 setInterval(_autoSlidePropRows, 32000);
 
-/* ─── Card spec row ("prop-stats") overflow → "+N" popup ────────────────
-   The row no longer slides/scrolls; whatever doesn't fit on one line is
-   hidden and collapsed into a "+N" chip. Clicking it opens the complete
+/* ─── Card spec row ("prop-stats") → cap at 4 + "More" popup ────────────
+   Always show at most the first 4 stat items; anything beyond that is
+   hidden and collapsed into a "More" chip, regardless of whether the row
+   would have had room to fit them. Clicking "More" opens the complete
    row (every item, not just the hidden ones) centered in a popup. Runs
    after every renderCards() and on resize, since prop-stats width is
    fluid with the grid's column count. */
+const PROP_STATS_MAX_VISIBLE = 4;
 function processStatsRow(row){
   // Cache the row's full original item list (once) so re-processing on
   // resize, or opening the popup, always has the complete set — not just
@@ -12728,7 +12731,12 @@ function processStatsRow(row){
     row._allItemsHTML = Array.from(row.children).map(el => el.outerHTML);
   }
   row.innerHTML = row._allItemsHTML.join('');
-  if (row.scrollWidth <= row.clientWidth + 1) return; // everything already fits
+  const items = Array.from(row.children);
+  if (items.length <= PROP_STATS_MAX_VISIBLE) return; // nothing to trim
+
+  for (let i = PROP_STATS_MAX_VISIBLE; i < items.length; i++) {
+    items[i].style.display = 'none';
+  }
 
   const moreChip = document.createElement('span');
   moreChip.className = 'prop-stats-more';
@@ -12740,13 +12748,6 @@ function processStatsRow(row){
   };
   moreChip.textContent = 'More';
   row.appendChild(moreChip);
-
-  const items = Array.from(row.children).filter(el => el !== moreChip);
-  let hidden = 0;
-  for (let i = items.length - 1; i >= 0 && row.scrollWidth > row.clientWidth; i--) {
-    items[i].style.display = 'none';
-    hidden++;
-  }
 }
 function processAllStatsRows(){
   document.querySelectorAll('.prop-stats').forEach(processStatsRow);
