@@ -3368,6 +3368,14 @@ ul{list-style:none}
      still fits fine at this ratio since it only needs ~140px of height. */
   .prop-grid:not(.list-view) .prop-img,
   .recently-viewed-strip .prop-img{aspect-ratio:1/1}
+  /* Mobile's 2-up grid is short enough (see above) that the floating
+     right-badge stack — now up to 5 items deep with the type-letter badge
+     added above the heart — was tall enough to spill past the image and
+     overlap the price ribbon underneath it. Scaling the whole stack down
+     (anchored top-right, so its top-right corner stays put) shrinks every
+     icon and the gaps between them together, without needing to hand-tune
+     each icon's own width/height/svg rules individually. */
+  .prop-right-badges{transform:scale(.78);transform-origin:top right}
   .prop-card{min-height:0}
   .view-toggle{display:none}
   .prop-grid.list-view{grid-template-columns:1fr 1fr;gap:10px}
