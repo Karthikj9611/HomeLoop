@@ -346,7 +346,7 @@
   }
   .btn-download:hover{filter:brightness(1.06);box-shadow:0 6px 20px -2px color-mix(in srgb, var(--brand) 55%, transparent)}
   .btn-download:active{transform:scale(.99)}
-  .btn-download:disabled{background:var(--ink-3);cursor:not-allowed;box-shadow:none;filter:none}
+  .btn-download:disabled, .btn-download.is-disabled{background:var(--ink-3);cursor:not-allowed;box-shadow:none;filter:none}
   .btn-clear{
     flex:1;height:46px;
     background:var(--tint);
@@ -373,7 +373,7 @@
   .btn-whatsapp svg{width:16px;height:16px}
   .btn-whatsapp:hover{background:#1ebe5a}
   .btn-whatsapp:active{transform:scale(.96)}
-  .btn-whatsapp:disabled{background:var(--ink-3);cursor:not-allowed}
+  .btn-whatsapp:disabled, .btn-whatsapp.is-disabled{background:var(--ink-3);cursor:not-allowed}
 
   /* ============ CONFIRM MODAL ============ */
   .confirm-overlay{
@@ -557,6 +557,14 @@
     .r-extra{grid-template-columns:1fr}
     .download-bar{width:100%;border-right:none}
   }
+
+  @media print{
+    body{background:#fff}
+    .form-panel{display:none}
+    .wrap{display:block;height:auto;overflow:visible}
+    .preview-panel{overflow:visible;padding:0;background:#fff}
+    .receipt{box-shadow:none;margin:0}
+  }
 </style>
 </head>
 <body>
@@ -571,12 +579,12 @@
     <div class="card" style="--ic-bg:var(--blue-bg);--ic-fg:var(--blue)">
       <div class="section-label"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.4"/><path d="M5 20c0-3.6 3.1-6.2 7-6.2s7 2.6 7 6.2"/></svg></span>Owner details</div>
       <div class="field">
-        <label>Name <span class="req">*</span></label>
+        <label for="landlordName">Name <span class="req">*</span></label>
         <input id="landlordName" />
       </div>
       <div class="row2">
         <div class="field">
-          <label>Mobile <span class="req">*</span></label>
+          <label for="landlordMobile">Mobile <span class="req">*</span></label>
           <div class="phone-wrap">
             <span class="cc">+91</span>
             <input id="landlordMobile" type="tel" inputmode="numeric" maxlength="10" required />
@@ -586,20 +594,20 @@
           </div>
         </div>
         <div class="field">
-          <label>Email</label>
+          <label for="landlordEmail">Email</label>
           <input id="landlordEmail" type="email" />
         </div>
       </div>
       <div class="field">
-        <label>Building <span class="req">*</span></label>
+        <label for="landlordBuildingName">Building <span class="req">*</span></label>
         <input id="landlordBuildingName" />
       </div>
       <div class="field">
-        <label>Address <span class="req">*</span></label>
+        <label for="landlordAddress">Address <span class="req">*</span></label>
         <textarea id="landlordAddress" rows="3"></textarea>
       </div>
       <div class="field">
-        <label>PAN <span class="hint">(needed for HRA &gt; ₹1L/yr)</span></label>
+        <label for="landlordPAN">PAN <span class="hint">(needed for HRA &gt; ₹1L/yr)</span></label>
         <input id="landlordPAN" maxlength="10" style="text-transform:uppercase" />
       </div>
     </div>
@@ -607,12 +615,12 @@
     <div class="card" style="--ic-bg:var(--amber-bg);--ic-fg:var(--amber)">
       <div class="section-label"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.4"/><path d="M5 20c0-3.6 3.1-6.2 7-6.2s7 2.6 7 6.2"/></svg></span>Tenant details</div>
       <div class="field">
-        <label>Name <span class="req">*</span></label>
+        <label for="tenantName">Name <span class="req">*</span></label>
         <input id="tenantName" />
       </div>
       <div class="row2">
         <div class="field">
-          <label>Mobile <span class="req">*</span></label>
+          <label for="tenantMobile">Mobile <span class="req">*</span></label>
           <div class="phone-wrap">
             <span class="cc">+91</span>
             <input id="tenantMobile" type="tel" inputmode="numeric" maxlength="10" required />
@@ -622,7 +630,7 @@
           </div>
         </div>
         <div class="field">
-          <label>Email</label>
+          <label for="tenantEmail">Email</label>
           <input id="tenantEmail" type="email" />
         </div>
       </div>
@@ -631,11 +639,11 @@
     <div class="card" style="--ic-bg:var(--brand-light);--ic-fg:var(--brand)">
       <div class="section-label"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11.5 12 4l8 7.5"/><path d="M6 10v9a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-9"/><path d="M10 20v-6h4v6"/></svg></span>Property &amp; rent</div>
       <div class="field">
-        <label>Building <span class="req">*</span></label>
+        <label for="buildingName">Building <span class="req">*</span></label>
         <input id="buildingName" />
       </div>
       <div class="field">
-        <label>Address <span class="req">*</span></label>
+        <label for="propertyAddress">Address <span class="req">*</span></label>
         <textarea id="propertyAddress" rows="3"></textarea>
         <label class="inline-check">
           <input type="checkbox" id="sameAsLandlordAddress" />
@@ -644,14 +652,14 @@
       </div>
       <div class="row2">
         <div class="field amt-field">
-          <label>Rent <span class="req">*</span></label>
+          <label for="rentAmount">Rent <span class="req">*</span></label>
           <div class="amt-wrap">
           <span class="cur">₹</span>
           <input id="rentAmount" type="number" min="0" />
           </div>
         </div>
         <div class="field">
-          <label>Mode <span class="req">*</span></label>
+          <label for="paymentMode">Mode <span class="req">*</span></label>
           <select id="paymentMode">
             <option>Cash</option>
             <option selected>NEFT</option>
@@ -666,14 +674,14 @@
       <div class="section-label"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v17l-3-2-3 2-3-2-3 2Z"/><path d="M9 8h6M9 12h6"/></svg></span>Additional charges</div>
       <div class="row2">
         <div class="field amt-field">
-          <label>Electricity</label>
+          <label for="electricityCharge">Electricity</label>
           <div class="amt-wrap">
           <span class="cur">₹</span>
           <input id="electricityCharge" type="number" min="0" />
           </div>
         </div>
         <div class="field amt-field">
-          <label>Water</label>
+          <label for="waterCharge">Water</label>
           <div class="amt-wrap">
           <span class="cur">₹</span>
           <input id="waterCharge" type="number" min="0" />
@@ -682,14 +690,14 @@
       </div>
       <div class="row2">
         <div class="field amt-field">
-          <label>Sanitary</label>
+          <label for="sanitaryCharge">Sanitary</label>
           <div class="amt-wrap">
           <span class="cur">₹</span>
           <input id="sanitaryCharge" type="number" min="0" />
           </div>
         </div>
         <div class="field amt-field">
-          <label>Parking</label>
+          <label for="parkingCharge">Parking</label>
           <div class="amt-wrap">
           <span class="cur">₹</span>
           <input id="parkingCharge" type="number" min="0" />
@@ -698,7 +706,7 @@
       </div>
       <div class="row2">
         <div class="field amt-field">
-          <label>Maintenance</label>
+          <label for="maintenanceCharge">Maintenance</label>
           <div class="amt-wrap">
           <span class="cur">₹</span>
           <input id="maintenanceCharge" type="number" min="0" />
@@ -722,11 +730,11 @@
       <div id="singleFields">
         <div class="row2">
           <div class="field">
-            <label>From <span class="req">*</span></label>
+            <label for="periodFrom">From <span class="req">*</span></label>
             <input id="periodFrom" type="date" />
           </div>
           <div class="field">
-            <label>To <span class="req">*</span></label>
+            <label for="periodTo">To <span class="req">*</span></label>
             <input id="periodTo" type="date" />
           </div>
         </div>
@@ -734,21 +742,21 @@
 
       <div class="row2 multi-fields" id="multiFields">
         <div class="field">
-          <label>From <span class="req">*</span></label>
+          <label for="multiFrom">From <span class="req">*</span></label>
           <input id="multiFrom" type="date" />
         </div>
         <div class="field">
-          <label>To <span class="req">*</span></label>
+          <label for="multiTo">To <span class="req">*</span></label>
           <input id="multiTo" type="date" />
         </div>
         <div class="field">
-          <label>Periods</label>
+          <label for="monthsCount">Periods</label>
           <input id="monthsCount" type="number" min="1" max="24" value="12" />
         </div>
       </div>
 
       <div class="field">
-        <label>Date</label>
+        <label for="paymentDate">Date</label>
         <input id="paymentDate" type="date" />
       </div>
 
@@ -833,6 +841,16 @@
     rowEl.querySelectorAll('input').forEach(el=>{
       el.addEventListener('input', () => { render(); saveForm(); });
     });
+    const amountEl = rowEl.querySelector('.otherChargeAmount');
+    if(amountEl){
+      amountEl.addEventListener('blur', () => {
+        if(amountEl.value !== '' && parseFloat(amountEl.value) < 0){
+          amountEl.value = '';
+          render();
+          saveForm();
+        }
+      });
+    }
     rowEl.querySelector('.remove-other-btn').addEventListener('click', () => {
       rowEl.remove();
       render();
@@ -910,6 +928,14 @@
   }
   function receiptNo(seed){
     return 'RR-' + new Date().getFullYear() + '-' + String(seed).padStart(4,'0');
+  }
+  // e.g. "2026-08-11" -> "Aug2026", for use in filenames
+  function monthYearLabel(dstr){
+    if(!dstr) return '';
+    const d = new Date(dstr + 'T00:00:00');
+    if(isNaN(d)) return '';
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return months[d.getMonth()] + d.getFullYear();
   }
   function money(n){
     return '₹' + (n||0).toLocaleString('en-IN');
@@ -1052,44 +1078,107 @@
     return arr;
   }
 
-  const REQUIRED_FIELD_MESSAGES = {
-    tenantName: 'Tenant name is required',
-    tenantMobile: 'Valid 10-digit mobile number is required',
-    landlordName: 'Owner name is required',
-    landlordMobile: 'Valid 10-digit mobile number is required',
-    landlordBuildingName: 'Building is required',
-    landlordAddress: 'Address is required',
-    buildingName: 'Building is required',
-    propertyAddress: 'Address is required',
-    paymentMode: 'Payment mode is required',
-    rentAmount: 'Rent amount is required',
-    periodFrom: 'From date is required',
-    periodTo: 'To date is required',
-    multiFrom: 'From date is required',
-    multiTo: 'To date is required'
+  const FIELD_LABELS = {
+    tenantName: 'Tenant name',
+    tenantMobile: 'Tenant mobile',
+    tenantEmail: 'Tenant email',
+    landlordName: 'Owner name',
+    landlordMobile: 'Owner mobile',
+    landlordEmail: 'Owner email',
+    landlordBuildingName: 'Owner building',
+    landlordAddress: 'Owner address',
+    landlordPAN: 'Owner PAN',
+    buildingName: 'Property building',
+    propertyAddress: 'Property address',
+    paymentMode: 'Payment mode',
+    rentAmount: 'Rent amount',
+    periodFrom: 'From date',
+    periodTo: 'To date',
+    multiFrom: 'From date',
+    multiTo: 'To date',
+    electricityCharge: 'Electricity charge',
+    waterCharge: 'Water charge',
+    sanitaryCharge: 'Sanitary charge',
+    parkingCharge: 'Parking charge',
+    maintenanceCharge: 'Maintenance charge'
   };
 
-  function isFieldValid(id, d){
-    if(id === 'tenantMobile' || id === 'landlordMobile') return /^\d{10}$/.test(d[id]);
-    return !!(d[id] && String(d[id]).trim());
+  const MOBILE_REGEX = /^[6-9]\d{9}$/;
+  const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const PAN_REGEX = /^[A-Za-z]{5}[0-9]{4}[A-Za-z]$/;
+
+  // Order here also controls which field gets focused first when several
+  // are invalid at once.
+  const VALIDATED_ORDER = [
+    'tenantName','tenantMobile','tenantEmail',
+    'landlordName','landlordMobile','landlordEmail','landlordBuildingName','landlordAddress','landlordPAN',
+    'buildingName','propertyAddress','paymentMode','rentAmount',
+    'electricityCharge','waterCharge','sanitaryCharge','parkingCharge','maintenanceCharge',
+    'periodFrom','periodTo','multiFrom','multiTo'
+  ];
+
+  // Returns an error message for this field's current value, or null if it's fine.
+  // Required fields error when empty; optional fields (email, PAN, charges) only
+  // error when a value is present but malformed.
+  function fieldIssue(id, d){
+    const val = d[id];
+    switch(id){
+      case 'tenantName':
+      case 'landlordName':
+      case 'landlordBuildingName':
+      case 'landlordAddress':
+      case 'buildingName':
+      case 'propertyAddress':
+      case 'paymentMode':
+        return (val && String(val).trim()) ? null : `${FIELD_LABELS[id]} is required`;
+      case 'tenantMobile':
+      case 'landlordMobile':
+        if(!val) return `${FIELD_LABELS[id]} is required`;
+        return MOBILE_REGEX.test(val) ? null : 'Enter a valid 10-digit mobile number';
+      case 'rentAmount':
+        return parseFloat(val) > 0 ? null : 'Rent amount must be greater than 0';
+      case 'periodFrom':
+        if(d.isMulti) return null;
+        return val ? null : 'From date is required';
+      case 'multiFrom':
+        if(!d.isMulti) return null;
+        return val ? null : 'From date is required';
+      case 'periodTo':
+        if(d.isMulti) return null;
+        return val ? null : 'To date is required';
+      case 'multiTo':
+        if(!d.isMulti) return null;
+        return val ? null : 'To date is required';
+      case 'landlordEmail':
+      case 'tenantEmail':
+        if(!val) return null;
+        return EMAIL_REGEX.test(val) ? null : 'Enter a valid email address';
+      case 'landlordPAN':
+        if(!val) return null;
+        return PAN_REGEX.test(val) ? null : 'Enter a valid PAN (e.g. ABCDE1234F)';
+      case 'electricityCharge':
+      case 'waterCharge':
+      case 'sanitaryCharge':
+      case 'parkingCharge':
+      case 'maintenanceCharge':
+        return parseFloat(val) >= 0 ? null : `${FIELD_LABELS[id]} cannot be negative`;
+      default:
+        return null;
+    }
   }
 
-  function getMissingFields(d){
-    const missing = [];
-    ['tenantName','landlordName','tenantMobile','landlordMobile','landlordBuildingName','landlordAddress','buildingName','propertyAddress','paymentMode','rentAmount']
-      .forEach(id => { if(!isFieldValid(id, d)) missing.push(id); });
-    if(d.isMulti){
-      if(!isFieldValid('multiFrom', d)) missing.push('multiFrom');
-      if(!isFieldValid('multiTo', d)) missing.push('multiTo');
-    } else {
-      if(!isFieldValid('periodFrom', d)) missing.push('periodFrom');
-      if(!isFieldValid('periodTo', d)) missing.push('periodTo');
-    }
-    return missing;
+  function isFieldValid(id, d){
+    return fieldIssue(id, d) === null;
+  }
+
+  function getFieldIssues(d){
+    return VALIDATED_ORDER
+      .map(id => ({ id, msg: fieldIssue(id, d) }))
+      .filter(issue => issue.msg !== null);
   }
 
   function validate(d){
-    return getMissingFields(d).length === 0;
+    return getFieldIssues(d).length === 0;
   }
 
   function fieldWrap(id){
@@ -1101,6 +1190,8 @@
     const wrap = fieldWrap(id);
     if(!wrap) return;
     wrap.classList.add('field-error');
+    const inputEl = $(id);
+    if(inputEl) inputEl.setAttribute('aria-invalid', 'true');
     let msgEl = wrap.querySelector('.field-error-msg');
     if(!msgEl){
       msgEl = document.createElement('div');
@@ -1114,6 +1205,8 @@
     const wrap = fieldWrap(id);
     if(!wrap) return;
     wrap.classList.remove('field-error');
+    const inputEl = $(id);
+    if(inputEl) inputEl.removeAttribute('aria-invalid');
     const msgEl = wrap.querySelector('.field-error-msg');
     if(msgEl) msgEl.remove();
   }
@@ -1121,6 +1214,8 @@
   function clearAllFieldErrors(){
     document.querySelectorAll('.field.field-error').forEach(wrap => {
       wrap.classList.remove('field-error');
+      const inputEl = wrap.querySelector('[id]');
+      if(inputEl) inputEl.removeAttribute('aria-invalid');
       const msgEl = wrap.querySelector('.field-error-msg');
       if(msgEl) msgEl.remove();
     });
@@ -1129,7 +1224,7 @@
   // As the person fixes a field, drop its error state immediately rather
   // than waiting for the next download/share attempt.
   function refreshFieldErrorsLive(d){
-    Object.keys(REQUIRED_FIELD_MESSAGES).forEach(id => {
+    VALIDATED_ORDER.forEach(id => {
       const wrap = fieldWrap(id);
       if(wrap && wrap.classList.contains('field-error') && isFieldValid(id, d)){
         clearFieldError(id);
@@ -1137,26 +1232,49 @@
     });
   }
 
-  function showFieldErrors(missingIds){
-    missingIds.forEach(id => setFieldError(id, REQUIRED_FIELD_MESSAGES[id] || 'This field is required'));
-    const firstEl = $(missingIds[0]);
+  function showFieldErrors(issues){
+    issues.forEach(issue => setFieldError(issue.id, issue.msg));
+    const firstEl = $(issues[0].id);
     if(firstEl){
       firstEl.scrollIntoView({behavior:'smooth', block:'center'});
       firstEl.focus({preventScroll:true});
     }
   }
 
+  function updateErrorBanner(issues){
+    const el = $('errMsg');
+    if(!issues.length){
+      el.classList.remove('show');
+      return;
+    }
+    const names = issues.map(issue => FIELD_LABELS[issue.id] || issue.id);
+    const unique = [...new Set(names)];
+    el.textContent = unique.length === 1
+      ? `Please check: ${unique[0]}.`
+      : `Please check: ${unique.join(', ')}.`;
+    el.classList.add('show');
+  }
+
   function updateDownloadState(d){
     const btn = $('downloadBtn');
     const waBtn = $('whatsappBtn');
-    const valid = validate(d);
+    const issues = getFieldIssues(d);
+    const valid = issues.length === 0;
+    // We deliberately don't set the native `disabled` attribute here: a
+    // disabled button can't be clicked (not even programmatically), so if
+    // we disabled it outright the person could never trigger the
+    // per-field error highlighting by clicking Download/Share while
+    // something's missing. Instead we style it as disabled but leave it
+    // clickable, and downloadPDF/sharePDF re-check validity themselves.
     if(btn.dataset.generating !== '1'){
-      btn.disabled = !valid;
+      btn.classList.toggle('is-disabled', !valid);
+      btn.setAttribute('aria-disabled', String(!valid));
     }
     if(waBtn.dataset.generating !== '1'){
-      waBtn.disabled = !valid;
+      waBtn.classList.toggle('is-disabled', !valid);
+      waBtn.setAttribute('aria-disabled', String(!valid));
     }
-    $('errMsg').classList.toggle('show', !valid);
+    updateErrorBanner(issues);
     refreshFieldErrorsLive(d);
   }
 
@@ -1212,7 +1330,12 @@
   }
 
   function pdfFilename(d){
-    return 'Rent-Receipt-' + (d.tenantName || 'tenant').replace(/\s+/g,'_') + '.pdf';
+    const period = d.isMulti
+      ? (d.multiFrom ? monthYearLabel(d.multiFrom) : '')
+      : (d.periodFrom ? monthYearLabel(d.periodFrom) : '');
+    const parts = ['Rent-Receipt', (d.tenantName || 'tenant').replace(/\s+/g,'_')];
+    if(period) parts.push(period);
+    return parts.join('-') + '.pdf';
   }
 
   function showShareStatus(msg){
@@ -1225,19 +1348,22 @@
   }
 
   async function downloadPDF(){
+    const btn = $('downloadBtn');
+    if(btn.dataset.generating === '1') return; // already in progress — ignore repeat clicks
     const d = getFormData();
-    const missing = getMissingFields(d);
-    if(missing.length){
-      $('errMsg').classList.add('show');
-      showFieldErrors(missing);
+    const issues = getFieldIssues(d);
+    if(issues.length){
+      updateErrorBanner(issues);
+      showFieldErrors(issues);
       return;
     }
-    $('errMsg').classList.remove('show');
+    updateErrorBanner([]);
     clearAllFieldErrors();
+    hideShareStatus();
 
-    const btn = $('downloadBtn');
     btn.dataset.generating = '1';
-    btn.disabled = true;
+    btn.classList.add('is-disabled');
+    btn.setAttribute('aria-disabled', 'true');
     btn.textContent = 'Generating…';
 
     const pdf = await buildPdfDoc();
@@ -1246,23 +1372,27 @@
     btn.dataset.generating = '0';
     btn.textContent = '⬇ Download PDF';
     updateDownloadState(getFormData());
+    showShareStatus('✓ Receipt downloaded.');
+    setTimeout(hideShareStatus, 3500);
   }
 
   async function sharePDF(){
+    const waBtn = $('whatsappBtn');
+    if(waBtn.dataset.generating === '1') return; // already in progress — ignore repeat clicks
     const d = getFormData();
-    const missing = getMissingFields(d);
-    if(missing.length){
-      $('errMsg').classList.add('show');
-      showFieldErrors(missing);
+    const issues = getFieldIssues(d);
+    if(issues.length){
+      updateErrorBanner(issues);
+      showFieldErrors(issues);
       return;
     }
-    $('errMsg').classList.remove('show');
+    updateErrorBanner([]);
     clearAllFieldErrors();
     hideShareStatus();
 
-    const waBtn = $('whatsappBtn');
     waBtn.dataset.generating = '1';
-    waBtn.disabled = true;
+    waBtn.classList.add('is-disabled');
+    waBtn.setAttribute('aria-disabled', 'true');
 
     const pdf = await buildPdfDoc();
     const fname = pdfFilename(d);
@@ -1280,6 +1410,8 @@
           text:'Rent receipt for ' + (d.tenantName || 'tenant')
         });
         sharedNatively = true;
+        showShareStatus('✓ Shared successfully.');
+        setTimeout(hideShareStatus, 3500);
       }catch(err){
         if(err && err.name === 'AbortError'){
           // person cancelled the share sheet — do nothing further
@@ -1492,6 +1624,12 @@
   });
 
   $('sameAsLandlordAddress').addEventListener('change', function(){
+    if(!this.checked){
+      // Give the person a clean slate to type their own building/address,
+      // rather than leaving the just-copied landlord values sitting there.
+      $('propertyAddress').value = '';
+      $('buildingName').value = '';
+    }
     applyAddressSync();
     render();
     saveForm();
