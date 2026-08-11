@@ -1853,8 +1853,7 @@ ul{list-style:none}
 .compare-diff-toggle.active{
   background:var(--brand-light);border-color:var(--brand);color:var(--brand);
 }
-.compare-diff-toggle .compare-diff-dot{background:var(--border-2)}
-.compare-diff-toggle.active .compare-diff-dot{background:var(--brand)}
+.compare-diff-icon{width:14px;height:14px;stroke:currentColor;stroke-width:2;flex-shrink:0}
 .compare-table-wrap{overflow-x:auto;padding:0 24px 24px;overscroll-behavior-x:contain}
 .compare-table{width:100%;border-collapse:separate;border-spacing:0;min-width:560px}
 .compare-table th,.compare-table td{
@@ -3488,9 +3487,29 @@ ul{list-style:none}
   
   .shortlist-panel{width:100%}
   .menu-panel{width:100%}
-  .compare-bar{bottom:68px;width:calc(100% - 24px)}
-  .compare-bar-thumbs{max-width:46vw}
   .compare-table th.compare-col,.compare-empty-cell,.compare-add-slot{min-width:140px}
+  .compare-row-label,.compare-section-row td{position:static;left:auto}
+  .compare-bar{
+    bottom:68px;width:calc(100% - 24px);
+    flex-wrap:wrap;row-gap:10px;
+    border-radius:20px;padding:14px;
+    justify-content:center;
+  }
+  .compare-bar-thumbs{
+    flex:0 0 100%;max-width:100%;
+    overflow-x:visible;flex-wrap:wrap;
+    justify-content:center;
+  }
+  .compare-modal-header{padding:14px 16px}
+  .compare-modal-header-actions{gap:8px}
+  .compare-diff-text,.compare-share-text{display:none}
+  .compare-diff-toggle,.compare-share-btn,.compare-modal-header-actions .modal-close{
+    width:36px;height:36px;padding:0;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;gap:0;flex-shrink:0;
+  }
+  .compare-diff-icon{width:16px;height:16px}
+  .compare-share-btn svg{width:16px;height:16px}
+  .compare-share-btn{box-shadow:0 3px 10px rgba(24,158,80,.35)}
   .bottom-nav{
     display:flex;
     position:fixed;bottom:0;left:0;right:0;z-index:110;
@@ -6272,11 +6291,12 @@ ul{list-style:none}
       <span class="compare-modal-title">Compare properties</span>
       <div class="compare-modal-header-actions">
         <button class="compare-diff-toggle" id="compareDiffToggle" onclick="toggleCompareDiffOnly()" aria-pressed="false" title="Show only rows that differ">
-          <span class="compare-diff-dot"></span><span>Diffs only</span>
+          <svg class="compare-diff-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="3" width="12" height="12" rx="3"/><rect x="9" y="9" width="12" height="12" rx="3"/></svg>
+          <span class="compare-diff-text">Diffs only</span>
         </button>
-        <button class="compare-share-btn" onclick="shareCompareViaWhatsApp()" aria-label="Share comparison via WhatsApp">
+        <button class="compare-share-btn" onclick="shareCompareViaWhatsApp()" aria-label="Share comparison via WhatsApp" title="Share via WhatsApp">
           <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.6 6.32A8.86 8.86 0 0 0 12.05 4C7.4 4 3.6 7.8 3.6 12.45c0 1.6.45 3.13 1.27 4.45L4 21l4.2-1.1a8.83 8.83 0 0 0 4.07.99h.01c4.65 0 8.45-3.8 8.45-8.45a8.4 8.4 0 0 0-2.93-5.62zM12.06 19.5a7.05 7.05 0 0 1-3.6-.99l-.26-.15-2.67.7.71-2.6-.17-.27a6.99 6.99 0 0 1-1.08-3.74c0-3.86 3.15-7 7.04-7 1.88 0 3.64.73 4.97 2.06a6.96 6.96 0 0 1 2.06 4.96c0 3.87-3.16 7.03-7 7.03zm3.86-5.27c-.21-.1-1.24-.62-1.43-.68-.19-.07-.33-.1-.47.1-.14.21-.54.68-.66.81-.12.14-.24.16-.45.05-.21-.1-.87-.32-1.66-1.03-.61-.55-1.03-1.22-1.15-1.43-.12-.21-.01-.32.1-.43.1-.1.21-.26.32-.39.1-.13.14-.21.21-.36.07-.14.04-.27-.02-.38-.07-.1-.62-1.49-.85-2.04-.18-.43-.36-.37-.5-.38h-.42c-.14 0-.38.05-.58.27-.21.21-.79.77-.79 1.88 0 1.1.81 2.18.92 2.33.12.14 1.58 2.42 3.83 3.3 1.9.75 2.28.6 2.7.56.42-.04 1.36-.55 1.55-1.09.19-.53.19-.98.13-1.08-.05-.1-.21-.16-.43-.27z"/></svg>
-          <span>Share</span>
+          <span class="compare-share-text">Share</span>
         </button>
         <button class="modal-close" onclick="closeCompareModal()" aria-label="Close comparison">
           <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
