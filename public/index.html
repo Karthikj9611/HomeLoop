@@ -749,6 +749,18 @@ ul{list-style:none}
   flex-shrink:0;
   backdrop-filter:blur(6px);
 }
+.prop-badge-type-letter{
+  width:26px;height:26px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:12px;font-weight:800;
+  box-sizing:border-box;
+  flex-shrink:0;
+  backdrop-filter:blur(6px);
+}
+.prop-badge-type-letter.wide{
+  width:auto;min-width:26px;padding:0 8px;border-radius:13px;
+  letter-spacing:.02em;
+}
 .badge-rent{background:linear-gradient(135deg,#c98a9a,#a85c6e);color:#fff;box-shadow:0 2px 6px rgba(168,92,110,.35)}
 .badge-lease{background:linear-gradient(135deg,#a893a0,#8a6b7a);color:#fff;box-shadow:0 2px 6px rgba(138,107,122,.35)}
 .badge-pg{background:linear-gradient(135deg,#8a5c68,#6b3d4a);color:#fff;box-shadow:0 2px 6px rgba(107,61,74,.35)}
@@ -7207,6 +7219,7 @@ function cardHTML(p, compact, extraLeftBadge) {
   const compared = compareSet.has(p.id);
   const lockedType = getCompareType();
   const pType = pTypeLabel(p);
+  const pTypeLetter = {Rent:'R',Lease:'L',PG:'PG',ShortStay:'S'}[pType] || pType[0];
   const compareDisabled = !compared && lockedType && pType !== lockedType;
   const colors = {Rent:'#e8f5ee:#1a6640',Lease:'#dde9fa:#1a4680',PG:'#eee8fa:#4a2a9a',ShortStay:'#e0f7fa:#00646e'};
   const [bg, fg] = (colors[pType]||'#f0f0f0:#333').split(':');
@@ -7275,9 +7288,9 @@ function cardHTML(p, compact, extraLeftBadge) {
       ${priceChipsHTML(p, pType, deposit, maintenance, leaseDur, {ribbon:true})}
       <div class="prop-card-top-row">
         <div class="prop-left-badges">
-          ${(!compact && !['Rent','Lease','PG','ShortStay'].includes(currentTab)) ? `<span class="prop-badge-type badge-${pType.toLowerCase()}">${pType}</span>` : ''}
         </div>
         <div class="prop-right-badges">
+          ${(!compact && !['Rent','Lease','PG','ShortStay'].includes(currentTab)) ? `<span class="prop-badge-type-letter${pTypeLetter.length>1?' wide':''} badge-${pType.toLowerCase()}" title="${pType}">${pTypeLetter}</span>` : ''}
           ${extraLeftBadge || ''}
           <div class="prop-heart${liked?' liked':''}" onclick="event.stopPropagation();toggleShortlist('${p.id}',this)" aria-label="${liked?'Remove from':'Add to'} shortlist">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
