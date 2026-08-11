@@ -1771,21 +1771,26 @@ ul{list-style:none}
 
 /* ─── Compare Bar ──────────────────────────────── */
 .compare-bar{
-  position:fixed;left:50%;bottom:80px;z-index:160;
+  position:fixed;left:50%;bottom:20px;z-index:160;
   transform:translateX(-50%) translateY(120%);
   background:linear-gradient(180deg,#232323,#161616);color:#fff;
   border:1px solid rgba(255,255,255,.08);
-  border-radius:99px;
-  display:flex;align-items:center;justify-content:center;gap:14px;
-  padding:8px 8px 8px 18px;
+  border-radius:20px;
+  display:flex;align-items:center;justify-content:center;
+  flex-wrap:wrap;row-gap:12px;gap:14px;
+  padding:14px 44px 14px 14px;
   box-shadow:0 12px 32px rgba(0,0,0,.35);
   backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
   transition:transform .25s ease,visibility .25s ease;
   visibility:hidden;
-  max-width:calc(100vw - 32px);
+  width:min(420px, calc(100vw - 32px));
 }
 .compare-bar.show{transform:translateX(-50%) translateY(0);visibility:visible}
-.compare-bar-thumbs{display:flex;align-items:center;gap:6px;overflow-x:auto;max-width:38vw;scrollbar-width:none}
+.compare-bar-thumbs{
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  flex:0 0 100%;max-width:100%;
+  flex-wrap:wrap;overflow-x:visible;scrollbar-width:none;
+}
 .compare-bar-thumbs::-webkit-scrollbar{display:none}
 .compare-bar-thumb{
   height:27px;border-radius:99px;
@@ -1802,7 +1807,8 @@ ul{list-style:none}
 .compare-bar-btn{
   background:var(--brand);color:#fff;
   font-size:13px;font-weight:600;
-  padding:9px 18px;border-radius:99px;
+  height:27px;padding:0 18px;border-radius:99px;
+  display:flex;align-items:center;justify-content:center;
   white-space:nowrap;flex-shrink:0;
   box-shadow:0 4px 12px rgba(224,58,82,.35);
   transition:background .12s,box-shadow .12s;
@@ -1810,7 +1816,8 @@ ul{list-style:none}
 .compare-bar-btn:hover{background:var(--brand-hover)}
 .compare-bar-btn:disabled{background:#666;box-shadow:none;cursor:not-allowed}
 .compare-bar-close{
-  width:30px;height:30px;border-radius:50%;flex-shrink:0;
+  position:absolute;top:10px;right:10px;
+  width:27px;height:27px;border-radius:50%;flex-shrink:0;
   display:flex;align-items:center;justify-content:center;
   color:rgba(255,255,255,.7);
 }
@@ -3489,17 +3496,6 @@ ul{list-style:none}
   .menu-panel{width:100%}
   .compare-table th.compare-col,.compare-empty-cell,.compare-add-slot{min-width:140px}
   .compare-row-label,.compare-section-row td{position:static;left:auto}
-  .compare-bar{
-    bottom:68px;width:calc(100% - 24px);
-    flex-wrap:wrap;row-gap:10px;
-    border-radius:20px;padding:14px;
-    justify-content:center;
-  }
-  .compare-bar-thumbs{
-    flex:0 0 100%;max-width:100%;
-    overflow-x:visible;flex-wrap:wrap;
-    justify-content:center;
-  }
   .compare-modal-header{padding:14px 16px}
   .compare-modal-header-actions{gap:8px}
   .compare-diff-text,.compare-share-text{display:none}
@@ -6281,7 +6277,6 @@ ul{list-style:none}
 <!-- ─── Compare Bar ───────────────────────────────── -->
 <div class="compare-bar" id="compareBar" role="region" aria-label="Property comparison bar">
   <div class="compare-bar-thumbs" id="compareBarThumbs"></div>
-  <span class="compare-bar-label" id="compareBarLabel"></span>
   <button class="compare-bar-btn" id="compareBarBtn" onclick="openCompareModal()">Compare</button>
   <div class="compare-bar-close" onclick="clearCompare()" aria-label="Clear comparison">
     <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -6292,11 +6287,11 @@ ul{list-style:none}
 <div class="modal-overlay" id="compareModal" role="dialog" aria-modal="true" aria-label="Compare properties">
   <div class="modal compare-modal" id="compareModalContent">
     <div class="compare-modal-header">
-      <span class="compare-modal-title">Compare properties</span>
+      <span class="compare-modal-title">Compare</span>
       <div class="compare-modal-header-actions">
         <button class="compare-diff-toggle" id="compareDiffToggle" onclick="toggleCompareDiffOnly()" aria-pressed="false" title="Show only rows that differ">
           <svg class="compare-diff-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="3" width="12" height="12" rx="3"/><rect x="9" y="9" width="12" height="12" rx="3"/></svg>
-          <span class="compare-diff-text">Diffs only</span>
+          <span class="compare-diff-text">Differences</span>
         </button>
         <button class="compare-share-btn" onclick="shareCompareViaWhatsApp()" aria-label="Share comparison via WhatsApp" title="Share via WhatsApp">
           <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.6 6.32A8.86 8.86 0 0 0 12.05 4C7.4 4 3.6 7.8 3.6 12.45c0 1.6.45 3.13 1.27 4.45L4 21l4.2-1.1a8.83 8.83 0 0 0 4.07.99h.01c4.65 0 8.45-3.8 8.45-8.45a8.4 8.4 0 0 0-2.93-5.62zM12.06 19.5a7.05 7.05 0 0 1-3.6-.99l-.26-.15-2.67.7.71-2.6-.17-.27a6.99 6.99 0 0 1-1.08-3.74c0-3.86 3.15-7 7.04-7 1.88 0 3.64.73 4.97 2.06a6.96 6.96 0 0 1 2.06 4.96c0 3.87-3.16 7.03-7 7.03zm3.86-5.27c-.21-.1-1.24-.62-1.43-.68-.19-.07-.33-.1-.47.1-.14.21-.54.68-.66.81-.12.14-.24.16-.45.05-.21-.1-.87-.32-1.66-1.03-.61-.55-1.03-1.22-1.15-1.43-.12-.21-.01-.32.1-.43.1-.1.21-.26.32-.39.1-.13.14-.21.21-.36.07-.14.04-.27-.02-.38-.07-.1-.62-1.49-.85-2.04-.18-.43-.36-.37-.5-.38h-.42c-.14 0-.38.05-.58.27-.21.21-.79.77-.79 1.88 0 1.1.81 2.18.92 2.33.12.14 1.58 2.42 3.83 3.3 1.9.75 2.28.6 2.7.56.42-.04 1.36-.55 1.55-1.09.19-.53.19-.98.13-1.08-.05-.1-.21-.16-.43-.27z"/></svg>
@@ -7756,7 +7751,7 @@ function removeFromCompare(id) {
 function renderCompareBar() {
   const bar = document.getElementById('compareBar');
   const n = compareSet.size;
-  if (n < 2) {
+  if (n < 1) {
     bar.classList.remove('show');
     return;
   }
@@ -7767,7 +7762,7 @@ function renderCompareBar() {
     const label = p ? esc(p.propertyId) : '?';
     return `<span class="compare-bar-thumb" title="${label}">${label}</span>`;
   }).join('');
-  document.getElementById('compareBarLabel').innerHTML = `<b>${n}</b> of ${COMPARE_MAX} selected`;
+  
   const btn = document.getElementById('compareBarBtn');
   btn.disabled = false;
   btn.textContent = `Compare (${n})`;
