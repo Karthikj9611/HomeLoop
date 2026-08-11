@@ -4314,7 +4314,6 @@ ul{list-style:none}
   <div class="empty-state" id="emptyState">
     <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
     <h3>No properties found</h3>
-    <p>Try adjusting your search or filters to find something nearby.</p>
   </div>
 </main>
 
@@ -12553,7 +12552,7 @@ async function fetchProperties() {
   const leaseGrid = document.getElementById('leaseGrid');
   const pgGrid = document.getElementById('pgGrid');
   const promotedGrid = document.getElementById('promotedGrid');
-  if (rentGrid) rentGrid.innerHTML = '<div style="grid-column:1/-1;padding:40px;text-align:center;color:var(--text-2)">Loading listings…</div>';
+  if (rentGrid) rentGrid.innerHTML = '<div style="grid-column:1/-1;padding:40px;text-align:center;font-size:18px;color:var(--text-2)">🏠✨ Finding your perfect home... ⏳</div>';
   if (leaseGrid) leaseGrid.innerHTML = '';
   if (pgGrid) pgGrid.innerHTML = '';
   if (promotedGrid) promotedGrid.innerHTML = '';
