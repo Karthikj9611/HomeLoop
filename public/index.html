@@ -3362,6 +3362,8 @@ ul{list-style:none}
   .prop-card.list-view{flex-direction:column}
   .prop-card.list-view .prop-img{width:100%;aspect-ratio:4/3;height:auto;min-height:0;border-radius:0}
   .recently-viewed-strip{gap:10px;padding:10px 12px 4px}
+  .recently-viewed-clear{padding:6px;gap:0}
+  .recently-viewed-clear-label{display:none}
 
   /* Compact sizing for the 2-up mobile card so title/price/deposit/buttons
      don't get squeezed or overflow the narrower card width. */
@@ -4201,15 +4203,19 @@ ul{list-style:none}
 
   <div id="recentlyViewedSection" class="recently-viewed-section" style="display:none">
     <div class="section-divider" style="display:flex;align-items:center;gap:10px">
+      <button class="recently-viewed-clear" aria-hidden="true" tabindex="-1" style="visibility:hidden;flex-shrink:0">
+        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/></svg>
+        <span class="recently-viewed-clear-label">Clear all</span>
+      </button>
       <div class="section-divider-inner" style="flex:1;min-width:0">
         <span class="section-divider-label promoted-label">
           <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:4px"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
           Recently viewed
         </span>
       </div>
-      <button class="recently-viewed-clear" onclick="clearRecentlyViewed()" style="flex-shrink:0">
+      <button class="recently-viewed-clear" onclick="clearRecentlyViewed()" style="flex-shrink:0" aria-label="Clear all">
         <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/></svg>
-        Clear all
+        <span class="recently-viewed-clear-label">Clear all</span>
       </button>
     </div>
     <div class="recently-viewed-strip" id="recentlyViewedStrip"></div>
