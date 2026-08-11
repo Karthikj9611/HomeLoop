@@ -1027,16 +1027,17 @@
           </div>
 
           <div class="r-parties">
+		   <div class="party-box by">
+              <div class="party-label">Received By</div>
+              <div class="party-name">${d.landlordName || '—'}</div>
+              <div class="party-detail">${d.landlordBuildingName ? '<b>' + d.landlordBuildingName + '</b><br/>' : '<br>'}${d.landlordAddress || '—'}${landlordContact ? '<br/>' + landlordContact : ''}${d.landlordPAN ? '<br/>' + d.landlordPAN : ''}</div>
+            </div>
             <div class="party-box from">
               <div class="party-label">Received From</div>
               <div class="party-name">${d.tenantName || '—'}</div>
               <div class="party-detail">${d.buildingName ? '<b>' + d.buildingName + '</b><br/>' : ''}${d.propertyAddress || 'Property address not provided'}${tenantContact ? '<br/>' + tenantContact : ''}</div>
             </div>
-            <div class="party-box by">
-              <div class="party-label">Received By</div>
-              <div class="party-name">${d.landlordName || '—'}</div>
-              <div class="party-detail">${d.landlordBuildingName ? '<b>' + d.landlordBuildingName + '</b><br/>' : '<br>'}${d.landlordAddress || '—'}${landlordContact ? '<br/>' + landlordContact : ''}${d.landlordPAN ? '<br/>' + d.landlordPAN : ''}</div>
-            </div>
+           
           </div>
 
 
@@ -1259,12 +1260,6 @@
       el.classList.remove('show');
       return;
     }
-    const names = issues.map(issue => FIELD_LABELS[issue.id] || issue.id);
-    const unique = [...new Set(names)];
-    el.textContent = unique.length === 1
-      ? `Please check: ${unique[0]}.`
-      : `Please check: ${unique.join(', ')}.`;
-    el.classList.add('show');
   }
 
   function updateDownloadState(d){
