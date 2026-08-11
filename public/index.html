@@ -8620,20 +8620,20 @@ function priceChipsHTML(p, pType, deposit, maintenance, leaseDur, opts) {
   const rentChip = `<div class="prop-chip price-chip price-chip-rent">
     <span class="price-ico-3d">${rentSvg}</span>
     <span class="price-text-stack">
-      <span class="prop-price">${fmtRupeeResponsive(p.price?.rent||0, true)}<span class="prop-price-unit">/ <span class="unit-full">${rentUnit}</span><span class="unit-short">${rentUnitShort}</span></span></span>
+      <span class="prop-price">₹${fmtRupeeResponsive(p.price?.rent||0, true)}<span class="prop-price-unit">/ <span class="unit-full">${rentUnit}</span><span class="unit-short">${rentUnitShort}</span></span></span>
     </span>
   </div>`;
   const maintChip = maintenance > 0 ? `<div class="prop-chip price-chip" title="Monthly maintenance">
     <span class="price-ico-3d">${maintSvg}</span>
     <span class="price-text-stack">
-      <span class="prop-deposit-val">${fmtRupeeResponsive(maintenance, true)}</span>
+      <span class="prop-deposit-val">₹${fmtRupeeResponsive(maintenance, true)}</span>
       <span class="prop-deposit-lbl"><span class="unit-full">Maintenance</span><span class="unit-short">Maint</span></span>
     </span>
   </div>` : '';
   const depositChip = deposit > 0 ? `<div class="prop-chip price-chip" title="Security deposit">
     <span class="price-ico-3d">${depositSvg}</span>
     <span class="price-text-stack">
-      <span class="prop-deposit-val">${fmtRupeeResponsive(deposit, true)}</span>
+      <span class="prop-deposit-val">₹${fmtRupeeResponsive(deposit, true)}</span>
       <span class="prop-deposit-lbl"><span class="unit-full">Deposit</span><span class="unit-short">SD</span></span>
     </span>
   </div>` : '';

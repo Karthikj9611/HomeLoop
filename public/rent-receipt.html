@@ -145,12 +145,18 @@
     background:var(--brand-light) !important;
     box-shadow:0 0 0 3px color-mix(in srgb, var(--brand) 14%, transparent) !important;
   }
+  .field.field-error input:focus,
+  .field.field-error select:focus,
+  .field.field-error textarea:focus{
+    box-shadow:0 0 0 3px color-mix(in srgb, var(--brand) 28%, transparent) !important;
+  }
   .field-error-msg{
     font-size:10.5px;
     font-weight:600;
     color:var(--brand);
     margin-top:5px;
   }
+  .field-error-msg::before{content:'⚠ '}
   .field label{
     display:block;
     font-size:11.5px;
@@ -165,7 +171,7 @@
     font-weight:400;
     margin-left:4px;
   }
-  .field label .req{color:var(--brand);font-weight:700}
+  .field label .req{color:var(--ink-3);font-weight:700}
   .field label.inline-check{
     display:flex;align-items:center;gap:6px;
     font-size:11.5px;font-weight:500;color:var(--ink-3);
@@ -296,6 +302,11 @@
     font-size:13px;color:var(--ink-3);
     pointer-events:none;
   }
+  .amt-wrap input[type="number"]::-webkit-outer-spin-button,
+  .amt-wrap input[type="number"]::-webkit-inner-spin-button{
+    -webkit-appearance:none;margin:0;
+  }
+  .amt-wrap input[type="number"]{-moz-appearance:textfield}
 
   .multi-toggle{
     display:flex;align-items:center;justify-content:space-between;gap:8px;
@@ -424,6 +435,7 @@
   .err.show{display:block}
   .share-status{font-size:11.5px;color:var(--ink-2);margin-top:8px;display:none;line-height:1.5}
   .share-status.show{display:block}
+  .share-status.success{color:var(--ok);font-weight:600}
 
   /* ============ PREVIEW PANEL ============ */
   .preview-panel{
@@ -671,7 +683,7 @@
     </div>
 
     <div class="card" style="--ic-bg:var(--purple-bg);--ic-fg:var(--purple)">
-      <div class="section-label"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v17l-3-2-3 2-3-2-3 2Z"/><path d="M9 8h6M9 12h6"/></svg></span>Additional charges</div>
+      <div class="section-label"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v17l-3-2-3 2-3-2-3 2Z"/><path d="M9 8h6M9 12h6"/></svg></span>Additional charges<span class="hint" style="margin-left:auto">Optional</span></div>
       <div class="row2">
         <div class="field amt-field">
           <label for="electricityCharge">Electricity</label>
@@ -1302,6 +1314,13 @@
       label.className = 'count-label';
       label.textContent = periods.length + ' receipt' + (periods.length>1?'s':'') + ' will be generated (one page each).';
       panel.appendChild(label);
+    } else if(!d.tenantName && !d.landlordName && !d.rentAmount){
+      // Untouched form — let the person know this preview updates live as
+      // they type, rather than leaving them to guess why it's mostly blank.
+      const hint = document.createElement('div');
+      hint.className = 'count-label';
+      hint.innerHTML = '<span>✎</span> This preview updates live as you fill in the form.';
+      panel.appendChild(hint);
     }
 
     periods.forEach((p, i) => {
@@ -1338,13 +1357,16 @@
     return parts.join('-') + '.pdf';
   }
 
-  function showShareStatus(msg){
+  function showShareStatus(msg, isSuccess){
     const el = $('shareStatus');
     el.textContent = msg;
+    el.classList.toggle('success', !!isSuccess);
     el.classList.add('show');
   }
   function hideShareStatus(){
-    $('shareStatus').classList.remove('show');
+    const el = $('shareStatus');
+    el.classList.remove('show');
+    el.classList.remove('success');
   }
 
   async function downloadPDF(){
@@ -1372,7 +1394,7 @@
     btn.dataset.generating = '0';
     btn.textContent = '⬇ Download PDF';
     updateDownloadState(getFormData());
-    showShareStatus('✓ Receipt downloaded.');
+    showShareStatus('✓ Receipt downloaded.', true);
     setTimeout(hideShareStatus, 3500);
   }
 
@@ -1410,7 +1432,7 @@
           text:'Rent receipt for ' + (d.tenantName || 'tenant')
         });
         sharedNatively = true;
-        showShareStatus('✓ Shared successfully.');
+        showShareStatus('✓ Shared successfully.', true);
         setTimeout(hideShareStatus, 3500);
       }catch(err){
         if(err && err.name === 'AbortError'){
