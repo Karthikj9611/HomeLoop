@@ -7263,7 +7263,7 @@ function cardHTML(p, compact, extraLeftBadge) {
   })() : '';
   const compactClass = compact ? ' compact' : '';
   const promotedClass = p.promoted ? ' prop-card-promoted' : '';
-  return `<div class="prop-card${listClass}${compactClass}${promotedClass} type-${pType.toLowerCase()}" onclick="openDetail('${p.id}')">
+  return `<div class="prop-card${listClass}${compactClass}${promotedClass} type-${pType.toLowerCase()}" data-property-id="${p.id}">
     <div class="prop-img" style="background:${bg}" data-idx="0">
       ${buildImgSlider(p, fg, '-grid')}
       ${priceChipsHTML(p, pType, deposit, maintenance, leaseDur, {ribbon:true})}
@@ -7466,7 +7466,7 @@ function shortlistCardHTML(p) {
     }
     return dateStr;
   })() : '';
-  return `<div class="prop-card type-${pType.toLowerCase()}" onclick="openDetail('${p.id}')">
+  return `<div class="prop-card type-${pType.toLowerCase()}" data-property-id="${p.id}">
     <div class="prop-img" style="background:${bg}" data-idx="0">
       ${buildImgSlider(p, fg, '-sl')}
       ${priceChipsHTML(p, pType, deposit, maintenance, leaseDur, {ribbon:true})}
@@ -12782,7 +12782,12 @@ function processStatsRow(row){
 
   const moreChip = document.createElement('span');
   moreChip.className = 'prop-stats-more';
-  moreChip.onclick = function(e){ e.stopPropagation(); openStatsPopup(row); };
+  moreChip.onclick = function(e){
+    e.stopPropagation();
+    const card = row.closest('.prop-card, .rv-card');
+    const pid = card && (card.dataset.propertyId || (card.getAttribute('onclick') || '').match(/openDetail\('([^']+)'\)/)?.[1]);
+    if (pid) openDetail(pid); else openStatsPopup(row);
+  };
   moreChip.textContent = 'More';
   row.appendChild(moreChip);
 
