@@ -7355,6 +7355,10 @@ function cardHTML(p, compact, extraLeftBadge) {
           <span class="prop-stat-icon icon-bed">🛏️</span>
           ${bhkVal}
         </span>` : ''; })()}
+        ${isPGCard && pg.room ? (() => { const sharingMap = { 'Single': 1, 'Double Sharing': 2, 'Triple Sharing': 3 }; const sharingVal = sharingMap[pg.room]; return `<span class="prop-stat" title="${esc(pg.room)}">
+          <span class="prop-stat-icon icon-bed">🛏️</span>
+          ${sharingVal || esc(pg.room)}
+        </span>`; })() : ''}
         ${bathrooms > 0 ? `<span class="prop-stat" title="Bathrooms">
           <span class="prop-stat-icon icon-bath">🚽</span>
           ${bathrooms}
@@ -7376,13 +7380,9 @@ function cardHTML(p, compact, extraLeftBadge) {
           ${fmtRupee(maintenance)}
         </span>` : ''}
         ${lift ? `<span class="prop-stat" title="Lift available"><span class="prop-stat-icon icon-lift">🛗</span></span>` : ''}
-        <span class="prop-chip chip-furnish" title="Furnishing">
+        ${!isPGCard ? `<span class="prop-chip chip-furnish" title="Furnishing">
           <span class="prop-chip-icon icon-furnish">🛋️</span>
-          ${p.property?.furnish ?? p.pg?.furnish ?? p.shortStay?.furnish}
-        </span>
-        ${isPGCard && pg.room ? `<span class="prop-chip chip-room" title="Room type">
-          <span class="prop-chip-icon icon-room">🛏️</span>
-          ${esc(pg.room)}
+          ${p.property?.furnish ?? p.shortStay?.furnish}
         </span>` : ''}
         ${isPGCard && pg.gender ? `<span class="prop-chip chip-gender" title="Gender preference">
           <span class="prop-chip-icon icon-gender">🚻</span>
@@ -7395,6 +7395,22 @@ function cardHTML(p, compact, extraLeftBadge) {
         ${isPGCard && pg.occupancy ? `<span class="prop-chip chip-occupancy" title="Occupancy available">
           <span class="prop-chip-icon icon-occupancy">🧍</span>
           ${esc(pg.occupancy)}
+        </span>` : ''}
+        ${isPGCard && pg.food ? `<span class="prop-chip chip-food" title="Food type">
+          <span class="prop-chip-icon icon-food">🍲</span>
+          ${esc(pg.food)}
+        </span>` : ''}
+        ${isPGCard && pg.notice ? `<span class="prop-chip chip-notice" title="Notice period">
+          <span class="prop-chip-icon icon-notice">📋</span>
+          ${esc(pg.notice)}
+        </span>` : ''}
+        ${isPGCard && pg.gateTime ? `<span class="prop-chip chip-gatetime" title="Gate closing time">
+          <span class="prop-chip-icon icon-gatetime">🚪</span>
+          ${esc(pg.gateTime)}
+        </span>` : ''}
+        ${isPGCard && pg.visitors ? `<span class="prop-chip chip-visitors" title="Visitor policy">
+          <span class="prop-chip-icon icon-visitors">🙋</span>
+          ${esc(pg.visitors)}
         </span>` : ''}
         ${isSSCard && shortStay.roomType ? `<span class="prop-chip chip-room" title="Room type">
           <span class="prop-chip-icon icon-room">🛏️</span>
