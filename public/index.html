@@ -1831,7 +1831,7 @@ ul{list-style:none}
 .compare-modal-header{
   display:flex;align-items:center;justify-content:space-between;
   padding:18px 24px;border-bottom:1px solid var(--border);
-  position:sticky;top:0;background:var(--bg);z-index:2;
+  position:sticky;top:0;background:var(--bg);z-index:5;
 }
 .compare-modal-title{font-size:17px;font-weight:700}
 .compare-modal-header-actions{display:flex;align-items:center;gap:8px}
@@ -1895,11 +1895,22 @@ ul{list-style:none}
 .compare-no{color:var(--text-3)}
 .compare-section-row td{
   padding:8px 14px;border-bottom:none;
-  font-size:10.5px;font-weight:800;color:var(--brand);
+  font-size:10.5px;font-weight:800;
   text-transform:uppercase;letter-spacing:.06em;
-  background:var(--brand-light);position:sticky;left:0;
+  position:sticky;left:0;
+  color:var(--brand);background:var(--brand-light);
 }
 .compare-section-row:first-child td{border-top:none}
+/* Distinct color per section so the compare table is easier to scan at a
+   glance — each maps loosely onto the palette already used for property-
+   type badges (Rent/Lease/PG/ShortStay) plus two extras for Rules/Media. */
+.compare-section-row.sec-listing-info td{color:#1a4680;background:#dde9fa}
+.compare-section-row.sec-pricing td{color:#1a6640;background:#e8f5ee}
+.compare-section-row.sec-property-details td{color:#4a2a9a;background:#eee8fa}
+.compare-section-row.sec-terms td{color:#00646e;background:#e0f7fa}
+.compare-section-row.sec-rules td{color:#8a5a00;background:#fdf0dd}
+.compare-section-row.sec-pg-details td{color:#9c2f5a;background:#fbe6ee}
+.compare-section-row.sec-media-amenities td{color:#35415c;background:#e7ebf5}
 .compare-diff-dot{
   display:inline-block;width:6px;height:6px;border-radius:50%;
   background:var(--brand);margin-left:6px;vertical-align:middle;flex-shrink:0;
@@ -7933,15 +7944,32 @@ function renderCompareTable() {
     </th>`;
   }).join('');
 
-  const bodyRows = rows.map(r => {
-    if (r.section) {
-      return `<tr class="compare-section-row"><td colspan="${props.length + 1}">${esc(r.section)}</td></tr>`;
-    }
+  const sectionClass = (label) => 'sec-' + label.toLowerCase().replace(/&/g, '').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+
+  const rowsWithDiff = rows.map(r => {
+    if (r.section) return r;
     const vals = props.map(p => r.get(p));
     const isDiff = props.length > 1 && vals.some(v => v !== vals[0]);
-    return `<tr class="${isDiff ? 'compare-diff-row' : ''}">
-      <td class="compare-row-label">${r.label}${isDiff ? '<span class="compare-diff-dot" title="Differs across properties"></span>' : ''}</td>
-      ${vals.map(v => `<td>${v}</td>`).join('')}
+    return { ...r, vals, isDiff };
+  });
+
+  // A section header is only worth showing in diff-only mode if at least one
+  // row under it actually differs; otherwise it's just an empty label.
+  const sectionHasDiff = new Map();
+  let curSection = null;
+  rowsWithDiff.forEach(r => {
+    if (r.section) { curSection = r; sectionHasDiff.set(r, false); return; }
+    if (r.isDiff && curSection) sectionHasDiff.set(curSection, true);
+  });
+
+  const bodyRows = rowsWithDiff.map(r => {
+    if (r.section) {
+      if (compareDiffOnly && !sectionHasDiff.get(r)) return '';
+      return `<tr class="compare-section-row ${sectionClass(r.section)}"><td colspan="${props.length + 1}">${esc(r.section)}</td></tr>`;
+    }
+    return `<tr class="${r.isDiff ? 'compare-diff-row' : ''}">
+      <td class="compare-row-label">${r.label}${r.isDiff ? '<span class="compare-diff-dot" title="Differs across properties"></span>' : ''}</td>
+      ${r.vals.map(v => `<td>${v}</td>`).join('')}
     </tr>`;
   }).join('');
 
