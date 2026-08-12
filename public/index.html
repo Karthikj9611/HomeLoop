@@ -7259,10 +7259,7 @@ function cardHTML(p, compact, extraLeftBadge) {
   const availableFmt = available ? (() => {
     const d = new Date(available);
     if (isNaN(d)) return available;
-    const dd = String(d.getDate()).padStart(2,'0');
-    const mm = String(d.getMonth()+1).padStart(2,'0');
-    const yyyy = d.getFullYear();
-    const dateStr = `${dd}-${mm}-${yyyy}`;
+    const dateStr = formatDateDisplay(d);
     // Relative phrasing ("in 2 days", "in 3 months") for anything within
     // roughly the next 3 months — easier to scan at a glance than a raw
     // date. Past dates and anything further out just show the plain date.
@@ -7484,10 +7481,7 @@ function shortlistCardHTML(p) {
   const availableFmt = available ? (() => {
     const d = new Date(available);
     if (isNaN(d)) return available;
-    const dd = String(d.getDate()).padStart(2,'0');
-    const mm = String(d.getMonth()+1).padStart(2,'0');
-    const yyyy = d.getFullYear();
-    const dateStr = `${dd}-${mm}-${yyyy}`;
+    const dateStr = formatDateDisplay(d);
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const target = new Date(d.getFullYear(), d.getMonth(), d.getDate());
@@ -7807,7 +7801,7 @@ function renderCompareTable() {
     { label: 'Verified', get: p => yn(!!p.verified) },
     { label: 'Location', get: p => dash(p.location?.area) },
     { label: 'City', get: p => dash(p.location?.city) },
-    { label: 'Posted', get: p => dash(p.posted) },
+    { label: 'Posted', get: p => p.posted ? formatDateDisplay(p.posted, true) : '—' },
 
     section('Pricing'),
     { label: 'Rent / Month', get: p => `<span style="font-weight:700;color:var(--text)">${fmtRupee(p.price?.rent||0)}</span>` },
@@ -7831,7 +7825,7 @@ function renderCompareTable() {
     { label: 'Lift', get: p => yn(pHasLift(p)) },
     { label: 'Car park', get: p => (parseInt(p.property?.car ?? p.pg?.car, 10) || 0) > 0 ? `${parseInt(p.property?.car ?? p.pg?.car, 10)}` : 'No' },
     { label: 'Bike park', get: p => (parseInt(p.property?.bike ?? p.pg?.bike, 10) || 0) > 0 ? `${parseInt(p.property?.bike ?? p.pg?.bike, 10)}` : 'No' },
-    { label: 'Available from', get: p => dash(p.property?.available ?? p.pg?.available) },
+    { label: 'Available from', get: p => { const v = p.property?.available ?? p.pg?.available; return v ? formatDateDisplay(v) : '—'; } },
 
     section('Terms'),
     { label: 'Notice period', get: p => dash(p.terms?.notice) },
@@ -7883,10 +7877,7 @@ function renderCompareTable() {
     const availableFmt = available ? (() => {
       const d = new Date(available);
       if (isNaN(d)) return available;
-      const dd = String(d.getDate()).padStart(2,'0');
-      const mm = String(d.getMonth()+1).padStart(2,'0');
-      const yyyy = d.getFullYear();
-      const dateStr = `${dd}-${mm}-${yyyy}`;
+      const dateStr = formatDateDisplay(d);
       const now = new Date();
       const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
       const target = new Date(d.getFullYear(), d.getMonth(), d.getDate());
@@ -9476,7 +9467,7 @@ function buildDetailTable(p) {
     kv('Floor', property.floor),
     kv('Bathrooms', property.bathrooms),
     kv('Furnishing', property.furnish),
-    !isPG ? kv('Available from', property.available) : null,
+    !isPG ? kv('Available from', property.available ? formatDateDisplay(property.available) : property.available) : null,
   ]);
 
   section('📅 Availability & Terms', [
@@ -9505,7 +9496,7 @@ function buildDetailTable(p) {
       kv('Bathroom', pg.bathroom),
       kv('Room furnishing', pg.furnish),
       kv('Food type', pg.food),
-      kv('Available from', pg.available),
+      kv('Available from', pg.available ? formatDateDisplay(pg.available) : pg.available),
       kv('Visitor policy', pg.visitors),
       kv('Gate closing time', pg.gateTime),
     ]);
@@ -9667,9 +9658,8 @@ function openVisitCalendarOptions(details, { title, sub } = {}) {
   const ev = buildVisitCalendarEvent(details);
   document.getElementById('visitConfirmTitle').textContent = title || 'Visit requested';
   const dateObj   = ev.start;
-  const dateLabel = dateObj.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
-  const timeLabel = dateObj.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' });
-  document.getElementById('visitConfirmSub').textContent = sub || `${dateLabel}, ${timeLabel}${details.propertyCode ? ' — ' + details.propertyCode : ''}`;
+  const dateTimeLabel = formatDateDisplay(dateObj, true);
+  document.getElementById('visitConfirmSub').textContent = sub || `${dateTimeLabel}${details.propertyCode ? ' — ' + details.propertyCode : ''}`;
   document.getElementById('calGoogleBtn').href = googleCalendarLink(ev);
   document.getElementById('visitConfirmModal').classList.add('open');
   lockBodyScroll();
@@ -9842,7 +9832,7 @@ async function submitBookingRequest() {
     const data = await res.json();
     if (!res.ok) { showToast(data.message || 'Could not complete the booking. Please try again.'); return; }
 
-    const dateLabel = new Date(checkin).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+    const dateLabel = formatDateDisplay(checkin);
     closeBookingModal();
     showToast(`Booked from ${dateLabel} for ${days} day${days > 1 ? 's' : ''} — ${p.propertyId || ''}`);
   } catch (err) {
@@ -10452,17 +10442,38 @@ function closeProfileModal() {
   exitProfileEditMode();
   exitPasswordEditMode();
 }
-// Formats a Date as 'dd-mm-yyyy hh:mm AM/PM', matching the server's posted-date format.
-function formatPostedDateTime(date) {
-  const d = new Date(date);
-  const dd = String(d.getDate()).padStart(2, '0');
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const yyyy = d.getFullYear();
+// Parses either a real Date, an ISO string, or the server's legacy
+// 'dd-mm-yyyy hh:mm AM/PM' string into a Date object.
+function parseFlexibleDate(input) {
+  if (input instanceof Date) return input;
+  if (typeof input === 'string') {
+    const m = input.match(/^(\d{2})-(\d{2})-(\d{4})\s+(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+    if (m) {
+      let [, dd, mm, yyyy, hh, min, ap] = m;
+      hh = parseInt(hh, 10);
+      if (/pm/i.test(ap) && hh !== 12) hh += 12;
+      if (/am/i.test(ap) && hh === 12) hh = 0;
+      return new Date(parseInt(yyyy, 10), parseInt(mm, 10) - 1, parseInt(dd, 10), hh, parseInt(min, 10));
+    }
+  }
+  return new Date(input);
+}
+// Single source of truth for how dates render anywhere in the app:
+// 'D MMM YYYY' (e.g. '27 Jul 2026'), or with withTime: 'D MMM YYYY · h:mm AM/PM'.
+function formatDateDisplay(input, withTime = false) {
+  const d = parseFlexibleDate(input);
+  if (isNaN(d)) return typeof input === 'string' ? input : '';
+  const datePart = `${d.getDate()} ${d.toLocaleDateString('en-IN', { month: 'short' })} ${d.getFullYear()}`;
+  if (!withTime) return datePart;
   let hours = d.getHours();
   const minutes = String(d.getMinutes()).padStart(2, '0');
   const ampm = hours >= 12 ? 'PM' : 'AM';
   hours = hours % 12; if (hours === 0) hours = 12;
-  return `${dd}-${mm}-${yyyy} ${String(hours).padStart(2, '0')}:${minutes} ${ampm}`;
+  return `${datePart} · ${hours}:${minutes} ${ampm}`;
+}
+// Kept for any older call sites — now just delegates to the shared formatter.
+function formatPostedDateTime(date) {
+  return formatDateDisplay(date, true);
 }
 function getLoggedInUser() {
   try { return JSON.parse(localStorage.getItem('homeloop_user')); } catch { return null; }
@@ -11698,7 +11709,7 @@ function notifTimeAgo(dateStr) {
   if (hrs < 24)  return hrs + (hrs === 1 ? ' hour ago' : ' hours ago');
   const days = Math.floor(hrs / 24);
   if (days < 7)  return days + (days === 1 ? ' day ago' : ' days ago');
-  return new Date(dateStr).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
+  return formatDateDisplay(dateStr);
 }
 function renderNotifications(list) {
   const container = document.getElementById('notifList');
