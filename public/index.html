@@ -7389,7 +7389,6 @@ function cardHTML(p, compact, extraLeftBadge) {
   const pg = p.pg || {};
   const shortStay = p.shortStay || {};
   const bathrooms = isPGCard ? (parseInt(pg.bathroom) || 1) : (parseInt(p.property?.bathrooms) || 1);
-  
   const carCount = isPGCard ? (parseInt(pg.car, 10) || 0) : (parseInt(p.property?.car, 10) || 0);
   const bikeCount = isPGCard ? (parseInt(pg.bike, 10) || 0) : (parseInt(p.property?.bike, 10) || 0);
   const carpark = carCount > 0;
@@ -7617,10 +7616,6 @@ function shortlistCardHTML(p) {
   const isPGCardSL = pType === 'PG';
   const pgSL = p.pg || {};
   const bathrooms = isPGCardSL ? (parseInt(pgSL.bathroom) || 1) : (parseInt(p.property?.bathrooms) || 1);
-  const toiletIsIndianSL = String(p.property?.toiletType || '').toLowerCase() === 'indian';
-  const bathIconSvgSL = toiletIsIndianSL
-    ? '<svg viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="12" cy="13" rx="9" ry="6"/><ellipse cx="12" cy="13" rx="3" ry="4.5"/><rect x="4" y="7" width="4" height="2" rx="1"/><rect x="16" y="7" width="4" height="2" rx="1"/></svg>'
-    : '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="3" width="12" height="5" rx="1"/><path d="M8 8v3a4 4 0 0 0 8 0V8"/><ellipse cx="12" cy="17" rx="7" ry="4"/><path d="M6 17v1a6 6 0 0 0 12 0v-1"/></svg>';
   const carCount = isPGCardSL ? (parseInt(pgSL.car, 10) || 0) : (parseInt(p.property?.car, 10) || 0);
   const bikeCount = isPGCardSL ? (parseInt(pgSL.bike, 10) || 0) : (parseInt(p.property?.bike, 10) || 0);
   const carpark = carCount > 0;
@@ -7709,8 +7704,8 @@ function shortlistCardHTML(p) {
         ${isPGCardSL ? (pgSL.occupancy ? `<span class="prop-stat" title="Occupancy">
           <span class="prop-stat-icon icon-occupancy">🧍</span>
           ${esc(pgSL.occupancy)}
-        </span>` : '') : (bathrooms > 0 ? `<span class="prop-stat" title="Bathrooms${toiletIsIndianSL ? ' (Indian toilet)' : ' (Western toilet)'}">
-          <span class="prop-stat-icon icon-bath">${bathIconSvgSL}</span>
+        </span>` : '') : (bathrooms > 0 ? `<span class="prop-stat" title="Bathrooms">
+          <span class="prop-stat-icon icon-bath">🚽</span>
           ${bathrooms}
         </span>` : '')}
         <span class="prop-stat" title="Furnishing">
