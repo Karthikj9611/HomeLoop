@@ -1875,31 +1875,21 @@ ul{list-style:none}
   white-space:nowrap;position:sticky;left:0;background:var(--bg);
 }
 .compare-col-head{position:relative;padding-top:14px!important}
+/* The compare column header now reuses the exact same visual language as a
+   normal .prop-card (image slider, price ribbon, floating heart/views/
+   compare/promoted badges, id+buildtype row, location+availability row) —
+   just scaled to fit a table column instead of a grid cell. */
+.compare-col-card{width:210px;max-width:100%}
 .compare-col-img{
-  width:170px;height:106px;aspect-ratio:16/10;border-radius:8px;
+  width:100%;aspect-ratio:4/3;border-radius:10px;
   background:var(--bg-3);margin:0 auto 8px;
-  display:flex;align-items:center;justify-content:center;
   overflow:hidden;position:relative;flex-shrink:0;
 }
 .compare-col-img img{width:100%;height:100%;object-fit:cover}
-.compare-col-top-row{
-  position:absolute;top:6px;left:6px;right:6px;
-  display:flex;align-items:flex-start;justify-content:space-between;
-  z-index:2;
-}
-.compare-col-left-badges{display:flex;align-items:center;gap:6px}
-.compare-col-right-badges{display:flex;flex-direction:column;align-items:center;gap:5px}
-.compare-col-remove{
-  width:22px;height:22px;border-radius:50%;
-  display:flex;align-items:center;justify-content:center;
-  color:var(--text-3);background:rgba(255,255,255,.92);cursor:pointer;
-  flex-shrink:0;
-}
-.compare-col-remove:hover{background:#fff;color:var(--brand)}
-.compare-col-remove svg{width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2.4}
-.compare-col-title{font-size:13px;font-weight:600;line-height:1.35;margin-bottom:2px}
-.compare-col-loc{font-size:11.5px;color:var(--text-3)}
-.compare-col-price{font-size:16px;font-weight:700;color:var(--brand);margin-top:6px}
+.compare-col-img .prop-card-top-row{padding:0}
+.compare-col-img .prop-right-badges{transform:scale(.8);transform-origin:top right}
+.compare-col-body{padding-top:2px}
+.compare-col-body .prop-title,.compare-col-body .prop-loc{font-size:12.5px}
 .compare-empty-cell{color:var(--text-3);min-width:170px}
 .compare-yes{color:#1a7d4a;font-weight:600}
 .compare-no{color:var(--text-3)}
@@ -7813,6 +7803,12 @@ function renderCompareTable() {
   const section = (label) => ({ section: label });
 
   const rows = [
+    section('Listing Info'),
+    { label: 'Verified', get: p => yn(!!p.verified) },
+    { label: 'Location', get: p => dash(p.location?.area) },
+    { label: 'City', get: p => dash(p.location?.city) },
+    { label: 'Posted', get: p => dash(p.posted) },
+
     section('Pricing'),
     { label: 'Rent / Month', get: p => `<span style="font-weight:700;color:var(--text)">${fmtRupee(p.price?.rent||0)}</span>` },
     { label: 'Deposit', get: p => `${fmtRupee(p.price?.deposit||0)}` },
@@ -7872,34 +7868,77 @@ function renderCompareTable() {
         if (p.amenities?.extra) list.push(...p.amenities.extra.split(',').map(s => s.trim()).filter(Boolean));
         return list.length ? list.join(', ') : '—';
       } },
-
-    section('Listing Info'),
-    { label: 'Verified', get: p => yn(!!p.verified) },
-    { label: 'Location', get: p => dash(p.location?.area) },
-    { label: 'City', get: p => dash(p.location?.city) },
-    { label: 'Posted', get: p => dash(p.posted) },
   ];
 
   const headCells = props.map(p => {
-    const img = (p.media?.images && p.media.images[0]) ? `<img src="${safeUrl(p.media.images[0])}" alt="${esc(p.propertyId)}" loading="lazy">` : '';
     const pType = pTypeLabel(p);
-    const topRow = `<div class="compare-col-top-row">
-        <div class="compare-col-left-badges">
-          <span class="prop-badge-type badge-${pType.toLowerCase()}">${pType}</span>
-        </div>
-        <div class="compare-col-right-badges">
-          <div class="compare-col-remove" onclick="event.stopPropagation();removeFromCompare('${p.id}')" title="Remove from comparison">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-          </div>
-          ${p.promoted ? '<div class="prop-icon-badge prop-icon-promoted" title="Promoted"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l2.9 6.26 6.9.8-5.1 4.7 1.4 6.84L12 17.3l-6.1 3.3 1.4-6.84-5.1-4.7 6.9-.8z"/></svg></div>' : ''}
-          ${(SHOW_VERIFIED_BADGE && p.verified) ? '<div class="prop-icon-badge prop-icon-verified" title="Verified"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.5" fill="#fff"/><path d="M8 12.3l2.6 2.6 5.4-5.8" stroke="#1a73e8" stroke-width="2.1" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>' : ''}
-        </div>
-      </div>`;
+    const colors = {Rent:'#e8f5ee:#1a6640',Lease:'#dde9fa:#1a4680',PG:'#eee8fa:#4a2a9a',ShortStay:'#e0f7fa:#00646e'};
+    const [bg, fg] = (colors[pType]||'#f0f0f0:#333').split(':');
+    const liked = shortlisted.has(String(p.id));
+    const deposit = p.price?.deposit || 0;
+    const maintenance = p.price?.maintenance || 0;
+    const leaseDur = p.terms?.lease || '';
+    const ptype = p.property?.type || p.pg?.type || p.shortStay?.type || '';
+    const available = pTypeLabel(p) === 'PG' ? (p.pg?.available || '') : (p.property?.available || '');
+    const availableFmt = available ? (() => {
+      const d = new Date(available);
+      if (isNaN(d)) return available;
+      const dd = String(d.getDate()).padStart(2,'0');
+      const mm = String(d.getMonth()+1).padStart(2,'0');
+      const yyyy = d.getFullYear();
+      const dateStr = `${dd}-${mm}-${yyyy}`;
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const target = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+      const dayMs = 24 * 60 * 60 * 1000;
+      const diffDays = Math.round((target - today) / dayMs);
+      if (diffDays < 0) return dateStr;
+      if (diffDays === 0) return 'Today';
+      if (diffDays === 1) return 'Tomorrow';
+      if (diffDays <= 30) return `In ${diffDays} day${diffDays > 1 ? 's' : ''}`;
+      let months = (target.getFullYear() - today.getFullYear()) * 12 + (target.getMonth() - today.getMonth());
+      if (target.getDate() < today.getDate()) months--;
+      if (months <= 3) {
+        if (months <= 0) return `In ${diffDays} days`;
+        const afterMonths = new Date(today.getFullYear(), today.getMonth() + months, today.getDate());
+        const remDays = Math.round((target - afterMonths) / dayMs);
+        let label = `${months} Month${months > 1 ? 's' : ''}`;
+        if (remDays > 0) label += ` ${remDays} Day${remDays > 1 ? 's' : ''}`;
+        return label;
+      }
+      return dateStr;
+    })() : '';
     return `<th class="compare-col compare-col-head">
-      <div class="compare-col-img">${img}${topRow}</div>
-      <div class="compare-col-title">${esc(p.propertyId)}</div>
-      <div class="compare-col-loc">${esc(p.location?.area)}</div>
-      <div class="compare-col-price">${fmtRupee(p.price?.rent||0)}</div>
+      <div class="compare-col-card">
+        <div class="compare-col-img" style="background:${bg}">
+          ${buildImgSlider(p, fg, '-cmp')}
+          <div class="prop-card-top-row">
+            <div class="prop-left-badges"></div>
+            <div class="prop-right-badges">
+              <div class="prop-heart${liked?' liked':''}" onclick="event.stopPropagation();toggleShortlist('${p.id}',this)" aria-label="${liked?'Remove from':'Add to'} shortlist">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+              </div>
+              <div class="prop-icon-badge prop-views-float" title="${getViews(p).toLocaleString('en-IN')} views">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                <span class="prop-views-float-badge">${formatViews(getViews(p))}</span>
+              </div>
+              <div class="prop-icon-badge prop-compare-float checked" onclick="event.stopPropagation();removeFromCompare('${p.id}')" aria-label="Remove from compare" title="Remove from comparison">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="8" height="16" rx="1.5"/><rect x="13" y="4" width="8" height="16" rx="1.5" opacity="0.55"/></svg>
+              </div>
+              ${p.promoted ? '<div class="prop-icon-badge prop-icon-promoted" title="Promoted"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l2.9 6.26 6.9.8-5.1 4.7 1.4 6.84L12 17.3l-6.1 3.3 1.4-6.84-5.1-4.7 6.9-.8z"/></svg></div>' : ''}
+              ${(SHOW_VERIFIED_BADGE && p.verified) ? '<div class="prop-icon-badge prop-icon-verified" title="Verified"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.5" fill="#fff"/><path d="M8 12.3l2.6 2.6 5.4-5.8" stroke="#1a73e8" stroke-width="2.1" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>' : ''}
+            </div>
+          </div>
+        </div>
+        <div class="compare-col-body">
+          ${availableFmt ? `<div class="prop-loc">
+            <span class="prop-loc-avail" title="Available from">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              ${availableFmt}
+            </span>
+          </div>` : ''}
+        </div>
+      </div>
     </th>`;
   }).join('');
 
