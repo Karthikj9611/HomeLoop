@@ -6603,6 +6603,9 @@ function renderRecentlyViewed() {
   // still empty) and then flashes to the real card look once data arrives.
   // Just stay hidden for this one extra beat instead.
   if (!_initialPropertiesFetchDone) { section.style.display = 'none'; return; }
+  // Not needed on the Explore/All tab — that view already shows everything,
+  // so a "recently viewed" strip on top of it is redundant.
+  if (currentTab === 'All') { section.style.display = 'none'; return; }
   const strip = document.getElementById('recentlyViewedStrip');
   // One-time migration: entries saved before "name" stored the Property ID
   // (or rendered while PROPERTIES hadn't loaded yet) get corrected in place
@@ -6621,7 +6624,6 @@ function renderRecentlyViewed() {
   const ids = recentlyViewed.filter(id => {
     const rv = recentlyViewedData[id];
     if (!rv) return false;
-    if (currentTab === 'All') return true;
     if (currentTab === 'Promoted' || currentTab === 'Verified') {
       const live = PROPERTIES.find(x => x.id === id);
       return live ? matchesTab(live, currentTab) : false;
@@ -7354,14 +7356,20 @@ function cardHTML(p, compact, extraLeftBadge) {
           <span class="prop-stat-icon icon-bed">🛏️</span>
           ${sharingVal || esc(pg.room)}
         </span>`; })() : ''}
-        ${bathrooms > 0 ? `<span class="prop-stat" title="Bathrooms">
+        ${isPGCard ? (pg.occupancy ? `<span class="prop-stat" title="Occupancy">
+          <span class="prop-stat-icon icon-occupancy">🧍</span>
+          ${esc(pg.occupancy)}
+        </span>` : '') : (bathrooms > 0 ? `<span class="prop-stat" title="Bathrooms">
           <span class="prop-stat-icon icon-bath">🚽</span>
           ${bathrooms}
-        </span>` : ''}
-        ${carCount > 0 ? `<span class="prop-stat" title="${carCount+' car parking spot'+(carCount>1?'s':'')}">
+        </span>` : '')}
+        ${isPGCard ? (pg.gender ? (() => { const gIcon = {'Boys':'♂️','Girls':'♀️','Co-ed':'⚥'}[pg.gender] || '🚻'; const gAbbr = {'Boys':'M','Girls':'F','Co-ed':'M/F'}[pg.gender] || esc(pg.gender); return `<span class="prop-stat" title="Gender preference: ${esc(pg.gender)}">
+          <span class="prop-stat-icon icon-gender">${gIcon}</span>
+          ${gAbbr}
+        </span>`; })() : '') : (carCount > 0 ? `<span class="prop-stat" title="${carCount+' car parking spot'+(carCount>1?'s':'')}">
           <span class="prop-stat-icon icon-car">🚗</span>
           ${carCount}
-        </span>` : ''}
+        </span>` : '')}
         ${bikeCount > 0 ? `<span class="prop-stat" title="${bikeCount+' bike parking spot'+(bikeCount>1?'s':'')}">
           <span class="prop-stat-icon icon-bike">🏍️</span>
           ${bikeCount}
@@ -7379,17 +7387,9 @@ function cardHTML(p, compact, extraLeftBadge) {
           <span class="prop-chip-icon icon-furnish">🛋️</span>
           ${p.property?.furnish ?? p.shortStay?.furnish}
         </span>` : ''}
-        ${isPGCard && pg.gender ? `<span class="prop-chip chip-gender" title="Gender preference">
-          <span class="prop-chip-icon icon-gender">🚻</span>
-          ${esc(pg.gender)}
-        </span>` : ''}
         ${isPGCard && pg.meals ? `<span class="prop-chip chip-meals" title="Meals">
           <span class="prop-chip-icon icon-meals">🍽️</span>
           ${esc(pg.meals)}
-        </span>` : ''}
-        ${isPGCard && pg.occupancy ? `<span class="prop-chip chip-occupancy" title="Occupancy available">
-          <span class="prop-chip-icon icon-occupancy">🧍</span>
-          ${esc(pg.occupancy)}
         </span>` : ''}
         ${isPGCard && pg.food ? `<span class="prop-chip chip-food" title="Food type">
           <span class="prop-chip-icon icon-food">🍲</span>
@@ -7564,10 +7564,13 @@ function shortlistCardHTML(p) {
           <span class="prop-stat-icon icon-bed">🛏️</span>
           ${bhkVal}
         </span>` : ''; })()}
-        ${bathrooms > 0 ? `<span class="prop-stat" title="Bathrooms">
+        ${isPGCardSL ? (pgSL.occupancy ? `<span class="prop-stat" title="Occupancy">
+          <span class="prop-stat-icon icon-occupancy">🧍</span>
+          ${esc(pgSL.occupancy)}
+        </span>` : '') : (bathrooms > 0 ? `<span class="prop-stat" title="Bathrooms">
           <span class="prop-stat-icon icon-bath">🚽</span>
           ${bathrooms}
-        </span>` : ''}
+        </span>` : '')}
         <span class="prop-stat" title="Furnishing">
           <span class="prop-stat-icon icon-furnish">🛋️</span>
           ${p.property?.furnish ?? p.pg?.furnish ?? p.shortStay?.furnish}
