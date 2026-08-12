@@ -468,6 +468,11 @@ ul{list-style:none}
   
   padding:20px 0 24px;
 }
+/* Explore/"All" tab: Premium Services follows directly after <main>, so
+   there should be no leftover bottom padding or "No properties found"
+   empty-state gap sitting between the filter bar and it. */
+main.tab-explore{padding-bottom:0}
+main.tab-explore .empty-state{display:none !important}
 .results-header{padding:0 20px}
 .results-header{
   display:flex;align-items:center;justify-content:space-between;
@@ -1260,7 +1265,7 @@ ul{list-style:none}
 
 /* ─── Empty state ──────────────────────────────── */
 .empty-state{
-  text-align:center;padding:60px 20px;
+  text-align:center;padding:28px 20px;
   display:none;
 }
 .empty-state.show{display:block}
@@ -8110,7 +8115,16 @@ function updateAllOnlySections() {
   const mainEl = document.getElementById('mainContent');
   if (mainEl) {
     mainEl.classList.toggle('needs-nav-clear', !show);
+    // On Explore/"All", Premium Services / UrbanAware follow immediately
+    // after <main> — collapse its bottom padding and force-hide the
+    // "No properties found" empty state (which is meaningless here since
+    // this tab isn't really about the property grid) so there's no dead
+    // gap before "Our Premium Services", regardless of how renderCards()
+    // sets emptyState's own display afterward.
+    mainEl.classList.toggle('tab-explore', show);
   }
+  const emptyStateEl = document.getElementById('emptyState');
+  if (emptyStateEl && show) emptyStateEl.classList.remove('show');
 }
 
 function switchTab(el) {
