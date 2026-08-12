@@ -4298,16 +4298,6 @@ main.tab-explore .empty-state{display:none !important}
   </div>
 </div>
 
-    <div style="display:flex;align-items:center;gap:8px;margin-left:auto" id="viewToggleWrap">
-      <div class="view-toggle">
-        <button class="view-btn active" onclick="setView('grid',this)" aria-label="Grid view">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-        </button>
-        <button class="view-btn" onclick="setView('list',this)" aria-label="List view">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
-        </button>
-      </div>
-    </div>
   </div>
 
   <div id="recentlyViewedSection" class="recently-viewed-section" style="display:none">
@@ -8226,6 +8216,19 @@ function updateAllOnlySections() {
   if (leaseSection) leaseSection.style.display = show ? 'none' : '';
   if (pgSection) pgSection.style.display = show ? 'none' : '';
 
+  // The results-header (count + ad banner + view toggle) only makes sense on
+  // Explore ("All") — Promoted/Rent/Lease/PG each render their own section
+  // instead of the shared results grid. Owner-only hiding (see
+  // updateListingVisibility) still applies on top of this — only show it
+  // when both conditions allow it.
+  const rh = document.getElementById('resultsHeader');
+  if (rh) {
+    const canList = (() => { const u = getLoggedInUser(); return !!u && u.accountType === 'owner'; })();
+    rh.style.display = (show && canList) ? '' : 'none';
+    const mainEl2 = document.getElementById('mainContent');
+    if (mainEl2) mainEl2.style.paddingTop = (show && canList) ? '' : '0';
+  }
+
   // Mobile bottom-nav clearance
   const mainEl = document.getElementById('mainContent');
   if (mainEl) {
@@ -10774,11 +10777,6 @@ function updateListPropertyVisibility(user) {
   // is owner-only.
   ['fabAdd', 'fabInlineAdd', 'menuManageLabel', 'menuListRent', 'menuListLease', 'menuListPG', 'adBanner']
     .forEach(id => { const el = document.getElementById(id); if (el) el.style.display = display; });
-  // viewToggleWrap has no CSS class of its own (display:flex is only set
-  // inline in the HTML), so clearing to '' would fall back to the browser
-  // default (block) instead of restoring the flex row — set explicitly.
-  const vt = document.getElementById('viewToggleWrap');
-  if (vt) vt.style.display = canList ? 'flex' : 'none';
   // For non-owners every child of this row is now hidden — collapse the row
   // itself too, or its margin-bottom leaves a bare gap above the listings.
   const rh = document.getElementById('resultsHeader');
