@@ -2124,6 +2124,18 @@ main.tab-explore .empty-state{display:none !important}
 .reviews-loading,.reviews-empty{
   text-align:center;color:var(--text-3);font-size:13.5px;padding:40px;width:100%;flex-shrink:0;
 }
+/* Owner reviews vs Tenant reviews are shown as two separate stacked
+   groups (each its own small auto-advancing single-card carousel), so
+   a reader can immediately tell which side of a listing left a review
+   instead of them being interleaved together. */
+.reviews-group{width:100%}
+.reviews-group + .reviews-group{margin-top:18px;padding-top:16px;border-top:1px solid var(--border)}
+.reviews-group-label{
+  font-size:13px;font-weight:800;color:var(--text);margin-bottom:10px;
+  display:flex;align-items:center;gap:6px;
+}
+.reviews-group-label span{color:var(--brand)}
+.reviews-group-cards{position:relative;width:100%}
 .review-card{
   flex:1 0 auto;width:100%;display:none;
   border:1px solid var(--border);border-radius:18px;padding:14px;background:var(--bg);
@@ -12598,6 +12610,17 @@ function avatarColorFromName(name) {
   return `linear-gradient(135deg, hsl(${hue},70%,60%), hsl(${(hue+30)%360},70%,48%))`;
 }
 
+function reviewRole(rv) {
+  // Reviewer role — the backend's Review docs carry `accountType`
+  // ('customer' or 'owner'), mirroring the User model. Older reviews saved
+  // before this field existed will have neither, so they fall into 'other'.
+  const rawRole = rv.accountType || rv.userType || rv.role || '';
+  const r = String(rawRole).toLowerCase();
+  if (r === 'owner') return 'owner';
+  if (r === 'customer') return 'tenant';
+  return 'other';
+}
+
 function reviewCardHTML(rv) {
   const name = esc(rv.userName || 'HomeLoop user');
   const initial = (name[0] || 'U').toUpperCase();
@@ -12607,15 +12630,10 @@ function reviewCardHTML(rv) {
     : initial;
   const avatarStyle = photoUrl ? '' : ` style="background:${avatarColorFromName(name)}"`;
 
-  // Reviewer role — the backend's Review docs carry `accountType`
-  // ('customer' or 'owner'), mirroring the User model. Older reviews saved
-  // before this field existed will have neither, so no badge shows for them.
-  const rawRole = rv.accountType || rv.userType || rv.role || '';
-  const isOwner = String(rawRole).toLowerCase() === 'owner';
-  const isTenant = !isOwner && String(rawRole).toLowerCase() === 'customer';
-  const roleBadge = isOwner
+  const role = reviewRole(rv);
+  const roleBadge = role === 'owner'
     ? `<span class="review-card-role-badge owner">Owner</span>`
-    : isTenant
+    : role === 'tenant'
       ? `<span class="review-card-role-badge tenant">Tenant</span>`
       : '';
 
@@ -12636,6 +12654,41 @@ function reviewCardHTML(rv) {
     </div>
     <div class="review-card-text">${esc(rv.text)}</div>
   </div>`;
+}
+
+const REVIEW_GROUP_LABELS = { owner: 'Owner', tenant: 'Tenant', other: 'Other' };
+
+function reviewGroupsHTML(reviews) {
+  const buckets = { owner: [], tenant: [], other: [] };
+  reviews.forEach(rv => buckets[reviewRole(rv)].push(rv));
+  return ['owner', 'tenant', 'other']
+    .filter(key => buckets[key].length)
+    .map(key => `<div class="reviews-group" data-group="${key}">
+      <div class="reviews-group-label">${REVIEW_GROUP_LABELS[key]} <span>Reviews</span></div>
+      <div class="reviews-group-cards" id="reviewsGroupCards-${key}">
+        ${buckets[key].map(reviewCardHTML).join('')}
+      </div>
+    </div>`).join('');
+}
+
+// Appends new cards into their matching group (creating the group if it
+// didn't exist on the page yet — e.g. the first tenant review only shows
+// up on page 2 of "Show more").
+function appendReviewsToGroups(list, reviews) {
+  const buckets = { owner: [], tenant: [], other: [] };
+  reviews.forEach(rv => buckets[reviewRole(rv)].push(rv));
+  ['owner', 'tenant', 'other'].forEach(key => {
+    if (!buckets[key].length) return;
+    let cardsEl = document.getElementById(`reviewsGroupCards-${key}`);
+    if (!cardsEl) {
+      list.insertAdjacentHTML('beforeend', `<div class="reviews-group" data-group="${key}">
+        <div class="reviews-group-label">${REVIEW_GROUP_LABELS[key]} <span>Reviews</span></div>
+        <div class="reviews-group-cards" id="reviewsGroupCards-${key}"></div>
+      </div>`);
+      cardsEl = document.getElementById(`reviewsGroupCards-${key}`);
+    }
+    cardsEl.insertAdjacentHTML('beforeend', buckets[key].map(reviewCardHTML).join(''));
+  });
 }
 
 function renderRatingBars(ratingCounts) {
@@ -12672,7 +12725,7 @@ async function loadReviews() {
         loadMoreBtn.style.display = 'none';
         return;
       }
-      list.innerHTML = reviews.map(reviewCardHTML).join('');
+      list.innerHTML = reviewGroupsHTML(reviews);
       const avg = data.avgRating || 0;
       document.getElementById('reviewsAvgScore').textContent = avg.toFixed(1);
       document.getElementById('reviewsAvgStars').textContent = renderStarString(avg);
@@ -12680,7 +12733,7 @@ async function loadReviews() {
       renderRatingBars(data.ratingCounts || {});
       initReviewCarousel();
     } else {
-      list.insertAdjacentHTML('beforeend', reviews.map(reviewCardHTML).join(''));
+      appendReviewsToGroups(list, reviews);
       initReviewCarousel();
     }
 
@@ -12977,32 +13030,36 @@ window.addEventListener('resize', function(){
 });
 
 /* ─── Reviews carousel ──────────────────────────────────────────────
-   The right-hand review panel shows one card at a time (so its height
-   matches the ratings-summary card on the left) and auto-advances to
-   the next review every 10s, looping back to the first after the last.
-   Re-run initReviewCarousel() any time #reviewsList's contents change
-   (initial load, "Show more", a fresh submission) so it always reflects
-   what's actually in the DOM. */
-let _reviewCarouselTimer = null;
-let _reviewCarouselIndex = 0;
+   Owner and Tenant reviews are now shown as two separate groups, each
+   its own single-card carousel (so a reader can tell at a glance which
+   side of a listing left the review, instead of them being interleaved).
+   Every .reviews-group-cards container gets its own independent
+   auto-advance timer. Re-run initReviewCarousel() any time #reviewsList's
+   contents change (initial load, "Show more", a fresh submission) so it
+   always reflects what's actually in the DOM. */
+let _reviewCarouselTimers = [];
 function initReviewCarousel(){
   const list = document.getElementById('reviewsList');
   if (!list) return;
-  const cards = Array.from(list.querySelectorAll('.review-card'));
-  clearInterval(_reviewCarouselTimer);
-  if (!cards.length) return;
+  _reviewCarouselTimers.forEach(t => clearInterval(t));
+  _reviewCarouselTimers = [];
 
-  _reviewCarouselIndex = 0;
-  cards.forEach((c, i) => c.classList.toggle('active', i === 0));
-  if (cards.length <= 1) return;
+  list.querySelectorAll('.reviews-group-cards').forEach(group => {
+    const cards = Array.from(group.querySelectorAll('.review-card'));
+    if (!cards.length) return;
+    let index = 0;
+    cards.forEach((c, i) => c.classList.toggle('active', i === 0));
+    if (cards.length <= 1) return;
 
-  _reviewCarouselTimer = setInterval(() => {
-    const current = list.querySelectorAll('.review-card');
-    if (!current.length) return;
-    current[_reviewCarouselIndex]?.classList.remove('active');
-    _reviewCarouselIndex = (_reviewCarouselIndex + 1) % current.length;
-    current[_reviewCarouselIndex]?.classList.add('active');
-  }, 10000);
+    const timer = setInterval(() => {
+      const current = group.querySelectorAll('.review-card');
+      if (!current.length) return;
+      current[index]?.classList.remove('active');
+      index = (index + 1) % current.length;
+      current[index]?.classList.add('active');
+    }, 10000);
+    _reviewCarouselTimers.push(timer);
+  });
 }
 
 document.addEventListener('click', function(e) {
