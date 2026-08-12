@@ -1265,13 +1265,28 @@ main.tab-explore .empty-state{display:none !important}
 
 /* ─── Empty state ──────────────────────────────── */
 .empty-state{
-  text-align:center;padding:28px 20px;
+  text-align:center;padding:48px 20px 40px;
   display:none;
 }
-.empty-state.show{display:block}
-.empty-state svg{width:56px;height:56px;stroke:var(--border-2);fill:none;stroke-width:1.2;margin:0 auto 16px}
-.empty-state h3{font-size:16px;font-weight:600;color:var(--text);margin-bottom:6px}
-.empty-state p{font-size:13px;color:var(--text-3);max-width:260px;margin:0 auto}
+.empty-state.show{display:flex;flex-direction:column;align-items:center}
+.empty-state-icon{
+  width:72px;height:72px;border-radius:50%;margin:0 auto 20px;
+  display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(145deg,var(--brand-light),var(--bg-3));
+  box-shadow:inset 0 0 0 1px var(--border);
+}
+.empty-state-icon svg{width:30px;height:30px;stroke:var(--brand);fill:none;stroke-width:1.6}
+.empty-state h3{font-size:17px;font-weight:800;color:var(--text);margin-bottom:6px;letter-spacing:-.2px}
+.empty-state p{font-size:13.5px;line-height:1.5;color:var(--text-3);max-width:300px;margin:0 auto}
+.empty-state-actions{display:flex;align-items:center;gap:10px;margin-top:20px;flex-wrap:wrap;justify-content:center}
+.empty-state-btn{
+  font-size:13px;font-weight:700;border-radius:10px;padding:9px 18px;cursor:pointer;
+  transition:transform .12s,box-shadow .12s,background .15s;
+}
+.empty-state-btn.primary{background:var(--brand);color:#fff;border:none}
+.empty-state-btn.primary:hover{background:var(--brand-hover);transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,0,0,.12)}
+.empty-state-btn.secondary{background:var(--bg);color:var(--text-2);border:1px solid var(--border-2)}
+.empty-state-btn.secondary:hover{background:var(--bg-3);color:var(--text)}
 
 /* ─── Property Detail Modal ────────────────────── */
 .modal-overlay{
@@ -4359,8 +4374,14 @@ main.tab-explore .empty-state{display:none !important}
     <div class="prop-grid" id="shortstayGrid"></div>
   </div>
   <div class="empty-state" id="emptyState">
-    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-    <h3>No properties found</h3>
+    <div class="empty-state-icon">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    </div>
+    <h3 id="emptyStateTitle">No properties found</h3>
+    <p id="emptyStateText">We couldn't find anything matching your filters. Try widening your search or clearing a few filters.</p>
+    <div class="empty-state-actions" id="emptyStateActions">
+      <button class="empty-state-btn primary" onclick="clearFilters()">Clear filters</button>
+    </div>
   </div>
 </main>
 
@@ -6771,6 +6792,53 @@ function sectionKeyFor(p) {
   return 'rent';
 }
 
+// Human-readable name for each tab, used by the empty state so the
+// message actually names what's missing ("No PG listings yet") instead
+// of a generic "No properties found" regardless of which tab you're on.
+const TAB_EMPTY_LABEL = {
+  Promoted: 'promoted listings',
+  Rent: 'rental listings',
+  Lease: 'lease listings',
+  PG: 'PG listings',
+  ShortStay: 'short stay listings',
+  All: 'listings',
+};
+
+// Listings for the current tab, ignoring every filter/search — used to
+// tell apart "nothing exists in this category at all" (filters can't
+// help) from "filters narrowed an otherwise non-empty category down to
+// zero" (clearing filters can help), so the empty state can say the
+// right thing and only offer "Clear filters" when it would actually do
+// something.
+function tabRawCount(tab) {
+  return PROPERTIES.filter(p => {
+    if (!SHORT_STAY_ENABLED && pTypeLabel(p) === 'ShortStay') return false;
+    return matchesTab(p, tab);
+  }).length;
+}
+
+function setEmptyStateContent() {
+  const title = document.getElementById('emptyStateTitle');
+  const text = document.getElementById('emptyStateText');
+  const actions = document.getElementById('emptyStateActions');
+  if (!title || !text || !actions) return;
+
+  const label = TAB_EMPTY_LABEL[currentTab] || 'listings';
+  if (tabRawCount(currentTab) === 0) {
+    // Nothing in this category at all — filters are irrelevant here.
+    title.textContent = `No ${label} yet`;
+    text.textContent = currentTab === 'All'
+      ? "There's nothing listed yet. Check back soon, or be the first to post one!"
+      : `There are no ${label} on HomeLoop yet. Check back soon, or try another category.`;
+    actions.style.display = 'none';
+  } else {
+    // Listings exist, but the current filters/search ruled all of them out.
+    title.textContent = 'No properties found';
+    text.textContent = "We couldn't find anything matching your filters. Try widening your search or clearing a few filters.";
+    actions.style.display = '';
+  }
+}
+
 function renderCards() {
   saveFilterState(); // keep localStorage in sync with live filter/tab state on every render
   const empty = document.getElementById('emptyState');
@@ -6784,6 +6852,7 @@ function renderCards() {
       document.getElementById(key + 'Grid').innerHTML = '';
       document.getElementById(key + 'Divider').style.display = 'none';
     });
+    setEmptyStateContent();
     empty.classList.add('show');
     return;
   }
