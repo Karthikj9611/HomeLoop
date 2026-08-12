@@ -6452,7 +6452,7 @@ function formatViews(n) {
 /* ═══════════════════════════════════════════════
    STATE
 ═══════════════════════════════════════════════ */
-let currentTab = 'All'; // default tab shown on load
+let currentTab = 'Promoted'; // default tab shown on load
 const SHOW_VERIFIED_BADGE = false; // verified badge hidden on cards for now — flip to true to bring it back
 let currentSort = 'newest';
 let userCoords = null;      // {lat, lng} once geolocation succeeds, used for "Near me first" sort
@@ -12728,7 +12728,7 @@ async function fetchProperties() {
 /* ── Ad Banner ── */
 document.addEventListener('DOMContentLoaded', function() {
   syncFdBar();
-  updateAllOnlySections(); // show UrbanAware / Reviews / Premium on initial load (default tab is All)
+  updateAllOnlySections(); // hide UrbanAware / Reviews / Premium on initial load (default tab is Promoted)
 
   // ── Load properties from DB ──
   (async function loadPropertiesFromDB() {
