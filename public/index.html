@@ -7763,6 +7763,18 @@ function renderCompareBar() {
   btn.textContent = `Compare (${n})`;
 }
 
+// Strips any deep-link markers (?property=, ?compare=, or the /property/:id
+// path) from the address bar without reloading the page — so refreshing
+// after closing a shared property/compare view doesn't reopen it again.
+function clearDeepLinkUrl() {
+  const url = new URL(window.location.href);
+  let changed = false;
+  if (url.searchParams.has('property')) { url.searchParams.delete('property'); changed = true; }
+  if (url.searchParams.has('compare'))  { url.searchParams.delete('compare');  changed = true; }
+  if (/^\/property\/[a-fA-F0-9]{24}$/.test(url.pathname)) { url.pathname = '/'; changed = true; }
+  if (changed) history.replaceState(null, '', url.pathname + url.search + url.hash);
+}
+
 function openCompareModal() {
   if (compareSet.size < 2) {
     showToast('Select at least 2 properties to compare');
@@ -7776,6 +7788,7 @@ function openCompareModal() {
 function closeCompareModal() {
   document.getElementById('compareModal').classList.remove('open');
   unlockBodyScroll();
+  clearDeepLinkUrl();
 }
 
 function shareCompareViaWhatsApp() {
@@ -9575,6 +9588,7 @@ function closeDetail() {
   document.getElementById('viewActionsRow').style.display = 'none';
   document.getElementById('viewActionsRow2').style.display = 'none';
   document.getElementById('viewActionsFooter').style.display = 'none';
+  clearDeepLinkUrl();
 }
 
 function toggleShortlistFromModal(id) {
