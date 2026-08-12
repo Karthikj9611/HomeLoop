@@ -3629,11 +3629,8 @@ ul{list-style:none}
   </div>
 
   <div class="nav-tabs" role="tablist">
-    <div class="nav-tab active" data-tab="All" role="tab" onclick="switchTab(this)" tabindex="0">
-      <span class="nav-tab-icon">🏘️</span>
-      All
-    </div>
-    <div class="nav-tab" data-tab="Promoted" role="tab" onclick="switchTab(this)" tabindex="0">
+    
+    <div class="nav-tab active" data-tab="Promoted" role="tab" onclick="switchTab(this)" tabindex="0">
       <span class="nav-tab-icon">⭐</span>
       Promoted
     </div>
@@ -3652,6 +3649,10 @@ ul{list-style:none}
     <div class="nav-tab" data-tab="ShortStay" role="tab" onclick="switchTab(this)" tabindex="0" style="display:none">
       <span class="nav-tab-icon">🏨</span>
       Short Stay
+    </div>
+	<div class="nav-tab" data-tab="All" role="tab" onclick="switchTab(this)" tabindex="0">
+      <span class="nav-tab-icon">🧰</span>
+      Explore
     </div>
   </div>
 
@@ -4653,11 +4654,8 @@ ul{list-style:none}
 
 <!-- ─── Mobile bottom nav ────────────────────────── -->
 <nav class="bottom-nav" aria-label="Main navigation">
-  <div class="bottom-tab active" data-tab="All" onclick="switchTabMobile(this)">
-    <span class="bottom-tab-icon">🏘️</span>
-    All
-  </div>
-  <div class="bottom-tab" data-tab="Promoted" onclick="switchTabMobile(this)">
+  
+  <div class="bottom-tab active" data-tab="Promoted" onclick="switchTabMobile(this)">
     <span class="bottom-tab-icon">⭐</span>
     Promoted
   </div>
@@ -4672,6 +4670,10 @@ ul{list-style:none}
   <div class="bottom-tab" data-tab="PG" onclick="switchTabMobile(this)">
     <span class="bottom-tab-icon">🛏️</span>
     PG
+  </div>
+  <div class="bottom-tab" data-tab="All" onclick="switchTabMobile(this)">
+    <span class="bottom-tab-icon">🧰</span>
+    Explore
   </div>
   <div class="bottom-tab" onclick="toggleShortlistPanel()">
     <span class="bottom-tab-icon-wrap">
@@ -8061,16 +8063,32 @@ function clearFiltersHiddenByTab() {
 let hasHonestReviews = false;
 function updateAllOnlySections() {
   const show = currentTab === 'All';
+
   const urbanAware = document.getElementById('honestReviewsSection');
   const reviewsSection = document.querySelector('.reviews-section');
   const premiumServices = document.getElementById('premiumServicesSection');
+
+  const promotedSection = document.getElementById('promotedSection');
+  const rentSection = document.getElementById('rentSection');
+  const leaseSection = document.getElementById('leaseSection');
+  const pgSection = document.getElementById('pgSection');
+
+  // Show only on "All"
   if (urbanAware) urbanAware.style.display = (show && hasHonestReviews) ? '' : 'none';
   if (reviewsSection) reviewsSection.style.display = show ? '' : 'none';
   if (premiumServices) premiumServices.style.display = show ? '' : 'none';
-  // Mobile bottom-nav clearance (see .main.needs-nav-clear in CSS) is only
-  // needed when nothing follows <main> — i.e. every tab except "All".
+
+  // Hide Promoted, Rent, Lease and PG when "All" is selected
+  if (promotedSection) promotedSection.style.display = show ? 'none' : '';
+  if (rentSection) rentSection.style.display = show ? 'none' : '';
+  if (leaseSection) leaseSection.style.display = show ? 'none' : '';
+  if (pgSection) pgSection.style.display = show ? 'none' : '';
+
+  // Mobile bottom-nav clearance
   const mainEl = document.getElementById('mainContent');
-  if (mainEl) mainEl.classList.toggle('needs-nav-clear', !show);
+  if (mainEl) {
+    mainEl.classList.toggle('needs-nav-clear', !show);
+  }
 }
 
 function switchTab(el) {
