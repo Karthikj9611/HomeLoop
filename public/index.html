@@ -2235,14 +2235,33 @@ ul{list-style:none}
 .services-arrow svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2.2}
 .services-arrow.prev{left:-6px}
 .services-arrow.next{right:-6px}
+
+/* On desktop, evenly divide Premium Services and UrbanAware cards into
+   4 equal columns that fill the full row width (instead of a fixed
+   card width with leftover horizontal-scroll space). Overrides the
+   JS-matched card width above for these two strips specifically. */
+@media (min-width:641px){
+  .services-scroll .service-card,
+  .hr-scroll .hr-card{
+    flex:0 0 calc((100% - 48px)/4) !important;
+    width:calc((100% - 48px)/4) !important;
+    min-width:calc((100% - 48px)/4) !important;
+    max-width:calc((100% - 48px)/4) !important;
+  }
+  .hr-scroll .hr-thumb{
+    width:100% !important;
+    min-width:100% !important;
+    max-width:100% !important;
+  }
+}
 @media (max-width:640px){
   .services-section{padding:8px 12px 24px}
   .services-title{font-size:23px}
   .services-sub{font-size:13px}
   .services-scroll{gap:10px;padding:4px 0 10px}
   .service-card{
-    flex:0 0 var(--matched-card-w, calc((100vw - 34px)/2));
-    width:var(--matched-card-w, calc((100vw - 34px)/2));min-width:var(--matched-card-w, calc((100vw - 34px)/2));max-width:var(--matched-card-w, calc((100vw - 34px)/2));
+    flex:0 0 calc((100% - 10px)/2) !important;
+    width:calc((100% - 10px)/2) !important;min-width:calc((100% - 10px)/2) !important;max-width:calc((100% - 10px)/2) !important;
     height:var(--matched-card-h, 250px);min-height:var(--matched-card-h, 250px);max-height:var(--matched-card-h, 250px);
   }
   .services-arrow{display:none}
@@ -2394,11 +2413,11 @@ ul{list-style:none}
   .hr-arrow{display:none}
   .hr-scroll{gap:10px;padding:4px 0 10px}
   .hr-card{
-    flex:0 0 var(--matched-card-w, calc((100vw - 34px)/2));
-    width:var(--matched-card-w, calc((100vw - 34px)/2));min-width:var(--matched-card-w, calc((100vw - 34px)/2));max-width:var(--matched-card-w, calc((100vw - 34px)/2));
+    flex:0 0 calc((100% - 10px)/2) !important;
+    width:calc((100% - 10px)/2) !important;min-width:calc((100% - 10px)/2) !important;max-width:calc((100% - 10px)/2) !important;
   }
   .hr-thumb{
-    width:var(--matched-card-w, calc((100vw - 34px)/2));min-width:var(--matched-card-w, calc((100vw - 34px)/2));max-width:var(--matched-card-w, calc((100vw - 34px)/2));
+    width:100% !important;min-width:100% !important;max-width:100% !important;
     height:var(--matched-card-h, 250px);min-height:var(--matched-card-h, 250px);max-height:var(--matched-card-h, 250px);
   }
 }
