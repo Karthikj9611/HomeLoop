@@ -542,6 +542,7 @@ const PropertyDetailsSchema = new mongoose.Schema({
   floor:     { type: String }, // Not collected for Short Stay (form hides this field) — no default, so it's omitted entirely instead of appearing as a default value
   area:      { type: String },   // not collected for PG/Short Stay; no default, so omitted entirely for them
   bathrooms: { type: String }, // Not collected for Short Stay (form hides this field) — no default, so it's omitted entirely instead of appearing as a default value
+  toiletType: { type: String }, // Indian / Western / Both — not collected for PG/Short Stay; no default, so omitted entirely for them
   furnish:   { type: String }, // Not collected for Short Stay (form hides this field) — no default, so it's omitted entirely instead of appearing as a default value
   facing:    { type: String }, // Not collected for Short Stay (form hides this field) — no default, so it's omitted entirely instead of appearing as a default value
   age:       { type: String },   // not collected for PG/Short Stay; no default, so omitted entirely for them
@@ -581,6 +582,7 @@ const PgSchema = new mongoose.Schema({
   occupancy:     { type: String, default: null },
   notice:        { type: String, default: null }, // pgNotice — lives here only, not mirrored into terms.notice
   bathroom:      { type: String, default: null },
+  toiletType:    { type: String, default: null }, // pgToiletType — Indian / Western / Both
   furnish:       { type: String, default: null }, // pgRoomFurnishing
   food:          { type: String, default: null }, // pgFoodType
   available:     { type: String, default: null }, // pgAvailableFrom — lives here only, not mirrored into property.available

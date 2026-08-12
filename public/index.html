@@ -5237,6 +5237,10 @@ main.tab-explore .empty-state{display:none !important}
         <select class="form-select" id="f-baths"><option>1</option><option>2</option><option>3</option><option>4+</option></select>
       </div>
       <div class="form-group">
+        <label class="form-label">Toilet Type</label>
+        <select class="form-select" id="f-toiletType"><option>Western</option><option>Indian</option><option>Both</option></select>
+      </div>
+      <div class="form-group">
         <label class="form-label">Furnishing</label>
         <select class="form-select" id="f-furnishing">
           <option>Fully</option><option>Semi</option><option>Basic</option>
@@ -5335,6 +5339,7 @@ main.tab-explore .empty-state{display:none !important}
           <select class="form-select" id="f-pgRoomType"><option>Single</option><option>Double Sharing</option><option>Triple Sharing</option><option>Dormitory</option></select>
         </div>
         <div class="form-group"><label class="form-label">Attached bathroom</label><select class="form-select" id="f-pgBathroom"><option>Yes</option><option>Shared</option></select></div>
+        <div class="form-group"><label class="form-label">Toilet Type</label><select class="form-select" id="f-pgToiletType"><option>Western</option><option>Indian</option><option>Both</option></select></div>
         <div class="form-group"><label class="form-label">Occupancy available</label><input class="form-input" type="number" id="f-pgOccupancy" /></div>
         <div class="form-group"><label class="form-label">Room furnishing</label><select class="form-select" id="f-pgRoomFurnishing"><option value="">Select</option><option>Fully Furnished</option><option>Semi-Furnished</option><option>Unfurnished</option></select></div>
         <div class="form-group">
@@ -7384,6 +7389,7 @@ function cardHTML(p, compact, extraLeftBadge) {
   const pg = p.pg || {};
   const shortStay = p.shortStay || {};
   const bathrooms = isPGCard ? (parseInt(pg.bathroom) || 1) : (parseInt(p.property?.bathrooms) || 1);
+  
   const carCount = isPGCard ? (parseInt(pg.car, 10) || 0) : (parseInt(p.property?.car, 10) || 0);
   const bikeCount = isPGCard ? (parseInt(pg.bike, 10) || 0) : (parseInt(p.property?.bike, 10) || 0);
   const carpark = carCount > 0;
@@ -7611,6 +7617,10 @@ function shortlistCardHTML(p) {
   const isPGCardSL = pType === 'PG';
   const pgSL = p.pg || {};
   const bathrooms = isPGCardSL ? (parseInt(pgSL.bathroom) || 1) : (parseInt(p.property?.bathrooms) || 1);
+  const toiletIsIndianSL = String(p.property?.toiletType || '').toLowerCase() === 'indian';
+  const bathIconSvgSL = toiletIsIndianSL
+    ? '<svg viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="12" cy="13" rx="9" ry="6"/><ellipse cx="12" cy="13" rx="3" ry="4.5"/><rect x="4" y="7" width="4" height="2" rx="1"/><rect x="16" y="7" width="4" height="2" rx="1"/></svg>'
+    : '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="3" width="12" height="5" rx="1"/><path d="M8 8v3a4 4 0 0 0 8 0V8"/><ellipse cx="12" cy="17" rx="7" ry="4"/><path d="M6 17v1a6 6 0 0 0 12 0v-1"/></svg>';
   const carCount = isPGCardSL ? (parseInt(pgSL.car, 10) || 0) : (parseInt(p.property?.car, 10) || 0);
   const bikeCount = isPGCardSL ? (parseInt(pgSL.bike, 10) || 0) : (parseInt(p.property?.bike, 10) || 0);
   const carpark = carCount > 0;
@@ -7699,8 +7709,8 @@ function shortlistCardHTML(p) {
         ${isPGCardSL ? (pgSL.occupancy ? `<span class="prop-stat" title="Occupancy">
           <span class="prop-stat-icon icon-occupancy">🧍</span>
           ${esc(pgSL.occupancy)}
-        </span>` : '') : (bathrooms > 0 ? `<span class="prop-stat" title="Bathrooms">
-          <span class="prop-stat-icon icon-bath">🚽</span>
+        </span>` : '') : (bathrooms > 0 ? `<span class="prop-stat" title="Bathrooms${toiletIsIndianSL ? ' (Indian toilet)' : ' (Western toilet)'}">
+          <span class="prop-stat-icon icon-bath">${bathIconSvgSL}</span>
           ${bathrooms}
         </span>` : '')}
         <span class="prop-stat" title="Furnishing">
@@ -7981,6 +7991,7 @@ function renderCompareTable() {
     { label: 'Furnishing', get: p => dash(p.property?.furnish ?? p.pg?.furnish ?? p.shortStay?.furnish) },
     { label: 'Floor', get: p => dash(p.property?.floor) },
     { label: 'Bathrooms', get: p => dash(p.property?.bathrooms ?? p.pg?.bathroom) },
+    { label: 'Toilet type', get: p => dash(p.property?.toiletType ?? p.pg?.toiletType) },
     { label: 'Facing', get: p => dash(p.property?.facing) },
     { label: 'Tenant preferred', get: p => dash(p.property?.tenant) },
     { label: 'Lift', get: p => yn(pHasLift(p)) },
@@ -8008,6 +8019,7 @@ function renderCompareTable() {
       { label: 'Room type', get: p => dash(p.pg?.room) },
       { label: 'Occupancy', get: p => dash(p.pg?.occupancy) },
       { label: 'Attached bathroom', get: p => dash(p.pg?.bathroom) },
+      { label: 'Toilet type', get: p => dash(p.pg?.toiletType) },
       { label: 'Room furnishing', get: p => dash(p.pg?.furnish) },
       { label: 'Meals included', get: p => dash(p.pg?.meals) },
       { label: 'Food type', get: p => dash(p.pg?.food) },
@@ -9669,6 +9681,7 @@ function buildDetailTable(p) {
     kv('Car parking', property.car),
     kv('Floor', property.floor),
     kv('Bathrooms', property.bathrooms),
+    !isPG && !isShortStay ? kv('Toilet type', property.toiletType) : null,
     kv('Furnishing', property.furnish),
     !isPG ? kv('Available from', property.available ? formatDateDisplay(property.available) : property.available) : null,
   ]);
@@ -9697,6 +9710,7 @@ function buildDetailTable(p) {
       kv('Occupancy', pg.occupancy),
       kv('Notice period', pg.notice),
       kv('Bathroom', pg.bathroom),
+      kv('Toilet type', pg.toiletType),
       kv('Room furnishing', pg.furnish),
       kv('Food type', pg.food),
       kv('Available from', pg.available ? formatDateDisplay(pg.available) : pg.available),
@@ -10511,6 +10525,7 @@ function applyImportedProperty(p) {
   if (isShortStay) { sv('f-ssBikePark', property.bike); sv('f-ssCarPark', property.car); }
   sv('f-floor', property.floor);
   sv('f-baths', isPG ? '1' : property.bathrooms);
+  if (!isPG && !isShortStay) sv('f-toiletType', property.toiletType);
   sv('f-furnishing', property.furnish);
   if (isPG) sv('f-pgAvailableFrom', pg.available);
   else if (isLease) sv('f-leaseAvailableFrom', property.available);
@@ -10571,6 +10586,7 @@ function applyImportedProperty(p) {
     sv('f-pgMeals', pg.meals);
     sv('f-pgOccupancy', pg.occupancy);
     sv('f-pgBathroom', pg.bathroom);
+    sv('f-pgToiletType', pg.toiletType);
     sv('f-pgRoomFurnishing', pg.furnish);
     sv('f-pgFoodType', pg.food);
     sv('f-pgVisitorPolicy', pg.visitors);
@@ -13648,6 +13664,7 @@ function submitListing() {
         ...(isShortStay ? {} : {
           floor:     document.getElementById('f-floor').value || 'G',
           bathrooms: document.getElementById('f-baths').value || '1',
+          toiletType: document.getElementById('f-toiletType').value,
           furnish:   document.getElementById('f-furnishing').value,
           facing:    document.getElementById('f-facing').value,
           tenant:    document.getElementById('f-tenant').value,
@@ -13701,6 +13718,7 @@ function submitListing() {
       occupancy: gv('f-pgOccupancy') || null,
       notice:    gv('f-pgNotice') || null,
       bathroom:  gv('f-pgBathroom') || null,
+      toiletType: gv('f-pgToiletType') || null,
       furnish:   gv('f-pgRoomFurnishing') || null,
       food:      gv('f-pgFoodType') || null,
       available: gv('f-pgAvailableFrom') || null,
