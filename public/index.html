@@ -6823,6 +6823,20 @@ function setEmptyStateContent() {
   const actions = document.getElementById('emptyStateActions');
   if (!title || !text || !actions) return;
 
+  // The very first renderCards() call fires synchronously on page load,
+  // before the async fetchProperties() request has come back — PROPERTIES
+  // is still `[]` at that point, which would otherwise make this claim
+  // "No listings yet" for a split second while data is still loading (and
+  // clash visually with the grid's own "Finding your perfect home…"
+  // placeholder). Show a neutral loading message instead until that first
+  // fetch has actually completed.
+  if (!_initialPropertiesFetchDone) {
+    title.textContent = 'Loading listings…';
+    text.textContent = 'Hang tight while we fetch the latest properties.';
+    actions.style.display = 'none';
+    return;
+  }
+
   const label = TAB_EMPTY_LABEL[currentTab] || 'listings';
   if (tabRawCount(currentTab) === 0) {
     // Nothing in this category at all — filters are irrelevant here.
@@ -12846,7 +12860,12 @@ async function fetchProperties() {
   const leaseGrid = document.getElementById('leaseGrid');
   const pgGrid = document.getElementById('pgGrid');
   const promotedGrid = document.getElementById('promotedGrid');
-  if (rentGrid) rentGrid.innerHTML = '<div style="grid-column:1/-1;padding:40px;text-align:center;font-size:18px;color:var(--text-2)">🏠✨ Finding your perfect home... ⏳</div>';
+  // No inline "Finding your perfect home…" placeholder here anymore — the
+  // very first renderCards() call (which runs synchronously before this
+  // fetch even starts) already puts up the emptyState's own "Loading
+  // listings…" message, so setting a second, different-looking loading
+  // string in the grid itself just produced two conflicting messages
+  // stacked on top of each other on a fresh page load.
   if (leaseGrid) leaseGrid.innerHTML = '';
   if (pgGrid) pgGrid.innerHTML = '';
   if (promotedGrid) promotedGrid.innerHTML = '';
@@ -12871,6 +12890,12 @@ async function fetchProperties() {
     console.error('Could not load properties from server:', err.message);
     const rentGrid2 = document.getElementById('rentGrid');
     if (rentGrid2) rentGrid2.innerHTML = '<div style="grid-column:1/-1;padding:40px;text-align:center;color:var(--text-2)">⚠️ Could not connect to server. Please refresh the page.</div>';
+    // Hide the emptyState's "Loading listings…" message now that we know
+    // the fetch actually failed — otherwise it'd sit stacked underneath
+    // the connection-error message above, the same double-message look
+    // this was fixed to avoid.
+    const emptyEl = document.getElementById('emptyState');
+    if (emptyEl) emptyEl.classList.remove('show');
     // Still run the one-shot restore (and let saveFilterState resume saving)
     // even on failure — otherwise a failed fetch permanently blocks filter
     // persistence for the rest of this page load.
