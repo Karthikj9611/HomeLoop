@@ -2136,13 +2136,32 @@ main.tab-explore .empty-state{display:none !important}
 }
 .reviews-group-label span{color:var(--brand)}
 .reviews-group-cards{position:relative;width:100%}
+.reviews-group-cards.is-swipeable{cursor:pointer;touch-action:pan-y}
+.reviews-group-cards.is-swipeable .review-card{user-select:none}
+.reviews-carousel-dots{
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  margin-top:10px;
+}
+.reviews-carousel-dot{
+  width:6px;height:6px;border-radius:50%;padding:0;
+  background:var(--border-2);border:none;cursor:pointer;
+  transition:background .2s,width .2s,border-radius .2s;
+}
+.reviews-carousel-dot.active{width:16px;border-radius:3px;background:var(--brand)}
+/* Crossfade instead of a hard cut: every card sits stacked on top of one
+   another (absolute), fading out as the incoming one fades in, so a
+   review change reads as a gentle dissolve rather than a jump. The
+   .active card switches to position:relative so it's the one that
+   actually determines the container's height. */
 .review-card{
-  flex:1 0 auto;width:100%;display:none;
+  position:absolute;top:0;left:0;right:0;width:100%;
+  display:flex;flex-direction:column;
+  opacity:0;pointer-events:none;
+  transition:opacity .6s ease;
   border:1px solid var(--border);border-radius:18px;padding:14px;background:var(--bg);
   box-shadow:0 2px 14px rgba(0,0,0,.04);
 }
-.review-card.active{display:flex;flex-direction:column;animation:reviewCardIn .4s ease;}
-@keyframes reviewCardIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.review-card.active{position:relative;opacity:1;pointer-events:auto}
 .review-card-head{display:flex;align-items:center;gap:11px;margin:2px 0 8px}
 .review-avatar{
   width:36px;height:36px;border-radius:50%;
@@ -2154,12 +2173,6 @@ main.tab-explore .empty-state{display:none !important}
 .review-card-meta{flex:1;min-width:0}
 .review-card-name-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 .review-card-name{font-size:13.5px;font-weight:700;color:var(--text)}
-.review-card-role-badge{
-  font-size:9.5px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;
-  padding:2px 7px;border-radius:99px;line-height:1.5;
-}
-.review-card-role-badge.tenant{background:var(--brand-light);color:var(--brand)}
-.review-card-role-badge.owner{background:var(--bg-3);color:var(--text-2);border:1px solid var(--border-2)}
 .review-card-date{font-size:11.5px;color:var(--text-3)}
 .review-card-stars-wrap{display:flex;flex-direction:column;align-items:flex-end;gap:1px;flex-shrink:0}
 .review-card-stars{color:#f5a623;font-size:13px;letter-spacing:1.5px;white-space:nowrap}
@@ -12630,20 +12643,12 @@ function reviewCardHTML(rv) {
     : initial;
   const avatarStyle = photoUrl ? '' : ` style="background:${avatarColorFromName(name)}"`;
 
-  const role = reviewRole(rv);
-  const roleBadge = role === 'owner'
-    ? `<span class="review-card-role-badge owner">Owner</span>`
-    : role === 'tenant'
-      ? `<span class="review-card-role-badge tenant">Tenant</span>`
-      : '';
-
   return `<div class="review-card">
     <div class="review-card-head">
       <div class="review-avatar"${avatarStyle}>${avatarInner}</div>
       <div class="review-card-meta">
         <div class="review-card-name-row">
           <div class="review-card-name">${name}</div>
-          ${roleBadge}
         </div>
         <div class="review-card-date">${reviewTimeAgo(rv.createdAt)}</div>
       </div>
@@ -12667,6 +12672,7 @@ function reviewGroupsHTML(reviews) {
       <div class="reviews-group-label">${REVIEW_GROUP_LABELS[key]} <span>Reviews</span></div>
       <div class="reviews-group-cards" id="reviewsGroupCards-${key}">
         ${buckets[key].map(reviewCardHTML).join('')}
+        <div class="reviews-carousel-dots" id="reviewsDots-${key}"></div>
       </div>
     </div>`).join('');
 }
@@ -12683,11 +12689,15 @@ function appendReviewsToGroups(list, reviews) {
     if (!cardsEl) {
       list.insertAdjacentHTML('beforeend', `<div class="reviews-group" data-group="${key}">
         <div class="reviews-group-label">${REVIEW_GROUP_LABELS[key]} <span>Reviews</span></div>
-        <div class="reviews-group-cards" id="reviewsGroupCards-${key}"></div>
+        <div class="reviews-group-cards" id="reviewsGroupCards-${key}">
+          <div class="reviews-carousel-dots" id="reviewsDots-${key}"></div>
+        </div>
       </div>`);
       cardsEl = document.getElementById(`reviewsGroupCards-${key}`);
     }
-    cardsEl.insertAdjacentHTML('beforeend', buckets[key].map(reviewCardHTML).join(''));
+    // New cards go before the dots, which must stay last.
+    cardsEl.querySelector('.reviews-carousel-dots')
+      .insertAdjacentHTML('beforebegin', buckets[key].map(reviewCardHTML).join(''));
   });
 }
 
@@ -13033,32 +13043,115 @@ window.addEventListener('resize', function(){
    Owner and Tenant reviews are now shown as two separate groups, each
    its own single-card carousel (so a reader can tell at a glance which
    side of a listing left the review, instead of them being interleaved).
-   Every .reviews-group-cards container gets its own independent
-   auto-advance timer. Re-run initReviewCarousel() any time #reviewsList's
-   contents change (initial load, "Show more", a fresh submission) so it
-   always reflects what's actually in the DOM. */
-let _reviewCarouselTimers = [];
+   Every group gets its own independent auto-advance timer, and can also
+   be stepped manually via the prev/next arrows or the dots — a manual
+   step resets that group's auto-advance timer so it doesn't immediately
+   jump again right after the user acts. Re-run initReviewCarousel() any
+   time #reviewsList's contents change (initial load, "Show more", a
+   fresh submission) so it always reflects what's actually in the DOM. */
+const _reviewCarousels = {}; // key -> { index, timer }
+
+function _reviewCarouselGroupEl(key) {
+  return document.getElementById(`reviewsGroupCards-${key}`);
+}
+
+function _setReviewCarouselIndex(key, index) {
+  const group = _reviewCarouselGroupEl(key);
+  if (!group) return;
+  const cards = group.querySelectorAll('.review-card');
+  if (!cards.length) return;
+  const clamped = ((index % cards.length) + cards.length) % cards.length;
+  cards.forEach((c, i) => c.classList.toggle('active', i === clamped));
+  const dots = document.getElementById(`reviewsDots-${key}`);
+  if (dots) {
+    dots.querySelectorAll('.reviews-carousel-dot').forEach((d, i) => d.classList.toggle('active', i === clamped));
+  }
+  if (_reviewCarousels[key]) _reviewCarousels[key].index = clamped;
+}
+
+function _startReviewCarouselTimer(key) {
+  const state = _reviewCarousels[key];
+  if (!state) return;
+  clearInterval(state.timer);
+  const group = _reviewCarouselGroupEl(key);
+  if (!group || group.querySelectorAll('.review-card').length <= 1) return;
+  state.timer = setInterval(() => {
+    _setReviewCarouselIndex(key, (_reviewCarousels[key]?.index ?? 0) + 1);
+  }, 10000);
+}
+
+// Called by the prev/next arrow buttons.
+function reviewCarouselStep(key, dir) {
+  const current = _reviewCarousels[key]?.index ?? 0;
+  _setReviewCarouselIndex(key, current + dir);
+  _startReviewCarouselTimer(key); // manual interaction resets the auto-advance clock
+}
+
+// Called by clicking a dot — jumps straight to that review.
+function reviewCarouselGoTo(key, index) {
+  _setReviewCarouselIndex(key, index);
+  _startReviewCarouselTimer(key);
+}
+
 function initReviewCarousel(){
   const list = document.getElementById('reviewsList');
   if (!list) return;
-  _reviewCarouselTimers.forEach(t => clearInterval(t));
-  _reviewCarouselTimers = [];
+  Object.values(_reviewCarousels).forEach(s => clearInterval(s.timer));
 
   list.querySelectorAll('.reviews-group-cards').forEach(group => {
+    const key = group.id.replace('reviewsGroupCards-', '');
     const cards = Array.from(group.querySelectorAll('.review-card'));
     if (!cards.length) return;
-    let index = 0;
-    cards.forEach((c, i) => c.classList.toggle('active', i === 0));
-    if (cards.length <= 1) return;
 
-    const timer = setInterval(() => {
-      const current = group.querySelectorAll('.review-card');
-      if (!current.length) return;
-      current[index]?.classList.remove('active');
-      index = (index + 1) % current.length;
-      current[index]?.classList.add('active');
-    }, 10000);
-    _reviewCarouselTimers.push(timer);
+    _reviewCarousels[key] = { index: 0, timer: null };
+    cards.forEach((c, i) => c.classList.toggle('active', i === 0));
+
+    const multi = cards.length > 1;
+    group.classList.toggle('is-swipeable', multi);
+
+    const dots = document.getElementById(`reviewsDots-${key}`);
+    if (dots) {
+      dots.innerHTML = multi
+        ? cards.map((_, i) => `<button class="reviews-carousel-dot${i === 0 ? ' active' : ''}" aria-label="Go to review ${i + 1}" onclick="reviewCarouselGoTo('${key}', ${i})"></button>`).join('')
+        : '';
+    }
+
+    if (multi) _startReviewCarouselTimer(key);
+  });
+
+  _wireReviewCarouselGestures();
+}
+
+/* Tap-or-swipe navigation, in place of prev/next arrow buttons: tapping
+   a review card advances to the next one, swiping left/right in either
+   direction steps forward/back. Uses pointer events so it works the same
+   for touch and mouse. Wiring only happens once per group container
+   (tracked via dataset.gestureWired) since the same container element is
+   reused across "Show more" appends and re-runs of initReviewCarousel(). */
+function _wireReviewCarouselGestures() {
+  document.querySelectorAll('.reviews-group-cards').forEach(group => {
+    if (group.dataset.gestureWired) return;
+    group.dataset.gestureWired = '1';
+    const key = group.id.replace('reviewsGroupCards-', '');
+    let startX = 0, startY = 0, tracking = false;
+
+    group.addEventListener('pointerdown', (e) => {
+      if (e.target.closest('.reviews-carousel-dot')) return;
+      startX = e.clientX; startY = e.clientY; tracking = true;
+    });
+    group.addEventListener('pointerup', (e) => {
+      if (!tracking || e.target.closest('.reviews-carousel-dot')) { tracking = false; return; }
+      tracking = false;
+      const cardCount = group.querySelectorAll('.review-card').length;
+      if (cardCount <= 1) return;
+      const dx = e.clientX - startX;
+      const dy = e.clientY - startY;
+      if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) {
+        reviewCarouselStep(key, dx < 0 ? 1 : -1); // swipe left = next, swipe right = prev
+      } else {
+        reviewCarouselStep(key, 1); // plain tap = next
+      }
+    });
   });
 }
 
