@@ -13190,16 +13190,14 @@ window.addEventListener('resize', function(){
 });
 
 /* ─── Reviews carousel ──────────────────────────────────────────────
-   Owner and Tenant reviews are now shown as two separate groups, each
-   its own single-card carousel (so a reader can tell at a glance which
+   Owner and Tenant reviews are shown as two separate groups, each its
+   own single-card carousel (so a reader can tell at a glance which
    side of a listing left the review, instead of them being interleaved).
-   Every group gets its own independent auto-advance timer, and can also
-   be stepped manually via the prev/next arrows or the dots — a manual
-   step resets that group's auto-advance timer so it doesn't immediately
-   jump again right after the user acts. Re-run initReviewCarousel() any
-   time #reviewsList's contents change (initial load, "Show more", a
-   fresh submission) so it always reflects what's actually in the DOM. */
-const _reviewCarousels = {}; // key -> { index, timer }
+   No auto-advance — a group only changes card on tap or swipe, via the
+   prev/next arrows, or by clicking a dot. Re-run initReviewCarousel()
+   any time #reviewsList's contents change (initial load, "Show more",
+   a fresh submission) so it always reflects what's actually in the DOM. */
+const _reviewCarousels = {}; // key -> { index }
 
 function _reviewCarouselGroupEl(key) {
   return document.getElementById(`reviewsGroupCards-${key}`);
@@ -13219,41 +13217,27 @@ function _setReviewCarouselIndex(key, index) {
   if (_reviewCarousels[key]) _reviewCarousels[key].index = clamped;
 }
 
-function _startReviewCarouselTimer(key) {
-  const state = _reviewCarousels[key];
-  if (!state) return;
-  clearInterval(state.timer);
-  const group = _reviewCarouselGroupEl(key);
-  if (!group || group.querySelectorAll('.review-card').length <= 1) return;
-  state.timer = setInterval(() => {
-    _setReviewCarouselIndex(key, (_reviewCarousels[key]?.index ?? 0) + 1);
-  }, 10000);
-}
-
 // Called by the prev/next arrow buttons.
 function reviewCarouselStep(key, dir) {
   const current = _reviewCarousels[key]?.index ?? 0;
   _setReviewCarouselIndex(key, current + dir);
-  _startReviewCarouselTimer(key); // manual interaction resets the auto-advance clock
 }
 
 // Called by clicking a dot — jumps straight to that review.
 function reviewCarouselGoTo(key, index) {
   _setReviewCarouselIndex(key, index);
-  _startReviewCarouselTimer(key);
 }
 
 function initReviewCarousel(){
   const list = document.getElementById('reviewsList');
   if (!list) return;
-  Object.values(_reviewCarousels).forEach(s => clearInterval(s.timer));
 
   list.querySelectorAll('.reviews-group-cards').forEach(group => {
     const key = group.id.replace('reviewsGroupCards-', '');
     const cards = Array.from(group.querySelectorAll('.review-card'));
     if (!cards.length) return;
 
-    _reviewCarousels[key] = { index: 0, timer: null };
+    _reviewCarousels[key] = { index: 0 };
     cards.forEach((c, i) => c.classList.toggle('active', i === 0));
 
     const multi = cards.length > 1;
@@ -13265,8 +13249,6 @@ function initReviewCarousel(){
         ? cards.map((_, i) => `<button class="reviews-carousel-dot${i === 0 ? ' active' : ''}" aria-label="Go to review ${i + 1}" onclick="reviewCarouselGoTo('${key}', ${i})"></button>`).join('')
         : '';
     }
-
-    if (multi) _startReviewCarouselTimer(key);
   });
 
   _wireReviewCarouselGestures();
