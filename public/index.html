@@ -12929,6 +12929,12 @@ async function fetchProperties() {
 
 /* ── Ad Banner ── */
 document.addEventListener('DOMContentLoaded', function() {
+  // Fire-and-forget: records this page load as a visit. The server dedups
+  // by a long-lived cookie (plus an IP/device fallback for incognito), so
+  // reloads, extra tabs, and repeat visits from this browser don't inflate
+  // the count — see POST /api/stats/visit on the backend.
+  fetch('/api/stats/visit', { method: 'POST', credentials: 'same-origin' }).catch(() => { /* stats are best-effort, never block the page on this */ });
+
   syncFdBar();
   updateAllOnlySections(); // hide UrbanAware / Reviews / Premium on initial load (default tab is Promoted)
 

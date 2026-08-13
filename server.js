@@ -30,7 +30,7 @@ app.set('trust proxy', 1); // we're behind Render's proxy; needed for express-ra
 // <script> blocks throughout, so a default CSP would break them; enabling it
 // properly needs a nonce- or hash-based rework of those pages first.
 app.use(helmet({ contentSecurityPolicy: false }));
-app.use(cors({ origin: process.env.ALLOWED_ORIGIN || '*' }));
+app.use(cors({ origin: process.env.ALLOWED_ORIGIN || '*', credentials: true }));
 app.use(express.json({
   limit: '10mb', // 10mb to allow base64 images
 }));
@@ -2312,8 +2312,9 @@ app.get('/api/user/payments', requireUser, async (req, res) => {
 // ────────────────────────────────────────────────────────────────────────────
 // ── SITE STATS (visitor counter + total registered users) ──
 // Powers the two small stat pills above the FAB on the homepage:
-//   - "Website visitors": all-time count of page loads, bumped once per
-//     visit by a fire-and-forget call from the frontend on load.
+//   - "Website visitors": all-time count of UNIQUE visitors (not page loads),
+//     bumped once per visitor by a fire-and-forget call from the frontend on
+//     load. "Today's visitors" is the same idea, scoped to the current day.
 //   - "Login users": total registered users (User.countDocuments()).
 // A single-document counter (keyed by `key`) is enough here — no need for
 // the Counter/nextSequenceId pattern used for human-readable IDs elsewhere.
@@ -2323,6 +2324,54 @@ const SiteStatSchema = new mongoose.Schema({
   value: { type: Number, default: 0 },
 });
 const SiteStat = mongoose.model('SiteStat', SiteStatSchema);
+
+// ── Visitor identity, for dedup ──
+// Two-tier identity so a person isn't recounted from the same device:
+//   1. `visitorId` — a random token set as a long-lived cookie. Survives
+//      refreshes, new tabs, and closing/reopening the browser normally.
+//   2. `fingerprint` — sha256(IP + User-Agent). Cookies don't survive an
+//      incognito/private window (browsers isolate that storage on purpose),
+//      so this is the fallback that still recognizes "same device, same
+//      network" even when no cookie comes back.
+// A visit is "new" (bumps the all-time counter) only when NEITHER identity
+// matches an existing record. Note this is best-effort, not exact: devices
+// sharing one IP behind the same NAT with an identical browser/OS combo can
+// collide (undercount), and a visitor switching networks while incognito
+// won't be recognized (overcount). That's an inherent limit of dedup without
+// requiring accounts/login — normal for any visitor-counter implementation.
+const VisitorSchema = new mongoose.Schema({
+  visitorId:    { type: String, default: null, index: true },
+  fingerprint:  { type: String, required: true, index: true },
+  firstSeenAt:  { type: Date, default: Date.now },
+  lastSeenAt:   { type: Date, default: Date.now },
+  lastSeenDate: { type: String, required: true }, // 'YYYY-MM-DD', local to bumpDailyStat's clock
+});
+const Visitor = mongoose.model('Visitor', VisitorSchema);
+
+const VISITOR_COOKIE_NAME  = 'hl_vid';
+const VISITOR_COOKIE_MAXAGE_MS = 5 * 365 * 24 * 60 * 60 * 1000; // 5 years
+
+// Minimal cookie reader — avoids pulling in cookie-parser for one cookie.
+function readCookie(req, name) {
+  const header = req.headers.cookie;
+  if (!header) return null;
+  const parts = header.split(';');
+  for (const part of parts) {
+    const eq = part.indexOf('=');
+    if (eq === -1) continue;
+    const k = part.slice(0, eq).trim();
+    if (k === name) return decodeURIComponent(part.slice(eq + 1).trim());
+  }
+  return null;
+}
+
+function visitorFingerprint(req) {
+  // req.ip respects 'trust proxy' (set above), so this is the real client IP
+  // behind Render's proxy, not the proxy's own address.
+  const ip = (req.ip || '').toString();
+  const ua = (req.headers['user-agent'] || '').toString();
+  return crypto.createHash('sha256').update(`${ip}|${ua}`).digest('hex');
+}
 
 // ── Daily breakdown backing the admin panel's "Daily Visits" and
 // "Users Registered" tabs. One doc per (date, type) — bumped once per page
@@ -2365,13 +2414,61 @@ const visitLimiterStats = rateLimit({
 
 app.post('/api/stats/visit', visitLimiterStats, async (req, res) => {
   try {
-    const doc = await SiteStat.findOneAndUpdate(
-      { key: 'totalVisits' },
-      { $inc: { value: 1 } },
-      { upsert: true, new: true }
-    );
-    await bumpDailyStat('visit');
-    res.json({ totalVisits: doc.value });
+    const today = todayStr();
+    const cookieVid = readCookie(req, VISITOR_COOKIE_NAME);
+    const fingerprint = visitorFingerprint(req);
+
+    // Cookie match first (most precise — one browser, not "one IP+UA").
+    // Fingerprint is only a fallback for when the cookie didn't come back,
+    // e.g. a fresh incognito window on the same device/network.
+    let visitor = null;
+    if (cookieVid) visitor = await Visitor.findOne({ visitorId: cookieVid });
+    if (!visitor) visitor = await Visitor.findOne({ fingerprint });
+
+    let totalVisits;
+    let visitorIdForCookie;
+
+    if (visitor) {
+      // Returning visitor (recognized via cookie or fingerprint) — never
+      // bump the all-time counter again. Only bump "today" if this is the
+      // first time we've seen them today.
+      const isNewDay = visitor.lastSeenDate !== today;
+      visitor.visitorId    = cookieVid || visitor.visitorId; // backfill if browser had no cookie yet
+      visitor.fingerprint   = fingerprint;
+      visitor.lastSeenAt    = new Date();
+      visitor.lastSeenDate  = today;
+      await visitor.save();
+
+      if (isNewDay) await bumpDailyStat('visit');
+
+      visitorIdForCookie = visitor.visitorId || crypto.randomBytes(16).toString('hex');
+      const doc = await SiteStat.findOne({ key: 'totalVisits' }).lean();
+      totalVisits = doc ? doc.value : 0;
+    } else {
+      // Genuinely new visitor — bump both all-time and today.
+      visitorIdForCookie = cookieVid || crypto.randomBytes(16).toString('hex');
+      await Visitor.create({
+        visitorId:    visitorIdForCookie,
+        fingerprint,
+        lastSeenDate: today,
+      });
+
+      const doc = await SiteStat.findOneAndUpdate(
+        { key: 'totalVisits' },
+        { $inc: { value: 1 } },
+        { upsert: true, new: true }
+      );
+      await bumpDailyStat('visit');
+      totalVisits = doc.value;
+    }
+
+    res.cookie(VISITOR_COOKIE_NAME, visitorIdForCookie, {
+      maxAge: VISITOR_COOKIE_MAXAGE_MS,
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+    });
+    res.json({ totalVisits });
   } catch (err) {
     console.error('POST /api/stats/visit error:', err.message);
     res.status(500).json({ message: 'Error recording visit' });
