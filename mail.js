@@ -10,7 +10,7 @@
 const axios = require("axios");
 
 const BREVO_API_KEY = process.env.BREVO_API_KEY;
-const BREVO_SENDER_EMAIL = "prashanth8553261336@gmail.com";
+const BREVO_SENDER_EMAIL = "karthik.j@enhancesys.com";
 const BREVO_SENDER_NAME = "HomeLoop";
 
 // ── HTML escape helper for email templates ──
