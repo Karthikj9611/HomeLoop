@@ -2328,6 +2328,27 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
           </div>
         </div>
       </div>
+
+      <!-- Daily visits, browsable month by month — data comes from the same
+           DailyStat rows as the "Today's site visits" card above, just
+           filtered to one month at a time via ?month=YYYY-MM. -->
+      <div class="card" style="margin-top:16px">
+        <div class="table-wrapper">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:14px">
+            <div style="font-weight:700;font-size:15px;color:var(--ink)">Daily visits — monthly view</div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <button class="bulk-btn bulk-btn-outline-danger" onclick="shiftVisitsMonth(-1)" title="Previous month"><i class="fas fa-chevron-left"></i></button>
+              <input type="month" id="visitsMonthPicker" class="col-filter-input" style="width:150px" onchange="onVisitsMonthChange(this.value)">
+              <button class="bulk-btn bulk-btn-outline-danger" onclick="shiftVisitsMonth(1)" title="Next month"><i class="fas fa-chevron-right"></i></button>
+            </div>
+            <div style="font-weight:700;color:var(--ink3);font-size:0.84rem">Total this month: <span id="visitsMonthTotal">—</span></div>
+          </div>
+          <table class="dataTable" style="width:100%">
+            <thead><tr><th>Date</th><th>Visits</th></tr></thead>
+            <tbody id="visitsMonthTbody"><tr><td colspan="2" class="empty-state"><i class="fas fa-circle-notch fa-spin"></i>Loading…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
     </div>
 
     <div class="visits-subpanel" id="visits-sub-users">
@@ -3455,6 +3476,67 @@ window.resetDailyStat = async function(type){
     if(!res.ok){ alert(data.message || `Failed to reset ${meta.label.toLowerCase()}`); return; }
     loadDailyStat(type);
   } catch(err){ alert(`Failed to reset ${meta.label.toLowerCase()}. Please try again.`); }
+};
+
+/* ── DAILY VISITS: monthly view ── */
+function currentMonthStr(){
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+}
+let _visitsMonth = currentMonthStr();
+
+function daysInMonth(monthStr){
+  const [y, m] = monthStr.split('-').map(Number);
+  return new Date(y, m, 0).getDate(); // day 0 of next month = last day of this one
+}
+
+async function loadVisitsMonth(monthStr){
+  _visitsMonth = monthStr;
+  const picker = document.getElementById('visitsMonthPicker');
+  if(picker) picker.value = monthStr;
+  const tbody = document.getElementById('visitsMonthTbody');
+  const totalEl = document.getElementById('visitsMonthTotal');
+  if(tbody) tbody.innerHTML = '<tr><td colspan="2" class="empty-state"><i class="fas fa-circle-notch fa-spin"></i>Loading…</td></tr>';
+  try{
+    const res = await fetch(`${BASE}/api/admin/daily-stats/visit?month=${monthStr}`, { headers: authHeaders() });
+    const data = await res.json().catch(()=>({}));
+    if(!res.ok){ if(tbody) tbody.innerHTML = '<tr><td colspan="2" class="empty-state">Failed to load</td></tr>'; return; }
+
+    // Fill every day of the month, even ones with no DailyStat row (0 visits),
+    // so a full-month table isn't missing rows for quiet days.
+    const byDate = {};
+    (data.days || []).forEach(d => { byDate[d.date] = d.count || 0; });
+    const total = daysInMonth(monthStr);
+    const today = todayLocalStr();
+    let rowsHtml = '';
+    for(let day = total; day >= 1; day--){
+      const dateStr = `${monthStr}-${String(day).padStart(2,'0')}`;
+      if(dateStr > today) continue; // don't show future days
+      const count = byDate[dateStr] || 0;
+      rowsHtml += `<tr><td>${dateStr}</td><td>${count}</td></tr>`;
+    }
+    if(tbody) tbody.innerHTML = rowsHtml || '<tr><td colspan="2" class="empty-state">No data yet</td></tr>';
+    if(totalEl) totalEl.innerText = typeof data.monthTotal === 'number' ? data.monthTotal : 0;
+  } catch(err){
+    console.error('loadVisitsMonth error:', err);
+    if(tbody) tbody.innerHTML = '<tr><td colspan="2" class="empty-state">Failed to load</td></tr>';
+  }
+}
+
+function todayLocalStr(){
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+window.onVisitsMonthChange = function(monthStr){
+  if(!monthStr) return;
+  loadVisitsMonth(monthStr);
+};
+
+window.shiftVisitsMonth = function(delta){
+  const [y, m] = _visitsMonth.split('-').map(Number);
+  const d = new Date(y, m - 1 + delta, 1);
+  loadVisitsMonth(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`);
 };
 
 /* ── HONEST REVIEWS: SELECTION & BULK DELETE ── */
@@ -5264,6 +5346,7 @@ $(document).ready(function(){
   loadDailyStat('visit');
   loadDailyStat('registration');
   loadTotalUsers();
+  loadVisitsMonth(currentMonthStr());
 
   /* ════════════════════════════════════
      HONEST REVIEWS TABLE

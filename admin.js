@@ -1134,15 +1134,25 @@ module.exports = function registerAdminRoutes(app, deps) {
     return true;
   }
 
-  // GET /api/admin/daily-stats/:type — list every tracked day, newest first, plus the all-time total.
+  // GET /api/admin/daily-stats/:type — list tracked days, newest first, plus the all-time total.
+  // Optional ?month=YYYY-MM restricts `days` to that month (used by the admin
+  // "Daily visits — monthly view" table) — `total`, `today`, and `todayDate`
+  // always reflect the FULL history regardless of the month filter, so the
+  // big-number cards stay correct even while browsing a past month.
   app.get('/api/admin/daily-stats/:type', requireAdmin, async (req, res) => {
     try {
       if (!checkDailyStatType(req, res)) return;
-      const days = await DailyStat.find({ type: req.params.type }).sort({ date: -1 }).lean();
-      const total = days.reduce((sum, d) => sum + (d.count || 0), 0);
+      const allDays = await DailyStat.find({ type: req.params.type }).sort({ date: -1 }).lean();
+      const total = allDays.reduce((sum, d) => sum + (d.count || 0), 0);
       const todayDate = todayStr();
-      const todayDoc = days.find(d => d.date === todayDate);
-      res.json({ days, total, today: todayDoc ? todayDoc.count : 0, todayDate });
+      const todayDoc = allDays.find(d => d.date === todayDate);
+
+      const month = (req.query.month || '').toString();
+      const monthOk = /^\d{4}-\d{2}$/.test(month);
+      const days = monthOk ? allDays.filter(d => d.date.startsWith(month)) : allDays;
+      const monthTotal = monthOk ? days.reduce((sum, d) => sum + (d.count || 0), 0) : null;
+
+      res.json({ days, total, today: todayDoc ? todayDoc.count : 0, todayDate, month: monthOk ? month : null, monthTotal });
     } catch (err) {
       console.error('GET /api/admin/daily-stats error:', err.message);
       res.status(500).json({ message: 'Error fetching daily stats' });
