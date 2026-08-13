@@ -26,19 +26,45 @@ module.exports = function registerAdminRoutes(app, deps) {
 
   // ────────────────────────────────────────────────────────────────────────────
   // ── ADMIN LOGIN ──
+  // Supports any number of admin accounts, each set via a numbered pair of env vars:
+  //   ADMIN_EMAIL   / ADMIN_PASSWORD    (1st admin — required in production)
+  //   ADMIN_EMAIL_2 / ADMIN_PASSWORD_2  (2nd admin — optional)
+  //   ADMIN_EMAIL_3 / ADMIN_PASSWORD_3  (3rd admin — optional)
+  //   ...and so on. Numbering must be consecutive — it stops at the first
+  //   missing pair, so ADMIN_EMAIL_4 would be ignored if ADMIN_EMAIL_3 isn't set.
   // In dev (no ADMIN_EMAIL/ADMIN_PASSWORD set), falls back to admin@admin.com/admin.
-  // In production, the env check above forces real credentials to be set.
+  // In production, the env check above forces the first admin's real credentials to be set.
   // Sessions are stored in Mongo (not a JS Map) so they survive restarts/deploys —
   // important on free-tier hosting where the process restarts/cold-starts often.
   // ────────────────────────────────────────────────────────────────────────────
   // admin.html logs in with { email, password } and expects { adminKey, firstName } back,
   // then sends the key on every request as the 'x-admin-key' header — matched here.
-  const ADMIN_EMAIL    = (process.env.ADMIN_EMAIL || 'admin@admin.com').toLowerCase();
 
-  // Hashed once at startup, never compared as a plain string — closes the timing-attack
-  // gap a direct `password === ADMIN_PASSWORD` check would have, and means the raw
-  // password only ever exists in process memory for the comparison itself.
-  const ADMIN_PASSWORD_HASH = bcrypt.hashSync(process.env.ADMIN_PASSWORD || 'admin', 10);
+  // Each account's password is hashed once at startup, never compared as a plain
+  // string — closes the timing-attack gap a direct `password === ADMIN_PASSWORD`
+  // check would have, and means the raw password only ever exists in process
+  // memory for the comparison itself.
+  function buildAdminAccounts() {
+    const accounts = [{
+      email: (process.env.ADMIN_EMAIL || 'admin@admin.com').toLowerCase(),
+      passwordHash: bcrypt.hashSync(process.env.ADMIN_PASSWORD || 'admin', 10),
+    }];
+    let i = 2;
+    while (process.env[`ADMIN_EMAIL_${i}`] && process.env[`ADMIN_PASSWORD_${i}`]) {
+      accounts.push({
+        email: process.env[`ADMIN_EMAIL_${i}`].toLowerCase(),
+        passwordHash: bcrypt.hashSync(process.env[`ADMIN_PASSWORD_${i}`], 10),
+      });
+      i++;
+    }
+    return accounts;
+  }
+  const ADMIN_ACCOUNTS = buildAdminAccounts();
+
+  // Used when the submitted email doesn't match any admin, so we still run a
+  // bcrypt.compare (against this instead of a real hash) — keeps a wrong-email
+  // request and a wrong-password request taking the same amount of time.
+  const DUMMY_PASSWORD_HASH = bcrypt.hashSync('dummy-password-for-timing-safety', 10);
 
   const ADMIN_NAME     = 'Admin';
 
@@ -73,11 +99,14 @@ module.exports = function registerAdminRoutes(app, deps) {
   app.post('/api/login', loginLimiter, async (req, res) => {
     try {
       const { email, password } = req.body || {};
-      const emailMatch = String(email || '').toLowerCase() === ADMIN_EMAIL;
-      const passwordMatch = typeof password === 'string' && await bcrypt.compare(password, ADMIN_PASSWORD_HASH);
-      // Always run bcrypt.compare even when the email doesn't match, so a wrong-email
+      const normalizedEmail = String(email || '').toLowerCase();
+      const account = ADMIN_ACCOUNTS.find(a => a.email === normalizedEmail);
+      // Always run bcrypt.compare — even when no account matches the email, in
+      // which case we compare against DUMMY_PASSWORD_HASH — so a wrong-email
       // request and a wrong-password request take the same amount of time.
-      if (emailMatch && passwordMatch) {
+      const passwordMatch = typeof password === 'string'
+        && await bcrypt.compare(password, account ? account.passwordHash : DUMMY_PASSWORD_HASH);
+      if (account && passwordMatch) {
         const adminKey = await issueAdminSession();
         return res.json({ message: 'Login successful', adminKey, firstName: ADMIN_NAME });
       }
