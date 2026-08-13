@@ -10,8 +10,8 @@
 const axios = require("axios");
 
 const BREVO_API_KEY = process.env.BREVO_API_KEY;
-const BREVO_SENDER_EMAIL = "karthik.j@enhancesys.com";
-const BREVO_SENDER_NAME = "KR Real Estate";
+const BREVO_SENDER_EMAIL = "prashanth8553261336@gmail.com";
+const BREVO_SENDER_NAME = "HomeLoop";
 
 // ── HTML escape helper for email templates ──
 function escHtml(s) {
@@ -48,7 +48,7 @@ async function sendEmailWithBrevo(to, subject, htmlContent) {
 function otpEmailTemplate(otp) {
   return `<div style="font-family:Arial,sans-serif;max-width:480px;margin:auto;background:#fff;border-radius:12px;overflow:hidden;border:1px solid #e0e0e0">
     <div style="background:linear-gradient(135deg,#1b3a2d,#2e7d5a);padding:22px 24px;text-align:center">
-      <h2 style="margin:0;color:#fff;font-size:1.4rem">KR Real Estate</h2>
+      <h2 style="margin:0;color:#fff;font-size:1.4rem">HomeLoop</h2>
       <p style="margin:4px 0 0;color:rgba(255,255,255,0.6);font-size:0.8rem">Email Verification</p>
     </div>
     <div style="padding:28px 24px;text-align:center">
@@ -57,7 +57,7 @@ function otpEmailTemplate(otp) {
       <p style="color:#999;font-size:0.8rem;margin-top:16px">Valid for <strong>5 minutes</strong>. Do not share this OTP.</p>
     </div>
     <div style="background:#f9f9f9;padding:12px;text-align:center;font-size:0.72rem;color:#bbb">
-      © ${new Date().getFullYear()} KR Real Estate
+      © ${new Date().getFullYear()} HomeLoop
     </div>
   </div>`;
 }
@@ -68,13 +68,13 @@ function appointmentConfirmedEmailTemplate(appt) {
   return `
 <div style="font-family:Arial,sans-serif;max-width:520px;margin:auto;background:#fff;border-radius:14px;overflow:hidden;border:1px solid #e0e0e0">
   <div style="background:linear-gradient(135deg,#1b3a2d,#2e7d5a);padding:24px;text-align:center">
-    <h2 style="margin:0;color:#fff;font-size:1.4rem;font-family:Georgia,serif">KR Real Estate</h2>
+    <h2 style="margin:0;color:#fff;font-size:1.4rem;font-family:Georgia,serif">HomeLoop</h2>
     <p style="margin:6px 0 0;color:rgba(255,255,255,0.7);font-size:0.82rem">Appointment Confirmed</p>
   </div>
   <div style="padding:30px 28px">
     <p style="font-size:1rem;color:#222;margin-bottom:6px">Hi <strong>${escHtml(appt.name)}</strong>,</p>
     <p style="color:#555;font-size:0.9rem;line-height:1.6;margin-bottom:24px">
-      Your appointment with <strong>KR Real Estate</strong> has been <span style="color:#1a7a5e;font-weight:700">confirmed</span>. Here are your details:
+      Your appointment with <strong>HomeLoop</strong> has been <span style="color:#1a7a5e;font-weight:700">confirmed</span>. Here are your details:
     </p>
     <div style="background:#f4f9f6;border-radius:10px;padding:18px 20px;border:1px solid #d0ece1;margin-bottom:24px">
       <table style="width:100%;border-collapse:collapse;font-size:0.88rem">
@@ -93,7 +93,7 @@ function appointmentConfirmedEmailTemplate(appt) {
     </div>
   </div>
   <div style="background:#f9f9f9;padding:14px;text-align:center;font-size:0.72rem;color:#aaa">
-    © ${new Date().getFullYear()} KR Real Estate · This is an automated message
+    © ${new Date().getFullYear()} HomeLoop · This is an automated message
   </div>
 </div>`;
 }
