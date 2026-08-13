@@ -5323,7 +5323,7 @@ main.tab-explore .empty-state{display:none !important}
       <div class="lm-section">📅 Availability &amp; Terms</div>
       <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
         <div class="form-group"><label class="form-label">Notice period</label><select class="form-select" id="f-noticePeriod"><option value="">Select</option><option>15 Days</option><option>1 Month</option><option>2 Months</option><option selected>3 Months</option></select></div>
-        <div class="form-group"><label class="form-label">Contract Term</label><select class="form-select" id="f-leaseDuration"><option value="">Any</option><option>11 Months</option><option selected>12 Months</option><option>24 Months</option><option>36 Months</option><option>48 Months</option><option>48+ Months</option></select></div>
+        <div class="form-group"><label class="form-label">Contract Term</label><select class="form-select" id="f-leaseDuration"><option value="">Any</option><option>6 Months</option><option selected>12 Months</option><option>24 Months</option><option>36 Months</option><option>48 Months</option><option>48+ Months</option></select></div>
       </div>
       <div class="lm-section">⚖️ Tenant Rules</div>
       <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
@@ -5854,7 +5854,7 @@ main.tab-explore .empty-state{display:none !important}
          PaymentRequest is created quietly in the background once a valid
          amount is entered (see handleAmountBlur()/ensureCurrentPaymentRequest()). -->
     <div id="paymentStage2" style="display:none">
-      <div class="form-group">
+      <div class="form-group" id="pay-category-group">
         <label class="form-label">Payment for</label>
         <select class="form-input" id="pay-category" onchange="handlePayCategoryChange()">
           <option value="rent">Rent</option>
@@ -5862,6 +5862,14 @@ main.tab-explore .empty-state{display:none !important}
           <option value="pg">PG</option>
           <option value="other">Other</option>
         </select>
+      </div>
+
+      <!-- Owner brokerage: flat fixed charge, no category picker, no rent math. -->
+      <div id="payOwnerFlat" style="display:none">
+        <div class="payment-detail-row" style="margin-bottom:16px">
+          <span>Amount payable (fixed charge)</span>
+          <span class="detail-value-with-copy"><b id="pay-owner-flat-amount">₹2,000</b><button type="button" class="detail-copy-btn" title="Copy amount" onclick="copyCurrentAmount(this, event)"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></button></span>
+        </div>
       </div>
 
       <!-- Rent (30%) / Lease (50%): enter the monthly rent, we auto-calculate
@@ -8442,7 +8450,7 @@ const FD_SORT_ORDER = {
   furnishing: ['Furnished','Fully Furnished','Semi-Furnished','Unfurnished'],
   bathrooms: ['1','2','3','4','Yes','Shared'],
   pgMeals: ['All 3 Meals','Breakfast only','No meals'],
-  leaseDuration: ['11 Months','12 Months','24 Months','36 Months','48 Months','48+ Months','1 Year','2 Years','3 Years','5 Years','9 Years','15 Years','30 Years'],
+  leaseDuration: ['6 Months','12 Months','24 Months','36 Months','48 Months','48+ Months','1 Year','2 Years','3 Years','5 Years','9 Years','15 Years','30 Years'],
   leaseType: ['Residential','Commercial','Industrial','Mixed Use'],
   lockIn: ['1 Year','2 Years','3 Years'],
   pgGateTime: ['9 PM','10 PM','11 PM'],
@@ -11488,12 +11496,28 @@ function openPaymentModal(purpose, propertyId, propertyLabel) {
   const fileInput = document.getElementById('pay-screenshot');
   if (fileInput) fileInput.value = '';
 
-  // Reset the "Payment for" picker to Rent by default and sync the visible
-  // section (rent calc / charges redirect / manual amount) to match.
-  document.getElementById('pay-category').value = 'rent';
-  const rentTotal = document.getElementById('pay-rent-total');
-  if (rentTotal) rentTotal.value = '';
-  handlePayCategoryChange();
+  // Owner paying the brokerage fee: skip the tenant-style "Payment for"
+  // picker and rent math entirely — it's always a flat fixed charge.
+  const isOwnerBrokerage = !!user && user.accountType === 'owner' && (purpose || 'brokerage') === 'brokerage';
+  document.getElementById('pay-category-group').style.display = isOwnerBrokerage ? 'none' : '';
+  document.getElementById('payOwnerFlat').style.display = isOwnerBrokerage ? '' : 'none';
+
+  if (isOwnerBrokerage) {
+    document.getElementById('payRentCalc').style.display = 'none';
+    document.getElementById('payPgFlat').style.display = 'none';
+    document.getElementById('paymentAmountEntry').style.display = 'none';
+    amtInline.value = 2000;
+    amtInline.readOnly = true;
+    amtInline.classList.add('identity-locked');
+    handleAmountBlur(); // quietly create the PaymentRequest for the flat ₹2,000
+  } else {
+    // Reset the "Payment for" picker to Rent by default and sync the visible
+    // section (rent calc / charges redirect / manual amount) to match.
+    document.getElementById('pay-category').value = 'rent';
+    const rentTotal = document.getElementById('pay-rent-total');
+    if (rentTotal) rentTotal.value = '';
+    handlePayCategoryChange();
+  }
 
   document.getElementById('paymentModal').classList.add('open');
   lockBodyScroll();
