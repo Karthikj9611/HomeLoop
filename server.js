@@ -1027,11 +1027,9 @@ const BASE_REQUIRED_FIELDS = [
   ['owner.name',        'Owner name'],
   ['owner.phone',       'Owner phone number'],
   ['owner.email',       'Owner email'],
-  ['owner.altPhone',    'Owner alternate number'],
   ['owner.contactTime', 'Preferred contact time'],
   ['owner.address',     'Owner address'],
   ['media.desc',        'Description'],
-  ['media.video',       'Video tour URL'],
 ];
 
 // Extra fields required only for the listing types whose form section

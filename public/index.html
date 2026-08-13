@@ -5183,15 +5183,14 @@ main.tab-explore .empty-state{display:none !important}
           <div class="form-group">
             <label class="form-label">Agent phone number</label>
             <div class="input-icon-wrap">
-              <input class="form-input" type="tel" id="f-agentPhone" inputmode="numeric" maxlength="10" oninput="sanitizeMobileInput(this)" />
-              <button type="button" class="contact-pick-btn" onclick="pickContactFromDevice('f-agentPhone','f-agentArea')" title="Pick from contacts">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-              </button>
+              <input class="form-input identity-locked" type="tel" id="f-agentPhone" inputmode="numeric" maxlength="10" value="9035205230" readonly />
             </div>
+            <div class="identity-locked-hint">Fixed agent contact number</div>
           </div>
           <div class="form-group">
             <label class="form-label">Agent service area</label>
-            <input class="form-input" type="text" id="f-agentArea" />
+            <input class="form-input identity-locked" type="text" id="f-agentArea" value="Prashanth B, Singasandra" readonly />
+            <div class="identity-locked-hint">Fixed agent service area</div>
           </div>
         </div>
       </div>
@@ -5326,8 +5325,8 @@ main.tab-explore .empty-state{display:none !important}
       </div>
       <div class="lm-section">⚖️ Tenant Rules</div>
       <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
-        <div class="form-group"><label class="form-label">Pets allowed</label><select class="form-select" id="f-petsAllowed"><option value="">Select</option><option>Yes</option><option>No</option><option>Restricted</option></select></div>
-        <div class="form-group"><label class="form-label">Non-veg allowed</label><select class="form-select" id="f-nonVegAllowed"><option value="">Select</option><option>Yes</option><option>No</option></select></div>
+        <div class="form-group"><label class="form-label">Pets allowed</label><select class="form-select" id="f-petsAllowed"><option value="">Select</option><option>Yes</option><option selected>No</option><option>Restricted</option></select></div>
+        <div class="form-group"><label class="form-label">Non-veg allowed</label><select class="form-select" id="f-nonVegAllowed"><option value="">Select</option><option selected>Yes</option><option>No</option></select></div>
       </div>
     </div>
 
@@ -5348,8 +5347,8 @@ main.tab-explore .empty-state{display:none !important}
       </div>
       <div class="lm-section">⚖️ House Rules</div>
       <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
-        <div class="form-group"><label class="form-label">Pets allowed</label><select class="form-select" id="f-leasePets"><option value="">Select</option><option>Yes</option><option>No</option></select></div>
-        <div class="form-group"><label class="form-label">Non-veg allowed</label><select class="form-select" id="f-leaseNonVeg"><option value="">Select</option><option>Yes</option><option>No</option></select></div>
+        <div class="form-group"><label class="form-label">Pets allowed</label><select class="form-select" id="f-leasePets"><option value="">Select</option><option>Yes</option><option selected>No</option></select></div>
+        <div class="form-group"><label class="form-label">Non-veg allowed</label><select class="form-select" id="f-leaseNonVeg"><option value="">Select</option><option selected>Yes</option><option>No</option></select></div>
       </div>
     </div>
 
@@ -5442,7 +5441,7 @@ main.tab-explore .empty-state{display:none !important}
     <div id="addAmenitiesSection">
     <div class="lm-section">✨ Amenities</div>
     <div class="form-group" id="amSelectFormGroup">
-      <label class="form-label">Select amenities <span style="color:var(--brand)">*</span></label>
+      <label class="form-label">Select amenities</label>
       <div class="am-dd" id="amDropdown">
         <button type="button" class="am-dd-trigger" onclick="toggleAmDropdown(event)">
           <span><span class="am-dd-count" id="amDdCount" style="display:none">0</span><span id="amDdLabel">Choose amenities…</span></span>
@@ -10157,6 +10156,23 @@ function resetListingForm() {
   // cleared back to blank.
   const cityField = document.getElementById('f-city');
   if (cityField) cityField.value = 'Bangalore';
+  // Re-apply the fixed agent contact details (non-editable) which the
+  // blanket reset above just cleared back to blank.
+  const agentPhoneField = document.getElementById('f-agentPhone');
+  const agentAreaField = document.getElementById('f-agentArea');
+  if (agentPhoneField) agentPhoneField.value = '9035205230';
+  if (agentAreaField) agentAreaField.value = 'Prashanth B, Singasandra';
+  // Re-apply default Tenant Rules (Pets allowed = No, Non-veg allowed = Yes)
+  // which the blanket reset above just cleared back to the placeholder.
+  // Still fully editable — these are just sensible starting values.
+  const petsRent = document.getElementById('f-petsAllowed');
+  const nonVegRent = document.getElementById('f-nonVegAllowed');
+  const petsLease = document.getElementById('f-leasePets');
+  const nonVegLease = document.getElementById('f-leaseNonVeg');
+  if (petsRent) petsRent.value = 'No';
+  if (nonVegRent) nonVegRent.value = 'Yes';
+  if (petsLease) petsLease.value = 'No';
+  if (nonVegLease) nonVegLease.value = 'Yes';
   // Undo the maintenance>0 lock on electricity/water so a fresh form starts unlocked
   const elecReset = document.getElementById('f-electricityIncluded');
   const waterReset = document.getElementById('f-waterCharge');
@@ -10528,8 +10544,10 @@ function applyImportedProperty(p) {
   sv('f-ownerAltPhone', owner.altPhone);
   sv('f-contactTime', owner.contactTime);
   sv('f-ownerAddress', owner.address);
-  sv('f-agentPhone', owner.agentPhone);
-  sv('f-agentArea', owner.agentArea);
+  // Agent contact is fixed/non-editable — always show the fixed value
+  // rather than whatever happens to be stored on this listing.
+  sv('f-agentPhone', '9035205230');
+  sv('f-agentArea', 'Prashanth B, Singasandra');
 
   // Pricing
   if (isLease) {
@@ -13541,12 +13559,6 @@ function validateListingForm() {
   if (imgGroup && isFieldVisible(imgGroup) && (!Array.isArray(fImages) || fImages.length === 0)) {
     setGroupError(imgGroup, 'Please add at least one property image');
     if (!firstErrorEl) firstErrorEl = imgGroup;
-  }
-  // Amenities — at least one must be selected
-  const amGroup = document.getElementById('amSelectFormGroup');
-  if (amGroup && isFieldVisible(amGroup) && !AM_LIST.some(([id]) => { const cb = document.getElementById(id); return cb && cb.checked; })) {
-    setGroupError(amGroup, 'Please select at least one amenity');
-    if (!firstErrorEl) firstErrorEl = amGroup;
   }
   // Tenant preference — at least one option must be selected
   const tenantGroup = document.getElementById('tenantFormGroup');
