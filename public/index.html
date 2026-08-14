@@ -9479,11 +9479,9 @@ function getFiltered() {
     };
     list.sort((a, b) => distFor(a) - distFor(b));
   }
-  // Default ("Newest first"): sort by the numeric part of the property id
-  // (e.g. "QWR001" -> 1), ignoring the 3 random letters, ascending — so
-  // e.g. 172, 616, 843 display in that order regardless of their random
-  // letter prefixes.
-  else list.sort((a, b) => propertyIdSeq(a) - propertyIdSeq(b));
+  // Default ("Newest first" tab, but actually oldest-listed-first per KR):
+  // sort ascending by createdAt — the property listed first shows first.
+  else list.sort((a, b) => propertyListedAt(a) - propertyListedAt(b));
 
   // Location-based priority (not a restriction): once we know the visitor's
   // pincode (from their current location), bring same-pincode listings to
@@ -9526,12 +9524,15 @@ function applyFilters(){ closeAllFd(); renderCards(); }
 // e.g. "...Bengaluru Urban, Karnataka, 560095, India"). Prefer the
 // explicit field when present, otherwise pull the pincode out of the
 // address text so those listings can still match on pincode.
-/* Property ids are 3 random letters + an always-incrementing number
-   (e.g. "QWR001"). Strip the letters and return just the number, so
-   listing order can be derived from it regardless of the random prefix. */
-function propertyIdSeq(p) {
-  const match = String(p.id || '').match(/\d+/);
-  return match ? Number(match[0]) : 0;
+/* Property listing order — sorted by createdAt (the actual date/time the
+   property was listed), ascending, so the first-ever listed property shows
+   first. This is the authoritative "listed on" timestamp; parsing the
+   number out of the property code is not used here since p.id is actually
+   the MongoDB _id (not the QWR001-style code — that's p.propertyId), and
+   createdAt is more direct anyway. */
+function propertyListedAt(p) {
+  const t = new Date(p.createdAt).getTime();
+  return isNaN(t) ? 0 : t;
 }
 
 function getPropertyPincode(p) {
