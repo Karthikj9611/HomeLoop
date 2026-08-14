@@ -9489,7 +9489,14 @@ function getFiltered() {
   // "matches" and within "doesn't match" the order from the sort above
   // (price/promoted/nearby/default) is preserved; this only partitions
   // matches above non-matches.
-  if (nearbyPincode) {
+  // Gated to currentSort==='nearby' only: geolocation resolves in the
+  // background on every page load (see initNearbyLocation, called
+  // unconditionally on load), which used to silently re-sort the grid the
+  // moment it succeeded — even for visitors who never touched "Near me
+  // first" — making the default "listed order" view jump/reorder itself a
+  // second or two after the correct initial paint. Now this boost only
+  // ever applies once the visitor has actually chosen that sort option.
+  if (nearbyPincode && currentSort === 'nearby') {
     const total = list.length;
     const pin = nearbyPincode.trim();
     list.sort((a, b) => {
