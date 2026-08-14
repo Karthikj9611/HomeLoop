@@ -13273,12 +13273,21 @@ function _autoSlidePropRows(){
 setInterval(_autoSlidePropRows, 32000);
 
 /* ─── Card spec row ("prop-stats") → cap at 4 + "More" popup ────────────
-   Always show at most the first 4 stat items; anything beyond that is
-   hidden and collapsed into a "More" chip, regardless of whether the row
-   would have had room to fit them. Clicking "More" opens the complete
-   row (every item, not just the hidden ones) centered in a popup. Runs
-   after every renderCards() and on resize, since prop-stats width is
-   fluid with the grid's column count. */
+   Show as many stat items as actually fit the row's live width (measured,
+   not assumed), capped at 4 even if more would technically fit — matching
+   the original design intent. Anything beyond what's shown is collapsed
+   into a "More" chip, whose own width is measured and reserved for up
+   front, so "More" itself is never the thing that gets clipped. Clicking
+   "More" opens the complete row (every item, not just the hidden ones)
+   centered in a popup. Runs after every renderCards() and on resize,
+   since prop-stats width is fluid with the grid's column count.
+
+   Previously this always showed exactly 4 items regardless of whether
+   they (plus "More") actually fit — on narrow mobile widths, a wide chip
+   like "450 sqft" as the 4th item routinely pushed "More" (or even part
+   of the 4th item itself) past the row's overflow:hidden edge, clipping
+   it. Measuring real widths instead fixes that everywhere the row is
+   narrow, not just on today's specific screen sizes. */
 const PROP_STATS_MAX_VISIBLE = 4;
 function processStatsRow(row){
   // Cache the row's full original item list (once) so re-processing on
@@ -13289,22 +13298,55 @@ function processStatsRow(row){
   }
   row.innerHTML = row._allItemsHTML.join('');
   const items = Array.from(row.children);
-  if (items.length <= PROP_STATS_MAX_VISIBLE) return; // nothing to trim
+  if (items.length === 0) return;
 
-  for (let i = PROP_STATS_MAX_VISIBLE; i < items.length; i++) {
-    items[i].style.display = 'none';
+  const buildMoreChip = () => {
+    const chip = document.createElement('span');
+    chip.className = 'prop-stats-more';
+    chip.textContent = 'More';
+    chip.onclick = function(e){
+      e.stopPropagation();
+      const card = row.closest('.prop-card, .rv-card');
+      const pid = card && (card.dataset.propertyId || (card.getAttribute('onclick') || '').match(/openDetail\('([^']+)'\)/)?.[1]);
+      if (pid) openDetail(pid); else openStatsPopup(row);
+    };
+    return chip;
+  };
+
+  // Items keep their natural (flex-shrink:0) width regardless of the row's
+  // overflow:hidden, so offsetWidth here reflects true rendered size even
+  // for items about to be clipped.
+  const rowWidth = row.clientWidth;
+  let fullTotal = 0;
+  for (const el of items) fullTotal += el.offsetWidth;
+
+  if (items.length <= PROP_STATS_MAX_VISIBLE && fullTotal <= rowWidth) {
+    return; // everything fits as-is, no "More" needed
   }
 
-  const moreChip = document.createElement('span');
-  moreChip.className = 'prop-stats-more';
-  moreChip.onclick = function(e){
-    e.stopPropagation();
-    const card = row.closest('.prop-card, .rv-card');
-    const pid = card && (card.dataset.propertyId || (card.getAttribute('onclick') || '').match(/openDetail\('([^']+)'\)/)?.[1]);
-    if (pid) openDetail(pid); else openStatsPopup(row);
-  };
-  moreChip.textContent = 'More';
-  row.appendChild(moreChip);
+  // Measure the "More" chip itself (off-DOM, so it doesn't affect layout)
+  // so its width can be reserved for up front — this is what guarantees
+  // it's never the part that ends up clipped.
+  const measureChip = buildMoreChip();
+  measureChip.style.visibility = 'hidden';
+  measureChip.style.position = 'absolute';
+  document.body.appendChild(measureChip);
+  const moreWidth = measureChip.offsetWidth;
+  document.body.removeChild(measureChip);
+
+  let visibleCount = 0;
+  let total = 0;
+  for (let i = 0; i < items.length && i < PROP_STATS_MAX_VISIBLE; i++) {
+    total += items[i].offsetWidth;
+    if (total + moreWidth > rowWidth) break;
+    visibleCount = i + 1;
+  }
+  visibleCount = Math.max(visibleCount, 1); // always show at least one stat, never just "More" alone
+
+  for (let i = visibleCount; i < items.length; i++) {
+    items[i].style.display = 'none';
+  }
+  row.appendChild(buildMoreChip());
 }
 function processAllStatsRows(){
   document.querySelectorAll('.prop-stats').forEach(processStatsRow);
