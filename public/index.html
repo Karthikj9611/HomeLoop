@@ -9479,7 +9479,11 @@ function getFiltered() {
     };
     list.sort((a, b) => distFor(a) - distFor(b));
   }
-  else list.sort((a,b)=>String(a.id).localeCompare(String(b.id)));
+  // Default ("Newest first"): sort by the numeric part of the property id
+  // (e.g. "QWR001" -> 1), ignoring the 3 random letters, ascending — so
+  // e.g. 172, 616, 843 display in that order regardless of their random
+  // letter prefixes.
+  else list.sort((a, b) => propertyIdSeq(a) - propertyIdSeq(b));
 
   // Location-based priority (not a restriction): once we know the visitor's
   // pincode (from their current location), bring same-pincode listings to
@@ -9522,6 +9526,14 @@ function applyFilters(){ closeAllFd(); renderCards(); }
 // e.g. "...Bengaluru Urban, Karnataka, 560095, India"). Prefer the
 // explicit field when present, otherwise pull the pincode out of the
 // address text so those listings can still match on pincode.
+/* Property ids are 3 random letters + an always-incrementing number
+   (e.g. "QWR001"). Strip the letters and return just the number, so
+   listing order can be derived from it regardless of the random prefix. */
+function propertyIdSeq(p) {
+  const match = String(p.id || '').match(/\d+/);
+  return match ? Number(match[0]) : 0;
+}
+
 function getPropertyPincode(p) {
   if (p.location?.pincode) return String(p.location.pincode).trim();
   const address = p.location?.address || '';
