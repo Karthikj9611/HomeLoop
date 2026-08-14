@@ -324,6 +324,16 @@ ul{list-style:none}
   padding-right:4px; /* keeps text clear of the scrollbar */
   overscroll-behavior:contain;
 }
+/* Search box inside a dropdown popover (e.g. Property ID) — sits between
+   the label and the option pills, filters them live as the owner types. */
+.fd-search{
+  flex-shrink:0;width:100%;box-sizing:border-box;
+  border:1px solid var(--border-2);border-radius:7px;
+  padding:7px 10px;font-size:12px;color:var(--text-1);
+  background:var(--bg);outline:none;
+}
+.fd-search:focus{border-color:var(--brand)}
+.fp-opt.fd-hidden{display:none}
 .fp-opt{
   border:1px solid var(--border-2);border-radius:7px;
   padding:8px 12px;font-size:12px;color:var(--text-2);
@@ -3779,6 +3789,27 @@ main.tab-explore .empty-state{display:none !important}
 
 
   
+    <!-- Property ID — for owners to quickly find a specific listing among
+       many by its code (e.g. "QWR001"). Options are built dynamically from
+       whatever property ids actually exist (see fdCollectPropertyIds), same
+       live-data pattern as Pincode/Locality below. Includes a search box
+       since the id list can get long and isn't meaningfully sortable for
+       scanning by eye the way Pincode/Locality are. -->
+  <div class="fd-btn fd-rent fd-lease fd-pg fd-shortstay" id="fdb-propertyIdFilter" onclick="toggleFd('propertyIdFilter',this)">
+    <span class="fd-icon">🔖</span>
+    <span class="fd-label">Property ID</span> <span class="fd-badge" id="fdbc-propertyIdFilter" style="display:none"></span>
+    <svg class="chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+    <div class="fd-pop" id="fdp-propertyIdFilter" onclick="event.stopPropagation()">
+      <div class="fd-pop-label">Property ID</div>
+      <input class="fd-search" type="text" placeholder="Search ID…" oninput="fdSearchOpts('fdo-propertyIdFilter', this.value)"/>
+      <div class="fd-opts" id="fdo-propertyIdFilter"></div>
+      <div class="fd-pop-footer">
+        <button class="fd-clear-btn" onclick="clearFd('propertyIdFilter')">Clear</button>
+        <button class="fd-apply-btn" onclick="applyFd('propertyIdFilter')">Apply</button>
+      </div>
+    </div>
+  </div>
+
     <!-- Pincode — options are built dynamically from whatever pincodes actually
        exist across current listings (see fdCollectPincodes), so this list
        always reflects real data instead of a hardcoded set of codes. -->
@@ -8412,6 +8443,7 @@ function handleSearch() {
 /* Map each dropdown id → which data-filter keys live inside it */
 const FD_GROUPS = {
   type:       ['propertyType'],
+  propertyIdFilter: ['propertyIdCode'],
   pincode:    ['pincode'],
   locality:   ['locality'],
   bhk:        ['bhk'],
@@ -8553,6 +8585,18 @@ function fdCollectMerged(fields, predicate) {
   return Array.from(set);
 }
 
+/* Collect distinct property ids (the QWR001-style codes, not the Mongo
+   _id) present in PROPERTIES, scoped to the active tab — same pattern as
+   fdCollectPincodes. Used by the owner-facing Property ID filter. */
+function fdCollectPropertyIds() {
+  const set = new Set();
+  PROPERTIES.forEach(p => {
+    if (!matchesTab(p, currentTab)) return;
+    if (p.propertyId) set.add(p.propertyId);
+  });
+  return Array.from(set);
+}
+
 /* Collect distinct pincodes present in PROPERTIES, scoped to the active tab.
    Uses getPropertyPincode() (defined further below) so listings that only
    have a free-text address — no explicit location.pincode saved yet — still
@@ -8662,6 +8706,15 @@ function buildFilterOptions() {
   fdRenderOpts('fdo-type', 'propertyType',
     fdSortValues('propertyType', fdCollectMerged(['propertyType','pgPropertyType','ssPropertyType'])), 'type');
   restoreSel('fdo-type', 'propertyType', 'type');
+
+  // Property ID dropdown — owner-facing, lets someone with many listings
+  // jump straight to a specific one by its code. Rebuilt from live data
+  // like Pincode/Locality; not numerically or alphabetically meaningful to
+  // sort (random letters, incrementing number underneath), so fdSortValues
+  // falls back to plain localeCompare here, and the search box is the
+  // actual way it's meant to be used with more than a handful of listings.
+  fdRenderOpts('fdo-propertyIdFilter', 'propertyIdCode', fdSortValues('propertyIdCode', fdCollectPropertyIds()), 'propertyIdFilter');
+  restoreSel('fdo-propertyIdFilter', 'propertyIdCode', 'propertyIdFilter');
 
   // Pincode dropdown — rebuilt from whatever's actually in PROPERTIES right
   // now, so newly added/verified listings' pincodes appear without any
@@ -8896,6 +8949,21 @@ function refreshTotalBadge() {
   if (clearBtn) clearBtn.style.display = total > 0 ? '' : 'none';
 }
 
+/* Live-filters a dropdown's option pills as the owner types in its search
+   box (currently only Property ID uses this — see fdSearchOpts wiring in
+   the HTML). Case-insensitive substring match against each pill's visible
+   text; non-matching pills are hidden via .fd-hidden rather than removed,
+   so selections survive typing and clearing the search back out. */
+function fdSearchOpts(containerId, query) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  const q = query.trim().toLowerCase();
+  container.querySelectorAll('.fp-opt').forEach(opt => {
+    const match = !q || opt.textContent.toLowerCase().includes(q);
+    opt.classList.toggle('fd-hidden', !match);
+  });
+}
+
 /* Apply = close popover and rerender */
 function applyFd(id) {
   refreshFdBtn(id);
@@ -8906,7 +8974,14 @@ function applyFd(id) {
 /* Clear a single dropdown */
 function clearFd(id) {
   const pop = document.getElementById('fdp-' + id);
-  if (pop) pop.querySelectorAll('.fp-opt.sel').forEach(o => o.classList.remove('sel'));
+  if (pop) {
+    pop.querySelectorAll('.fp-opt.sel').forEach(o => o.classList.remove('sel'));
+    // Reset any search box in this dropdown (e.g. Property ID) and
+    // un-hide every pill it had filtered out.
+    const search = pop.querySelector('.fd-search');
+    if (search) search.value = '';
+    pop.querySelectorAll('.fp-opt.fd-hidden').forEach(o => o.classList.remove('fd-hidden'));
+  }
   refreshFdBtn(id);
   renderCards();
 }
@@ -8914,6 +8989,8 @@ function clearFd(id) {
 /* Clear all filters */
 function clearFilters() {
   document.querySelectorAll('.fp-opt.sel').forEach(o => o.classList.remove('sel'));
+  document.querySelectorAll('.fd-search').forEach(s => s.value = '');
+  document.querySelectorAll('.fp-opt.fd-hidden').forEach(o => o.classList.remove('fd-hidden'));
   Object.keys(FD_GROUPS).forEach(id => refreshFdBtn(id));
   FD_RANGE_IDS.forEach(id => {
     const minEl = document.getElementById('fd-' + id + '-min');
@@ -9335,6 +9412,9 @@ function getFiltered() {
     if (fs.propertyType) {
       const typeVal = p.property?.type ?? p.pg?.type ?? p.shortStay?.type;
       if (!fs.propertyType.includes(typeVal)) return false;
+    }
+    if (fs.propertyIdCode) {
+      if (!fs.propertyIdCode.includes(p.propertyId)) return false;
     }
     if (fs.pincode) {
       if (!fs.pincode.includes(getPropertyPincode(p))) return false;
