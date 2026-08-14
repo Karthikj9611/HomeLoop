@@ -2076,7 +2076,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
         </button>
       </div>
       <div class="bulk-toolbar-right">
-        <button class="bulk-btn bulk-btn-danger" id="bulkDeleteSelectedBtn" style="display:none" onclick="deleteSelectedProperties()" title="Delete selected">
+        <button class="bulk-btn bulk-btn-danger" id="bulkDeleteSelectedBtn" disabled title="Deleting properties is disabled" style="display:none;opacity:.4;cursor:not-allowed;pointer-events:none">
           <i class="fas fa-trash-alt"></i> <span class="bulk-btn-label">Delete Selected&nbsp;</span>(<span id="bulkDeleteCount">0</span>)
         </button>
         <button class="bulk-btn bulk-btn-outline-danger" id="resetAllViewsBtn" onclick="resetAllViews()" title="Reset every listing's view count to 0">
@@ -4279,9 +4279,9 @@ function updateBulkToolbarUI(){
   const show = n > 0;
   countEl.style.display = show ? 'inline-flex' : 'none';
   clearBtn.style.display = show ? 'inline-flex' : 'none';
-  delBtn.style.display = show ? 'inline-flex' : 'none';
+  if (delBtn) delBtn.style.display = show ? 'inline-flex' : 'none';
   numEl.textContent = n;
-  delCountEl.textContent = n;
+  if (delCountEl) delCountEl.textContent = n;
 }
 
 window.clearPropSelection = function(){
@@ -5139,7 +5139,7 @@ $(document).ready(function(){
           return `<div style="display:inline-flex;gap:6px;flex-wrap:nowrap;justify-content:center">
             <button class="btn-view" onclick="openAdminPropModal('${row._id}')"><i class="fas fa-eye"></i> View</button>
             ${bookingBtn}
-            <button class="btn-delete" onclick="deleteProperty('${row._id}')"><i class="fas fa-trash-alt"></i> Delete</button>
+            <button class="btn-delete" disabled title="Deleting properties is disabled" style="opacity:.4;cursor:not-allowed;pointer-events:none"><i class="fas fa-trash-alt"></i> Delete</button>
           </div>`;
       }}
     ],
