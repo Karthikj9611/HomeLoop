@@ -8587,14 +8587,22 @@ function fdCollectMerged(fields, predicate) {
 
 /* Collect distinct property ids (the QWR001-style codes, not the Mongo
    _id) present in PROPERTIES, scoped to the active tab — same pattern as
-   fdCollectPincodes. Used by the owner-facing Property ID filter. */
+   fdCollectPincodes. Used by the owner-facing Property ID filter.
+   Ordered by listed_on (createdAt, ascending) to match how the property
+   cards themselves are ordered — not alphabetically, since these codes
+   start with 3 random letters (see propertyListedAt) that carry no
+   meaning to sort by. */
 function fdCollectPropertyIds() {
-  const set = new Set();
+  const seen = new Set();
+  const rows = [];
   PROPERTIES.forEach(p => {
     if (!matchesTab(p, currentTab)) return;
-    if (p.propertyId) set.add(p.propertyId);
+    if (!p.propertyId || seen.has(p.propertyId)) return;
+    seen.add(p.propertyId);
+    rows.push(p);
   });
-  return Array.from(set);
+  rows.sort((a, b) => propertyListedAt(a) - propertyListedAt(b));
+  return rows.map(p => p.propertyId);
 }
 
 /* Collect distinct pincodes present in PROPERTIES, scoped to the active tab.
@@ -8709,11 +8717,11 @@ function buildFilterOptions() {
 
   // Property ID dropdown — owner-facing, lets someone with many listings
   // jump straight to a specific one by its code. Rebuilt from live data
-  // like Pincode/Locality; not numerically or alphabetically meaningful to
-  // sort (random letters, incrementing number underneath), so fdSortValues
-  // falls back to plain localeCompare here, and the search box is the
-  // actual way it's meant to be used with more than a handful of listings.
-  fdRenderOpts('fdo-propertyIdFilter', 'propertyIdCode', fdSortValues('propertyIdCode', fdCollectPropertyIds()), 'propertyIdFilter');
+  // like Pincode/Locality. Passed straight through (not via fdSortValues,
+  // which would alphabetize it — meaningless here since these codes start
+  // with 3 random letters) since fdCollectPropertyIds already returns them
+  // in listed_on order, matching how the property cards themselves sort.
+  fdRenderOpts('fdo-propertyIdFilter', 'propertyIdCode', fdCollectPropertyIds(), 'propertyIdFilter');
   restoreSel('fdo-propertyIdFilter', 'propertyIdCode', 'propertyIdFilter');
 
   // Pincode dropdown — rebuilt from whatever's actually in PROPERTIES right
