@@ -629,30 +629,23 @@ async function nextSequenceId(prefix) {
 }
 
 async function nextPropertyId() {
-  // Random alphanumeric code (e.g. AAA123) instead of a sequential, type-prefixed
-  // counter. IDs are generated randomly rather than incremented, so we retry on
-  // the rare collision instead of relying on Counter's atomic $inc.
+  // 3 random letters + a globally incrementing number (e.g. QWR001). The
+  // letters are re-randomized on every call; the number comes from a single
+  // shared Counter (key 'PROPERTY') via atomic $inc, so it keeps
+  // incrementing across all property types regardless of the letters,
+  // and never needs a collision-retry loop.
   const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-  const DIGITS = '0123456789';
-  const randomCode = () => {
+  const randomLetters = () => {
     let code = '';
     for (let i = 0; i < 3; i++) code += LETTERS[Math.floor(Math.random() * LETTERS.length)];
-    for (let i = 0; i < 3; i++) code += DIGITS[Math.floor(Math.random() * DIGITS.length)];
     return code;
   };
-  let id, exists = true, attempts = 0;
-  while (exists && attempts < 10) {
-    id = randomCode();
-    const [inRent, inLease, inPg, inHourlyStay] = await Promise.all([
-      Rent.exists({ propertyId: id }),
-      Lease.exists({ propertyId: id }),
-      Pg.exists({ propertyId: id }),
-      HourlyStay.exists({ propertyId: id }),
-    ]);
-    exists = !!(inRent || inLease || inPg || inHourlyStay);
-    attempts++;
-  }
-  return id;
+  const counter = await Counter.findOneAndUpdate(
+    { _id: 'PROPERTY' },
+    { $inc: { seq: 1 } },
+    { new: true, upsert: true }
+  );
+  return `${randomLetters()}${String(counter.seq).padStart(3, '0')}`; // e.g. QWR001
 }
 
 // ────────────────────────────────────────────────────────────────────────────
