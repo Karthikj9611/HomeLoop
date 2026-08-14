@@ -2659,20 +2659,24 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
         </div>
         <textarea class="form-input" id="f-ownerAddress" rows="2" style="resize:vertical"></textarea>
       </div>
-      <!-- Agent-only fields — shown when Listed by = Agent -->
+      <!-- Agent-only fields — shown when Listed by = Agent.
+           Unlike index.html (where these are fixed to the platform's own
+           agent contact), admin can edit any listing's agent phone/area
+           per-property — so these stay plain editable inputs here. -->
       <div id="f-agentFields" style="grid-column:span 3">
         <div class="form-row" style="grid-template-columns:1fr 1fr;margin-top:4px">
           <div class="form-group">
             <label class="form-label">Agent phone number</label>
             <div class="input-icon-wrap">
-              <input class="form-input identity-locked" type="tel" id="f-agentPhone" inputmode="numeric" maxlength="10" value="9035205230" readonly />
+              <input class="form-input" type="tel" id="f-agentPhone" inputmode="numeric" maxlength="10" value="9035205230" oninput="sanitizeMobileInput(this)"/>
+              <button type="button" class="contact-pick-btn" id="f-agentPhone-pickBtn" onclick="pickContactFromDevice('f-agentPhone')" title="Pick from contacts">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              </button>
             </div>
-            <div class="identity-locked-hint">Fixed agent contact number</div>
           </div>
           <div class="form-group">
             <label class="form-label">Agent service area</label>
-            <input class="form-input identity-locked" type="text" id="f-agentArea" value="Prashanth B, Singasandra" readonly />
-            <div class="identity-locked-hint">Fixed agent service area</div>
+            <input class="form-input" type="text" id="f-agentArea" value="Prashanth B, Singasandra" />
           </div>
         </div>
       </div>
@@ -2709,7 +2713,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
       <div class="form-group">
         <label class="form-label">Property type</label>
         <select class="form-select" id="f-propertyType">
-          <option>Apartment</option><option>House</option><option>Standalone</option><option>Villa</option><option>Studio</option><option>Duplex</option><option>Penthouse</option><option>Bungalow</option><option>Loft</option><option>Cottage</option><option>Farmhouse</option><option>PG</option><option>Hostel</option><option>Homestay</option>
+          <option>Apartment</option><option>House</option><option>Standalone building</option><option>Villa</option><option>Studio</option><option>Duplex</option><option>Penthouse</option><option>Bungalow</option><option>Loft</option><option>Cottage</option><option>Farmhouse</option><option>PG</option><option>Hostel</option><option>Homestay</option>
         </select>
       </div>
       <div class="form-group">
