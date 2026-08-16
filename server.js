@@ -1957,6 +1957,7 @@ app.get('/api/honest-reviews', async (req, res) => {
     const reviews = await HonestReview.find({ active: true, status: 'approved' })
       .sort({ order: 1, createdAt: -1 })
       .lean();
+    res.set('Cache-Control', 'public, max-age=300'); // admin-curated content, changes rarely
     res.json({ reviews });
   } catch (err) {
     console.error('GET /api/honest-reviews error:', err.message);
@@ -2036,6 +2037,7 @@ app.get('/api/partners', async (req, res) => {
     const partners = await Partner.find({ active: true })
       .sort({ order: 1, createdAt: 1 })
       .lean();
+    res.set('Cache-Control', 'public, max-age=300'); // partner logos, changes rarely
     res.json({ partners });
   } catch (err) {
     console.error('GET /api/partners error:', err.message);
@@ -2174,6 +2176,7 @@ app.get('/api/payment-settings', async (req, res) => {
   try {
     const settings = await PaymentSettings.findOne({ key: 'default' }).lean();
     if (!settings) console.warn('⚠️  No PaymentSettings in DB — serving DUMMY_PAYMENT_DETAILS. Replace these before accepting real payments.');
+    res.set('Cache-Control', 'public, max-age=60'); // rarely changes; kept short since it's payment-related
     res.json(settings || DUMMY_PAYMENT_DETAILS);
   } catch (err) {
     console.error('GET /api/payment-settings error:', err.message);
@@ -2480,6 +2483,7 @@ app.get('/api/stats', async (req, res) => {
       User.countDocuments(),
       DailyStat.findOne({ date: todayStr(), type: 'visit' }).lean(),
     ]);
+    res.set('Cache-Control', 'public, max-age=10'); // short TTL — these are meant to feel live
     res.json({
       totalVisits: visitDoc ? visitDoc.value : 0,
       totalUsers,
