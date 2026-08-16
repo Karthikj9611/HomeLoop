@@ -1987,49 +1987,40 @@ main.tab-explore .empty-state{display:none !important}
 .visit-confirm-sub{font-size:13px;color:var(--text-2);text-align:center;margin-top:4px}
 
 /* ─── Toast / Alert ────────────────────────────── */
-.toast-backdrop{
-  position:fixed;inset:0;z-index:100000;
-  background:rgba(20,16,17,.16);
-  backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);
-  opacity:0;pointer-events:none;
-  transition:opacity .25s ease;
-}
-.toast-backdrop.show{opacity:1}
+/* A non-blocking notification banner that drops in from the top of the
+   screen — no darkened backdrop, doesn't interrupt whatever the person is
+   doing underneath it. */
+.toast-backdrop{display:none}
 .toast{
-  position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) translateY(10px) scale(.92);
-  display:flex;align-items:center;gap:14px;
+  position:fixed;top:14px;left:50%;
+  transform:translateX(-50%) translateY(-130%);
+  display:flex;align-items:center;gap:12px;
   background:#fff;color:var(--text);
-  border-radius:20px;
-  box-shadow:0 24px 55px rgba(20,16,17,.20),0 6px 16px rgba(20,16,17,.08),inset 0 0 0 1px rgba(20,16,17,.05);
-  padding:15px 22px 15px 16px;font-size:14px;font-weight:600;line-height:1.45;
-  width:max-content;max-width:min(86vw,380px);
+  border-radius:14px;
+  box-shadow:0 10px 30px rgba(20,16,17,.14),0 2px 8px rgba(20,16,17,.06);
+  padding:12px 16px 12px 12px;font-size:14px;font-weight:600;line-height:1.4;
+  width:max-content;max-width:min(92vw,420px);
   white-space:normal;word-break:break-word;text-align:left;
-  opacity:0;transition:opacity .28s cubic-bezier(.22,1,.36,1),transform .28s cubic-bezier(.22,1,.36,1);
-  pointer-events:none;z-index:100001;overflow:hidden;
+  opacity:0;transition:opacity .3s cubic-bezier(.22,1,.36,1),transform .38s cubic-bezier(.22,1,.36,1);
+  pointer-events:none;z-index:100001;
+  border-top:3px solid var(--toast-accent,var(--brand));
 }
-.toast.show{opacity:1;transform:translate(-50%,-50%) translateY(0) scale(1)}
-.toast::after{
-  content:"";position:absolute;left:0;right:0;bottom:0;height:3px;
-  background:var(--toast-accent,var(--brand));opacity:.5;
-  transform-origin:left;transform:scaleX(1);
-  transition:transform 2.4s linear;
-}
-.toast.show::after{transform:scaleX(0)}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 .toast-icon{
-  flex-shrink:0;width:34px;height:34px;border-radius:50%;
+  flex-shrink:0;width:26px;height:26px;border-radius:8px;
   display:flex;align-items:center;justify-content:center;
-  background:var(--toast-accent,var(--brand));
-  box-shadow:0 4px 10px -2px var(--toast-glow,rgba(224,58,82,.35));
+  background:var(--toast-accent-light,var(--brand-light));
 }
-.toast-icon svg{width:18px;height:18px;stroke:#fff;fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+.toast-icon svg{width:15px;height:15px;stroke:var(--toast-accent,var(--brand));fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
 .toast-msg{flex:1}
 
 /* Success — brand pink doubles as the default/success accent used across
    most toasts (added to shortlist, booked, restored, etc). */
-.toast.toast-success{--toast-accent:#1fa971;--toast-accent-light:#e8faf1;--toast-glow:rgba(31,169,113,.35)}
-.toast.toast-error{--toast-accent:#e0393a;--toast-accent-light:#fdeaea;--toast-glow:rgba(224,57,58,.35)}
-.toast.toast-warning{--toast-accent:#d98a1c;--toast-accent-light:#fef4e3;--toast-glow:rgba(217,138,28,.35)}
-.toast.toast-info{--toast-accent:#2f7feb;--toast-accent-light:#eaf2ff;--toast-glow:rgba(47,127,235,.35)}
+.toast.toast-success{--toast-accent:#1fa971;--toast-accent-light:#e8faf1}
+.toast.toast-error{--toast-accent:#e0393a;--toast-accent-light:#fdeaea}
+.toast.toast-warning{--toast-accent:#d98a1c;--toast-accent-light:#fef4e3}
+.toast.toast-info{--toast-accent:#2f7feb;--toast-accent-light:#eaf2ff}
+
 
 /* ─── Backdrop for panels ──────────────────────── */
 .panel-backdrop{
@@ -14074,15 +14065,9 @@ function showToast(msg, type) {
     `<svg viewBox="0 0 24 24" aria-hidden="true">${TOAST_ICONS[kind]}</svg>`;
   t.classList.remove('toast-success', 'toast-error', 'toast-warning', 'toast-info');
   t.classList.add('toast-' + kind);
-  // Restart the progress-bar sweep every time (removing .show resets the
-  // ::after transition so repeated toasts don't inherit a stale animation).
-  t.classList.remove('show');
-  backdrop.classList.remove('show');
+  t.classList.add('show');
+  backdrop.classList.add('show');
   clearTimeout(toastTimer);
-  requestAnimationFrame(() => {
-    t.classList.add('show');
-    backdrop.classList.add('show');
-  });
   toastTimer = setTimeout(() => { t.classList.remove('show'); backdrop.classList.remove('show'); }, 2400);
 }
 
