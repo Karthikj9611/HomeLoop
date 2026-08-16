@@ -3056,8 +3056,10 @@ let dataTable, propTable, apptTable, honestReviewsTable;
 
 const BASE = 'https://homeloop.in';
 
-/* ── ADMIN KEY – set after login ── */
-let ADMIN_KEY = sessionStorage.getItem('kr_admin_key') || '';
+/* ── ADMIN KEY – set after login ──
+   Uses localStorage (not sessionStorage) so the admin stays signed in even
+   after closing the tab/browser — only clicking "Sign Out" clears it. */
+let ADMIN_KEY = localStorage.getItem('kr_admin_key') || '';
 
 /* Helper: auth headers for all fetch() calls */
 function authHeaders(extra){
@@ -3186,9 +3188,9 @@ async function doLogin(){
       return;
     }
     ADMIN_KEY = data.adminKey;
-    sessionStorage.setItem('kr_admin_key', ADMIN_KEY);
+    localStorage.setItem('kr_admin_key', ADMIN_KEY);
     const adminName = data.firstName || 'Admin';
-    sessionStorage.setItem('kr_admin_name', adminName);
+    localStorage.setItem('kr_admin_name', adminName);
     document.getElementById('adminNameBadge').textContent = adminName;
     hideLogin();
     if(dataTable) dataTable.ajax.reload();
@@ -3264,7 +3266,8 @@ window.addEventListener('resize', function(){
 setTimeout(alignThreeRowsAsColumns, 400); // catch late webfont reflow
 
 function doLogout(){
-  sessionStorage.removeItem('kr_admin_key');
+  localStorage.removeItem('kr_admin_key');
+  localStorage.removeItem('kr_admin_name');
   ADMIN_KEY = '';
   location.reload();
 }
@@ -3272,15 +3275,44 @@ function doLogout(){
 if(!ADMIN_KEY){
   window.addEventListener('DOMContentLoaded', showLogin);
 } else {
-  // Key already in session — fetch user info to show name
+  // Key already saved from a previous visit — verify it's still accepted by
+  // the server before trusting it. If the session was revoked/expired,
+  // fall back to the login screen instead of showing a broken admin panel.
   fetch(BASE + '/api/users', { method:'GET', headers: authHeaders() })
-    .then(r => r.ok ? r.json() : [])
-    .catch(()=>[])
+    .then(r => {
+      if(!r.ok){
+        localStorage.removeItem('kr_admin_key');
+        localStorage.removeItem('kr_admin_name');
+        ADMIN_KEY = '';
+        showLogin();
+        return null;
+      }
+      return r.json();
+    })
+    .catch(()=>null)
     .then(()=>{
-      const stored = sessionStorage.getItem('kr_admin_name');
+      if(!ADMIN_KEY) return;
+      const stored = localStorage.getItem('kr_admin_name');
       if(stored) document.getElementById('adminNameBadge').textContent = stored;
     });
 }
+
+// If the admin's session ever gets rejected mid-use (expired/revoked on the
+// server), don't let API calls just silently fail — drop back to the login
+// screen automatically instead of leaving a half-broken panel on screen.
+const _nativeFetch = window.fetch;
+window.fetch = function(input, init){
+  return _nativeFetch(input, init).then(res => {
+    const usedAdminKey = init && init.headers && init.headers['x-admin-key'];
+    if(usedAdminKey && res.status === 401 && ADMIN_KEY){
+      localStorage.removeItem('kr_admin_key');
+      localStorage.removeItem('kr_admin_name');
+      ADMIN_KEY = '';
+      showLogin();
+    }
+    return res;
+  });
+};
 
 /* ── TAB SWITCHING ── */
 function switchTab(tab){

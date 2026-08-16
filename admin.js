@@ -68,7 +68,13 @@ module.exports = function registerAdminRoutes(app, deps) {
 
   const ADMIN_NAME     = 'Admin';
 
-  const SESSION_TTL_MS = 4 * 60 * 60 * 1000;
+  // Sessions used to expire after 4 hours, which logged admins out mid-work
+  // even though the tab was still open. The admin panel is meant to behave
+  // like "stay signed in until you explicitly log out", so this is now a
+  // long-lived TTL (180 days) — effectively indefinite for normal use, while
+  // still giving Mongo's TTL index a backstop to clean up truly abandoned
+  // sessions instead of keeping them forever.
+  const SESSION_TTL_MS = 180 * 24 * 60 * 60 * 1000;
 
   const AdminSessionSchema = new mongoose.Schema({
     key:       { type: String, required: true, unique: true, index: true },
