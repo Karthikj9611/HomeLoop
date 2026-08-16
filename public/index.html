@@ -13476,7 +13476,11 @@ async function addImagesFromFiles(input) {
   if (hint) hint.textContent = 'Uploading…';
 
   const form = new FormData();
-  files.forEach(file => form.append('images', file));
+  // Stamp every photo with a centered "homeloop.in" watermark (matching how
+  // other listing sites like NoBroker brand their photos) before it ever
+  // leaves the device — the server only ever sees the watermarked version.
+  const watermarked = await Promise.all(files.map(f => watermarkImageFile(f).catch(() => f)));
+  watermarked.forEach(file => form.append('images', file));
 
   try {
     const res = await fetch('/api/upload-images', { method: 'POST', body: form, headers: userAuthHeaders() });
@@ -13490,6 +13494,83 @@ async function addImagesFromFiles(input) {
   }
 }
 
+// Draws the source image onto a canvas with a semi-transparent
+// "🏠 homeloop.in" mark centered over it, then returns a new File with the
+// same name/type so it's a drop-in replacement in the upload FormData.
+// Falls back to the original file (via the .catch() at the call site) if
+// anything about loading/encoding fails, so a bad photo never blocks the
+// whole upload.
+// Cache the already-loaded header logo so repeat uploads in the same
+// session don't have to decode the (fairly large) base64 PNG again.
+let _watermarkLogoPromise = null;
+function getWatermarkLogo() {
+  if (!_watermarkLogoPromise) {
+    _watermarkLogoPromise = new Promise((resolve, reject) => {
+      const headerLogo = document.querySelector('.logo-mark');
+      if (!headerLogo || !headerLogo.src) { reject(new Error('logo not found')); return; }
+      const logoImg = new Image();
+      logoImg.onload = () => resolve(logoImg);
+      logoImg.onerror = () => reject(new Error('logo failed to load'));
+      logoImg.src = headerLogo.src; // exact same data: URI used in the header
+    });
+  }
+  return _watermarkLogoPromise;
+}
+
+async function watermarkImageFile(file) {
+  const logo = await getWatermarkLogo();
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      try {
+        const w = img.naturalWidth, h = img.naturalHeight;
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+
+        // Small logo icon + brand name side by side, centered on the photo
+        // as one group — like a NoBroker-style mark rather than the logo
+        // alone taking up a big chunk of the middle of the photo.
+        const iconSize = Math.min(w, h) * 0.09;
+        const fontSize = iconSize * 0.62;
+        const gap = iconSize * 0.28;
+        const label = 'homeloop.in';
+
+        ctx.font = `700 ${fontSize}px Inter, system-ui, sans-serif`;
+        const textWidth = ctx.measureText(label).width;
+        const groupWidth = iconSize + gap + textWidth;
+        const groupX = (w - groupWidth) / 2;
+        const cy = h / 2;
+
+        ctx.save();
+        ctx.globalAlpha = 0.6;
+        ctx.shadowColor = 'rgba(0,0,0,.35)';
+        ctx.shadowBlur = iconSize * 0.12;
+        ctx.drawImage(logo, groupX, cy - iconSize / 2, iconSize, iconSize);
+
+        ctx.fillStyle = 'rgba(255,255,255,.92)';
+        ctx.font = `700 ${fontSize}px Inter, system-ui, sans-serif`;
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(label, groupX + iconSize + gap, cy + fontSize * 0.03);
+        ctx.restore();
+
+        canvas.toBlob(blob => {
+          URL.revokeObjectURL(url);
+          if (!blob) { reject(new Error('toBlob failed')); return; }
+          resolve(new File([blob], file.name, { type: blob.type || file.type || 'image/jpeg' }));
+        }, 'image/jpeg', 0.92);
+      } catch (e) {
+        URL.revokeObjectURL(url);
+        reject(e);
+      }
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('image load failed')); };
+    img.src = url;
+  });
+}
 function onFTypeChange(val) {
   const isPG = val === 'PG';
   const isLease = val === 'Lease';
