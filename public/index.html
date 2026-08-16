@@ -1989,31 +1989,47 @@ main.tab-explore .empty-state{display:none !important}
 /* ─── Toast / Alert ────────────────────────────── */
 .toast-backdrop{
   position:fixed;inset:0;z-index:100000;
-  background:rgba(20,16,17,.14);
+  background:rgba(20,16,17,.16);
+  backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);
   opacity:0;pointer-events:none;
-  transition:opacity .2s ease;
+  transition:opacity .25s ease;
 }
 .toast-backdrop.show{opacity:1}
 .toast{
-  position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) translateY(6px) scale(.97);
-  display:flex;align-items:center;gap:12px;
+  position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) translateY(10px) scale(.92);
+  display:flex;align-items:center;gap:14px;
   background:#fff;color:var(--text);
-  border-radius:16px;box-shadow:0 16px 40px rgba(20,16,17,.16),0 2px 6px rgba(20,16,17,.06);
-  padding:15px 20px;font-size:14px;font-weight:500;line-height:1.45;
+  border-radius:20px;
+  box-shadow:0 24px 55px rgba(20,16,17,.20),0 6px 16px rgba(20,16,17,.08),inset 0 0 0 1px rgba(20,16,17,.05);
+  padding:15px 22px 15px 16px;font-size:14px;font-weight:600;line-height:1.45;
   width:max-content;max-width:min(86vw,380px);
   white-space:normal;word-break:break-word;text-align:left;
-  opacity:0;transition:opacity .2s ease,transform .2s ease;
-  pointer-events:none;z-index:100001;
+  opacity:0;transition:opacity .28s cubic-bezier(.22,1,.36,1),transform .28s cubic-bezier(.22,1,.36,1);
+  pointer-events:none;z-index:100001;overflow:hidden;
 }
 .toast.show{opacity:1;transform:translate(-50%,-50%) translateY(0) scale(1)}
-.toast-icon{
-  flex-shrink:0;width:26px;height:26px;border-radius:50%;
-  display:flex;align-items:center;justify-content:center;
-  background:var(--brand-light);
+.toast::after{
+  content:"";position:absolute;left:0;right:0;bottom:0;height:3px;
+  background:var(--toast-accent,var(--brand));opacity:.5;
+  transform-origin:left;transform:scaleX(1);
+  transition:transform 2.4s linear;
 }
-.toast-icon svg{width:15px;height:15px;stroke:var(--brand);fill:none;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
-.toast.toast-error .toast-icon{background:#fdeaea}
-.toast.toast-error .toast-icon svg{stroke:#d33}
+.toast.show::after{transform:scaleX(0)}
+.toast-icon{
+  flex-shrink:0;width:34px;height:34px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  background:var(--toast-accent,var(--brand));
+  box-shadow:0 4px 10px -2px var(--toast-glow,rgba(224,58,82,.35));
+}
+.toast-icon svg{width:18px;height:18px;stroke:#fff;fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+.toast-msg{flex:1}
+
+/* Success — brand pink doubles as the default/success accent used across
+   most toasts (added to shortlist, booked, restored, etc). */
+.toast.toast-success{--toast-accent:#1fa971;--toast-accent-light:#e8faf1;--toast-glow:rgba(31,169,113,.35)}
+.toast.toast-error{--toast-accent:#e0393a;--toast-accent-light:#fdeaea;--toast-glow:rgba(224,57,58,.35)}
+.toast.toast-warning{--toast-accent:#d98a1c;--toast-accent-light:#fef4e3;--toast-glow:rgba(217,138,28,.35)}
+.toast.toast-info{--toast-accent:#2f7feb;--toast-accent-light:#eaf2ff;--toast-glow:rgba(47,127,235,.35)}
 
 /* ─── Backdrop for panels ──────────────────────── */
 .panel-backdrop{
@@ -6441,11 +6457,11 @@ main.tab-explore .empty-state{display:none !important}
 
 <!-- ─── Toast / Alert ─────────────────────────────── -->
 <div class="toast-backdrop" id="toastBackdrop"></div>
-<div class="toast" id="toast" role="status" aria-live="polite">
+<div class="toast toast-success" id="toast" role="status" aria-live="polite">
   <span class="toast-icon" id="toastIcon">
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>
   </span>
-  <span id="toastMsg"></span>
+  <span class="toast-msg" id="toastMsg"></span>
 </div>
 
 <!-- ─── Compare Bar ───────────────────────────────── -->
@@ -7912,12 +7928,12 @@ function toggleCompare(id, el) {
     if (el) el.classList.remove('checked');
   } else {
     if (compareSet.size >= COMPARE_MAX) {
-      showToast(`You can compare up to ${COMPARE_MAX} properties at a time`);
+      showToast(`You can compare up to ${COMPARE_MAX} properties at a time`, 'warning');
       return;
     }
     const existingType = getCompareType();
     if (existingType && pTypeLabel(prop) !== existingType) {
-      showToast(`You can only compare ${existingType} properties together`);
+      showToast(`You can only compare ${existingType} properties together`, 'warning');
       return;
     }
     compareSet.add(id);
@@ -8015,7 +8031,7 @@ function clearDeepLinkUrl() {
 
 function openCompareModal() {
   if (compareSet.size < 2) {
-    showToast('Select at least 2 properties to compare');
+    showToast('Select at least 2 properties to compare', 'warning');
     return;
   }
   renderCompareTable();
@@ -9938,7 +9954,7 @@ let scheduleForPropId = null;
 let bookingForPropId = null;
 
 function openScheduleModal(propId) {
-  if (!getLoggedInUser()) { showToast('Please log in to schedule a visit'); openAuthModal(); return; }
+  if (!getLoggedInUser()) { showToast('Please log in to schedule a visit', 'warning'); openAuthModal(); return; }
   const p = PROPERTIES.find(x => x.id === propId);
   if (!p) return;
   scheduleForPropId = propId;
@@ -10037,15 +10053,15 @@ async function submitScheduleVisit() {
   const note  = document.getElementById('sched-note').value.trim();
 
   if (!date || !time) {
-    showToast('Please pick a date and time for your visit');
+    showToast('Please pick a date and time for your visit', 'warning');
     return;
   }
-  if (!name) { showToast('Please enter your name'); return; }
-  if (!phone) { showToast('Please enter your phone number'); return; }
-  if (!isValidIndianMobile(phone)) { showToast('Enter a valid 10-digit mobile number starting with 6, 7, 8 or 9'); return; }
+  if (!name) { showToast('Please enter your name', 'warning'); return; }
+  if (!phone) { showToast('Please enter your phone number', 'warning'); return; }
+  if (!isValidIndianMobile(phone)) { showToast('Enter a valid 10-digit mobile number starting with 6, 7, 8 or 9', 'warning'); return; }
 
   const p = PROPERTIES.find(x => x.id === scheduleForPropId);
-  if (!p) { showToast('Could not find that property. Please try again.'); return; }
+  if (!p) { showToast('Could not find that property. Please try again.', 'error'); return; }
 
   const btn = document.getElementById('scheduleSubmitBtn');
   btn.disabled = true;
@@ -10066,7 +10082,7 @@ async function submitScheduleVisit() {
       })
     });
     const data = await res.json();
-    if (!res.ok) { showToast(data.message || 'Could not request the visit. Please try again.'); return; }
+    if (!res.ok) { showToast(data.message || 'Could not request the visit. Please try again.', 'error'); return; }
 
     // Reflect the server's authoritative visitCount locally so the badge in
     // the detail modal / My Listings updates immediately, without touching
@@ -10101,7 +10117,7 @@ async function submitScheduleVisit() {
       note,
     }, { title: 'Visit requested' });
   } catch (err) {
-    showToast('Network error. Please try again.');
+    showToast('Network error. Please try again.', 'error');
   } finally {
     btn.disabled = false;
     btn.textContent = 'Request visit';
@@ -10113,7 +10129,7 @@ async function submitScheduleVisit() {
    (OYO-style: no owner visit needed, guest books the room directly)
 ═══════════════════════════════════════════════ */
 function openBookingModal(propId) {
-  if (!getLoggedInUser()) { showToast('Please log in to book'); openAuthModal(); return; }
+  if (!getLoggedInUser()) { showToast('Please log in to book', 'warning'); openAuthModal(); return; }
   const p = PROPERTIES.find(x => x.id === propId);
   if (!p) return;
   bookingForPropId = propId;
@@ -10159,14 +10175,14 @@ async function submitBookingRequest() {
   const email   = document.getElementById('book-email').value.trim();
   const note    = document.getElementById('book-note').value.trim();
 
-  if (!checkin) { showToast('Please pick a check-in date'); return; }
-  if (!days || parseInt(days) < 1) { showToast('Please enter the number of days'); return; }
-  if (!name) { showToast('Please enter your name'); return; }
-  if (!phone) { showToast('Please enter your phone number'); return; }
-  if (!isValidIndianMobile(phone)) { showToast('Enter a valid 10-digit mobile number starting with 6, 7, 8 or 9'); return; }
+  if (!checkin) { showToast('Please pick a check-in date', 'warning'); return; }
+  if (!days || parseInt(days) < 1) { showToast('Please enter the number of days', 'warning'); return; }
+  if (!name) { showToast('Please enter your name', 'warning'); return; }
+  if (!phone) { showToast('Please enter your phone number', 'warning'); return; }
+  if (!isValidIndianMobile(phone)) { showToast('Enter a valid 10-digit mobile number starting with 6, 7, 8 or 9', 'warning'); return; }
 
   const p = PROPERTIES.find(x => x.id === bookingForPropId);
-  if (!p) { showToast('Could not find that property. Please try again.'); return; }
+  if (!p) { showToast('Could not find that property. Please try again.', 'error'); return; }
 
   const btn = document.getElementById('bookingSubmitBtn');
   btn.disabled = true;
@@ -10188,13 +10204,13 @@ async function submitBookingRequest() {
       })
     });
     const data = await res.json();
-    if (!res.ok) { showToast(data.message || 'Could not complete the booking. Please try again.'); return; }
+    if (!res.ok) { showToast(data.message || 'Could not complete the booking. Please try again.', 'error'); return; }
 
     const dateLabel = formatDateDisplay(checkin);
     closeBookingModal();
     showToast(`Booked from ${dateLabel} for ${days} day${days > 1 ? 's' : ''} — ${p.propertyId || ''}`);
   } catch (err) {
-    showToast('Network error. Please try again.');
+    showToast('Network error. Please try again.', 'error');
   } finally {
     btn.disabled = false;
     btn.textContent = 'Confirm booking';
@@ -10209,7 +10225,7 @@ function openCall(propId) {
   if (!p) return;
   const rawPhone = (p.owner?.agentPhone || '').replace(/\D/g, '');
   if (!rawPhone) {
-    showToast('No agent phone number added for this listing');
+    showToast('No agent phone number added for this listing', 'warning');
     return;
   }
   const phone = rawPhone.length === 10 ? '+91' + rawPhone : ('+' + rawPhone);
@@ -10224,7 +10240,7 @@ function openWhatsApp(propId) {
   if (!p) return;
   const rawPhone = (p.owner?.agentPhone || '').replace(/\D/g, '');
   if (!rawPhone) {
-    showToast('No agent phone number added for this listing');
+    showToast('No agent phone number added for this listing', 'warning');
     return;
   }
   const phone = rawPhone.length === 10 ? '91' + rawPhone : rawPhone;
@@ -10935,7 +10951,7 @@ async function addAuthProfilePic(input) {
       saveSignupDraft();
     }
   } catch (err) {
-    showToast(err.message || 'Could not upload photo. Please try again.');
+    showToast(err.message || 'Could not upload photo. Please try again.', 'error');
     if (preview) preview.innerHTML = AUTH_PHOTO_PLACEHOLDER;
   }
 }
@@ -11011,7 +11027,7 @@ async function submitAuth() {
 
   if (isLogin) {
     const contact = document.getElementById('auth-contact').value.trim();
-    if (!contact || !password) { showToast('Please fill in your details'); return; }
+    if (!contact || !password) { showToast('Please fill in your details', 'warning'); return; }
     body = { contact, password };
   } else {
     if (!selectedAccountType) {
@@ -11026,12 +11042,12 @@ async function submitAuth() {
     const mobile            = document.getElementById('auth-mobile').value.trim();
     const confirmPassword = document.getElementById('auth-confirm-password').value;
 
-    if (!firstName || !lastName) { showToast('Please enter your first and last name'); return; }
-    if (!email)  { showToast('Please enter your email'); return; }
-    if (!mobile) { showToast('Please enter your mobile number'); return; }
-    if (!isValidIndianMobile(mobile)) { showToast('Enter a valid 10-digit mobile number starting with 6, 7, 8 or 9'); return; }
-    if (!password) { showToast('Please enter a password'); return; }
-    if (password !== confirmPassword) { showToast('Passwords do not match'); return; }
+    if (!firstName || !lastName) { showToast('Please enter your first and last name', 'warning'); return; }
+    if (!email)  { showToast('Please enter your email', 'warning'); return; }
+    if (!mobile) { showToast('Please enter your mobile number', 'warning'); return; }
+    if (!isValidIndianMobile(mobile)) { showToast('Enter a valid 10-digit mobile number starting with 6, 7, 8 or 9', 'warning'); return; }
+    if (!password) { showToast('Please enter a password', 'warning'); return; }
+    if (password !== confirmPassword) { showToast('Passwords do not match', 'warning'); return; }
     body = { firstName, lastName, email, mobile, password, confirmPassword, accountType: selectedAccountType, profilePic: authProfilePicUrl || null };
   }
 
@@ -11048,7 +11064,7 @@ async function submitAuth() {
         body: JSON.stringify({ email: body.email })
       });
       const otpData = await otpRes.json();
-      if (!otpRes.ok) { showToast(otpData.message || 'Could not send verification code'); return; }
+      if (!otpRes.ok) { showToast(otpData.message || 'Could not send verification code', 'error'); return; }
 
       // Reveal the code field right in the same form (no separate step/modal) —
       // lock the rest of the details so an edit mid-verification can't drift
@@ -11068,12 +11084,12 @@ async function submitAuth() {
     });
     const data = await res.json();
     if (!res.ok) {
-      showToast(data.message || 'Something went wrong');
+      showToast(data.message || 'Something went wrong', 'error');
       return;
     }
     finishAuthSuccess(data);
   } catch (err) {
-    showToast('Network error. Please try again.');
+    showToast('Network error. Please try again.', 'error');
   } finally {
     btn.disabled = false;
     btn.textContent = isLogin ? 'Log in' : (pendingSignupBody ? 'Verify & create account' : 'Sign up');
@@ -11105,7 +11121,7 @@ async function verifySignupOtp() {
 
   if (!pendingSignupBody) { cancelSignupOtp(); return; }
   const otp = document.getElementById('auth-otp').value.trim();
-  if (!/^\d{6}$/.test(otp)) { showToast('Enter the 6-digit code from your email'); return; }
+  if (!/^\d{6}$/.test(otp)) { showToast('Enter the 6-digit code from your email', 'warning'); return; }
 
   btn.disabled = true;
   btn.textContent = 'Verifying…';
@@ -11117,7 +11133,7 @@ async function verifySignupOtp() {
       body: JSON.stringify({ email: pendingSignupBody.email, otp })
     });
     const verifyData = await verifyRes.json();
-    if (!verifyRes.ok) { showToast(verifyData.message || 'Incorrect code'); return; }
+    if (!verifyRes.ok) { showToast(verifyData.message || 'Incorrect code', 'error'); return; }
 
     btn.textContent = 'Creating account…';
     const signupRes  = await fetch('/api/user/signup', {
@@ -11126,12 +11142,12 @@ async function verifySignupOtp() {
       body: JSON.stringify(pendingSignupBody)
     });
     const signupData = await signupRes.json();
-    if (!signupRes.ok) { showToast(signupData.message || 'Something went wrong'); return; }
+    if (!signupRes.ok) { showToast(signupData.message || 'Something went wrong', 'error'); return; }
 
     pendingSignupBody = null;
     finishAuthSuccess(signupData);
   } catch (err) {
-    showToast('Network error. Please try again.');
+    showToast('Network error. Please try again.', 'error');
   } finally {
     btn.disabled = false;
     btn.textContent = pendingSignupBody ? 'Verify & create account' : 'Sign up';
@@ -11152,9 +11168,9 @@ async function resendSignupOtp() {
       body: JSON.stringify({ email: pendingSignupBody.email })
     });
     const data = await res.json();
-    showToast(res.ok ? 'Code resent' : (data.message || 'Could not resend code'));
+    showToast(res.ok ? 'Code resent' : (data.message || 'Could not resend code'), res.ok ? 'success' : 'error');
   } catch (err) {
-    showToast('Network error. Please try again.');
+    showToast('Network error. Please try again.', 'error');
   } finally {
     setTimeout(() => { link.style.pointerEvents = ''; link.style.opacity = ''; }, 15000);
   }
@@ -11231,9 +11247,9 @@ async function saveProfileEdits() {
   const name   = document.getElementById('profile-edit-name').value.trim();
   const email  = document.getElementById('profile-edit-email').value.trim();
   const mobile = document.getElementById('profile-edit-mobile').value.trim();
-  if (!email)  { showToast('Email cannot be empty'); return; }
-  if (!mobile) { showToast('Mobile number cannot be empty'); return; }
-  if (!isValidIndianMobile(mobile)) { showToast('Enter a valid 10-digit mobile number starting with 6, 7, 8 or 9'); return; }
+  if (!email)  { showToast('Email cannot be empty', 'warning'); return; }
+  if (!mobile) { showToast('Mobile number cannot be empty', 'warning'); return; }
+  if (!isValidIndianMobile(mobile)) { showToast('Enter a valid 10-digit mobile number starting with 6, 7, 8 or 9', 'warning'); return; }
 
   const btn = document.getElementById('profileSaveBtn');
   btn.disabled = true;
@@ -11245,7 +11261,7 @@ async function saveProfileEdits() {
       body: JSON.stringify({ name, email, mobile })
     });
     const data = await res.json();
-    if (!res.ok) { showToast(data.message || 'Could not update profile'); return; }
+    if (!res.ok) { showToast(data.message || 'Could not update profile', 'error'); return; }
 
     const user = getLoggedInUser();
     user.name = data.name;
@@ -11263,7 +11279,7 @@ async function saveProfileEdits() {
     exitProfileEditMode();
     showToast('Profile updated');
   } catch (err) {
-    showToast('Network error. Please try again.');
+    showToast('Network error. Please try again.', 'error');
   } finally {
     btn.disabled = false;
     btn.textContent = 'Save changes';
@@ -11287,8 +11303,8 @@ function exitPasswordEditMode() {
 async function savePasswordChange() {
   const currentPassword = document.getElementById('profile-current-password').value;
   const newPassword     = document.getElementById('profile-new-password').value;
-  if (!currentPassword || !newPassword) { showToast('Please fill in both fields'); return; }
-  if (newPassword.length < 6) { showToast('New password must be at least 6 characters'); return; }
+  if (!currentPassword || !newPassword) { showToast('Please fill in both fields', 'warning'); return; }
+  if (newPassword.length < 6) { showToast('New password must be at least 6 characters', 'warning'); return; }
 
   const btn = document.getElementById('profilePasswordBtn');
   btn.disabled = true;
@@ -11300,11 +11316,11 @@ async function savePasswordChange() {
       body: JSON.stringify({ currentPassword, newPassword })
     });
     const data = await res.json();
-    if (!res.ok) { showToast(data.message || 'Could not update password'); return; }
+    if (!res.ok) { showToast(data.message || 'Could not update password', 'error'); return; }
     exitPasswordEditMode();
     showToast('Password updated successfully');
   } catch (err) {
-    showToast('Network error. Please try again.');
+    showToast('Network error. Please try again.', 'error');
   } finally {
     btn.disabled = false;
     btn.textContent = 'Update password';
@@ -11532,7 +11548,7 @@ async function copyPaymentDetail(text, btnEl, event) {
       setTimeout(() => btnEl.classList.remove('copied'), 1200);
     }
   } catch (err) {
-    showToast('Could not copy — please copy it manually');
+    showToast('Could not copy — please copy it manually', 'error');
   }
 }
 
@@ -11543,7 +11559,7 @@ async function copyPaymentDetail(text, btnEl, event) {
 function copyCurrentAmount(btnEl, event) {
   if (event) event.stopPropagation();
   const val = document.getElementById('pay-amount-inline').value;
-  if (!val || Number(val) <= 0) { showToast('Enter an amount first'); return; }
+  if (!val || Number(val) <= 0) { showToast('Enter an amount first', 'warning'); return; }
   copyPaymentDetail(val, btnEl, event);
 }
 
@@ -11668,7 +11684,7 @@ async function finalizePaymentRequestCreation(purpose, amount, note, propertyId)
     body: JSON.stringify({ purpose, amount, note, propertyId: propertyId || undefined })
   });
   const data = await res.json();
-  if (!res.ok) { showToast(data.message || 'Could not start payment'); return null; }
+  if (!res.ok) { showToast(data.message || 'Could not start payment', 'error'); return null; }
 
   CURRENT_PAYMENT_REQUEST = {
     id: data.request._id, refCode: data.request.refCode, amount: data.request.amount,
@@ -11688,7 +11704,7 @@ async function createPaymentRequest() {
   const amount     = Number(document.getElementById('pay-amount').value);
   const note       = propertyNote;
 
-  if (!amount || amount <= 0) { showToast('Enter a valid amount'); return; }
+  if (!amount || amount <= 0) { showToast('Enter a valid amount', 'warning'); return; }
 
   const btn = document.getElementById('paymentStage1Btn');
   btn.disabled = true;
@@ -11699,7 +11715,7 @@ async function createPaymentRequest() {
     document.getElementById('paymentStage1').style.display = 'none';
     document.getElementById('paymentStage2').style.display = '';
   } catch (err) {
-    showToast('Network error. Please try again.');
+    showToast('Network error. Please try again.', 'error');
   } finally {
     btn.disabled = false;
     btn.textContent = 'Continue';
@@ -11787,7 +11803,7 @@ function buildUpiIntentUrl(s) {
 // as the fallback either way.
 function payViaUpiApp() {
   const url = buildUpiIntentUrl(PAYMENT_SETTINGS_CACHE);
-  if (!url) { showToast('Enter an amount first'); return; }
+  if (!url) { showToast('Enter an amount first', 'warning'); return; }
   window.location.href = url;
 }
 
@@ -11798,7 +11814,7 @@ function payViaUpiApp() {
 // proof against it.
 async function submitPaymentProof() {
   const amount = Number(document.getElementById('pay-amount-inline').value);
-  if (!amount || amount <= 0) { showToast('Enter a valid amount'); return; }
+  if (!amount || amount <= 0) { showToast('Enter a valid amount', 'warning'); return; }
 
   const fileInput = document.getElementById('pay-screenshot');
   const formData = new FormData();
@@ -11816,11 +11832,11 @@ async function submitPaymentProof() {
       body: formData
     });
     const data = await res.json();
-    if (!res.ok) { showToast(data.message || 'Could not submit payment proof'); return; }
+    if (!res.ok) { showToast(data.message || 'Could not submit payment proof', 'error'); return; }
     showToast('Payment submitted — we\'ll verify it shortly');
     closePaymentModal();
   } catch (err) {
-    showToast('Network error. Please try again.');
+    showToast('Network error. Please try again.', 'error');
   } finally {
     btn.disabled = false;
     btn.textContent = "I've paid — submit for verification";
@@ -11837,7 +11853,7 @@ async function submitPaymentProof() {
 ═══════════════════════════════════════════════ */
 function openEditListingFull(id) {
   const p = MY_LISTINGS_CACHE.find(x => x.id === id);
-  if (!p) { showToast('Could not find that listing'); return; }
+  if (!p) { showToast('Could not find that listing', 'error'); return; }
 
   closeProfileModal();
   editingPropertyId = id;
@@ -12136,7 +12152,7 @@ function copyVideoLink(url) {
   if (navigator.clipboard) {
     navigator.clipboard.writeText(url).then(() => showToast('Video link copied!'));
   } else {
-    showToast('Video link: ' + url);
+    showToast('Video link: ' + url, 'info');
   }
 }
 
@@ -12145,7 +12161,7 @@ function copyReferralCode() {
   if (navigator.clipboard) {
     navigator.clipboard.writeText(code).then(() => showToast('Referral code copied!'));
   } else {
-    showToast('Referral code: ' + code);
+    showToast('Referral code: ' + code, 'info');
   }
 }
 function shareReferralCode() {
@@ -12244,7 +12260,7 @@ async function loadHonestReviews() {
 
 /* ── Post Your Video Review (any logged-in user) ── */
 function openSubmitVideoModal() {
-  if (!getLoggedInUser()) { showToast('Please log in to submit your video'); openAuthModal(); return; }
+  if (!getLoggedInUser()) { showToast('Please log in to submit your video', 'warning'); openAuthModal(); return; }
   document.getElementById('submitVideoModal').classList.add('open');
   lockBodyScroll();
 }
@@ -12274,7 +12290,7 @@ async function submitVideoReview(evt) {
     loadHonestReviews();
   } catch (err) {
     console.error('submitVideoReview error:', err);
-    showToast(err.message || 'Could not submit your video');
+    showToast(err.message || 'Could not submit your video', 'error');
   } finally {
     btn.disabled = false;
     btn.textContent = 'Submit for review';
@@ -12753,9 +12769,9 @@ function reviewTimeAgo(iso) {
 async function submitReview() {
   const user = getLoggedInUser();
   if (!user) { openAuthModal(); return; }
-  if (!reviewRatingSelected) { showToast('Please select a star rating'); return; }
+  if (!reviewRatingSelected) { showToast('Please select a star rating', 'warning'); return; }
   const text = document.getElementById('reviewText').value.trim();
-  if (!text) { showToast('Please write a short review'); return; }
+  if (!text) { showToast('Please write a short review', 'warning'); return; }
 
   const btn = document.getElementById('reviewSubmitBtn');
   btn.disabled = true;
@@ -12769,7 +12785,7 @@ async function submitReview() {
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
       if (res.status === 409) {
-        showToast(data.error || 'You have already posted a review');
+        showToast(data.error || 'You have already posted a review', 'error');
         closeReviewModal();
         initReviewForm();
         return;
@@ -12786,7 +12802,7 @@ async function submitReview() {
     loadReviews();
   } catch (err) {
     console.error('Could not submit review:', err.message);
-    showToast('Could not post your review. Please try again.');
+    showToast('Could not post your review. Please try again.', 'error');
   } finally {
     btn.disabled = false;
     btn.textContent = 'Post review';
@@ -13477,7 +13493,7 @@ async function addImagesFromFiles(input) {
     if (!res.ok) throw new Error(data.message || 'Upload failed');
     (data.urls || []).forEach(u => { if (fImages.indexOf(u) < 0) fImages.push(u); });
   } catch (err) {
-    showToast(err.message || 'Could not upload images. Please try again.');
+    showToast(err.message || 'Could not upload images. Please try again.', 'error');
   } finally {
     renderFImages();
   }
@@ -13699,7 +13715,7 @@ function validateListingForm() {
 function submitListing() {
   const firstError = validateListingForm();
   if (firstError) {
-    showToast('Please fill in all required fields');
+    showToast('Please fill in all required fields', 'warning');
     firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
     if (typeof firstError.focus === 'function') firstError.focus();
     return;
@@ -13710,7 +13726,7 @@ function submitListing() {
   const ownerName = document.getElementById('f-ownerName').value.trim();
   const ownerPhone = document.getElementById('f-ownerPhone').value.trim();
 /*  if (!title || !rent || !loc || !ownerName || !ownerPhone) {
-    showToast('Please fill in title, rent, location and owner details');
+    showToast('Please fill in title, rent, location and owner details', 'warning');
     return;
   }
 */
@@ -13719,17 +13735,17 @@ function submitListing() {
   function gb(id) { const el = document.getElementById(id); return el ? el.checked : false; }
 
   if (ownerPhone && !isValidIndianMobile(ownerPhone)) {
-    showToast('Enter a valid 10-digit owner phone number starting with 6, 7, 8 or 9');
+    showToast('Enter a valid 10-digit owner phone number starting with 6, 7, 8 or 9', 'warning');
     return;
   }
   const ownerAltPhone = gv('f-ownerAltPhone');
   if (ownerAltPhone && !isValidIndianMobile(ownerAltPhone)) {
-    showToast('Enter a valid 10-digit alternate number starting with 6, 7, 8 or 9');
+    showToast('Enter a valid 10-digit alternate number starting with 6, 7, 8 or 9', 'warning');
     return;
   }
   const agentPhone = gv('f-agentPhone');
   if (agentPhone && !isValidIndianMobile(agentPhone)) {
-    showToast('Enter a valid 10-digit agent phone number starting with 6, 7, 8 or 9');
+    showToast('Enter a valid 10-digit agent phone number starting with 6, 7, 8 or 9', 'warning');
     return;
   }
 
@@ -13931,7 +13947,7 @@ function submitListing() {
   })
   .catch(err => {
     console.error('Submit listing error:', err);
-    showToast('Failed to ' + (isEditing ? 'save changes' : 'submit') + ': ' + err.message);
+    showToast('Failed to ' + (isEditing ? 'save changes' : 'submit') + ': ' + err.message, 'error');
   })
   .finally(() => {
     if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = isEditing ? 'Save changes' : 'Submit listing'; }
@@ -13943,8 +13959,10 @@ function submitListing() {
 ═══════════════════════════════════════════════ */
 let toastTimer;
 const TOAST_ICONS = {
-  info:    '<path d="M20 6L9 17l-5-5"/>',
+  success: '<path d="M20 6L9 17l-5-5"/>',
   error:   '<circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="13"/><line x1="12" y1="16" x2="12" y2="16.01"/>',
+  warning: '<path d="M12 9v4"/><path d="M12 16.01h.01"/><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>',
+  info:    '<circle cx="12" cy="12" r="9"/><line x1="12" y1="11" x2="12" y2="16.5"/><line x1="12" y1="7.5" x2="12" y2="7.51"/>',
 };
 
 /* ── Indian mobile number validation ──
@@ -14050,13 +14068,21 @@ function showConfirmDialog({ title = 'Are you sure?', message = 'This action can
 function showToast(msg, type) {
   const t = document.getElementById('toast');
   const backdrop = document.getElementById('toastBackdrop');
+  const kind = TOAST_ICONS[type] ? type : 'success';
   document.getElementById('toastMsg').textContent = msg;
   document.getElementById('toastIcon').innerHTML =
-    `<svg viewBox="0 0 24 24" aria-hidden="true">${TOAST_ICONS[type] || TOAST_ICONS.info}</svg>`;
-  t.classList.toggle('toast-error', type === 'error');
-  t.classList.add('show');
-  backdrop.classList.add('show');
+    `<svg viewBox="0 0 24 24" aria-hidden="true">${TOAST_ICONS[kind]}</svg>`;
+  t.classList.remove('toast-success', 'toast-error', 'toast-warning', 'toast-info');
+  t.classList.add('toast-' + kind);
+  // Restart the progress-bar sweep every time (removing .show resets the
+  // ::after transition so repeated toasts don't inherit a stale animation).
+  t.classList.remove('show');
+  backdrop.classList.remove('show');
   clearTimeout(toastTimer);
+  requestAnimationFrame(() => {
+    t.classList.add('show');
+    backdrop.classList.add('show');
+  });
   toastTimer = setTimeout(() => { t.classList.remove('show'); backdrop.classList.remove('show'); }, 2400);
 }
 
