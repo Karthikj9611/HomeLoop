@@ -5088,31 +5088,6 @@ main.tab-explore .empty-state{display:none !important}
          listing. -->
     <div id="listingFormSections">
 
-    <!-- ===== 0. IMPORT EXISTING DATA (file upload or pasted JSON) ===== -->
-    <div class="lm-section" id="importSectionHeader" style="cursor:pointer;display:flex;align-items:center;justify-content:space-between" onclick="toggleImportPanel()">
-      <span>📥 Import property data (optional)</span>
-      <span id="importPanelToggleTxt" style="font-size:12px;color:var(--brand);font-weight:700">Show</span>
-    </div>
-    <div id="importPanelBody" style="display:none;background:var(--bg-2,#f7f7f9);border:1px dashed var(--border-2,#ddd);border-radius:12px;padding:14px;margin-bottom:6px">
-      <div style="font-size:12.5px;color:var(--text-2);margin-bottom:10px">
-        Already have the property details somewhere — a JSON export, a database record, an old listing doc? Upload the file or paste it below and the form fields will be filled in automatically. You can still review and edit everything before submitting.
-      </div>
-      <div class="form-row" style="grid-template-columns:1fr 1fr;align-items:end">
-        <div class="form-group">
-          <label class="form-label">Upload a file (.json / .txt)</label>
-          <input class="form-input" type="file" id="f-importFile" accept=".json,.txt,application/json,text/plain" onchange="handleImportFile(this)" />
-        </div>
-        <div class="form-group">
-          <button type="button" class="form-submit" style="margin:0;height:40px" onclick="applyPastedImportText()">Autofill form from pasted text</button>
-        </div>
-      </div>
-      <div class="form-group">
-        <label class="form-label">…or paste JSON / database text here</label>
-        <textarea class="form-input" id="f-importText" rows="6" style="resize:vertical;font-family:monospace;font-size:12px"></textarea>
-      </div>
-      <div id="importStatusMsg" style="font-size:12px;min-height:16px;margin-top:2px"></div>
-    </div>
-
     <!-- ===== 1. BASIC INFORMATION ===== -->
     <div class="lm-section">📋 Basic Information</div>
     <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
@@ -10336,7 +10311,7 @@ function resetFieldVisibility() {
   });
 }
 const VIEW_ALWAYS_HIDDEN_GROUPS = ['fullAddressGroup', 'latLngGroup', 'mapsLinkGroup', 'imgFormGroup'];
-const VIEW_SECTION_HEADERS_SKIP = ['importSectionHeader', 'mediaSectionHeader']; // hidden by their own logic already
+const VIEW_SECTION_HEADERS_SKIP = ['mediaSectionHeader']; // hidden by their own logic already
 function hideEmptyViewFields() {
   document.querySelectorAll('#addModalScrollBody .form-group').forEach(group => {
     if (VIEW_ALWAYS_HIDDEN_GROUPS.includes(group.id)) return; // already force-hidden elsewhere
@@ -10542,98 +10517,10 @@ function closeAddModal() {
   document.getElementById('addModal').classList.remove('open');
   unlockBodyScroll();
 }
-/* ═══════════════════════════════════════════════
-   IMPORT PROPERTY DATA (file upload or pasted JSON/DB text)
-   Lets someone skip manual entry by handing over an existing
-   JSON export / database document, which gets parsed and used
-   to fill in the Add Listing form fields for review before submit.
-═══════════════════════════════════════════════ */
-function toggleImportPanel() {
-  const body = document.getElementById('importPanelBody');
-  const txt = document.getElementById('importPanelToggleTxt');
-  const open = body.style.display !== 'none';
-  body.style.display = open ? 'none' : 'block';
-  txt.textContent = open ? 'Show' : 'Hide';
-}
 
-function setImportStatus(msg, isError) {
-  const el = document.getElementById('importStatusMsg');
-  if (!el) return;
-  el.textContent = msg;
-  el.style.color = isError ? 'var(--brand)' : 'var(--text-2)';
-}
-
-function handleImportFile(input) {
-  const file = (input.files || [])[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = () => {
-    processImportRawText(String(reader.result || ''));
-    input.value = '';
-  };
-  reader.onerror = () => setImportStatus('Could not read that file.', true);
-  reader.readAsText(file);
-}
-
-function applyPastedImportText() {
-  const raw = document.getElementById('f-importText').value.trim();
-  if (!raw) { setImportStatus('Paste some JSON/text first.', true); return; }
-  processImportRawText(raw);
-}
-
-// Mongo shell / Compass exports use extended JSON wrappers like
-// {"$oid": "..."} and {"$date": "..."} instead of plain strings —
-// unwrap those recursively so the rest of the import logic can just
-// treat every value as a normal string/number.
-function normalizeMongoExtendedJSON(val) {
-  if (Array.isArray(val)) return val.map(normalizeMongoExtendedJSON);
-  if (val && typeof val === 'object') {
-    if (typeof val.$oid === 'string') return val.$oid;
-    if (typeof val.$date === 'string') return val.$date;
-    if (val.$date && typeof val.$date === 'object' && val.$date.$numberLong) return new Date(Number(val.$date.$numberLong)).toISOString();
-    const out = {};
-    for (const k in val) out[k] = normalizeMongoExtendedJSON(val[k]);
-    return out;
-  }
-  return val;
-}
-
-function processImportRawText(raw) {
-  let parsed;
-  try {
-    parsed = JSON.parse(raw);
-  } catch (e) {
-    setImportStatus('That doesn\'t look like valid JSON — check for missing commas/quotes and try again.', true);
-    return;
-  }
-  parsed = normalizeMongoExtendedJSON(parsed);
-
-  // Accept a few shapes: a single property object, { properties: [...] }
-  // (like a GET /api/properties dump), or a bare array of properties.
-  let prop = parsed;
-  if (Array.isArray(parsed)) {
-    prop = parsed[0];
-    if (parsed.length > 1) setImportStatus(`Found ${parsed.length} properties — imported the first one (${prop?.propertyId || 'untitled'}).`);
-  } else if (parsed && Array.isArray(parsed.properties)) {
-    prop = parsed.properties[0];
-    if (parsed.properties.length > 1) setImportStatus(`Found ${parsed.properties.length} properties — imported the first one (${prop?.propertyId || 'untitled'}).`);
-  }
-
-  if (!prop || typeof prop !== 'object') {
-    setImportStatus('Could not find a property object in that data.', true);
-    return;
-  }
-
-  try {
-    applyImportedProperty(prop);
-    if (!document.getElementById('importStatusMsg').textContent) setImportStatus('Form filled in — review the fields below, then submit.');
-    showToast('Property data imported — please review before submitting');
-  } catch (e) {
-    console.error('Import error:', e);
-    setImportStatus('Imported partially — some fields may need a manual check.', true);
-  }
-}
-
+// Populates every Add/Edit Listing form field from a property object.
+// Originally shared with the "import JSON" panel (now removed); still used
+// by openEditListingFull() to load an existing listing's data for editing.
 function applyImportedProperty(p) {
   function sv(id, val) { const el = document.getElementById(id); if (el && val !== undefined && val !== null) el.value = val; }
   const basic = p.basic || {}, location = p.location || {}, owner = p.owner || {}, price = p.price || {},
@@ -10758,8 +10645,6 @@ function applyImportedProperty(p) {
   if (Array.isArray(media.images) && media.images.length) {
     fImages = media.images.slice();
     renderFImages();
-    const looksStale = media.images.some(u => /^\/uploads\/\d+-[0-9a-f]+\.webp$/i.test(u));
-    if (looksStale) setImportStatus('Imported image links look like old/expired uploads — you may need to re-upload photos.', true);
   }
 
   // PG-specific block
@@ -11967,12 +11852,8 @@ function openEditListingFull(id) {
   const typeSelect = document.getElementById('f-type');
   if (typeSelect) typeSelect.disabled = true;
 
-  // Hide the "import existing data" panel and "Clear form" button — neither
-  // makes sense while editing a listing that already exists.
-  const importHeader = document.getElementById('importSectionHeader');
-  const importBody = document.getElementById('importPanelBody');
-  if (importHeader) importHeader.style.display = 'none';
-  if (importBody) importBody.style.display = 'none';
+  // Hide the "Clear form" button — doesn't make sense while editing a
+  // listing that already exists.
   const clearBtn = document.getElementById('clearFormBtn');
   if (clearBtn) clearBtn.style.display = 'none';
 
@@ -11998,9 +11879,7 @@ function closeEditListingFull() {
   const typeSelect = document.getElementById('f-type');
   if (typeSelect) typeSelect.disabled = false;
 
-  const importHeader = document.getElementById('importSectionHeader');
   const clearBtn = document.getElementById('clearFormBtn');
-  if (importHeader) importHeader.style.display = '';
   if (clearBtn) clearBtn.style.display = '';
 
   document.getElementById('addModalTitleText').textContent = 'List your property';
@@ -13732,7 +13611,6 @@ function fCaptureLocation() {
 // under that field.
 // ═══════════════════════════════════════════════
 const OPTIONAL_FIELD_IDS = new Set([
-  'f-importFile', 'f-importText',
   'f-latitude', 'f-longitude', 'f-latLngDisplay',
   'f-imgFileInput', 'f-imgCameraInput',
   'f-amenities-extra',
