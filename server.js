@@ -1283,6 +1283,7 @@ app.get('/api/properties', async (req, res) => {
       booked:       !!doc.booked,
     }));
 
+    res.set('Cache-Control', 'public, max-age=30'); // public listing data only, already scrubbed of PII — avoids a redundant DB hit on quick back/forward navigation
     res.json({ properties: mapped, total: mapped.length });
   } catch (err) {
     console.error('GET /api/properties error:', err);
