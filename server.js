@@ -1,6 +1,7 @@
 require('dotenv').config();
 
 const express    = require('express');
+const compression = require('compression');
 const helmet     = require('helmet');
 const mongoose   = require('mongoose');
 const cors       = require('cors');
@@ -29,6 +30,7 @@ app.set('trust proxy', 1); // we're behind Render's proxy; needed for express-ra
 // contentSecurityPolicy left off for now — index.html/admin.html use inline
 // <script> blocks throughout, so a default CSP would break them; enabling it
 // properly needs a nonce- or hash-based rework of those pages first.
+app.use(compression()); // gzip every response — index.html and JSON API payloads were going out uncompressed
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(cors({ origin: process.env.ALLOWED_ORIGIN || '*', credentials: true }));
 app.use(express.json({
@@ -705,6 +707,10 @@ function buildListingSchema() {
   });
   schema.index({ createdAt: -1 });
   schema.index({ 'basic.status': 1, createdAt: -1 });
+  // Every public GET /api/properties call filters on exactly these two
+  // fields (verified:true, booked:{$ne:true}) — without this, that query
+  // was a full collection scan on every listing-page load.
+  schema.index({ verified: 1, booked: 1, createdAt: -1 });
   return schema;
 }
 
