@@ -3316,6 +3316,8 @@ window.fetch = function(input, init){
 
 /* ── TAB SWITCHING ── */
 function switchTab(tab){
+  localStorage.setItem('kr_admin_activeTab', tab);
+
   // Update buttons
   document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
   document.getElementById('tab-'+tab).classList.add('active');
@@ -5324,6 +5326,9 @@ $(document).ready(function(){
   $topControls.find('.dt-buttons').prependTo('#bulkToolbar .bulk-toolbar-left');
   $topControls.remove();
   loadPropColVisibility();
+  document.querySelectorAll('#propCatTabs .cat-tab-btn').forEach(btn=>{
+    btn.classList.toggle('active', btn.getAttribute('data-cat') === _propCategoryState);
+  });
   applyPropCategoryColumnVisibility(_propCategoryState);
   buildPropColumnToggle();
   setTimeout(alignThreeRowsAsColumns, 50);
@@ -5629,6 +5634,15 @@ $(document).ready(function(){
   });
   initColumnToggle('review');
   } catch(e){ console.error('Honest Reviews table failed to initialize:', e); }
+
+  // Restore whichever main tab (Visits/Customers/Properties/Appointments/
+  // Honest Reviews) was last selected — survives a refresh or reopening the
+  // dashboard later. 'properties' is already active by default in the
+  // static HTML, so only switch if something else was last picked.
+  const _savedTab = localStorage.getItem('kr_admin_activeTab');
+  if(_savedTab && _savedTab !== 'properties'){
+    switchTab(_savedTab);
+  }
 
 });
 
@@ -5966,7 +5980,11 @@ function propCategoryOf(status){
   return 'Rent';
 }
 
-let _propCategoryState = 'Rent';
+// Remembers whichever category tab (All/Promoted/Rent/Lease/PG/Booked) was
+// last selected, so it survives a refresh or reopening the tab later — only
+// clicking a different tab changes it. Falls back to 'Rent' the very first
+// time, matching the tab that's marked active in the static HTML.
+let _propCategoryState = localStorage.getItem('kr_admin_propCategory') || 'Rent';
 
 // PG-only and Short-Stay-only column indices in #propertyTable (see the
 // numbered comments in the propTable columns:[...] definition above).
@@ -6353,6 +6371,7 @@ function applyPropCategoryColumnVisibility(cat){
 
 function switchPropCategory(cat){
   _propCategoryState = cat;
+  localStorage.setItem('kr_admin_propCategory', cat);
   document.querySelectorAll('#propCatTabs .cat-tab-btn').forEach(btn=>{
     btn.classList.toggle('active', btn.getAttribute('data-cat') === cat);
   });
