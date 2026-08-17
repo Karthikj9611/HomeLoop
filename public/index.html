@@ -11682,6 +11682,9 @@ function renderMyListings() {
         </div>
       </div>
       <div class="profile-mini-actions">
+        <button class="profile-mini-icon-btn" title="Duplicate — start a new listing pre-filled with these details" onclick="event.stopPropagation();openCloneListingFull('${p.id}')">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        </button>
         <button class="profile-mini-icon-btn" title="Edit" onclick="event.stopPropagation();openEditRestrictedModal('listing', '${esc(p.propertyId||'')}')">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
         </button>
@@ -12216,6 +12219,51 @@ function closeEditListingFull() {
   // the user themselves had in progress before they tapped Edit, if anything.
   resetListingForm();
   restoreListingDraft();
+}
+
+/* ═══════════════════════════════════════════════
+   DUPLICATE LISTING — for the "same building, another vacant unit" case:
+   pre-fills the normal "List your property" form from an existing listing
+   of this owner's so they don't have to re-key everything, then leaves it
+   as a completely independent new-listing draft (editingPropertyId stays
+   null, so submitListing() POSTs a fresh property, not a PUT). Owner
+   identity fields are re-locked to the logged-in account afterward, same
+   as any other new listing.
+═══════════════════════════════════════════════ */
+function openCloneListingFull(id) {
+  const p = MY_LISTINGS_CACHE.find(x => x.id === id);
+  if (!p) { showToast('Could not find that listing', 'error'); return; }
+
+  closeProfileModal();
+  resetListingForm();
+  applyImportedProperty(p);
+  // applyImportedProperty() copies the source listing's owner name/phone/
+  // email too — overwrite those back to the logged-in account and re-lock,
+  // exactly like starting any other new listing.
+  lockIdentityFieldsForNewListing();
+  onFTypeChange(document.getElementById('f-type').value);
+
+  // Unlike editing, the type is free to change — this is a brand-new,
+  // independent listing.
+  const typeSelect = document.getElementById('f-type');
+  if (typeSelect) typeSelect.disabled = false;
+
+  const clearBtn = document.getElementById('clearFormBtn');
+  if (clearBtn) clearBtn.style.display = '';
+
+  document.getElementById('addModalTitleText').textContent = 'List your property';
+  const sub = document.getElementById('addModalSubtitleText');
+  if (sub) {
+    sub.textContent = p.propertyId ? `Copied from ${p.propertyId} — update what's different` : '';
+    sub.style.display = p.propertyId ? '' : 'none';
+  }
+
+  const submitBtn = document.getElementById('listingSubmitBtn');
+  if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Submit listing'; }
+
+  document.getElementById('addModal').classList.add('open');
+  lockBodyScroll();
+  showToast('Details copied — update what\'s different and submit');
 }
 
 /* ═══════════════════════════════════════════════
