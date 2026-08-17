@@ -62,6 +62,24 @@ function otpEmailTemplate(otp) {
   </div>`;
 }
 
+// ── Template: Password reset OTP email ──
+function passwordResetOtpEmailTemplate(otp) {
+  return `<div style="font-family:Arial,sans-serif;max-width:480px;margin:auto;background:#fff;border-radius:12px;overflow:hidden;border:1px solid #e0e0e0">
+    <div style="background:linear-gradient(135deg,#1b3a2d,#2e7d5a);padding:22px 24px;text-align:center">
+      <h2 style="margin:0;color:#fff;font-size:1.4rem">HomeLoop</h2>
+      <p style="margin:4px 0 0;color:rgba(255,255,255,0.6);font-size:0.8rem">Password Reset</p>
+    </div>
+    <div style="padding:28px 24px;text-align:center">
+      <p style="color:#555;margin-bottom:18px">Use this code to reset your password:</p>
+      <div style="font-size:2.4rem;font-weight:800;letter-spacing:10px;background:#f0f9f4;padding:16px 20px;border-radius:10px;display:inline-block;color:#1b3a2d;border:2px dashed #2e7d5a">${otp}</div>
+      <p style="color:#999;font-size:0.8rem;margin-top:16px">Valid for <strong>5 minutes</strong>. If you didn't request this, you can safely ignore this email.</p>
+    </div>
+    <div style="background:#f9f9f9;padding:12px;text-align:center;font-size:0.72rem;color:#bbb">
+      © ${new Date().getFullYear()} HomeLoop
+    </div>
+  </div>`;
+}
+
 // ── Template: Appointment confirmation email ──
 function appointmentConfirmedEmailTemplate(appt) {
   const slotIcon = { Morning: '🌅', Afternoon: '☀️', Evening: '🌙' }[appt.timeSlot] || '🕐';
@@ -102,5 +120,6 @@ module.exports = {
   sendEmailWithBrevo,
   escHtml,
   otpEmailTemplate,
+  passwordResetOtpEmailTemplate,
   appointmentConfirmedEmailTemplate
 };

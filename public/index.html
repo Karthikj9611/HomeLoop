@@ -5686,12 +5686,63 @@ main.tab-explore .empty-state{display:none !important}
         </div>
       </div>
       <div id="authForgotRow" style="text-align:right;margin-bottom:6px">
-        <span style="font-size:12px;color:var(--brand);font-weight:600;cursor:pointer" onclick="showToast('Password reset link sent (demo)')">Forgot password?</span>
+        <span style="font-size:12px;color:var(--brand);font-weight:600;cursor:pointer" onclick="openForgotPassword()">Forgot password?</span>
       </div>
 
       <button class="form-submit" id="authSubmitBtn" onclick="submitAuth()">Log in</button>
 
       <div class="auth-foot" id="authFoot">New to <span class="brandname">Home<span class="bn-accent">Loop</span></span>? <a onclick="switchAuthTab('signup')">Sign up</a></div>
+    </div>
+
+    <!-- ── Forgot password — separate inline view within the same modal.
+         Three stages shown/hidden via forgotStage: 'email' → 'otp' → 'newpass'.
+         Kept apart from #authFormStep (rather than reusing the login fields)
+         since it needs its own back/resend affordances at each stage. ── -->
+    <div id="authForgotStep" style="display:none">
+      <div id="forgotStageEmail">
+        <p style="font-size:12.5px;color:var(--text-2);margin:2px 0 14px;line-height:1.5">
+          Enter the email on your account and we'll send you a reset code.
+        </p>
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input class="form-input" type="email" id="forgot-email" />
+        </div>
+        <button class="form-submit" id="forgotSendBtn" onclick="sendForgotOtp()">Send reset code</button>
+      </div>
+
+      <div id="forgotStageOtp" style="display:none">
+        <p style="font-size:12.5px;color:var(--text-2);margin:2px 0 14px;line-height:1.5">
+          Code sent to <strong id="forgotOtpEmailLabel"></strong>, if an account exists for it.
+        </p>
+        <div class="form-group">
+          <label class="form-label">Verification code</label>
+          <input class="form-input" type="text" id="forgot-otp" inputmode="numeric" maxlength="6"
+                 style="letter-spacing:6px;font-weight:700;text-align:center"
+                 oninput="this.value=this.value.replace(/\D/g,'').slice(0,6)" />
+        </div>
+        <button class="form-submit" id="forgotVerifyBtn" onclick="verifyForgotOtp()">Verify code</button>
+        <div class="auth-foot" style="display:flex;justify-content:space-between;gap:10px;margin-top:10px">
+          <a onclick="backToForgotEmail()">&larr; Edit email</a>
+          <a id="forgotResendLink" onclick="resendForgotOtp()">Resend code</a>
+        </div>
+      </div>
+
+      <div id="forgotStageNewPass" style="display:none">
+        <p style="font-size:12.5px;color:var(--text-2);margin:2px 0 14px;line-height:1.5">Choose a new password.</p>
+        <div class="form-group">
+          <label class="form-label">New password</label>
+          <input class="form-input" type="password" id="forgot-newpassword" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Re-enter new password</label>
+          <input class="form-input" type="password" id="forgot-confirmpassword" />
+        </div>
+        <button class="form-submit" id="forgotResetBtn" onclick="submitNewPassword()">Reset password</button>
+      </div>
+
+      <div class="auth-foot" style="margin-top:14px">
+        <a onclick="cancelForgotPassword()">&larr; Back to log in</a>
+      </div>
     </div>
   </div>
 </div>
@@ -11216,6 +11267,168 @@ function backToSignupForm() {
   const isLogin = document.getElementById('authTabLogin')?.classList.contains('active');
   document.getElementById('authModalTitle').textContent = isLogin ? 'Welcome back' : 'Create your account';
   document.getElementById('authSubmitBtn').textContent = isLogin ? 'Log in' : 'Sign up';
+  resetForgotPasswordView();
+}
+
+/* ═══════════════════════════════════════════════
+   AUTH MODAL — FORGOT PASSWORD
+   Inline 3-stage view within #authModal: email → otp → new password.
+   forgotEmail/forgotResetToken hold state between stages (mirrors
+   pendingSignupBody's role in the signup OTP flow above).
+═══════════════════════════════════════════════ */
+let forgotEmail = null;
+let forgotResetToken = null;
+
+function resetForgotPasswordView() {
+  forgotEmail = null;
+  forgotResetToken = null;
+  document.getElementById('authFormStep').style.display = '';
+  document.getElementById('authForgotStep').style.display = 'none';
+  document.getElementById('forgotStageEmail').style.display = '';
+  document.getElementById('forgotStageOtp').style.display = 'none';
+  document.getElementById('forgotStageNewPass').style.display = 'none';
+  document.getElementById('forgot-email').value = '';
+  document.getElementById('forgot-otp').value = '';
+  document.getElementById('forgot-newpassword').value = '';
+  document.getElementById('forgot-confirmpassword').value = '';
+}
+
+function openForgotPassword() {
+  resetForgotPasswordView();
+  // Carry over whatever was already typed into the login "Phone or email"
+  // field, if it looks like an email — saves retyping it.
+  const contact = (document.getElementById('auth-contact').value || '').trim();
+  if (contact.includes('@')) document.getElementById('forgot-email').value = contact;
+  document.getElementById('authFormStep').style.display = 'none';
+  document.getElementById('authForgotStep').style.display = '';
+  document.getElementById('authModalTitle').textContent = 'Reset your password';
+}
+
+function cancelForgotPassword() {
+  resetForgotPasswordView();
+  document.getElementById('authFormStep').style.display = '';
+  document.getElementById('authForgotStep').style.display = 'none';
+  const isLogin = document.getElementById('authTabLogin')?.classList.contains('active');
+  document.getElementById('authModalTitle').textContent = isLogin ? 'Welcome back' : 'Create your account';
+}
+
+async function sendForgotOtp() {
+  const btn = document.getElementById('forgotSendBtn');
+  if (btn.disabled) return;
+  const email = document.getElementById('forgot-email').value.trim();
+  if (!email) { showToast('Please enter your email', 'warning'); return; }
+
+  btn.disabled = true;
+  btn.textContent = 'Sending…';
+  try {
+    const res  = await fetch('/api/user/password/forgot', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    });
+    const data = await res.json();
+    if (!res.ok) { showToast(data.message || 'Something went wrong', 'error'); return; }
+
+    forgotEmail = email;
+    document.getElementById('forgotOtpEmailLabel').textContent = email;
+    document.getElementById('forgot-otp').value = '';
+    document.getElementById('forgotStageEmail').style.display = 'none';
+    document.getElementById('forgotStageOtp').style.display = '';
+    showToast(data.message);
+  } catch (err) {
+    showToast('Network error. Please try again.', 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Send reset code';
+  }
+}
+
+async function resendForgotOtp() {
+  if (!forgotEmail) return;
+  const link = document.getElementById('forgotResendLink');
+  if (link.style.pointerEvents === 'none') return;
+  link.style.pointerEvents = 'none';
+  link.style.opacity = '0.5';
+  try {
+    const res  = await fetch('/api/user/password/forgot', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: forgotEmail })
+    });
+    const data = await res.json();
+    showToast(res.ok ? 'Code resent' : (data.message || 'Could not resend code'), res.ok ? 'success' : 'error');
+  } catch (err) {
+    showToast('Network error. Please try again.', 'error');
+  } finally {
+    setTimeout(() => { link.style.pointerEvents = ''; link.style.opacity = ''; }, 15000);
+  }
+}
+
+function backToForgotEmail() {
+  document.getElementById('forgotStageOtp').style.display = 'none';
+  document.getElementById('forgotStageEmail').style.display = '';
+}
+
+async function verifyForgotOtp() {
+  const btn = document.getElementById('forgotVerifyBtn');
+  if (btn.disabled) return;
+  if (!forgotEmail) { cancelForgotPassword(); return; }
+  const otp = document.getElementById('forgot-otp').value.trim();
+  if (!/^\d{6}$/.test(otp)) { showToast('Enter the 6-digit code from your email', 'warning'); return; }
+
+  btn.disabled = true;
+  btn.textContent = 'Verifying…';
+  try {
+    const res  = await fetch('/api/user/password/forgot/verify-otp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: forgotEmail, otp })
+    });
+    const data = await res.json();
+    if (!res.ok) { showToast(data.message || 'Incorrect code', 'error'); return; }
+
+    forgotResetToken = data.resetToken;
+    document.getElementById('forgotStageOtp').style.display = 'none';
+    document.getElementById('forgotStageNewPass').style.display = '';
+  } catch (err) {
+    showToast('Network error. Please try again.', 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Verify code';
+  }
+}
+
+async function submitNewPassword() {
+  const btn = document.getElementById('forgotResetBtn');
+  if (btn.disabled) return;
+  if (!forgotEmail || !forgotResetToken) { cancelForgotPassword(); return; }
+
+  const newPassword     = document.getElementById('forgot-newpassword').value;
+  const confirmPassword = document.getElementById('forgot-confirmpassword').value;
+  if (!newPassword || newPassword.length < 6) { showToast('New password must be at least 6 characters', 'warning'); return; }
+  if (newPassword !== confirmPassword) { showToast('Passwords do not match', 'warning'); return; }
+
+  btn.disabled = true;
+  btn.textContent = 'Resetting…';
+  try {
+    const res  = await fetch('/api/user/password/reset', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: forgotEmail, resetToken: forgotResetToken, newPassword })
+    });
+    const data = await res.json();
+    if (!res.ok) { showToast(data.message || 'Something went wrong', 'error'); return; }
+
+    showToast(data.message);
+    cancelForgotPassword();
+    switchAuthTab('login');
+    document.getElementById('auth-contact').value = forgotEmail || '';
+  } catch (err) {
+    showToast('Network error. Please try again.', 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Reset password';
+  }
 }
 
 /* ═══════════════════════════════════════════════

@@ -12,7 +12,7 @@ const rateLimit  = require('express-rate-limit');
 const bcrypt     = require('bcryptjs');
 const multer     = require('multer');
 const sharp      = require('sharp');
-const { sendEmailWithBrevo, otpEmailTemplate } = require('./mail');
+const { sendEmailWithBrevo, otpEmailTemplate, passwordResetOtpEmailTemplate } = require('./mail');
 
 // ── Env checks ──
 if (!process.env.MONGODB_URI)   throw new Error('MONGODB_URI env var is required');
@@ -92,6 +92,39 @@ const EmailOtpSchema = new mongoose.Schema({
   expiresAt:  { type: Date, required: true, index: { expires: 0 } }, // TTL: Mongo auto-deletes once this passes
 });
 const EmailOtp = mongoose.model('EmailOtp', EmailOtpSchema);
+
+// ────────────────────────────────────────────────────────────────────────────
+// ── PASSWORD RESET ──
+// Same bcrypt-hashed-OTP pattern as signup (EmailOtp), but for an EXISTING
+// account. Step 2 also mints a random resetToken (separately hashed) so step 3
+// can't be reached by anyone who merely knows the email — the token is proof
+// the OTP step actually passed, held only by whoever received the email.
+// Kept as its own collection rather than reusing EmailOtp, since that one is
+// tied to the "email must NOT already have an account" signup invariant.
+// ────────────────────────────────────────────────────────────────────────────
+const RESET_OTP_TTL_MS         = 5  * 60 * 1000; // same 5-minute window as signup
+const RESET_TOKEN_TTL_MS       = 10 * 60 * 1000; // slightly longer — covers "pick a new password" time
+const RESET_RESEND_COOLDOWN_MS = 30 * 1000;
+const RESET_MAX_ATTEMPTS       = 5;
+
+const PasswordResetSchema = new mongoose.Schema({
+  email:          { type: String, required: true, lowercase: true, trim: true, unique: true, index: true },
+  otpHash:        { type: String, required: true },
+  attempts:       { type: Number, default: 0 },
+  verified:       { type: Boolean, default: false },
+  resetTokenHash: { type: String, default: null }, // set once verify-otp succeeds
+  lastSentAt:     { type: Date, default: Date.now },
+  expiresAt:      { type: Date, required: true, index: { expires: 0 } }, // TTL: re-set to a longer window once verified
+});
+const PasswordReset = mongoose.model('PasswordReset', PasswordResetSchema);
+
+// Rate limiter for password-reset endpoints — same shape as otpLimiter, since
+// a real email goes out on every hit here too.
+const passwordResetLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, max: 8,
+  standardHeaders: true, legacyHeaders: false,
+  message: { message: 'Too many requests. Please try again later.' }
+});
 
 // Rate limiter for the OTP endpoints specifically — tighter than the general
 // auth limiter since each hit sends a real email (Brevo has its own quota/cost).
@@ -506,6 +539,143 @@ app.put('/api/user/password', requireUser, userAuthLimiter, async (req, res) => 
     res.json({ message: 'Password updated successfully' });
   } catch (err) {
     console.error('PUT /api/user/password error:', err);
+    res.status(500).json({ message: 'Server error. Please try again.' });
+  }
+});
+
+// ── Forgot password: Step 1 — send email OTP ──
+app.post('/api/user/password/forgot', passwordResetLimiter, async (req, res) => {
+  const startedAt = Date.now();
+  // Floor for the "account not found" (fast) and "account found, OTP sent"
+  // (slow — bcrypt hash + DB write + Brevo API round-trip) paths to converge
+  // on, so a caller can't distinguish which happened purely by response time.
+  // This won't fully mask a slow Brevo response (that path can still run
+  // past the floor), but it closes the trivial gap where "not found" would
+  // otherwise return near-instantly while "found" always does real work.
+  const FORGOT_MIN_RESPONSE_MS = 400;
+  const padToFloor = async () => {
+    const remaining = FORGOT_MIN_RESPONSE_MS - (Date.now() - startedAt);
+    if (remaining > 0) await new Promise(r => setTimeout(r, remaining));
+  };
+
+  try {
+    const { email } = req.body || {};
+    if (!email || !String(email).trim()) return res.status(400).json({ message: 'Email is required' });
+    const cleanEmail = String(email).toLowerCase().trim();
+
+    // Generic response either way — unlike signup, we do NOT want to reveal
+    // whether an account exists for this email. We just skip the send
+    // silently if there's no match — but we still do equivalent-cost dummy
+    // work and pad to the same floor as the real path below, so the two
+    // cases can't be told apart by response time either.
+    const genericResponse = { message: 'If an account exists for that email, a reset code has been sent.' };
+
+    const user = await User.findOne({ email: cleanEmail }).select('_id').lean();
+    if (!user) {
+      await bcrypt.hash(crypto.randomBytes(16).toString('hex'), 10); // match the real path's bcrypt cost
+      await padToFloor();
+      return res.json(genericResponse);
+    }
+
+    const existing = await PasswordReset.findOne({ email: cleanEmail }).lean();
+    if (existing && (Date.now() - new Date(existing.lastSentAt).getTime()) < RESET_RESEND_COOLDOWN_MS) {
+      return res.status(429).json({ message: 'Please wait a few seconds before requesting another code.' });
+    }
+
+    const otp = String(crypto.randomInt(100000, 1000000)); // 6-digit, same as signup OTP
+    const otpHash = await bcrypt.hash(otp, 10);
+
+    await PasswordReset.findOneAndUpdate(
+      { email: cleanEmail },
+      {
+        email: cleanEmail, otpHash, attempts: 0, verified: false, resetTokenHash: null,
+        lastSentAt: new Date(), expiresAt: new Date(Date.now() + RESET_OTP_TTL_MS),
+      },
+      { upsert: true }
+    );
+
+    const mailResult = await sendEmailWithBrevo(cleanEmail, 'Reset your HomeLoop password', passwordResetOtpEmailTemplate(otp));
+    if (!mailResult.success) {
+      console.error('Failed to send password reset OTP email:', mailResult.error);
+      return res.status(502).json({ message: 'Could not send the reset email. Please try again in a moment.' });
+    }
+    await padToFloor();
+
+    return res.json(genericResponse);
+  } catch (err) {
+    console.error('Forgot password error:', err);
+    res.status(500).json({ message: 'Server error. Please try again.' });
+  }
+});
+
+// ── Forgot password: Step 2 — verify OTP, issue a one-time reset token ──
+app.post('/api/user/password/forgot/verify-otp', passwordResetLimiter, async (req, res) => {
+  try {
+    const { email, otp } = req.body || {};
+    if (!email || !otp) return res.status(400).json({ message: 'Email and code are required' });
+    const cleanEmail = String(email).toLowerCase().trim();
+
+    const record = await PasswordReset.findOne({ email: cleanEmail });
+    if (!record) return res.status(400).json({ message: 'Code expired or not found. Please request a new one.' });
+    if (record.attempts >= RESET_MAX_ATTEMPTS) {
+      return res.status(429).json({ message: 'Too many incorrect attempts. Please request a new code.' });
+    }
+
+    const match = await bcrypt.compare(String(otp).trim(), record.otpHash);
+    if (!match) {
+      record.attempts += 1;
+      await record.save();
+      return res.status(400).json({ message: 'Incorrect code. Please try again.' });
+    }
+
+    // Mint the token step 3 actually trusts — not the email alone (otherwise
+    // step 3 could be raced/hit by anyone who just knows the target email).
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    record.verified = true;
+    record.resetTokenHash = await bcrypt.hash(resetToken, 10);
+    record.expiresAt = new Date(Date.now() + RESET_TOKEN_TTL_MS); // extend TTL to cover the "set new password" step
+    await record.save();
+
+    return res.json({ message: 'Code verified', resetToken });
+  } catch (err) {
+    console.error('Verify reset OTP error:', err);
+    res.status(500).json({ message: 'Server error. Please try again.' });
+  }
+});
+
+// ── Forgot password: Step 3 — set the new password ──
+app.post('/api/user/password/reset', passwordResetLimiter, async (req, res) => {
+  try {
+    const { email, resetToken, newPassword } = req.body || {};
+    if (!email || !resetToken || !newPassword) return res.status(400).json({ message: 'Missing required fields' });
+    if (newPassword.length < 6) return res.status(400).json({ message: 'New password must be at least 6 characters' });
+    const cleanEmail = String(email).toLowerCase().trim();
+
+    const record = await PasswordReset.findOne({ email: cleanEmail, verified: true });
+    if (!record || !record.resetTokenHash) {
+      return res.status(400).json({ message: 'Reset session expired. Please start again.' });
+    }
+
+    const tokenMatch = await bcrypt.compare(String(resetToken), record.resetTokenHash);
+    if (!tokenMatch) return res.status(401).json({ message: 'Invalid or expired reset link. Please start again.' });
+
+    const user = await User.findOne({ email: cleanEmail });
+    if (!user) return res.status(404).json({ message: 'Account not found' });
+
+    user.password = await bcrypt.hash(newPassword, 10);
+    await user.save();
+
+    // Same reasoning as the logged-in change-password route: a stolen/leaked
+    // session shouldn't survive a reset. No "current session" to preserve
+    // here, so every session for this account is killed.
+    await UserSession.deleteMany({ userObjectId: user._id });
+
+    // One-time use — remove the record so the token can't be replayed.
+    await PasswordReset.deleteOne({ _id: record._id });
+
+    return res.json({ message: 'Password reset successfully. Please log in with your new password.' });
+  } catch (err) {
+    console.error('Reset password error:', err);
     res.status(500).json({ message: 'Server error. Please try again.' });
   }
 });
