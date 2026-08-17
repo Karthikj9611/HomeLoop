@@ -3470,7 +3470,13 @@ main.tab-explore .empty-state{display:none !important}
      unconditionally left a large dead gap before "Our Premium Services".
      The .needs-nav-clear class is toggled by updateAllOnlySections(). */
   .main{padding:14px 0 24px}
-  .main.needs-nav-clear{padding-bottom:calc(56px + env(safe-area-inset-bottom) + 24px)}
+  /* Clearance must also cover the FAB, not just the bottom-nav: the FAB sits
+     "bottom:calc(56px + safe-area + 20px)" and is 36px tall, so its top edge
+     is at 56px + safe-area + 56px from the viewport bottom. Padding-bottom
+     needs to reach at least that far (plus a little breathing room) or the
+     last row of cards stays partly hidden under the + button when fully
+     scrolled down. */
+  .main.needs-nav-clear{padding-bottom:calc(56px + env(safe-area-inset-bottom) + 68px)}
   .results-header{padding:0 12px}
   .ad-banner{height:44px}
   .ad-slide{padding:0 14px;gap:10px;font-size:12.5px}
