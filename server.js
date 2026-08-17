@@ -221,6 +221,7 @@ async function attachUserIfPresent(req, res, next) {
 // as the same number for uniqueness checks and lookups.
 function normalizeMobile(raw) {
   let digits = String(raw || '').replace(/\D/g, '');
+  if (digits.length > 10 && digits.startsWith('0')) digits = digits.slice(1);
   if (digits.length > 10 && digits.startsWith('91')) digits = digits.slice(digits.length - 10);
   return digits;
 }
@@ -320,6 +321,7 @@ app.post('/api/user/signup', userAuthLimiter, async (req, res) => {
 
     const cleanEmail  = String(email).toLowerCase().trim();
     const cleanMobile = normalizeMobile(mobile);
+    if (!/^\d{10}$/.test(cleanMobile)) return res.status(400).json({ message: 'Please enter a valid 10-digit mobile number' });
 
     const [existingEmail, existingMobile] = await Promise.all([
       User.findOne({ email: cleanEmail }),
@@ -383,10 +385,14 @@ app.post('/api/user/login', userAuthLimiter, async (req, res) => {
     const identifier = String(contact).toLowerCase().trim();
     const query = identifier.includes('@') ? { email: identifier } : { mobile: normalizeMobile(identifier) };
     const user = await User.findOne(query);
-    if (!user) return res.status(401).json({ message: 'No account found. Please sign up.' });
+    // Same message either way (wrong identifier vs. wrong password) — a
+    // different message per case would let the response be used to check
+    // which emails/numbers have accounts on the site.
+    const genericError = { message: 'Incorrect email/mobile or password' };
+    if (!user) return res.status(401).json(genericError);
 
     const match = await bcrypt.compare(password, user.password);
-    if (!match) return res.status(401).json({ message: 'Incorrect password' });
+    if (!match) return res.status(401).json(genericError);
 
     const userKey = await issueUserSession(user);
     return res.json({
@@ -450,6 +456,7 @@ app.put('/api/user/me', profileUpdateLimiter, requireUser, async (req, res) => {
     if (mobile !== undefined) {
       const cleanMobile = normalizeMobile(mobile);
       if (!cleanMobile) return res.status(400).json({ message: 'Mobile number cannot be empty' });
+      if (!/^\d{10}$/.test(cleanMobile)) return res.status(400).json({ message: 'Please enter a valid 10-digit mobile number' });
       const existing = await User.findOne({ mobile: cleanMobile, _id: { $ne: req.userId } });
       if (existing) return res.status(409).json({ message: 'That mobile number is already in use by another account' });
       update.mobile = cleanMobile;
@@ -488,6 +495,14 @@ app.put('/api/user/password', requireUser, userAuthLimiter, async (req, res) => 
 
     user.password = await bcrypt.hash(newPassword, 10);
     await user.save();
+
+    // Log out every other active session for this account (e.g. a leaked/
+    // stolen session key, or a device you're no longer using) — but not the
+    // one making this request, since the frontend keeps using its existing
+    // key after a password change rather than rotating to a new one.
+    const currentKey = (req.headers['x-user-key'] || '').toString();
+    await UserSession.deleteMany({ userObjectId: user._id, key: { $ne: currentKey } });
+
     res.json({ message: 'Password updated successfully' });
   } catch (err) {
     console.error('PUT /api/user/password error:', err);
