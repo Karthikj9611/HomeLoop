@@ -6537,17 +6537,28 @@ function safeUrl(v) {
 function getVideoEmbedInfo(url) {
   let u;
   try { u = new URL(url); } catch { return null; }
+  // YouTube/Vimeo IDs are always plain alphanumeric (plus -/_ for YouTube).
+  // Anything else means the "id" isn't really one — could be a crafted
+  // ?v= value smuggling markup through (URLSearchParams decodes percent-
+  // encoding, so raw quotes/angle-brackets survive into the extracted
+  // value) — so treat it as unrecognized rather than embed it.
+  const validId = (id, re) => (id && re.test(id)) ? id : null;
+  const YT_ID = /^[\w-]{1,64}$/;
   const host = u.hostname.replace(/^www\./, '');
   if (host === 'youtu.be') {
-    const id = u.pathname.slice(1).split('/')[0];
+    const id = validId(u.pathname.slice(1).split('/')[0], YT_ID);
     if (id) return { type: 'youtube', id };
   }
   if (host === 'youtube.com' || host === 'm.youtube.com') {
-    if (u.pathname === '/watch' && u.searchParams.get('v')) {
-      return { type: 'youtube', id: u.searchParams.get('v') };
+    if (u.pathname === '/watch') {
+      const id = validId(u.searchParams.get('v'), YT_ID);
+      if (id) return { type: 'youtube', id };
     }
     const m = u.pathname.match(/^\/(embed|shorts)\/([^/?]+)/);
-    if (m) return { type: 'youtube', id: m[2] };
+    if (m) {
+      const id = validId(m[2], YT_ID);
+      if (id) return { type: 'youtube', id };
+    }
   }
   if (host === 'vimeo.com' || host === 'player.vimeo.com') {
     const m = u.pathname.match(/(\d+)/);
@@ -7631,7 +7642,7 @@ function cardHTML(p, compact, extraLeftBadge) {
         ${lift ? `<span class="prop-stat" title="Lift available"><span class="prop-stat-icon icon-lift">🛗</span></span>` : ''}
         ${!isPGCard ? `<span class="prop-chip chip-furnish" title="Furnishing">
           <span class="prop-chip-icon icon-furnish">🛋️</span>
-          ${p.property?.furnish ?? p.shortStay?.furnish}
+          ${esc(p.property?.furnish ?? p.shortStay?.furnish)}
         </span>` : ''}
         ${isPGCard && pg.meals ? `<span class="prop-chip chip-meals" title="Meals">
           <span class="prop-chip-icon icon-meals">🍽️</span>
@@ -7819,7 +7830,7 @@ function shortlistCardHTML(p) {
         </span>` : '')}
         <span class="prop-stat" title="Furnishing">
           <span class="prop-stat-icon icon-furnish">🛋️</span>
-          ${p.property?.furnish ?? p.pg?.furnish ?? p.shortStay?.furnish}
+          ${esc(p.property?.furnish ?? p.pg?.furnish ?? p.shortStay?.furnish)}
         </span>
         ${carCount > 0 ? `<span class="prop-stat" title="${carCount+' car parking spot'+(carCount>1?'s':'')}">
           <span class="prop-stat-icon icon-car">🚗</span>
@@ -8062,7 +8073,7 @@ function renderCompareTable() {
   }
 
   const yn = (v) => v ? '<span class="compare-yes">Yes</span>' : '<span class="compare-no">No</span>';
-  const dash = (v) => (v === undefined || v === null || v === '') ? '—' : v;
+  const dash = (v) => esc((v === undefined || v === null || v === '') ? '—' : v);
   const hasAny = (props, path) => props.some(p => {
     const v = path.split('.').reduce((o, k) => (o == null ? o : o[k]), p);
     return v !== undefined && v !== null && v !== '';
@@ -8137,7 +8148,7 @@ function renderCompareTable() {
     { label: 'Amenities', get: p => {
         const list = (p.amenities?.selected || []).slice();
         if (p.amenities?.extra) list.push(...p.amenities.extra.split(',').map(s => s.trim()).filter(Boolean));
-        return list.length ? list.join(', ') : '—';
+        return list.length ? list.map(esc).join(', ') : '—';
       } },
   ];
 
@@ -11335,7 +11346,7 @@ async function loadMyListings() {
   try {
     const res = await fetch('/api/user/my-listings', { headers: userAuthHeaders() });
     const data = await res.json();
-    if (!res.ok) { wrap.innerHTML = `<div class="profile-list-empty">${data.message || 'Could not load your listings.'}</div>`; return; }
+    if (!res.ok) { wrap.innerHTML = `<div class="profile-list-empty">${esc(data.message || 'Could not load your listings.')}</div>`; return; }
     MY_LISTINGS_CACHE = data.properties || [];
     renderMyListings();
   } catch (err) {

@@ -108,6 +108,15 @@ const userAuthLimiter = rateLimit({
   message: { message: 'Too many attempts. Please try again later.' }
 });
 
+// Rate limiter for profile updates — same cadence as userAuthLimiter but a
+// separate bucket, so editing your profile doesn't eat into your login/signup
+// attempt quota (or vice versa).
+const profileUpdateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, max: 20,
+  standardHeaders: true, legacyHeaders: false,
+  message: { message: 'Too many profile updates. Please try again later.' }
+});
+
 // ────────────────────────────────────────────────────────────────────────────
 // ── USER SESSIONS ──
 // Same pattern as admin sessions above, also Mongo-backed: a random token
@@ -425,7 +434,7 @@ app.get('/api/user/me', requireUser, async (req, res) => {
 });
 
 // ── UPDATE current user profile (name / email / mobile) ──
-app.put('/api/user/me', requireUser, async (req, res) => {
+app.put('/api/user/me', profileUpdateLimiter, requireUser, async (req, res) => {
   try {
     const { name, email, mobile, profilePhoto } = req.body || {};
     const update = {};
@@ -1100,6 +1109,14 @@ const listingLimiter = rateLimit({
   message: { message: 'Too many listing submissions. Please try again later.' }
 });
 
+// Separate bucket for editing/deleting existing listings, so those don't
+// compete with an owner's new-listing creation quota above.
+const listingWriteLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, max: 20,
+  standardHeaders: true, legacyHeaders: false,
+  message: { message: 'Too many listing changes. Please try again later.' }
+});
+
 // ── POST /api/properties ──
 app.post('/api/properties', listingLimiter, requireUser, requireOwner, async (req, res) => {
   try {
@@ -1722,7 +1739,7 @@ app.get('/api/user/my-listings', requireUser, async (req, res) => {
 });
 
 // ── PUT /api/user/listings/:id (edit a listing the user owns) ──
-app.put('/api/user/listings/:id', requireUser, async (req, res) => {
+app.put('/api/user/listings/:id', listingWriteLimiter, requireUser, async (req, res) => {
   try {
     const { doc: prop, model: currentModel } = await findUserListingById(req.params.id, req.userId);
     if (!prop) return res.status(404).json({ message: 'Listing not found, or you do not have permission to edit it' });
@@ -1781,7 +1798,7 @@ app.put('/api/user/listings/:id', requireUser, async (req, res) => {
   }
 });
 
-app.delete('/api/user/listings/:id', requireUser, async (req, res) => {
+app.delete('/api/user/listings/:id', listingWriteLimiter, requireUser, async (req, res) => {
   try {
     let deleted = null;
     for (const M of LISTING_MODEL_LIST) {
@@ -1865,6 +1882,14 @@ const reviewLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, max: 10,
   standardHeaders: true, legacyHeaders: false,
   message: { message: 'Too many review submissions. Please try again later.' }
+});
+
+// Same cadence as reviewLimiter, separate bucket — honest reviews are a
+// distinct collection/feature from the star reviews above.
+const honestReviewLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, max: 10,
+  standardHeaders: true, legacyHeaders: false,
+  message: { message: 'Too many submissions. Please try again later.' }
 });
 
 // POST /api/reviews — requires a logged-in user (x-user-key header).
@@ -1989,7 +2014,7 @@ app.get('/api/honest-reviews/mine', requireUser, async (req, res) => {
 // YouTube video. Goes live immediately (no manage/approve UI exists yet on
 // the site) — if moderation is added back later, flip `active`/`status`
 // below to false/'pending' and reintroduce an approve step.
-app.post('/api/honest-reviews/submit', requireUser, async (req, res) => {
+app.post('/api/honest-reviews/submit', honestReviewLimiter, requireUser, async (req, res) => {
   try {
     const user = await User.findById(req.userId);
     if (!user) return res.status(401).json({ error: 'Invalid or expired session' });
