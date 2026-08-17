@@ -3838,23 +3838,6 @@ main.tab-explore .empty-state{display:none !important}
     </div>
   </div>
 
-    <!-- Pincode — options are built dynamically from whatever pincodes actually
-       exist across current listings (see fdCollectPincodes), so this list
-       always reflects real data instead of a hardcoded set of codes. -->
-  <div class="fd-btn fd-rent fd-lease fd-pg fd-shortstay" id="fdb-pincode" onclick="toggleFd('pincode',this)">
-    <span class="fd-icon">📍</span>
-    <span class="fd-label">Pincode</span> <span class="fd-badge" id="fdbc-pincode" style="display:none"></span>
-    <svg class="chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
-    <div class="fd-pop" id="fdp-pincode" onclick="event.stopPropagation()">
-      <div class="fd-pop-label">Pincode</div>
-      <div class="fd-opts" id="fdo-pincode"></div>
-      <div class="fd-pop-footer">
-        <button class="fd-clear-btn" onclick="clearFd('pincode')">Clear</button>
-        <button class="fd-apply-btn" onclick="applyFd('pincode')">Apply</button>
-      </div>
-    </div>
-  </div>
-
   <!-- Locality — location.area (e.g. "Singasandra, AECS Layout"), options
        built dynamically the same way as Pincode (see fdCollectLocalities).
        Distinct from the existing "Area" filter below, which is sqft size. -->
@@ -3872,32 +3855,58 @@ main.tab-explore .empty-state{display:none !important}
     </div>
   </div>
 
-  <!-- RENT + LEASE + PG + SHORT STAY: Property Type -->
-  <div class="fd-btn fd-rent fd-lease fd-pg fd-shortstay" id="fdb-type" onclick="toggleFd('type',this)">
-    <span class="fd-icon">🏢</span>
-    <span class="fd-label">Type</span> <span class="fd-badge" id="fdbc-type" style="display:none"></span>
+    <!-- Pincode — options are built dynamically from whatever pincodes actually
+       exist across current listings (see fdCollectPincodes), so this list
+       always reflects real data instead of a hardcoded set of codes. -->
+  <div class="fd-btn fd-rent fd-lease fd-pg fd-shortstay" id="fdb-pincode" onclick="toggleFd('pincode',this)">
+    <span class="fd-icon">📍</span>
+    <span class="fd-label">Pincode</span> <span class="fd-badge" id="fdbc-pincode" style="display:none"></span>
     <svg class="chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
-    <div class="fd-pop" id="fdp-type" onclick="event.stopPropagation()">
-      <div class="fd-pop-label">Property type</div>
-      <div class="fd-opts" id="fdo-type"></div>
+    <div class="fd-pop" id="fdp-pincode" onclick="event.stopPropagation()">
+      <div class="fd-pop-label">Pincode</div>
+      <div class="fd-opts" id="fdo-pincode"></div>
       <div class="fd-pop-footer">
-        <button class="fd-clear-btn" onclick="clearFd('type')">Clear</button>
-        <button class="fd-apply-btn" onclick="applyFd('type')">Apply</button>
+        <button class="fd-clear-btn" onclick="clearFd('pincode')">Clear</button>
+        <button class="fd-apply-btn" onclick="applyFd('pincode')">Apply</button>
+      </div>
+    </div>
+  </div>
+
+
+
+  <!-- ALL TYPES: Price (Rent / Lease amount / PG rent / Per-day rate — same underlying price.rent field) -->
+  <div class="fd-btn fd-rent fd-lease fd-pg fd-shortstay" id="fdb-price" onclick="toggleFd('price',this)">
+    <span class="fd-icon">💰</span>
+    <span class="fd-label">Price</span> <span class="fd-badge" id="fdbc-price" style="display:none"></span>
+    <svg class="chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+    <div class="fd-pop" id="fdp-price" onclick="event.stopPropagation()">
+      <div class="fd-pop-label">Price (₹)</div>
+      <div class="fd-range-inputs">
+        <input class="fd-range-input" type="number" min="0" step="1" inputmode="numeric" placeholder="Min" id="fd-price-min" oninput="refreshFdRangeBtn('price')">
+        <span class="fd-range-sep">–</span>
+        <input class="fd-range-input" type="number" min="0" step="1" inputmode="numeric" placeholder="Max" id="fd-price-max" oninput="refreshFdRangeBtn('price')">
+      </div>
+      <div class="fd-range-hint">Enter any range, e.g. 0 – 10000</div>
+      <div class="fd-pop-footer">
+        <button class="fd-clear-btn" onclick="clearFdRange('price')">Clear</button>
+        <button class="fd-apply-btn" onclick="applyFdRange('price')">Apply</button>
       </div>
     </div>
   </div>
   
-      <!-- RENT + LEASE: Tenant -->
-  <div class="fd-btn fd-rent fd-lease" id="fdb-tenant" onclick="toggleFd('tenant',this)">
-    <span class="fd-icon">👤</span>
-    <span class="fd-label">Tenant</span> <span class="fd-badge" id="fdbc-tenant" style="display:none"></span>
+
+
+  <!-- RENT + LEASE: BHK -->
+  <div class="fd-btn fd-rent fd-lease" id="fdb-bhk" onclick="toggleFd('bhk',this)">
+    <span class="fd-icon">🛏️</span>
+    <span class="fd-label">BHK</span> <span class="fd-badge" id="fdbc-bhk" style="display:none"></span>
     <svg class="chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
-    <div class="fd-pop" id="fdp-tenant" onclick="event.stopPropagation()">
-      <div class="fd-pop-label">Tenant preferred</div>
-      <div class="fd-opts" id="fdo-tenant"></div>
+    <div class="fd-pop" id="fdp-bhk" onclick="event.stopPropagation()">
+      <div class="fd-pop-label">BHK</div>
+      <div class="fd-opts" id="fdo-bhk"></div>
       <div class="fd-pop-footer">
-        <button class="fd-clear-btn" onclick="clearFd('tenant')">Clear</button>
-        <button class="fd-apply-btn" onclick="applyFd('tenant')">Apply</button>
+        <button class="fd-clear-btn" onclick="clearFd('bhk')">Clear</button>
+        <button class="fd-apply-btn" onclick="applyFd('bhk')">Apply</button>
       </div>
     </div>
   </div>
@@ -3923,24 +3932,86 @@ main.tab-explore .empty-state{display:none !important}
     </div>
   </div>
 
-
-
-  <!-- ALL TYPES: Price (Rent / Lease amount / PG rent / Per-day rate — same underlying price.rent field) -->
-  <div class="fd-btn fd-rent fd-lease fd-pg fd-shortstay" id="fdb-price" onclick="toggleFd('price',this)">
-    <span class="fd-icon">💰</span>
-    <span class="fd-label">Price</span> <span class="fd-badge" id="fdbc-price" style="display:none"></span>
+  <!-- RENT + LEASE + PG + SHORT STAY: Property Type -->
+  <div class="fd-btn fd-rent fd-lease fd-pg fd-shortstay" id="fdb-type" onclick="toggleFd('type',this)">
+    <span class="fd-icon">🏢</span>
+    <span class="fd-label">Type</span> <span class="fd-badge" id="fdbc-type" style="display:none"></span>
     <svg class="chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
-    <div class="fd-pop" id="fdp-price" onclick="event.stopPropagation()">
-      <div class="fd-pop-label">Price (₹)</div>
-      <div class="fd-range-inputs">
-        <input class="fd-range-input" type="number" min="0" step="1" inputmode="numeric" placeholder="Min" id="fd-price-min" oninput="refreshFdRangeBtn('price')">
-        <span class="fd-range-sep">–</span>
-        <input class="fd-range-input" type="number" min="0" step="1" inputmode="numeric" placeholder="Max" id="fd-price-max" oninput="refreshFdRangeBtn('price')">
-      </div>
-      <div class="fd-range-hint">Enter any range, e.g. 0 – 10000</div>
+    <div class="fd-pop" id="fdp-type" onclick="event.stopPropagation()">
+      <div class="fd-pop-label">Property type</div>
+      <div class="fd-opts" id="fdo-type"></div>
       <div class="fd-pop-footer">
-        <button class="fd-clear-btn" onclick="clearFdRange('price')">Clear</button>
-        <button class="fd-apply-btn" onclick="applyFdRange('price')">Apply</button>
+        <button class="fd-clear-btn" onclick="clearFd('type')">Clear</button>
+        <button class="fd-apply-btn" onclick="applyFd('type')">Apply</button>
+      </div>
+    </div>
+  </div>
+  
+  
+  <!-- ALL: Available from -->
+  <div class="fd-btn fd-rent fd-lease fd-pg" id="fdb-availFrom" onclick="toggleFd('availFrom',this)">
+    <span class="fd-icon">📅</span>
+    <span class="fd-label">Available</span> <span class="fd-badge" id="fdbc-availFrom" style="display:none"></span>
+    <svg class="chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+    <div class="fd-pop" id="fdp-availFrom" onclick="event.stopPropagation()">
+      <div class="fd-pop-label">Available from</div>
+      <div class="fd-opts">
+        <div class="fp-opt" data-filter="_availBucket" data-val="0-7" onclick="toggleOpt(this,'availFrom')">Immediate (≤7 days)</div>
+        <div class="fp-opt" data-filter="_availBucket" data-val="7-15" onclick="toggleOpt(this,'availFrom')">Within 15 days</div>
+        <div class="fp-opt" data-filter="_availBucket" data-val="15-30" onclick="toggleOpt(this,'availFrom')">Within 1 month</div>
+        <div class="fp-opt" data-filter="_availBucket" data-val="30-90" onclick="toggleOpt(this,'availFrom')">Within 3 months</div>
+        <div class="fp-opt" data-filter="_availBucket" data-val="90-" onclick="toggleOpt(this,'availFrom')">Later</div>
+      </div>
+      <div class="fd-pop-footer">
+        <button class="fd-clear-btn" onclick="clearFd('availFrom')">Clear</button>
+        <button class="fd-apply-btn" onclick="applyFd('availFrom')">Apply</button>
+      </div>
+    </div>
+  </div>
+
+
+
+  <!-- RENT + LEASE: Furnishing -->
+  <div class="fd-btn fd-rent fd-lease fd-pg fd-shortstay" id="fdb-furnishing" onclick="toggleFd('furnishing',this)">
+    <span class="fd-icon">🛋️</span>
+    <span class="fd-label">Furnishing</span> <span class="fd-badge" id="fdbc-furnishing" style="display:none"></span>
+    <svg class="chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+    <div class="fd-pop" id="fdp-furnishing" onclick="event.stopPropagation()">
+      <div class="fd-pop-label">Furnishing</div>
+      <div class="fd-opts" id="fdo-furnishing"></div>
+      <div class="fd-pop-footer">
+        <button class="fd-clear-btn" onclick="clearFd('furnishing')">Clear</button>
+        <button class="fd-apply-btn" onclick="applyFd('furnishing')">Apply</button>
+      </div>
+    </div>
+  </div>
+  
+    <!-- RENT + LEASE: Bathrooms -->
+  <div class="fd-btn fd-rent fd-lease fd-pg" id="fdb-bathrooms" onclick="toggleFd('bathrooms',this)">
+    <span class="fd-icon">🚿</span>
+    <span class="fd-label">Bathrooms</span> <span class="fd-badge" id="fdbc-bathrooms" style="display:none"></span>
+    <svg class="chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+    <div class="fd-pop" id="fdp-bathrooms" onclick="event.stopPropagation()">
+      <div class="fd-pop-label">No. of bathrooms</div>
+      <div class="fd-opts" id="fdo-bathrooms"></div>
+      <div class="fd-pop-footer">
+        <button class="fd-clear-btn" onclick="clearFd('bathrooms')">Clear</button>
+        <button class="fd-apply-btn" onclick="applyFd('bathrooms')">Apply</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ALL TYPES: Amenities -->
+  <div class="fd-btn fd-rent fd-lease fd-pg fd-shortstay" id="fdb-amenities" onclick="toggleFd('amenities',this)">
+    <span class="fd-icon">✨</span>
+    <span class="fd-label">Amenities</span> <span class="fd-badge" id="fdbc-amenities" style="display:none"></span>
+    <svg class="chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+    <div class="fd-pop" id="fdp-amenities" onclick="event.stopPropagation()">
+      <div class="fd-pop-label">Amenities</div>
+      <div class="fd-opts" id="fdo-amenities"></div>
+      <div class="fd-pop-footer">
+        <button class="fd-clear-btn" onclick="clearFd('amenities')">Clear</button>
+        <button class="fd-apply-btn" onclick="applyFd('amenities')">Apply</button>
       </div>
     </div>
   </div>
@@ -4009,93 +4080,6 @@ main.tab-explore .empty-state{display:none !important}
       </div>
     </div>
   </div>
-  
-
-
-  <!-- RENT + LEASE: BHK -->
-  <div class="fd-btn fd-rent fd-lease" id="fdb-bhk" onclick="toggleFd('bhk',this)">
-    <span class="fd-icon">🛏️</span>
-    <span class="fd-label">BHK</span> <span class="fd-badge" id="fdbc-bhk" style="display:none"></span>
-    <svg class="chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
-    <div class="fd-pop" id="fdp-bhk" onclick="event.stopPropagation()">
-      <div class="fd-pop-label">BHK</div>
-      <div class="fd-opts" id="fdo-bhk"></div>
-      <div class="fd-pop-footer">
-        <button class="fd-clear-btn" onclick="clearFd('bhk')">Clear</button>
-        <button class="fd-apply-btn" onclick="applyFd('bhk')">Apply</button>
-      </div>
-    </div>
-  </div>
-  
-    <!-- RENT + LEASE: Bathrooms -->
-  <div class="fd-btn fd-rent fd-lease fd-pg" id="fdb-bathrooms" onclick="toggleFd('bathrooms',this)">
-    <span class="fd-icon">🚿</span>
-    <span class="fd-label">Bathrooms</span> <span class="fd-badge" id="fdbc-bathrooms" style="display:none"></span>
-    <svg class="chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
-    <div class="fd-pop" id="fdp-bathrooms" onclick="event.stopPropagation()">
-      <div class="fd-pop-label">No. of bathrooms</div>
-      <div class="fd-opts" id="fdo-bathrooms"></div>
-      <div class="fd-pop-footer">
-        <button class="fd-clear-btn" onclick="clearFd('bathrooms')">Clear</button>
-        <button class="fd-apply-btn" onclick="applyFd('bathrooms')">Apply</button>
-      </div>
-    </div>
-  </div>
-
-
-
-  <!-- RENT + LEASE: Furnishing -->
-  <div class="fd-btn fd-rent fd-lease fd-pg fd-shortstay" id="fdb-furnishing" onclick="toggleFd('furnishing',this)">
-    <span class="fd-icon">🛋️</span>
-    <span class="fd-label">Furnishing</span> <span class="fd-badge" id="fdbc-furnishing" style="display:none"></span>
-    <svg class="chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
-    <div class="fd-pop" id="fdp-furnishing" onclick="event.stopPropagation()">
-      <div class="fd-pop-label">Furnishing</div>
-      <div class="fd-opts" id="fdo-furnishing"></div>
-      <div class="fd-pop-footer">
-        <button class="fd-clear-btn" onclick="clearFd('furnishing')">Clear</button>
-        <button class="fd-apply-btn" onclick="applyFd('furnishing')">Apply</button>
-      </div>
-    </div>
-  </div>
-  
-  
-  <!-- ALL: Available from -->
-  <div class="fd-btn fd-rent fd-lease fd-pg" id="fdb-availFrom" onclick="toggleFd('availFrom',this)">
-    <span class="fd-icon">📅</span>
-    <span class="fd-label">Available</span> <span class="fd-badge" id="fdbc-availFrom" style="display:none"></span>
-    <svg class="chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
-    <div class="fd-pop" id="fdp-availFrom" onclick="event.stopPropagation()">
-      <div class="fd-pop-label">Available from</div>
-      <div class="fd-opts">
-        <div class="fp-opt" data-filter="_availBucket" data-val="0-7" onclick="toggleOpt(this,'availFrom')">Immediate (≤7 days)</div>
-        <div class="fp-opt" data-filter="_availBucket" data-val="7-15" onclick="toggleOpt(this,'availFrom')">Within 15 days</div>
-        <div class="fp-opt" data-filter="_availBucket" data-val="15-30" onclick="toggleOpt(this,'availFrom')">Within 1 month</div>
-        <div class="fp-opt" data-filter="_availBucket" data-val="30-90" onclick="toggleOpt(this,'availFrom')">Within 3 months</div>
-        <div class="fp-opt" data-filter="_availBucket" data-val="90-" onclick="toggleOpt(this,'availFrom')">Later</div>
-      </div>
-      <div class="fd-pop-footer">
-        <button class="fd-clear-btn" onclick="clearFd('availFrom')">Clear</button>
-        <button class="fd-apply-btn" onclick="applyFd('availFrom')">Apply</button>
-      </div>
-    </div>
-  </div>
-
-
-  <!-- LEASE: Lease type -->
-  <div class="fd-btn fd-lease" id="fdb-leaseType" onclick="toggleFd('leaseType',this)">
-    <span class="fd-icon">🏷️</span>
-    <span class="fd-label">Lease Type</span> <span class="fd-badge" id="fdbc-leaseType" style="display:none"></span>
-    <svg class="chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
-    <div class="fd-pop" id="fdp-leaseType" onclick="event.stopPropagation()">
-      <div class="fd-pop-label">Lease type</div>
-      <div class="fd-opts" id="fdo-leaseType"></div>
-      <div class="fd-pop-footer">
-        <button class="fd-clear-btn" onclick="clearFd('leaseType')">Clear</button>
-        <button class="fd-apply-btn" onclick="applyFd('leaseType')">Apply</button>
-      </div>
-    </div>
-  </div>
 
 
 
@@ -4131,6 +4115,67 @@ main.tab-explore .empty-state{display:none !important}
       <div class="fd-pop-footer">
         <button class="fd-clear-btn" onclick="clearFd('age')">Clear</button>
         <button class="fd-apply-btn" onclick="applyFd('age')">Apply</button>
+      </div>
+    </div>
+  </div>
+  
+      <!-- RENT + LEASE: Tenant -->
+  <div class="fd-btn fd-rent fd-lease" id="fdb-tenant" onclick="toggleFd('tenant',this)">
+    <span class="fd-icon">👤</span>
+    <span class="fd-label">Tenant</span> <span class="fd-badge" id="fdbc-tenant" style="display:none"></span>
+    <svg class="chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+    <div class="fd-pop" id="fdp-tenant" onclick="event.stopPropagation()">
+      <div class="fd-pop-label">Tenant preferred</div>
+      <div class="fd-opts" id="fdo-tenant"></div>
+      <div class="fd-pop-footer">
+        <button class="fd-clear-btn" onclick="clearFd('tenant')">Clear</button>
+        <button class="fd-apply-btn" onclick="applyFd('tenant')">Apply</button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- LEASE: Lease type -->
+  <div class="fd-btn fd-lease" id="fdb-leaseType" onclick="toggleFd('leaseType',this)">
+    <span class="fd-icon">🏷️</span>
+    <span class="fd-label">Lease Type</span> <span class="fd-badge" id="fdbc-leaseType" style="display:none"></span>
+    <svg class="chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+    <div class="fd-pop" id="fdp-leaseType" onclick="event.stopPropagation()">
+      <div class="fd-pop-label">Lease type</div>
+      <div class="fd-opts" id="fdo-leaseType"></div>
+      <div class="fd-pop-footer">
+        <button class="fd-clear-btn" onclick="clearFd('leaseType')">Clear</button>
+        <button class="fd-apply-btn" onclick="applyFd('leaseType')">Apply</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- RENT + LEASE: Contract Term -->
+  <div class="fd-btn fd-rent fd-lease" id="fdb-leaseDuration" onclick="toggleFd('leaseDuration',this)">
+    <span class="fd-icon">📆</span>
+    <span class="fd-label">Duration</span> <span class="fd-badge" id="fdbc-leaseDuration" style="display:none"></span>
+    <svg class="chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+    <div class="fd-pop" id="fdp-leaseDuration" onclick="event.stopPropagation()">
+      <div class="fd-pop-label">Contract Term</div>
+      <div class="fd-opts" id="fdo-leaseDuration"></div>
+      <div class="fd-pop-footer">
+        <button class="fd-clear-btn" onclick="clearFd('leaseDuration')">Clear</button>
+        <button class="fd-apply-btn" onclick="applyFd('leaseDuration')">Apply</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- LEASE: Lock-in period -->
+  <div class="fd-btn fd-lease" id="fdb-lockIn" onclick="toggleFd('lockIn',this)">
+    <span class="fd-icon">🔒</span>
+    <span class="fd-label">Lock-in</span> <span class="fd-badge" id="fdbc-lockIn" style="display:none"></span>
+    <svg class="chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+    <div class="fd-pop" id="fdp-lockIn" onclick="event.stopPropagation()">
+      <div class="fd-pop-label">Lock-in period</div>
+      <div class="fd-opts" id="fdo-lockIn"></div>
+      <div class="fd-pop-footer">
+        <button class="fd-clear-btn" onclick="clearFd('lockIn')">Clear</button>
+        <button class="fd-apply-btn" onclick="applyFd('lockIn')">Apply</button>
       </div>
     </div>
   </div>
@@ -4187,68 +4232,6 @@ main.tab-explore .empty-state{display:none !important}
     </div>
   </div>
 
-
-
-  <!-- SHORT STAY: Couples allowed -->
-  <div class="fd-btn fd-shortstay" id="fdb-ssCouples" onclick="toggleFd('ssCouples',this)">
-    <span class="fd-icon">💑</span>
-    <span class="fd-label">Couples</span> <span class="fd-badge" id="fdbc-ssCouples" style="display:none"></span>
-    <svg class="chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
-    <div class="fd-pop fd-pop right" id="fdp-ssCouples" onclick="event.stopPropagation()">
-      <div class="fd-pop-label">Unmarried couples allowed</div>
-      <div class="fd-opts" id="fdo-ssCouples"></div>
-      <div class="fd-pop-footer">
-        <button class="fd-clear-btn" onclick="clearFd('ssCouples')">Clear</button>
-        <button class="fd-apply-btn" onclick="applyFd('ssCouples')">Apply</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- RENT + LEASE: Contract Term -->
-  <div class="fd-btn fd-rent fd-lease" id="fdb-leaseDuration" onclick="toggleFd('leaseDuration',this)">
-    <span class="fd-icon">📆</span>
-    <span class="fd-label">Duration</span> <span class="fd-badge" id="fdbc-leaseDuration" style="display:none"></span>
-    <svg class="chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
-    <div class="fd-pop" id="fdp-leaseDuration" onclick="event.stopPropagation()">
-      <div class="fd-pop-label">Contract Term</div>
-      <div class="fd-opts" id="fdo-leaseDuration"></div>
-      <div class="fd-pop-footer">
-        <button class="fd-clear-btn" onclick="clearFd('leaseDuration')">Clear</button>
-        <button class="fd-apply-btn" onclick="applyFd('leaseDuration')">Apply</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- LEASE: Lock-in period -->
-  <div class="fd-btn fd-lease" id="fdb-lockIn" onclick="toggleFd('lockIn',this)">
-    <span class="fd-icon">🔒</span>
-    <span class="fd-label">Lock-in</span> <span class="fd-badge" id="fdbc-lockIn" style="display:none"></span>
-    <svg class="chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
-    <div class="fd-pop" id="fdp-lockIn" onclick="event.stopPropagation()">
-      <div class="fd-pop-label">Lock-in period</div>
-      <div class="fd-opts" id="fdo-lockIn"></div>
-      <div class="fd-pop-footer">
-        <button class="fd-clear-btn" onclick="clearFd('lockIn')">Clear</button>
-        <button class="fd-apply-btn" onclick="applyFd('lockIn')">Apply</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ALL TYPES: Amenities -->
-  <div class="fd-btn fd-rent fd-lease fd-pg fd-shortstay" id="fdb-amenities" onclick="toggleFd('amenities',this)">
-    <span class="fd-icon">✨</span>
-    <span class="fd-label">Amenities</span> <span class="fd-badge" id="fdbc-amenities" style="display:none"></span>
-    <svg class="chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
-    <div class="fd-pop" id="fdp-amenities" onclick="event.stopPropagation()">
-      <div class="fd-pop-label">Amenities</div>
-      <div class="fd-opts" id="fdo-amenities"></div>
-      <div class="fd-pop-footer">
-        <button class="fd-clear-btn" onclick="clearFd('amenities')">Clear</button>
-        <button class="fd-apply-btn" onclick="applyFd('amenities')">Apply</button>
-      </div>
-    </div>
-  </div>
-
   <!-- PG: Occupancy -->
   <div class="fd-btn fd-pg" id="fdb-pgOccupancy" onclick="toggleFd('pgOccupancy',this)">
     <span class="fd-icon">👥</span>
@@ -4290,6 +4273,23 @@ main.tab-explore .empty-state{display:none !important}
       <div class="fd-pop-footer">
         <button class="fd-clear-btn" onclick="clearFd('pgVisitors')">Clear</button>
         <button class="fd-apply-btn" onclick="applyFd('pgVisitors')">Apply</button>
+      </div>
+    </div>
+  </div>
+
+
+
+  <!-- SHORT STAY: Couples allowed -->
+  <div class="fd-btn fd-shortstay" id="fdb-ssCouples" onclick="toggleFd('ssCouples',this)">
+    <span class="fd-icon">💑</span>
+    <span class="fd-label">Couples</span> <span class="fd-badge" id="fdbc-ssCouples" style="display:none"></span>
+    <svg class="chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+    <div class="fd-pop fd-pop right" id="fdp-ssCouples" onclick="event.stopPropagation()">
+      <div class="fd-pop-label">Unmarried couples allowed</div>
+      <div class="fd-opts" id="fdo-ssCouples"></div>
+      <div class="fd-pop-footer">
+        <button class="fd-clear-btn" onclick="clearFd('ssCouples')">Clear</button>
+        <button class="fd-apply-btn" onclick="applyFd('ssCouples')">Apply</button>
       </div>
     </div>
   </div>
