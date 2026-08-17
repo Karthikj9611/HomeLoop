@@ -1340,6 +1340,11 @@ app.post('/api/properties/:id/view', viewLimiter, async (req, res) => {
 // ────────────────────────────────────────────────────────────────────────────
 const INDEX_HTML_PATH = path.join(__dirname, 'public', 'index.html');
 
+// Cached in memory so /property/:id doesn't re-read this ~850KB file from
+// disk on every request — it only changes on deploy, so we read it once
+// (lazily, on the first request that needs it) and reuse the string after.
+let _indexHtmlCache = null;
+
 function escapeHtmlAttr(str) {
   return String(str || '')
     .replace(/&/g, '&amp;')
@@ -1351,7 +1356,10 @@ function escapeHtmlAttr(str) {
 app.get('/property/:id', async (req, res, next) => {
   let html;
   try {
-    html = await fs.promises.readFile(INDEX_HTML_PATH, 'utf8');
+    if (_indexHtmlCache === null) {
+      _indexHtmlCache = await fs.promises.readFile(INDEX_HTML_PATH, 'utf8');
+    }
+    html = _indexHtmlCache;
   } catch (readErr) {
     console.error('GET /property/:id — could not read index.html:', readErr.message);
     return next(); // let the 404/static handlers deal with it, same as any other unmatched route
