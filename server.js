@@ -27,48 +27,12 @@ if (!process.env.BREVO_API_KEY) {
 
 const app = express();
 app.set('trust proxy', 1); // we're behind Render's proxy; needed for express-rate-limit to key off the real client IP
+// contentSecurityPolicy left off for now — index.html/admin.html use inline
+// <script> blocks throughout, so a default CSP would break them; enabling it
+// properly needs a nonce- or hash-based rework of those pages first.
 app.use(compression()); // gzip every response — index.html and JSON API payloads were going out uncompressed
-// CSP: index.html/admin.html run everything through inline <script>/style=""
-// blocks, so script-src/style-src need 'unsafe-inline' — this does NOT
-// protect against inline-script XSS (that's still on the esc()/escaping
-// work already done throughout both pages). What it *does* add: blocks
-// scripts/styles/images/frames from loading off any domain not explicitly
-// listed below, blocks base-tag hijacking, blocks the page being framed by
-// another site, and blocks form submissions to a foreign origin. Locking
-// script-src down further would need a nonce- or hash-based rework of both
-// pages' inline scripts.
-app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", 'https://code.jquery.com', 'https://cdn.datatables.net', 'https://cdnjs.cloudflare.com'],
-      styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com', 'https://cdnjs.cloudflare.com', 'https://cdn.datatables.net'],
-      fontSrc: ["'self'", 'https://fonts.gstatic.com', 'https://cdnjs.cloudflare.com', 'data:'],
-      imgSrc: ["'self'", 'data:', 'blob:', 'https://images.unsplash.com'],
-      // Property "video tour" fields accept any direct .mp4/.webm/.ogg/.mov
-      // URL an owner pastes in (see getVideoEmbedInfo()/buildVideoEmbed() in
-      // both index.html and admin.html) — there's no fixed set of hosts to
-      // allowlist, so media-src has to stay open to any HTTPS source (still
-      // blocks http:, blob:, and data: media, which that field never uses).
-      mediaSrc: ["'self'", 'https:'],
-      connectSrc: ["'self'", 'https://nominatim.openstreetmap.org'],
-      frameSrc: ["'self'", 'https://www.youtube-nocookie.com', 'https://www.youtube.com', 'https://player.vimeo.com'],
-      objectSrc: ["'none'"],
-      baseUri: ["'self'"],
-      formAction: ["'self'"],
-      frameAncestors: ["'self'"],
-    },
-  },
-}));
-// ALLOWED_ORIGIN can be a single origin or a comma-separated list (e.g. a
-// www + non-www pair, or a staging domain alongside prod). The env-check
-// above already refuses to boot in production without it set, so the '*'
-// fallback below only ever applies in local dev, after that warning.
-const allowedOrigins = (process.env.ALLOWED_ORIGIN || '*').split(',').map(o => o.trim());
-app.use(cors({
-  origin: allowedOrigins.includes('*') ? '*' : allowedOrigins,
-  credentials: true,
-}));
+app.use(helmet({ contentSecurityPolicy: false }));
+app.use(cors({ origin: process.env.ALLOWED_ORIGIN || '*', credentials: true }));
 app.use(express.json({
   limit: '10mb', // 10mb to allow base64 images
 }));
