@@ -1540,36 +1540,46 @@ footer i{color:var(--gold)}
   .stat-card-big-label{font-size:0.7rem}
   .stat-card-big-actions .bulk-btn{padding:6px 10px;font-size:0.68rem}
 
-  /* Bulk toolbar: wrap onto as many lines as needed so every icon stays
-     visible at once — no horizontal scroll/cut-off, matching rows 1 & 2 */
+  /* Bulk toolbar: keep everything on one row and let it scroll horizontally
+     instead of wrapping to a second line — matches the tab-bar/cat-tab-bar
+     pattern (rows 1 & 2), and avoids the lone last icon getting orphaned
+     onto its own row once labels made each button wider. */
   .bulk-toolbar{
-    justify-content:flex-start;flex-wrap:wrap;gap:10px;
-    padding:10px 12px;overflow-x:visible;
+    justify-content:flex-start;flex-wrap:nowrap;gap:8px;
+    padding:10px 12px;overflow-x:auto;-webkit-overflow-scrolling:touch;
+    scrollbar-width:none;-ms-overflow-style:none;
   }
-  .bulk-toolbar-left,.bulk-toolbar-right{flex-wrap:wrap;gap:6px}
-  .bulk-btn,.btn-add-review,.bulk-selected-count{flex-shrink:0}
+  .bulk-toolbar::-webkit-scrollbar{display:none}
+  .bulk-toolbar-left,.bulk-toolbar-right{flex-wrap:nowrap;gap:6px;flex-shrink:0}
+  .bulk-btn,.btn-add-review,.bulk-selected-count,.dt-buttons,.dt-button,.col-toggle-wrap,.filter-active-badge{flex-shrink:0}
   .bulk-toolbar-below{justify-content:center}
-  .bulk-btn-label{display:none}
+  /* Full text ("Clear filters", "Reset All Views", etc.) is too wide for a
+     mobile toolbar of icon buttons — shrink it to 0 and swap in a single
+     mobile-friendly word via data-mobile, same technique as .tab-btn-label. */
+  .bulk-btn-label{font-size:0;line-height:0}
+  .bulk-btn-label::after{content:attr(data-mobile);font-size:0.56rem;line-height:1.1;display:block}
   .bulk-btn,.btn-add-review{padding:8px 11px}
   .col-toggle-btn{padding:8px 11px;gap:0}
 
-  /* Icon-only toolbar buttons: force a uniform circle size so CSV/Excel/PDF,
-     Columns, Reset All Views, etc. all match regardless of each icon's own
-     natural glyph width. Excludes bulk-btn-danger (the "Delete Selected (n)"
-     button), which still shows a count and needs to flex wider than a circle. */
+  /* Icon+label toolbar buttons: uniform pill (icon on top, one-word label
+     below) so CSV/Excel/PDF, Columns, Reset All Views, etc. all match
+     regardless of each icon's own natural glyph width. Excludes
+     bulk-btn-danger (the "Delete Selected (n)" button), which still shows
+     a count and needs to flex wider than this fixed-width pill. */
   .bulk-toolbar .bulk-btn:not(.bulk-btn-danger),
   .bulk-toolbar .btn-add-review,
   .dt-button,
   .col-toggle-btn{
-    width:38px!important;height:38px!important;min-width:38px!important;
-    padding:0!important;gap:0!important;
-    display:inline-flex!important;align-items:center!important;justify-content:center!important;
-    border-radius:50%!important;
+    width:44px!important;height:auto!important;min-width:44px!important;
+    padding:6px 2px 5px!important;gap:2px!important;
+    display:inline-flex!important;flex-direction:column!important;
+    align-items:center!important;justify-content:center!important;
+    border-radius:12px!important;
   }
   .bulk-toolbar .bulk-btn:not(.bulk-btn-danger) i,
   .bulk-toolbar .btn-add-review i,
   .dt-button i,
-  .col-toggle-btn i{font-size:0.85rem!important;margin:0!important}
+  .col-toggle-btn i{font-size:0.8rem!important;margin:0!important}
 
   /* Properties toolbar (#bulkToolbar) icon order: Columns, then PDF/Excel/CSV,
      then the rest of the controls in their original relative order. Flatten
@@ -1649,7 +1659,7 @@ footer i{color:var(--gold)}
   .cat-tab-btn{padding:10px 8px;gap:4px;flex-direction:column;font-size:0.62rem;min-width:56px}
   .cat-tab-btn i{font-size:1rem;margin-bottom:1px}
 
-  /* Icon-only toolbar buttons (row 3): bump to the same footprint as
+  /* Icon+label toolbar buttons (row 3): bump to the same footprint as
      .tab-btn/.cat-tab-btn at this breakpoint so all three rows match */
   .bulk-toolbar .bulk-btn:not(.bulk-btn-danger),
   .bulk-toolbar .btn-add-review,
@@ -1661,6 +1671,7 @@ footer i{color:var(--gold)}
   .bulk-toolbar .btn-add-review i,
   .dt-button i,
   .col-toggle-btn i{font-size:1rem!important}
+  .bulk-btn-label::after{font-size:0.6rem!important}
 
   /* Remark input full width */
   .remark-input{width:100%;max-width:200px}
@@ -1962,25 +1973,25 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
         <div class="bulk-toolbar bulk-toolbar-spaced" id="custBulkToolbar">
           <div class="bulk-toolbar-left">
             <span class="filter-active-badge" id="custFilterBadge" style="display:none">
-              <i class="fas fa-filter"></i> <span id="custFilterCount">0</span><span class="bulk-btn-label"> filters active</span>
+              <i class="fas fa-filter"></i> <span id="custFilterCount">0</span><span class="bulk-btn-label" data-mobile="Filters"> filters active</span>
             </span>
             <button class="bulk-btn bulk-btn-clear" id="custClearFiltersBtn" style="display:none" onclick="clearCustFilters()" title="Clear all filters">
-              <i class="fas fa-filter-circle-xmark"></i> <span class="bulk-btn-label">Clear filters</span>
+              <i class="fas fa-filter-circle-xmark"></i> <span class="bulk-btn-label" data-mobile="Clear">Clear filters</span>
             </button>
             <span class="bulk-selected-count" id="custSelectedCount" style="display:none">
-              <i class="fas fa-check-circle"></i> <span id="custSelectedNum">0</span><span class="bulk-btn-label"> selected</span>
+              <i class="fas fa-check-circle"></i> <span id="custSelectedNum">0</span><span class="bulk-btn-label" data-mobile="Selected"> selected</span>
             </span>
             <button class="bulk-btn bulk-btn-clear" id="custClearBtn" style="display:none" onclick="clearCustSelection()" title="Clear selection">
-              <i class="fas fa-xmark"></i> <span class="bulk-btn-label">Clear selection</span>
+              <i class="fas fa-xmark"></i> <span class="bulk-btn-label" data-mobile="Clear">Clear selection</span>
             </button>
           </div>
           <div class="bulk-toolbar-right">
             <button class="bulk-btn bulk-btn-danger" id="custDeleteSelectedBtn" style="display:none" onclick="deleteSelectedCustomers()" title="Delete selected">
-              <i class="fas fa-trash-alt"></i> <span class="bulk-btn-label">Delete Selected&nbsp;</span>(<span id="custDeleteCount">0</span>)
+              <i class="fas fa-trash-alt"></i> <span class="bulk-btn-label" data-mobile="Delete">Delete Selected&nbsp;</span>(<span id="custDeleteCount">0</span>)
             </button>
             <div class="col-toggle-wrap" id="custColToggleWrap">
               <button type="button" class="col-toggle-btn" id="custColToggleBtn" onclick="toggleColMenu('cust')">
-                <i class="fas fa-table-columns"></i> <span class="bulk-btn-label">Columns</span>
+                <i class="fas fa-table-columns"></i> <span class="bulk-btn-label" data-mobile="Columns">Columns</span>
               </button>
               <div class="col-toggle-menu" id="custColToggleMenu"></div>
             </div>
@@ -2067,28 +2078,28 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
     <div class="bulk-toolbar bulk-toolbar-spaced" id="bulkToolbar">
       <div class="bulk-toolbar-left">
         <span class="filter-active-badge" id="propFilterBadge" style="display:none">
-          <i class="fas fa-filter"></i> <span id="propFilterCount">0</span><span class="bulk-btn-label"> filters active</span>
+          <i class="fas fa-filter"></i> <span id="propFilterCount">0</span><span class="bulk-btn-label" data-mobile="Filters"> filters active</span>
         </span>
         <button class="bulk-btn bulk-btn-clear" id="propClearFiltersBtn" style="display:none" onclick="clearPropFilters()" title="Clear all filters">
-          <i class="fas fa-filter-circle-xmark"></i> <span class="bulk-btn-label">Clear filters</span>
+          <i class="fas fa-filter-circle-xmark"></i> <span class="bulk-btn-label" data-mobile="Clear">Clear filters</span>
         </button>
         <span class="bulk-selected-count" id="bulkSelectedCount" style="display:none">
-          <i class="fas fa-check-circle"></i> <span id="bulkSelectedNum">0</span><span class="bulk-btn-label"> selected</span>
+          <i class="fas fa-check-circle"></i> <span id="bulkSelectedNum">0</span><span class="bulk-btn-label" data-mobile="Selected"> selected</span>
         </span>
         <button class="bulk-btn bulk-btn-clear" id="bulkClearBtn" style="display:none" onclick="clearPropSelection()" title="Clear selection">
-          <i class="fas fa-xmark"></i> <span class="bulk-btn-label">Clear selection</span>
+          <i class="fas fa-xmark"></i> <span class="bulk-btn-label" data-mobile="Clear">Clear selection</span>
         </button>
       </div>
       <div class="bulk-toolbar-right">
         <button class="bulk-btn bulk-btn-danger" id="bulkDeleteSelectedBtn" disabled title="Deleting properties is disabled" style="display:none;opacity:.4;cursor:not-allowed;pointer-events:none">
-          <i class="fas fa-trash-alt"></i> <span class="bulk-btn-label">Delete Selected&nbsp;</span>(<span id="bulkDeleteCount">0</span>)
+          <i class="fas fa-trash-alt"></i> <span class="bulk-btn-label" data-mobile="Delete">Delete Selected&nbsp;</span>(<span id="bulkDeleteCount">0</span>)
         </button>
         <button class="bulk-btn bulk-btn-outline-danger" id="resetAllViewsBtn" onclick="resetAllViews()" title="Reset every listing's view count to 0">
-          <i class="fas fa-rotate-left"></i> <span class="bulk-btn-label">Reset All Views</span>
+          <i class="fas fa-rotate-left"></i> <span class="bulk-btn-label" data-mobile="Reset">Reset All Views</span>
         </button>
         <div class="col-toggle-wrap" id="propColToggleWrap">
           <button type="button" class="col-toggle-btn" id="propColToggleBtn" onclick="togglePropColMenu()">
-            <i class="fas fa-table-columns"></i> <span class="bulk-btn-label">Columns</span>
+            <i class="fas fa-table-columns"></i> <span class="bulk-btn-label" data-mobile="Columns">Columns</span>
           </button>
           <div class="col-toggle-menu" id="propColToggleMenu"></div>
         </div>
@@ -2218,25 +2229,25 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
         <div class="bulk-toolbar bulk-toolbar-spaced" id="apptBulkToolbar">
           <div class="bulk-toolbar-left">
             <span class="filter-active-badge" id="apptFilterBadge" style="display:none">
-              <i class="fas fa-filter"></i> <span id="apptFilterCount">0</span><span class="bulk-btn-label"> filters active</span>
+              <i class="fas fa-filter"></i> <span id="apptFilterCount">0</span><span class="bulk-btn-label" data-mobile="Filters"> filters active</span>
             </span>
             <button class="bulk-btn bulk-btn-clear" id="apptClearFiltersBtn" style="display:none" onclick="clearApptFilters()" title="Clear all filters">
-              <i class="fas fa-filter-circle-xmark"></i> <span class="bulk-btn-label">Clear filters</span>
+              <i class="fas fa-filter-circle-xmark"></i> <span class="bulk-btn-label" data-mobile="Clear">Clear filters</span>
             </button>
             <span class="bulk-selected-count" id="apptSelectedCount" style="display:none">
-              <i class="fas fa-check-circle"></i> <span id="apptSelectedNum">0</span><span class="bulk-btn-label"> selected</span>
+              <i class="fas fa-check-circle"></i> <span id="apptSelectedNum">0</span><span class="bulk-btn-label" data-mobile="Selected"> selected</span>
             </span>
             <button class="bulk-btn bulk-btn-clear" id="apptClearBtn" style="display:none" onclick="clearApptSelection()" title="Clear selection">
-              <i class="fas fa-xmark"></i> <span class="bulk-btn-label">Clear selection</span>
+              <i class="fas fa-xmark"></i> <span class="bulk-btn-label" data-mobile="Clear">Clear selection</span>
             </button>
           </div>
           <div class="bulk-toolbar-right">
             <button class="bulk-btn bulk-btn-danger" id="apptDeleteSelectedBtn" style="display:none" onclick="deleteSelectedAppointments()" title="Delete selected">
-              <i class="fas fa-trash-alt"></i> <span class="bulk-btn-label">Delete Selected&nbsp;</span>(<span id="apptDeleteCount">0</span>)
+              <i class="fas fa-trash-alt"></i> <span class="bulk-btn-label" data-mobile="Delete">Delete Selected&nbsp;</span>(<span id="apptDeleteCount">0</span>)
             </button>
             <div class="col-toggle-wrap" id="apptColToggleWrap">
               <button type="button" class="col-toggle-btn" id="apptColToggleBtn" onclick="toggleColMenu('appt')">
-                <i class="fas fa-table-columns"></i> <span class="bulk-btn-label">Columns</span>
+                <i class="fas fa-table-columns"></i> <span class="bulk-btn-label" data-mobile="Columns">Columns</span>
               </button>
               <div class="col-toggle-menu" id="apptColToggleMenu"></div>
             </div>
@@ -2433,28 +2444,28 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
         <div class="bulk-toolbar" id="reviewBulkToolbar">
           <div class="bulk-toolbar-left">
             <span class="bulk-selected-count" id="reviewSelectedCount" style="display:none">
-              <i class="fas fa-check-circle"></i> <span id="reviewSelectedNum">0</span><span class="bulk-btn-label"> selected</span>
+              <i class="fas fa-check-circle"></i> <span id="reviewSelectedNum">0</span><span class="bulk-btn-label" data-mobile="Selected"> selected</span>
             </span>
             <button class="bulk-btn bulk-btn-clear" id="reviewClearBtn" style="display:none" onclick="clearReviewSelection()" title="Clear selection">
-              <i class="fas fa-xmark"></i> <span class="bulk-btn-label">Clear selection</span>
+              <i class="fas fa-xmark"></i> <span class="bulk-btn-label" data-mobile="Clear">Clear selection</span>
             </button>
           </div>
           <div class="bulk-toolbar-right">
             <button class="btn-add-review" onclick="openHonestReviewModal()" title="Add review">
-              <i class="fas fa-plus"></i> <span class="bulk-btn-label">Add Review</span>
+              <i class="fas fa-plus"></i> <span class="bulk-btn-label" data-mobile="Add">Add Review</span>
             </button>
             <button class="bulk-btn bulk-btn-danger" id="reviewDeleteSelectedBtn" style="display:none" onclick="deleteSelectedReviews()" title="Delete selected">
-              <i class="fas fa-trash-alt"></i> <span class="bulk-btn-label">Delete Selected&nbsp;</span>(<span id="reviewDeleteCount">0</span>)
+              <i class="fas fa-trash-alt"></i> <span class="bulk-btn-label" data-mobile="Delete">Delete Selected&nbsp;</span>(<span id="reviewDeleteCount">0</span>)
             </button>
             <button class="bulk-btn bulk-btn-outline-danger" disabled title="Temporarily disabled">
-              <i class="fas fa-triangle-exclamation"></i> <span class="bulk-btn-label">Delete All Reviews</span>
+              <i class="fas fa-triangle-exclamation"></i> <span class="bulk-btn-label" data-mobile="Delete">Delete All Reviews</span>
             </button>
           </div>
         </div>
         <div style="display:flex;justify-content:flex-end;margin-bottom:10px">
           <div class="col-toggle-wrap" id="reviewColToggleWrap">
             <button type="button" class="col-toggle-btn" id="reviewColToggleBtn" onclick="toggleColMenu('review')">
-              <i class="fas fa-table-columns"></i> <span class="bulk-btn-label">Columns</span>
+              <i class="fas fa-table-columns"></i> <span class="bulk-btn-label" data-mobile="Columns">Columns</span>
             </button>
             <div class="col-toggle-menu" id="reviewColToggleMenu"></div>
           </div>
@@ -4888,7 +4899,7 @@ $(document).ready(function(){
     dom:'<"top-controls"B>rt<"bottom-controls"ip>',
     buttons:[
       /*{
-        extend:'csv', text:'<i class="fas fa-file-csv"></i> <span class="bulk-btn-label">CSV</span>',
+        extend:'csv', text:'<i class="fas fa-file-csv"></i> <span class="bulk-btn-label" data-mobile="CSV">CSV</span>',
         title: function(){ return 'Customer_Leads_' + new Date().toLocaleDateString('en-GB') + (_selectedCustIds.size ? '_Selected' : ''); },
         exportOptions:{
           rows: custExportRowSelector,
@@ -4898,7 +4909,7 @@ $(document).ready(function(){
         }
       },
       {
-        extend:'excel', text:'<i class="fas fa-file-excel"></i> <span class="bulk-btn-label">Excel</span>',
+        extend:'excel', text:'<i class="fas fa-file-excel"></i> <span class="bulk-btn-label" data-mobile="Excel">Excel</span>',
         title: function(){ return 'Customer_Leads_' + new Date().toLocaleDateString('en-GB') + (_selectedCustIds.size ? '_Selected' : ''); },
         exportOptions:{
           rows: custExportRowSelector,
@@ -4920,7 +4931,7 @@ $(document).ready(function(){
         }
       },*/
       {
-        extend:'pdf', text:'<i class="fas fa-file-pdf"></i> <span class="bulk-btn-label">PDF</span>',
+        extend:'pdf', text:'<i class="fas fa-file-pdf"></i> <span class="bulk-btn-label" data-mobile="PDF">PDF</span>',
         orientation:'landscape', pageSize:'A4',
         title: function(){ return 'Customer_Leads_' + new Date().toLocaleDateString('en-GB') + (_selectedCustIds.size ? '_Selected' : ''); },
         exportOptions:{
@@ -5195,7 +5206,7 @@ $(document).ready(function(){
     dom:'<"top-controls"B>rt<"bottom-controls"ip>',
     buttons:[
 	  /*{
-        extend:'csv', text:'<i class="fas fa-file-csv"></i> <span class="bulk-btn-label">CSV</span>',
+        extend:'csv', text:'<i class="fas fa-file-csv"></i> <span class="bulk-btn-label" data-mobile="CSV">CSV</span>',
         title: function(){ return 'Property_Leads_' + new Date().toLocaleDateString('en-GB') + (_selectedPropIds.size ? '_Selected' : ''); },
         exportOptions:{
           rows: propExportRowSelector,
@@ -5205,7 +5216,7 @@ $(document).ready(function(){
         }
       },
       {
-        extend:'excel', text:'<i class="fas fa-file-excel"></i> <span class="bulk-btn-label">Excel</span>',
+        extend:'excel', text:'<i class="fas fa-file-excel"></i> <span class="bulk-btn-label" data-mobile="Excel">Excel</span>',
         title: function(){ return 'Property_Leads_' + new Date().toLocaleDateString('en-GB') + (_selectedPropIds.size ? '_Selected' : ''); },
         exportOptions:{
           rows: propExportRowSelector,
@@ -5215,7 +5226,7 @@ $(document).ready(function(){
         }
       },*/
 	  {
-        extend:'pdf', text:'<i class="fas fa-file-pdf"></i> <span class="bulk-btn-label">PDF</span>',
+        extend:'pdf', text:'<i class="fas fa-file-pdf"></i> <span class="bulk-btn-label" data-mobile="PDF">PDF</span>',
         orientation:'landscape', pageSize:'A4',
         title: function(){ return 'Property_Leads_' + new Date().toLocaleDateString('en-GB') + (_selectedPropIds.size ? '_Selected' : ''); },
        exportOptions: {
@@ -5456,7 +5467,7 @@ $(document).ready(function(){
     dom:'<"top-controls"B>rt<"bottom-controls"ip>',
     buttons:[
       /*{
-        extend:'csv', text:'<i class="fas fa-file-csv"></i> <span class="bulk-btn-label">CSV</span>',
+        extend:'csv', text:'<i class="fas fa-file-csv"></i> <span class="bulk-btn-label" data-mobile="CSV">CSV</span>',
         title: function(){ return 'Appointment_Leads_' + new Date().toLocaleDateString('en-GB') + (_selectedApptIds.size ? '_Selected' : ''); },
         exportOptions:{
           rows: apptExportRowSelector,
@@ -5471,7 +5482,7 @@ $(document).ready(function(){
         }
       },
       {
-        extend:'excel', text:'<i class="fas fa-file-excel"></i> <span class="bulk-btn-label">Excel</span>',
+        extend:'excel', text:'<i class="fas fa-file-excel"></i> <span class="bulk-btn-label" data-mobile="Excel">Excel</span>',
         title: function(){ return 'Appointment_Leads_' + new Date().toLocaleDateString('en-GB') + (_selectedApptIds.size ? '_Selected' : ''); },
         exportOptions:{
           rows: apptExportRowSelector,
@@ -5490,7 +5501,7 @@ $(document).ready(function(){
         exportOptions:{columns:[0,1,2,3,4,5,6,7,8,9,10,11]}
       },*/
       {
-        extend:'pdf', text:'<i class="fas fa-file-pdf"></i> <span class="bulk-btn-label">PDF</span>',
+        extend:'pdf', text:'<i class="fas fa-file-pdf"></i> <span class="bulk-btn-label" data-mobile="PDF">PDF</span>',
         orientation:'landscape', pageSize:'A4',
         title: function(){ return 'Appointment_Leads_' + new Date().toLocaleDateString('en-GB') + (_selectedApptIds.size ? '_Selected' : ''); },
         exportOptions: {

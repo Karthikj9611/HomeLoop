@@ -7307,8 +7307,18 @@ function buildImgSlider(p, fg, uidSuffix, videoSlideHtml) {
     return `<div class="prop-img-placeholder"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" stroke="${fg}" opacity=".3"/><polyline points="9 22 9 12 15 12 15 22" stroke="${fg}" opacity=".3"/></svg></div>`;
   }
   const uid = 'sl' + p.id + (uidSuffix || '');
+  // Only the first slide (the one actually shown) is native-lazy-loaded —
+  // that's what lets the browser defer it until the card scrolls near the
+  // viewport. The rest of a card's slides sit right behind it, hidden with
+  // display:none, until the user swipes. If they were lazy too, the browser
+  // wouldn't start fetching them until the moment they become visible —
+  // i.e. exactly when the swipe happens — which is what caused the delay/
+  // lag between sliding and the next photo actually appearing. Loading them
+  // eagerly means they're already fetched (or fetching) by the time a swipe
+  // reveals them, since they load together with the first slide as soon as
+  // the card itself is in view.
   const imgSlides = imgs.map((url, i) =>
-    `<img class="img-slide${i===0?' active':''}" src="${safeUrl(url)}" loading="lazy" alt="" onclick="event.stopPropagation();openLightbox('${p.id}',${i})" />`
+    `<img class="img-slide${i===0?' active':''}" src="${safeUrl(url)}"${i===0?' loading="lazy"':''} decoding="async" alt="" onclick="event.stopPropagation();openLightbox('${p.id}',${i})" />`
   ).join('');
   // Video tour, when present, always comes after every photo — the last
   // slide in the same swipeable gallery rather than a separate section.
@@ -7397,12 +7407,33 @@ let lightboxImgs = [];
 let lightboxIdx = 0;
 let lightboxVideoHtml = ''; // '' when this property has no (valid) video tour
 
+// The lightbox swaps a single <img>'s src on each swipe instead of
+// pre-rendering hidden slides (see the note near the touch handler below),
+// so it never had the buildImgSlider lazy-loading issue — but nothing was
+// fetching the next photo ahead of time either, so there was still a beat
+// of loading on every swipe. This preloads the photo on either side of the
+// current one into the browser's cache, so by the time a swipe reaches it,
+// it's already there. A Set just avoids re-requesting the same URL twice.
+const lightboxPreloaded = new Set();
+function preloadLightboxImage(url) {
+  if (!url || lightboxPreloaded.has(url)) return;
+  lightboxPreloaded.add(url);
+  new Image().src = safeUrl(url);
+}
+function preloadLightboxNeighbors() {
+  const total = lightboxImgs.length;
+  if (total < 2) return;
+  preloadLightboxImage(lightboxImgs[(lightboxIdx + 1) % total]);
+  preloadLightboxImage(lightboxImgs[(lightboxIdx - 1 + total) % total]);
+}
+
 function openLightbox(propId, idx) {
   const p = PROPERTIES.find(x => x.id === propId);
   if (!p || !p.media?.images || !p.media.images.length) return;
   lightboxImgs = p.media.images;
   lightboxVideoHtml = buildVideoSlideHtml(p);
   lightboxIdx = idx || 0;
+  lightboxPreloaded.clear();
   renderLightbox();
   document.getElementById('lightboxOverlay').classList.add('open');
 }
@@ -7441,7 +7472,7 @@ function renderLightbox() {
     videoEl.style.display = 'none';
     videoEl.innerHTML = '';
     imgEl.style.display = 'block';
-    imgEl.src = lightboxImgs[lightboxIdx];
+    imgEl.src = safeUrl(lightboxImgs[lightboxIdx]);
   }
   document.getElementById('lightboxCounter').textContent = (lightboxIdx + 1) + ' / ' + total;
   const multi = total > 1;
@@ -7449,6 +7480,7 @@ function renderLightbox() {
     ? lightboxImgs.map((url, i) => `<div class="lightbox-thumb${i===lightboxIdx?' active':''}" style="background-image:url('${safeUrl(url)}')" onclick="lightboxGo(${i})"></div>`).join('')
       + (lightboxVideoHtml ? `<div class="lightbox-thumb video-thumb${isVideo?' active':''}" onclick="lightboxGo(${lightboxImgs.length})"><svg viewBox="0 0 24 24" aria-hidden="true"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg></div>` : '')
     : '';
+  preloadLightboxNeighbors();
 }
 
 /* Swipe-to-change-photo inside the fullscreen lightbox — separate from the
