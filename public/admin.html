@@ -4202,12 +4202,56 @@ window.togglePropFlag = async function(id, field, checkboxEl){
     // Booked now affects visibility in every tab (All, Promoted, Rent/Lease/PG/
     // Short Stay), not just Promoted/Booked, so always redraw to reflect it.
     propTable.draw(false);
+
+    // Listing just went live — offer to notify the owner immediately.
+    // NOTE: this confirm()/window.open() happens after two awaited calls
+    // above, so on stricter browsers the popup blocker may still eat the
+    // wa.me tabs since the original click's user-gesture window can lapse;
+    // the Share button in the Action column is the reliable fallback.
+    if(field === 'verified' && confirmedVal === true){
+      const shareNow = confirm('Listing verified and live! Share the link with the owner via WhatsApp now?');
+      if(shareNow) shareListingToOwner(id);
+    }
   } catch(err){
     checkboxEl.checked = !desired; // revert on network error
     alert(`Failed to update ${field} status`);
   } finally {
     checkboxEl.disabled = false;
   }
+};
+
+/* ── SHARE VERIFIED LISTING TO OWNER / ALT NUMBER (WhatsApp) ──
+   Lets the agent, once a listing is verified and live, fire off the
+   /property/:id link to the owner's number and their alternate number
+   via WhatsApp in one click. Gated on row.verified so it's only ever
+   usable after the listing is actually live — matches the "Share"
+   button's own disabled state in the Action column below. */
+function waDigits(raw){
+  let d = String(raw||'').replace(/\D/g,'');
+  if(!d) return '';
+  if(d.length === 10) return '91' + d;                          // bare 10-digit Indian mobile
+  if(d.length === 11 && d.charAt(0) === '0') return '91' + d.slice(1); // leading trunk 0, e.g. "091-xxxxxxxxxx"
+  return d;                                                      // already has a country code, or unrecognized — pass through as-is
+}
+
+window.shareListingToOwner = function(id){
+  const row = _adminPropCache[id];
+  if(!row){ alert('Listing details not loaded yet — please retry.'); return; }
+  if(!row.verified){ alert("This listing isn't verified yet — verify it first, then share."); return; }
+
+  const link = `${BASE}/property/${id}`;
+  const msg = `Hi ${row.ownerName || 'there'}, your property "${row.title || 'listing'}"${row.loc ? ' in ' + row.loc : ''} has been verified and is now live on HomeLoop!\n\nView it here: ${link}`;
+  const text = encodeURIComponent(msg);
+
+  const numbers = [row.ownerNumber, row.ownerAltPhone].map(waDigits).filter(Boolean);
+  if(!numbers.length){ alert('No owner phone number on file for this listing.'); return; }
+
+  numbers.forEach((num, i) => {
+    // A tiny stagger keeps back-to-back window.open() calls (owner + alt
+    // number) reliable across browsers/mobile WhatsApp-app handoffs —
+    // both still fire from the same click's user gesture.
+    setTimeout(() => { window.open(`https://wa.me/${num}?text=${text}`, '_blank'); }, i * 400);
+  });
 };
 
 /* ── PROPERTY VIEWS: INDIVIDUAL & RESET-ALL ── */
@@ -5185,8 +5229,12 @@ $(document).ready(function(){
           const bookingBtn = row.booked
             ? `<button class="btn-booking-details" title="Booking details" onclick="openBookingDetailsModal('${row._id}')"><i class="fas fa-file-signature"></i> Booking</button>`
             : '';
+          const shareBtn = row.verified
+            ? `<button class="btn-view" style="background:#25D366;border-color:#25D366;color:#fff" title="Share the live link with the owner (and alt number) via WhatsApp" onclick="shareListingToOwner('${row._id}')"><i class="fab fa-whatsapp"></i> Share</button>`
+            : `<button class="btn-view" disabled title="Verify this listing first to enable sharing" style="opacity:.4;cursor:not-allowed;pointer-events:none"><i class="fab fa-whatsapp"></i> Share</button>`;
           return `<div style="display:inline-flex;gap:6px;flex-wrap:nowrap;justify-content:center">
             <button class="btn-view" onclick="openAdminPropModal('${row._id}')"><i class="fas fa-eye"></i> View</button>
+            ${shareBtn}
             ${bookingBtn}
             <button class="btn-delete" disabled title="Deleting properties is disabled" style="opacity:.4;cursor:not-allowed;pointer-events:none"><i class="fas fa-trash-alt"></i> Delete</button>
           </div>`;
