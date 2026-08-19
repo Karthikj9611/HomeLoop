@@ -10607,9 +10607,22 @@ function lockIdentityFieldsForNewListing() {
   const user = getLoggedInUser();
   if (!user) return;
   const fullName = `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.name || '';
-  const fields = [
+
+  // Owner name and phone are prefilled from the account for convenience
+  // but stay editable — a listing is often posted on someone else's
+  // behalf (a broker, a family member), so neither should be locked to
+  // whoever is logged in. Email remains locked since it's the verified
+  // contact identity tied to the account.
+  const prefillOnly = [
     ['f-ownerName', fullName],
-    ['f-ownerPhone', user.mobile || ''],
+    ['f-ownerPhone', user.mobile || '']
+  ];
+  prefillOnly.forEach(([id, val]) => {
+    const el = document.getElementById(id);
+    if (el && !el.value.trim()) el.value = val;
+  });
+
+  const fields = [
     ['f-ownerEmail', user.email || '']
   ];
   fields.forEach(([id, val]) => {
@@ -10621,8 +10634,6 @@ function lockIdentityFieldsForNewListing() {
     const hint = document.getElementById(id + '-hint');
     if (hint) hint.style.display = '';
   });
-  const pickBtn = document.getElementById('f-ownerPhone-pickBtn');
-  if (pickBtn) pickBtn.style.display = 'none';
 }
 function unlockIdentityFieldsForEdit() {
   ['f-ownerName', 'f-ownerPhone', 'f-ownerEmail'].forEach(id => {
@@ -10633,8 +10644,6 @@ function unlockIdentityFieldsForEdit() {
     const hint = document.getElementById(id + '-hint');
     if (hint) hint.style.display = 'none';
   });
-  const pickBtn = document.getElementById('f-ownerPhone-pickBtn');
-  if (pickBtn) pickBtn.style.display = '';
 }
 function openAddModal(presetType) {
   if (!getLoggedInUser()) { openAuthModal(); return; }
@@ -12311,8 +12320,11 @@ function openCloneListingFull(id) {
   resetListingForm();
   applyImportedProperty(p);
   // applyImportedProperty() copies the source listing's owner name/phone/
-  // email too — overwrite those back to the logged-in account and re-lock,
-  // exactly like starting any other new listing.
+  // email too. Owner name is left as copied (it's an editable field, not
+  // an account-locked one — cloning "same building, another unit" usually
+  // means the same owner). Phone/email are still overwritten back to the
+  // logged-in account and re-locked, exactly like starting any other new
+  // listing.
   lockIdentityFieldsForNewListing();
   onFTypeChange(document.getElementById('f-type').value);
 
