@@ -1981,6 +1981,31 @@ app.put('/api/user/listings/:id', listingWriteLimiter, requireUser, async (req, 
   }
 });
 
+// ── PATCH /api/user/listings/:id/booked (owner: toggle booked flag on their own listing) ──
+// Mirrors the admin booked toggle (admin.js), but scoped to the requesting
+// owner — findOneAndUpdate is always filtered by { _id, userId } together so
+// an owner can never flip this for a listing that isn't theirs. Once true,
+// the listing is excluded from GET /api/properties (booked: { $ne: true }
+// filter there) and disappears from the public site, same as the admin toggle.
+app.patch('/api/user/listings/:id/booked', listingWriteLimiter, requireUser, async (req, res) => {
+  try {
+    const { booked } = req.body || {};
+    if (typeof booked !== 'boolean') {
+      return res.status(400).json({ message: 'booked must be a boolean' });
+    }
+    let updated = null;
+    for (const M of LISTING_MODEL_LIST) {
+      updated = await M.findOneAndUpdate({ _id: req.params.id, userId: req.userId }, { booked }, { new: true });
+      if (updated) break;
+    }
+    if (!updated) return res.status(404).json({ message: 'Listing not found, or you do not have permission to update it' });
+    res.json({ message: 'Booked status updated', booked: updated.booked });
+  } catch (err) {
+    console.error('PATCH /api/user/listings/:id/booked error:', err);
+    res.status(500).json({ message: 'Error updating booked status' });
+  }
+});
+
 app.delete('/api/user/listings/:id', listingWriteLimiter, requireUser, async (req, res) => {
   try {
     let deleted = null;

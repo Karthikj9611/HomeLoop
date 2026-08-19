@@ -2925,6 +2925,11 @@ main.tab-explore .empty-state{display:none !important}
   display:inline-block;font-size:10px;font-weight:800;padding:3px 9px;border-radius:99px;
   background:var(--bg-3);color:var(--text-2);margin-top:6px;letter-spacing:.2px;
 }
+.profile-status-pill.booked-pill{background:#fdecec;color:#e04444}
+/* Booked toggle icon button — same on/off convention as the other mini
+   action icons, just flips to red once the listing is marked booked. */
+.profile-mini-icon-btn.booked-active{border-color:#e04444;background:#fdecec}
+.profile-mini-icon-btn.booked-active svg{stroke:#e04444}
 /* ── My Listings analytics — summary strip above the list, and a compact
    stats row inside each card (views / visit requests / days live). Uses
    fields already returned by GET /api/user/my-listings (views, visitCount,
@@ -11707,6 +11712,7 @@ function renderMyListings() {
         </div>
         <div class="profile-mini-price">${rent}<span style="color:var(--text-3);font-weight:500">/ Month</span></div>
         <span class="profile-status-pill">${esc(p.basic?.status) || 'For Rent'}</span>
+        ${p.booked ? `<span class="profile-status-pill booked-pill" style="margin-left:5px">Booked</span>` : ''}
         ${p.visitCount > 0 ? `<span class="profile-status-pill" style="background:var(--brand-light);color:var(--brand);margin-left:5px">${p.visitCount} visit${p.visitCount===1?'':'s'} requested</span>` : ''}
         <div class="profile-mini-stats">
           <span class="profile-mini-stat" title="Total views">
@@ -11726,9 +11732,38 @@ function renderMyListings() {
         <button class="profile-mini-icon-btn" title="Edit" onclick="event.stopPropagation();openEditRestrictedModal('listing', '${esc(p.propertyId||'')}')">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
         </button>
+        <button class="profile-mini-icon-btn${p.booked ? ' booked-active' : ''}" title="${p.booked ? 'Mark as available' : 'Mark as booked'}" onclick="event.stopPropagation();toggleMyListingBooked('${p.id}', this)">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        </button>
       </div>
     </div>`;
   }).join('');
+}
+
+// Owner-only: flip the booked flag on one of their own listings (mirrors the
+// admin panel's Booked toggle). Once booked, the listing drops out of the
+// public site's results, so this is how an owner takes it off-market
+// themselves the moment a tenant is finalized, without waiting on admin.
+async function toggleMyListingBooked(id, btnEl) {
+  const p = MY_LISTINGS_CACHE.find(x => x.id === id);
+  if (!p) return;
+  const desired = !p.booked;
+  btnEl.disabled = true;
+  try {
+    const res = await fetch(`/api/user/listings/${id}/booked`, {
+      method: 'PATCH',
+      headers: userAuthHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({ booked: desired })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) { alert(data.message || 'Could not update booked status.'); return; }
+    p.booked = typeof data.booked === 'boolean' ? data.booked : desired;
+    renderMyListings();
+  } catch (err) {
+    alert('⚠️ Could not connect to server.');
+  } finally {
+    btnEl.disabled = false;
+  }
 }
 
 /* ═══════════════════════════════════════════════
