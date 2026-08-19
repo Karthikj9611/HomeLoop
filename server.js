@@ -1230,7 +1230,6 @@ const BASE_REQUIRED_FIELDS = [
 const TYPE_REQUIRED_FIELDS = {
   'For Rent': [
     ['price.deposit',      'Security deposit'],
-    ['price.maintenance',  'Maintenance'],
     ['price.negotiable',   'Price negotiable'],
     ['property.type',      'Property type'],
     ['property.bhk',       'BHK'],
@@ -1243,7 +1242,6 @@ const TYPE_REQUIRED_FIELDS = {
     ['rules.nonVeg',       'Non-veg allowed'],
   ],
   'Lease': [
-    ['price.maintenance',  'Maintenance'],
     ['property.type',      'Property type'],
     ['property.bhk',       'BHK'],
     ['property.floor',     'Floor'],
