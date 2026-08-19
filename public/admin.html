@@ -1814,7 +1814,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
 .logout-btn:hover{background:var(--red-light);color:var(--red);border-color:rgba(224,68,68,0.25)}
 
 /* ── CONFIRM MODAL ── */
-#confirmOverlay,#alertOverlay{
+#confirmOverlay,#alertOverlay,#sharePickOverlay{
   display:none;position:fixed;inset:0;z-index:10000;
   background:rgba(12,13,16,0.68);
   align-items:center;justify-content:center;
@@ -1915,6 +1915,21 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
     <div class="confirm-msg" id="alertMsg" style="margin-bottom:22px"></div>
     <div class="confirm-actions">
       <button class="confirm-ok-btn" id="alertOkBtn" style="flex:1">OK</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SHARE-NUMBER PICKER (which number(s) to WhatsApp the live link to) ══ -->
+<div id="sharePickOverlay">
+  <div class="confirm-card">
+    <div class="confirm-icon info"><i class="fas fa-share-nodes"></i></div>
+    <div class="confirm-title">Share with which number?</div>
+    <div class="confirm-msg" id="sharePickMsg" style="margin-bottom:22px"></div>
+    <div class="confirm-actions" style="flex-wrap:wrap">
+      <button class="confirm-ok-btn success" id="sharePickOwnerBtn" style="flex:1 1 100%">Owner number</button>
+      <button class="confirm-ok-btn success" id="sharePickAltBtn" style="flex:1 1 100%">Alternate number</button>
+      <button class="confirm-ok-btn success" id="sharePickBothBtn" style="flex:1 1 100%">Both numbers</button>
+      <button class="confirm-cancel-btn" id="sharePickCancelBtn" style="flex:1 1 100%">Cancel</button>
     </div>
   </div>
 </div>
@@ -4220,12 +4235,61 @@ window.togglePropFlag = async function(id, field, checkboxEl){
   }
 };
 
+/* ── SHARE-NUMBER PICKER MODAL ──
+   Lets the agent choose Owner / Alternate / Both before the WhatsApp
+   tabs open, instead of always blasting both numbers. Only offers a
+   choice when both numbers actually exist on the listing — falls back
+   silently to whichever single number is present. */
+function showShareNumberPicker({ ownerLabel, altLabel } = {}){
+  return new Promise(resolve=>{
+    const overlay   = document.getElementById('sharePickOverlay');
+    const msgEl     = document.getElementById('sharePickMsg');
+    const ownerBtn  = document.getElementById('sharePickOwnerBtn');
+    const altBtn    = document.getElementById('sharePickAltBtn');
+    const bothBtn   = document.getElementById('sharePickBothBtn');
+    const cancelBtn = document.getElementById('sharePickCancelBtn');
+
+    msgEl.textContent = 'Choose who should get the live listing link.';
+    ownerBtn.textContent = `Owner number (${ownerLabel})`;
+    altBtn.textContent = `Alternate number (${altLabel})`;
+
+    function cleanup(result){
+      overlay.style.display = 'none';
+      ownerBtn.removeEventListener('click', onOwner);
+      altBtn.removeEventListener('click', onAlt);
+      bothBtn.removeEventListener('click', onBoth);
+      cancelBtn.removeEventListener('click', onCancel);
+      overlay.removeEventListener('click', onOverlayClick);
+      document.removeEventListener('keydown', onKeydown);
+      resolve(result);
+    }
+    function onOwner(){ cleanup('owner'); }
+    function onAlt(){ cleanup('alt'); }
+    function onBoth(){ cleanup('both'); }
+    function onCancel(){ cleanup(null); }
+    function onOverlayClick(e){ if(e.target === overlay) cleanup(null); }
+    function onKeydown(e){ if(e.key === 'Escape') cleanup(null); }
+
+    ownerBtn.addEventListener('click', onOwner);
+    altBtn.addEventListener('click', onAlt);
+    bothBtn.addEventListener('click', onBoth);
+    cancelBtn.addEventListener('click', onCancel);
+    overlay.addEventListener('click', onOverlayClick);
+    document.addEventListener('keydown', onKeydown);
+
+    overlay.style.display = 'flex';
+    ownerBtn.focus();
+  });
+}
+
 /* ── SHARE VERIFIED LISTING TO OWNER / ALT NUMBER (WhatsApp) ──
    Lets the agent, once a listing is verified and live, fire off the
-   /property/:id link to the owner's number and their alternate number
-   via WhatsApp in one click. Gated on row.verified so it's only ever
-   usable after the listing is actually live — matches the "Share"
-   button's own disabled state in the Action column below. */
+   /property/:id link to the owner's number and/or their alternate
+   number via WhatsApp. If both numbers exist, asks the agent which
+   one(s) to use; if only one exists, shares to it directly. Gated on
+   row.verified so it's only ever usable after the listing is live —
+   matches the "Share" button's own disabled state in the Action
+   column below. */
 function waDigits(raw){
   let d = String(raw||'').replace(/\D/g,'');
   if(!d) return '';
@@ -4234,7 +4298,16 @@ function waDigits(raw){
   return d;                                                      // already has a country code, or unrecognized — pass through as-is
 }
 
-window.shareListingToOwner = function(id){
+function openWhatsAppTabs(numbers, text){
+  numbers.forEach((num, i) => {
+    // A tiny stagger keeps back-to-back window.open() calls (owner + alt
+    // number) reliable across browsers/mobile WhatsApp-app handoffs —
+    // both still fire from the same click's user gesture.
+    setTimeout(() => { window.open(`https://wa.me/${num}?text=${text}`, '_blank'); }, i * 400);
+  });
+}
+
+window.shareListingToOwner = async function(id){
   const row = _adminPropCache[id];
   if(!row){ alert('Listing details not loaded yet — please retry.'); return; }
   if(!row.verified){ alert("This listing isn't verified yet — verify it first, then share."); return; }
@@ -4243,15 +4316,21 @@ window.shareListingToOwner = function(id){
   const msg = `Hi ${row.ownerName || 'there'}, your property "${row.title || 'listing'}"${row.loc ? ' in ' + row.loc : ''} has been verified and is now live on HomeLoop!\n\nView it here: ${link}`;
   const text = encodeURIComponent(msg);
 
-  const numbers = [row.ownerNumber, row.ownerAltPhone].map(waDigits).filter(Boolean);
-  if(!numbers.length){ alert('No owner phone number on file for this listing.'); return; }
+  const ownerNum = waDigits(row.ownerNumber);
+  const altNum   = waDigits(row.ownerAltPhone);
 
-  numbers.forEach((num, i) => {
-    // A tiny stagger keeps back-to-back window.open() calls (owner + alt
-    // number) reliable across browsers/mobile WhatsApp-app handoffs —
-    // both still fire from the same click's user gesture.
-    setTimeout(() => { window.open(`https://wa.me/${num}?text=${text}`, '_blank'); }, i * 400);
-  });
+  if(!ownerNum && !altNum){ alert('No owner phone number on file for this listing.'); return; }
+
+  // Only one number on file — nothing to choose between, share straight away.
+  if(!ownerNum || !altNum){
+    openWhatsAppTabs([ownerNum || altNum], text);
+    return;
+  }
+
+  const choice = await showShareNumberPicker({ ownerLabel: row.ownerNumber, altLabel: row.ownerAltPhone });
+  if(!choice) return; // cancelled
+  const numbers = choice === 'owner' ? [ownerNum] : choice === 'alt' ? [altNum] : [ownerNum, altNum];
+  openWhatsAppTabs(numbers, text);
 };
 
 /* ── PROPERTY VIEWS: INDIVIDUAL & RESET-ALL ── */
