@@ -15284,7 +15284,6 @@ document.addEventListener('keydown',function(e){
     img.alt = w.alt || '';
     overlay.classList.add('open');
     document.body.style.overflow = 'hidden';
-    sessionStorage.setItem('wishShown_' + w.id, todayStr());
   }
 
   function closeWishModal(){
@@ -15303,8 +15302,6 @@ document.addEventListener('keydown',function(e){
   document.addEventListener('DOMContentLoaded', function(){
     var w = activeWish();
     if (!w) return;
-    // Show once per day per visitor (re-shows if they come back the next day, or after clearing tab storage)
-    if (sessionStorage.getItem('wishShown_' + w.id) === todayStr()) return;
     openWishModal(w);
   });
 })();
