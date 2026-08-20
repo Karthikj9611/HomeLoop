@@ -211,6 +211,10 @@ body{
 .bulk-toolbar-below{
   justify-content:center;
 }
+.bulk-wa-row{
+  display:flex;margin:-16px 0 24px;
+}
+.bulk-wa-row .bulk-btn{padding:9px 16px;width:auto}
 .bulk-toolbar-spaced{
   justify-content:flex-start;margin-bottom:24px;
   flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;
@@ -1566,7 +1570,7 @@ footer i{color:var(--gold)}
      regardless of each icon's own natural glyph width. Excludes
      bulk-btn-danger (the "Delete Selected (n)" button), which still shows
      a count and needs to flex wider than this fixed-width pill. */
-  .bulk-toolbar .bulk-btn:not(.bulk-btn-danger):not(#bulkShareWhatsAppBtn),
+  .bulk-toolbar .bulk-btn:not(.bulk-btn-danger),
   .bulk-toolbar .btn-add-review,
   .dt-button,
   .col-toggle-btn{
@@ -1576,7 +1580,7 @@ footer i{color:var(--gold)}
     align-items:center!important;justify-content:center!important;
     border-radius:12px!important;
   }
-  .bulk-toolbar .bulk-btn:not(.bulk-btn-danger):not(#bulkShareWhatsAppBtn) i,
+  .bulk-toolbar .bulk-btn:not(.bulk-btn-danger) i,
   .bulk-toolbar .btn-add-review i,
   .dt-button i,
   .col-toggle-btn i{font-size:0.8rem!important;margin:0!important}
@@ -1596,9 +1600,8 @@ footer i{color:var(--gold)}
   #propClearFiltersBtn{order:6}
   #bulkSelectedCount{order:7}
   #bulkClearBtn{order:8}
-  #bulkShareWhatsAppBtn{order:9}
-  #bulkDeleteSelectedBtn{order:10}
-  #resetAllViewsBtn{order:11}
+  #bulkDeleteSelectedBtn{order:9}
+  #resetAllViewsBtn{order:10}
 
   /* Category sub-tab bar — single horizontal row, swipeable */
   .cat-tab-bar{
@@ -1662,13 +1665,13 @@ footer i{color:var(--gold)}
 
   /* Icon+label toolbar buttons (row 3): bump to the same footprint as
      .tab-btn/.cat-tab-btn at this breakpoint so all three rows match */
-  .bulk-toolbar .bulk-btn:not(.bulk-btn-danger):not(#bulkShareWhatsAppBtn),
+  .bulk-toolbar .bulk-btn:not(.bulk-btn-danger),
   .bulk-toolbar .btn-add-review,
   .dt-button,
   .col-toggle-btn{
     width:56px!important;height:56px!important;min-width:56px!important;
   }
-  .bulk-toolbar .bulk-btn:not(.bulk-btn-danger):not(#bulkShareWhatsAppBtn) i,
+  .bulk-toolbar .bulk-btn:not(.bulk-btn-danger) i,
   .bulk-toolbar .btn-add-review i,
   .dt-button i,
   .col-toggle-btn i{font-size:1rem!important}
@@ -2105,9 +2108,6 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
         <button class="bulk-btn bulk-btn-clear" id="bulkClearBtn" style="display:none" onclick="clearPropSelection()" title="Clear selection">
           <i class="fas fa-xmark"></i> <span class="bulk-btn-label" data-mobile="Clear">Clear selection</span>
         </button>
-        <button class="bulk-btn" id="bulkShareWhatsAppBtn" style="display:none;background:#25D366;border-color:#25D366;color:#fff" onclick="shareSelectedToOwners()" title="Share the live listing link with every selected listing's owner via WhatsApp, one chat tab each">
-          <i class="fab fa-whatsapp"></i> <span class="bulk-btn-label" data-mobile="WhatsApp">Share via WhatsApp&nbsp;</span>(<span id="bulkShareWhatsAppCount">0</span>)
-        </button>
       </div>
       <div class="bulk-toolbar-right">
         <button class="bulk-btn bulk-btn-danger" id="bulkDeleteSelectedBtn" disabled title="Deleting properties is disabled" style="display:none;opacity:.4;cursor:not-allowed;pointer-events:none">
@@ -2123,6 +2123,11 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
           <div class="col-toggle-menu" id="propColToggleMenu"></div>
         </div>
       </div>
+    </div>
+    <div class="bulk-wa-row" id="bulkWhatsAppRow" style="display:none">
+      <button class="bulk-btn" id="bulkShareWhatsAppBtn" style="background:#25D366;border-color:#25D366;color:#fff" onclick="shareSelectedToOwners()" title="Share the live listing link with every selected listing's owner via WhatsApp, one chat tab each">
+        <i class="fab fa-whatsapp"></i> <span class="bulk-btn-label" data-mobile="WhatsApp">Share via WhatsApp&nbsp;</span>(<span id="bulkShareWhatsAppCount">0</span>)
+      </button>
     </div>
     <div class="card">
       <div class="table-wrapper">
@@ -4513,13 +4518,13 @@ function updateBulkToolbarUI(){
   const clearBtn  = document.getElementById('bulkClearBtn');
   const delBtn    = document.getElementById('bulkDeleteSelectedBtn');
   const delCountEl= document.getElementById('bulkDeleteCount');
-  const waBtn     = document.getElementById('bulkShareWhatsAppBtn');
+  const waRow     = document.getElementById('bulkWhatsAppRow');
   const waCountEl = document.getElementById('bulkShareWhatsAppCount');
   const show = n > 0;
   countEl.style.display = show ? 'inline-flex' : 'none';
   clearBtn.style.display = show ? 'inline-flex' : 'none';
   if (delBtn) delBtn.style.display = show ? 'inline-flex' : 'none';
-  if (waBtn) waBtn.style.display = show ? 'inline-flex' : 'none';
+  if (waRow) waRow.style.display = show ? 'flex' : 'none';
   numEl.textContent = n;
   if (delCountEl) delCountEl.textContent = n;
   if (waCountEl) waCountEl.textContent = n;
