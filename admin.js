@@ -584,6 +584,7 @@ module.exports = function registerAdminRoutes(app, deps) {
 
           // Gallery / description / amenities / map
           images:       Array.isArray(media.images) ? media.images : [],
+          video:        media.video || '',
           desc:         media.desc || '',
           amenities:    Array.isArray(amenities.selected) ? amenities.selected : [],
           latitude:     location.lat != null ? location.lat : null,

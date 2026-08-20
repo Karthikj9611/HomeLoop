@@ -2164,6 +2164,8 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
               <th>Visits</th>
               <th>Views</th>
               <th>Photos</th>
+              <th>Image URLs</th>
+              <th>Video URL</th>
               <th>Amenities</th>
               <th>Property ID</th>
               <th>User ID</th>
@@ -2212,6 +2214,8 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
               <th><input type="text" class="col-filter-input" data-filter-key="views" placeholder="Search…" oninput="onPropColumnFilter('views', this.value, this)"></th>
               <th></th>
               <th></th>
+              <th></th>
+              <th></th>
               <th><input type="text" class="col-filter-input" data-filter-key="propertyId" placeholder="Search…" oninput="onPropColumnFilter('propertyId', this.value, this)"></th>
               <th><input type="text" class="col-filter-input" data-filter-key="userId" placeholder="Search…" oninput="onPropColumnFilter('userId', this.value, this)"></th>
               <th><div class="col-date-range">
@@ -2230,7 +2234,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
             </tr>
           </thead>
           <tbody>
-            <tr><td colspan="44" class="empty-state"><i class="fas fa-circle-notch fa-spin"></i>Loading…</td></tr>
+            <tr><td colspan="47" class="empty-state"><i class="fas fa-circle-notch fa-spin"></i>Loading…</td></tr>
           </tbody>
         </table>
       </div>
@@ -5277,7 +5281,21 @@ $(document).ready(function(){
       { data:null, orderable:false, visible:false, className:'dt-body-center', render:(d,t,row)=>{
           return String(Array.isArray(row.images) ? row.images.length : 0);
       }},
-      /* 38 – Amenities (list, +N more opens modal) */
+      /* 38 – Image URLs (hidden on screen; kept so PDF/other exports can
+         include every image link, one per line) */
+      { data:null, orderable:false, visible:false, render:(d,t,row)=>{
+          const imgs = Array.isArray(row.images) ? row.images : [];
+          if(t!=='display') return imgs.join('\n');
+          if(!imgs.length) return '—';
+          return `<div style="white-space:normal;max-width:260px;word-break:break-all">${imgs.map(u=>escapeHtml(u)).join('<br>')}</div>`;
+      }},
+      /* 39 – Video URL (hidden on screen; kept so PDF/other exports can
+         include the listing's video link) */
+      { data:'video', orderable:false, visible:false, render:(d,t,row)=>{
+          if(t!=='display') return d||'';
+          return d ? `<div style="white-space:normal;max-width:220px;word-break:break-all">${escapeHtml(d)}</div>` : '—';
+      }},
+      /* 40 – Amenities (list, +N more opens modal) */
       { data:null, orderable:false, render:(d,t,row)=>{
           const list = Array.isArray(row.amenities) ? row.amenities : [];
           if(t!=='display') return list.join(' ');
@@ -5288,22 +5306,22 @@ $(document).ready(function(){
           const encoded = escapeHtml(JSON.stringify(list));
           return `<div style="white-space:normal;max-width:260px">${shown}, <a href="javascript:void(0)" class="amenities-more-link" data-list="${encoded}" onclick="openAmenitiesModal(this)">+${more} more</a></div>`;
       }},
-      /* 39 – Property ID */
+      /* 41 – Property ID */
       { data:'propertyId', render:(d)=> escapeHtml(d||'—') },
-      /* 40 – User ID */
+      /* 42 – User ID */
       { data:'userId', visible:false, render:(d)=> escapeHtml(d||'—') },
-      /* 41 – Listed On */
+      /* 43 – Listed On */
       { data:'createdAt', render:(d,t)=>{
           if(t==='display') return formatDateTime(d);
           if(t==='export') return plainDateTime(d);
           return d||'—';
       }},
-      /* 42 – Remarks */
+      /* 44 – Remarks */
       { data:'remarks', orderable:false, render:(d,t,row)=>{
           if(t==='display') return remarkCellHtml(row._id, d, 'property');
           return d||'';
       }},
-      /* 43 – Action */
+      /* 45 – Action */
       { data:null, orderable:false, render:(d,t,row)=>{
           _adminPropCache[row._id] = row;
           const bookingBtn = row.booked
@@ -5320,7 +5338,7 @@ $(document).ready(function(){
           </div>`;
       }}
     ],
-    order:[[42,'asc']], // Listed On (createdAt) — oldest to newest
+    order:[[44,'asc']], // Listed On (createdAt) — oldest to newest
     orderCellsTop:true,
     pageLength:10,
     scrollX:true,
@@ -5363,7 +5381,7 @@ $(document).ready(function(){
 				// Column 0 is the select checkbox — it has no printable
 				// value, so leave it out of the PDF entirely instead of
 				// exporting a blank column.
-				return idx !== 0 && idx !== 43 && idx !== 44 &&
+				return idx !== 0 && idx !== 45 && idx !== 46 &&
 					   propTable.column(idx).visible();
 			},
 			// Use each column's dedicated "export" text instead of stripping
@@ -6134,6 +6152,17 @@ let _propCategoryState = localStorage.getItem('kr_admin_propCategory') || 'Rent'
 const PG_ONLY_COLS = [27, 28, 29, 30, 31]; // PG Gender, Room Type, Meals, Occupancy, Notice
 const SS_ONLY_COLS = [32, 33, 34, 35];     // SS Room Type, Available 24hrs, Cancellation, Couples Allowed
 
+// Short Stay is hidden site-wide for now (see SHORT_STAY_ENABLED in the
+// frontend) — mirroring that here: Short-Stay-only columns stay hidden in
+// the admin Properties grid regardless of category tab, and are left out
+// of the Columns-toggle menu entirely so they can't be manually re-shown.
+// Flip this back to true (and re-add the 'Short Stay Details' group in
+// PROP_COL_GROUPS below) whenever Short Stay is re-enabled. Nothing else —
+// the column definitions, PG_ONLY_COLS/SS_ONLY_COLS themselves, the Short
+// Stay category tab/filters — was touched, so turning it back on is a
+// one-line change.
+const SS_COLS_ENABLED = false;
+
 // Measures the real rendered width of the properties table's 1st sticky
 // column (the row-select checkbox) and stores it as a CSS custom property
 // so the 2nd sticky column (Property) can position itself at the exact
@@ -6173,14 +6202,22 @@ const PROP_COL_GROUPS = [
     {idx:27, label:'PG Gender'}, {idx:28, label:'PG Room Type'}, {idx:29, label:'PG Meals'},
     {idx:30, label:'PG Occupancy'}, {idx:31, label:'PG Notice'}
   ]},
-  { label:'Short Stay Details', cols:[
+  // 'Short Stay Details' group intentionally left out of the Columns-toggle
+  // menu while SS_COLS_ENABLED is false (see the comment above SS_ONLY_COLS).
+  // Restore this group to bring the toggle back:
+  //   { label:'Short Stay Details', cols:[
+  //     {idx:32, label:'SS Room Type'}, {idx:33, label:'SS Available 24hrs'},
+  //     {idx:34, label:'SS Cancellation'}, {idx:35, label:'SS Couples Allowed'}
+  //   ]},
+  ...(SS_COLS_ENABLED ? [{ label:'Short Stay Details', cols:[
     {idx:32, label:'SS Room Type'}, {idx:33, label:'SS Available 24hrs'},
     {idx:34, label:'SS Cancellation'}, {idx:35, label:'SS Couples Allowed'}
-  ]},
+  ]}] : []),
   { label:'Meta', cols:[
-    {idx:36, label:'Visits'}, {idx:37, label:'Views'}, {idx:38, label:'Photos'}, {idx:39, label:'Amenities'},
-    {idx:40, label:'Property ID'}, {idx:41, label:'User ID'}, {idx:42, label:'Listed On'},
-    {idx:43, label:'Remarks'}
+    {idx:36, label:'Visits'}, {idx:37, label:'Views'}, {idx:38, label:'Photos'},
+    {idx:39, label:'Image URLs'}, {idx:40, label:'Video URL'}, {idx:41, label:'Amenities'},
+    {idx:42, label:'Property ID'}, {idx:43, label:'User ID'}, {idx:44, label:'Listed On'},
+    {idx:45, label:'Remarks'}
   ]}
 ];
 
@@ -6219,11 +6256,11 @@ function apptExportRowSelector(idx){
 }
 
 function propExportColumnPredicate(idx){
-  return idx!==0 && idx!==43 && idx!==44 && propTable.column(idx).visible();
+  return idx!==0 && idx!==45 && idx!==46 && propTable.column(idx).visible();
 }
 function propExportColumnIndices(){
   const idxs=[];
-  for(let i=0;i<=43;i++){ if(propExportColumnPredicate(i)) idxs.push(i); }
+  for(let i=0;i<=46;i++){ if(propExportColumnPredicate(i)) idxs.push(i); }
   return idxs;
 }
 
@@ -6505,7 +6542,7 @@ function applyPropCategoryColumnVisibility(cat){
   // Short Stay: hide PG-only fields, show Short-Stay fields.
   // all/Promoted/Booked: mixed listing types, so show everything.
   const showPG = (cat === 'all' || cat === 'Promoted' || cat === 'Booked' || cat === 'PG');
-  const showSS = (cat === 'all' || cat === 'Promoted' || cat === 'Booked' || cat === 'Short Stay');
+  const showSS = SS_COLS_ENABLED && (cat === 'all' || cat === 'Promoted' || cat === 'Booked' || cat === 'Short Stay');
   PG_ONLY_COLS.forEach(i => propTable.column(i).visible(showPG, false));
   SS_ONLY_COLS.forEach(i => propTable.column(i).visible(showSS, false));
   propTable.columns.adjust();
