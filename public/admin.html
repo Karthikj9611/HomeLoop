@@ -1596,6 +1596,7 @@ footer i{color:var(--gold)}
   #propClearFiltersBtn{order:6}
   #bulkSelectedCount{order:7}
   #bulkClearBtn{order:8}
+  #bulkShareWhatsAppBtn{order:8.5}
   #bulkDeleteSelectedBtn{order:9}
   #resetAllViewsBtn{order:10}
 
@@ -2103,6 +2104,9 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
         </span>
         <button class="bulk-btn bulk-btn-clear" id="bulkClearBtn" style="display:none" onclick="clearPropSelection()" title="Clear selection">
           <i class="fas fa-xmark"></i> <span class="bulk-btn-label" data-mobile="Clear">Clear selection</span>
+        </button>
+        <button class="bulk-btn" id="bulkShareWhatsAppBtn" style="display:none;background:#25D366;border-color:#25D366;color:#fff" onclick="shareSelectedToOwners()" title="Share the live listing link with every selected listing's owner via WhatsApp, one chat tab each">
+          <i class="fab fa-whatsapp"></i> <span class="bulk-btn-label" data-mobile="WhatsApp">Share via WhatsApp&nbsp;</span>(<span id="bulkShareWhatsAppCount">0</span>)
         </button>
       </div>
       <div class="bulk-toolbar-right">
@@ -4308,14 +4312,19 @@ function openWhatsAppTabs(numbers, text){
   });
 }
 
+/* ── Shared "listing is live" WhatsApp message text, used by both the
+   single-listing Share button and the bulk Share-Selected flow below. ── */
+function ownerShareMessageText(row, id){
+  const link = `${BASE}/property/${id}`;
+  return `Hi ${row.ownerName || 'there'}, your property "${row.title || 'listing'}"${row.loc ? ' in ' + row.loc : ''} has been verified and is now live on HomeLoop!\n\nView it here: ${link}`;
+}
+
 window.shareListingToOwner = async function(id){
   const row = _adminPropCache[id];
   if(!row){ alert('Listing details not loaded yet — please retry.'); return; }
   if(!row.verified){ alert("This listing isn't verified yet — verify it first, then share."); return; }
 
-  const link = `${BASE}/property/${id}`;
-  const msg = `Hi ${row.ownerName || 'there'}, your property "${row.title || 'listing'}"${row.loc ? ' in ' + row.loc : ''} has been verified and is now live on HomeLoop!\n\nView it here: ${link}`;
-  const text = encodeURIComponent(msg);
+  const text = encodeURIComponent(ownerShareMessageText(row, id));
 
   const ownerNum = waDigits(row.ownerNumber);
   const altNum   = waDigits(row.ownerAltPhone);
@@ -4332,6 +4341,61 @@ window.shareListingToOwner = async function(id){
   if(!choice) return; // cancelled
   const numbers = choice === 'owner' ? [ownerNum] : choice === 'alt' ? [altNum] : [ownerNum, altNum];
   openWhatsAppTabs(numbers, text);
+};
+
+/* ── BULK SHARE: send the "listing is live" WhatsApp message to every
+   selected listing's owner in one go. Meant to be paired with the
+   "Listed On" date filter/preset — filter to a particular day, tick
+   Select-All (which only selects the currently filtered rows), then
+   fire this. Skips any selected listing that isn't verified yet or has
+   no owner phone on file, and tells the agent how many were skipped.
+   Only ever messages the primary owner number (falling back to the
+   alternate number when that's all there is) — bulk-messaging both
+   numbers for every listing would double the popup count for little
+   benefit, unlike the single-listing Share button's picker. ── */
+function openWhatsAppTabsMulti(items){
+  items.forEach((item, i) => {
+    // Staggered like openWhatsAppTabs(), just spaced a bit further apart
+    // since a batch is more likely to run into the browser's popup cap.
+    setTimeout(() => { window.open(`https://wa.me/${item.number}?text=${item.text}`, '_blank'); }, i * 500);
+  });
+}
+
+window.shareSelectedToOwners = async function(){
+  const ids = Array.from(_selectedPropIds);
+  if(!ids.length) return;
+
+  const selectedRows = propTable.rows().data().toArray().filter(r => ids.includes(r._id));
+
+  const shareable = [];
+  let skippedUnverified = 0;
+  let skippedNoNumber = 0;
+
+  selectedRows.forEach(row => {
+    if(!row.verified){ skippedUnverified++; return; }
+    const num = waDigits(row.ownerNumber) || waDigits(row.ownerAltPhone);
+    if(!num){ skippedNoNumber++; return; }
+    shareable.push({ number: num, text: encodeURIComponent(ownerShareMessageText(row, row._id)) });
+  });
+
+  if(!shareable.length){
+    alert('None of the selected listings can be shared — they need to be verified and have an owner phone number on file.');
+    return;
+  }
+
+  let message = `This opens ${shareable.length} WhatsApp chat${shareable.length===1?'':'s'} — one per owner — each pre-filled with their listing link.`;
+  if(skippedUnverified) message += ` ${skippedUnverified} unverified listing${skippedUnverified===1?'':'s'} will be skipped.`;
+  if(skippedNoNumber) message += ` ${skippedNoNumber} listing${skippedNoNumber===1?'':'s'} with no phone number on file will be skipped.`;
+  message += ' Your browser may prompt you to allow multiple pop-ups — please allow them.';
+
+  const ok = await showConfirmModal({
+    title: `Share ${shareable.length} listing${shareable.length===1?'':'s'} via WhatsApp?`,
+    message,
+    okText: 'Share All'
+  });
+  if(!ok) return;
+
+  openWhatsAppTabsMulti(shareable);
 };
 
 /* ── PROPERTY VIEWS: INDIVIDUAL & RESET-ALL ── */
@@ -4449,12 +4513,16 @@ function updateBulkToolbarUI(){
   const clearBtn  = document.getElementById('bulkClearBtn');
   const delBtn    = document.getElementById('bulkDeleteSelectedBtn');
   const delCountEl= document.getElementById('bulkDeleteCount');
+  const waBtn     = document.getElementById('bulkShareWhatsAppBtn');
+  const waCountEl = document.getElementById('bulkShareWhatsAppCount');
   const show = n > 0;
   countEl.style.display = show ? 'inline-flex' : 'none';
   clearBtn.style.display = show ? 'inline-flex' : 'none';
   if (delBtn) delBtn.style.display = show ? 'inline-flex' : 'none';
+  if (waBtn) waBtn.style.display = show ? 'inline-flex' : 'none';
   numEl.textContent = n;
   if (delCountEl) delCountEl.textContent = n;
+  if (waCountEl) waCountEl.textContent = n;
 }
 
 window.clearPropSelection = function(){
