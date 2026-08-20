@@ -6219,11 +6219,7 @@ main.tab-explore .empty-state{display:none !important}
 
     <span id="referCodeText" style="display:none">HOMELOOP-GUEST24</span>
 
-    <button class="form-submit" onclick="shareReferralCode()">Share invite link</button>
-
-    <div style="display:flex;align-items:center;gap:10px;margin:18px 0;color:var(--text-2);font-size:12px">
-      <div style="flex:1;height:1px;background:var(--border)"></div>OR REFER DIRECTLY<div style="flex:1;height:1px;background:var(--border)"></div>
-    </div>
+    <div class="refer-required-hint" style="font-size:12px;color:var(--text-2);margin-bottom:12px">Add the tenant's number to send the invite straight to their WhatsApp — or leave it blank and share the link with anyone. Filling in both sets of details also registers the referral so you get credit for the reward.</div>
 
     <div class="form-row">
       <div class="form-group">
@@ -6252,7 +6248,7 @@ main.tab-explore .empty-state{display:none !important}
         </div>
       </div>
     </div>
-    <button class="form-submit" id="referSubmitBtn" onclick="submitReferral()">Submit referral</button>
+    <button class="form-submit" id="referSubmitBtn" onclick="inviteAndRegisterReferral()">Share invite link</button>
   </div>
 </div>
 
@@ -12878,40 +12874,54 @@ function closeReferModal() {
   document.getElementById('referModal').classList.remove('open');
   unlockBodyScroll();
 }
-async function submitReferral() {
+// Sharing always works, with or without any details filled in:
+//  - tenant's phone given → invite goes straight to their WhatsApp
+//  - tenant's phone blank → generic "share with anyone" link (native share
+//    sheet / clipboard fallback), same as before
+// Registering the referral (for reward credit) is a separate, optional
+// side effect: it only fires, silently and in the background, when every
+// field is filled in and valid — it never blocks or gates the share.
+async function inviteAndRegisterReferral() {
   const referrerName  = document.getElementById('refer-name').value.trim();
   const referrerPhone = document.getElementById('refer-phone').value.trim();
   const tenantName    = document.getElementById('refer-tenant-name').value.trim();
   const tenantPhone   = document.getElementById('refer-tenant-phone').value.trim();
 
-  if (!referrerName) { showToast('Please enter your name', 'warning'); return; }
-  if (!isValidIndianMobile(referrerPhone)) { showToast('Enter a valid 10-digit mobile number for yourself', 'warning'); return; }
-  if (!tenantName) { showToast("Please enter the tenant's name", 'warning'); return; }
-  if (!isValidIndianMobile(tenantPhone)) { showToast("Enter a valid 10-digit mobile number for the tenant", 'warning'); return; }
-
-  const btn = document.getElementById('referSubmitBtn');
-  btn.disabled = true;
-  btn.textContent = 'Submitting…';
-
-  try {
-    const res = await fetch('/api/referrals', {
-      method: 'POST',
-      headers: userAuthHeaders({ 'Content-Type': 'application/json' }),
-      body: JSON.stringify({ referrerName, referrerPhone, tenantName, tenantPhone })
-    });
-    const data = await res.json();
-    if (!res.ok) { showToast(data.message || 'Could not submit your referral. Please try again.', 'error'); return; }
-
-    showToast(data.message || 'Referral submitted!', 'success');
-    document.getElementById('refer-tenant-name').value = '';
-    document.getElementById('refer-tenant-phone').value = '';
-    closeReferModal();
-  } catch (err) {
-    showToast('Network error. Please try again.', 'error');
-  } finally {
-    btn.disabled = false;
-    btn.textContent = 'Submit referral';
+  if (isValidIndianMobile(tenantPhone)) {
+    shareToTenantWhatsApp(tenantPhone, tenantName);
+  } else {
+    shareReferralCode(tenantName);
   }
+
+  if (referrerName && isValidIndianMobile(referrerPhone) && tenantName && isValidIndianMobile(tenantPhone)) {
+    try {
+      const res = await fetch('/api/referrals', {
+        method: 'POST',
+        headers: userAuthHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify({ referrerName, referrerPhone, tenantName, tenantPhone })
+      });
+      if (res.ok) showToast("Referral registered — you'll get credit for the reward!", 'success');
+    } catch (err) {
+      // Best-effort only — registration failing silently shouldn't
+      // interrupt or roll back the invite that was just shared.
+    }
+  }
+
+  document.getElementById('refer-tenant-name').value = '';
+  document.getElementById('refer-tenant-phone').value = '';
+  closeReferModal();
+}
+
+// Opens a WhatsApp chat pre-filled with the invite, addressed directly to
+// the tenant's number (assumes India, +91 — matches isValidIndianMobile).
+function shareToTenantWhatsApp(tenantPhone, tenantName) {
+  const website = "https://homeloop.in";
+  const greeting = tenantName ? `Hi ${tenantName}! 🏠` : '🏠 Hey!';
+  const text = `${greeting}
+
+Find verified Rentals, PGs, Leases, Short Stays, and more—all in one place.
+${website}`;
+  window.open(`https://wa.me/91${tenantPhone}?text=${encodeURIComponent(text)}`, '_blank');
 }
 function copyVideoLink(url) {
   if (!url) return;
@@ -12930,10 +12940,11 @@ function copyReferralCode() {
     showToast('Referral code: ' + code, 'info');
   }
 }
-function shareReferralCode() {
+function shareReferralCode(tenantName) {
   const website = "https://homeloop.in";
 
-  const text = `🏠 Looking for a home?
+  const greeting = tenantName ? `Hi ${tenantName}! 🏠` : '🏠 Looking for a home?';
+  const text = `${greeting}
 
 Find verified Rentals, PGs, Leases, Short Stays, and more—all in one place.`;
 
