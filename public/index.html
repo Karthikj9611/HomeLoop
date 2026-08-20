@@ -3159,112 +3159,128 @@ main.tab-explore .empty-state{display:none !important}
    #chargesModal only so no other modal in the app is affected.
    ═══════════════════════════════════════════════════════════ */
 #chargesModal .add-modal{
-  padding:0;border-radius:22px;max-width:440px;
+  padding:0;border-radius:20px;max-width:400px;
   overflow-y:auto;overflow-x:hidden;
   box-shadow:0 30px 70px -18px rgba(224,58,82,.32),0 0 0 1px rgba(0,0,0,.04);
   animation:chargesModalIn .28s cubic-bezier(.2,.8,.2,1);
 }
 @keyframes chargesModalIn{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
 #chargesModal .add-modal-header{
-  margin:0;padding:22px 54px 20px 20px;align-items:flex-start;
+  margin:0;padding:16px 48px 14px 16px;align-items:flex-start;
   background:linear-gradient(135deg,var(--brand) 0%,var(--brand-hover) 100%);
   position:relative;overflow:hidden;
 }
 #chargesModal .add-modal-header::after{
-  content:'';position:absolute;top:-40px;right:-30px;width:140px;height:140px;
+  content:'';position:absolute;top:-40px;right:-30px;width:110px;height:110px;
   background:rgba(255,255,255,.08);border-radius:50%;pointer-events:none;
 }
-#chargesModal .charges-hero-row{display:flex;align-items:flex-start;gap:12px;position:relative;z-index:1}
+#chargesModal .charges-hero-row{display:flex;align-items:center;gap:10px;position:relative;z-index:1}
 #chargesModal .charges-hero-icon{
-  width:40px;height:40px;border-radius:12px;flex-shrink:0;
+  width:32px;height:32px;border-radius:10px;flex-shrink:0;
   background:rgba(255,255,255,.2);
   display:flex;align-items:center;justify-content:center;
 }
-#chargesModal .charges-hero-icon svg{width:20px;height:20px;stroke:#fff;fill:none;stroke-width:1.8}
-#chargesModal .add-modal-title{color:#fff;font-size:18px;font-weight:800;letter-spacing:-.01em}
-#chargesModal .charges-hero-subtitle{color:rgba(255,255,255,.85);font-size:12px;margin-top:4px;font-weight:500;line-height:1.4}
+#chargesModal .charges-hero-icon svg{width:16px;height:16px;stroke:#fff;fill:none;stroke-width:1.8}
+#chargesModal .add-modal-title{color:#fff;font-size:15.5px;font-weight:800;letter-spacing:-.01em;line-height:1.2}
+#chargesModal .charges-hero-subtitle{color:rgba(255,255,255,.85);font-size:11px;margin-top:2px;font-weight:500;line-height:1.35}
 #chargesModal .modal-close{
-  position:absolute;top:16px;right:16px;z-index:2;
+  position:absolute;top:12px;right:12px;z-index:2;
+  width:28px;height:28px;
   background:rgba(255,255,255,.22);box-shadow:none;
 }
 #chargesModal .modal-close:hover{background:rgba(255,255,255,.36);transform:scale(1.06)}
-#chargesModal .modal-close svg{stroke:#fff}
-#chargesModal .charges-body{padding:20px 20px 22px}
+#chargesModal .modal-close svg{stroke:#fff;width:14px;height:14px}
+#chargesModal .charges-body{padding:14px 16px 16px}
 
 /* Price cards — replace the old solid-fill centered badge */
 #chargesModal .charges-section-label{
-  font-size:11px;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:.06em;
-  margin:0 0 9px;display:flex;align-items:center;gap:6px;
+  font-size:10px;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:.06em;
+  margin:0 0 7px;display:flex;align-items:center;gap:6px;
 }
-#chargesModal .charges-section-label:not(:first-child){margin-top:18px}
+#chargesModal .charges-section-label:not(:first-child){margin-top:12px}
 #chargesModal .charges-price-card{
-  display:flex;align-items:center;gap:12px;
-  background:var(--bg-2);border:1px solid var(--border);border-radius:15px;
-  padding:12px 14px;margin-bottom:9px;
+  display:flex;align-items:center;gap:10px;
+  background:var(--bg-2);border:1px solid var(--border);border-radius:13px;
+  padding:9px 11px;margin-bottom:7px;
 }
 #chargesModal .charges-price-card.is-free{background:linear-gradient(135deg,#f0fdf4,#fbfffc);border-color:#bbf7d0}
 #chargesModal .charges-price-icon{
-  width:36px;height:36px;border-radius:11px;background:var(--brand-light);
+  width:30px;height:30px;border-radius:9px;background:var(--brand-light);
   display:flex;align-items:center;justify-content:center;flex-shrink:0;
 }
-#chargesModal .charges-price-icon svg{width:17px;height:17px;stroke:var(--brand);fill:none;stroke-width:2}
+#chargesModal .charges-price-icon svg{width:15px;height:15px;stroke:var(--brand);fill:none;stroke-width:2}
 #chargesModal .is-free .charges-price-icon{background:#dcfce7}
 #chargesModal .is-free .charges-price-icon svg{stroke:#16a34a}
 #chargesModal .charges-price-info{flex:1;min-width:0}
-#chargesModal .charges-price-label{font-size:10.5px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px}
-#chargesModal .charges-price-amount{font-size:15px;font-weight:800;color:var(--text);line-height:1.3}
+#chargesModal .charges-price-label{font-size:9.5px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:1px}
+#chargesModal .charges-price-amount{font-size:13.5px;font-weight:800;color:var(--text);line-height:1.25}
 #chargesModal .is-free .charges-price-amount{color:#16a34a}
-#chargesModal .charges-price-sub{font-size:11px;color:var(--text-3);margin-top:1px;line-height:1.4}
+#chargesModal .charges-price-sub{font-size:10px;color:var(--text-3);margin-top:1px;line-height:1.35}
+
+/* Compact 3-up pricing grid for the guest view */
+#chargesModal .charges-mini-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:10px}
+#chargesModal .charges-mini-card{
+  background:var(--bg-2);border:1px solid var(--border);border-radius:12px;
+  padding:10px 6px 9px;text-align:center;
+}
+#chargesModal .charges-mini-icon{
+  width:26px;height:26px;border-radius:8px;background:var(--brand-light);
+  display:flex;align-items:center;justify-content:center;margin:0 auto 6px;
+}
+#chargesModal .charges-mini-icon svg{width:13px;height:13px;stroke:var(--brand);fill:none;stroke-width:2}
+#chargesModal .charges-mini-label{font-size:8.5px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.02em;margin-bottom:4px;line-height:1.25}
+#chargesModal .charges-mini-amount{font-size:11.5px;font-weight:800;color:var(--text);line-height:1.25}
 
 /* Included checklist */
 #chargesModal .charges-includes-title{
-  font-size:11px;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:.06em;margin:18px 0 10px;
+  font-size:10px;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:.06em;margin:12px 0 7px;
 }
 #chargesModal .charges-includes{
-  background:var(--bg-2);border-radius:14px;padding:13px 15px;gap:11px;margin-bottom:16px;
+  background:var(--bg-2);border-radius:12px;padding:10px 12px;gap:7px;margin-bottom:10px;
 }
-#chargesModal .charges-include-item{gap:10px;font-size:12.5px;line-height:1.4}
+#chargesModal .charges-include-item{gap:8px;font-size:11.5px;line-height:1.35}
 #chargesModal .charges-include-item svg{
-  width:22px;height:22px;padding:5px;border-radius:50%;
+  width:18px;height:18px;padding:4px;border-radius:50%;
   background:#dcfce7;stroke:#16a34a;stroke-width:2.5;box-sizing:border-box;flex-shrink:0;
 }
 
 /* Note / warning card */
 #chargesModal .charges-warning{
-  background:var(--brand-light)!important;border:none!important;border-radius:13px;
-  padding:12px 13px;gap:10px;align-items:center;font-size:12px;line-height:1.5;
+  background:var(--brand-light)!important;border:none!important;border-radius:12px;
+  padding:9px 11px;gap:8px;align-items:center;font-size:11px;line-height:1.4;
 }
 #chargesModal .charges-warning svg{
-  width:28px;height:28px;padding:6px;border-radius:50%;
+  width:22px;height:22px;padding:5px;border-radius:50%;
   background:#fff;stroke:var(--brand)!important;flex-shrink:0;box-sizing:border-box;margin-top:0!important;
 }
 
 /* Buttons */
 #chargesModal .form-submit{
-  border-radius:12px;padding:13px;font-size:14.5px;letter-spacing:.01em;font-weight:700;
+  border-radius:11px;padding:11px;font-size:13.5px;letter-spacing:.01em;font-weight:700;
   background:linear-gradient(135deg,var(--brand),var(--brand-hover));
   box-shadow:0 10px 24px -8px rgba(224,58,82,.55);
   transition:transform .12s,box-shadow .15s;
 }
 #chargesModal .form-submit:hover{transform:translateY(-1px);box-shadow:0 12px 28px -8px rgba(224,58,82,.6)}
 #chargesModal .form-submit:active{transform:translateY(0)}
-#chargesModal .profile-btn-secondary{
-  border-radius:12px;font-weight:700;background:var(--bg-2);border:1px solid var(--border);
-  transition:background .15s;
+#chargesModal .charges-contact-link{
+  display:block;text-align:center;width:100%;margin-top:8px;
+  font-size:12px;font-weight:700;color:var(--text-2);
+  background:none;border:none;padding:4px;cursor:pointer;
 }
-#chargesModal .profile-btn-secondary:hover{background:var(--bg-3)}
+#chargesModal .charges-contact-link:hover{color:var(--brand)}
 
 /* Guest view — tabbed audience switch instead of stacked sections */
 #chargesModal .charges-audience-tabs{
-  display:flex;background:var(--bg-2);border-radius:12px;padding:4px;margin-bottom:18px;gap:4px;
+  display:flex;background:var(--bg-2);border-radius:11px;padding:3px;margin-bottom:12px;gap:3px;
 }
 #chargesModal .charges-audience-tab{
-  flex:1;text-align:center;padding:9px 4px;border-radius:9px;
-  font-size:12.5px;font-weight:700;color:var(--text-2);cursor:pointer;border:none;background:none;
-  display:flex;align-items:center;justify-content:center;gap:6px;
+  flex:1;text-align:center;padding:7px 4px;border-radius:8px;
+  font-size:12px;font-weight:700;color:var(--text-2);cursor:pointer;border:none;background:none;
+  display:flex;align-items:center;justify-content:center;gap:5px;
   transition:background .15s,color .15s;
 }
-#chargesModal .charges-audience-tab svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;flex-shrink:0}
+#chargesModal .charges-audience-tab svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;flex-shrink:0}
 #chargesModal .charges-audience-tab.active{background:#fff;color:var(--brand);box-shadow:0 2px 8px rgba(0,0,0,.08)}
 #chargesModal .charges-audience-panel{display:none}
 #chargesModal .charges-audience-panel.active{display:block}
@@ -6261,38 +6277,34 @@ main.tab-explore .empty-state{display:none !important}
     <div class="charges-body">
     <!-- ═══ Tenant / default view ═══ -->
     <div id="chargesTenantView">
-      <div class="charges-section-label">Pricing by property type</div>
-
-      <div class="charges-price-card">
-        <div class="charges-price-icon">
-          <svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7"/><path d="M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9"/></svg>
+      <div class="charges-mini-grid">
+        <div class="charges-mini-card">
+          <div class="charges-mini-icon">
+            <svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7"/><path d="M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9"/></svg>
+          </div>
+          <div class="charges-mini-label">Rental</div>
+          <div class="charges-mini-amount">30% rent</div>
         </div>
-        <div class="charges-price-info">
-          <div class="charges-price-label">Rental properties</div>
-          <div class="charges-price-amount">30% of monthly rent</div>
-          <div class="charges-price-sub">e.g. ₹10,000 rent → ₹3,000 charge</div>
+        <div class="charges-mini-card">
+          <div class="charges-mini-icon">
+            <svg viewBox="0 0 24 24"><path d="m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4"/><path d="m21 2-9.6 9.6"/><circle cx="7.5" cy="15.5" r="5.5"/></svg>
+          </div>
+          <div class="charges-mini-label">Lease</div>
+          <div class="charges-mini-amount">½ month</div>
+        </div>
+        <div class="charges-mini-card">
+          <div class="charges-mini-icon">
+            <svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </div>
+          <div class="charges-mini-label">PG</div>
+          <div class="charges-mini-amount">₹1,000</div>
         </div>
       </div>
 
-      <div class="charges-price-card">
-        <div class="charges-price-icon">
-          <svg viewBox="0 0 24 24"><path d="m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4"/><path d="m21 2-9.6 9.6"/><circle cx="7.5" cy="15.5" r="5.5"/></svg>
-        </div>
-        <div class="charges-price-info">
-          <div class="charges-price-label">Lease properties</div>
-          <div class="charges-price-amount">Half month's rent</div>
-          <div class="charges-price-sub">e.g. ₹20,000 rent → ₹10,000 charge</div>
-        </div>
-      </div>
-
-      <div class="charges-price-card" style="margin-bottom:0">
-        <div class="charges-price-icon">
-          <svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-        </div>
-        <div class="charges-price-info">
-          <div class="charges-price-label">PG / co-living</div>
-          <div class="charges-price-amount">₹1,000 charge</div>
-        </div>
+      <!-- Online payment option -->
+      <div class="charges-warning">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <span><strong>Pay only after you find a good home</strong> — never before.</span>
       </div>
 
       <!-- What you get -->
@@ -6300,32 +6312,20 @@ main.tab-explore .empty-state{display:none !important}
       <div class="charges-includes">
         <div class="charges-include-item">
           <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
-          Personalised shortlist of 4 matching properties
+          Personalised shortlist &amp; accompanied visits
         </div>
         <div class="charges-include-item">
           <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
-          Accompanied property visits with our partner
+          Owner negotiation &amp; rental agreement drafting
         </div>
-        <div class="charges-include-item">
-          <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
-          Owner negotiation, advance payment assistance &amp; rental agreement drafting
-        </div>
-      </div>
-
-      <!-- Online payment option -->
-      <div class="charges-warning">
-        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-        <span><strong>You pay only after you find a good home through us</strong> — never before.</span>
       </div>
 
       <button class="form-submit" onclick="closeChargesModal(); openPaymentModal('brokerage');">Pay brokerage online</button>
-      <button class="profile-btn-secondary" style="width:100%;margin-top:8px" onclick="closeChargesModal(); openHelpModal();">Got a question? Contact us</button>
+      <button class="charges-contact-link" onclick="closeChargesModal(); openHelpModal();">Got a question? Contact us</button>
     </div>
 
     <!-- ═══ Owner view ═══ -->
     <div id="chargesOwnerView" style="display:none">
-      <div class="charges-section-label">Pricing per successful tenant</div>
-
       <div class="charges-price-card" style="margin-bottom:0">
         <div class="charges-price-icon">
           <svg viewBox="0 0 24 24"><path d="M6 3h12"/><path d="M6 8h12"/><path d="M6 13l8.5 8"/><path d="M6 13h3a5 5 0 0 0 0-10"/></svg>
@@ -6333,34 +6333,29 @@ main.tab-explore .empty-state{display:none !important}
         <div class="charges-price-info">
           <div class="charges-price-label">Every successful placement</div>
           <div class="charges-price-amount">₹2,000 onwards</div>
-          <div class="charges-price-sub">Based on your property's rent — Rental, Lease or PG</div>
+          <div class="charges-price-sub">Based on your property's rent</div>
         </div>
+      </div>
+
+      <div class="charges-warning" style="margin-top:9px">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <span><strong>Pay only after your flat is filled</strong> — never before.</span>
       </div>
 
       <div class="charges-includes-title">What's included</div>
       <div class="charges-includes">
         <div class="charges-include-item">
           <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
-          Priority listing so your property is shown to tenants faster
+          Priority listing &amp; verified tenant leads
         </div>
         <div class="charges-include-item">
           <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
-          Verified, matched tenant leads — less time wasted on unfit enquiries
+          Visit coordination &amp; rental agreement drafting
         </div>
-        <div class="charges-include-item">
-          <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
-          Visit coordination and rental agreement drafting support
-        </div>
-      </div>
-
-      <!-- Online payment option -->
-      <div class="charges-warning">
-        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-        <span><strong>You pay only after your flat is filled by a tenant we bring</strong> — never before.</span>
       </div>
 
       <button class="form-submit" onclick="closeChargesModal(); openPaymentModal('brokerage');">Pay online</button>
-      <button class="profile-btn-secondary" style="width:100%;margin-top:8px" onclick="closeChargesModal(); openHelpModal();">Got a question? Contact us</button>
+      <button class="charges-contact-link" onclick="closeChargesModal(); openHelpModal();">Got a question? Contact us</button>
     </div>
 
     <!-- ═══ Guest view — nobody logged in, show both, simplified via tabs ═══ -->
@@ -6377,48 +6372,40 @@ main.tab-explore .empty-state{display:none !important}
       </div>
 
       <div class="charges-audience-panel active" id="chargesTabPanel-tenant">
-        <div class="charges-price-card">
-          <div class="charges-price-icon">
-            <svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7"/><path d="M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9"/></svg>
+        <div class="charges-mini-grid">
+          <div class="charges-mini-card">
+            <div class="charges-mini-icon">
+              <svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7"/><path d="M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9"/></svg>
+            </div>
+            <div class="charges-mini-label">Rental</div>
+            <div class="charges-mini-amount">30% rent</div>
           </div>
-          <div class="charges-price-info">
-            <div class="charges-price-label">Rental properties</div>
-            <div class="charges-price-amount">30% of monthly rent</div>
+          <div class="charges-mini-card">
+            <div class="charges-mini-icon">
+              <svg viewBox="0 0 24 24"><path d="m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4"/><path d="m21 2-9.6 9.6"/><circle cx="7.5" cy="15.5" r="5.5"/></svg>
+            </div>
+            <div class="charges-mini-label">Lease</div>
+            <div class="charges-mini-amount">½ month</div>
           </div>
-        </div>
-        <div class="charges-price-card">
-          <div class="charges-price-icon">
-            <svg viewBox="0 0 24 24"><path d="m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4"/><path d="m21 2-9.6 9.6"/><circle cx="7.5" cy="15.5" r="5.5"/></svg>
-          </div>
-          <div class="charges-price-info">
-            <div class="charges-price-label">Lease properties</div>
-            <div class="charges-price-amount">Half month's rent</div>
-          </div>
-        </div>
-        <div class="charges-price-card" style="margin-bottom:0">
-          <div class="charges-price-icon">
-            <svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-          </div>
-          <div class="charges-price-info">
-            <div class="charges-price-label">PG / co-living</div>
-            <div class="charges-price-amount">₹1,000 charge</div>
+          <div class="charges-mini-card">
+            <div class="charges-mini-icon">
+              <svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            </div>
+            <div class="charges-mini-label">PG</div>
+            <div class="charges-mini-amount">₹1,000</div>
           </div>
         </div>
 
-        <div class="charges-warning" style="margin-top:12px">
+        <div class="charges-warning">
           <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-          <span><strong>You pay only after you find a good home through us</strong> — never before.</span>
+          <span><strong>Pay only after you find a home</strong> — never before.</span>
         </div>
 
         <div class="charges-includes-title">What's included</div>
         <div class="charges-includes">
           <div class="charges-include-item">
             <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
-            A shortlist of properties matched to you
-          </div>
-          <div class="charges-include-item">
-            <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
-            Accompanied visits with our partner
+            Matched shortlist &amp; accompanied visits
           </div>
           <div class="charges-include-item">
             <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
@@ -6439,20 +6426,16 @@ main.tab-explore .empty-state{display:none !important}
           </div>
         </div>
 
-        <div class="charges-warning" style="margin-top:12px">
+        <div class="charges-warning" style="margin-top:9px">
           <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-          <span><strong>You pay only after your flat is filled by a tenant we bring</strong> — never before.</span>
+          <span><strong>Pay only after your flat is filled</strong> — never before.</span>
         </div>
 
         <div class="charges-includes-title">What's included</div>
         <div class="charges-includes">
           <div class="charges-include-item">
             <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
-            Your property shown to more tenants, faster
-          </div>
-          <div class="charges-include-item">
-            <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
-            Verified, ready-to-move tenant leads
+            Priority listing &amp; verified tenant leads
           </div>
           <div class="charges-include-item">
             <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
