@@ -2640,8 +2640,9 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
         <div style="font-size:11px;color:var(--text-2);margin-top:2px">Auto-filled from the address · edit if it's wrong</div>
       </div>
       <div class="form-group" id="latLngGroup">
-        <label class="form-label">Latitude / Longitude (auto)</label>
-        <input class="form-input" type="text" id="f-latLngDisplay" readonly />
+        <label class="form-label">Latitude / Longitude</label>
+        <input class="form-input" type="text" id="f-latLngDisplay" placeholder="e.g. 12.345678, 77.123456" oninput="onLatLngDisplayInput(this.value)" />
+        <div style="font-size:11px;color:var(--text-2);margin-top:2px">Auto-filled by Live · edit directly if you need to correct it</div>
       </div>
       <div class="form-group" id="mapsLinkGroup">
         <label class="form-label">Google Maps link (optional)</label>
@@ -7464,6 +7465,22 @@ function onPincodeInput(el) {
   pincodeManuallyEdited = true;
 }
 
+function onLatLngDisplayInput(value) {
+  // Accepts free-typed formats like "12.345678° N, 77.123456° E" or a
+  // plain "12.345678, 77.123456" pair and keeps the hidden f-latitude /
+  // f-longitude inputs (the values actually saved) in sync.
+  const nums = (value.match(/-?\d+(\.\d+)?/g) || []).map(Number);
+  const latEl = document.getElementById('f-latitude');
+  const lngEl = document.getElementById('f-longitude');
+  if (nums.length >= 2 && Math.abs(nums[0]) <= 90 && Math.abs(nums[1]) <= 180) {
+    latEl.value = nums[0];
+    lngEl.value = nums[1];
+  } else {
+    latEl.value = '';
+    lngEl.value = '';
+  }
+}
+
 function fCaptureLocation() {
   const btnTxt = document.getElementById('f-locBtnTxt');
   const status = document.getElementById('f-locStatus');
@@ -7798,6 +7815,7 @@ const OPTIONAL_FIELD_IDS = new Set([
   'f-imgFileInput', 'f-imgCameraInput',
   'f-amenities-extra',
   'f-ownerAltPhone', 'f-videoUrl', 'f-age', 'f-area',
+  'f-maintenance', 'f-leaseMaintenance',
 ]);
 function isUnitField(id) { return /Units$/.test(id); }
 function getAllListingFields() {
