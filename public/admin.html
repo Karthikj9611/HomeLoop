@@ -1566,7 +1566,7 @@ footer i{color:var(--gold)}
      regardless of each icon's own natural glyph width. Excludes
      bulk-btn-danger (the "Delete Selected (n)" button), which still shows
      a count and needs to flex wider than this fixed-width pill. */
-  .bulk-toolbar .bulk-btn:not(.bulk-btn-danger),
+  .bulk-toolbar .bulk-btn:not(.bulk-btn-danger):not(#bulkShareWhatsAppBtn),
   .bulk-toolbar .btn-add-review,
   .dt-button,
   .col-toggle-btn{
@@ -1576,7 +1576,7 @@ footer i{color:var(--gold)}
     align-items:center!important;justify-content:center!important;
     border-radius:12px!important;
   }
-  .bulk-toolbar .bulk-btn:not(.bulk-btn-danger) i,
+  .bulk-toolbar .bulk-btn:not(.bulk-btn-danger):not(#bulkShareWhatsAppBtn) i,
   .bulk-toolbar .btn-add-review i,
   .dt-button i,
   .col-toggle-btn i{font-size:0.8rem!important;margin:0!important}
@@ -1596,9 +1596,9 @@ footer i{color:var(--gold)}
   #propClearFiltersBtn{order:6}
   #bulkSelectedCount{order:7}
   #bulkClearBtn{order:8}
-  #bulkShareWhatsAppBtn{order:8.5}
-  #bulkDeleteSelectedBtn{order:9}
-  #resetAllViewsBtn{order:10}
+  #bulkShareWhatsAppBtn{order:9}
+  #bulkDeleteSelectedBtn{order:10}
+  #resetAllViewsBtn{order:11}
 
   /* Category sub-tab bar — single horizontal row, swipeable */
   .cat-tab-bar{
@@ -1662,13 +1662,13 @@ footer i{color:var(--gold)}
 
   /* Icon+label toolbar buttons (row 3): bump to the same footprint as
      .tab-btn/.cat-tab-btn at this breakpoint so all three rows match */
-  .bulk-toolbar .bulk-btn:not(.bulk-btn-danger),
+  .bulk-toolbar .bulk-btn:not(.bulk-btn-danger):not(#bulkShareWhatsAppBtn),
   .bulk-toolbar .btn-add-review,
   .dt-button,
   .col-toggle-btn{
     width:56px!important;height:56px!important;min-width:56px!important;
   }
-  .bulk-toolbar .bulk-btn:not(.bulk-btn-danger) i,
+  .bulk-toolbar .bulk-btn:not(.bulk-btn-danger):not(#bulkShareWhatsAppBtn) i,
   .bulk-toolbar .btn-add-review i,
   .dt-button i,
   .col-toggle-btn i{font-size:1rem!important}
