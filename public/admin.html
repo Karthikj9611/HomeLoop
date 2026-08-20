@@ -455,6 +455,11 @@ table.dataTable.no-footer{border-bottom:none!important}
   transition:all 0.18s;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
 .email-link:hover{background:var(--gold);color:var(--ink);box-shadow:0 4px 12px rgba(184,144,60,0.3)}
+/* Image URLs / Video URL cells: unlike phone/email these are long http(s)
+   links that need to wrap across multiple lines, so they use a plain
+   underlined style instead of the fixed-width pill badges above. */
+.url-link{color:#1a6fa8;text-decoration:underline;word-break:break-all}
+.url-link:hover{color:#0c4a6e}
 .amenities-more-link{color:var(--gold-dark);font-weight:600;text-decoration:underline;white-space:nowrap}
 .amenities-more-link:hover{color:var(--gold)}
 .amenity-chip{
@@ -5290,18 +5295,22 @@ $(document).ready(function(){
           return String(Array.isArray(row.images) ? row.images.length : 0);
       }},
       /* 38 – Image URLs (hidden on screen; kept so PDF/other exports can
-         include every image link, one per line) */
+         include every image link, one per line). Each URL is a real,
+         clickable link (opens the image in a new tab) both on screen and
+         in the PDF export's link injection above. */
       { data:null, orderable:false, visible:false, render:(d,t,row)=>{
           const imgs = Array.isArray(row.images) ? row.images : [];
           if(t!=='display') return imgs.join('\n');
           if(!imgs.length) return '—';
-          return `<div style="white-space:normal;max-width:260px;word-break:break-all">${imgs.map(u=>escapeHtml(u)).join('<br>')}</div>`;
+          return `<div style="white-space:normal;max-width:260px;word-break:break-all">${imgs.map(u=>`<a href="${escapeHtml(u)}" target="_blank" rel="noopener noreferrer" class="url-link">${escapeHtml(u)}</a>`).join('<br>')}</div>`;
       }},
       /* 39 – Video URL (hidden on screen; kept so PDF/other exports can
-         include the listing's video link) */
+         include the listing's video link). Rendered as a real, clickable
+         link (opens the video in a new tab) both on screen and in the PDF
+         export's link injection above. */
       { data:'video', orderable:false, visible:false, render:(d,t,row)=>{
           if(t!=='display') return d||'';
-          return d ? `<div style="white-space:normal;max-width:220px;word-break:break-all">${escapeHtml(d)}</div>` : '—';
+          return d ? `<a href="${escapeHtml(d)}" target="_blank" rel="noopener noreferrer" class="url-link" style="word-break:break-all">${escapeHtml(d)}</a>` : '—';
       }},
       /* 40 – Description (hidden on screen; kept so PDF/other exports can
          include the full listing description) */
@@ -5444,6 +5453,8 @@ $(document).ready(function(){
           var ownerNumPos = propExportColumnIndices().indexOf(7);
           var ownerAltPos = propExportColumnIndices().indexOf(8);
           var ownerEmailPos = propExportColumnIndices().indexOf(9);
+          var imageUrlsPos = propExportColumnIndices().indexOf(38);
+          var videoUrlPos = propExportColumnIndices().indexOf(39);
           var rows=propTable.rows(propExportRowSelector).data().toArray();
           var tableIdx = doc.content.findIndex(function(c){ return c && c.table; });
           var tableBody = tableIdx>=0 ? doc.content[tableIdx].table.body : null;
@@ -5459,6 +5470,26 @@ $(document).ready(function(){
             if(ownerNumPos>=0 && ph && pdfRow[ownerNumPos]) pdfRow[ownerNumPos]={text:ph,link:'tel:'+ph,color:'#1a7a5e',decoration:'underline',fontSize:8};
             if(ownerAltPos>=0 && altPh && pdfRow[ownerAltPos]) pdfRow[ownerAltPos]={text:altPh,link:'tel:'+altPh,color:'#1a7a5e',decoration:'underline',fontSize:8};
             if(ownerEmailPos>=0 && em && pdfRow[ownerEmailPos]) pdfRow[ownerEmailPos]={text:em,link:'mailto:'+em,color:'#8a6820',decoration:'underline',fontSize:8};
+
+            // Make each Image URL and the Video URL clickable in the exported
+            // PDF too. Image URLs can be a list (one listing can have many
+            // photos) — pdfMake doesn't support multiple links inside a
+            // single text run, so each URL becomes its own line via `stack`,
+            // and every line gets its own `link`. A cell shows "—" (see the
+            // on-screen renderer above) when there are no images/video, so
+            // guard against that before treating it as a URL.
+            var imgs = Array.isArray(rd.images) ? rd.images.filter(Boolean) : [];
+            if(imageUrlsPos>=0 && imgs.length && pdfRow[imageUrlsPos]){
+              pdfRow[imageUrlsPos]={
+                stack: imgs.map(function(u){
+                  return {text:u,link:u,color:'#1a6fa8',decoration:'underline',fontSize:7,margin:[0,0,0,2]};
+                })
+              };
+            }
+            var vid = rd.video||'';
+            if(videoUrlPos>=0 && vid && pdfRow[videoUrlPos]){
+              pdfRow[videoUrlPos]={text:vid,link:vid,color:'#1a6fa8',decoration:'underline',fontSize:8};
+            }
           });
 
           // Rather than paginate, size the sheet itself to the column
