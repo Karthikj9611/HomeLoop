@@ -5314,7 +5314,7 @@ main.tab-explore .empty-state{display:none !important}
       <div class="form-group" id="fullAddressGroup" style="grid-column:span 2">
         <label class="form-label">Building Live Address</label>
         <div style="display:flex;gap:7px;align-items:flex-start">
-          <textarea class="form-input" id="f-fullAddress" rows="2" style="flex:1;min-width:0;resize:vertical;background:var(--bg-2,#f5f5f5)" oninput="onFullAddressInput(this.value)"></textarea>
+          <textarea class="form-input" id="f-fullAddress" rows="2" style="flex:1;min-width:0;resize:vertical;background:var(--bg-2,#f5f5f5)" oninput="onFullAddressInput(this.value)" onblur="onFullAddressBlur(this.value)"></textarea>
           <button type="button" onclick="fCaptureLocation()"
             style="flex-shrink:0;padding:9px 12px;border-radius:9px;border:1.5px solid var(--text);background:var(--bg);color:var(--text);font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;white-space:nowrap;height:40px;margin-top:1px">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M1 12h4M19 12h4"/></svg>
@@ -14426,9 +14426,55 @@ function extractPincodeFromAddress(text) {
 let pincodeManuallyEdited = false;
 
 function onFullAddressInput(value) {
-  if (pincodeManuallyEdited) return;
-  const guess = extractPincodeFromAddress(value);
-  if (guess) document.getElementById('f-pincode').value = guess;
+  if (!pincodeManuallyEdited) {
+    const guess = extractPincodeFromAddress(value);
+    if (guess) document.getElementById('f-pincode').value = guess;
+  }
+  // Re-resolve lat/lng (and the Google Maps link) from the address text
+  // itself whenever the person hand-edits it — debounced so we're not
+  // firing a geocode call on every keystroke.
+  clearTimeout(addressGeocodeTimer);
+  addressGeocodeTimer = setTimeout(() => geocodeAddressText(value), 900);
+}
+
+// Matches only a link this form generated itself from raw coordinates
+// (see fCaptureLocation / geocodeAddressText below) — used to avoid
+// clobbering a link the owner has deliberately pasted/customized
+// (e.g. pointing at the exact building entrance instead of a plain pin).
+const AUTO_MAPS_LINK_RE = /^https:\/\/www\.google\.com\/maps\?q=-?\d+(\.\d+)?,-?\d+(\.\d+)?$/;
+
+// Fires the moment the person leaves the address field (tab/click away) —
+// skips the debounce wait so the edit lands immediately instead of after
+// the 900ms pause, while typing itself still stays debounced.
+function onFullAddressBlur(value) {
+  clearTimeout(addressGeocodeTimer);
+  geocodeAddressText(value);
+}
+
+let addressGeocodeTimer = null;
+function geocodeAddressText(value) {
+  const trimmed = String(value || '').trim();
+  const status = document.getElementById('f-locStatus');
+  if (trimmed.length < 8) return; // too short/likely mid-typing to bother geocoding
+  if (status) status.textContent = 'Updating coordinates from address...';
+  fetch('https://nominatim.openstreetmap.org/search?q=' + encodeURIComponent(trimmed) + '&format=json&limit=1&accept-language=en')
+    .then(r => r.json())
+    .then(results => {
+      if (!results || !results.length) {
+        if (status) status.textContent = 'Could not match address to a location.';
+        return;
+      }
+      const lat = parseFloat(results[0].lat), lon = parseFloat(results[0].lon);
+      document.getElementById('f-latitude').value = lat;
+      document.getElementById('f-longitude').value = lon;
+      document.getElementById('f-latLngDisplay').value = lat.toFixed(6) + '° N, ' + lon.toFixed(6) + '° E';
+      const mapsLinkEl = document.getElementById('f-googleMapsLink');
+      if (mapsLinkEl && (!mapsLinkEl.value || AUTO_MAPS_LINK_RE.test(mapsLinkEl.value))) {
+        mapsLinkEl.value = 'https://www.google.com/maps?q=' + lat + ',' + lon;
+      }
+      if (status) status.textContent = 'Coordinates updated from edited address.';
+    })
+    .catch(() => { if (status) status.textContent = 'Coordinate lookup failed.'; });
 }
 
 function onPincodeInput(el) {

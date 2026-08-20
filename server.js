@@ -1578,16 +1578,23 @@ app.get('/property/:id', async (req, res, next) => {
       if (doc) {
         const area   = (doc.location && doc.location.area) || 'Bangalore';
         const status = (doc.basic && doc.basic.status) || 'For Rent';
-        const bhk    = (doc.property && doc.property.bhk) ? `${doc.property.bhk} BHK ` : '';
+        // doc.property.bhk already stores the full label from the post-form
+        // dropdown (e.g. "1 RK", "1 BHK", "2 BHK") — don't re-append " BHK"
+        // or it doubles up as "1 BHK BHK".
+        const bhk    = (doc.property && doc.property.bhk) ? `${doc.property.bhk} ` : '';
         const type   = (doc.property && doc.property.type)
           ? `${doc.property.type} `
           : (status === 'PG' ? 'PG ' : status === 'Short Stay' ? 'Stay ' : 'Property ');
         const price  = formatPrice((doc.price || {}).rent, status);
+        // status is already phrased as "For Rent" for that case, so a bare
+        // "for ${status}" reads as "for For Rent" — only prefix "for" when
+        // status isn't already leading with it.
+        const statusPhrase = /^for\b/i.test(status) ? status : `for ${status}`;
 
-        const title = `${bhk}${type}for ${status} in ${area}, Bangalore \u2013 \u20B9${price} | HomeLoop`;
+        const title = `${bhk}${type}${statusPhrase} in ${area}, Bangalore \u2013 \u20B9${price} | HomeLoop`;
         const descSource = (doc.media && doc.media.desc && doc.media.desc.trim())
           ? doc.media.desc
-          : `${bhk}${type}available for ${status} in ${area}, Bangalore. View photos, price and contact details on HomeLoop.`;
+          : `${bhk}${type}available ${statusPhrase} in ${area}, Bangalore. View photos, price and contact details on HomeLoop.`;
         const description = String(descSource).replace(/\s+/g, ' ').trim().slice(0, 200);
 
         const firstImage = (doc.media && Array.isArray(doc.media.images) && doc.media.images[0]) || '';
