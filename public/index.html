@@ -1314,6 +1314,41 @@ main.tab-explore .empty-state{display:none !important}
 }
 .modal-overlay.open{display:flex}
 
+/* ─── Festive Wish Modal (reusable — shows a greeting image on chosen dates) ─── */
+.wish-modal-overlay{
+  position:fixed;inset:0;z-index:1300;
+  background:rgba(20,16,17,.6);
+  display:none;align-items:center;justify-content:center;
+  padding:20px;backdrop-filter:blur(3px);
+}
+.wish-modal-overlay.open{display:flex}
+.wish-modal-card{
+  position:relative;
+  width:100%;max-width:420px;
+  animation:modalIn .25s cubic-bezier(.2,.7,.3,1);
+}
+.wish-modal-card img{
+  display:block;width:100%;height:auto;
+  max-height:82vh;object-fit:contain;
+  border-radius:var(--radius-xl, 16px);
+  box-shadow:0 24px 70px rgba(0,0,0,.35);
+  background:#fff;
+}
+.wish-modal-close{
+  position:absolute;top:-14px;right:-14px;
+  width:34px;height:34px;border-radius:50%;
+  background:#fff;color:var(--text,#141011);
+  border:none;box-shadow:0 4px 14px rgba(0,0,0,.25);
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;font-size:16px;line-height:1;
+  transition:transform .12s;
+}
+.wish-modal-close:hover{transform:scale(1.08)}
+@media (max-width:480px){
+  .wish-modal-card{max-width:100%}
+  .wish-modal-close{top:-12px;right:0}
+}
+
 /* ── Confirm dialog (replaces native confirm()) ── */
 #confirmOverlay{
   position:fixed;inset:0;z-index:1200;
@@ -15170,6 +15205,90 @@ document.addEventListener('keydown',function(e){
     </div>
   </div>
 </div>
+
+<!-- ── Festive Wish Modal (reusable) ──
+     To add a new wish later, just add another entry to WISH_CONFIG below —
+     no other code needs to change. -->
+<div class="wish-modal-overlay" id="wishModalOverlay" role="dialog" aria-modal="true" aria-label="Greeting">
+  <div class="wish-modal-card">
+    <button class="wish-modal-close" id="wishModalClose" aria-label="Close">&#x2715;</button>
+    <img id="wishModalImg" src="" alt="">
+  </div>
+</div>
+<script>
+(function(){
+  // ── Add/edit entries here for any future wish. Each entry only shows on
+  // its own date(s); nothing needs to be removed afterwards, it just stops
+  // firing once the date passes.
+  var WISH_CONFIG = [
+    {
+      id: 'varalakshmi-vratam-2026',
+      startDate: '2026-08-20',   // YYYY-MM-DD (inclusive)
+      endDate:   '2026-08-21',   // last day it should show (inclusive)
+      image:     '/wishes/varalakshmi-vratam-2026.webp',
+      imageFallback: '/wishes/varalakshmi-vratam-2026.jpg',
+      alt:       'Happy Varalakshmi Vratam — from Home Loop'
+    }
+    // Example for the future:
+    // {
+    //   id: 'diwali-2026',
+    //   startDate: '2026-11-08',
+    //   endDate:   '2026-11-09',
+    //   image:     '/wishes/diwali-2026.webp',
+    //   imageFallback: '/wishes/diwali-2026.jpg',
+    //   alt:       'Happy Diwali — from Home Loop'
+    // }
+  ];
+
+  function todayStr(){
+    var d = new Date();
+    var m = String(d.getMonth()+1).padStart(2,'0');
+    var day = String(d.getDate()).padStart(2,'0');
+    return d.getFullYear()+'-'+m+'-'+day;
+  }
+
+  function activeWish(){
+    var today = todayStr();
+    for (var i=0; i<WISH_CONFIG.length; i++){
+      var w = WISH_CONFIG[i];
+      if (today >= w.startDate && today <= w.endDate) return w;
+    }
+    return null;
+  }
+
+  function openWishModal(w){
+    var overlay = document.getElementById('wishModalOverlay');
+    var img = document.getElementById('wishModalImg');
+    img.onerror = function(){ if (w.imageFallback && img.src.indexOf(w.imageFallback) === -1) img.src = w.imageFallback; };
+    img.src = w.image;
+    img.alt = w.alt || '';
+    overlay.classList.add('open');
+    document.body.style.overflow = 'hidden';
+    sessionStorage.setItem('wishShown_' + w.id, todayStr());
+  }
+
+  function closeWishModal(){
+    document.getElementById('wishModalOverlay').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  document.getElementById('wishModalClose').addEventListener('click', closeWishModal);
+  document.getElementById('wishModalOverlay').addEventListener('click', function(e){
+    if (e.target === this) closeWishModal();
+  });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape') closeWishModal();
+  });
+
+  document.addEventListener('DOMContentLoaded', function(){
+    var w = activeWish();
+    if (!w) return;
+    // Show once per day per visitor (re-shows if they come back the next day, or after clearing tab storage)
+    if (sessionStorage.getItem('wishShown_' + w.id) === todayStr()) return;
+    setTimeout(function(){ openWishModal(w); }, 400);
+  });
+})();
+</script>
 
 </body>
 </html>
