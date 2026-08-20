@@ -6204,6 +6204,39 @@ main.tab-explore .empty-state{display:none !important}
     <span id="referCodeText" style="display:none">HOMELOOP-GUEST24</span>
 
     <button class="form-submit" onclick="shareReferralCode()">Share invite link</button>
+
+    <div style="display:flex;align-items:center;gap:10px;margin:18px 0;color:var(--text-2);font-size:12px">
+      <div style="flex:1;height:1px;background:var(--border)"></div>OR REFER DIRECTLY<div style="flex:1;height:1px;background:var(--border)"></div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Your name</label>
+        <input class="form-input" type="text" id="refer-name" />
+        <div class="identity-locked-hint" id="refer-name-hint" style="display:none">Auto-filled from your account</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Your phone</label>
+        <input class="form-input" type="tel" id="refer-phone" inputmode="numeric" maxlength="10" oninput="sanitizeMobileInput(this)" />
+        <div class="identity-locked-hint" id="refer-phone-hint" style="display:none">Auto-filled</div>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Tenant's name</label>
+        <input class="form-input" type="text" id="refer-tenant-name" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Tenant's phone</label>
+        <div class="input-icon-wrap">
+          <input class="form-input" type="tel" id="refer-tenant-phone" inputmode="numeric" maxlength="10" oninput="sanitizeMobileInput(this)" />
+          <button type="button" class="contact-pick-btn" onclick="pickContactFromDevice('refer-tenant-phone','refer-tenant-name')" title="Pick from contacts">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+    <button class="form-submit" id="referSubmitBtn" onclick="submitReferral()">Submit referral</button>
   </div>
 </div>
 
@@ -12838,12 +12871,64 @@ function closeNotifModal() {
    REFER & EARN MODAL
 ═══════════════════════════════════════════════ */
 function openReferModal() {
+  const user = getLoggedInUser();
+  const preloadName = (user && `${user.firstName || ''} ${user.lastName || ''}`.trim()) || (user && user.name) || '';
+  document.getElementById('refer-name').value = preloadName;
+  document.getElementById('refer-phone').value = (user && user.mobile) || '';
+  document.getElementById('refer-tenant-name').value = '';
+  document.getElementById('refer-tenant-phone').value = '';
+  // Lock the referrer's own identity to the logged-in account, same pattern
+  // as the Schedule a Visit modal, only when logged in — guests fill both
+  // their own and the tenant's fields in themselves.
+  ['refer-name', 'refer-phone'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.readOnly = !!user;
+    el.classList.toggle('identity-locked', !!user);
+    const hint = document.getElementById(id + '-hint');
+    if (hint) hint.style.display = user ? '' : 'none';
+  });
   document.getElementById('referModal').classList.add('open');
   lockBodyScroll();
 }
 function closeReferModal() {
   document.getElementById('referModal').classList.remove('open');
   unlockBodyScroll();
+}
+async function submitReferral() {
+  const referrerName  = document.getElementById('refer-name').value.trim();
+  const referrerPhone = document.getElementById('refer-phone').value.trim();
+  const tenantName    = document.getElementById('refer-tenant-name').value.trim();
+  const tenantPhone   = document.getElementById('refer-tenant-phone').value.trim();
+
+  if (!referrerName) { showToast('Please enter your name', 'warning'); return; }
+  if (!isValidIndianMobile(referrerPhone)) { showToast('Enter a valid 10-digit mobile number for yourself', 'warning'); return; }
+  if (!tenantName) { showToast("Please enter the tenant's name", 'warning'); return; }
+  if (!isValidIndianMobile(tenantPhone)) { showToast("Enter a valid 10-digit mobile number for the tenant", 'warning'); return; }
+
+  const btn = document.getElementById('referSubmitBtn');
+  btn.disabled = true;
+  btn.textContent = 'Submitting…';
+
+  try {
+    const res = await fetch('/api/referrals', {
+      method: 'POST',
+      headers: userAuthHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({ referrerName, referrerPhone, tenantName, tenantPhone })
+    });
+    const data = await res.json();
+    if (!res.ok) { showToast(data.message || 'Could not submit your referral. Please try again.', 'error'); return; }
+
+    showToast(data.message || 'Referral submitted!', 'success');
+    document.getElementById('refer-tenant-name').value = '';
+    document.getElementById('refer-tenant-phone').value = '';
+    closeReferModal();
+  } catch (err) {
+    showToast('Network error. Please try again.', 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Submit referral';
+  }
 }
 function copyVideoLink(url) {
   if (!url) return;

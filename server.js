@@ -2257,6 +2257,64 @@ app.post('/api/honest-reviews/submit', honestReviewLimiter, requireUser, async (
   }
 });
 
+// ── Referrals (Refer & Earn modal — "refer a tenant directly" form) ──
+// Same cadence as the other write-route limiters above, own bucket.
+const referralLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, max: 10,
+  standardHeaders: true, legacyHeaders: false,
+  message: { message: 'Too many referrals submitted. Please try again later.' }
+});
+
+const referralSchema = new mongoose.Schema({
+  userId:         { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null, index: true }, // null when referred while logged out
+  userReadableId: { type: String, default: null, index: true }, // e.g. USER-000001, for admin readability
+  referrerName:   { type: String, required: true, trim: true },
+  referrerPhone:  { type: String, required: true, trim: true },
+  tenantName:     { type: String, required: true, trim: true },
+  tenantPhone:    { type: String, required: true, trim: true },
+  status:         { type: String, enum: ['Pending', 'Rewarded', 'Rejected'], default: 'Pending' },
+  createdAt:      { type: Date, default: Date.now },
+});
+referralSchema.index({ createdAt: -1 });
+const Referral = mongoose.model('Referral', referralSchema);
+
+// POST /api/referrals — "Refer & Earn" modal's direct-refer form. Works for
+// guests too (the ₹1,000 reward just won't have an account to credit until
+// they log in) — attachUserIfPresent stamps userId when a session exists,
+// same pattern as POST /api/upload-images, and leaves it null otherwise.
+app.post('/api/referrals', referralLimiter, attachUserIfPresent, async (req, res) => {
+  try {
+    const { referrerName, referrerPhone, tenantName, tenantPhone } = req.body || {};
+
+    if (!referrerName || !String(referrerName).trim()) {
+      return res.status(400).json({ message: 'Your name is required' });
+    }
+    if (!referrerPhone || !/^\d{10}$/.test(normalizeMobile(referrerPhone))) {
+      return res.status(400).json({ message: 'A valid 10-digit phone number is required' });
+    }
+    if (!tenantName || !String(tenantName).trim()) {
+      return res.status(400).json({ message: "Tenant's name is required" });
+    }
+    if (!tenantPhone || !/^\d{10}$/.test(normalizeMobile(tenantPhone))) {
+      return res.status(400).json({ message: "A valid 10-digit tenant phone number is required" });
+    }
+
+    const referral = await Referral.create({
+      userId:         req.userId,
+      userReadableId: req.userReadableId || null,
+      referrerName:   String(referrerName).trim(),
+      referrerPhone:  normalizeMobile(referrerPhone),
+      tenantName:     String(tenantName).trim(),
+      tenantPhone:    normalizeMobile(tenantPhone),
+    });
+
+    res.status(201).json({ message: 'Thanks! We\'ll reach out to your referral shortly.', referral });
+  } catch (err) {
+    console.error('POST /api/referrals error:', err.message);
+    res.status(500).json({ message: 'Could not save your referral. Please try again.' });
+  }
+});
+
 // ── Partners (shown in the About Us modal's "Our Partners" row) ──
 const partnerSchema = new mongoose.Schema({
   name:       { type: String, required: true, maxlength: 80 },
