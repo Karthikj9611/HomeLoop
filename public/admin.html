@@ -2166,6 +2166,10 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
               <th>Photos</th>
               <th>Image URLs</th>
               <th>Video URL</th>
+              <th>Description</th>
+              <th>Latitude</th>
+              <th>Longitude</th>
+              <th>Promoted Priority</th>
               <th>Amenities</th>
               <th>Property ID</th>
               <th>User ID</th>
@@ -2216,6 +2220,10 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
               <th></th>
               <th></th>
               <th></th>
+              <th></th>
+              <th></th>
+              <th></th>
+              <th></th>
               <th><input type="text" class="col-filter-input" data-filter-key="propertyId" placeholder="Search…" oninput="onPropColumnFilter('propertyId', this.value, this)"></th>
               <th><input type="text" class="col-filter-input" data-filter-key="userId" placeholder="Search…" oninput="onPropColumnFilter('userId', this.value, this)"></th>
               <th><div class="col-date-range">
@@ -2234,7 +2242,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
             </tr>
           </thead>
           <tbody>
-            <tr><td colspan="47" class="empty-state"><i class="fas fa-circle-notch fa-spin"></i>Loading…</td></tr>
+            <tr><td colspan="51" class="empty-state"><i class="fas fa-circle-notch fa-spin"></i>Loading…</td></tr>
           </tbody>
         </table>
       </div>
@@ -5295,7 +5303,32 @@ $(document).ready(function(){
           if(t!=='display') return d||'';
           return d ? `<div style="white-space:normal;max-width:220px;word-break:break-all">${escapeHtml(d)}</div>` : '—';
       }},
-      /* 40 – Amenities (list, +N more opens modal) */
+      /* 40 – Description (hidden on screen; kept so PDF/other exports can
+         include the full listing description) */
+      { data:'desc', orderable:false, visible:false, render:(d,t,row)=>{
+          if(t!=='display') return d||'';
+          return d ? `<div style="white-space:normal;max-width:280px">${escapeHtml(d)}</div>` : '—';
+      }},
+      /* 41 – Latitude (hidden on screen; kept so PDF/other exports can
+         include the exact map coordinates) */
+      { data:'latitude', orderable:false, visible:false, className:'dt-body-center', render:(d,t)=>{
+          if(t!=='display') return (d!=null ? String(d) : '');
+          return d!=null ? escapeHtml(String(d)) : '—';
+      }},
+      /* 42 – Longitude (hidden on screen; see Latitude above) */
+      { data:'longitude', orderable:false, visible:false, className:'dt-body-center', render:(d,t)=>{
+          if(t!=='display') return (d!=null ? String(d) : '');
+          return d!=null ? escapeHtml(String(d)) : '—';
+      }},
+      /* 43 – Promoted Priority (hidden on screen; the numeric tier behind
+         the Promoted toggle — lower usually means higher up in Promoted
+         ordering) */
+      { data:null, orderable:true, visible:false, className:'dt-body-center', render:(d,t,row)=>{
+          const p = row.full && row.full.promotedPriority;
+          if(t!=='display') return (p!=null ? p : '');
+          return p!=null ? escapeHtml(String(p)) : '—';
+      }},
+      /* 44 – Amenities (list, +N more opens modal) */
       { data:null, orderable:false, render:(d,t,row)=>{
           const list = Array.isArray(row.amenities) ? row.amenities : [];
           if(t!=='display') return list.join(' ');
@@ -5306,22 +5339,22 @@ $(document).ready(function(){
           const encoded = escapeHtml(JSON.stringify(list));
           return `<div style="white-space:normal;max-width:260px">${shown}, <a href="javascript:void(0)" class="amenities-more-link" data-list="${encoded}" onclick="openAmenitiesModal(this)">+${more} more</a></div>`;
       }},
-      /* 41 – Property ID */
+      /* 45 – Property ID */
       { data:'propertyId', render:(d)=> escapeHtml(d||'—') },
-      /* 42 – User ID */
+      /* 46 – User ID */
       { data:'userId', visible:false, render:(d)=> escapeHtml(d||'—') },
-      /* 43 – Listed On */
+      /* 47 – Listed On */
       { data:'createdAt', render:(d,t)=>{
           if(t==='display') return formatDateTime(d);
           if(t==='export') return plainDateTime(d);
           return d||'—';
       }},
-      /* 44 – Remarks */
+      /* 48 – Remarks */
       { data:'remarks', orderable:false, render:(d,t,row)=>{
           if(t==='display') return remarkCellHtml(row._id, d, 'property');
           return d||'';
       }},
-      /* 45 – Action */
+      /* 49 – Action */
       { data:null, orderable:false, render:(d,t,row)=>{
           _adminPropCache[row._id] = row;
           const bookingBtn = row.booked
@@ -5338,7 +5371,7 @@ $(document).ready(function(){
           </div>`;
       }}
     ],
-    order:[[44,'asc']], // Listed On (createdAt) — oldest to newest
+    order:[[48,'asc']], // Listed On (createdAt) — oldest to newest
     orderCellsTop:true,
     pageLength:10,
     scrollX:true,
@@ -5381,7 +5414,7 @@ $(document).ready(function(){
 				// Column 0 is the select checkbox — it has no printable
 				// value, so leave it out of the PDF entirely instead of
 				// exporting a blank column.
-				return idx !== 0 && idx !== 45 && idx !== 46 &&
+				return idx !== 0 && idx !== 49 && idx !== 50 &&
 					   propTable.column(idx).visible();
 			},
 			// Use each column's dedicated "export" text instead of stripping
@@ -6215,9 +6248,10 @@ const PROP_COL_GROUPS = [
   ]}] : []),
   { label:'Meta', cols:[
     {idx:36, label:'Visits'}, {idx:37, label:'Views'}, {idx:38, label:'Photos'},
-    {idx:39, label:'Image URLs'}, {idx:40, label:'Video URL'}, {idx:41, label:'Amenities'},
-    {idx:42, label:'Property ID'}, {idx:43, label:'User ID'}, {idx:44, label:'Listed On'},
-    {idx:45, label:'Remarks'}
+    {idx:39, label:'Image URLs'}, {idx:40, label:'Video URL'}, {idx:41, label:'Description'},
+    {idx:42, label:'Latitude'}, {idx:43, label:'Longitude'}, {idx:44, label:'Promoted Priority'},
+    {idx:45, label:'Amenities'}, {idx:46, label:'Property ID'}, {idx:47, label:'User ID'},
+    {idx:48, label:'Listed On'}, {idx:49, label:'Remarks'}
   ]}
 ];
 
@@ -6256,11 +6290,11 @@ function apptExportRowSelector(idx){
 }
 
 function propExportColumnPredicate(idx){
-  return idx!==0 && idx!==45 && idx!==46 && propTable.column(idx).visible();
+  return idx!==0 && idx!==49 && idx!==50 && propTable.column(idx).visible();
 }
 function propExportColumnIndices(){
   const idxs=[];
-  for(let i=0;i<=46;i++){ if(propExportColumnPredicate(i)) idxs.push(i); }
+  for(let i=0;i<=50;i++){ if(propExportColumnPredicate(i)) idxs.push(i); }
   return idxs;
 }
 
