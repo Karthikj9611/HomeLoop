@@ -460,6 +460,7 @@ table.dataTable.no-footer{border-bottom:none!important}
    underlined style instead of the fixed-width pill badges above. */
 .url-link{color:#1a6fa8;text-decoration:underline;word-break:break-all}
 .url-link:hover{color:#0c4a6e}
+.url-sl-no{color:#6b7280;font-weight:600;font-size:0.78em}
 .amenities-more-link{color:var(--gold-dark);font-weight:600;text-decoration:underline;white-space:nowrap}
 .amenities-more-link:hover{color:var(--gold)}
 .amenity-chip{
@@ -5295,14 +5296,16 @@ $(document).ready(function(){
           return String(Array.isArray(row.images) ? row.images.length : 0);
       }},
       /* 38 – Image URLs (hidden on screen; kept so PDF/other exports can
-         include every image link, one per line). Each URL is a real,
-         clickable link (opens the image in a new tab) both on screen and
-         in the PDF export's link injection above. */
+         include every image link, one per line). Each URL is numbered
+         (1, 2, 3…) and is a real, clickable link (opens the image in a
+         new tab) both on screen and in the PDF export's link injection
+         below — numbering keeps it clear which link is which listing's
+         1st/2nd/3rd photo etc. when there are several. */
       { data:null, orderable:false, visible:false, render:(d,t,row)=>{
           const imgs = Array.isArray(row.images) ? row.images : [];
-          if(t!=='display') return imgs.join('\n');
+          if(t!=='display') return imgs.map((u,i)=>`${i+1}. ${u}`).join('\n');
           if(!imgs.length) return '—';
-          return `<div style="white-space:normal;max-width:260px;word-break:break-all">${imgs.map(u=>`<a href="${escapeHtml(u)}" target="_blank" rel="noopener noreferrer" class="url-link">${escapeHtml(u)}</a>`).join('<br>')}</div>`;
+          return `<div style="white-space:normal;max-width:260px;word-break:break-all">${imgs.map((u,i)=>`<span class="url-sl-no">${i+1}.</span> <a href="${escapeHtml(u)}" target="_blank" rel="noopener noreferrer" class="url-link">${escapeHtml(u)}</a>`).join('<br>')}</div>`;
       }},
       /* 39 – Video URL (hidden on screen; kept so PDF/other exports can
          include the listing's video link). Rendered as a real, clickable
@@ -5481,8 +5484,16 @@ $(document).ready(function(){
             var imgs = Array.isArray(rd.images) ? rd.images.filter(Boolean) : [];
             if(imageUrlsPos>=0 && imgs.length && pdfRow[imageUrlsPos]){
               pdfRow[imageUrlsPos]={
-                stack: imgs.map(function(u){
-                  return {text:u,link:u,color:'#1a6fa8',decoration:'underline',fontSize:7,margin:[0,0,0,2]};
+                // Prefix each URL with its serial number (1., 2., 3.…) so
+                // it's clear which link is that listing's 1st/2nd/3rd
+                // photo etc. — matches the numbering shown on screen.
+                // Only the URL portion of each line carries the `link`,
+                // the "N." label itself is plain (non-clickable) text.
+                stack: imgs.map(function(u,i){
+                  return {text:[
+                    {text:(i+1)+'. ',color:'#6b7280',bold:true},
+                    {text:u,link:u,color:'#1a6fa8',decoration:'underline'}
+                  ],fontSize:7,margin:[0,0,0,2]};
                 })
               };
             }
