@@ -13225,15 +13225,24 @@ const SERVICE_PRICING = {
   },
 };
 
+// These two skip the pricing breakdown entirely — just a quick "call us
+// directly" prompt, since pricing varies too much case-by-case to quote.
+const SIMPLE_CONTACT_SERVICES = ['Rental Agreement', 'Building Painter'];
+
 function openServiceModal(name, category, icon, imgUrl) {
   document.getElementById('svc-service').value = name;
   document.getElementById('svcModalIcon').textContent = icon;
   document.getElementById('svcModalLabel').textContent = name;
 
   // Inject pricing block
-  const pricing = SERVICE_PRICING[name];
+  const pricing = SIMPLE_CONTACT_SERVICES.includes(name) ? null : SERVICE_PRICING[name];
   let pricingHTML = '';
-  if (pricing) {
+  if (SIMPLE_CONTACT_SERVICES.includes(name)) {
+    pricingHTML = `
+      <div class="svc-pricing-section">
+        <div class="svc-price-note" style="margin-top:0">📞 Call or WhatsApp us directly for ${name} — we'll sort out the details with you.</div>
+      </div>`;
+  } else if (pricing) {
     const itemsHTML = pricing.items.map(i => `
       <div class="svc-price-item">
         <div class="svc-price-label">${i.label}</div>
