@@ -8067,7 +8067,7 @@ function cardHTML(p, compact, extraLeftBadge) {
         </span>` : ''}
       </div>
       </div>
-	  <div class="prop-stats prop-chip-row-scroll">
+	  <div class="prop-stats">
         ${(() => { const bhkVal = String(p.property?.bhk || '').replace(/\s*BHK\s*$/i, '').trim(); return (parseFloat(bhkVal) > 0) ? `<span class="prop-stat" title="Configuration">
           <span class="prop-stat-icon icon-bed">🛏️</span>
           ${bhkVal}
@@ -8098,52 +8098,6 @@ function cardHTML(p, compact, extraLeftBadge) {
           <span class="prop-stat-icon icon-area">📐</span>
           ${areaSqft} sqft
         </span>` : ''}
-        ${maintenance > 0 ? `<span class="prop-stat" title="Monthly maintenance">
-          <span class="prop-stat-icon icon-maint">🔧</span>
-          ${fmtRupee(maintenance)}
-        </span>` : ''}
-        ${lift ? `<span class="prop-stat" title="Lift available"><span class="prop-stat-icon icon-lift">🛗</span></span>` : ''}
-        ${!isPGCard ? `<span class="prop-chip chip-furnish" title="Furnishing">
-          <span class="prop-chip-icon icon-furnish">🛋️</span>
-          ${esc(p.property?.furnish ?? p.shortStay?.furnish)}
-        </span>` : ''}
-        ${isPGCard && pg.meals ? `<span class="prop-chip chip-meals" title="Meals">
-          <span class="prop-chip-icon icon-meals">🍽️</span>
-          ${esc(pg.meals)}
-        </span>` : ''}
-        ${isPGCard && pg.food ? `<span class="prop-chip chip-food" title="Food type">
-          <span class="prop-chip-icon icon-food">🍲</span>
-          ${esc(pg.food)}
-        </span>` : ''}
-        ${isPGCard && pg.notice ? `<span class="prop-chip chip-notice" title="Notice period">
-          <span class="prop-chip-icon icon-notice">📋</span>
-          ${esc(pg.notice)}
-        </span>` : ''}
-        ${isPGCard && pg.gateTime ? `<span class="prop-chip chip-gatetime" title="Gate closing time">
-          <span class="prop-chip-icon icon-gatetime">🚪</span>
-          ${esc(pg.gateTime)}
-        </span>` : ''}
-        ${isPGCard && pg.visitors ? `<span class="prop-chip chip-visitors" title="Visitor policy">
-          <span class="prop-chip-icon icon-visitors">🙋</span>
-          ${esc(pg.visitors)}
-        </span>` : ''}
-        ${isSSCard && shortStay.roomType ? `<span class="prop-chip chip-room" title="Room type">
-          <span class="prop-chip-icon icon-room">🛏️</span>
-          ${esc(shortStay.roomType)}
-        </span>` : ''}
-        ${isSSCard && shortStay.available24hrs ? `<span class="prop-chip chip-ss24hrs" title="Available 24 hours">
-          <span class="prop-chip-icon icon-ss24hrs">🕐</span>
-          ${shortStay.available24hrs === 'Yes' ? '24-Hour Checkin' : 'No 24-Hour Checkin'}
-        </span>` : ''}
-        ${isSSCard && shortStay.cancellation ? `<span class="prop-chip chip-sscancel" title="Free cancellation window">
-          <span class="prop-chip-icon icon-sscancel">🔄</span>
-          ${esc(shortStay.cancellation)}
-        </span>` : ''}
-        ${isSSCard && shortStay.couplesAllowed ? `<span class="prop-chip chip-sscouples" title="Unmarried couples allowed">
-          <span class="prop-chip-icon icon-sscouples">💑</span>
-          ${shortStay.couplesAllowed === 'Yes' ? 'Couples Allowed' : 'Couples Not Allowed'}
-        </span>` : ''}
-        ${amenityTagsHTML(p)}
       </div>
 <!--<div class="prop-footer">
         <div class="prop-quick-actions">
@@ -8204,6 +8158,7 @@ function shortlistCardHTML(p) {
   const carpark = carCount > 0;
   const bikepark = bikeCount > 0;
   const lift = pHasLift(p);
+  const areaSqft = (p.property?.area || '').toString().replace(/\s*sqft\s*$/i, '').trim();
   const deposit = p.price?.deposit || 0;
   const maintenance = p.price?.maintenance || 0;
   const leaseDur = p.terms?.lease || '';
@@ -8236,7 +8191,7 @@ function shortlistCardHTML(p) {
     }
     return dateStr;
   })() : '';
-  return `<div class="prop-card type-${pType.toLowerCase()}" data-property-id="${p.id}">
+  return `<div class="prop-card type-${pType.toLowerCase()}" data-property-id="${p.id}" onclick="toggleShortlistPanel();openDetail('${p.id}')">
     <div class="prop-img" style="background:${bg}" data-idx="0">
       ${buildImgSlider(p, fg, '-sl')}
       ${priceChipsHTML(p, pType, deposit, maintenance, leaseDur, {ribbon:true})}
@@ -8284,6 +8239,10 @@ function shortlistCardHTML(p) {
           <span class="prop-stat-icon icon-bed">🛏️</span>
           ${bhkVal}
         </span>` : ''; })()}
+        ${isPGCardSL && pgSL.room ? (() => { const sharingMap = { 'Single': 1, 'Double Sharing': 2, 'Triple Sharing': 3 }; const sharingVal = sharingMap[pgSL.room]; return `<span class="prop-stat" title="${esc(pgSL.room)}">
+          <span class="prop-stat-icon icon-bed">🛏️</span>
+          ${sharingVal || esc(pgSL.room)}
+        </span>`; })() : ''}
         ${isPGCardSL ? (pgSL.occupancy ? `<span class="prop-stat" title="Occupancy">
           <span class="prop-stat-icon icon-occupancy">🧍</span>
           ${esc(pgSL.occupancy)}
@@ -8291,20 +8250,21 @@ function shortlistCardHTML(p) {
           <span class="prop-stat-icon icon-bath">🚽</span>
           ${bathrooms}
         </span>` : '')}
-        <span class="prop-stat" title="Furnishing">
-          <span class="prop-stat-icon icon-furnish">🛋️</span>
-          ${esc(p.property?.furnish ?? p.pg?.furnish ?? p.shortStay?.furnish)}
-        </span>
-        ${carCount > 0 ? `<span class="prop-stat" title="${carCount+' car parking spot'+(carCount>1?'s':'')}">
+        ${isPGCardSL ? (pgSL.gender ? (() => { const gIcon = {'Boys':'♂️','Girls':'♀️','Co-ed':'⚥'}[pgSL.gender] || '🚻'; const gAbbr = {'Boys':'M','Girls':'F','Co-ed':'M/F'}[pgSL.gender] || esc(pgSL.gender); return `<span class="prop-stat" title="Gender preference: ${esc(pgSL.gender)}">
+          <span class="prop-stat-icon icon-gender">${gIcon}</span>
+          ${gAbbr}
+        </span>`; })() : '') : (carCount > 0 ? `<span class="prop-stat" title="${carCount+' car parking spot'+(carCount>1?'s':'')}">
           <span class="prop-stat-icon icon-car">🚗</span>
           ${carCount}
-        </span>` : ''}
+        </span>` : '')}
         ${bikeCount > 0 ? `<span class="prop-stat" title="${bikeCount+' bike parking spot'+(bikeCount>1?'s':'')}">
           <span class="prop-stat-icon icon-bike">🏍️</span>
           ${bikeCount}
         </span>` : ''}
-        ${lift ? `<span class="prop-stat" title="Lift available"><span class="prop-stat-icon icon-lift">🛗</span></span>` : ''}
-        ${amenityTagsHTML(p)}
+        ${areaSqft ? `<span class="prop-stat" title="Built-up area">
+          <span class="prop-stat-icon icon-area">📐</span>
+          ${areaSqft} sqft
+        </span>` : ''}
       </div>
     </div>
   </div>`;
