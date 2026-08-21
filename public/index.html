@@ -1045,8 +1045,12 @@ main.tab-explore .empty-state{display:none !important}
   flex-wrap:nowrap;overflow-x:auto;-ms-overflow-style:none;scrollbar-width:none;
   scroll-behavior:smooth;
   cursor:grab;
-  /* Same trailing fade as .prop-stats — signals scrollability instead of
-     looking like a broken/truncated amenity chip. */
+}
+/* The trailing fade only applies once JS (syncChipRowFade) has confirmed
+   the row actually overflows — applying it unconditionally faded out the
+   tail of the last item (e.g. "3333 sqft" reading as "3333 sq") even on
+   rows where every stat already fit and there was nothing left to scroll to. */
+.prop-chip-row-scroll.has-overflow{
   mask-image:linear-gradient(to right,#000 92%,transparent 100%);
   -webkit-mask-image:linear-gradient(to right,#000 92%,transparent 100%);
 }
@@ -1410,50 +1414,6 @@ main.tab-explore .empty-state{display:none !important}
 .confirm-ok-btn.info{background:#2563eb}
 .confirm-ok-btn.info:hover{background:#1d4ed8}
 
-/* ── Stats popup (opened from the "+N" chip on a card's spec row) ──
-   Shows every icon+value in that row, centered, instead of the row
-   sliding/scrolling sideways to reveal the rest. Styled to match the
-   existing confirm-card / modal-amenity conventions used elsewhere. ── */
-#statsPopupOverlay{
-  position:fixed;inset:0;z-index:1200;
-  background:rgba(20,16,17,.55);
-  display:none;align-items:center;justify-content:center;
-  padding:16px;backdrop-filter:blur(2px);
-}
-#statsPopupOverlay.open{display:flex}
-.stats-popup-card{
-  background:var(--bg);border-radius:var(--radius-xl);
-  width:100%;max-width:560px;
-  padding:24px 24px 20px;
-  box-shadow:0 24px 70px rgba(0,0,0,.28);
-  animation:modalIn .22s cubic-bezier(.2,.7,.3,1);
-}
-.stats-popup-title{font-size:1.05rem;font-weight:800;color:var(--text);margin-bottom:14px}
-.stats-popup-body{
-  display:grid;grid-template-columns:repeat(3,1fr);
-  gap:8px;max-height:60vh;overflow-y:auto;
-}
-.stats-popup-body .prop-stat,.stats-popup-body .prop-chip{
-  display:flex;align-items:center;justify-content:flex-start;gap:5px;
-  background:var(--bg-2);border:1px solid var(--border);
-  border-radius:14px;padding:7px 10px;
-  font-size:12px;font-weight:500;color:var(--text-2);
-  line-height:1.3;white-space:normal;text-align:left;
-}
-.stats-popup-body .prop-stat-label{
-  color:var(--text-3);font-weight:500;
-}
-@media (max-width:640px){
-  .stats-popup-body{grid-template-columns:repeat(2,1fr)}
-}
-.stats-popup-body .prop-stat::before,.stats-popup-body .prop-chip::before{display:none}
-.stats-popup-body .prop-stat-icon,.stats-popup-body .prop-chip-icon{font-size:13px}
-.stats-popup-close{
-  margin-top:18px;width:100%;padding:11px;border-radius:var(--radius);border:none;
-  background:var(--bg-3);color:var(--text-2);font-size:.86rem;font-weight:700;
-  cursor:pointer;transition:all .15s;
-}
-.stats-popup-close:hover{background:var(--border-2);color:var(--text)}
 .modal{
   background:var(--bg);border-radius:var(--radius-xl);
   width:100%;max-width:720px;max-height:92vh;
@@ -3767,8 +3727,11 @@ main.tab-explore .empty-state{display:none !important}
     display:grid;grid-auto-flow:column;grid-auto-columns:50%;
     overflow-x:auto;-ms-overflow-style:none;scrollbar-width:none;
     scroll-snap-type:x mandatory;cursor:grab;width:100%;
-    /* Same trailing fade as .prop-stats/.prop-chip-row-scroll — signals
-       there's more to scroll instead of looking like an abrupt cut-off. */
+  }
+  /* Same overflow-gated fade as .prop-chip-row-scroll — signals there's
+     more to scroll only when there actually is, instead of always cutting
+     off the last chip's tail. */
+  .prop-img-price .prop-price-chips.price-chips-scroll.has-overflow{
     mask-image:linear-gradient(to right,#000 92%,transparent 100%);
     -webkit-mask-image:linear-gradient(to right,#000 92%,transparent 100%);
   }
@@ -7284,7 +7247,6 @@ function renderRecentlyViewed() {
   section.style.display = '';
   strip.innerHTML = ids.map(id => recentlyViewedCardHTML(recentlyViewedData[id])).join('');
   requestAnimationFrame(syncRecentlyViewedCardWidth);
-  requestAnimationFrame(processAllStatsRows);
 }
 // Keeps Recently Viewed cards exactly as wide as the real property cards
 // currently on screen (the property grid is fluid — auto-fill(minmax(260px,1fr))
@@ -7508,7 +7470,7 @@ function renderCards() {
 
   // Collapse each card's spec row down to what actually fits, now that
   // the fresh markup is in the DOM and real widths are known.
-  requestAnimationFrame(processAllStatsRows);
+  syncChipRowFade();
 
   // Premium Services / Honest Reviews cards are fixed-width horizontal
   // scroll strips, but property cards are a fluid CSS Grid (auto-fill) —
@@ -7518,6 +7480,22 @@ function renderCards() {
   // variable, keeping the two visually identical at any screen size.
   syncScrollCardWidth();
 }
+
+// Only the stat/amenity row's own JS knows whether it truly overflows its
+// visible width, so the trailing "there's more to scroll" fade (.has-overflow
+// in CSS) is toggled here rather than being an unconditional CSS rule —
+// otherwise a row where every stat already fit still had its last item's
+// tail faded away (e.g. "3333 sqft" reading as "3333 sq").
+function syncChipRowFade() {
+  document.querySelectorAll('.prop-chip-row-scroll, .price-chips-scroll').forEach(row => {
+    row.classList.toggle('has-overflow', row.scrollWidth > row.clientWidth + 2);
+  });
+}
+let _chipRowFadeTimer = null;
+window.addEventListener('resize', () => {
+  clearTimeout(_chipRowFadeTimer);
+  _chipRowFadeTimer = setTimeout(syncChipRowFade, 150);
+});
 
 function syncScrollCardWidth() {
   const propCard = document.querySelector('.prop-card');
@@ -7780,6 +7758,10 @@ function preloadLightboxNeighbors() {
 function openLightbox(propId, idx) {
   const p = PROPERTIES.find(x => x.id === propId);
   if (!p || !p.media?.images || !p.media.images.length) return;
+  incrementViews(p);   // clicking a card's photo also counts as a view — the
+                        // image's own onclick stops propagation so it never
+                        // reaches the card's openDetail(id) handler
+  renderCards();        // reflect the new count on the card grid
   lightboxImgs = p.media.images;
   lightboxVideoHtml = buildVideoSlideHtml(p);
   lightboxIdx = idx || 0;
@@ -8040,7 +8022,7 @@ function cardHTML(p, compact, extraLeftBadge) {
   })() : '';
   const compactClass = compact ? ' compact' : '';
   const promotedClass = p.promoted ? ' prop-card-promoted' : '';
-  return `<div class="prop-card${listClass}${compactClass}${promotedClass} type-${pType.toLowerCase()}" data-property-id="${p.id}">
+  return `<div class="prop-card${listClass}${compactClass}${promotedClass} type-${pType.toLowerCase()}" data-property-id="${p.id}" onclick="openDetail('${p.id}')">
     <div class="prop-img" style="background:${bg}" data-idx="0">
       ${buildImgSlider(p, fg, '-grid')}
       ${priceChipsHTML(p, pType, deposit, maintenance, leaseDur, {ribbon:true})}
@@ -8085,7 +8067,7 @@ function cardHTML(p, compact, extraLeftBadge) {
         </span>` : ''}
       </div>
       </div>
-	  <div class="prop-stats">
+	  <div class="prop-stats prop-chip-row-scroll">
         ${(() => { const bhkVal = String(p.property?.bhk || '').replace(/\s*BHK\s*$/i, '').trim(); return (parseFloat(bhkVal) > 0) ? `<span class="prop-stat" title="Configuration">
           <span class="prop-stat-icon icon-bed">🛏️</span>
           ${bhkVal}
@@ -8386,7 +8368,6 @@ function renderShortlistPanel() {
     return;
   }
   list.innerHTML = ids.map(id => shortlistCardHTML(shortlistedData[id])).join('');
-  requestAnimationFrame(processAllStatsRows);
 }
 
 
@@ -14068,122 +14049,6 @@ function _autoSlidePropRows(){
 })();
 setInterval(_autoSlidePropRows, 32000);
 
-/* ─── Card spec row ("prop-stats") → cap at 4 + "More" popup ────────────
-   Show as many stat items as actually fit the row's live width (measured,
-   not assumed), capped at 4 even if more would technically fit — matching
-   the original design intent. Anything beyond what's shown is collapsed
-   into a "More" chip, whose own width is measured and reserved for up
-   front, so "More" itself is never the thing that gets clipped. Clicking
-   "More" opens the complete row (every item, not just the hidden ones)
-   centered in a popup. Runs after every renderCards() and on resize,
-   since prop-stats width is fluid with the grid's column count.
-
-   Previously this always showed exactly 4 items regardless of whether
-   they (plus "More") actually fit — on narrow mobile widths, a wide chip
-   like "450 sqft" as the 4th item routinely pushed "More" (or even part
-   of the 4th item itself) past the row's overflow:hidden edge, clipping
-   it. Measuring real widths instead fixes that everywhere the row is
-   narrow, not just on today's specific screen sizes. */
-const PROP_STATS_MAX_VISIBLE = 4;
-function processStatsRow(row){
-  // Cache the row's full original item list (once) so re-processing on
-  // resize, or opening the popup, always has the complete set — not just
-  // whatever happens to still be in the DOM after a previous pass hid some.
-  if (!row._allItemsHTML) {
-    row._allItemsHTML = Array.from(row.children).map(el => el.outerHTML);
-  }
-  row.innerHTML = row._allItemsHTML.join('');
-  const items = Array.from(row.children);
-  if (items.length === 0) return;
-
-  const buildMoreChip = () => {
-    const chip = document.createElement('span');
-    chip.className = 'prop-stats-more';
-    chip.textContent = 'More';
-    chip.onclick = function(e){
-      e.stopPropagation();
-      const card = row.closest('.prop-card, .rv-card');
-      const pid = card && (card.dataset.propertyId || (card.getAttribute('onclick') || '').match(/openDetail\('([^']+)'\)/)?.[1]);
-      if (pid) openDetail(pid); else openStatsPopup(row);
-    };
-    return chip;
-  };
-
-  // Items keep their natural (flex-shrink:0) width regardless of the row's
-  // overflow:hidden, so offsetWidth here reflects true rendered size even
-  // for items about to be clipped.
-  const rowWidth = row.clientWidth;
-  let fullTotal = 0;
-  for (const el of items) fullTotal += el.offsetWidth;
-
-  if (items.length <= PROP_STATS_MAX_VISIBLE && fullTotal <= rowWidth) {
-    return; // everything fits as-is, no "More" needed
-  }
-
-  // Measure the "More" chip itself (off-DOM, so it doesn't affect layout)
-  // so its width can be reserved for up front — this is what guarantees
-  // it's never the part that ends up clipped.
-  const measureChip = buildMoreChip();
-  measureChip.style.visibility = 'hidden';
-  measureChip.style.position = 'absolute';
-  document.body.appendChild(measureChip);
-  const moreWidth = measureChip.offsetWidth;
-  document.body.removeChild(measureChip);
-
-  let visibleCount = 0;
-  let total = 0;
-  for (let i = 0; i < items.length && i < PROP_STATS_MAX_VISIBLE; i++) {
-    total += items[i].offsetWidth;
-    if (total + moreWidth > rowWidth) break;
-    visibleCount = i + 1;
-  }
-  visibleCount = Math.max(visibleCount, 1); // always show at least one stat, never just "More" alone
-
-  for (let i = visibleCount; i < items.length; i++) {
-    items[i].style.display = 'none';
-  }
-  row.appendChild(buildMoreChip());
-}
-function processAllStatsRows(){
-  document.querySelectorAll('.prop-stats').forEach(processStatsRow);
-}
-const STAT_ICON_LABELS = {
-  'icon-bed': 'Bedrooms',
-  'icon-bath': 'Bathrooms',
-  'icon-car': 'Car Parking',
-  'icon-bike': 'Bike Parking',
-  'icon-area': 'Area',
-  'icon-maint': 'Maintenance',
-  'icon-lift': 'Lift'
-};
-function openStatsPopup(row){
-  const wrap = document.createElement('div');
-  wrap.innerHTML = row._allItemsHTML.join('');
-  wrap.querySelectorAll('.prop-stat').forEach(el => {
-    const iconEl = el.querySelector('.prop-stat-icon');
-    if (!iconEl) return;
-    const iconClass = Array.from(iconEl.classList).find(c => STAT_ICON_LABELS[c]);
-    if (!iconClass) return;
-    const labelSpan = document.createElement('span');
-    labelSpan.className = 'prop-stat-label';
-    labelSpan.textContent = STAT_ICON_LABELS[iconClass];
-    el.appendChild(labelSpan);
-  });
-  document.getElementById('statsPopupBody').innerHTML = wrap.innerHTML;
-  document.getElementById('statsPopupOverlay').classList.add('open');
-}
-function closeStatsPopup(){
-  document.getElementById('statsPopupOverlay').classList.remove('open');
-}
-document.addEventListener('keydown', function(e){
-  if (e.key === 'Escape') closeStatsPopup();
-});
-let _statsRowResizeTimer = null;
-window.addEventListener('resize', function(){
-  clearTimeout(_statsRowResizeTimer);
-  _statsRowResizeTimer = setTimeout(processAllStatsRows, 150);
-});
-
 /* ─── Reviews carousel ──────────────────────────────────────────────
    Owner and Tenant reviews are shown as two separate groups, each its
    own single-card carousel (so a reader can tell at a glance which
@@ -15251,15 +15116,6 @@ document.addEventListener('keydown',function(e){
   <div style="position:relative;max-width:100%;max-height:90vh;display:flex;">
     <img id="imgZoomSrc" src="" alt="Zoomed image">
     <div id="imgZoomCaption"></div>
-  </div>
-</div>
-
-<!-- ── Stats popup (full spec row, opened from a card's "+N" chip) ── -->
-<div id="statsPopupOverlay" onclick="if(event.target===this)closeStatsPopup()">
-  <div class="stats-popup-card">
-    <div class="stats-popup-title">All details</div>
-    <div class="stats-popup-body" id="statsPopupBody"></div>
-    <button class="stats-popup-close" onclick="closeStatsPopup()">Close</button>
   </div>
 </div>
 
