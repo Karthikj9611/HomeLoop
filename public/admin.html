@@ -2442,8 +2442,8 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
               </button>
             </div>
           </div>
-          <table class="dataTable" style="width:100%">
-            <thead><tr><th>Date</th><th>Visits</th></tr></thead>
+          <table class="dataTable" style="width:auto;min-width:320px">
+            <thead><tr><th style="width:220px">Date</th><th style="width:120px">Visits</th></tr></thead>
             <tbody id="visitsMonthTbody"><tr><td colspan="2" class="empty-state"><i class="fas fa-circle-notch fa-spin"></i>Loading…</td></tr></tbody>
           </table>
         </div>
@@ -3108,7 +3108,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
 
 let dataTable, propTable, apptTable, honestReviewsTable;
 
-const BASE = 'https://homeloop.in';
+const BASE = 'http://localhost:5000';
 
 /* ── ADMIN KEY – set after login ──
    Uses localStorage (not sessionStorage) so the admin stays signed in even
