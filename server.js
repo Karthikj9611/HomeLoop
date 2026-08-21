@@ -2673,10 +2673,20 @@ function readCookie(req, name) {
 }
 
 function visitorFingerprint(req) {
-  // req.ip respects 'trust proxy' (set above), so this is the real client IP
-  // behind Render's proxy, not the proxy's own address.
-  const ip = (req.ip || '').toString();
   const ua = (req.headers['user-agent'] || '').toString();
+
+  // Preferred: a device signature the frontend builds from screen size,
+  // timezone, language, platform, etc. (see buildDeviceSignature() in
+  // index.html). These stay the same across incognito windows AND across
+  // network changes (VPN, wifi -> mobile data) on the same physical device,
+  // so switching networks no longer makes a returning visitor look "new".
+  const sig = req.body && typeof req.body.deviceSig === 'string' ? req.body.deviceSig.slice(0, 512) : '';
+  if (sig) return crypto.createHash('sha256').update(`${ua}|${sig}`).digest('hex');
+
+  // Fallback for clients that couldn't supply a signature (JS blocked, very
+  // old browser) — IP+UA, best-effort only. req.ip respects 'trust proxy'
+  // (set above), so this is the real client IP behind Render's proxy.
+  const ip = (req.ip || '').toString();
   return crypto.createHash('sha256').update(`${ip}|${ua}`).digest('hex');
 }
 

@@ -9,7 +9,7 @@
 // modal has zero load delay by the time the page is interactive.
 (function(){
   var WISH_PRELOAD = [
-    { startDate:'2026-08-20', endDate:'2026-08-21', image:'/wishes/varalakshmi-vratam-2026.webp' }
+    { startDate:'2026-08-20', endDate:'2026-08-21', image:'/wishes/varalakshmi-vratam-2026.png' }
   ];
   function todayStr(){ var d=new Date(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0'); return d.getFullYear()+'-'+m+'-'+day; }
   var today = todayStr();
@@ -15245,8 +15245,8 @@ document.addEventListener('keydown',function(e){
       id: 'varalakshmi-vratam-2026',
       startDate: '2026-08-20',   // YYYY-MM-DD (inclusive)
       endDate:   '2026-08-21',   // last day it should show (inclusive)
-      image:     '/wishes/varalakshmi-vratam-2026.webp',
-      imageFallback: '/wishes/varalakshmi-vratam-2026.jpg',
+      image:     '/wishes/varalakshmi-vratam-2026.png',
+      imageFallback: null,
       alt:       'Happy Varalakshmi Vratam — from Home Loop'
     }
     // Example for the future:
