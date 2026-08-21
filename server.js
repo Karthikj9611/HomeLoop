@@ -1492,10 +1492,12 @@ app.get('/api/properties', async (req, res) => {
 });
 
 // ── POST /api/properties/:id/view (public: record one view of a listing) ──
-// Called once per browser per listing (the frontend dedupes via its own
-// "seen" set before calling this, same idea as visitedSeen for visit
-// requests) so the count reflects real, DB-backed views — this is what
-// admin's per-listing / reset-all views actions operate on.
+// Called once per browser per listing. Dedup is now server-side via
+// PropertyView (propertyId + visitorFingerprint(req), see above) rather than
+// trusting the frontend's localStorage "seen" set — localStorage is empty in
+// every fresh incognito window, so a device could inflate a listing's count
+// just by opening it privately under the old, client-only dedup. This is
+// what admin's per-listing / reset-all views actions operate on.
 const viewLimiter = rateLimit({
   windowMs: 60 * 1000, max: 60,
   standardHeaders: true, legacyHeaders: false,
@@ -1507,9 +1509,28 @@ app.post('/api/properties/:id/view', viewLimiter, async (req, res) => {
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
       return res.status(400).json({ message: 'Invalid property id' });
     }
+
+    const fingerprint = visitorFingerprint(req);
+
+    // Try to claim this (propertyId, fingerprint) pair. The unique index
+    // rejects a repeat with E11000 — that's how we know this device has
+    // already been counted for this listing, incognito or not.
+    let isNewView = true;
+    try {
+      await PropertyView.create({ propertyId: req.params.id, fingerprint });
+    } catch (err) {
+      if (err && err.code === 11000) {
+        isNewView = false;
+      } else {
+        throw err;
+      }
+    }
+
     let updated = null;
     for (const M of LISTING_MODEL_LIST) {
-      updated = await M.findByIdAndUpdate(req.params.id, { $inc: { views: 1 } }, { new: true });
+      updated = isNewView
+        ? await M.findByIdAndUpdate(req.params.id, { $inc: { views: 1 } }, { new: true })
+        : await M.findById(req.params.id);
       if (updated) break;
     }
     if (!updated) return res.status(404).json({ message: 'Property not found' });
@@ -2708,6 +2729,23 @@ const Visitor = mongoose.model('Visitor', VisitorSchema);
 
 const VISITOR_COOKIE_NAME  = 'hl_vid';
 const VISITOR_COOKIE_MAXAGE_MS = 5 * 365 * 24 * 60 * 60 * 1000; // 5 years
+
+// ── Per-property view dedup ──
+// Same fingerprint idea as Visitor above (visitorFingerprint()), but scoped
+// per-listing: one doc per (propertyId, fingerprint) pair. This is what makes
+// /api/properties/:id/view safe against incognito windows — the old version
+// relied only on the frontend's localStorage "seen" set, which is empty in
+// every fresh incognito session, so the same device could re-inflate a
+// listing's view count just by opening it privately. The unique index below
+// is the actual dedup: a repeat (propertyId, fingerprint) throws E11000
+// instead of inserting, so we know not to increment again.
+const PropertyViewSchema = new mongoose.Schema({
+  propertyId:  { type: String, required: true },
+  fingerprint: { type: String, required: true },
+  createdAt:   { type: Date, default: Date.now },
+});
+PropertyViewSchema.index({ propertyId: 1, fingerprint: 1 }, { unique: true });
+const PropertyView = mongoose.model('PropertyView', PropertyViewSchema);
 
 // Minimal cookie reader — avoids pulling in cookie-parser for one cookie.
 function readCookie(req, name) {

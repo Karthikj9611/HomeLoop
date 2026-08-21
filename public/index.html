@@ -7012,6 +7012,34 @@ let PROPERTIES = [];
 let _initialPropertiesFetchDone = false;
 
 
+/* ─── Device signature ───────────────────────────
+   A best-effort, non-cookie identifier for "this physical device/browser
+   install", built from things that stay stable across incognito windows and
+   network changes (screen size, timezone, language, platform, pixel ratio)
+   but do NOT stay stable across different devices. Sent as `deviceSig` on
+   requests the backend dedups by fingerprint (see visitorFingerprint() in
+   server.js) — /api/stats/visit and /api/properties/:id/view — so the same
+   phone/laptop isn't recounted just because it opened an incognito window or
+   switched from wifi to mobile data. Falls back to IP+UA server-side if this
+   ever throws (very old browsers, JS restrictions) or returns empty. */
+function buildDeviceSignature() {
+  try {
+    const parts = [
+      screen.width, screen.height, screen.colorDepth,
+      window.devicePixelRatio || 1,
+      Intl.DateTimeFormat().resolvedOptions().timeZone || '',
+      navigator.language || '',
+      (navigator.languages || []).join(','),
+      navigator.platform || '',
+      navigator.hardwareConcurrency || '',
+      navigator.maxTouchPoints || 0,
+    ];
+    return parts.join('|');
+  } catch (e) {
+    return ''; // server falls back to IP+UA when this is empty
+  }
+}
+
 /* ─── View counts (DB-backed) ───────────────────
    The real count lives on the property document (Property.views) so admin's
    reset actions are reflected for every visitor, not just the browser that
@@ -7044,7 +7072,11 @@ function incrementViews(p) {
   // immediately, then confirm with the server (source of truth). If the
   // request fails, the next fetchProperties() reload will self-correct.
   p.views = getViews(p) + 1;
-  fetch(`/api/properties/${p.id}/view`, { method: 'POST' })
+  fetch(`/api/properties/${p.id}/view`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ deviceSig: buildDeviceSignature() }),
+  })
     .then(res => res.ok ? res.json() : null)
     .then(data => { if (data && typeof data.views === 'number') p.views = data.views; })
     .catch(() => { /* view count will reconcile on next full reload */ });
@@ -13868,7 +13900,12 @@ document.addEventListener('DOMContentLoaded', function() {
   // by a long-lived cookie (plus an IP/device fallback for incognito), so
   // reloads, extra tabs, and repeat visits from this browser don't inflate
   // the count — see POST /api/stats/visit on the backend.
-  fetch('/api/stats/visit', { method: 'POST', credentials: 'same-origin' }).catch(() => { /* stats are best-effort, never block the page on this */ });
+  fetch('/api/stats/visit', {
+    method: 'POST',
+    credentials: 'same-origin',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ deviceSig: buildDeviceSignature() }),
+  }).catch(() => { /* stats are best-effort, never block the page on this */ });
 
   syncFdBar();
   updateAllOnlySections(); // hide UrbanAware / Reviews / Premium on initial load (default tab is Promoted)
