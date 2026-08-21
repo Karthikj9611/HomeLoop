@@ -1333,16 +1333,8 @@
     const pdf = new jsPDF('p', 'pt', 'a4');
     const pageWidth = pdf.internal.pageSize.getWidth();
 
-    // Make sure the web fonts (Sora/Inter) have actually finished loading
-    // before we rasterize — otherwise the first PDF/share generated after
-    // a page load can silently capture the fallback system font, which
-    // looks slightly blurrier/thinner than the real fonts.
-    if(document.fonts && document.fonts.ready){
-      try{ await document.fonts.ready; }catch(e){}
-    }
-
     for(let i=0;i<sheets.length;i++){
-      const canvas = await html2canvas(sheets[i], {scale:3, backgroundColor:'#ffffff', imageTimeout:0});
+      const canvas = await html2canvas(sheets[i], {scale:2, backgroundColor:'#ffffff'});
       const imgData = canvas.toDataURL('image/png');
       const imgHeight = (canvas.height * pageWidth) / canvas.width;
       if(i>0) pdf.addPage();
@@ -1372,25 +1364,6 @@
     el.classList.remove('success');
   }
 
-  // jsPDF's built-in .save() creates a throwaway <a download> and clicks it
-  // without attaching it to the DOM first. Desktop browsers tolerate that,
-  // but several mobile browsers (notably iOS Safari) silently ignore clicks
-  // on detached elements and just open the PDF in a preview tab instead of
-  // downloading it. Attaching the link to the document before clicking makes
-  // the download behave the same way on mobile as it does on desktop.
-  function downloadBlob(blob, filename){
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    a.rel = 'noopener';
-    a.style.display = 'none';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    setTimeout(() => URL.revokeObjectURL(url), 4000);
-  }
-
   async function downloadPDF(){
     const btn = $('downloadBtn');
     if(btn.dataset.generating === '1') return; // already in progress — ignore repeat clicks
@@ -1411,7 +1384,7 @@
     btn.textContent = 'Generating…';
 
     const pdf = await buildPdfDoc();
-    downloadBlob(pdf.output('blob'), pdfFilename(d));
+    pdf.save(pdfFilename(d));
 
     btn.dataset.generating = '0';
     btn.textContent = '⬇ Download PDF';
@@ -1472,7 +1445,7 @@
       // so download the PDF and open WhatsApp pre-filled with a note to attach it.
       // No recipient is pre-selected — the person picks who to send it to
       // themselves, same as the native share sheet above.
-      downloadBlob(blob, fname);
+      pdf.save(fname);
       const msg = 'Hi ' + (d.tenantName || '') + ', here is your rent receipt — attaching the PDF that just downloaded (' + fname + ').';
       const waUrl = 'https://wa.me/?text=' + encodeURIComponent(msg);
       window.open(waUrl, '_blank');
