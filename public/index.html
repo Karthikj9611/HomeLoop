@@ -11215,6 +11215,11 @@ function openProfileModal() {
   document.getElementById('profileTileName').textContent = user.name || '—';
   document.getElementById('profileTileEmail').textContent = user.email || '—';
   document.getElementById('profileTileMobile').textContent = user.mobile || '—';
+  // Tenants ('customer' accounts) can't own listings, so the "Listings" tab
+  // has nothing to show them — same owner-only gate as updateListPropertyVisibility().
+  const canList = user.accountType === 'owner';
+  const listingsTabEl = document.getElementById('profileTabListings');
+  if (listingsTabEl) listingsTabEl.style.display = canList ? '' : 'none';
   document.getElementById('profileModal').classList.add('open');
   lockBodyScroll();
   switchProfileTab('info');
