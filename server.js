@@ -2537,14 +2537,65 @@ const paymentLimiter = rateLimit({
 // (fetched separately from /api/payment-settings) alongside this refCode.
 app.post('/api/payments/request', paymentLimiter, requireUser, async (req, res) => {
   try {
-    const { purpose, amount, note, propertyId } = req.body || {};
+    const { purpose, amount, note, propertyId, category, rentTotal } = req.body || {};
     if (!['brokerage', 'booking', 'visit_deposit', 'promotion'].includes(purpose)) {
       return res.status(400).json({ message: 'Invalid payment purpose' });
     }
-    const amt = Number(amount);
-    if (!amt || amt <= 0) return res.status(400).json({ message: 'A valid amount is required' });
+    let amt = Number(amount);
+    if (!Number.isFinite(amt) || amt <= 0) return res.status(400).json({ message: 'A valid amount is required' });
+    // Sanity ceiling — nothing charged through this flow should ever be this
+    // high; catches typos/overflow attempts regardless of which branch below applies.
+    if (amt > 1_00_00_000) return res.status(400).json({ message: 'Amount is too large' });
     if (propertyId && !mongoose.Types.ObjectId.isValid(propertyId)) {
       return res.status(400).json({ message: 'Invalid property id' });
+    }
+
+    // If a propertyId was given, resolve the actual listing doc now — used
+    // below both to enforce ownership (for purposes that require it) and to
+    // cross-check the amount against fixed/percentage fee rules where one exists.
+    let propertyDoc = null;
+    if (propertyId) {
+      for (const M of LISTING_MODEL_LIST) {
+        propertyDoc = await M.findById(propertyId).select('userId basic.status').lean();
+        if (propertyDoc) break;
+      }
+      if (!propertyDoc) return res.status(404).json({ message: 'Property not found' });
+    }
+
+    // "Promote my listing" only makes sense against a listing you own —
+    // require the propertyId and check ownership, same rule the edit/delete
+    // routes above use ({ _id, userId } together).
+    if (purpose === 'promotion') {
+      if (!propertyDoc) return res.status(400).json({ message: 'A property you own is required to promote a listing' });
+      if (String(propertyDoc.userId) !== String(req.userId)) {
+        return res.status(403).json({ message: 'You can only promote your own listing' });
+      }
+    }
+
+    // Fee amounts we can actually verify server-side, mirroring the numbers
+    // the frontend itself computes/locks in the payment modal. Anything not
+    // covered here (booking/visit_deposit, or "Other" amounts with no fixed
+    // schedule) still just gets the basic positive-number check above —
+    // those are self-declared figures with no ground truth to validate against,
+    // and rely on the admin's manual verification against the bank/UPI statement.
+    const user = await User.findById(req.userId).select('accountType').lean();
+    if (purpose === 'brokerage' && user && user.accountType === 'owner') {
+      // Flat fixed charge — the frontend locks this field to 2000 and never
+      // lets an owner edit it, so ignore whatever the client sent and use
+      // the known-correct figure instead of merely validating it.
+      amt = 2000;
+    } else if (purpose === 'brokerage' && category === 'pg') {
+      if (amt !== 1000) return res.status(400).json({ message: 'PG brokerage is a flat ₹1,000 fee' });
+    } else if (purpose === 'brokerage' && (category === 'rent' || category === 'lease')) {
+      const total = Number(rentTotal);
+      if (!Number.isFinite(total) || total <= 0) {
+        return res.status(400).json({ message: 'A valid monthly rent is required to compute the brokerage amount' });
+      }
+      const pct = category === 'lease' ? 0.5 : 0.3;
+      const expected = Math.round(total * pct);
+      if (amt !== expected) {
+        return res.status(400).json({ message: `Amount does not match ${category === 'lease' ? '50%' : '30%'} of the entered rent` });
+      }
     }
 
     const refCode = await nextSequenceId('PAY');

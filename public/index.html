@@ -12128,6 +12128,11 @@ let PAYMENT_SETTINGS_CACHE  = null; // UPI/QR/bank details, lazy-loaded only whe
 // PaymentRequest is created.
 let CURRENT_PAY_PROPERTY_ID = null;
 let CURRENT_PAY_PROPERTY_NOTE = '';
+// Whether the "Payment for" category (rent/lease/pg/other) applies to the
+// currently-open flow — false for the owner's flat brokerage fee, which has
+// no category picker. Read by ensureCurrentPaymentRequest() so the server
+// gets a real category (for amount cross-checking) or none, never a stale one.
+let CURRENT_PAY_CATEGORY_APPLICABLE = true;
 
 // Plain rupee formatting with thousands separators (fmtRupee() abbreviates to
 // K/L/Cr, which isn't right for an exact amount someone is about to pay).
@@ -12196,6 +12201,12 @@ function openPaymentModal(purpose, propertyId, propertyLabel) {
   // Owner paying the brokerage fee: skip the tenant-style "Payment for"
   // picker and rent math entirely — it's always a flat fixed charge.
   const isOwnerBrokerage = !!user && user.accountType === 'owner' && (purpose || 'brokerage') === 'brokerage';
+  // Tells ensureCurrentPaymentRequest() whether the "Payment for" category
+  // (rent/lease/pg/other) is meaningful for this flow — the server uses it to
+  // cross-check the amount, so we must not send a stale category value left
+  // over from a previous open when this flow doesn't actually use one (e.g.
+  // the owner's flat fee below).
+  CURRENT_PAY_CATEGORY_APPLICABLE = !isOwnerBrokerage;
   document.getElementById('pay-category-group').style.display = isOwnerBrokerage ? 'none' : '';
   document.getElementById('payOwnerFlat').style.display = isOwnerBrokerage ? '' : 'none';
 
@@ -12392,18 +12403,25 @@ async function handleAmountBlur() {
 async function ensureCurrentPaymentRequest(amount) {
   if (CURRENT_PAYMENT_REQUEST && CURRENT_PAYMENT_REQUEST.amount === amount) return CURRENT_PAYMENT_REQUEST;
   const purpose = document.getElementById('pay-purpose').value;
-  return finalizePaymentRequestCreation(purpose, amount, CURRENT_PAY_PROPERTY_NOTE, CURRENT_PAY_PROPERTY_ID);
+  // category/rentTotal let the server cross-check the amount against the
+  // same 30%/50%/flat-fee rules this UI already computes — see
+  // handlePayCategoryChange()/updateRentComputedDisplay() above.
+  const category = CURRENT_PAY_CATEGORY_APPLICABLE ? document.getElementById('pay-category').value : undefined;
+  const rentTotalEl = document.getElementById('pay-rent-total');
+  const rentTotal = (category === 'rent' || category === 'lease') && rentTotalEl && rentTotalEl.value
+    ? Number(rentTotalEl.value) : undefined;
+  return finalizePaymentRequestCreation(purpose, amount, CURRENT_PAY_PROPERTY_NOTE, CURRENT_PAY_PROPERTY_ID, category, rentTotal);
 }
 
 // Creates the PaymentRequest server-side and updates the reference badge.
 // Called both from the amount-blur auto-create path and from
 // submitPaymentProof() as a fallback. Returns the created request, or null
 // if it failed (toast already shown).
-async function finalizePaymentRequestCreation(purpose, amount, note, propertyId) {
+async function finalizePaymentRequestCreation(purpose, amount, note, propertyId, category, rentTotal) {
   const res = await fetch('/api/payments/request', {
     method: 'POST',
     headers: userAuthHeaders({ 'Content-Type': 'application/json' }),
-    body: JSON.stringify({ purpose, amount, note, propertyId: propertyId || undefined })
+    body: JSON.stringify({ purpose, amount, note, propertyId: propertyId || undefined, category, rentTotal })
   });
   const data = await res.json();
   if (!res.ok) { showToast(data.message || 'Could not start payment', 'error'); return null; }
