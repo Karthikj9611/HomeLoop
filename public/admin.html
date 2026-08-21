@@ -3718,13 +3718,14 @@ async function loadDailyStat(type){
 
 window.resetDailyStat = async function(type){
   const meta = DAILY_STAT_LABELS[type];
-  const ok = await showConfirmModal({ title:`Reset ${meta.label}?`, message:'Today\'s count will be set back to 0. This cannot be undone.', okText:'Reset' });
+  const ok = await showConfirmModal({ title:`Reset ${meta.label}?`, message:'Every day\'s count — today and every past month — will be set back to 0. This cannot be undone.', okText:'Reset all' });
   if(!ok) return;
   try{
-    const res = await fetch(`${BASE}/api/admin/daily-stats/${type}/today/clear`, { method:'PATCH', headers: authHeaders() });
+    const res = await fetch(`${BASE}/api/admin/daily-stats/${type}/clear-all`, { method:'POST', headers: authHeaders() });
     const data = await res.json().catch(()=>({}));
     if(!res.ok){ alert(data.message || `Failed to reset ${meta.label.toLowerCase()}`); return; }
     loadDailyStat(type);
+    if(type === 'visit') loadVisitsMonth(_visitsMonth);
   } catch(err){ alert(`Failed to reset ${meta.label.toLowerCase()}. Please try again.`); }
 };
 
