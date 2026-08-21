@@ -9,7 +9,7 @@
 // modal has zero load delay by the time the page is interactive.
 (function(){
   var WISH_PRELOAD = [
-    { startDate:'2026-08-20', endDate:'2026-08-21', image:'/wishes/varalakshmi-vratam-2026.png' }
+    { startDate:'2026-08-20', endDate:'2026-08-21', image:'/wishes/varalakshmi-vratam-2026.webp' }
   ];
   function todayStr(){ var d=new Date(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0'); return d.getFullYear()+'-'+m+'-'+day; }
   var today = todayStr();
@@ -15245,8 +15245,8 @@ document.addEventListener('keydown',function(e){
       id: 'varalakshmi-vratam-2026',
       startDate: '2026-08-20',   // YYYY-MM-DD (inclusive)
       endDate:   '2026-08-21',   // last day it should show (inclusive)
-      image:     '/wishes/varalakshmi-vratam-2026.png',
-      imageFallback: null,
+      image:     '/wishes/varalakshmi-vratam-2026.webp',
+      imageFallback: '/wishes/varalakshmi-vratam-2026.jpg',
       alt:       'Happy Varalakshmi Vratam — from Home Loop'
     }
     // Example for the future:
@@ -15279,11 +15279,32 @@ document.addEventListener('keydown',function(e){
   function openWishModal(w){
     var overlay = document.getElementById('wishModalOverlay');
     var img = document.getElementById('wishModalImg');
-    img.onerror = function(){ if (w.imageFallback && img.src.indexOf(w.imageFallback) === -1) img.src = w.imageFallback; };
-    img.src = w.image;
+    var revealed = false;
+    function reveal(){
+      if (revealed) return;
+      revealed = true;
+      overlay.classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+    // Preload off-screen first so the modal only appears once the image is
+    // actually ready — avoids a blank/broken flash while it downloads.
+    var preloadImg = new Image();
+    preloadImg.onload = function(){ img.src = preloadImg.src; reveal(); };
+    preloadImg.onerror = function(){
+      if (w.imageFallback && preloadImg.src.indexOf(w.imageFallback) === -1) {
+        preloadImg.src = w.imageFallback;
+      } else {
+        // Both formats failed — still reveal so the close button/alt text
+        // is reachable rather than silently doing nothing.
+        img.src = w.image;
+        reveal();
+      }
+    };
+    preloadImg.src = w.image;
     img.alt = w.alt || '';
-    overlay.classList.add('open');
-    document.body.style.overflow = 'hidden';
+    // Safety net: if the image is unusually slow (very slow connection),
+    // don't leave the visitor waiting forever — show it after 2s regardless.
+    setTimeout(function(){ if (!revealed) { img.src = preloadImg.src || w.image; reveal(); } }, 2000);
   }
 
   function closeWishModal(){
