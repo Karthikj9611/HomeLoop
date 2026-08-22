@@ -3318,20 +3318,19 @@ main.tab-explore .empty-state{display:none !important}
 .help-quick-wa{border-color:#c3efd4}
 .help-quick-wa svg{stroke:#25D366}
 .help-quick-wa:hover{border-color:#25D366;background:#e8faef}
-/* ─── Pagination — pill-style, stacked so the count label and the button
-   row each center independently (avoids the lopsided look of trying to
-   center one long flex line of mixed-width children). ── */
+/* ─── Pagination — pill-style Prev/Next with a page label between, one
+   centered row on desktop and mobile alike. ── */
 .pagination-bar{
-  grid-column:1/-1;display:flex;flex-direction:column;align-items:center;gap:10px;
+  grid-column:1/-1;display:flex;justify-content:center;
   padding:16px 20px;border-top:1px solid var(--border);background:var(--bg);
 }
 .pagination-info{font-size:12px;color:var(--text-3);white-space:nowrap}
-.pagination-controls{display:flex;align-items:center;gap:6px;flex-wrap:nowrap}
+.pagination-controls{display:flex;align-items:center;gap:10px;flex-wrap:nowrap}
 .page-btn{
   display:flex;align-items:center;justify-content:center;
-  min-width:32px;height:32px;padding:0 8px;
+  min-width:32px;height:36px;padding:0 18px;
   border-radius:999px;border:1.5px solid var(--border-2);
-  background:var(--bg);font-size:13px;font-weight:600;color:var(--text);
+  background:var(--bg);font-size:14px;font-weight:600;color:var(--text);
   cursor:pointer;transition:border-color .12s,background .12s,transform .1s,box-shadow .12s;
 }
 .page-btn:hover:not(:disabled):not(.active){border-color:var(--brand);background:var(--brand-light);color:var(--brand)}
@@ -3799,6 +3798,11 @@ main.tab-explore .empty-state{display:none !important}
   
   .shortlist-panel{width:100%}
   .menu-panel{width:100%}
+  /* 2x2 like the main grid on mobile, instead of one card per row —
+     shortlist-panel is full-width here so two columns fit comfortably. */
+  .panel-list{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .panel-list .prop-card{margin-bottom:0}
+  .panel-list .prop-img{height:110px}
   .compare-table th.compare-col,.compare-empty-cell,.compare-add-slot{min-width:140px}
   .compare-row-label,.compare-section-row td{position:static;left:auto}
   .compare-modal-header{padding:14px 16px}
