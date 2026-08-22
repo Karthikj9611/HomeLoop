@@ -14148,9 +14148,12 @@ async function addImagesFromFiles(input) {
   }
 }
 
-// Draws the source image onto a canvas with a semi-transparent
-// "🏠 homeloop.in" mark centered over it, then returns a new File with the
-// same name/type so it's a drop-in replacement in the upload FormData.
+// Draws the source image onto a canvas with a semi-transparent watermark
+// centered over it — the circular ".logo-mark-wrap" badge (golden ring +
+// white-bordered logo) next to the "homeloop.in" wordmark, matching the
+// header logo rather than just the flat logo artwork — then returns a new
+// File with the same name/type so it's a drop-in replacement in the upload
+// FormData.
 // Falls back to the original file (via the .catch() at the call site) if
 // anything about loading/encoding fails, so a bad photo never blocks the
 // whole upload.
@@ -14189,7 +14192,7 @@ async function watermarkImageFile(file) {
         // alone taking up a big chunk of the middle of the photo.
         const iconSize = Math.min(w, h) * 0.09;
         const fontSize = iconSize * 0.62;
-        const gap = iconSize * 0.28;
+        const gap = iconSize * 0.06;
         const label = 'homeloop.in';
 
         ctx.font = `700 ${fontSize}px Inter, system-ui, sans-serif`;
@@ -14202,7 +14205,43 @@ async function watermarkImageFile(file) {
         ctx.globalAlpha = 0.6;
         ctx.shadowColor = 'rgba(0,0,0,.35)';
         ctx.shadowBlur = iconSize * 0.12;
-        ctx.drawImage(logo, groupX, cy - iconSize / 2, iconSize, iconSize);
+
+        // Circular badge matching the header's .logo-mark-wrap: a golden
+        // conic-gradient ring behind a white-bordered, circularly-clipped
+        // logo image — not just the raw square logo artwork.
+        const iconCX = groupX + iconSize / 2;
+        const iconCY = cy;
+        const iconR = iconSize / 2;
+        ctx.beginPath();
+        ctx.arc(iconCX, iconCY, iconR, 0, Math.PI * 2);
+        if (ctx.createConicGradient) {
+          const ringGrad = ctx.createConicGradient(220 * Math.PI / 180, iconCX, iconCY);
+          ringGrad.addColorStop(0, '#d4af6a');
+          ringGrad.addColorStop(0.33, '#a97a2f');
+          ringGrad.addColorStop(0.66, '#7a5a22');
+          ringGrad.addColorStop(1, '#d4af6a');
+          ctx.fillStyle = ringGrad;
+        } else {
+          ctx.fillStyle = '#a97a2f'; // flat fallback if conic gradients aren't supported
+        }
+        ctx.fill();
+
+        // White inset "padding" ring (mirrors the wrap's padding + the
+        // .logo-mark's own white border), then the logo clipped to a circle
+        // and cover-fit inside it.
+        const innerR = iconR * 0.86;
+        ctx.beginPath();
+        ctx.arc(iconCX, iconCY, innerR, 0, Math.PI * 2);
+        ctx.fillStyle = '#fdfcf9';
+        ctx.fill();
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(iconCX, iconCY, innerR * 0.92, 0, Math.PI * 2);
+        ctx.clip();
+        const side = innerR * 0.92 * 2;
+        ctx.drawImage(logo, iconCX - side / 2, iconCY - side / 2, side, side);
+        ctx.restore();
 
         ctx.fillStyle = 'rgba(255,255,255,.92)';
         ctx.font = `700 ${fontSize}px Inter, system-ui, sans-serif`;
