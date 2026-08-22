@@ -755,6 +755,15 @@ main.tab-explore .empty-state{display:none !important}
   .prop-img-price .prop-price-unit .unit-short,
   .prop-img-price .price-chip[title="Security deposit"] .unit-short{display:none}
 }
+/* Below ~200px (e.g. the shortlist panel's 2-column cards), even "Deposit"
+   as a full word no longer fits next to the ₹ amount and the floating
+   heart/view/compare icon stack — it was overlapping and clipping to
+   "Depo". Let it fall back to "SD" at this width, same as maintenance
+   already does. */
+@container prop-img-box (max-width:200px){
+  .prop-img-price .price-chip[title="Security deposit"] .unit-full{display:none}
+  .prop-img-price .price-chip[title="Security deposit"] .unit-short{display:inline}
+}
 .prop-img .img-slide{transition:transform .5s cubic-bezier(.2,.7,.3,1)}
 
 .prop-card.list-view .prop-img{width:230px;aspect-ratio:unset;height:auto;min-height:150px;border-radius:0}
@@ -3802,7 +3811,13 @@ main.tab-explore .empty-state{display:none !important}
      shortlist-panel is full-width here so two columns fit comfortably. */
   .panel-list{display:grid;grid-template-columns:1fr 1fr;gap:8px}
   .panel-list .prop-card{margin-bottom:0}
-  .panel-list .prop-img{height:110px}
+  /* 110px wasn't tall enough for the full heart+views+compare(+promoted/
+     verified) badge stack even at the existing .78 mobile scale — the
+     last icon spilled past the image and sat on top of the price ribbon
+     below it (looked like the deposit text got "cut off" by the star).
+     140px gives the same scaled stack (up to ~125px incl. the top:10px
+     offset) clear room above the ribbon. */
+  .panel-list .prop-img{height:140px}
   .compare-table th.compare-col,.compare-empty-cell,.compare-add-slot{min-width:140px}
   .compare-row-label,.compare-section-row td{position:static;left:auto}
   .compare-modal-header{padding:14px 16px}
