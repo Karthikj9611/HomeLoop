@@ -675,7 +675,6 @@ main.tab-explore .empty-state{display:none !important}
   right:auto;width:50%;max-width:100%;
 }
 .prop-img-price::-webkit-scrollbar{display:none}
-.prop-img:has(.prop-img-price) .slide-dots{bottom:38px}
 .prop-img-price .prop-price-chips,
 .prop-img-price .prop-price-chips.price-chips-scroll{
   display:flex;flex-wrap:nowrap;align-items:baseline;gap:0;
@@ -1447,7 +1446,6 @@ main.tab-explore .empty-state{display:none !important}
 }
 .modal-img .slide-prev:hover,.modal-img .slide-next:hover{background:#fff;transform:scale(1.07)}
 .modal-img .slide-prev svg,.modal-img .slide-next svg{width:18px;height:18px;stroke-width:2.4}
-.modal-img .slide-dots{bottom:14px}
 .modal-img-typebadge{
   position:absolute;top:14px;left:14px;z-index:2;
   padding:6px 14px;border-radius:99px;font-size:11.5px;font-weight:800;
@@ -3857,16 +3855,6 @@ main.tab-explore .empty-state{display:none !important}
 .img-slide.active{display:block}
 .img-slide.active{pointer-events:auto}
 .img-slide.active{opacity:1}
-.slide-dots{
-  position:absolute;bottom:10px;left:50%;transform:translateX(-50%);
-  display:flex;gap:4px;z-index:3;
-}
-.slide-dot{
-  width:5px;height:5px;border-radius:50%;
-  background:rgba(255,255,255,.55);border:none;cursor:pointer;padding:0;
-  transition:background .15s;
-}
-.slide-dot.active{background:#fff}
 
 /* ─── Image Zoom Lightbox ───────────────────────── */
 #imgZoomOverlay{
@@ -7683,18 +7671,13 @@ function buildImgSlider(p, fg, uidSuffix, videoSlideHtml) {
   const videoSlide = videoSlideHtml
     ? `<div class="img-slide video-slide${imgs.length===0?' active':''}">${videoSlideHtml}</div>`
     : '';
-  const totalSlides = imgs.length + (videoSlideHtml ? 1 : 0);
-  const dots = totalSlides > 1 ? `<div class="slide-dots">${imgs.map((_,i)=>
-    `<button class="slide-dot${i===0?' active':''}" onclick="event.stopPropagation();slideGo('${uid}',${i})"></button>`
-  ).join('')}${videoSlideHtml ? `<button class="slide-dot${imgs.length===0?' active':''}" onclick="event.stopPropagation();slideGo('${uid}',${imgs.length})"></button>` : ''}</div>` : '';
-  return `<div class="img-slides" id="${uid}">${imgSlides}${videoSlide}${dots}</div>`;
+  return `<div class="img-slides" id="${uid}">${imgSlides}${videoSlide}</div>`;
 }
 
 function slideGo(uid, idx) {
   const c = document.getElementById(uid);
   if (!c) return;
   c.querySelectorAll('.img-slide').forEach((s,i) => s.classList.toggle('active', i===idx));
-  c.querySelectorAll('.slide-dot').forEach((d,i) => d.classList.toggle('active', i===idx));
 }
 
 function slideStep(uid, dir) {
