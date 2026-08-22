@@ -1742,7 +1742,7 @@ main.tab-explore .empty-state{display:none !important}
 /* ─── Shortlist Panel ──────────────────────────── */
 .shortlist-panel{
   position:fixed;top:0;right:0;bottom:0;z-index:250;
-  width:340px;background:var(--bg);
+  width:100%;background:var(--bg);
   border-left:1px solid var(--border);
   display:flex;flex-direction:column;
   transform:translateX(100%);
@@ -1780,16 +1780,25 @@ main.tab-explore .empty-state{display:none !important}
 }
 .panel-close:hover{background:rgba(255,255,255,.34);transform:scale(1.06)}
 .panel-close svg{width:15px;height:15px;stroke:#fff;fill:none;stroke-width:2.4}
-.panel-list{flex:1;display:flex;flex-direction:column;overflow-y:auto;padding:12px}
+/* Desktop: full-width panel, 4 cards per row, same card look as the main
+   grid (aspect-ratio image, no fixed height) — everything shown in one
+   scrollable grid, no pagination. */
+.panel-list{
+  flex:1;display:grid;grid-template-columns:repeat(4,1fr);gap:16px;
+  overflow-y:auto;padding:20px;align-content:start;
+}
 .panel-empty{
+  grid-column:1/-1;
   flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
   padding:40px 20px;text-align:center;
   font-size:13px;color:var(--text-3);
 }
-.panel-list .prop-card{width:100%;height:auto;margin-bottom:12px;border-radius:14px;overflow:hidden}
-.panel-list .prop-img{height:160px}
+.panel-list .prop-card{width:100%;height:auto;margin-bottom:0;border-radius:14px;overflow:hidden}
 .panel-list .prop-body{flex:0 0 auto}
 .panel-list .prop-footer{margin-top:12px}
+/* Empty state: drop the grid so the single message can center in the full
+   panel instead of sitting in one grid cell at the top. */
+.panel-list:has(.panel-empty){display:flex;flex-direction:column}
 
 /* ─── FAB ──────────────────────────────────────── */
 .fab{
