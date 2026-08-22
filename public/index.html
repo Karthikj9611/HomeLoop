@@ -1003,9 +1003,13 @@ main.tab-explore .empty-state{display:none !important}
   justify-self:end;
   display:flex;align-items:center;gap:3px;flex-shrink:0;
   font-size:11.5px;
-  color:#a85c6e;font-weight:600;white-space:nowrap;
+  font-weight:600;white-space:nowrap;
 }
-.prop-loc-avail svg{width:11px;height:11px;stroke:#a85c6e;fill:none;stroke-width:2;flex-shrink:0;display:none}
+/* Past availability dates read as overdue (red); today/future dates read as
+   upcoming (green) — set per-instance via one of these two modifier classes. */
+.prop-loc-avail.prop-loc-avail-past{color:#d13a4d}
+.prop-loc-avail.prop-loc-avail-future{color:#1a8f4c}
+.prop-loc-avail svg{width:11px;height:11px;stroke:currentColor;fill:none;stroke-width:2;flex-shrink:0;display:none}
 .prop-loc svg{width:11px;height:11px;stroke:#a85c6e;fill:#a85c6e;fill-opacity:.12;stroke-width:2;flex-shrink:0;display:none}
 .prop-loc-area span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;flex:1 1 auto;display:block}
 .prop-loc-area .prop-loc-short{display:none}
@@ -7974,35 +7978,7 @@ function cardHTML(p, compact, extraLeftBadge) {
   // Plain-text chip, no icon — used for the long tail of fields below so we're not
   // hand-drawing an SVG per field. Skips rendering entirely when value is empty.
   const chip = (label, value) => value ? `<span class="prop-chip" title="${esc(label)}"><span class="prop-chip-val">${esc(value)}</span></span>` : '';
-  const availableFmt = available ? (() => {
-    const d = new Date(available);
-    if (isNaN(d)) return available;
-    const dateStr = formatDateDisplay(d);
-    // Relative phrasing ("in 2 days", "in 3 months") for anything within
-    // roughly the next 3 months — easier to scan at a glance than a raw
-    // date. Past dates and anything further out just show the plain date.
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const target = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-    const dayMs = 24 * 60 * 60 * 1000;
-    const diffDays = Math.round((target - today) / dayMs);
-    if (diffDays < 0) return dateStr;
-    if (diffDays === 0) return 'Today';
-    if (diffDays === 1) return 'Tomorrow';
-    if (diffDays <= 30) return `In ${diffDays} day${diffDays > 1 ? 's' : ''}`;
-    // Whole calendar months between today and the target date.
-    let months = (target.getFullYear() - today.getFullYear()) * 12 + (target.getMonth() - today.getMonth());
-    if (target.getDate() < today.getDate()) months--;
-    if (months <= 3) {
-      if (months <= 0) return `In ${diffDays} days`;
-      const afterMonths = new Date(today.getFullYear(), today.getMonth() + months, today.getDate());
-      const remDays = Math.round((target - afterMonths) / dayMs);
-      let label = `${months} Month${months > 1 ? 's' : ''}`;
-      if (remDays > 0) label += ` ${remDays} Day${remDays > 1 ? 's' : ''}`;
-      return label;
-    }
-    return dateStr;
-  })() : '';
+  const availableInfo = availableDateInfo(available);
   const compactClass = compact ? ' compact' : '';
   const promotedClass = p.promoted ? ' prop-card-promoted' : '';
   return `<div class="prop-card${listClass}${compactClass}${promotedClass} type-${pType.toLowerCase()}" data-property-id="${p.id}" onclick="openDetail('${p.id}')">
@@ -8044,9 +8020,9 @@ function cardHTML(p, compact, extraLeftBadge) {
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
           <span class="prop-loc-full">${esc(p.location?.area)}</span><span class="prop-loc-short">${esc(locShort(p.location?.area))}</span>
         </span>
-        ${availableFmt ? `<span class="prop-loc-avail" title="Available from">
+        ${availableInfo ? `<span class="prop-loc-avail ${availableInfo.cls}" title="Available from">
           <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-          ${availableFmt}
+          ${availableInfo.text}
         </span>` : ''}
       </div>
       </div>
@@ -8149,31 +8125,7 @@ function shortlistCardHTML(p) {
   const electricLabel = p.price?.electricity || '';
   const ptype = p.property?.type || pgSL.type || p.shortStay?.type || '';
   const available = isPGCardSL ? (pgSL.available || '') : (p.property?.available || '');
-  const availableFmt = available ? (() => {
-    const d = new Date(available);
-    if (isNaN(d)) return available;
-    const dateStr = formatDateDisplay(d);
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const target = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-    const dayMs = 24 * 60 * 60 * 1000;
-    const diffDays = Math.round((target - today) / dayMs);
-    if (diffDays < 0) return dateStr;
-    if (diffDays === 0) return 'Today';
-    if (diffDays === 1) return 'Tomorrow';
-    if (diffDays <= 30) return `In ${diffDays} day${diffDays > 1 ? 's' : ''}`;
-    let months = (target.getFullYear() - today.getFullYear()) * 12 + (target.getMonth() - today.getMonth());
-    if (target.getDate() < today.getDate()) months--;
-    if (months <= 3) {
-      if (months <= 0) return `In ${diffDays} days`;
-      const afterMonths = new Date(today.getFullYear(), today.getMonth() + months, today.getDate());
-      const remDays = Math.round((target - afterMonths) / dayMs);
-      let label = `${months} Month${months > 1 ? 's' : ''}`;
-      if (remDays > 0) label += ` ${remDays} Day${remDays > 1 ? 's' : ''}`;
-      return label;
-    }
-    return dateStr;
-  })() : '';
+  const availableInfo = availableDateInfo(available);
   return `<div class="prop-card type-${pType.toLowerCase()}" data-property-id="${p.id}" onclick="toggleShortlistPanel();openDetail('${p.id}')">
     <div class="prop-img" style="background:${bg}" data-idx="0">
       ${buildImgSlider(p, fg, '-sl')}
@@ -8211,9 +8163,9 @@ function shortlistCardHTML(p) {
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
           <span class="prop-loc-full">${esc(p.location?.area)}</span><span class="prop-loc-short">${esc(locShort(p.location?.area))}</span>
         </span>
-        ${availableFmt ? `<span class="prop-loc-avail" title="Available from">
+        ${availableInfo ? `<span class="prop-loc-avail ${availableInfo.cls}" title="Available from">
           <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-          ${availableFmt}
+          ${availableInfo.text}
         </span>` : ''}
       </div>
       </div>
@@ -8567,31 +8519,7 @@ function renderCompareTable() {
     const leaseDur = p.terms?.lease || '';
     const ptype = p.property?.type || p.pg?.type || p.shortStay?.type || '';
     const available = pTypeLabel(p) === 'PG' ? (p.pg?.available || '') : (p.property?.available || '');
-    const availableFmt = available ? (() => {
-      const d = new Date(available);
-      if (isNaN(d)) return available;
-      const dateStr = formatDateDisplay(d);
-      const now = new Date();
-      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      const target = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-      const dayMs = 24 * 60 * 60 * 1000;
-      const diffDays = Math.round((target - today) / dayMs);
-      if (diffDays < 0) return dateStr;
-      if (diffDays === 0) return 'Today';
-      if (diffDays === 1) return 'Tomorrow';
-      if (diffDays <= 30) return `In ${diffDays} day${diffDays > 1 ? 's' : ''}`;
-      let months = (target.getFullYear() - today.getFullYear()) * 12 + (target.getMonth() - today.getMonth());
-      if (target.getDate() < today.getDate()) months--;
-      if (months <= 3) {
-        if (months <= 0) return `In ${diffDays} days`;
-        const afterMonths = new Date(today.getFullYear(), today.getMonth() + months, today.getDate());
-        const remDays = Math.round((target - afterMonths) / dayMs);
-        let label = `${months} Month${months > 1 ? 's' : ''}`;
-        if (remDays > 0) label += ` ${remDays} Day${remDays > 1 ? 's' : ''}`;
-        return label;
-      }
-      return dateStr;
-    })() : '';
+    const availableInfo = availableDateInfo(available);
     return `<th class="compare-col compare-col-head">
       <div class="compare-col-card">
         <div class="compare-col-img" style="background:${bg}">
@@ -8615,10 +8543,10 @@ function renderCompareTable() {
           </div>
         </div>
         <div class="compare-col-body">
-          ${availableFmt ? `<div class="prop-loc">
-            <span class="prop-loc-avail" title="Available from">
+          ${availableInfo ? `<div class="prop-loc">
+            <span class="prop-loc-avail ${availableInfo.cls}" title="Available from">
               <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-              ${availableFmt}
+              ${availableInfo.text}
             </span>
           </div>` : ''}
         </div>
@@ -11213,6 +11141,20 @@ function formatDateDisplay(input, withTime = false) {
 // Kept for any older call sites — now just delegates to the shared formatter.
 function formatPostedDateTime(date) {
   return formatDateDisplay(date, true);
+}
+// "Available from" badge shown on property cards: always the plain date
+// (no more "In 8 days" / "Today" / "2 Months" phrasing), colored red when
+// the date has already passed and green when it's today or upcoming.
+function availableDateInfo(available) {
+  if (!available) return null;
+  const d = parseFlexibleDate(available);
+  if (isNaN(d)) return { text: available, cls: 'prop-loc-avail-future' };
+  const dateStr = formatDateDisplay(d);
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const target = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const cls = target < today ? 'prop-loc-avail-past' : 'prop-loc-avail-future';
+  return { text: dateStr, cls };
 }
 function getLoggedInUser() {
   try { return JSON.parse(localStorage.getItem('homeloop_user')); } catch { return null; }
