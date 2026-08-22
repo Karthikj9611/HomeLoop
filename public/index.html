@@ -3306,7 +3306,6 @@ main.tab-explore .empty-state{display:none !important}
 #chargesModal #chargesOwnerView{display:flex;flex-direction:column;gap:14px}
 
 /* ─── Help & Support Modal ─────────────────────── */
-.help-search{margin-bottom:14px}
 .help-quick-strip{display:flex;gap:8px;margin-bottom:16px}
 .help-quick-btn{
   flex:1;display:flex;align-items:center;justify-content:center;gap:6px;
@@ -3319,17 +3318,6 @@ main.tab-explore .empty-state{display:none !important}
 .help-quick-wa{border-color:#c3efd4}
 .help-quick-wa svg{stroke:#25D366}
 .help-quick-wa:hover{border-color:#25D366;background:#e8faef}
-.help-quick-mail svg{stroke:var(--brand)}
-.help-cats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:18px}
-.help-cat{
-  display:flex;flex-direction:column;align-items:flex-start;gap:8px;
-  padding:14px;border:1px solid var(--border);border-radius:var(--radius);
-  cursor:pointer;transition:border-color .12s,background .12s;
-}
-.help-cat:hover{border-color:var(--brand);background:var(--brand-light)}
-.help-cat.active{border-color:var(--brand);background:var(--brand-light);}
-.help-cat svg{width:20px;height:20px;stroke:var(--brand);fill:none;stroke-width:1.7}
-.help-cat-label{font-size:12.5px;font-weight:600;color:var(--text)}
 .faq-item{border-bottom:1px solid var(--border)}
 .faq-item:last-child{border-bottom:none}
 .faq-q{
@@ -3344,7 +3332,6 @@ main.tab-explore .empty-state{display:none !important}
   max-height:0;overflow:hidden;transition:max-height .2s ease;
 }
 .faq-item.open .faq-a{max-height:300px;padding-bottom:13px}
-.help-contact-row{display:flex;gap:10px;margin-top:18px}
 
 /* ─── Our Company Modal ────────────────────────── */
 .about-hero{text-align:center;padding:8px 10px 20px}
@@ -6506,81 +6493,29 @@ main.tab-explore .empty-state{display:none !important}
       </button>
     </div>
 
-    <div class="help-search">
-      <div class="searchbar" style="border-radius:10px">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <input type="text" onkeydown="if(event.key==='Enter'){showToast('Searching help center…')}" />
-      </div>
-    </div>
-
     <!-- Quick contact strip -->
     <div class="help-quick-strip">
-      <a class="help-quick-btn" href="tel:18001234567">
-        <svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.8 19.8 0 0 1 1.61 3.4 2 2 0 0 1 3.59 1.22h3a2 2 0 0 1 2 1.72 12.8 12.8 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 8.78a16 16 0 0 0 6.29 6.29l1.14-1.14a2 2 0 0 1 2.11-.45 12.8 12.8 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-        Call Us
-      </a>
       <a class="help-quick-btn help-quick-wa" href="https://wa.me/911234567890" target="_blank" rel="noopener">
         <svg viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
         WhatsApp
       </a>
-      <a class="help-quick-btn help-quick-mail" href="mailto:support@homeloop.in">
-        <svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-        Email
+      <a class="help-quick-btn" href="tel:18001234567">
+        <svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.8 19.8 0 0 1 1.61 3.4 2 2 0 0 1 3.59 1.22h3a2 2 0 0 1 2 1.72 12.8 12.8 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 8.78a16 16 0 0 0 6.29 6.29l1.14-1.14a2 2 0 0 1 2.11-.45 12.8 12.8 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+        Call Us
       </a>
-    </div>
-
-    <div class="help-cats">
-      <div class="help-cat" onclick="filterFaq('listing')">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/></svg>
-        <div class="help-cat-label">Listings &amp; Posting</div>
-      </div>
-      <div class="help-cat" onclick="filterFaq('payment')">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-        <div class="help-cat-label">Payments &amp; Deposits</div>
-      </div>
-      <div class="help-cat" onclick="filterFaq('account')">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-        <div class="help-cat-label">Account &amp; Login</div>
-      </div>
-      <div class="help-cat" onclick="filterFaq('safety')">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-        <div class="help-cat-label">Safety &amp; Trust</div>
-      </div>
-      <div class="help-cat" onclick="filterFaq('visit')">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-        <div class="help-cat-label">Visits &amp; Scheduling</div>
-      </div>
-      <div class="help-cat" onclick="filterFaq('refer')">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><path d="M19 8l2 2-2 2M21 10h-4"/></svg>
-        <div class="help-cat-label">Refer &amp; Earn</div>
-      </div>
     </div>
 
     <div class="lm-section" style="margin-top:4px">Frequently asked</div>
     <div id="faqList">
 
-      <div class="faq-item" data-cat="listing">
+      <div class="faq-item">
         <div class="faq-q" onclick="toggleFaq(this)">How do I post a property for free?
           <svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
         <div class="faq-a">Tap the + button or "Post a Property" in the menu, fill in your property details and owner contact, then submit. Your first listing is completely free.</div>
       </div>
 
-      <div class="faq-item" data-cat="listing">
-        <div class="faq-q" onclick="toggleFaq(this)">How long does my listing stay active?
-          <svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
-        </div>
-        <div class="faq-a">Listings stay active for 90 days by default. You can renew or edit them anytime from your account. Once a tenant moves in, mark the property as rented so others don't waste time.</div>
-      </div>
-
-      <div class="faq-item" data-cat="listing">
-        <div class="faq-q" onclick="toggleFaq(this)">Can I edit my listing after posting?
-          <svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
-        </div>
-        <div class="faq-a">Yes. Go to your profile, find the listing, and tap Edit. Changes go live immediately after review.</div>
-      </div>
-
-      <div class="faq-item" data-cat="payment">
+      <div class="faq-item">
         <div class="faq-q" onclick="toggleFaq(this)">Is there a brokerage or fee?
           <svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
@@ -6589,78 +6524,20 @@ main.tab-explore .empty-state{display:none !important}
         </div>
       </div>
 
-      <div class="faq-item" data-cat="payment">
+      <div class="faq-item">
         <div class="faq-q" onclick="toggleFaq(this)">How is the security deposit handled?
           <svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
         <div class="faq-a">The deposit is agreed directly between the owner and tenant. We recommend paying only after physically visiting the property and signing a rental agreement. Never pay in advance to unverified owners.</div>
       </div>
 
-      <div class="faq-item" data-cat="account">
-        <div class="faq-q" onclick="toggleFaq(this)">How do I reset my password?
-          <svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
-        </div>
-        <div class="faq-a">On the login screen, tap "Forgot password" to receive a reset link.</div>
-      </div>
-
-      <div class="faq-item" data-cat="account">
-        <div class="faq-q" onclick="toggleFaq(this)">How do I delete my account?
-          <svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
-        </div>
-        <div class="faq-a">Go to Menu → Account Settings → Delete Account. This will permanently remove your profile and all listings. This action cannot be undone.</div>
-      </div>
-
-      <div class="faq-item" data-cat="safety">
-        <div class="faq-q" onclick="toggleFaq(this)">How are listings verified?
-          <svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
-        </div>
-        <div class="faq-a">We verify owner contact details and periodically review listings for accuracy. Look for the green Verified badge on trusted listings. Always visit the property in person before paying any amount.</div>
-      </div>
-
-      <div class="faq-item" data-cat="safety">
+      <div class="faq-item">
         <div class="faq-q" onclick="toggleFaq(this)">How do I report a suspicious listing?
           <svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
         <div class="faq-a">Tap the three-dot menu on any listing and select "Report". Our team reviews all reports within 24 hours. Fraudulent listings are removed immediately.</div>
       </div>
 
-      <div class="faq-item" data-cat="visit">
-        <div class="faq-q" onclick="toggleFaq(this)">How do I schedule a property visit?
-          <svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
-        </div>
-        <div class="faq-a">Open the property, tap "Schedule Visit", pick a date and time slot that works for you. The owner will be notified and will confirm via call or WhatsApp.</div>
-      </div>
-
-      <div class="faq-item" data-cat="visit">
-        <div class="faq-q" onclick="toggleFaq(this)">Can I reschedule or cancel a visit?
-          <svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
-        </div>
-        <div class="faq-a">Yes. Go to your scheduled visits and tap Reschedule or Cancel. Please cancel at least 2 hours in advance out of courtesy to the owner.</div>
-      </div>
-
-      <div class="faq-item" data-cat="refer">
-        <div class="faq-q" onclick="toggleFaq(this)">When do I get my ₹1,000 referral reward?
-          <svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
-        </div>
-        <div class="faq-a">Your reward is credited to your UPI once the referred tenant moves in via a commission-based booking. No limit on how many tenants you can refer.<br><br>
-          <a href="javascript:void(0)" onclick="closeHelpModal(); openReferModal();" style="color:var(--brand);font-weight:600;text-decoration:underline">See Refer &amp; Earn details →</a>
-        </div>
-      </div>
-
-      <div class="faq-item" data-cat="refer">
-        <div class="faq-q" onclick="toggleFaq(this)">How does the referral link work?
-          <svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
-        </div>
-        <div class="faq-a">Share your unique referral link — when the tenant books through it and moves in, the referral is tracked automatically.<br><br>
-          <a href="javascript:void(0)" onclick="closeHelpModal(); openReferModal();" style="color:var(--brand);font-weight:600;text-decoration:underline">Get your referral link →</a>
-        </div>
-      </div>
-
-    </div>
-
-    <div class="help-contact-row">
-      <button class="modal-btn-secondary" onclick="showToast('Opening live chat…')">💬 Chat with us</button>
-      <button class="modal-btn-primary" onclick="showToast('Calling support: 1800-123-4567')">📞 Call support</button>
     </div>
   </div>
 </div>
@@ -13308,18 +13185,6 @@ function toggleFaq(el) {
   const wasOpen = item.classList.contains('open');
   document.querySelectorAll('#faqList .faq-item').forEach(f => f.classList.remove('open'));
   if (!wasOpen) item.classList.add('open');
-}
-function filterFaq(cat) {
-  document.querySelectorAll('#faqList .faq-item').forEach(f => {
-    f.style.display = (!cat || f.dataset.cat === cat) ? '' : 'none';
-    f.classList.remove('open');
-  });
-  document.querySelectorAll('.help-cat').forEach(c => c.classList.remove('active'));
-  event.currentTarget.classList.add('active');
-}
-function resetFaq() {
-  document.querySelectorAll('#faqList .faq-item').forEach(f => { f.style.display = ''; f.classList.remove('open'); });
-  document.querySelectorAll('.help-cat').forEach(c => c.classList.remove('active'));
 }
 
 /* ═══════════════════════════════════════════════
