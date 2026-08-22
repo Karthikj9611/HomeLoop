@@ -3318,6 +3318,33 @@ main.tab-explore .empty-state{display:none !important}
 .help-quick-wa{border-color:#c3efd4}
 .help-quick-wa svg{stroke:#25D366}
 .help-quick-wa:hover{border-color:#25D366;background:#e8faef}
+/* ─── Pagination — pill-style, stacked so the count label and the button
+   row each center independently (avoids the lopsided look of trying to
+   center one long flex line of mixed-width children). ── */
+.pagination-bar{
+  grid-column:1/-1;display:flex;flex-direction:column;align-items:center;gap:10px;
+  padding:16px 20px;border-top:1px solid var(--border);background:var(--bg);
+}
+.pagination-info{font-size:12px;color:var(--text-3);white-space:nowrap}
+.pagination-controls{display:flex;align-items:center;gap:6px;flex-wrap:nowrap}
+.page-btn{
+  display:flex;align-items:center;justify-content:center;
+  min-width:32px;height:32px;padding:0 8px;
+  border-radius:999px;border:1.5px solid var(--border-2);
+  background:var(--bg);font-size:13px;font-weight:600;color:var(--text);
+  cursor:pointer;transition:border-color .12s,background .12s,transform .1s,box-shadow .12s;
+}
+.page-btn:hover:not(:disabled):not(.active){border-color:var(--brand);background:var(--brand-light);color:var(--brand)}
+.page-btn:active:not(:disabled){transform:scale(.94)}
+.page-btn:disabled{color:var(--text-3);cursor:default;opacity:.5}
+.page-btn.active{
+  background:var(--brand);border-color:var(--brand);color:#fff;
+  box-shadow:0 3px 10px rgba(224,58,82,.3);cursor:default;
+}
+.page-ellipsis{
+  display:flex;align-items:center;justify-content:center;
+  min-width:20px;height:32px;font-size:13px;color:var(--text-3);
+}
 .faq-item{border-bottom:1px solid var(--border)}
 .faq-item:last-child{border-bottom:none}
 .faq-q{
@@ -7412,54 +7439,15 @@ window.addEventListener('resize', () => {
   _syncCardWidthTimer = setTimeout(syncScrollCardWidth, 150);
 });
 
-function pageNumberButtons(section, page, totalPages) {
-  // Builds a dynamic list of page numbers, with ellipses for long ranges.
-  // Always shows: first, last, current, and 1 neighbour on each side.
-  const pages = [];
-  const addPage = n => pages.push(n);
-  const addEllipsis = () => pages.push('...');
-
-  addPage(0);
-  if (page - 1 > 1) addEllipsis();
-  for (let n = Math.max(1, page - 1); n <= Math.min(totalPages - 2, page + 1); n++) addPage(n);
-  if (page + 1 < totalPages - 2) addEllipsis();
-  if (totalPages > 1) addPage(totalPages - 1);
-
-  // de-dupe (covers small totalPages edge cases)
-  const seen = new Set();
-  const clean = pages.filter(p => { if (p === '...') return true; if (seen.has(p)) return false; seen.add(p); return true; });
-
-  return clean.map(p => {
-    if (p === '...') {
-      return `<span style="padding:7px 6px;font-size:13px;color:var(--text-3)">…</span>`;
-    }
-    const isActive = p === page;
-    return `<button onclick="goToPage('${section}',${p})"
-      style="min-width:34px;padding:7px 10px;border-radius:8px;border:1.5px solid ${isActive ? 'var(--brand)' : 'var(--border-2)'};background:${isActive ? 'var(--brand)' : 'var(--bg)'};font-size:13px;font-weight:600;color:${isActive ? '#fff' : 'var(--text)'};cursor:${isActive ? 'default' : 'pointer'}"
-      ${isActive ? 'disabled' : ''}>${p + 1}</button>`;
-  }).join('');
-}
-
 function paginationHTML(section, page, total) {
   const totalPages = Math.ceil(total / PAGE_SIZE);
   if (totalPages <= 1) return '';
-  const start = page * PAGE_SIZE + 1;
-  const end = Math.min((page + 1) * PAGE_SIZE, total);
   return `
-    <div style="grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:14px;padding:14px 20px;border-top:1px solid var(--border);background:var(--bg)">
-  <span style="font-size:12px;color:var(--text-3);white-space:nowrap">${start}–${end} of ${total}</span>
-  <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">
-        <button onclick="changePage('${section}',-1)"
-          style="display:flex;align-items:center;gap:4px;padding:7px 10px;border-radius:8px;border:1.5px solid var(--border-2);background:var(--bg);font-size:13px;font-weight:500;color:${page===0?'var(--text-3)':'var(--text)'};cursor:${page===0?'default':'pointer'}"
-          ${page===0?'disabled':''}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
-        </button>
-        ${pageNumberButtons(section, page, totalPages)}
-        <button onclick="changePage('${section}',1)"
-          style="display:flex;align-items:center;gap:4px;padding:7px 10px;border-radius:8px;border:1.5px solid var(--border-2);background:var(--bg);font-size:13px;font-weight:500;color:${page>=totalPages-1?'var(--text-3)':'var(--text)'};cursor:${page>=totalPages-1?'default':'pointer'}"
-          ${page>=totalPages-1?'disabled':''}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
-        </button>
+    <div class="pagination-bar">
+      <div class="pagination-controls">
+        <button class="page-btn" onclick="changePage('${section}',-1)" ${page===0?'disabled':''}>Prev</button>
+        <span class="pagination-info">Page ${page + 1} of ${totalPages}</span>
+        <button class="page-btn" onclick="changePage('${section}',1)" ${page>=totalPages-1?'disabled':''}>Next</button>
       </div>
     </div>`;
 }
