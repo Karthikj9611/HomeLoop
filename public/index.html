@@ -362,14 +362,18 @@ ul{list-style:none}
   flex:1 1 auto;min-height:0;overflow-y:auto;
   padding-right:4px; /* keeps text clear of the scrollbar */
   overscroll-behavior:contain;
+  scrollbar-width:none; /* Firefox — hide the scrollbar, scrolling still works */
+  -ms-overflow-style:none; /* old Edge/IE */
 }
+.fd-opts::-webkit-scrollbar{display:none} /* Chrome/Safari — hide the scrollbar, scrolling still works */
 /* Search box inside a dropdown popover (e.g. Property ID) — sits between
    the label and the option pills, filters them live as the owner types. */
 .fd-search{
-  flex-shrink:0;width:100%;box-sizing:border-box;
+  flex-shrink:0;width:calc(100% - 4px);box-sizing:border-box;
   border:1px solid var(--border-2);border-radius:7px;
   padding:5px 10px;font-size:16px;color:var(--text-1);
   background:var(--bg);outline:none;
+  min-height:36px;
 }
 .fd-search:focus{border-color:var(--brand)}
 .fp-opt.fd-hidden{display:none}
@@ -377,6 +381,7 @@ ul{list-style:none}
   border:1px solid var(--border-2);border-radius:7px;
   padding:8px 12px;font-size:12px;color:var(--text-2);
   cursor:pointer;transition:all .12s;background:var(--bg);
+  box-sizing:border-box;min-height:36px;display:flex;align-items:center;
 }
 .fp-opt:hover{border-color:var(--brand);color:var(--brand)}
 .fp-opt.sel{background:var(--brand);color:#fff;border-color:var(--brand)}
@@ -4106,6 +4111,7 @@ main.tab-explore .empty-state{display:none !important}
     <svg class="chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
     <div class="fd-pop" id="fdp-locality" onclick="event.stopPropagation()">
       <div class="fd-pop-label">Locality / Area</div>
+      <input class="fd-search" type="text" placeholder="Search locality…" oninput="fdSearchOpts('fdo-locality', this.value)"/>
       <div class="fd-opts" id="fdo-locality"></div>
       <div class="fd-pop-footer">
         <button class="fd-clear-btn" onclick="clearFd('locality')">Clear</button>
@@ -4123,6 +4129,7 @@ main.tab-explore .empty-state{display:none !important}
     <svg class="chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
     <div class="fd-pop" id="fdp-pincode" onclick="event.stopPropagation()">
       <div class="fd-pop-label">Pincode</div>
+      <input class="fd-search" type="text" placeholder="Search pincode…" oninput="fdSearchOpts('fdo-pincode', this.value)"/>
       <div class="fd-opts" id="fdo-pincode"></div>
       <div class="fd-pop-footer">
         <button class="fd-clear-btn" onclick="clearFd('pincode')">Clear</button>
@@ -4162,6 +4169,7 @@ main.tab-explore .empty-state{display:none !important}
     <svg class="chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
     <div class="fd-pop" id="fdp-bhk" onclick="event.stopPropagation()">
       <div class="fd-pop-label">BHK</div>
+      <input class="fd-search" type="text" placeholder="Search BHK…" oninput="fdSearchOpts('fdo-bhk', this.value)"/>
       <div class="fd-opts" id="fdo-bhk"></div>
       <div class="fd-pop-footer">
         <button class="fd-clear-btn" onclick="clearFd('bhk')">Clear</button>
@@ -4177,7 +4185,8 @@ main.tab-explore .empty-state{display:none !important}
     <svg class="chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
     <div class="fd-pop" id="fdp-area" onclick="event.stopPropagation()">
       <div class="fd-pop-label">Sqft</div>
-      <div class="fd-opts">
+      <input class="fd-search" type="text" placeholder="Search sqft…" oninput="fdSearchOpts('fdo-area', this.value)"/>
+      <div class="fd-opts" id="fdo-area">
         <div class="fp-opt" data-filter="_areaBucket" data-val="0-500" onclick="toggleOpt(this,'area')">Under 500</div>
         <div class="fp-opt" data-filter="_areaBucket" data-val="500-1000" onclick="toggleOpt(this,'area')">500 – 1000</div>
         <div class="fp-opt" data-filter="_areaBucket" data-val="1000-1500" onclick="toggleOpt(this,'area')">1000 – 1500</div>
@@ -4198,6 +4207,7 @@ main.tab-explore .empty-state{display:none !important}
     <svg class="chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
     <div class="fd-pop" id="fdp-type" onclick="event.stopPropagation()">
       <div class="fd-pop-label">Property type</div>
+      <input class="fd-search" type="text" placeholder="Search type…" oninput="fdSearchOpts('fdo-type', this.value)"/>
       <div class="fd-opts" id="fdo-type"></div>
       <div class="fd-pop-footer">
         <button class="fd-clear-btn" onclick="clearFd('type')">Clear</button>
@@ -4214,7 +4224,8 @@ main.tab-explore .empty-state{display:none !important}
     <svg class="chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
     <div class="fd-pop" id="fdp-availFrom" onclick="event.stopPropagation()">
       <div class="fd-pop-label">Available from</div>
-      <div class="fd-opts">
+      <input class="fd-search" type="text" placeholder="Search availability…" oninput="fdSearchOpts('fdo-availFrom', this.value)"/>
+      <div class="fd-opts" id="fdo-availFrom">
         <div class="fp-opt" data-filter="_availBucket" data-val="0-7" onclick="toggleOpt(this,'availFrom')">Immediate (≤7 days)</div>
         <div class="fp-opt" data-filter="_availBucket" data-val="7-15" onclick="toggleOpt(this,'availFrom')">Within 15 days</div>
         <div class="fp-opt" data-filter="_availBucket" data-val="15-30" onclick="toggleOpt(this,'availFrom')">Within 1 month</div>
@@ -4237,6 +4248,7 @@ main.tab-explore .empty-state{display:none !important}
     <svg class="chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
     <div class="fd-pop" id="fdp-furnishing" onclick="event.stopPropagation()">
       <div class="fd-pop-label">Furnishing</div>
+      <input class="fd-search" type="text" placeholder="Search furnishing…" oninput="fdSearchOpts('fdo-furnishing', this.value)"/>
       <div class="fd-opts" id="fdo-furnishing"></div>
       <div class="fd-pop-footer">
         <button class="fd-clear-btn" onclick="clearFd('furnishing')">Clear</button>
@@ -4252,6 +4264,7 @@ main.tab-explore .empty-state{display:none !important}
     <svg class="chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
     <div class="fd-pop" id="fdp-bathrooms" onclick="event.stopPropagation()">
       <div class="fd-pop-label">No. of bathrooms</div>
+      <input class="fd-search" type="text" placeholder="Search bathrooms…" oninput="fdSearchOpts('fdo-bathrooms', this.value)"/>
       <div class="fd-opts" id="fdo-bathrooms"></div>
       <div class="fd-pop-footer">
         <button class="fd-clear-btn" onclick="clearFd('bathrooms')">Clear</button>
@@ -4267,6 +4280,7 @@ main.tab-explore .empty-state{display:none !important}
     <svg class="chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
     <div class="fd-pop" id="fdp-amenities" onclick="event.stopPropagation()">
       <div class="fd-pop-label">Amenities</div>
+      <input class="fd-search" type="text" placeholder="Search amenities…" oninput="fdSearchOpts('fdo-amenities', this.value)"/>
       <div class="fd-opts" id="fdo-amenities"></div>
       <div class="fd-pop-footer">
         <button class="fd-clear-btn" onclick="clearFd('amenities')">Clear</button>
@@ -4327,7 +4341,8 @@ main.tab-explore .empty-state{display:none !important}
     <svg class="chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
     <div class="fd-pop" id="fdp-floor" onclick="event.stopPropagation()">
       <div class="fd-pop-label">Floor</div>
-      <div class="fd-opts">
+      <input class="fd-search" type="text" placeholder="Search floor…" oninput="fdSearchOpts('fdo-floor', this.value)"/>
+      <div class="fd-opts" id="fdo-floor">
         <div class="fp-opt" data-filter="_floorBucket" data-val="0-1" onclick="toggleOpt(this,'floor')">Ground</div>
         <div class="fp-opt" data-filter="_floorBucket" data-val="1-4" onclick="toggleOpt(this,'floor')">1st – 3rd</div>
         <div class="fp-opt" data-filter="_floorBucket" data-val="4-9" onclick="toggleOpt(this,'floor')">4th – 8th</div>
@@ -4353,6 +4368,7 @@ main.tab-explore .empty-state{display:none !important}
     <svg class="chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
     <div class="fd-pop" id="fdp-facing" onclick="event.stopPropagation()">
       <div class="fd-pop-label">Facing direction</div>
+      <input class="fd-search" type="text" placeholder="Search facing…" oninput="fdSearchOpts('fdo-facing', this.value)"/>
       <div class="fd-opts" id="fdo-facing"></div>
       <div class="fd-pop-footer">
         <button class="fd-clear-btn" onclick="clearFd('facing')">Clear</button>
@@ -4370,6 +4386,7 @@ main.tab-explore .empty-state{display:none !important}
     <svg class="chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
     <div class="fd-pop" id="fdp-age" onclick="event.stopPropagation()">
       <div class="fd-pop-label">Age of property</div>
+      <input class="fd-search" type="text" placeholder="Search age…" oninput="fdSearchOpts('fdo-age', this.value)"/>
       <div class="fd-opts" id="fdo-age"></div>
       <div class="fd-pop-footer">
         <button class="fd-clear-btn" onclick="clearFd('age')">Clear</button>
@@ -4385,6 +4402,7 @@ main.tab-explore .empty-state{display:none !important}
     <svg class="chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
     <div class="fd-pop" id="fdp-tenant" onclick="event.stopPropagation()">
       <div class="fd-pop-label">Tenant preferred</div>
+      <input class="fd-search" type="text" placeholder="Search tenant…" oninput="fdSearchOpts('fdo-tenant', this.value)"/>
       <div class="fd-opts" id="fdo-tenant"></div>
       <div class="fd-pop-footer">
         <button class="fd-clear-btn" onclick="clearFd('tenant')">Clear</button>
@@ -4401,6 +4419,7 @@ main.tab-explore .empty-state{display:none !important}
     <svg class="chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
     <div class="fd-pop" id="fdp-leaseType" onclick="event.stopPropagation()">
       <div class="fd-pop-label">Lease type</div>
+      <input class="fd-search" type="text" placeholder="Search lease type…" oninput="fdSearchOpts('fdo-leaseType', this.value)"/>
       <div class="fd-opts" id="fdo-leaseType"></div>
       <div class="fd-pop-footer">
         <button class="fd-clear-btn" onclick="clearFd('leaseType')">Clear</button>
@@ -4416,6 +4435,7 @@ main.tab-explore .empty-state{display:none !important}
     <svg class="chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
     <div class="fd-pop" id="fdp-leaseDuration" onclick="event.stopPropagation()">
       <div class="fd-pop-label">Contract Term</div>
+      <input class="fd-search" type="text" placeholder="Search duration…" oninput="fdSearchOpts('fdo-leaseDuration', this.value)"/>
       <div class="fd-opts" id="fdo-leaseDuration"></div>
       <div class="fd-pop-footer">
         <button class="fd-clear-btn" onclick="clearFd('leaseDuration')">Clear</button>
@@ -4431,6 +4451,7 @@ main.tab-explore .empty-state{display:none !important}
     <svg class="chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
     <div class="fd-pop" id="fdp-lockIn" onclick="event.stopPropagation()">
       <div class="fd-pop-label">Lock-in period</div>
+      <input class="fd-search" type="text" placeholder="Search lock-in…" oninput="fdSearchOpts('fdo-lockIn', this.value)"/>
       <div class="fd-opts" id="fdo-lockIn"></div>
       <div class="fd-pop-footer">
         <button class="fd-clear-btn" onclick="clearFd('lockIn')">Clear</button>
@@ -4452,6 +4473,7 @@ main.tab-explore .empty-state{display:none !important}
     <svg class="chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
     <div class="fd-pop" id="fdp-pgGender" onclick="event.stopPropagation()">
       <div class="fd-pop-label">PG for</div>
+      <input class="fd-search" type="text" placeholder="Search…" oninput="fdSearchOpts('fdo-pgGender', this.value)"/>
       <div class="fd-opts" id="fdo-pgGender"></div>
       <div class="fd-pop-footer">
         <button class="fd-clear-btn" onclick="clearFd('pgGender')">Clear</button>
@@ -4467,6 +4489,7 @@ main.tab-explore .empty-state{display:none !important}
     <svg class="chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
     <div class="fd-pop" id="fdp-pgRoom" onclick="event.stopPropagation()">
       <div class="fd-pop-label">Room type</div>
+      <input class="fd-search" type="text" placeholder="Search room type…" oninput="fdSearchOpts('fdo-pgRoom', this.value)"/>
       <div class="fd-opts" id="fdo-pgRoom"></div>
       <div class="fd-pop-footer">
         <button class="fd-clear-btn" onclick="clearFd('pgRoom')">Clear</button>
@@ -4481,8 +4504,10 @@ main.tab-explore .empty-state{display:none !important}
     <svg class="chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
     <div class="fd-pop fd-pop right" id="fdp-pgMeals" onclick="event.stopPropagation()">
       <div class="fd-pop-label">Meals</div>
+      <input class="fd-search" type="text" placeholder="Search meals…" oninput="fdSearchOpts('fdo-pgMeals', this.value)"/>
       <div class="fd-opts" id="fdo-pgMeals"></div>
       <div class="fd-pop-label" style="margin-top:6px">Food type</div>
+      <input class="fd-search" type="text" placeholder="Search food type…" oninput="fdSearchOpts('fdo-pgFoodType', this.value)"/>
       <div class="fd-opts" id="fdo-pgFoodType"></div>
       <div class="fd-pop-footer">
         <button class="fd-clear-btn" onclick="clearFd('pgMeals')">Clear</button>
@@ -4498,6 +4523,7 @@ main.tab-explore .empty-state{display:none !important}
     <svg class="chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
     <div class="fd-pop" id="fdp-pgOccupancy" onclick="event.stopPropagation()">
       <div class="fd-pop-label">Occupancy</div>
+      <input class="fd-search" type="text" placeholder="Search occupancy…" oninput="fdSearchOpts('fdo-pgOccupancy', this.value)"/>
       <div class="fd-opts" id="fdo-pgOccupancy"></div>
       <div class="fd-pop-footer">
         <button class="fd-clear-btn" onclick="clearFd('pgOccupancy')">Clear</button>
@@ -4513,6 +4539,7 @@ main.tab-explore .empty-state{display:none !important}
     <svg class="chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
     <div class="fd-pop" id="fdp-pgGateTime" onclick="event.stopPropagation()">
       <div class="fd-pop-label">Gate closing time</div>
+      <input class="fd-search" type="text" placeholder="Search gate time…" oninput="fdSearchOpts('fdo-pgGateTime', this.value)"/>
       <div class="fd-opts" id="fdo-pgGateTime"></div>
       <div class="fd-pop-footer">
         <button class="fd-clear-btn" onclick="clearFd('pgGateTime')">Clear</button>
@@ -4528,6 +4555,7 @@ main.tab-explore .empty-state{display:none !important}
     <svg class="chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
     <div class="fd-pop" id="fdp-pgVisitors" onclick="event.stopPropagation()">
       <div class="fd-pop-label">Visitors policy</div>
+      <input class="fd-search" type="text" placeholder="Search visitors…" oninput="fdSearchOpts('fdo-pgVisitors', this.value)"/>
       <div class="fd-opts" id="fdo-pgVisitors"></div>
       <div class="fd-pop-footer">
         <button class="fd-clear-btn" onclick="clearFd('pgVisitors')">Clear</button>
@@ -4545,6 +4573,7 @@ main.tab-explore .empty-state{display:none !important}
     <svg class="chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
     <div class="fd-pop fd-pop right" id="fdp-ssCouples" onclick="event.stopPropagation()">
       <div class="fd-pop-label">Unmarried couples allowed</div>
+      <input class="fd-search" type="text" placeholder="Search…" oninput="fdSearchOpts('fdo-ssCouples', this.value)"/>
       <div class="fd-opts" id="fdo-ssCouples"></div>
       <div class="fd-pop-footer">
         <button class="fd-clear-btn" onclick="clearFd('ssCouples')">Clear</button>
@@ -4560,6 +4589,7 @@ main.tab-explore .empty-state{display:none !important}
     <svg class="chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
     <div class="fd-pop" id="fdp-ssCancellation" onclick="event.stopPropagation()">
       <div class="fd-pop-label">Cancellation policy</div>
+      <input class="fd-search" type="text" placeholder="Search cancellation…" oninput="fdSearchOpts('fdo-ssCancellation', this.value)"/>
       <div class="fd-opts" id="fdo-ssCancellation"></div>
       <div class="fd-pop-footer">
         <button class="fd-clear-btn" onclick="clearFd('ssCancellation')">Clear</button>
@@ -9330,8 +9360,8 @@ function refreshTotalBadge() {
 }
 
 /* Live-filters a dropdown's option pills as the owner types in its search
-   box (currently only Property ID uses this — see fdSearchOpts wiring in
-   the HTML). Case-insensitive substring match against each pill's visible
+   box — every option-list filter has one (see fdSearchOpts wiring in the
+   HTML). Case-insensitive substring match against each pill's visible
    text; non-matching pills are hidden via .fd-hidden rather than removed,
    so selections survive typing and clearing the search back out. */
 function fdSearchOpts(containerId, query) {
