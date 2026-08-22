@@ -8118,17 +8118,17 @@ function cardHTML(p, compact, extraLeftBadge) {
         ${isPGCard ? (pg.gender ? (() => { const gIcon = {'Boys':'♂️','Girls':'♀️','Co-ed':'⚥'}[pg.gender] || '🚻'; const gAbbr = {'Boys':'M','Girls':'F','Co-ed':'M/F'}[pg.gender] || esc(pg.gender); return `<span class="prop-stat" title="Gender preference: ${esc(pg.gender)}">
           <span class="prop-stat-icon icon-gender">${gIcon}</span>
           ${gAbbr}
-        </span>`; })() : '') : (carCount > 0 ? `<span class="prop-stat" title="${carCount+' car parking spot'+(carCount>1?'s':'')}">
+        </span>`; })() : '') : `<span class="prop-stat" title="${carCount+' car parking spot'+(carCount===1?'':'s')}">
           <span class="prop-stat-icon icon-car">🚗</span>
           ${carCount}
-        </span>` : '')}
+        </span>`}
         ${bikeCount > 0 ? `<span class="prop-stat" title="${bikeCount+' bike parking spot'+(bikeCount>1?'s':'')}">
           <span class="prop-stat-icon icon-bike">🏍️</span>
           ${bikeCount}
         </span>` : ''}
-        ${areaSqft ? `<span class="prop-stat" title="Built-up area">
+        ${areaSqft ? `<span class="prop-stat" title="Built-up area: ${areaSqft} sqft">
           <span class="prop-stat-icon icon-area">📐</span>
-          ${areaSqft} sqft
+          ${areaSqft}
         </span>` : ''}
       </div>
 <!--<div class="prop-footer">
@@ -8285,17 +8285,17 @@ function shortlistCardHTML(p) {
         ${isPGCardSL ? (pgSL.gender ? (() => { const gIcon = {'Boys':'♂️','Girls':'♀️','Co-ed':'⚥'}[pgSL.gender] || '🚻'; const gAbbr = {'Boys':'M','Girls':'F','Co-ed':'M/F'}[pgSL.gender] || esc(pgSL.gender); return `<span class="prop-stat" title="Gender preference: ${esc(pgSL.gender)}">
           <span class="prop-stat-icon icon-gender">${gIcon}</span>
           ${gAbbr}
-        </span>`; })() : '') : (carCount > 0 ? `<span class="prop-stat" title="${carCount+' car parking spot'+(carCount>1?'s':'')}">
+        </span>`; })() : '') : `<span class="prop-stat" title="${carCount+' car parking spot'+(carCount===1?'':'s')}">
           <span class="prop-stat-icon icon-car">🚗</span>
           ${carCount}
-        </span>` : '')}
+        </span>`}
         ${bikeCount > 0 ? `<span class="prop-stat" title="${bikeCount+' bike parking spot'+(bikeCount>1?'s':'')}">
           <span class="prop-stat-icon icon-bike">🏍️</span>
           ${bikeCount}
         </span>` : ''}
-        ${areaSqft ? `<span class="prop-stat" title="Built-up area">
+        ${areaSqft ? `<span class="prop-stat" title="Built-up area: ${areaSqft} sqft">
           <span class="prop-stat-icon icon-area">📐</span>
-          ${areaSqft} sqft
+          ${areaSqft}
         </span>` : ''}
       </div>
     </div>
