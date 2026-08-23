@@ -1200,6 +1200,11 @@ footer i{color:var(--gold)}
 }
 .form-clear-btn:hover{border-color:#d13a4d;color:#d13a4d;background:rgba(209,58,77,.06)}
 .add-modal.view-mode .form-clear-btn{display:none}
+.draft-save-indicator{
+  font-size:11.5px;color:var(--text-3);text-align:right;margin-top:12px;
+}
+.draft-save-indicator i{color:#2e9e5b;margin-right:4px}
+.add-modal.view-mode .draft-save-indicator{display:none!important}
 
 /* ─── Amenities multi-select dropdown ──────────── */
 .am-dd{position:relative}
@@ -3077,6 +3082,12 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
 
     </div>
     <!-- /listingFormSections -->
+
+    <!-- Autosave feedback for the "Add property" draft protection (see
+         saveListingDraftNow / checkForListingDraftOnLoad below) — hidden
+         until the first autosave fires, and not shown at all in view mode
+         or while editing an existing listing (drafts don't cover edits). -->
+    <div class="draft-save-indicator" id="draftSaveIndicator" style="display:none"></div>
 
     <div class="form-actions-row">
       <button type="button" class="form-clear-btn" id="listingClearBtn" onclick="clearListingFormPrompt()" title="Erase everything typed in this form">Clear form</button>
@@ -7133,6 +7144,7 @@ function closeApptModal(){
 
 let editingPropertyId = null;
 let fImages = [];
+let _listingFormDirty = false; // true once the open modal has any unsaved edits
 let _scrollLockCount = 0;
 let _scrollLockY = 0;
 
@@ -7239,7 +7251,22 @@ function saveListingDraftNow() {
   if (!modal || !modal.classList.contains('open')) return;
   try {
     localStorage.setItem(ADMIN_NEW_LISTING_DRAFT_KEY, JSON.stringify(captureListingFormState()));
+    showDraftSavedIndicator(Date.now());
   } catch (e) { /* storage full/unavailable — draft protection is best-effort */ }
+}
+// Small "Draft saved · 3:41 PM" caption above the form buttons so the
+// autosave isn't invisible — otherwise there's no sign it's protecting
+// anything until the moment it's actually needed.
+function showDraftSavedIndicator(atMs) {
+  const el = document.getElementById('draftSaveIndicator');
+  if (!el) return;
+  const time = new Date(atMs).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  el.innerHTML = '<i class="fas fa-check" style="font-size:10px"></i> Draft saved · ' + time;
+  el.style.display = '';
+}
+function hideDraftSavedIndicator() {
+  const el = document.getElementById('draftSaveIndicator');
+  if (el) el.style.display = 'none';
 }
 function scheduleListingDraftSave() {
   clearTimeout(_listingDraftSaveTimer);
@@ -7276,6 +7303,8 @@ async function checkForListingDraftOnLoad() {
   if (resume) {
     openAdminAddPropertyModal();
     applyListingFormState(state);
+    showDraftSavedIndicator(state.savedAt);
+    _listingFormDirty = true; // resumed content isn't saved to the server yet
   } else {
     clearListingDraft();
   }
@@ -7295,6 +7324,8 @@ async function clearListingFormPrompt() {
   const typeEl = document.getElementById('f-type');
   if (typeEl) onFTypeChange(typeEl.value);
   clearListingDraft();
+  hideDraftSavedIndicator();
+  _listingFormDirty = false;
 }
 function resetListingForm() {
   document.querySelectorAll('#addModal input:not([type="checkbox"]), #addModal select, #addModal textarea').forEach(el => { el.value = ''; });
@@ -7369,6 +7400,9 @@ function openAdminAddPropertyModal() {
   const submitBtn = document.getElementById('listingSubmitBtn');
   if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Add property'; }
 
+  hideDraftSavedIndicator();
+  _listingFormDirty = false;
+
   document.getElementById('addModal').classList.add('open');
   lockBodyScroll();
 }
@@ -7386,16 +7420,33 @@ function openAdminListingModal(id, mode) {
   const toggleBtn = document.getElementById('addModalModeToggleBtn');
   if (toggleBtn) toggleBtn.style.display = '';
 
+  hideDraftSavedIndicator(); // drafts don't apply to edit mode — see comment above
+  _listingFormDirty = false;
+
   document.getElementById('addModal').classList.add('open');
   lockBodyScroll();
 
   _setAdminListingMode(mode);
 }
-function closeAdminEditModal() {
+// Confirms before discarding unsaved edits — draft persistence only covers
+// an accidental *refresh*; without this, simply clicking ✕ or clicking
+// outside the modal would silently throw away everything just as easily.
+async function closeAdminEditModal() {
+  if (_listingFormDirty) {
+    const ok = await showConfirmModal({
+      title: 'Discard unsaved changes?',
+      message: 'You have unsaved changes in this form. Closing now discards them.',
+      okText: 'Discard changes',
+      cancelText: 'Keep editing',
+      variant: 'danger',
+    });
+    if (!ok) return;
+  }
   document.getElementById('addModal').classList.remove('open');
   unlockBodyScroll();
   editingPropertyId = null;
   resetListingForm();
+  _listingFormDirty = false;
 }
 
 /* View and Edit are the SAME form now — this just flips which mode it's
@@ -8019,6 +8070,7 @@ function renderFImages() {
 }
 function removeFImage(i) {
   fImages.splice(i, 1);
+  _listingFormDirty = true;
   renderFImages();
 }
 // Drag-to-reorder for the property-images thumbnail grid. Uses Pointer
@@ -8069,6 +8121,7 @@ function fImgPointerUp() {
   if (moved && current !== from) {
     const item = fImages.splice(from, 1)[0];
     fImages.splice(current, 0, item);
+    _listingFormDirty = true;
   } else {
     el.style.transform = '';
   }
@@ -8090,6 +8143,7 @@ async function addImagesFromFiles(input) {
     const data = await res.json();
     if (!res.ok) throw new Error(data.message || 'Upload failed');
     (data.urls || []).forEach(u => { if (fImages.indexOf(u) < 0) fImages.push(u); });
+    _listingFormDirty = true;
   } catch (err) {
     alert(err.message || 'Could not upload images. Please try again.');
   } finally {
@@ -8233,10 +8287,25 @@ function copyEditVideoLink() {
    index.html's submitListing(), minus the create/POST branch (admin
    only ever edits an existing DB record here, never creates one from
    scratch), and refreshing the DataTable in place afterwards. ── */
-function adminSubmitListing() {
+/* Soft, non-blocking duplicate check — an owner legitimately listing
+   several properties will share a phone number, so this only warns
+   (lets the admin catch a typo) rather than hard-blocking submission. */
+function findDuplicateOwnerPhoneListing(phone, excludeId) {
+  if (!phone) return null;
+  for (const id in _adminPropCache) {
+    if (id === excludeId) continue;
+    const row = _adminPropCache[id];
+    if (row && row.ownerNumber === phone) return row;
+  }
+  return null;
+}
+async function adminSubmitListing() {
   const firstError = validateListingForm();
   if (firstError) {
-    alert('Please fill in all required fields');
+    const label = firstError.id === 'imgFormGroup'
+      ? 'Please add at least one property image'
+      : fieldLabelText(firstError) + ' is required';
+    _adminToast(label);
     firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
     if (typeof firstError.focus === 'function') firstError.focus();
     return;
@@ -8263,6 +8332,20 @@ function adminSubmitListing() {
   if (agentPhone && !isValidIndianMobile(agentPhone)) {
     alert('Enter a valid 10-digit agent phone number starting with 6, 7, 8 or 9');
     return;
+  }
+  if (ownerPhone) {
+    const dupe = findDuplicateOwnerPhoneListing(ownerPhone, editingPropertyId);
+    if (dupe) {
+      const label = dupe.propertyId || dupe.title || 'another listing';
+      const proceed = await showConfirmModal({
+        title: 'Phone number already in use',
+        message: (dupe.loc ? label + ' (' + dupe.loc + ')' : label) + ' already uses owner phone ' + ownerPhone + '. That\'s fine if it\'s the same owner listing multiple properties — otherwise, double-check for a typo.',
+        okText: 'Continue anyway',
+        cancelText: 'Go back and check',
+        variant: 'info',
+      });
+      if (!proceed) return;
+    }
   }
 
   const amenitiesSelected = AM_LIST.filter(([id]) => gb(id)).map(([id, label, unitId]) => {
@@ -8409,6 +8492,8 @@ function adminSubmitListing() {
     if (!res.ok) throw new Error(data.message || 'Server error');
     alert(isNew ? 'Property added' : 'Listing updated');
     if (isNew) clearListingDraft();
+    hideDraftSavedIndicator();
+    _listingFormDirty = false; // saved successfully — closing now shouldn't prompt
     closeAdminEditModal();
     if (typeof propTable !== 'undefined' && propTable) propTable.ajax.reload(null, false);
   })
@@ -8431,6 +8516,7 @@ document.getElementById('addModal').addEventListener('input', function(e){
       if (msg) msg.remove();
     }
   }
+  _listingFormDirty = true;
   scheduleListingDraftSave();
 });
 document.getElementById('addModal').addEventListener('change', function(e){
@@ -8449,6 +8535,7 @@ document.getElementById('addModal').addEventListener('change', function(e){
     const msg = imgGroup.querySelector('.field-error-text');
     if (msg) msg.remove();
   }
+  _listingFormDirty = true;
   scheduleListingDraftSave();
 });
 document.getElementById('addModal').addEventListener('click', function(e) {
