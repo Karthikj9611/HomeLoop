@@ -2751,7 +2751,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
       </div>
       <div class="form-group" id="f-waterWrap">
         <label class="form-label">Water</label>
-        <select class="form-select" id="f-waterCharge"><option>Included</option><option>Separate</option><option>Tanker</option></select>
+        <select class="form-select" id="f-waterCharge"><option>Included</option><option>Separate</option><option>Tanker</option><option>Kaveri</option><option>Borewell</option></select>
       </div>
 	  <div class="form-group" id="f-negotiableWrap">
         <label class="form-label">Price negotiable</label>
@@ -2861,7 +2861,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
       <div class="lm-section">📅 Availability &amp; Terms</div>
       <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
         <div class="form-group"><label class="form-label">Notice period</label><select class="form-select" id="f-noticePeriod"><option value="">Select</option><option>15 Days</option><option>1 Month</option><option>2 Months</option><option selected>3 Months</option></select></div>
-        <div class="form-group"><label class="form-label">Contract Term</label><select class="form-select" id="f-leaseDuration"><option value="">Any</option><option>6 Months</option><option selected>12 Months</option><option>24 Months</option><option>36 Months</option><option>48 Months</option><option>48+ Months</option></select></div>
+        <div class="form-group"><label class="form-label">Contract Term</label><select class="form-select" id="f-leaseDuration"><option value="">Any</option><option>6 Months</option><option>11 Months</option><option selected>12 Months</option><option>24 Months</option><option>36 Months</option><option>48 Months</option><option>48+ Months</option></select></div>
       </div>
       <div class="lm-section">⚖️ Tenant Rules</div>
       <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
@@ -2993,25 +2993,26 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
             <button type="button" class="am-dd-action-btn am-dd-action-clear" onclick="amClearAll()">Clear all</button>
           </div>
           <div class="am-dd-grid">
-            <label class="am-dd-item"><input type="checkbox" id="am-wifi" onchange="onAmCheck()"/> Wi-Fi <input type="number" id="f-wifiUnits" min="1" onclick="event.stopPropagation()"></label>
             <label class="am-dd-item"><input type="checkbox" id="am-ac" onchange="onAmCheck()"/> AC <input type="number" id="f-acUnits" min="1" onclick="event.stopPropagation()"></label>
-            <label class="am-dd-item"><input type="checkbox" id="am-washing" onchange="onAmCheck()"/> Washing machine <input type="number" id="f-washingUnits" min="1" onclick="event.stopPropagation()"></label>
-            <label class="am-dd-item"><input type="checkbox" id="am-fridge" onchange="onAmCheck()"/> Refrigerator <input type="number" id="f-fridgeUnits" min="1" onclick="event.stopPropagation()"></label>
-            <label class="am-dd-item"><input type="checkbox" id="am-microwave" onchange="onAmCheck()"/> Microwave <input type="number" id="f-microwaveUnits" min="1" onclick="event.stopPropagation()"></label>
-            <label class="am-dd-item"><input type="checkbox" id="am-geyser" onchange="onAmCheck()"/> Geyser <input type="number" id="f-geyserUnits" min="1" onclick="event.stopPropagation()"></label>
-            <label class="am-dd-item"><input type="checkbox" id="am-wardrobe" onchange="onAmCheck()"/> Cupboards <input type="number" id="f-wardrobeUnits" min="1" onclick="event.stopPropagation()"></label>
-            <label class="am-dd-item"><input type="checkbox" id="am-bed" onchange="onAmCheck()"/> Bed &amp; mattress <input type="number" id="f-bedUnits" min="1" onclick="event.stopPropagation()"></label>
-            <label class="am-dd-item"><input type="checkbox" id="am-sofa" onchange="onAmCheck()"/> Sofa <input type="number" id="f-sofaUnits" min="1" onclick="event.stopPropagation()"></label>
-            <label class="am-dd-item"><input type="checkbox" id="am-lift" onchange="onAmCheck()"/> Elevator <input type="number" id="f-liftUnits" min="1" onclick="event.stopPropagation()"></label>
             <label class="am-dd-item"><input type="checkbox" id="am-balcony" onchange="onAmCheck()"/> Balcony <input type="number" id="f-balconyUnits" min="1" onclick="event.stopPropagation()"></label>
-            <label class="am-dd-item"><input type="checkbox" id="am-gym" onchange="onAmCheck()"/> Gym <input type="number" id="f-gymUnits" min="1" onclick="event.stopPropagation()"></label>
+            <label class="am-dd-item"><input type="checkbox" id="am-bed" onchange="onAmCheck()"/> Bed &amp; mattress <input type="number" id="f-bedUnits" min="1" onclick="event.stopPropagation()"></label>
             <label class="am-dd-item"><input type="checkbox" id="am-security" onchange="onAmCheck()"/> CCTV <input type="number" id="f-securityUnits" min="1" onclick="event.stopPropagation()"></label>
-            <label class="am-dd-item"><input type="checkbox" id="am-power" onchange="onAmCheck()"/> Power backup <input type="number" id="f-powerUnits" min="1" onclick="event.stopPropagation()"></label>
+            <label class="am-dd-item"><input type="checkbox" id="am-chimney" onchange="onAmCheck()"/> Chimney <input type="number" id="f-chimneyUnits" min="1" onclick="event.stopPropagation()"></label>
+            <label class="am-dd-item"><input type="checkbox" id="am-wardrobe" onchange="onAmCheck()"/> Cupboards <input type="number" id="f-wardrobeUnits" min="1" onclick="event.stopPropagation()"></label>
+            <label class="am-dd-item"><input type="checkbox" id="am-lift" onchange="onAmCheck()"/> Elevator <input type="number" id="f-liftUnits" min="1" onclick="event.stopPropagation()"></label>
             <label class="am-dd-item"><input type="checkbox" id="am-garden" onchange="onAmCheck()"/> Garden <input type="number" id="f-gardenUnits" min="1" onclick="event.stopPropagation()"></label>
+            <label class="am-dd-item"><input type="checkbox" id="am-geyser" onchange="onAmCheck()"/> Geyser <input type="number" id="f-geyserUnits" min="1" onclick="event.stopPropagation()"></label>
+            <label class="am-dd-item"><input type="checkbox" id="am-gym" onchange="onAmCheck()"/> Gym <input type="number" id="f-gymUnits" min="1" onclick="event.stopPropagation()"></label>
             <label class="am-dd-item"><input type="checkbox" id="am-laundry" onchange="onAmCheck()"/> Laundry <input type="number" id="f-laundryUnits" min="1" onclick="event.stopPropagation()"></label>
             <label class="am-dd-item"><input type="checkbox" id="am-meals" onchange="onAmCheck()"/> Meals included <input type="number" id="f-mealsUnits" min="1" onclick="event.stopPropagation()"></label>
+            <label class="am-dd-item"><input type="checkbox" id="am-microwave" onchange="onAmCheck()"/> Microwave <input type="number" id="f-microwaveUnits" min="1" onclick="event.stopPropagation()"></label>
             <label class="am-dd-item"><input type="checkbox" id="am-pipedgas" onchange="onAmCheck()"/> Piped gas connection <input type="number" id="f-pipedgasUnits" min="1" onclick="event.stopPropagation()"></label>
+            <label class="am-dd-item"><input type="checkbox" id="am-power" onchange="onAmCheck()"/> Power backup <input type="number" id="f-powerUnits" min="1" onclick="event.stopPropagation()"></label>
+            <label class="am-dd-item"><input type="checkbox" id="am-fridge" onchange="onAmCheck()"/> Refrigerator <input type="number" id="f-fridgeUnits" min="1" onclick="event.stopPropagation()"></label>
             <label class="am-dd-item"><input type="checkbox" id="am-ro" onchange="onAmCheck()"/> RO water filter <input type="number" id="f-roUnits" min="1" onclick="event.stopPropagation()"></label>
+            <label class="am-dd-item"><input type="checkbox" id="am-sofa" onchange="onAmCheck()"/> Sofa <input type="number" id="f-sofaUnits" min="1" onclick="event.stopPropagation()"></label>
+            <label class="am-dd-item"><input type="checkbox" id="am-washing" onchange="onAmCheck()"/> Washing machine <input type="number" id="f-washingUnits" min="1" onclick="event.stopPropagation()"></label>
+            <label class="am-dd-item"><input type="checkbox" id="am-wifi" onchange="onAmCheck()"/> Wi-Fi <input type="number" id="f-wifiUnits" min="1" onclick="event.stopPropagation()"></label>
           </div>
         </div>
       </div>
@@ -7141,25 +7142,26 @@ function unlockBodyScroll() {
    list index.html's form uses, needed so applyImportedProperty/
    adminSubmitListing read/write the exact same amenity fields. ── */
 const AM_LIST = [
-  ['am-wifi',     'Wi-Fi',                  'f-wifiUnits'],
   ['am-ac',       'AC',                     'f-acUnits'],
-  ['am-washing',  'Washing machine',        'f-washingUnits'],
-  ['am-fridge',   'Refrigerator',           'f-fridgeUnits'],
-  ['am-microwave','Microwave',       'f-microwaveUnits'],
-  ['am-geyser',   'Geyser',  'f-geyserUnits'],
-  ['am-wardrobe', 'Cupboards',   'f-wardrobeUnits'],
-  ['am-bed',      'Bed',         'f-bedUnits'],
-  ['am-sofa',     'Sofa',         'f-sofaUnits'],
-  ['am-lift',     'Elevator',        'f-liftUnits'],
   ['am-balcony',  'Balcony',      'f-balconyUnits'],
-  ['am-gym',      'Gym',             'f-gymUnits'],
+  ['am-bed',      'Bed',         'f-bedUnits'],
   ['am-security', 'CCTV',        'f-securityUnits'],
-  ['am-power',    'Power backup',           'f-powerUnits'],
+  ['am-chimney',  'Chimney',                'f-chimneyUnits'],
+  ['am-wardrobe', 'Cupboards',   'f-wardrobeUnits'],
+  ['am-lift',     'Elevator',        'f-liftUnits'],
   ['am-garden',   'Garden',                 'f-gardenUnits'],
+  ['am-geyser',   'Geyser',  'f-geyserUnits'],
+  ['am-gym',      'Gym',             'f-gymUnits'],
   ['am-laundry',  'Laundry',                'f-laundryUnits'],
   ['am-meals',    'Meals included',         'f-mealsUnits'],
+  ['am-microwave','Microwave',       'f-microwaveUnits'],
   ['am-pipedgas', 'Piped gas connection',   'f-pipedgasUnits'],
+  ['am-power',    'Power backup',           'f-powerUnits'],
+  ['am-fridge',   'Refrigerator',           'f-fridgeUnits'],
   ['am-ro',       'RO water filter',        'f-roUnits'],
+  ['am-sofa',     'Sofa',         'f-sofaUnits'],
+  ['am-washing',  'Washing machine',        'f-washingUnits'],
+  ['am-wifi',     'Wi-Fi',                  'f-wifiUnits'],
 ];
 
 function resetListingForm() {
