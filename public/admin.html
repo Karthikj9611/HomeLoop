@@ -6343,7 +6343,12 @@ window.toggleAdminCompareDiffOnly = function(){
 function renderAdminCompareTable(){
   const ids = Array.from(_selectedPropIds).slice(0, ADMIN_COMPARE_MAX);
   const rows = ids.map(id => _adminPropCache[id]).filter(Boolean);
-  const props = rows.map(r => r.full).filter(Boolean);
+  // Never drop a selected property just because .full hasn't loaded — that
+  // would desync the header row (built from `rows`) from the data rows
+  // (built from `props`), showing fewer values than property columns.
+  // Fall back to {} so every selected property still gets its own column,
+  // with its detail cells simply showing "—" until .full is available.
+  const props = rows.map(r => r.full || {});
   const wrap = document.getElementById('adminCompareTableWrap');
   if (props.length === 0){ wrap.innerHTML = ''; return; }
 
@@ -6428,7 +6433,7 @@ function renderAdminCompareTable(){
   ];
 
   const headCells = rows.map(row => {
-    const full = row.full;
+    const full = row.full || {};
     const pType = pTypeLabel(full);
     const colors = {Rent:'#e8f5ee:#1a6640',Lease:'#dde9fa:#1a4680',PG:'#eee8fa:#4a2a9a',ShortStay:'#e0f7fa:#00646e'};
     const [bg] = (colors[pType]||'#f0f0f0:#333').split(':');
