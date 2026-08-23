@@ -1189,6 +1189,18 @@ footer i{color:var(--gold)}
 
 .form-submit:hover{background:var(--brand-hover)}
 
+/* ─── Form actions row: Clear form (secondary) + Save/Add (primary) ── */
+.form-actions-row{display:flex;gap:10px;margin-top:8px}
+.form-actions-row .form-submit{margin-top:0;flex:1}
+.form-clear-btn{
+  padding:12px 18px;border-radius:10px;
+  background:transparent;color:var(--text-2);font-size:14px;font-weight:700;
+  border:1.5px solid var(--border-2);cursor:pointer;transition:border-color .12s,color .12s,background .12s;
+  white-space:nowrap;
+}
+.form-clear-btn:hover{border-color:#d13a4d;color:#d13a4d;background:rgba(209,58,77,.06)}
+.add-modal.view-mode .form-clear-btn{display:none}
+
 /* ─── Amenities multi-select dropdown ──────────── */
 .am-dd{position:relative}
 .am-dd-trigger{
@@ -2095,9 +2107,15 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
     </div>
     <!-- Toolbar: PDF export + selection controls + column toggle, all in one row.
          Kept outside .card so it floats as its own pill, not embedded in the
-         table's white card. -->
+         table's white card. Add Property sits in the same row (so there's no
+         extra blank row of vertical space) but gets a divider after it since
+         it's a create action, not a housekeeping one like the rest here. -->
     <div class="bulk-toolbar bulk-toolbar-spaced" id="bulkToolbar">
       <div class="bulk-toolbar-left">
+        <button class="bulk-btn" id="addPropertyBtn" onclick="openAdminAddPropertyModal()" style="background:var(--brand);color:#fff;border-color:var(--brand)">
+          <i class="fas fa-plus"></i> <span class="bulk-btn-label" data-mobile="Add">Add Property</span>
+        </button>
+        <span id="addPropertyDivider" style="width:1px;align-self:stretch;background:var(--border,#ddd);margin:2px 4px;flex-shrink:0"></span>
         <span class="filter-active-badge" id="propFilterBadge" style="display:none">
           <i class="fas fa-filter"></i> <span id="propFilterCount">0</span><span class="bulk-btn-label" data-mobile="Filters"> filters active</span>
         </span>
@@ -3060,7 +3078,10 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
     </div>
     <!-- /listingFormSections -->
 
-    <button class="form-submit" id="listingSubmitBtn" onclick="adminSubmitListing()">Save changes</button>
+    <div class="form-actions-row">
+      <button type="button" class="form-clear-btn" id="listingClearBtn" onclick="clearListingFormPrompt()" title="Erase everything typed in this form">Clear form</button>
+      <button class="form-submit" id="listingSubmitBtn" onclick="adminSubmitListing()">Save changes</button>
+    </div>
 
     <!-- View-mode only: admin/meta info that isn't part of the actual
          editable form (listed-on date, property ID, posted-by user,
@@ -3251,6 +3272,7 @@ async function doLogin(){
     if(dataTable) dataTable.ajax.reload();
     if(propTable) propTable.ajax.reload();
     if(apptTable) apptTable.ajax.reload();
+    checkForListingDraftOnLoad();
   } catch(e){
     errEl.textContent = 'Network error. Please try again.';
   }
@@ -3349,6 +3371,7 @@ if(!ADMIN_KEY){
       if(!ADMIN_KEY) return;
       const stored = localStorage.getItem('kr_admin_name');
       if(stored) document.getElementById('adminNameBadge').textContent = stored;
+      checkForListingDraftOnLoad();
     });
 }
 
@@ -5566,7 +5589,7 @@ $(document).ready(function(){
   // ".top-controls" instead (a plain sibling div, never cloned by scrollX,
   // and guaranteed to be a single element as a direct child of the wrapper).
   var $topControls = $('#propertyTable_wrapper > .top-controls');
-  $topControls.find('.dt-buttons').prependTo('#bulkToolbar .bulk-toolbar-left');
+  $topControls.find('.dt-buttons').insertAfter('#addPropertyDivider');
   $topControls.remove();
   loadPropColVisibility();
   document.querySelectorAll('#propCatTabs .cat-tab-btn').forEach(btn=>{
@@ -7164,6 +7187,115 @@ const AM_LIST = [
   ['am-wifi',     'Wi-Fi',                  'f-wifiUnits'],
 ];
 
+/* ══════════════════════════════════════════════════════════════════
+   ADD-LISTING DRAFT PERSISTENCE — protects an admin's in-progress
+   "Add property" entry against an accidental page refresh/reload/crash.
+   Scoped to *new* listings only (editingPropertyId === null): editing
+   an existing listing already reflects live server data, so restoring
+   a stale edit-draft on top of it after a refresh risks clobbering
+   changes another admin made in between — not worth the risk for a
+   record that already exists safely in the DB. A brand-new listing
+   typed into the form has nowhere else to live until it's saved, so
+   that's what this protects. ══════════════════════════════════════ */
+const ADMIN_NEW_LISTING_DRAFT_KEY = 'kr_admin_new_listing_draft';
+const ADMIN_DRAFT_MAX_AGE_MS = 24 * 60 * 60 * 1000; // discard drafts older than a day
+let _listingDraftSaveTimer = null;
+
+// Every input/select/textarea with an id inside the form, generically —
+// works regardless of which fields exist for the current property type
+// (Rent/Lease/PG/ShortStay all share the same #listingFormSections), so
+// this doesn't need updating whenever a field is added/removed.
+function captureListingFormState() {
+  const values = {};
+  const checkboxes = {};
+  document.querySelectorAll('#listingFormSections input[id], #listingFormSections select[id], #listingFormSections textarea[id]')
+    .forEach(el => {
+      if (el.type === 'checkbox') checkboxes[el.id] = el.checked;
+      else values[el.id] = el.value;
+    });
+  return { values, checkboxes, fImages: fImages.slice(), savedAt: Date.now() };
+}
+function applyListingFormState(state) {
+  if (!state) return;
+  Object.keys(state.values || {}).forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = state.values[id];
+  });
+  Object.keys(state.checkboxes || {}).forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.checked = state.checkboxes[id];
+  });
+  fImages = Array.isArray(state.fImages) ? state.fImages.slice() : [];
+  renderFImages();
+  const typeEl = document.getElementById('f-type');
+  if (typeEl) onFTypeChange(typeEl.value);
+  if (typeof renderAmSelected === 'function') renderAmSelected();
+  if (typeof renderTenantSelected === 'function') renderTenantSelected();
+  if (typeof applySameAsBuildingAddressState === 'function') applySameAsBuildingAddressState();
+}
+function saveListingDraftNow() {
+  if (editingPropertyId) return; // edit-mode isn't covered — see comment above
+  const modal = document.getElementById('addModal');
+  if (!modal || !modal.classList.contains('open')) return;
+  try {
+    localStorage.setItem(ADMIN_NEW_LISTING_DRAFT_KEY, JSON.stringify(captureListingFormState()));
+  } catch (e) { /* storage full/unavailable — draft protection is best-effort */ }
+}
+function scheduleListingDraftSave() {
+  clearTimeout(_listingDraftSaveTimer);
+  _listingDraftSaveTimer = setTimeout(saveListingDraftNow, 400);
+}
+function clearListingDraft() {
+  try { localStorage.removeItem(ADMIN_NEW_LISTING_DRAFT_KEY); } catch (e) { /* noop */ }
+}
+// Runs once on page load (after login is confirmed): if there's a recent
+// "Add property" draft left over from before a refresh/crash, offer to
+// resume it rather than silently discarding what was typed.
+async function checkForListingDraftOnLoad() {
+  let raw;
+  try { raw = localStorage.getItem(ADMIN_NEW_LISTING_DRAFT_KEY); } catch (e) { return; }
+  if (!raw) return;
+  let state;
+  try { state = JSON.parse(raw); } catch (e) { clearListingDraft(); return; }
+  if (!state || !state.savedAt || (Date.now() - state.savedAt) > ADMIN_DRAFT_MAX_AGE_MS) {
+    clearListingDraft();
+    return;
+  }
+  const hasContent = Object.values(state.values || {}).some(v => (v || '').toString().trim() !== '')
+    || Object.values(state.checkboxes || {}).some(Boolean)
+    || (state.fImages && state.fImages.length > 0);
+  if (!hasContent) { clearListingDraft(); return; }
+
+  const resume = await showConfirmModal({
+    title: 'Resume unsaved listing?',
+    message: 'You have an "Add property" draft from before the page refreshed. Resume where you left off, or discard it?',
+    okText: 'Resume draft',
+    cancelText: 'Discard',
+    variant: 'info',
+  });
+  if (resume) {
+    openAdminAddPropertyModal();
+    applyListingFormState(state);
+  } else {
+    clearListingDraft();
+  }
+}
+// Bound to the "Clear form" button — wipes every field in the currently
+// open form (add or edit) back to blank/default, plus any saved draft.
+async function clearListingFormPrompt() {
+  const ok = await showConfirmModal({
+    title: 'Clear form?',
+    message: 'This erases everything currently entered in this form. This cannot be undone.',
+    okText: 'Clear form',
+    cancelText: 'Cancel',
+    variant: 'danger',
+  });
+  if (!ok) return;
+  resetListingForm();
+  const typeEl = document.getElementById('f-type');
+  if (typeEl) onFTypeChange(typeEl.value);
+  clearListingDraft();
+}
 function resetListingForm() {
   document.querySelectorAll('#addModal input:not([type="checkbox"]), #addModal select, #addModal textarea').forEach(el => { el.value = ''; });
   const noticeRent = document.getElementById('f-noticePeriod');
@@ -7208,6 +7340,39 @@ function resetFieldVisibility() {
    when admin is editing someone else's property record). Shared by both
    the table's View and Edit buttons — mode ('view' | 'edit') decides
    whether fields start disabled or editable; see _setAdminListingMode(). ── */
+/* Opens the same add/edit modal but for a brand-new listing: no cached
+   property to load, editingPropertyId stays null (adminSubmitListing()
+   uses that to decide POST vs PUT), and the View/Edit toggle + admin-only
+   meta block (listed-on, property ID, remarks) don't apply since there's
+   nothing to view yet. */
+function openAdminAddPropertyModal() {
+  editingPropertyId = null;
+  resetListingForm();
+  onFTypeChange(document.getElementById('f-type').value);
+
+  document.getElementById('addModalBox').classList.remove('view-mode');
+  document.getElementById('addModal').classList.remove('view-mode');
+  document.querySelectorAll('#listingFormSections input, #listingFormSections select, #listingFormSections textarea')
+    .forEach(el => { el.disabled = false; });
+
+  const toggleBtn = document.getElementById('addModalModeToggleBtn');
+  if (toggleBtn) toggleBtn.style.display = 'none';
+  document.getElementById('addModalTitleText').textContent = 'Add property';
+  const sub = document.getElementById('addModalSubtitleText');
+  if (sub) { sub.textContent = ''; sub.style.display = 'none'; }
+
+  const gallerySlot = document.getElementById('aeGallerySlot');
+  if (gallerySlot) { gallerySlot.innerHTML = ''; gallerySlot.style.display = 'none'; }
+  const metaSlot = document.getElementById('aeAdminMetaSlot');
+  if (metaSlot) { metaSlot.innerHTML = ''; metaSlot.style.display = 'none'; }
+
+  const submitBtn = document.getElementById('listingSubmitBtn');
+  if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Add property'; }
+
+  document.getElementById('addModal').classList.add('open');
+  lockBodyScroll();
+}
+
 function openAdminListingModal(id, mode) {
   const p = _adminPropCache[id];
   if (!p) { alert('Could not find that listing'); return; }
@@ -7217,6 +7382,9 @@ function openAdminListingModal(id, mode) {
   resetListingForm();
   applyImportedProperty(full);
   onFTypeChange(document.getElementById('f-type').value);
+
+  const toggleBtn = document.getElementById('addModalModeToggleBtn');
+  if (toggleBtn) toggleBtn.style.display = '';
 
   document.getElementById('addModal').classList.add('open');
   lockBodyScroll();
@@ -7847,6 +8015,7 @@ function renderFImages() {
   ).join('');
   hint.style.display = fImages.length ? 'none' : 'block';
   if (orderHint) orderHint.style.display = fImages.length > 1 ? 'block' : 'none';
+  scheduleListingDraftSave();
 }
 function removeFImage(i) {
   fImages.splice(i, 1);
@@ -8072,8 +8241,6 @@ function adminSubmitListing() {
     if (typeof firstError.focus === 'function') firstError.focus();
     return;
   }
-  if (!editingPropertyId) return;
-
   const title = document.getElementById('f-title').value.trim();
   const rent = document.getElementById('f-rent').value;
   const loc = document.getElementById('f-location').value.trim();
@@ -8229,26 +8396,28 @@ function adminSubmitListing() {
   };
 
   const submitBtn = document.getElementById('listingSubmitBtn');
+  const isNew = !editingPropertyId;
   if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Saving…'; }
 
-  fetch('/api/admin/properties/' + editingPropertyId, {
-    method: 'PUT',
+  fetch(isNew ? '/api/admin/properties' : '/api/admin/properties/' + editingPropertyId, {
+    method: isNew ? 'POST' : 'PUT',
     headers: authHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(newProp)
   })
   .then(async res => {
     const data = await res.json();
     if (!res.ok) throw new Error(data.message || 'Server error');
-    alert('Listing updated');
+    alert(isNew ? 'Property added' : 'Listing updated');
+    if (isNew) clearListingDraft();
     closeAdminEditModal();
     if (typeof propTable !== 'undefined' && propTable) propTable.ajax.reload(null, false);
   })
   .catch(err => {
     console.error('Admin save listing error:', err);
-    alert('Failed to save changes: ' + err.message);
+    alert('Failed to save: ' + err.message);
   })
   .finally(() => {
-    if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Save changes'; }
+    if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = isNew ? 'Add property' : 'Save changes'; }
   });
 }
 
@@ -8262,6 +8431,7 @@ document.getElementById('addModal').addEventListener('input', function(e){
       if (msg) msg.remove();
     }
   }
+  scheduleListingDraftSave();
 });
 document.getElementById('addModal').addEventListener('change', function(e){
   const group = e.target.closest && e.target.closest('.form-group');
@@ -8279,6 +8449,7 @@ document.getElementById('addModal').addEventListener('change', function(e){
     const msg = imgGroup.querySelector('.field-error-text');
     if (msg) msg.remove();
   }
+  scheduleListingDraftSave();
 });
 document.getElementById('addModal').addEventListener('click', function(e) {
   if (e.target === this) closeAdminEditModal();

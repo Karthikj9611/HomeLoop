@@ -2907,6 +2907,7 @@ require('./admin')(app, {
   User, VisitRequest, LISTING_MODEL_LIST,
   findListingById, updateListingById, deleteListingById, moveListingIfNeeded,
   NESTED_SECTIONS, validatePropertyFields, formatPrice,
+  nextPropertyId, modelForStatus,
   notifyUser, visitCalendarMeta,
   HonestReview, Partner, PaymentSettings, PaymentRequest,
   SiteStat, DailyStat, todayStr,

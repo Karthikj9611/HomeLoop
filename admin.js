@@ -15,6 +15,7 @@ module.exports = function registerAdminRoutes(app, deps) {
     User, VisitRequest, LISTING_MODEL_LIST,
     findListingById, updateListingById, deleteListingById, moveListingIfNeeded,
     NESTED_SECTIONS, validatePropertyFields, formatPrice,
+    nextPropertyId, modelForStatus,
     notifyUser, visitCalendarMeta,
     HonestReview, Partner, PaymentSettings, PaymentRequest,
     SiteStat, DailyStat, todayStr,
@@ -798,6 +799,85 @@ module.exports = function registerAdminRoutes(app, deps) {
     } catch (err) {
       console.error('POST /api/properties/bulk-delete error:', err);
       res.status(500).json({ message: 'Error deleting properties' });
+    }
+  });
+
+  // ── POST /api/admin/properties (admin creates a new listing directly,
+  // not tied to any owner account) — same field-handling as POST
+  // /api/properties above (owner-created listings), just scoped by
+  // requireAdmin instead of requireUser + requireOwner, and userId/
+  // userReadableId are left null since there's no owner User account
+  // behind an admin-created listing (schema already treats null userId as
+  // "posted while logged out", which fits this case too). Doesn't run the
+  // owner route's full findMissingRequiredFields() sweep (that helper —
+  // and the BASE_REQUIRED_FIELDS/TYPE_REQUIRED_FIELDS lists it needs —
+  // live in server.js and aren't handed to this module); the admin form
+  // already blocks submission client-side until every visible required
+  // field is filled, and validatePropertyFields() below still catches
+  // malformed values same as the PUT route just above. ──
+  app.post('/api/admin/properties', requireAdmin, async (req, res) => {
+    try {
+      const body = req.body || {};
+      const fields = NESTED_SECTIONS.reduce((acc, k) => {
+        acc[k] = (body[k] && typeof body[k] === 'object') ? body[k] : {};
+        return acc;
+      }, {});
+
+      const validationError = validatePropertyFields(fields);
+      if (validationError) return res.status(400).json({ message: validationError });
+
+      fields.basic = Object.assign({ status: 'For Rent', listedBy: 'Owner' }, fields.basic);
+      fields.media.displayPrice = undefined; // not part of media; computed separately below
+
+      const status = fields.basic.status;
+
+      const priceLabel = status === 'Lease'      ? 'price.rent (lease amount)'
+                        : status === 'PG'         ? 'price.rent (monthly charge)'
+                        : status === 'Short Stay' ? 'price.rent (per day rate)'
+                        :                           'price.rent (monthly rent)';
+      if (!fields.owner.propertyName || !fields.location.area ||
+          fields.price.rent === undefined || fields.price.rent === null || fields.price.rent === '') {
+        return res.status(400).json({ message: `owner.propertyName, location.area, and ${priceLabel} are required.` });
+      }
+      if (status === 'PG' && (!fields.pg.gender || !fields.pg.room)) {
+        return res.status(400).json({ message: 'pg.gender and pg.room are required for PG listings.' });
+      }
+      if (status === 'Lease' && !fields.terms.lease) {
+        return res.status(400).json({ message: 'terms.lease (lease duration) is required for Lease listings.' });
+      }
+      if (status === 'Short Stay' && !fields.shortStay.roomType) {
+        return res.status(400).json({ message: 'shortStay.roomType is required for Short Stay listings.' });
+      }
+
+      const displayPrice = formatPrice(fields.price.rent, status);
+      const propertyId = await nextPropertyId();
+
+      const ListingModel = modelForStatus(status);
+      const prop = new ListingModel({
+        propertyId,
+        userId:         null, // admin-created listing — no owner User account behind it
+        userReadableId: null,
+        basic:     fields.basic,
+        location:  fields.location,
+        owner:     fields.owner,
+        price:     fields.price,
+        property:  status === 'PG' ? undefined : fields.property,
+        amenities: fields.amenities,
+        terms:     (status === 'PG' || status === 'Short Stay') ? undefined : fields.terms,
+        rules:     (status === 'PG' || status === 'Short Stay') ? undefined : fields.rules,
+        media:     fields.media,
+        pg:        status === 'PG' ? fields.pg : undefined,
+        shortStay: status === 'Short Stay' ? fields.shortStay : undefined,
+      });
+      await prop.save();
+
+      const saved = prop.toObject();
+      saved.displayPrice = displayPrice;
+
+      res.status(201).json({ message: 'Property added successfully!', property: saved });
+    } catch (err) {
+      console.error('POST /api/admin/properties error:', err);
+      res.status(500).json({ message: 'Error saving property' });
     }
   });
 

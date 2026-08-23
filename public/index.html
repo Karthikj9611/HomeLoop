@@ -11269,25 +11269,26 @@ function updateNavAuth() {
   initReviewForm();
   refreshNotifPolling();
 }
-// Tenants ('customer' accounts) and guests don't get to list a property —
-// only 'owner' accounts do. Hides both FAB add buttons and the four
-// "List ... Property" items (plus their Manage section label) in the menu
-// panel; "Post Your Video Review" stays visible for everyone since it's a
-// testimonial, not a listing.
+// Shown by default for guests (not logged in yet) so anyone can start
+// listing before creating an account. Once logged in, it's owner-only —
+// tenant ('customer') accounts don't get to list a property. Controls both
+// FAB add buttons and the four "List ... Property" items (plus their
+// Manage section label) in the menu panel; "Post Your Video Review" stays
+// visible for everyone since it's a testimonial, not a listing.
 function updateListPropertyVisibility(user) {
-  const canList = !!user && user.accountType === 'owner';
+  const canList = !user || user.accountType === 'owner';
   const display = canList ? '' : 'none';
-  // Verify/Promote are also owner-only actions on listings a tenant/guest
-  // wouldn't have, so the whole banner (not just the "List Property" slide)
-  // is owner-only.
+  // Verify/Promote are also owner-only actions on listings a logged-in
+  // tenant wouldn't have, so the whole banner (not just the "List Property"
+  // slide) follows the same guest-or-owner visibility.
   ['fabAdd', 'fabInlineAdd', 'menuManageLabel', 'menuListRent', 'menuListLease', 'menuListPG', 'adBanner']
     .forEach(id => { const el = document.getElementById(id); if (el) el.style.display = display; });
-  // For non-owners every child of this row is now hidden — collapse the row
+  // For tenants every child of this row is now hidden — collapse the row
   // itself too, or its margin-bottom leaves a bare gap above the listings.
   const rh = document.getElementById('resultsHeader');
   if (rh) rh.style.display = canList ? '' : 'none';
   // .main's top padding existed to sit above the results-header row; with
-  // that row now hidden for non-owners, the padding alone was leaving a
+  // that row now hidden for tenants, the padding alone was leaving a
   // bare gap above the listings — drop it to 0 in that case.
   const mainEl = document.getElementById('mainContent');
   if (mainEl) mainEl.style.paddingTop = canList ? '' : '0';
