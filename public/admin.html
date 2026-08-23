@@ -5416,8 +5416,13 @@ $(document).ready(function(){
           const shareBtn = row.verified
             ? `<button class="btn-view" style="background:#25D366;border-color:#25D366;color:#fff" title="Share the live link with the owner (and alt number) via WhatsApp" onclick="shareListingToOwner('${row._id}')"><i class="fab fa-whatsapp"></i> Share</button>`
             : `<button class="btn-view" disabled title="Verify this listing first to enable sharing" style="opacity:.4;cursor:not-allowed;pointer-events:none"><i class="fab fa-whatsapp"></i> Share</button>`;
+          const mapsUrl = propertyMapsUrl(row);
+          const navigateBtn = mapsUrl
+            ? `<button class="btn-view" style="background:#4285F4;border-color:#4285F4;color:#fff" title="Open this property's location in Google Maps" onclick="window.open('${mapsUrl.replace(/'/g, "\\'")}', '_blank', 'noopener')"><i class="fas fa-location-arrow"></i> Navigate</button>`
+            : `<button class="btn-view" disabled title="No address or coordinates on file for this listing" style="opacity:.4;cursor:not-allowed;pointer-events:none"><i class="fas fa-location-arrow"></i> Navigate</button>`;
           return `<div style="display:inline-flex;gap:6px;flex-wrap:nowrap;justify-content:center">
             <button class="btn-view" onclick="openAdminPropModal('${row._id}')"><i class="fas fa-eye"></i> View</button>
+            ${navigateBtn}
             ${shareBtn}
             ${bookingBtn}
             <button class="btn-delete" disabled title="Deleting properties is disabled" style="opacity:.4;cursor:not-allowed;pointer-events:none"><i class="fas fa-trash-alt"></i> Delete</button>
@@ -6002,6 +6007,26 @@ function _adminToast(msg){
   el.style.opacity = '1';
   clearTimeout(el._t);
   el._t = setTimeout(()=>{ el.style.opacity = '0'; }, 1800);
+}
+
+// Builds a Google Maps URL for a property row, in priority order: an
+// explicit map link the owner/admin pasted in (most reliable — accounts for
+// buildings Maps can't geocode well), then exact lat/lng coordinates (a
+// dropped pin), then a plain text search on the address as a last resort.
+// Returns null when none of those exist, so the Navigate button can disable
+// itself instead of opening a useless blank search.
+function propertyMapsUrl(row) {
+  const loc = (row.full && row.full.location) || {};
+  if (loc.mapLink) return loc.mapLink;
+  const lat = parseFloat(row.latitude), lng = parseFloat(row.longitude);
+  if (!isNaN(lat) && !isNaN(lng) && (lat !== 0 || lng !== 0)) {
+    return `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
+  }
+  const addressParts = [loc.address, loc.area || row.loc, loc.city, loc.pincode].filter(Boolean);
+  if (addressParts.length) {
+    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addressParts.join(', '))}`;
+  }
+  return null;
 }
 
 /* ── Photo gallery + lightbox — ported from index.html's buildImgSlider /
