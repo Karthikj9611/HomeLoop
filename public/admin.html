@@ -4398,9 +4398,24 @@ window.saveBookingDetails = async function(){
 };
 
 
-/* ── PROMOTED / VERIFIED TOGGLES ── */
+/* ── PROMOTED / VERIFIED TOGGLES ──
+   Checkbox flips instantly on click (native behavior), but the DB update
+   only happens if the admin confirms in the modal. Cancel reverts the
+   checkbox with no API call. */
+const PROP_FLAG_LABELS = { promoted: 'promoted', verified: 'verified', booked: 'booked' };
 window.togglePropFlag = async function(id, field, checkboxEl){
   const desired = checkboxEl.checked;
+  const label = PROP_FLAG_LABELS[field] || field;
+  const ok = await showConfirmModal({
+    title: `${desired ? 'Mark' : 'Unmark'} as ${label}?`,
+    message: `This will set "${label}" to ${desired ? 'ON' : 'OFF'} for this property.`,
+    okText: desired ? 'Turn on' : 'Turn off',
+    variant: 'info'
+  });
+  if(!ok){
+    checkboxEl.checked = !desired; // revert, no API call
+    return;
+  }
   checkboxEl.disabled = true;
   try{
     const res = await fetch(`${BASE}/api/properties/${id}/${field}`, {

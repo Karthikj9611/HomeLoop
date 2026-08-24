@@ -4700,6 +4700,32 @@ main.tab-explore .empty-state{display:none !important}
     <div class="recently-viewed-strip" id="recentlyViewedStrip"></div>
   </div>
 
+  <div id="bookedSection">
+    <div class="section-divider booked-divider" id="promotedBookedDivider" style="display:none">
+      <div class="section-divider-inner">
+        <span class="section-divider-label booked-label">Booked<span class="section-divider-count booked-count" id="promotedBookedCount"></span></span>
+      </div>
+    </div>
+    <div class="prop-grid" id="promotedBookedGrid"></div>
+    <div class="section-divider booked-divider" id="rentBookedDivider" style="display:none">
+      <div class="section-divider-inner">
+        <span class="section-divider-label booked-label">Booked<span class="section-divider-count booked-count" id="rentBookedCount"></span></span>
+      </div>
+    </div>
+    <div class="prop-grid" id="rentBookedGrid"></div>
+    <div class="section-divider booked-divider" id="leaseBookedDivider" style="display:none">
+      <div class="section-divider-inner">
+        <span class="section-divider-label booked-label">Booked<span class="section-divider-count booked-count" id="leaseBookedCount"></span></span>
+      </div>
+    </div>
+    <div class="prop-grid" id="leaseBookedGrid"></div>
+    <div class="section-divider booked-divider" id="pgBookedDivider" style="display:none">
+      <div class="section-divider-inner">
+        <span class="section-divider-label booked-label">Booked<span class="section-divider-count booked-count" id="pgBookedCount"></span></span>
+      </div>
+    </div>
+    <div class="prop-grid" id="pgBookedGrid"></div>
+  </div>
   <div id="promotedSection">
     <div class="section-divider" id="promotedDivider" style="display:none">
       <div class="section-divider-inner">
@@ -4710,12 +4736,6 @@ main.tab-explore .empty-state{display:none !important}
       </div>
     </div>
     <div class="prop-grid" id="promotedGrid"></div>
-    <div class="section-divider booked-divider" id="promotedBookedDivider" style="display:none">
-      <div class="section-divider-inner">
-        <span class="section-divider-label booked-label">Booked<span class="section-divider-count booked-count" id="promotedBookedCount"></span></span>
-      </div>
-    </div>
-    <div class="prop-grid" id="promotedBookedGrid"></div>
   </div>
   <div id="rentSection">
     <div class="section-divider" id="rentDivider" style="display:none">
@@ -4724,12 +4744,6 @@ main.tab-explore .empty-state{display:none !important}
       </div>
     </div>
     <div class="prop-grid" id="rentGrid"></div>
-    <div class="section-divider booked-divider" id="rentBookedDivider" style="display:none">
-      <div class="section-divider-inner">
-        <span class="section-divider-label booked-label">Booked<span class="section-divider-count booked-count" id="rentBookedCount"></span></span>
-      </div>
-    </div>
-    <div class="prop-grid" id="rentBookedGrid"></div>
   </div>
   <div id="leaseSection">
     <div class="section-divider" id="leaseDivider" style="display:none">
@@ -4738,12 +4752,6 @@ main.tab-explore .empty-state{display:none !important}
       </div>
     </div>
     <div class="prop-grid" id="leaseGrid"></div>
-    <div class="section-divider booked-divider" id="leaseBookedDivider" style="display:none">
-      <div class="section-divider-inner">
-        <span class="section-divider-label booked-label">Booked<span class="section-divider-count booked-count" id="leaseBookedCount"></span></span>
-      </div>
-    </div>
-    <div class="prop-grid" id="leaseBookedGrid"></div>
   </div>
   <div id="pgSection">
     <div class="section-divider" id="pgDivider" style="display:none">
@@ -4752,12 +4760,6 @@ main.tab-explore .empty-state{display:none !important}
       </div>
     </div>
     <div class="prop-grid" id="pgGrid"></div>
-    <div class="section-divider booked-divider" id="pgBookedDivider" style="display:none">
-      <div class="section-divider-inner">
-        <span class="section-divider-label booked-label">Booked<span class="section-divider-count booked-count" id="pgBookedCount"></span></span>
-      </div>
-    </div>
-    <div class="prop-grid" id="pgBookedGrid"></div>
   </div>
   <div id="shortstaySection">
     <div class="section-divider" id="shortstayDivider" style="display:none">
@@ -7599,35 +7601,33 @@ function renderCards() {
 // Renders the read-only "Booked" bucket under Promoted/Rent/Lease/PG. Source
 // data is BOOKED_PROPERTIES (fetched separately — see fetchBookedProperties()
 // — since the main /api/properties response never includes booked listings).
-// Deliberately ignores search/filter state: a booked listing has nothing left
-// to filter on (price/BHK/etc. no longer matter once it's off the market), so
-// this only respects which tab is active, same as the live sections do.
+// Promoted's bucket is the "everything booked" view (no type filter);
+// Rent/Lease/PG each show only their own type's booked listings. Ignores
+// search/filter state — a booked listing has nothing left to filter on
+// (price/BHK/etc. no longer matter once it's off the market) — and only one
+// bucket is ever populated at a time, matching whichever tab is active.
 function renderBookedSections() {
-  const KEYS = ['promoted', 'rent', 'lease', 'pg'];
-
-  // Mirrors matchesTab()'s tab-scoping for the live sections, so e.g. a
-  // "Booked Lease" bucket never appears while the Rent tab is active.
-  const tabAllows = key => {
-    if (currentTab === 'All') return true;
-    if (key === 'promoted') return currentTab === 'Promoted';
-    return currentTab === ({ rent: 'Rent', lease: 'Lease', pg: 'PG' })[key];
-  };
-
-  const groups = {
-    promoted: BOOKED_PROPERTIES.filter(p => p.promoted),
-    rent:     BOOKED_PROPERTIES.filter(p => sectionKeyFor(p) === 'rent'),
-    lease:    BOOKED_PROPERTIES.filter(p => sectionKeyFor(p) === 'lease'),
-    pg:       BOOKED_PROPERTIES.filter(p => sectionKeyFor(p) === 'pg'),
-  };
+  const groups = { promoted: [], rent: [], lease: [], pg: [] };
+  if (currentTab === 'Promoted') {
+    groups.promoted = BOOKED_PROPERTIES;
+  } else if (currentTab === 'Rent') {
+    groups.rent = BOOKED_PROPERTIES.filter(p => sectionKeyFor(p) === 'rent');
+  } else if (currentTab === 'Lease') {
+    groups.lease = BOOKED_PROPERTIES.filter(p => sectionKeyFor(p) === 'lease');
+  } else if (currentTab === 'PG') {
+    groups.pg = BOOKED_PROPERTIES.filter(p => sectionKeyFor(p) === 'pg');
+  }
+  // Any other tab (e.g. "All"/Explore) leaves every bucket empty — that tab
+  // hides the whole bookedSection wrapper anyway (see updateAllOnlySections()).
 
   const gridClass = 'prop-grid' + (isListView ? ' list-view' : '');
 
-  KEYS.forEach(key => {
+  ['promoted', 'rent', 'lease', 'pg'].forEach(key => {
     const divider = document.getElementById(key + 'BookedDivider');
     const grid = document.getElementById(key + 'BookedGrid');
     if (!divider || !grid) return;
 
-    const items = tabAllows(key) ? groups[key] : [];
+    const items = groups[key];
     if (items.length === 0) {
       divider.style.display = 'none';
       grid.innerHTML = '';
@@ -8797,17 +8797,19 @@ function updateAllOnlySections() {
   const rentSection = document.getElementById('rentSection');
   const leaseSection = document.getElementById('leaseSection');
   const pgSection = document.getElementById('pgSection');
+  const bookedSection = document.getElementById('bookedSection');
 
   // Show only on "All"
   if (urbanAware) urbanAware.style.display = (show && hasHonestReviews) ? '' : 'none';
   if (reviewsSection) reviewsSection.style.display = show ? '' : 'none';
   if (premiumServices) premiumServices.style.display = show ? '' : 'none';
 
-  // Hide Promoted, Rent, Lease and PG when "All" is selected
+  // Hide Promoted, Rent, Lease, PG and the Booked bucket when "All" is selected
   if (promotedSection) promotedSection.style.display = show ? 'none' : '';
   if (rentSection) rentSection.style.display = show ? 'none' : '';
   if (leaseSection) leaseSection.style.display = show ? 'none' : '';
   if (pgSection) pgSection.style.display = show ? 'none' : '';
+  if (bookedSection) bookedSection.style.display = show ? 'none' : '';
 
   // The results-header (count + ad banner + view toggle) only makes sense on
   // Explore ("All") — Promoted/Rent/Lease/PG each render their own section
@@ -8858,6 +8860,7 @@ function switchTab(el) {
   closeAllFd();
   updateAllOnlySections();
   renderCards();
+  renderBookedSections(); // re-filter the already-fetched BOOKED_PROPERTIES for the new tab
   renderRecentlyViewed();
   renderShortlistPanel();
 }
@@ -8873,6 +8876,7 @@ function switchTabMobile(el) {
   closeAllFd();
   updateAllOnlySections();
   renderCards();
+  renderBookedSections(); // re-filter the already-fetched BOOKED_PROPERTIES for the new tab
   renderRecentlyViewed();
   renderShortlistPanel();
 }
@@ -13949,9 +13953,19 @@ document.addEventListener('DOMContentLoaded', function() {
   updateAllOnlySections(); // hide UrbanAware / Reviews / Premium on initial load (default tab is Promoted)
 
   // ── Load properties from DB ──
-  fetchBookedProperties(); // fire-and-forget: supplementary "Booked" sections, doesn't block the main load
+  // fetchBookedProperties() used to fire concurrently here, but that raced
+  // against fetchProperties() restoring the saved tab (see
+  // restoreFilterStateBeforeBuild(), which sets currentTab from localStorage
+  // — but only inside fetchProperties()'s own success path). If the booked
+  // request happened to resolve first, renderBookedSections() would run once
+  // with currentTab still at its 'Promoted' default, dumping every booked
+  // item — unfiltered, with type badges — into the Promoted bucket, on any
+  // page load where the visitor's last tab was actually Rent/Lease/PG.
+  // Sequencing it after fetchProperties() resolves removes that race: by the
+  // time BOOKED_PROPERTIES is fetched, currentTab is already correct.
   (async function loadPropertiesFromDB() {
     const ok = await fetchProperties();
+    fetchBookedProperties(); // fire-and-forget from here on — supplementary, doesn't block the main load
     if (!ok) return;
     initNearbyLocation(); // ask for location once listings are in, so "Near me first" has data to sort
 
