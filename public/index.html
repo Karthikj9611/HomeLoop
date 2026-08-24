@@ -1751,19 +1751,6 @@ main.tab-explore .empty-state{display:none !important}
 .recently-viewed-strip::-webkit-scrollbar{height:6px}
 .recently-viewed-strip::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
 .recently-viewed-strip .prop-card{flex:0 0 var(--rv-card-w, 260px)}
-
-/* ─── Booked (horizontal scroll, same pattern as Recently Viewed) ── */
-.booked-strip{
-  display:flex;
-  gap:16px;
-  padding:16px 20px 8px;
-  overflow-x:auto;
-  scrollbar-width:thin;
-  overscroll-behavior-x:contain;
-}
-.booked-strip::-webkit-scrollbar{height:6px}
-.booked-strip::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
-.booked-strip .prop-card{flex:0 0 var(--bk-card-w, 260px)}
 .rv-card{position:relative;flex:0 0 var(--rv-card-w, 260px);border:1px solid var(--border);border-radius:16px;overflow:hidden;cursor:pointer;background:var(--bg);transition:box-shadow .15s,transform .15s}
 .rv-card:hover{box-shadow:0 4px 14px rgba(0,0,0,.08);transform:translateY(-1px)}
 .rv-card-thumb{width:100%;aspect-ratio:4/3;background-size:cover;background-position:center;background-color:var(--bg-2);display:flex;align-items:center;justify-content:center;color:var(--text-3);font-size:12px}
@@ -3783,8 +3770,7 @@ main.tab-explore .empty-state{display:none !important}
      of 1-2. The floating right-badge stack (heart/views/promoted/verified)
      still fits fine at this ratio since it only needs ~140px of height. */
   .prop-grid:not(.list-view) .prop-img,
-  .recently-viewed-strip .prop-img,
-  .booked-strip .prop-img{aspect-ratio:1/1}
+  .recently-viewed-strip .prop-img{aspect-ratio:1/1}
   /* Mobile's 2-up grid is short enough (see above) that the floating
      right-badge stack — now up to 5 items deep with the type-letter badge
      added above the heart — was tall enough to spill past the image and
@@ -3799,7 +3785,6 @@ main.tab-explore .empty-state{display:none !important}
   .prop-card.list-view{flex-direction:column}
   .prop-card.list-view .prop-img{width:100%;aspect-ratio:4/3;height:auto;min-height:0;border-radius:0}
   .recently-viewed-strip{gap:10px;padding:10px 12px 4px}
-  .booked-strip{gap:10px;padding:10px 12px 4px}
   .recently-viewed-clear{padding:6px;gap:0}
   .recently-viewed-clear-label{display:none}
 
@@ -4721,25 +4706,25 @@ main.tab-explore .empty-state{display:none !important}
         <span class="section-divider-label booked-label">Booked<span class="section-divider-count booked-count" id="promotedBookedCount"></span></span>
       </div>
     </div>
-    <div class="booked-strip" id="promotedBookedGrid"></div>
+    <div class="prop-grid" id="promotedBookedGrid"></div>
     <div class="section-divider booked-divider" id="rentBookedDivider" style="display:none">
       <div class="section-divider-inner">
         <span class="section-divider-label booked-label">Booked<span class="section-divider-count booked-count" id="rentBookedCount"></span></span>
       </div>
     </div>
-    <div class="booked-strip" id="rentBookedGrid"></div>
+    <div class="prop-grid" id="rentBookedGrid"></div>
     <div class="section-divider booked-divider" id="leaseBookedDivider" style="display:none">
       <div class="section-divider-inner">
         <span class="section-divider-label booked-label">Booked<span class="section-divider-count booked-count" id="leaseBookedCount"></span></span>
       </div>
     </div>
-    <div class="booked-strip" id="leaseBookedGrid"></div>
+    <div class="prop-grid" id="leaseBookedGrid"></div>
     <div class="section-divider booked-divider" id="pgBookedDivider" style="display:none">
       <div class="section-divider-inner">
         <span class="section-divider-label booked-label">Booked<span class="section-divider-count booked-count" id="pgBookedCount"></span></span>
       </div>
     </div>
-    <div class="booked-strip" id="pgBookedGrid"></div>
+    <div class="prop-grid" id="pgBookedGrid"></div>
   </div>
   <div id="promotedSection">
     <div class="section-divider" id="promotedDivider" style="display:none">
@@ -7639,6 +7624,8 @@ function renderBookedSections() {
   // Any other tab (e.g. "All"/Explore) leaves every bucket empty — that tab
   // hides the whole bookedSection wrapper anyway (see updateAllOnlySections()).
 
+  const gridClass = 'prop-grid' + (isListView ? ' list-view' : '');
+
   ['promoted', 'rent', 'lease', 'pg'].forEach(key => {
     const divider = document.getElementById(key + 'BookedDivider');
     const grid = document.getElementById(key + 'BookedGrid');
@@ -7653,37 +7640,10 @@ function renderBookedSections() {
 
     divider.style.display = '';
     document.getElementById(key + 'BookedCount').textContent = items.length;
-    grid.className = 'booked-strip'; // horizontal scroll, same pattern as Recently Viewed — ignores the grid/list view toggle
+    grid.className = gridClass;
     grid.innerHTML = items.map(p => cardHTML(p, key !== 'promoted')).join('');
   });
-  requestAnimationFrame(syncBookedStripCardWidth);
 }
-// Mirrors syncRecentlyViewedCardWidth(): keeps Booked cards matching the real
-// property cards' width (desktop) or exactly half the strip width so 2 cards
-// divide the screen evenly (mobile). Only one Booked strip is ever populated
-// at a time (matching currentTab), but syncing all four is harmless.
-function syncBookedStripCardWidth() {
-  const strips = document.querySelectorAll('.booked-strip');
-  if (!strips.length) return;
-  const isMobile = window.innerWidth <= 768;
-  strips.forEach(strip => {
-    if (isMobile) {
-      const cs = getComputedStyle(strip);
-      const gap = parseFloat(cs.columnGap || cs.gap) || 10;
-      const padL = parseFloat(cs.paddingLeft) || 0;
-      const padR = parseFloat(cs.paddingRight) || 0;
-      const available = strip.clientWidth - padL - padR - gap;
-      const w = available / 2;
-      if (w > 0) strip.style.setProperty('--bk-card-w', w + 'px');
-      return;
-    }
-    const sample = document.querySelector('.prop-grid .prop-card');
-    if (!sample) return;
-    const w = sample.getBoundingClientRect().width;
-    if (w > 0) strip.style.setProperty('--bk-card-w', w + 'px');
-  });
-}
-window.addEventListener('resize', () => { clearTimeout(window._bkWidthTimer); window._bkWidthTimer = setTimeout(syncBookedStripCardWidth, 150); });
 
 // Only the stat/amenity row's own JS knows whether it truly overflows its
 // visible width, so the trailing "there's more to scroll" fade (.has-overflow
