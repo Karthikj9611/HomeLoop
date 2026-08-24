@@ -365,7 +365,7 @@ table.dataTable.no-footer{border-bottom:none!important}
   min-width:40px;
 }
 #propertyTable .col-sno{
-  min-width:44px;
+  min-width:90px;
 }
 #propertyTable .col-sticky-2{
   max-width:230px;text-align:left!important;
@@ -2160,9 +2160,6 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
             </button>
           </div>
           <div class="bulk-toolbar-right">
-            <button class="bulk-btn bulk-btn-danger" id="custDeleteSelectedBtn" style="display:none" onclick="deleteSelectedCustomers()" title="Delete selected">
-              <i class="fas fa-trash-alt"></i> <span class="bulk-btn-label" data-mobile="Delete">Delete Selected&nbsp;</span>(<span id="custDeleteCount">0</span>)
-            </button>
             <div class="col-toggle-wrap" id="custColToggleWrap">
               <button type="button" class="col-toggle-btn" id="custColToggleBtn" onclick="toggleColMenu('cust')">
                 <i class="fas fa-table-columns"></i> <span class="bulk-btn-label" data-mobile="Columns">Columns</span>
@@ -2274,9 +2271,6 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
         </button>
       </div>
       <div class="bulk-toolbar-right">
-        <button class="bulk-btn bulk-btn-danger" id="bulkDeleteSelectedBtn" disabled title="Deleting properties is disabled" style="display:none;opacity:.4;cursor:not-allowed;pointer-events:none">
-          <i class="fas fa-trash-alt"></i> <span class="bulk-btn-label" data-mobile="Delete">Delete Selected&nbsp;</span>(<span id="bulkDeleteCount">0</span>)
-        </button>
         <button class="bulk-btn bulk-btn-outline-danger" id="resetAllViewsBtn" onclick="resetAllViews()" title="Reset every listing's view count to 0">
           <i class="fas fa-rotate-left"></i> <span class="bulk-btn-label" data-mobile="Reset">Reset All Views</span>
         </button>
@@ -2294,7 +2288,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
           <thead>
             <tr>
               <th class="col-sticky-1"><input type="checkbox" class="prop-select-all-checkbox" id="propSelectAllCheckbox" onchange="onPropSelectAllChange(this)"></th>
-              <th class="col-sno">S.No</th>
+              <th class="col-sno">Property ID</th>
               <th class="col-sticky-2">Property</th>
               <th>Promoted</th>
               <th>Verified</th>
@@ -2437,9 +2431,6 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
             </button>
           </div>
           <div class="bulk-toolbar-right">
-            <button class="bulk-btn bulk-btn-danger" id="apptDeleteSelectedBtn" style="display:none" onclick="deleteSelectedAppointments()" title="Delete selected">
-              <i class="fas fa-trash-alt"></i> <span class="bulk-btn-label" data-mobile="Delete">Delete Selected&nbsp;</span>(<span id="apptDeleteCount">0</span>)
-            </button>
             <div class="col-toggle-wrap" id="apptColToggleWrap">
               <button type="button" class="col-toggle-btn" id="apptColToggleBtn" onclick="toggleColMenu('appt')">
                 <i class="fas fa-table-columns"></i> <span class="bulk-btn-label" data-mobile="Columns">Columns</span>
@@ -2653,12 +2644,6 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
           <div class="bulk-toolbar-right">
             <button class="btn-add-review" onclick="openHonestReviewModal()" title="Add review">
               <i class="fas fa-plus"></i> <span class="bulk-btn-label" data-mobile="Add">Add Review</span>
-            </button>
-            <button class="bulk-btn bulk-btn-danger" id="reviewDeleteSelectedBtn" style="display:none" onclick="deleteSelectedReviews()" title="Delete selected">
-              <i class="fas fa-trash-alt"></i> <span class="bulk-btn-label" data-mobile="Delete">Delete Selected&nbsp;</span>(<span id="reviewDeleteCount">0</span>)
-            </button>
-            <button class="bulk-btn bulk-btn-outline-danger" disabled title="Temporarily disabled">
-              <i class="fas fa-triangle-exclamation"></i> <span class="bulk-btn-label" data-mobile="Delete">Delete All Reviews</span>
             </button>
           </div>
         </div>
@@ -3281,6 +3266,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
 let dataTable, propTable, apptTable, honestReviewsTable;
 
 const BASE = 'https://homeloop.in';
+//const BASE = 'http://localhost:5000';
 
 /* ── ADMIN KEY – set after login ──
    Uses localStorage (not sessionStorage) so the admin stays signed in even
@@ -4030,9 +4016,9 @@ function updateReviewBulkToolbarUI(){
   const show = n > 0;
   countEl.style.display = show ? 'inline-flex' : 'none';
   clearBtn.style.display = show ? 'inline-flex' : 'none';
-  delBtn.style.display = show ? 'inline-flex' : 'none';
+  if (delBtn) delBtn.style.display = show ? 'inline-flex' : 'none';
   numEl.textContent = n;
-  delCountEl.textContent = n;
+  if (delCountEl) delCountEl.textContent = n;
 }
 
 window.clearReviewSelection = function(){
@@ -4796,9 +4782,9 @@ function updateCustBulkToolbarUI(){
   const show = n > 0;
   countEl.style.display = show ? 'inline-flex' : 'none';
   clearBtn.style.display = show ? 'inline-flex' : 'none';
-  delBtn.style.display = show ? 'inline-flex' : 'none';
+  if (delBtn) delBtn.style.display = show ? 'inline-flex' : 'none';
   numEl.textContent = n;
-  delCountEl.textContent = n;
+  if (delCountEl) delCountEl.textContent = n;
 }
 
 window.clearCustSelection = function(){
@@ -4899,9 +4885,9 @@ function updateApptBulkToolbarUI(){
   const show = n > 0;
   countEl.style.display = show ? 'inline-flex' : 'none';
   clearBtn.style.display = show ? 'inline-flex' : 'none';
-  delBtn.style.display = show ? 'inline-flex' : 'none';
+  if (delBtn) delBtn.style.display = show ? 'inline-flex' : 'none';
   numEl.textContent = n;
-  delCountEl.textContent = n;
+  if (delCountEl) delCountEl.textContent = n;
 }
 
 window.clearApptSelection = function(){
@@ -5213,10 +5199,6 @@ $(document).ready(function(){
 				  <i class="fas fa-eye"></i> View
 				</button>
 
-				<button class="btn-delete" onclick="deleteBooking('${row.mobile}')">
-				  <i class="fas fa-trash-alt"></i> Delete
-				</button>
-
 			  </div>
 			`;
 		  }
@@ -5343,8 +5325,8 @@ $(document).ready(function(){
           const checked = _selectedPropIds.has(row._id) ? 'checked' : '';
           return `<input type="checkbox" class="prop-row-check" data-id="${row._id}" onchange="onPropRowCheck(this,'${row._id}')" ${checked}>`;
       }},
-      /* 1 – S.No (serial number) */
-      { data:null, orderable:false, className:'dt-body-center col-sno', render:(d,t,row,meta)=> String(meta.row+1) },
+      /* 1 – Property ID (was serial number) */
+      { data:'propertyId', orderable:false, className:'dt-body-center col-sno', render:(d)=> d||'—' },
       /* 1 – Property title (Property ID and Location are their own columns below) */
       { data:null, className:'col-sticky-2', render:(d,t,row)=>{
           const title = escapeHtml(row.title||'Untitled');
@@ -5579,7 +5561,6 @@ $(document).ready(function(){
             ${navigateBtn}
             ${shareBtn}
             ${bookingBtn}
-            <button class="btn-delete" disabled title="Deleting properties is disabled" style="opacity:.4;cursor:not-allowed;pointer-events:none"><i class="fas fa-trash-alt"></i> Delete</button>
           </div>`;
       }}
     ],
@@ -5870,7 +5851,6 @@ $(document).ready(function(){
           _apptCache[row._id] = row;
           return `<div style="display:inline-flex;gap:6px;flex-wrap:nowrap;justify-content:center">
             <button class="btn-view" onclick="openApptModal('${row._id}')"><i class="fas fa-eye"></i> View</button>
-            <button class="btn-delete" onclick="deleteAppointment('${row._id}')"><i class="fas fa-trash-alt"></i> Delete</button>
           </div>`;
       }}
     ],
@@ -6052,7 +6032,6 @@ $(document).ready(function(){
           if(t!=='display') return '';
           return `<div style="display:inline-flex;gap:6px;flex-wrap:nowrap;justify-content:center">
             <button class="btn-view" onclick="openHonestReviewModal('${row._id}')"><i class="fas fa-pen"></i> Edit</button>
-            <button class="btn-delete" onclick="deleteHonestReview('${row._id}')"><i class="fas fa-trash-alt"></i> Delete</button>
           </div>`;
       }}
     ],
