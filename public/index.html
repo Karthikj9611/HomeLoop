@@ -121,6 +121,17 @@ ul{list-style:none}
   letter-spacing:normal;text-transform:none;
 }
 .section-divider-count:empty{display:none}
+/* Booked section dividers reuse the same layout as the normal Rent/Lease/PG/
+   Promoted ones, but in the app's existing red "booked" color (see
+   .profile-status-pill.booked-pill) instead of the brand pink, so a Booked
+   bucket never gets mistaken for another live/available section at a glance. */
+.booked-label{
+  color:#e04444;
+  background:#fdecec;
+  padding:4px 12px;border-radius:99px;
+  border:1px solid #f6c6c6;
+}
+.booked-count{background:#e04444}
 /* ─── Scrollbar ────────────────────────────────── */
 ::-webkit-scrollbar{width:4px;height:4px}
 ::-webkit-scrollbar-track{background:transparent}
@@ -4699,6 +4710,12 @@ main.tab-explore .empty-state{display:none !important}
       </div>
     </div>
     <div class="prop-grid" id="promotedGrid"></div>
+    <div class="section-divider booked-divider" id="promotedBookedDivider" style="display:none">
+      <div class="section-divider-inner">
+        <span class="section-divider-label booked-label">Booked<span class="section-divider-count booked-count" id="promotedBookedCount"></span></span>
+      </div>
+    </div>
+    <div class="prop-grid" id="promotedBookedGrid"></div>
   </div>
   <div id="rentSection">
     <div class="section-divider" id="rentDivider" style="display:none">
@@ -4707,6 +4724,12 @@ main.tab-explore .empty-state{display:none !important}
       </div>
     </div>
     <div class="prop-grid" id="rentGrid"></div>
+    <div class="section-divider booked-divider" id="rentBookedDivider" style="display:none">
+      <div class="section-divider-inner">
+        <span class="section-divider-label booked-label">Booked<span class="section-divider-count booked-count" id="rentBookedCount"></span></span>
+      </div>
+    </div>
+    <div class="prop-grid" id="rentBookedGrid"></div>
   </div>
   <div id="leaseSection">
     <div class="section-divider" id="leaseDivider" style="display:none">
@@ -4715,6 +4738,12 @@ main.tab-explore .empty-state{display:none !important}
       </div>
     </div>
     <div class="prop-grid" id="leaseGrid"></div>
+    <div class="section-divider booked-divider" id="leaseBookedDivider" style="display:none">
+      <div class="section-divider-inner">
+        <span class="section-divider-label booked-label">Booked<span class="section-divider-count booked-count" id="leaseBookedCount"></span></span>
+      </div>
+    </div>
+    <div class="prop-grid" id="leaseBookedGrid"></div>
   </div>
   <div id="pgSection">
     <div class="section-divider" id="pgDivider" style="display:none">
@@ -4723,6 +4752,12 @@ main.tab-explore .empty-state{display:none !important}
       </div>
     </div>
     <div class="prop-grid" id="pgGrid"></div>
+    <div class="section-divider booked-divider" id="pgBookedDivider" style="display:none">
+      <div class="section-divider-inner">
+        <span class="section-divider-label booked-label">Booked<span class="section-divider-count booked-count" id="pgBookedCount"></span></span>
+      </div>
+    </div>
+    <div class="prop-grid" id="pgBookedGrid"></div>
   </div>
   <div id="shortstaySection">
     <div class="section-divider" id="shortstayDivider" style="display:none">
@@ -7043,6 +7078,12 @@ function buildVideoEmbed(url) {
    DATA
 ═══════════════════════════════════════════════ */
 let PROPERTIES = [];
+// Booked listings are excluded from PROPERTIES by the server (see
+// GET /api/properties) so they never show up mixed into the live grid. They're
+// fetched separately into this array purely to populate the read-only "Booked"
+// section under Promoted/Rent/Lease/PG — see fetchBookedProperties() /
+// renderBookedSections() further down.
+let BOOKED_PROPERTIES = [];
 // Recently Viewed renders its cards through the same styling as PROPERTIES
 // (via cardHTML), so it must not render until the initial fetch has actually
 // resolved — otherwise it briefly falls back to the plain snapshot-card style
@@ -7551,6 +7592,53 @@ function renderCards() {
   // measure an actual rendered .prop-card and mirror that width via a CSS
   // variable, keeping the two visually identical at any screen size.
   syncScrollCardWidth();
+
+  renderBookedSections();
+}
+
+// Renders the read-only "Booked" bucket under Promoted/Rent/Lease/PG. Source
+// data is BOOKED_PROPERTIES (fetched separately — see fetchBookedProperties()
+// — since the main /api/properties response never includes booked listings).
+// Deliberately ignores search/filter state: a booked listing has nothing left
+// to filter on (price/BHK/etc. no longer matter once it's off the market), so
+// this only respects which tab is active, same as the live sections do.
+function renderBookedSections() {
+  const KEYS = ['promoted', 'rent', 'lease', 'pg'];
+
+  // Mirrors matchesTab()'s tab-scoping for the live sections, so e.g. a
+  // "Booked Lease" bucket never appears while the Rent tab is active.
+  const tabAllows = key => {
+    if (currentTab === 'All') return true;
+    if (key === 'promoted') return currentTab === 'Promoted';
+    return currentTab === ({ rent: 'Rent', lease: 'Lease', pg: 'PG' })[key];
+  };
+
+  const groups = {
+    promoted: BOOKED_PROPERTIES.filter(p => p.promoted),
+    rent:     BOOKED_PROPERTIES.filter(p => sectionKeyFor(p) === 'rent'),
+    lease:    BOOKED_PROPERTIES.filter(p => sectionKeyFor(p) === 'lease'),
+    pg:       BOOKED_PROPERTIES.filter(p => sectionKeyFor(p) === 'pg'),
+  };
+
+  const gridClass = 'prop-grid' + (isListView ? ' list-view' : '');
+
+  KEYS.forEach(key => {
+    const divider = document.getElementById(key + 'BookedDivider');
+    const grid = document.getElementById(key + 'BookedGrid');
+    if (!divider || !grid) return;
+
+    const items = tabAllows(key) ? groups[key] : [];
+    if (items.length === 0) {
+      divider.style.display = 'none';
+      grid.innerHTML = '';
+      return;
+    }
+
+    divider.style.display = '';
+    document.getElementById(key + 'BookedCount').textContent = items.length;
+    grid.className = gridClass;
+    grid.innerHTML = items.map(p => cardHTML(p, key !== 'promoted')).join('');
+  });
 }
 
 // Only the stat/amenity row's own JS knows whether it truly overflows its
@@ -10083,7 +10171,7 @@ let propertyViewMode = false;
 let editingPropertyId = null;
 
 function openDetail(id) {
-  const p = PROPERTIES.find(x => x.id === id);
+  const p = PROPERTIES.find(x => x.id === id) || BOOKED_PROPERTIES.find(x => x.id === id);
   if (!p) return;
   incrementViews(p);   // count this open as a view, persisted to storage
   recordRecentlyViewed(p);
@@ -13826,6 +13914,24 @@ async function fetchProperties() {
   return true;
 }
 
+// Fetches booked listings (verified + booked, the mirror image of the main
+// /api/properties filter) for the read-only "Booked" sections under
+// Promoted/Rent/Lease/PG. Kept as its own small, best-effort call — separate
+// from fetchProperties() — since it's supplementary and shouldn't block or
+// complicate the main listing load if it's slow or fails.
+async function fetchBookedProperties() {
+  try {
+    const res = await fetch('/api/properties?booked=true');
+    if (!res.ok) throw new Error('Server returned ' + res.status);
+    const data = await res.json();
+    BOOKED_PROPERTIES = data.properties || [];
+  } catch (err) {
+    console.error('Could not load booked properties:', err.message);
+    BOOKED_PROPERTIES = [];
+  }
+  renderBookedSections();
+}
+
 /* ── Ad Banner ── */
 document.addEventListener('DOMContentLoaded', function() {
   // Fire-and-forget: records this page load as a visit. The server dedups
@@ -13843,6 +13949,7 @@ document.addEventListener('DOMContentLoaded', function() {
   updateAllOnlySections(); // hide UrbanAware / Reviews / Premium on initial load (default tab is Promoted)
 
   // ── Load properties from DB ──
+  fetchBookedProperties(); // fire-and-forget: supplementary "Booked" sections, doesn't block the main load
   (async function loadPropertiesFromDB() {
     const ok = await fetchProperties();
     if (!ok) return;

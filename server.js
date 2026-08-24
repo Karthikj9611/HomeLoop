@@ -1399,8 +1399,13 @@ app.get('/api/properties', async (req, res) => {
     // covers real-world scale for this site while still bounding worst-case
     // query size; raise further (or add real pagination + a dedicated
     // lightweight distinct-pincodes endpoint) if the catalog outgrows this.
-    const { status, q, limit = 2000, skip = 0 } = req.query;
-    const filter = { verified: true, booked: { $ne: true } }; // a listing only appears to the public once admin has verified it, and disappears again once marked booked
+    const { status, q, limit = 2000, skip = 0, booked } = req.query;
+    // Default: only available listings (verified, not booked) — same as before.
+    // ?booked=true flips this to fetch the booked ones instead, so the frontend
+    // can show a separate "Booked" section per type without ever mixing the two.
+    const filter = booked === 'true'
+      ? { verified: true, booked: true }
+      : { verified: true, booked: { $ne: true } }; // a listing only appears to the public once admin has verified it, and disappears again once marked booked
     if (status && typeof status === 'string') filter['basic.status'] = status;
     if (q && typeof q === 'string') {
       const re = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
