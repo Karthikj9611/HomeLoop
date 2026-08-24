@@ -182,9 +182,15 @@ body{
   font-size:0.8rem;font-weight:700;color:var(--gold-dark);
   background:var(--gold-light);
   display:inline-flex;align-items:center;gap:6px;
-  padding:8px 14px;border-radius:calc(var(--radius) - 4px);
+  padding:9px 16px;border-radius:999px;
   margin:0 2px;
+  cursor:pointer;border:none;transition:background 0.15s,opacity 0.15s;
+  font-family:'Plus Jakarta Sans',sans-serif;
 }
+.bulk-selected-count:hover{opacity:0.8}
+.bulk-selected-count:focus-visible{outline:2px solid var(--gold-dark);outline-offset:2px}
+.bulk-selected-count .bulk-selected-clear-x{font-size:0.78rem;font-weight:800;color:var(--red);opacity:0.85}
+.bulk-selected-count:hover .bulk-selected-clear-x{opacity:1}
 .filter-active-badge{
   font-size:0.8rem;font-weight:700;color:#2563eb;
   background:rgba(37,99,235,0.08);
@@ -323,6 +329,31 @@ table.dataTable thead tr.col-filter-row th{
 }
 .card-title{font-size:1rem;font-weight:700;color:var(--ink)}
 .card-sub{font-size:0.76rem;color:var(--ink3);margin-top:2px}
+.card-header-left,.card-header-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+#propGridHeader .dt-buttons{margin-bottom:0}
+#propGridHeader{padding-bottom:16px}
+/* PDF, filters-active badge, and Clear filters all take on the same pill
+   shape as the Columns toggle button — bordered, rounded-full — just with
+   each control's own color to show its state (neutral, active-blue, muted). */
+#propGridHeader .dt-button{
+  border-radius:99px!important;border:1.5px solid var(--border)!important;
+  background:var(--surface)!important;padding:8px 16px!important;color:var(--ink2)!important;
+  font-size:0.78rem!important;font-weight:700!important;
+}
+#propGridHeader .dt-button:hover{background:var(--surface2)!important;border-color:var(--border2)!important}
+#propGridHeader #propClearFiltersBtn{
+  border-radius:99px;border:1.5px solid var(--border);background:var(--surface);padding:8px 16px;
+  font-size:0.78rem;font-weight:700;
+}
+/* Icon glyphs differ in visual height per icon even at the same font-size,
+   so matching padding/font-size alone still lets the pill's rendered box
+   vary a little. Pin all three to one explicit height instead. */
+#propGridHeader .dt-button,
+#propGridHeader .col-toggle-btn,
+#propGridHeader #propClearFiltersBtn{
+  height:38px;box-sizing:border-box;padding-top:0!important;padding-bottom:0!important;
+}
+#propGridHeader #propClearFiltersBtn:hover{background:var(--surface2);border-color:var(--border2)}
 .table-wrapper{padding:16px 20px 20px;overflow-x:auto;-webkit-overflow-scrolling:touch}
 
 /* ── STICKY TABLE HEADER ──
@@ -1717,22 +1748,15 @@ footer i{color:var(--gold)}
   .dt-button i,
   .col-toggle-btn i{font-size:0.8rem!important;margin:0!important}
 
-  /* Properties toolbar (#bulkToolbar) icon order: Columns, then PDF/Excel/CSV,
-     then the rest of the controls in their original relative order. Flatten
-     the left/right wrapper divs and the dt-buttons group so every icon is a
-     direct flex item of .bulk-toolbar and can be freely reordered together. */
+  /* Properties toolbar (#bulkToolbar) icon order: the create action first,
+     then filters/selection/compare, then the reset action. PDF/Excel/CSV
+     and Columns now live in the grid's own card-header (#propGridHeader),
+     not this toolbar. */
   #bulkToolbar .bulk-toolbar-left,
-  #bulkToolbar .bulk-toolbar-right,
-  #bulkToolbar .dt-buttons{display:contents}
-  #propColToggleWrap{order:1}
-  #bulkToolbar .buttons-pdf{order:2}
-  #bulkToolbar .buttons-excel{order:3}
-  #bulkToolbar .buttons-csv{order:4}
+  #bulkToolbar .bulk-toolbar-right{display:contents}
   #propFilterBadge{order:5}
   #propClearFiltersBtn{order:6}
   #bulkSelectedCount{order:7}
-  #bulkClearBtn{order:8}
-  #bulkDeleteSelectedBtn{order:9}
   #resetAllViewsBtn{order:10}
 
   /* Category sub-tab bar — single horizontal row, swipeable */
@@ -2152,11 +2176,8 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
             <button class="bulk-btn bulk-btn-clear" id="custClearFiltersBtn" style="display:none" onclick="clearCustFilters()" title="Clear all filters">
               <i class="fas fa-filter-circle-xmark"></i> <span class="bulk-btn-label" data-mobile="Clear">Clear filters</span>
             </button>
-            <span class="bulk-selected-count" id="custSelectedCount" style="display:none">
-              <i class="fas fa-check-circle"></i> <span id="custSelectedNum">0</span><span class="bulk-btn-label" data-mobile="Selected"> selected</span>
-            </span>
-            <button class="bulk-btn bulk-btn-clear" id="custClearBtn" style="display:none" onclick="clearCustSelection()" title="Clear selection">
-              <i class="fas fa-xmark"></i> <span class="bulk-btn-label" data-mobile="Clear">Clear selection</span>
+            <button type="button" class="bulk-selected-count" id="custSelectedCount" style="display:none" onclick="clearCustSelection()" title="Clear selection">
+              <i class="fas fa-check-circle"></i> <span id="custSelectedNum">0</span><span class="bulk-btn-label" data-mobile="Selected"> selected</span> <span class="bulk-selected-clear-x">X</span>
             </button>
           </div>
           <div class="bulk-toolbar-right">
@@ -2253,36 +2274,34 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
         <button class="bulk-btn" id="addPropertyBtn" onclick="openAdminAddPropertyModal()" style="background:var(--brand);color:#fff;border-color:var(--brand)">
           <i class="fas fa-plus"></i> <span class="bulk-btn-label" data-mobile="Add">Add Property</span>
         </button>
-        <span id="addPropertyDivider" style="width:1px;align-self:stretch;background:var(--border,#ddd);margin:2px 4px;flex-shrink:0"></span>
-        <span class="filter-active-badge" id="propFilterBadge" style="display:none">
-          <i class="fas fa-filter"></i> <span id="propFilterCount">0</span><span class="bulk-btn-label" data-mobile="Filters"> filters active</span>
-        </span>
-        <button class="bulk-btn bulk-btn-clear" id="propClearFiltersBtn" style="display:none" onclick="clearPropFilters()" title="Clear all filters">
-          <i class="fas fa-filter-circle-xmark"></i> <span class="bulk-btn-label" data-mobile="Clear">Clear filters</span>
-        </button>
-        <span class="bulk-selected-count" id="bulkSelectedCount" style="display:none">
-          <i class="fas fa-check-circle"></i> <span id="bulkSelectedNum">0</span><span class="bulk-btn-label" data-mobile="Selected"> selected</span>
-        </span>
-        <button class="bulk-btn bulk-btn-clear" id="bulkClearBtn" style="display:none" onclick="clearPropSelection()" title="Clear selection">
-          <i class="fas fa-xmark"></i> <span class="bulk-btn-label" data-mobile="Clear">Clear selection</span>
-        </button>
         <button class="bulk-btn" id="bulkCompareBtn" style="display:none;background:var(--brand);color:#fff;border-color:var(--brand)" onclick="openAdminCompareModal()" title="Compare the selected properties and share the link with a customer">
-          <i class="fas fa-code-compare"></i> <span class="bulk-btn-label" data-mobile="Compare">Compare Selected&nbsp;</span>(<span id="bulkCompareCount">0</span>)
+          <i class="fas fa-code-compare"></i> <span class="bulk-btn-label" data-mobile="Compare">Compare - </span><span id="bulkCompareCount">0</span>
+        </button>
+        <span id="addPropertyDivider" style="width:1px;align-self:stretch;background:var(--border,#ddd);margin:2px 4px;flex-shrink:0"></span>
+        <button type="button" class="bulk-selected-count" id="bulkSelectedCount" style="display:none" onclick="clearPropSelection()" title="Clear selection">
+          <i class="fas fa-check-circle"></i> <span id="bulkSelectedNum">0</span><span class="bulk-btn-label" data-mobile="Selected"> selected</span> <span class="bulk-selected-clear-x">X</span>
         </button>
       </div>
       <div class="bulk-toolbar-right">
-        <button class="bulk-btn bulk-btn-outline-danger" id="resetAllViewsBtn" onclick="resetAllViews()" title="Reset every listing's view count to 0">
+        <button class="bulk-btn bulk-btn-outline-danger" id="resetAllViewsBtn" disabled title="Resetting all views is disabled" style="opacity:.4;cursor:not-allowed;pointer-events:none">
           <i class="fas fa-rotate-left"></i> <span class="bulk-btn-label" data-mobile="Reset">Reset All Views</span>
         </button>
-        <div class="col-toggle-wrap" id="propColToggleWrap">
-          <button type="button" class="col-toggle-btn" id="propColToggleBtn" onclick="togglePropColMenu()">
-            <i class="fas fa-table-columns"></i> <span class="bulk-btn-label" data-mobile="Columns">Columns</span>
-          </button>
-          <div class="col-toggle-menu" id="propColToggleMenu"></div>
-        </div>
       </div>
     </div>
     <div class="card">
+      <div class="card-header" id="propGridHeader">
+        <div class="card-header-left" id="propGridHeaderLeft">
+          <div class="col-toggle-wrap" id="propColToggleWrap">
+            <button type="button" class="col-toggle-btn" id="propColToggleBtn" onclick="togglePropColMenu()">
+              <i class="fas fa-table-columns"></i> <span class="bulk-btn-label" data-mobile="Columns">Columns</span>
+            </button>
+            <div class="col-toggle-menu" id="propColToggleMenu"></div>
+          </div>
+          <button class="bulk-btn bulk-btn-clear" id="propClearFiltersBtn" style="display:none" onclick="clearPropFilters()" title="Clear all filters">
+            <i class="fas fa-filter-circle-xmark"></i> <span class="bulk-btn-label" data-mobile="Clear">Clear filters</span>
+          </button>
+        </div>
+      </div>
       <div class="table-wrapper">
         <table id="propertyTable" class="display nowrap" style="width:100%">
           <thead>
@@ -2341,10 +2360,10 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
             </tr>
             <tr class="col-filter-row">
               <th class="col-sticky-1"></th>
-              <th class="col-sno"></th>
+              <th class="col-sno"><input type="text" class="col-filter-input" data-filter-key="propertyId" placeholder="Search…" oninput="onPropColumnFilter('propertyId', this.value, this)"></th>
               <th class="col-sticky-2"><input type="text" class="col-filter-input" data-filter-key="title" placeholder="Search…" oninput="onPropColumnFilter('title', this.value, this)"></th>
               <th><select class="col-filter-select" data-filter-key="promoted" onchange="onPropColumnFilter('promoted', this.value, this)"><option value="">All</option><option value="yes">Yes</option><option value="no">No</option></select></th>
-              <th></th>
+              <th><select class="col-filter-select" data-filter-key="verified" onchange="onPropColumnFilter('verified', this.value, this)"><option value="">All</option><option value="yes">Yes</option><option value="no">No</option></select></th>
               <th><select class="col-filter-select" data-filter-key="booked" onchange="onPropColumnFilter('booked', this.value, this)"><option value="">All</option><option value="yes">Yes</option><option value="no">No</option></select></th>
               <th><input type="text" class="col-filter-input" data-filter-key="ownerName" placeholder="Search…" oninput="onPropColumnFilter('ownerName', this.value, this)"></th>
               <th><input type="text" class="col-filter-input" data-filter-key="ownerNumber" placeholder="Search…" oninput="onPropColumnFilter('ownerNumber', this.value, this)"></th>
@@ -2385,7 +2404,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
               <th></th>
               <th></th>
               <th></th>
-              <th></th>
+              <th><input type="text" class="col-filter-input" data-filter-key="amenities" placeholder="Search…" oninput="onPropColumnFilter('amenities', this.value, this)"></th>
               <th><input type="text" class="col-filter-input" data-filter-key="propertyId" placeholder="Search…" oninput="onPropColumnFilter('propertyId', this.value, this)"></th>
               <th><input type="text" class="col-filter-input" data-filter-key="userId" placeholder="Search…" oninput="onPropColumnFilter('userId', this.value, this)"></th>
               <th><div class="col-date-range">
@@ -2423,11 +2442,8 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
             <button class="bulk-btn bulk-btn-clear" id="apptClearFiltersBtn" style="display:none" onclick="clearApptFilters()" title="Clear all filters">
               <i class="fas fa-filter-circle-xmark"></i> <span class="bulk-btn-label" data-mobile="Clear">Clear filters</span>
             </button>
-            <span class="bulk-selected-count" id="apptSelectedCount" style="display:none">
-              <i class="fas fa-check-circle"></i> <span id="apptSelectedNum">0</span><span class="bulk-btn-label" data-mobile="Selected"> selected</span>
-            </span>
-            <button class="bulk-btn bulk-btn-clear" id="apptClearBtn" style="display:none" onclick="clearApptSelection()" title="Clear selection">
-              <i class="fas fa-xmark"></i> <span class="bulk-btn-label" data-mobile="Clear">Clear selection</span>
+            <button type="button" class="bulk-selected-count" id="apptSelectedCount" style="display:none" onclick="clearApptSelection()" title="Clear selection">
+              <i class="fas fa-check-circle"></i> <span id="apptSelectedNum">0</span><span class="bulk-btn-label" data-mobile="Selected"> selected</span> <span class="bulk-selected-clear-x">X</span>
             </button>
           </div>
           <div class="bulk-toolbar-right">
@@ -2634,11 +2650,8 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
       <div class="table-wrapper">
         <div class="bulk-toolbar" id="reviewBulkToolbar">
           <div class="bulk-toolbar-left">
-            <span class="bulk-selected-count" id="reviewSelectedCount" style="display:none">
-              <i class="fas fa-check-circle"></i> <span id="reviewSelectedNum">0</span><span class="bulk-btn-label" data-mobile="Selected"> selected</span>
-            </span>
-            <button class="bulk-btn bulk-btn-clear" id="reviewClearBtn" style="display:none" onclick="clearReviewSelection()" title="Clear selection">
-              <i class="fas fa-xmark"></i> <span class="bulk-btn-label" data-mobile="Clear">Clear selection</span>
+            <button type="button" class="bulk-selected-count" id="reviewSelectedCount" style="display:none" onclick="clearReviewSelection()" title="Clear selection">
+              <i class="fas fa-check-circle"></i> <span id="reviewSelectedNum">0</span><span class="bulk-btn-label" data-mobile="Selected"> selected</span> <span class="bulk-selected-clear-x">X</span>
             </button>
           </div>
           <div class="bulk-toolbar-right">
@@ -3265,8 +3278,8 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
 
 let dataTable, propTable, apptTable, honestReviewsTable;
 
-const BASE = 'https://homeloop.in';
-//const BASE = 'http://localhost:5000';
+//const BASE = 'https://homeloop.in';
+const BASE = 'http://localhost:5000';
 
 /* ── ADMIN KEY – set after login ──
    Uses localStorage (not sessionStorage) so the admin stays signed in even
@@ -4010,12 +4023,10 @@ function updateReviewBulkToolbarUI(){
   const n = _selectedReviewIds.size;
   const countEl   = document.getElementById('reviewSelectedCount');
   const numEl     = document.getElementById('reviewSelectedNum');
-  const clearBtn  = document.getElementById('reviewClearBtn');
   const delBtn    = document.getElementById('reviewDeleteSelectedBtn');
   const delCountEl= document.getElementById('reviewDeleteCount');
   const show = n > 0;
   countEl.style.display = show ? 'inline-flex' : 'none';
-  clearBtn.style.display = show ? 'inline-flex' : 'none';
   if (delBtn) delBtn.style.display = show ? 'inline-flex' : 'none';
   numEl.textContent = n;
   if (delCountEl) delCountEl.textContent = n;
@@ -4630,12 +4641,10 @@ function updateBulkToolbarUI(){
   const n = _selectedPropIds.size;
   const countEl   = document.getElementById('bulkSelectedCount');
   const numEl     = document.getElementById('bulkSelectedNum');
-  const clearBtn  = document.getElementById('bulkClearBtn');
   const delBtn    = document.getElementById('bulkDeleteSelectedBtn');
   const delCountEl= document.getElementById('bulkDeleteCount');
   const show = n > 0;
   countEl.style.display = show ? 'inline-flex' : 'none';
-  clearBtn.style.display = show ? 'inline-flex' : 'none';
   if (delBtn) delBtn.style.display = show ? 'inline-flex' : 'none';
   numEl.textContent = n;
   if (delCountEl) delCountEl.textContent = n;
@@ -4776,12 +4785,10 @@ function updateCustBulkToolbarUI(){
   const n = _selectedCustIds.size;
   const countEl   = document.getElementById('custSelectedCount');
   const numEl     = document.getElementById('custSelectedNum');
-  const clearBtn  = document.getElementById('custClearBtn');
   const delBtn    = document.getElementById('custDeleteSelectedBtn');
   const delCountEl= document.getElementById('custDeleteCount');
   const show = n > 0;
   countEl.style.display = show ? 'inline-flex' : 'none';
-  clearBtn.style.display = show ? 'inline-flex' : 'none';
   if (delBtn) delBtn.style.display = show ? 'inline-flex' : 'none';
   numEl.textContent = n;
   if (delCountEl) delCountEl.textContent = n;
@@ -4879,12 +4886,10 @@ function updateApptBulkToolbarUI(){
   const n = _selectedApptIds.size;
   const countEl   = document.getElementById('apptSelectedCount');
   const numEl     = document.getElementById('apptSelectedNum');
-  const clearBtn  = document.getElementById('apptClearBtn');
   const delBtn    = document.getElementById('apptDeleteSelectedBtn');
   const delCountEl= document.getElementById('apptDeleteCount');
   const show = n > 0;
   countEl.style.display = show ? 'inline-flex' : 'none';
-  clearBtn.style.display = show ? 'inline-flex' : 'none';
   if (delBtn) delBtn.style.display = show ? 'inline-flex' : 'none';
   numEl.textContent = n;
   if (delCountEl) delCountEl.textContent = n;
@@ -5566,16 +5571,16 @@ $(document).ready(function(){
     ],
     order:[[48,'asc']], // Listed On (createdAt) — oldest to newest
     orderCellsTop:true,
-    pageLength:10,
+    pageLength:-1,
     scrollX:true,
     language:{
       emptyTable:'<div class="empty-state"><i class="fas fa-building"></i>No properties yet</div>',
       zeroRecords:'<div class="empty-state"><i class="fas fa-magnifying-glass"></i>No matching records</div>',
       lengthMenu:'Show _MENU_ entries',
-      info:'Showing _START_–_END_ of _TOTAL_ properties',
+      info:'Showing all _TOTAL_ properties',
       paginate:{previous:'‹ Prev',next:'Next ›'}
     },
-    dom:'<"top-controls"B>rt<"bottom-controls"ip>',
+    dom:'<"top-controls"B>rt<"bottom-controls"i>',
     buttons:[
 	  /*{
         extend:'csv', text:'<i class="fas fa-file-csv"></i> <span class="bulk-btn-label" data-mobile="CSV">CSV</span>',
@@ -5739,8 +5744,10 @@ $(document).ready(function(){
   // match set makes jQuery clone whatever you're inserting. Anchor on
   // ".top-controls" instead (a plain sibling div, never cloned by scrollX,
   // and guaranteed to be a single element as a direct child of the wrapper).
+  // PDF/Excel/CSV buttons live in the grid's own card-header now, not the
+  // bulk-toolbar pill above it — Columns already moved there too.
   var $topControls = $('#propertyTable_wrapper > .top-controls');
-  $topControls.find('.dt-buttons').insertAfter('#addPropertyDivider');
+  $topControls.find('.dt-buttons').prependTo('#propGridHeaderLeft');
   $topControls.remove();
   loadPropColVisibility();
   document.querySelectorAll('#propCatTabs .cat-tab-btn').forEach(btn=>{
@@ -6582,7 +6589,7 @@ const _propColumnFilters = {
   pgGender:'', pgRoomType:'', pgMeals:'', pgOccupancy:'', pgNotice:'',
   ssRoomType:'', ssAvailable24hrs:'', ssCancellation:'', ssCouplesAllowed:'',
   visitCount:'', views:'', propertyId:'', userId:'',
-  listedOnStart:'', listedOnEnd:'', promoted:'', booked:'', remarks:''
+  listedOnStart:'', listedOnEnd:'', promoted:'', verified:'', booked:'', remarks:'', amenities:''
 };
 
 // ── QUICK DATE-RANGE PRESETS ──
@@ -7180,9 +7187,12 @@ $.fn.dataTable.ext.search.push(function(settings, data, dataIndex){
   }
   if(cf.promoted === 'yes' && !row.promoted) return false;
   if(cf.promoted === 'no'  && row.promoted)  return false;
+  if(cf.verified === 'yes' && !row.verified) return false;
+  if(cf.verified === 'no'  && row.verified)  return false;
   if(cf.booked === 'yes' && !row.booked) return false;
   if(cf.booked === 'no'  && row.booked)  return false;
   if(cf.remarks && !contains(flattenRemarks(row.remarks||[]), cf.remarks)) return false;
+  if(cf.amenities && !contains((Array.isArray(row.amenities)?row.amenities:[]).join(', '), cf.amenities)) return false;
 
   return true;
 });
