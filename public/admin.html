@@ -457,12 +457,6 @@ table.dataTable.no-footer{border-bottom:none!important}
 
 /* ── CUSTOMER NAME ── */
 .customer-name{display:flex;align-items:center;justify-content:center;gap:9px}
-.customer-avatar{
-  width:32px;height:32px;border-radius:50%;overflow:hidden;flex-shrink:0;
-  display:flex;align-items:center;justify-content:center;
-  background:var(--brand);color:#fff;font-weight:700;font-size:13px;
-}
-.customer-avatar img{width:100%;height:100%;object-fit:cover}
 .customer-text-name{font-weight:600;font-size:0.88rem;color:var(--ink)}
 
 /* ── PHONE / EMAIL LINKS ── */
@@ -3627,14 +3621,10 @@ function renderName(row){
     row.name ||
     ((row.firstName||'') + ' ' + (row.lastName||'')).trim()
   ) || 'Unknown';
-  const initial = (row.name || row.firstName || full || '?').trim().charAt(0).toUpperCase() || '?';
-  const avatar = row.profilePhoto
-    ? `<div class="customer-avatar"><img src="${escapeHtml(row.profilePhoto)}" alt="${full}"/></div>`
-    : `<div class="customer-avatar">${initial}</div>`;
-  return `<div class="customer-name">${avatar}<div><div class="customer-text-name">${full}</div></div></div>`;
+  return `<div class="customer-name"><div><div class="customer-text-name">${full}</div></div></div>`;
 }
 function renderPhone(row){
-  if(row.mobile) return `<a href="tel:${escapeHtml(row.mobile)}" class="phone-link"><i class="fas fa-phone-flip"></i>${escapeHtml(row.mobile)}</a>`;
+  if(row.mobile) return `<a href="tel:${escapeHtml(row.mobile)}" class="phone-link">${escapeHtml(row.mobile)}</a>`;
   return `<span class="no-contact">—</span>`;
 }
 function renderEmail(row){
@@ -3828,7 +3818,7 @@ function accountTypeBadge(t){
   return `<span class="status-badge ${isOwner?'status-acct-owner':'status-acct-customer'}">${isOwner?'Owner':'Customer'}</span>`;
 }
 function renderOwnerPhone(row){
-  if(row.ownerNumber) return `<a href="tel:${row.ownerNumber}" class="phone-link"><i class="fas fa-phone-flip"></i>${escapeHtml(row.ownerNumber)}</a>`;
+  if(row.ownerNumber) return `<a href="tel:${row.ownerNumber}" class="phone-link">${escapeHtml(row.ownerNumber)}</a>`;
   return `<span class="no-contact">—</span>`;
 }
 
@@ -5387,16 +5377,11 @@ $(document).ready(function(){
             <span class="slider"></span>
           </span></label>`;
       }},
-      /* 5 – Owner Name (avatar + name only; phone/email/alt/time are their own columns) */
+      /* 5 – Owner Name (name only; phone/email/alt/time are their own columns) */
       { data:null, render:(d,t,row)=>{
           if(t!=='display') return row.ownerName||'';
           const name  = escapeHtml(row.ownerName||'—');
-          const initial = (row.ownerName||'?').trim().charAt(0).toUpperCase() || '?';
-          const photo = row.ownerProfilePhoto;
-          const avatar = photo
-            ? `<div class="customer-avatar"><img src="${escapeHtml(photo)}" alt="${name}"/></div>`
-            : `<div class="customer-avatar">${initial}</div>`;
-          return `<div style="display:flex;gap:8px;align-items:center">${avatar}<div class="prop-title">${name}</div></div>`;
+          return `<div style="display:flex;gap:8px;align-items:center"><div class="prop-title">${name}</div></div>`;
       }},
       /* 6 – Owner Number */
       { data:null, render:(d,t,row)=>{
@@ -5406,7 +5391,7 @@ $(document).ready(function(){
       /* 7 – Owner Alt Phone */
       { data:'ownerAltPhone', render:(d,t)=>{
           if(t!=='display') return d||'';
-          return d ? `<a href="tel:${escapeHtml(d)}" class="phone-link"><i class="fas fa-phone"></i>${escapeHtml(d)}</a>` : '—';
+          return d ? `<a href="tel:${escapeHtml(d)}" class="phone-link">${escapeHtml(d)}</a>` : '—';
       }},
       /* 8 – Owner Email */
       { data:'ownerEmail', render:(d,t)=>{
@@ -5823,11 +5808,11 @@ $(document).ready(function(){
       { data:'userReadableId', render:(d)=> escapeHtml(d||'—') },
       /* 5 – Mobile */
       { data:'mobile', orderable:false, render:(d)=>{
-          return d ? `<a href="tel:${escapeHtml(d)}" class="phone-link"><i class="fas fa-phone-flip"></i>${escapeHtml(d)}</a>` : '<span class="no-contact">—</span>';
+          return d ? `<a href="tel:${escapeHtml(d)}" class="phone-link">${escapeHtml(d)}</a>` : '<span class="no-contact">—</span>';
       }},
       /* 6 – Alt Mobile */
       { data:'altMobile', orderable:false, render:(d)=>{
-          return d ? `<a href="tel:${escapeHtml(d)}" class="phone-link" style="background:#f0f9ff;color:#2563eb;border-color:rgba(37,99,235,0.18)"><i class="fas fa-phone"></i>${escapeHtml(d)}</a>` : '<span class="no-contact">—</span>';
+          return d ? `<a href="tel:${escapeHtml(d)}" class="phone-link" style="background:#f0f9ff;color:#2563eb;border-color:rgba(37,99,235,0.18)">${escapeHtml(d)}</a>` : '<span class="no-contact">—</span>';
       }},
       /* 7 – Email */
       { data:'email', orderable:false, render:(d)=>{
@@ -7241,8 +7226,8 @@ function apptStatusBadge(s){
 
 function renderApptContact(row){
   const lines = [];
-  if(row.mobile) lines.push(`<a href="tel:${row.mobile}" class="phone-link"><i class="fas fa-phone-flip"></i>${escapeHtml(row.mobile)}</a>`);
-  if(row.altMobile) lines.push(`<a href="tel:${row.altMobile}" class="phone-link" style="background:#f0f9ff;color:#2563eb;border-color:rgba(37,99,235,0.18)"><i class="fas fa-phone"></i>${escapeHtml(row.altMobile)}</a>`);
+  if(row.mobile) lines.push(`<a href="tel:${row.mobile}" class="phone-link">${escapeHtml(row.mobile)}</a>`);
+  if(row.altMobile) lines.push(`<a href="tel:${row.altMobile}" class="phone-link" style="background:#f0f9ff;color:#2563eb;border-color:rgba(37,99,235,0.18)">${escapeHtml(row.altMobile)}</a>`);
   if(row.email) lines.push(`<a href="mailto:${row.email}" class="email-link" title="${escapeHtml(row.email)}"><i class="fas fa-envelope"></i>${escapeHtml(row.email)}</a>`);
   return lines.length
     ? `<div class="contact-col">${lines.join('')}</div>`
