@@ -1735,8 +1735,11 @@ footer i{color:var(--gold)}
      a count and needs to flex wider than this fixed-width pill. */
   .bulk-toolbar .bulk-btn:not(.bulk-btn-danger),
   .bulk-toolbar .btn-add-review,
+  .bulk-toolbar .bulk-selected-count,
   .dt-button,
-  .col-toggle-btn{
+  .col-toggle-btn,
+  #propGridHeader .dt-button,
+  #propGridHeader #propClearFiltersBtn{
     width:44px!important;height:auto!important;min-width:44px!important;
     padding:6px 2px 5px!important;gap:2px!important;
     display:inline-flex!important;flex-direction:column!important;
@@ -1745,8 +1748,22 @@ footer i{color:var(--gold)}
   }
   .bulk-toolbar .bulk-btn:not(.bulk-btn-danger) i,
   .bulk-toolbar .btn-add-review i,
+  .bulk-toolbar .bulk-selected-count i,
   .dt-button i,
-  .col-toggle-btn i{font-size:0.8rem!important;margin:0!important}
+  .col-toggle-btn i,
+  #propGridHeader .dt-button i,
+  #propGridHeader #propClearFiltersBtn i{font-size:0.8rem!important;margin:0!important}
+  .bulk-toolbar .bulk-selected-clear-x{
+    position:absolute;top:-6px;right:-6px;
+    width:16px;height:16px;border-radius:50%;
+    background:#fff;border:1.5px solid var(--gold-light,#f3e6c8);
+    box-shadow:0 1px 3px rgba(0,0,0,0.15);
+    display:flex!important;align-items:center;justify-content:center;
+    font-size:0.56rem!important;line-height:1;
+  }
+  .bulk-toolbar .bulk-selected-count{position:relative;border:1.5px solid rgba(155,120,20,0.25)}
+  .bulk-toolbar .bulk-selected-icon{display:none!important}
+  .bulk-toolbar .bulk-selected-num{font-size:1rem!important;font-weight:800!important;line-height:1.1}
 
   /* Properties toolbar (#bulkToolbar) icon order: the create action first,
      then filters/selection/compare, then the reset action. PDF/Excel/CSV
@@ -1823,14 +1840,22 @@ footer i{color:var(--gold)}
      .tab-btn/.cat-tab-btn at this breakpoint so all three rows match */
   .bulk-toolbar .bulk-btn:not(.bulk-btn-danger),
   .bulk-toolbar .btn-add-review,
+  .bulk-toolbar .bulk-selected-count,
   .dt-button,
-  .col-toggle-btn{
+  .col-toggle-btn,
+  #propGridHeader .dt-button,
+  #propGridHeader #propClearFiltersBtn{
     width:56px!important;height:56px!important;min-width:56px!important;
   }
   .bulk-toolbar .bulk-btn:not(.bulk-btn-danger) i,
   .bulk-toolbar .btn-add-review i,
+  .bulk-toolbar .bulk-selected-count i,
   .dt-button i,
-  .col-toggle-btn i{font-size:1rem!important}
+  .col-toggle-btn i,
+  #propGridHeader .dt-button i,
+  #propGridHeader #propClearFiltersBtn i{font-size:1rem!important}
+  .bulk-toolbar .bulk-selected-clear-x{width:18px!important;height:18px!important;top:-7px!important;right:-7px!important}
+  .bulk-toolbar .bulk-selected-num{font-size:1.1rem!important}
   .bulk-btn-label::after{font-size:0.6rem!important}
 
   /* Remark input full width */
@@ -2177,7 +2202,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
               <i class="fas fa-filter-circle-xmark"></i> <span class="bulk-btn-label" data-mobile="Clear">Clear filters</span>
             </button>
             <button type="button" class="bulk-selected-count" id="custSelectedCount" style="display:none" onclick="clearCustSelection()" title="Clear selection">
-              <i class="fas fa-check-circle"></i> <span id="custSelectedNum">0</span><span class="bulk-btn-label" data-mobile="Selected"> selected</span> <span class="bulk-selected-clear-x">X</span>
+              <i class="fas fa-check-circle bulk-selected-icon"></i> <span id="custSelectedNum" class="bulk-selected-num">0</span><span class="bulk-btn-label" data-mobile="Selected"> selected</span> <span class="bulk-selected-clear-x">X</span>
             </button>
           </div>
           <div class="bulk-toolbar-right">
@@ -2279,7 +2304,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
         </button>
         <span id="addPropertyDivider" style="width:1px;align-self:stretch;background:var(--border,#ddd);margin:2px 4px;flex-shrink:0"></span>
         <button type="button" class="bulk-selected-count" id="bulkSelectedCount" style="display:none" onclick="clearPropSelection()" title="Clear selection">
-          <i class="fas fa-check-circle"></i> <span id="bulkSelectedNum">0</span><span class="bulk-btn-label" data-mobile="Selected"> selected</span> <span class="bulk-selected-clear-x">X</span>
+          <i class="fas fa-check-circle bulk-selected-icon"></i> <span id="bulkSelectedNum" class="bulk-selected-num">0</span><span class="bulk-btn-label" data-mobile="Selected"> selected</span> <span class="bulk-selected-clear-x">X</span>
         </button>
       </div>
       <div class="bulk-toolbar-right">
@@ -2443,7 +2468,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
               <i class="fas fa-filter-circle-xmark"></i> <span class="bulk-btn-label" data-mobile="Clear">Clear filters</span>
             </button>
             <button type="button" class="bulk-selected-count" id="apptSelectedCount" style="display:none" onclick="clearApptSelection()" title="Clear selection">
-              <i class="fas fa-check-circle"></i> <span id="apptSelectedNum">0</span><span class="bulk-btn-label" data-mobile="Selected"> selected</span> <span class="bulk-selected-clear-x">X</span>
+              <i class="fas fa-check-circle bulk-selected-icon"></i> <span id="apptSelectedNum" class="bulk-selected-num">0</span><span class="bulk-btn-label" data-mobile="Selected"> selected</span> <span class="bulk-selected-clear-x">X</span>
             </button>
           </div>
           <div class="bulk-toolbar-right">
@@ -2651,7 +2676,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
         <div class="bulk-toolbar" id="reviewBulkToolbar">
           <div class="bulk-toolbar-left">
             <button type="button" class="bulk-selected-count" id="reviewSelectedCount" style="display:none" onclick="clearReviewSelection()" title="Clear selection">
-              <i class="fas fa-check-circle"></i> <span id="reviewSelectedNum">0</span><span class="bulk-btn-label" data-mobile="Selected"> selected</span> <span class="bulk-selected-clear-x">X</span>
+              <i class="fas fa-check-circle bulk-selected-icon"></i> <span id="reviewSelectedNum" class="bulk-selected-num">0</span><span class="bulk-btn-label" data-mobile="Selected"> selected</span> <span class="bulk-selected-clear-x">X</span>
             </button>
           </div>
           <div class="bulk-toolbar-right">
