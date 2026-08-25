@@ -7299,11 +7299,10 @@ function recentlyViewedCardHTML(rv) {
   // used by the main grid/shortlist (image ribbon, badges, stats, chips) so
   // recently-viewed matches everywhere else. No per-card remove button —
   // removal is handled by the section's "Clear all" only.
-  // Booked listings are excluded from PROPERTIES (see fetchBookedProperties()),
-  // so a previously-viewed property that's since been marked Booked would
-  // otherwise fall through to the plain rv-card fallback below even though
-  // it's still a real, current listing — check BOOKED_PROPERTIES too.
-  const live = PROPERTIES.find(x => x.id === rv.id) || BOOKED_PROPERTIES.find(x => x.id === rv.id);
+  // Booked listings never reach this point (renderRecentlyViewed's filter
+  // drops any id present in BOOKED_PROPERTIES before calling here), so this
+  // only ever needs to check PROPERTIES.
+  const live = PROPERTIES.find(x => x.id === rv.id);
   if (live) {
     return cardHTML(live, false);
   }
@@ -7340,7 +7339,7 @@ function renderRecentlyViewed() {
   recentlyViewed.forEach(id => {
     const rv = recentlyViewedData[id];
     if (!rv) return;
-    const live = PROPERTIES.find(x => x.id === id) || BOOKED_PROPERTIES.find(x => x.id === id);
+    const live = PROPERTIES.find(x => x.id === id);
     if (live?.propertyId && rv.name !== live.propertyId) {
       rv.name = live.propertyId;
       healed = true;
@@ -7350,13 +7349,18 @@ function renderRecentlyViewed() {
   const ids = recentlyViewed.filter(id => {
     const rv = recentlyViewedData[id];
     if (!rv) return false;
+    // A property viewed while live can later be marked Booked — booked
+    // listings shouldn't appear in Recently Viewed at all, so drop it here
+    // too (not just at record time in openDetail) once it shows up in
+    // BOOKED_PROPERTIES, rather than falling back to a booked-listing card.
+    if (BOOKED_PROPERTIES.some(x => x.id === id)) return false;
     if (currentTab === 'Promoted' || currentTab === 'Verified') {
-      const live = PROPERTIES.find(x => x.id === id) || BOOKED_PROPERTIES.find(x => x.id === id);
+      const live = PROPERTIES.find(x => x.id === id);
       return live ? matchesTab(live, currentTab) : false;
     }
     // Older entries saved before "type" was tracked fall back to a live
     // lookup so they don't just vanish under a specific tab.
-    const type = rv.type || pTypeLabel(PROPERTIES.find(x => x.id === id) || BOOKED_PROPERTIES.find(x => x.id === id) || {});
+    const type = rv.type || pTypeLabel(PROPERTIES.find(x => x.id === id) || {});
     return type === currentTab;
   });
   if (ids.length === 0) {
@@ -7876,7 +7880,7 @@ function preloadLightboxNeighbors() {
 }
 
 function openLightbox(propId, idx) {
-  const p = PROPERTIES.find(x => x.id === propId);
+  const p = PROPERTIES.find(x => x.id === propId) || BOOKED_PROPERTIES.find(x => x.id === propId);
   if (!p || !p.media?.images || !p.media.images.length) return;
   incrementViews(p);   // clicking a card's photo also counts as a view — the
                         // image's own onclick stops propagation so it never
@@ -10182,7 +10186,10 @@ function openDetail(id) {
   const p = PROPERTIES.find(x => x.id === id) || BOOKED_PROPERTIES.find(x => x.id === id);
   if (!p) return;
   incrementViews(p);   // count this open as a view, persisted to storage
-  recordRecentlyViewed(p);
+  // Booked listings are read-only/off-market — they don't belong in Recently
+  // Viewed, so only record it when it's a live (non-booked) property, i.e.
+  // actually present in PROPERTIES rather than only in BOOKED_PROPERTIES.
+  if (PROPERTIES.some(x => x.id === id)) recordRecentlyViewed(p);
   renderCards();        // reflect the new count on the card grid
 
   // View mode never touches the actual "list your property" form — it
@@ -13939,10 +13946,10 @@ async function fetchBookedProperties() {
   }
   renderBookedSections();
   // A Recently Viewed entry may point at a property that's since been
-  // booked — its live lookup now also checks BOOKED_PROPERTIES (see
-  // recentlyViewedCardHTML()), but that only helps once this data has
-  // actually arrived, so re-render to upgrade it from the plain fallback
-  // card without waiting for a tab switch.
+  // booked — renderRecentlyViewed() now filters those out (booked listings
+  // don't belong in Recently Viewed), but that only takes effect once this
+  // data has actually arrived, so re-render to drop it immediately instead
+  // of waiting for a tab switch.
   renderRecentlyViewed();
 }
 

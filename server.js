@@ -32,7 +32,15 @@ app.set('trust proxy', 1); // we're behind Render's proxy; needed for express-ra
 // properly needs a nonce- or hash-based rework of those pages first.
 app.use(compression()); // gzip every response — index.html and JSON API payloads were going out uncompressed
 app.use(helmet({ contentSecurityPolicy: false }));
-app.use(cors({ origin: process.env.ALLOWED_ORIGIN || '*', credentials: true }));
+const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGIN || 'https://homeloop.in,https://www.homeloop.in')
+  .split(',').map(s => s.trim());
+app.use(cors({
+  origin: (origin, cb) => {
+    if (!origin || ALLOWED_ORIGINS.includes(origin)) return cb(null, true);
+    cb(new Error('Not allowed by CORS'));
+  },
+  credentials: true,
+}));
 app.use(express.json({
   limit: '10mb', // 10mb to allow base64 images
 }));
