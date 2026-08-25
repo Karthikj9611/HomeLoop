@@ -1,7 +1,6 @@
 const mongoose  = require('mongoose');
 const crypto    = require('crypto');
 const bcrypt    = require('bcryptjs');
-const rateLimit = require('express-rate-limit');
 
 // ── Admin routes ──
 // Everything admin-only lives here: admin login/session handling and every
@@ -96,14 +95,7 @@ module.exports = function registerAdminRoutes(app, deps) {
     return !!session;
   }
 
-  // Simple rate limiter on the login route to slow down brute-force attempts
-  const loginLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, max: 20,
-    standardHeaders: true, legacyHeaders: false,
-    message: { message: 'Too many login attempts. Please try again later.' }
-  });
-
-  app.post('/api/login', loginLimiter, async (req, res) => {
+  app.post('/api/login', async (req, res) => {
     try {
       const { email, password } = req.body || {};
       const normalizedEmail = String(email || '').toLowerCase();
@@ -201,7 +193,10 @@ module.exports = function registerAdminRoutes(app, deps) {
   // ─────────────────────────────────────────────────────────────────────────
   app.get('/api/users', requireAdmin, async (req, res) => {
     try {
+      const _t0 = Date.now();
       const users = await User.find({}).sort({ createdAt: -1 }).lean();
+      const _ms = Date.now() - _t0;
+      if (_ms > 1000) console.warn(`⚠️ GET /api/users: ${users.length} docs took ${_ms}ms`);
       const userIds = users.map(u => u._id);
 
       const [propAggByModel, visitAgg] = await Promise.all([
@@ -482,7 +477,11 @@ module.exports = function registerAdminRoutes(app, deps) {
   // nested shape stays untouched for whatever already consumes it.
   app.get('/api/admin/properties', requireAdmin, async (req, res) => {
     try {
+      const _t0 = Date.now();
       const docArrays = await Promise.all(LISTING_MODEL_LIST.map(M => M.find({}).populate('userId', 'profilePhoto').lean()));
+      const _ms = Date.now() - _t0;
+      const _total = docArrays.reduce((n, arr) => n + arr.length, 0);
+      if (_ms > 1000) console.warn(`⚠️ GET /api/admin/properties: ${_total} docs across ${LISTING_MODEL_LIST.length} models took ${_ms}ms`);
       const docs = docArrays.flat().sort((a, b) =>
         (Number(b.promoted) - Number(a.promoted)) ||
         ((a.promotedPriority ?? 3) - (b.promotedPriority ?? 3)) ||

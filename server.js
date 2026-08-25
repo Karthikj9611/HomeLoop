@@ -8,7 +8,6 @@ const cors       = require('cors');
 const path       = require('path');
 const fs         = require('fs');
 const crypto     = require('crypto');
-const rateLimit  = require('express-rate-limit');
 const bcrypt     = require('bcryptjs');
 const multer     = require('multer');
 const sharp      = require('sharp');
@@ -118,37 +117,15 @@ const PasswordResetSchema = new mongoose.Schema({
 });
 const PasswordReset = mongoose.model('PasswordReset', PasswordResetSchema);
 
-// Rate limiter for password-reset endpoints — same shape as otpLimiter, since
 // a real email goes out on every hit here too.
-const passwordResetLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, max: 8,
-  standardHeaders: true, legacyHeaders: false,
-  message: { message: 'Too many requests. Please try again later.' }
-});
 
 // Rate limiter for the OTP endpoints specifically — tighter than the general
 // auth limiter since each hit sends a real email (Brevo has its own quota/cost).
-const otpLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, max: 8,
-  standardHeaders: true, legacyHeaders: false,
-  message: { message: 'Too many OTP requests. Please try again later.' }
-});
 
 // Rate limiter for user auth
-const userAuthLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, max: 20,
-  standardHeaders: true, legacyHeaders: false,
-  message: { message: 'Too many attempts. Please try again later.' }
-});
 
-// Rate limiter for profile updates — same cadence as userAuthLimiter but a
 // separate bucket, so editing your profile doesn't eat into your login/signup
 // attempt quota (or vice versa).
-const profileUpdateLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, max: 20,
-  standardHeaders: true, legacyHeaders: false,
-  message: { message: 'Too many profile updates. Please try again later.' }
-});
 
 // ────────────────────────────────────────────────────────────────────────────
 // ── USER SESSIONS ──
@@ -264,7 +241,7 @@ function normalizeMobile(raw) {
 // account is actually created. Generates a 6-digit code, bcrypt-hashes it into
 // EmailOtp (upsert — a resend just overwrites the previous code), and emails it
 // via Brevo. Doesn't require the account to exist yet (it doesn't, at this point).
-app.post('/api/user/signup/send-otp', otpLimiter, async (req, res) => {
+app.post('/api/user/signup/send-otp', async (req, res) => {
   try {
     const { email } = req.body || {};
     if (!email || !String(email).trim()) return res.status(400).json({ message: 'Email is required' });
@@ -273,8 +250,6 @@ app.post('/api/user/signup/send-otp', otpLimiter, async (req, res) => {
 
     const existingUser = await User.findOne({ email: cleanEmail });
     if (existingUser) return res.status(409).json({ message: 'Account already exists for this email. Please log in.' });
-
-    // Cheap resend-spam guard on top of the IP-based otpLimiter above — stops
     // someone from hammering "resend" for one target email from many IPs.
     const existingOtp = await EmailOtp.findOne({ email: cleanEmail }).lean();
     if (existingOtp && (Date.now() - new Date(existingOtp.lastSentAt).getTime()) < OTP_RESEND_COOLDOWN_MS) {
@@ -308,7 +283,7 @@ app.post('/api/user/signup/send-otp', otpLimiter, async (req, res) => {
 // below checks before creating the account. Wrong guesses are capped at
 // OTP_MAX_ATTEMPTS so the 6-digit space can't just be brute-forced within the
 // 5-minute window.
-app.post('/api/user/signup/verify-otp', otpLimiter, async (req, res) => {
+app.post('/api/user/signup/verify-otp', async (req, res) => {
   try {
     const { email, otp } = req.body || {};
     if (!email || !otp) return res.status(400).json({ message: 'Email and code are required' });
@@ -337,7 +312,7 @@ app.post('/api/user/signup/verify-otp', otpLimiter, async (req, res) => {
 });
 
 // ── User Signup ──
-app.post('/api/user/signup', userAuthLimiter, async (req, res) => {
+app.post('/api/user/signup', async (req, res) => {
   try {
     const { firstName, lastName, email, mobile, password, confirmPassword, accountType, profilePic } = req.body || {};
 
@@ -408,7 +383,7 @@ app.post('/api/user/signup', userAuthLimiter, async (req, res) => {
 });
 
 // ── User Login ──
-app.post('/api/user/login', userAuthLimiter, async (req, res) => {
+app.post('/api/user/login', async (req, res) => {
   try {
     const { contact, password } = req.body || {};
     if (!contact || !password) return res.status(400).json({ message: 'Please enter your details' });
@@ -473,7 +448,7 @@ app.get('/api/user/me', requireUser, async (req, res) => {
 });
 
 // ── UPDATE current user profile (name / email / mobile) ──
-app.put('/api/user/me', profileUpdateLimiter, requireUser, async (req, res) => {
+app.put('/api/user/me', requireUser, async (req, res) => {
   try {
     const { name, email, mobile, profilePhoto } = req.body || {};
     const update = {};
@@ -514,7 +489,7 @@ app.put('/api/user/me', profileUpdateLimiter, requireUser, async (req, res) => {
 });
 
 // ── CHANGE password ──
-app.put('/api/user/password', requireUser, userAuthLimiter, async (req, res) => {
+app.put('/api/user/password', requireUser, async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body || {};
     if (!currentPassword || !newPassword) return res.status(400).json({ message: 'Current and new password are required' });
@@ -544,7 +519,7 @@ app.put('/api/user/password', requireUser, userAuthLimiter, async (req, res) => 
 });
 
 // ── Forgot password: Step 1 — send email OTP ──
-app.post('/api/user/password/forgot', passwordResetLimiter, async (req, res) => {
+app.post('/api/user/password/forgot', async (req, res) => {
   const startedAt = Date.now();
   // Floor for the "account not found" (fast) and "account found, OTP sent"
   // (slow — bcrypt hash + DB write + Brevo API round-trip) paths to converge
@@ -609,7 +584,7 @@ app.post('/api/user/password/forgot', passwordResetLimiter, async (req, res) => 
 });
 
 // ── Forgot password: Step 2 — verify OTP, issue a one-time reset token ──
-app.post('/api/user/password/forgot/verify-otp', passwordResetLimiter, async (req, res) => {
+app.post('/api/user/password/forgot/verify-otp', async (req, res) => {
   try {
     const { email, otp } = req.body || {};
     if (!email || !otp) return res.status(400).json({ message: 'Email and code are required' });
@@ -644,7 +619,7 @@ app.post('/api/user/password/forgot/verify-otp', passwordResetLimiter, async (re
 });
 
 // ── Forgot password: Step 3 — set the new password ──
-app.post('/api/user/password/reset', passwordResetLimiter, async (req, res) => {
+app.post('/api/user/password/reset', async (req, res) => {
   try {
     const { email, resetToken, newPassword } = req.body || {};
     if (!email || !resetToken || !newPassword) return res.status(400).json({ message: 'Missing required fields' });
@@ -1306,22 +1281,12 @@ function findMissingRequiredFields(fields, status) {
 }
 
 // ── Rate limiter ──
-const listingLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000, max: 10,
-  standardHeaders: true, legacyHeaders: false,
-  message: { message: 'Too many listing submissions. Please try again later.' }
-});
 
 // Separate bucket for editing/deleting existing listings, so those don't
 // compete with an owner's new-listing creation quota above.
-const listingWriteLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000, max: 20,
-  standardHeaders: true, legacyHeaders: false,
-  message: { message: 'Too many listing changes. Please try again later.' }
-});
 
 // ── POST /api/properties ──
-app.post('/api/properties', listingLimiter, requireUser, requireOwner, async (req, res) => {
+app.post('/api/properties', requireUser, requireOwner, async (req, res) => {
   try {
     const body = req.body || {};
     const fields = NESTED_SECTIONS.reduce((acc, k) => {
@@ -1518,13 +1483,8 @@ app.get('/api/properties', async (req, res) => {
 // every fresh incognito window, so a device could inflate a listing's count
 // just by opening it privately under the old, client-only dedup. This is
 // what admin's per-listing / reset-all views actions operate on.
-const viewLimiter = rateLimit({
-  windowMs: 60 * 1000, max: 60,
-  standardHeaders: true, legacyHeaders: false,
-  message: { message: 'Too many requests. Please try again later.' }
-});
 
-app.post('/api/properties/:id/view', viewLimiter, async (req, res) => {
+app.post('/api/properties/:id/view', async (req, res) => {
   try {
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
       return res.status(400).json({ message: 'Invalid property id' });
@@ -1687,13 +1647,8 @@ app.get('/property/:id', async (req, res, next) => {
 });
 
 // ── POST /api/visits (Schedule a Visit modal) ──
-const visitLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000, max: 20,
-  standardHeaders: true, legacyHeaders: false,
-  message: { message: 'Too many visit requests. Please try again later.' }
-});
 
-app.post('/api/visits', visitLimiter, requireUser, async (req, res) => {
+app.post('/api/visits', requireUser, async (req, res) => {
   try {
     const { propertyId, visitorName, visitorPhone, email, note, visitDate, visitTime } = req.body || {};
 
@@ -1785,13 +1740,8 @@ app.post('/api/visits', visitLimiter, requireUser, async (req, res) => {
 });
 
 // ── POST /api/bookings (Book Now modal — Short Stay direct booking) ──
-const bookingLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000, max: 20,
-  standardHeaders: true, legacyHeaders: false,
-  message: { message: 'Too many booking requests. Please try again later.' }
-});
 
-app.post('/api/bookings', bookingLimiter, requireUser, async (req, res) => {
+app.post('/api/bookings', requireUser, async (req, res) => {
   try {
     const { propertyId, guestName, guestPhone, email, note, checkinDate, days, guests } = req.body || {};
 
@@ -1970,7 +1920,7 @@ app.get('/api/user/my-listings', requireUser, async (req, res) => {
 });
 
 // ── PUT /api/user/listings/:id (edit a listing the user owns) ──
-app.put('/api/user/listings/:id', listingWriteLimiter, requireUser, async (req, res) => {
+app.put('/api/user/listings/:id', requireUser, async (req, res) => {
   try {
     const { doc: prop, model: currentModel } = await findUserListingById(req.params.id, req.userId);
     if (!prop) return res.status(404).json({ message: 'Listing not found, or you do not have permission to edit it' });
@@ -2035,7 +1985,7 @@ app.put('/api/user/listings/:id', listingWriteLimiter, requireUser, async (req, 
 // an owner can never flip this for a listing that isn't theirs. Once true,
 // the listing is excluded from GET /api/properties (booked: { $ne: true }
 // filter there) and disappears from the public site, same as the admin toggle.
-app.patch('/api/user/listings/:id/booked', listingWriteLimiter, requireUser, async (req, res) => {
+app.patch('/api/user/listings/:id/booked', requireUser, async (req, res) => {
   try {
     const { booked } = req.body || {};
     if (typeof booked !== 'boolean') {
@@ -2054,7 +2004,7 @@ app.patch('/api/user/listings/:id/booked', listingWriteLimiter, requireUser, asy
   }
 });
 
-app.delete('/api/user/listings/:id', listingWriteLimiter, requireUser, async (req, res) => {
+app.delete('/api/user/listings/:id', requireUser, async (req, res) => {
   try {
     let deleted = null;
     for (const M of LISTING_MODEL_LIST) {
@@ -2134,23 +2084,12 @@ app.get('/api/reviews/mine', async (req, res) => {
 // Rate limiter for review submission — the one-review-per-user check below
 // already stops repeat spam from the same account, but this caps attempts
 // (e.g. account-cycling) the same way every other write route here does.
-const reviewLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, max: 10,
-  standardHeaders: true, legacyHeaders: false,
-  message: { message: 'Too many review submissions. Please try again later.' }
-});
 
-// Same cadence as reviewLimiter, separate bucket — honest reviews are a
 // distinct collection/feature from the star reviews above.
-const honestReviewLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, max: 10,
-  standardHeaders: true, legacyHeaders: false,
-  message: { message: 'Too many submissions. Please try again later.' }
-});
 
 // POST /api/reviews — requires a logged-in user (x-user-key header).
 // Mirrors the same auth pattern used by your other /api/user/... routes.
-app.post('/api/reviews', reviewLimiter, async (req, res) => {
+app.post('/api/reviews', async (req, res) => {
   try {
     const userKey = req.headers['x-user-key'];
     if (!userKey) return res.status(401).json({ error: 'Please log in to leave a review' });
@@ -2270,7 +2209,7 @@ app.get('/api/honest-reviews/mine', requireUser, async (req, res) => {
 // YouTube video. Goes live immediately (no manage/approve UI exists yet on
 // the site) — if moderation is added back later, flip `active`/`status`
 // below to false/'pending' and reintroduce an approve step.
-app.post('/api/honest-reviews/submit', honestReviewLimiter, requireUser, async (req, res) => {
+app.post('/api/honest-reviews/submit', requireUser, async (req, res) => {
   try {
     const user = await User.findById(req.userId);
     if (!user) return res.status(401).json({ error: 'Invalid or expired session' });
@@ -2307,11 +2246,6 @@ app.post('/api/honest-reviews/submit', honestReviewLimiter, requireUser, async (
 
 // ── Referrals (Refer & Earn modal — "refer a tenant directly" form) ──
 // Same cadence as the other write-route limiters above, own bucket.
-const referralLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, max: 10,
-  standardHeaders: true, legacyHeaders: false,
-  message: { message: 'Too many referrals submitted. Please try again later.' }
-});
 
 const referralSchema = new mongoose.Schema({
   userId:         { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null, index: true }, // null when referred while logged out
@@ -2330,7 +2264,7 @@ const Referral = mongoose.model('Referral', referralSchema);
 // guests too (the ₹1,000 reward just won't have an account to credit until
 // they log in) — attachUserIfPresent stamps userId when a session exists,
 // same pattern as POST /api/upload-images, and leaves it null otherwise.
-app.post('/api/referrals', referralLimiter, attachUserIfPresent, async (req, res) => {
+app.post('/api/referrals', attachUserIfPresent, async (req, res) => {
   try {
     const { referrerName, referrerPhone, tenantName, tenantPhone } = req.body || {};
 
@@ -2433,13 +2367,8 @@ const upload = multer({
   },
 });
 
-const uploadLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000, max: 30,
-  standardHeaders: true, legacyHeaders: false,
-  message: { message: 'Too many upload requests. Please try again later.' }
-});
 
-app.post('/api/upload-images', uploadLimiter, attachUserIfPresent, upload.array('images'), async (req, res) => {
+app.post('/api/upload-images', attachUserIfPresent, upload.array('images'), async (req, res) => {
   try {
     const files = req.files || [];
     if (!files.length) return res.status(400).json({ message: 'No images uploaded' });
@@ -2567,16 +2496,11 @@ PaymentRequestSchema.index({ createdAt: -1 });
 const PaymentRequest = mongoose.model('PaymentRequest', PaymentRequestSchema);
 
 // Mirrors the rate-limit pattern used for visits/bookings/reviews above.
-const paymentLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, max: 20,
-  standardHeaders: true, legacyHeaders: false,
-  message: { message: 'Too many payment requests. Please try again later.' }
-});
 
 // Step 1 — user starts a payment: creates the PaymentRequest with a fresh
 // refCode. The frontend follows up by showing our UPI/QR/bank details
 // (fetched separately from /api/payment-settings) alongside this refCode.
-app.post('/api/payments/request', paymentLimiter, requireUser, async (req, res) => {
+app.post('/api/payments/request', requireUser, async (req, res) => {
   try {
     const { purpose, amount, note, propertyId, category, rentTotal } = req.body || {};
     if (!['brokerage', 'booking', 'visit_deposit', 'promotion'].includes(purpose)) {
@@ -2664,7 +2588,7 @@ app.post('/api/payments/request', paymentLimiter, requireUser, async (req, res) 
 // longer required — the frontend no longer collects it. Only the request's
 // own owner can submit for it. An admin reviews the submission by hand
 // (see /api/admin/payments/:id/verify below).
-app.post('/api/payments/:id/submit-proof', paymentLimiter, requireUser, upload.single('screenshot'), async (req, res) => {
+app.post('/api/payments/:id/submit-proof', requireUser, upload.single('screenshot'), async (req, res) => {
   try {
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ message: 'Invalid payment id' });
     const request = await PaymentRequest.findOne({ _id: req.params.id, userId: req.userId });
@@ -2832,13 +2756,8 @@ async function bumpDailyStat(type) {
 // Light rate limit — this is a public, unauthenticated endpoint hit once per
 // page load, so it just needs to keep bots from spamming it, not restrict
 // normal browsing.
-const visitLimiterStats = rateLimit({
-  windowMs: 60 * 1000, max: 20,
-  standardHeaders: true, legacyHeaders: false,
-  message: { message: 'Too many requests. Please try again later.' }
-});
 
-app.post('/api/stats/visit', visitLimiterStats, async (req, res) => {
+app.post('/api/stats/visit', async (req, res) => {
   try {
     const today = todayStr();
     const cookieVid = readCookie(req, VISITOR_COOKIE_NAME);
