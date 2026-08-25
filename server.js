@@ -683,9 +683,29 @@ app.post('/api/user/password/reset', passwordResetLimiter, async (req, res) => {
 // ────────────────────────────────────────────────────────────────────────────
 
 // ── MongoDB ──
-mongoose.connect(process.env.MONGODB_URI)
+mongoose.connect(process.env.MONGODB_URI, {
+  serverSelectionTimeoutMS: 5000, // fail fast instead of the 30s default if Atlas is slow/unreachable
+  socketTimeoutMS: 20000,         // kill a hung query instead of blocking the event loop indefinitely
+})
   .then(() => console.log('✅ MongoDB Connected'))
   .catch(err => console.error('❌ MongoDB error:', err));
+
+// Log ongoing connection state changes — a mid-session drop/timeout won't show
+// up in the initial .catch() above, and this is usually the real cause behind
+// a Render "i/o timeout while running your code" instance failure.
+mongoose.connection.on('error', err => console.error('❌ MongoDB connection error:', err));
+mongoose.connection.on('disconnected', () => console.warn('⚠️ MongoDB disconnected'));
+mongoose.connection.on('reconnected', () => console.log('✅ MongoDB reconnected'));
+
+// Without these, an uncaught error just kills the process silently and Render
+// only ever logs the generic health-check timeout, not the actual cause.
+process.on('uncaughtException', err => {
+  console.error('❌ Uncaught exception:', err);
+  process.exit(1); // don't keep running in a corrupted state — let Render restart cleanly, now with the real cause logged
+});
+process.on('unhandledRejection', (reason) => {
+  console.error('❌ Unhandled rejection:', reason);
+});
 
 // ── Property Schema (nested, matches the listing-submission payload shape) ──
 const BasicSchema = new mongoose.Schema({
