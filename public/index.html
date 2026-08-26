@@ -9760,9 +9760,13 @@ function restoreFilterStateBeforeBuild() {
   // Everything else (.fp-opt pill filters) is handed off to buildFilterOptions
   // via pendingRestoreSel rather than applied here directly, since the pill
   // elements themselves don't exist yet until buildFilterOptions renders them.
+  // Note: some pill filters (Sqft/Available/Floor/Escalation) are also keyed
+  // with a leading underscore, same convention as the RANGE_MAP number-input
+  // keys above — so we skip only the RANGE_MAP keys specifically here, not
+  // every underscore-prefixed key, or those pills silently drop on refresh.
   pendingRestoreSel = {};
   Object.keys(sel).forEach(key => {
-    if (key.startsWith('_')) return;
+    if (RANGE_MAP.hasOwnProperty(key)) return;
     if (Array.isArray(sel[key]) && sel[key].length) pendingRestoreSel[key] = new Set(sel[key]);
   });
 }
