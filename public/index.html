@@ -10972,7 +10972,15 @@ function toggleSameAsBuildingAddress(checkbox) {
   const ownerAddr = document.getElementById('f-ownerAddress');
   const buildingAddr = document.getElementById('f-fullAddress');
   if (!ownerAddr) return;
-  if (checkbox.checked && buildingAddr) ownerAddr.value = buildingAddr.value.trim();
+  if (checkbox.checked) {
+    // Checked: pull in the current building live address.
+    if (buildingAddr) ownerAddr.value = buildingAddr.value.trim();
+  } else {
+    // Unchecked: clear it out rather than leaving the copied-in address
+    // sitting there editable — it's no longer "the same as", so it
+    // shouldn't look like it still is.
+    ownerAddr.value = '';
+  }
   applySameAsBuildingAddressState();
 }
 function lockIdentityFieldsForNewListing() {
