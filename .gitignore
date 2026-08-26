@@ -1,1 +1,5 @@
 .env
+node_modules/ 
+keep_alive.bat 
+.env 
+DB_Sample_Data.json
