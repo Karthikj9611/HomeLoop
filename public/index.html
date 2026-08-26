@@ -3020,6 +3020,11 @@ main.tab-explore .empty-state{display:none !important}
    action icons, just flips to red once the listing is marked booked. */
 .profile-mini-icon-btn.booked-active{border-color:#e04444;background:#fdecec}
 .profile-mini-icon-btn.booked-active svg{stroke:#e04444}
+/* Owner-only WhatsApp share button — filled icon, brand green, matching the
+   other WhatsApp touchpoints (.prop-qa-whatsapp / .prop-action-whatsapp) */
+.profile-mini-icon-btn.profile-mini-icon-whatsapp{border-color:#bfe8cf}
+.profile-mini-icon-btn.profile-mini-icon-whatsapp svg{fill:#25D366;stroke:none;width:15px;height:15px}
+.profile-mini-icon-btn.profile-mini-icon-whatsapp:hover{background:#e8faef;border-color:#25D366}
 /* ── My Listings analytics — summary strip above the list, and a compact
    stats row inside each card (views / visit requests / days live). Uses
    fields already returned by GET /api/user/my-listings (views, visitCount,
@@ -10231,12 +10236,30 @@ function openDetail(id) {
   document.getElementById('viewScheduleBtn').onclick = () => openScheduleModal(p.id);
   document.getElementById('viewCallBtn').onclick = () => openCall(p.id);
   document.getElementById('viewWhatsappBtn').onclick = () => openWhatsApp(p.id);
+  // Owner accounts don't need to schedule a visit or WhatsApp-contact through
+  // the property view — those actions are for prospective tenants only.
+  const viewerIsOwner = (() => { const u = getLoggedInUser(); return !!u && u.accountType === 'owner'; })();
+  document.getElementById('viewScheduleBtn').style.display = viewerIsOwner ? 'none' : '';
+  document.getElementById('viewWhatsappBtn').style.display = viewerIsOwner ? 'none' : '';
   const visitBadge = document.getElementById('modal-visit-count');
   visitBadge.dataset.propId = String(p.id);
   if ((p.visitCount || 0) > 0) { visitBadge.textContent = p.visitCount; visitBadge.style.display = ''; }
   else { visitBadge.style.display = 'none'; }
   document.getElementById('viewActionsRow').style.display = '';
-  document.getElementById('viewActionsRow2').style.display = '';
+  // Owners only see Shortlist + Call (no Schedule visit / WhatsApp), so pull
+  // Call up into the first row next to Shortlist — 50/50 split — instead of
+  // leaving it alone on its own full-width row underneath.
+  const actionsRow1 = document.getElementById('viewActionsRow');
+  const actionsRow2 = document.getElementById('viewActionsRow2');
+  const callBtn = document.getElementById('viewCallBtn');
+  const whatsappBtn = document.getElementById('viewWhatsappBtn');
+  if (viewerIsOwner) {
+    actionsRow1.appendChild(callBtn);
+    actionsRow2.style.display = 'none';
+  } else {
+    actionsRow2.insertBefore(callBtn, whatsappBtn);
+    actionsRow2.style.display = '';
+  }
   document.getElementById('viewActionsFooter').style.display = 'block';
 
   // Read-only view of an existing property — "Clear form" only makes sense
@@ -12113,6 +12136,9 @@ function renderMyListings() {
         <button class="profile-mini-icon-btn${p.booked ? ' booked-active' : ''}" title="${p.booked ? 'Mark as available' : 'Mark as booked'}" onclick="event.stopPropagation();toggleMyListingBooked('${p.id}', this)">
           <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
         </button>
+        <button class="profile-mini-icon-btn profile-mini-icon-whatsapp" title="Share on WhatsApp" onclick="event.stopPropagation();shareMyListingViaWhatsApp('${p.id}')">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.6 6.32A7.85 7.85 0 0 0 12.05 4c-4.37 0-7.93 3.56-7.93 7.93 0 1.4.37 2.76 1.06 3.96L4 20l4.24-1.11a7.9 7.9 0 0 0 3.8.97h.01c4.37 0 7.93-3.56 7.93-7.93 0-2.12-.82-4.11-2.38-5.61zm-5.55 12.2h-.01a6.58 6.58 0 0 1-3.35-.92l-.24-.14-2.51.66.67-2.45-.16-.25a6.58 6.58 0 0 1-1.01-3.5c0-3.64 2.96-6.6 6.61-6.6a6.57 6.57 0 0 1 6.6 6.61c0 3.64-2.97 6.6-6.61 6.6zm3.62-4.94c-.2-.1-1.17-.58-1.35-.64-.18-.07-.31-.1-.45.1-.13.2-.51.64-.62.77-.11.13-.23.15-.42.05-.2-.1-.83-.31-1.58-.98-.58-.52-.98-1.16-1.09-1.36-.11-.2-.01-.3.09-.4.09-.09.2-.23.3-.35.1-.11.13-.2.2-.33.06-.13.03-.25-.02-.35-.05-.1-.45-1.08-.61-1.48-.16-.39-.33-.33-.45-.34-.12-.01-.25-.01-.38-.01-.13 0-.35.05-.53.25-.18.2-.7.69-.7 1.67 0 .98.72 1.93.82 2.06.1.13 1.41 2.15 3.42 3.02.48.2.85.33 1.14.42.48.15.91.13 1.26.08.38-.06 1.17-.48 1.34-.94.16-.46.16-.86.11-.94-.05-.09-.18-.14-.38-.24z"/></svg>
+        </button>
       </div>
     </div>`;
   }).join('');
@@ -12142,6 +12168,27 @@ async function toggleMyListingBooked(id, btnEl) {
   } finally {
     btnEl.disabled = false;
   }
+}
+
+// Owner-only: share one of their own listings to anyone via WhatsApp (no
+// fixed number — opens wa.me/?text= so the owner picks the recipient from
+// their own WhatsApp contacts, same no-fixed-number pattern used by
+// shareCompareViaWhatsApp() and admin.html's owner-share feature).
+function shareMyListingViaWhatsApp(id) {
+  const p = MY_LISTINGS_CACHE.find(x => x.id === id);
+  if (!p) return;
+  const rent = p.price?.rent != null ? fmtRupee(p.price.rent) : null;
+  const propertyUrl = `${window.location.origin}/property/${p.id}`;
+  const lines = [
+    `Check out my property "${p.propertyId}" on HomeLoop:`,
+    `📍 ${p.location?.area || '—'}`,
+  ];
+  if (rent) lines.push(`💰 ${rent}/month`);
+  lines.push(`🏷️ ${p.basic?.status || 'For Rent'}`);
+  lines.push('', `View details: ${propertyUrl}`);
+  const msg = lines.join('\n');
+  const url = 'https://wa.me/?text=' + encodeURIComponent(msg);
+  window.open(url, '_blank', 'noopener');
 }
 
 /* ═══════════════════════════════════════════════
