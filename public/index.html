@@ -2020,6 +2020,11 @@ main.tab-explore .empty-state{display:none !important}
 .compare-col-img img{width:100%;height:100%;object-fit:cover}
 .compare-col-img .prop-card-top-row{padding:0}
 .compare-col-img .prop-right-badges{transform:scale(.8);transform-origin:top right}
+.compare-slide-dots{
+  position:absolute;bottom:6px;left:0;right:0;display:flex;justify-content:center;gap:4px;z-index:2;
+}
+.compare-slide-dots span{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.55)}
+.compare-slide-dots span.active{background:#fff}
 .compare-col-body{padding-top:2px}
 .compare-col-body .prop-title,.compare-col-body .prop-loc{font-size:12.5px}
 .compare-empty-cell{color:var(--text-3);min-width:170px}
@@ -3978,7 +3983,7 @@ main.tab-explore .empty-state{display:none !important}
 }
 
 /* ─── Card image slider ─────────────────────────── */
-.img-slides{position:absolute;inset:0;width:100%;height:100%;overflow:hidden;cursor:grab}
+.img-slides{position:absolute;inset:0;width:100%;height:100%;overflow:hidden;cursor:grab;touch-action:pan-y}
 .img-slides:active{cursor:grabbing}
 .img-slide{display:none;position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background-color:var(--bg-3);pointer-events:none;vertical-align:top}
 .img-slide.active{display:block}
@@ -7421,7 +7426,7 @@ function toggleCompareDiffOnly(){
   if (btn) btn.classList.toggle('active', compareDiffOnly);
   renderCompareTable();
 }
-const COMPARE_MAX = 4;
+const COMPARE_MAX = 3;
 let isListView = false;
 let searchQuery = '';
 
@@ -7800,6 +7805,12 @@ function slideGo(uid, idx) {
   const c = document.getElementById(uid);
   if (!c) return;
   c.querySelectorAll('.img-slide').forEach((s,i) => s.classList.toggle('active', i===idx));
+  // Compare-modal cards show dot indicators alongside the slider (see
+  // compare-slide-dots) — keep them in sync too when present. Every other
+  // .img-slides consumer (property cards, shortlist panel, etc.) has no
+  // such sibling, so this is a no-op for them.
+  const dotsWrap = c.parentElement && c.parentElement.querySelector('.compare-slide-dots');
+  if (dotsWrap) dotsWrap.querySelectorAll('span').forEach((d,i) => d.classList.toggle('active', i===idx));
 }
 
 function slideStep(uid, dir) {
@@ -8466,6 +8477,7 @@ function toggleCompare(id, el) {
       closeCompareModal();
     } else {
       renderCompareTable();
+      updateCompareUrl();
     }
   }
 }
@@ -8514,6 +8526,7 @@ function removeFromCompare(id) {
     closeCompareModal();
   } else {
     renderCompareTable();
+    updateCompareUrl();
   }
 }
 
@@ -8549,6 +8562,20 @@ function clearDeepLinkUrl() {
   if (changed) history.replaceState(null, '', url.pathname + url.search + url.hash);
 }
 
+// Keeps the address bar's ?compare= param in sync with compareSet while the
+// compare modal is open, so a plain browser refresh (not just a shared
+// WhatsApp link) restores the same comparison. No-ops (and clears the param)
+// once fewer than 2 properties remain, same threshold openCompareModal() uses.
+function updateCompareUrl() {
+  const url = new URL(window.location.href);
+  if (compareSet.size >= 2) {
+    url.searchParams.set('compare', [...compareSet].join(','));
+  } else {
+    url.searchParams.delete('compare');
+  }
+  history.replaceState(null, '', url.pathname + url.search + url.hash);
+}
+
 function openCompareModal() {
   if (compareSet.size < 2) {
     showToast('Select at least 2 properties to compare', 'warning');
@@ -8557,6 +8584,7 @@ function openCompareModal() {
   renderCompareTable();
   document.getElementById('compareModal').classList.add('open');
   lockBodyScroll();
+  updateCompareUrl();
 }
 
 function closeCompareModal() {
@@ -8596,10 +8624,8 @@ function renderCompareTable() {
 
   const rows = [
     section('Listing Info'),
-    { label: 'Verified', get: p => yn(!!p.verified) },
     { label: 'Location', get: p => dash(p.location?.area) },
     { label: 'City', get: p => dash(p.location?.city) },
-    { label: 'Posted', get: p => p.posted ? formatDateDisplay(p.posted, true) : '—' },
 
     section('Pricing'),
     { label: 'Rent / Month', get: p => `<span style="font-weight:700;color:var(--text)">${fmtRupee(p.price?.rent||0)}</span>` },
@@ -8608,7 +8634,7 @@ function renderCompareTable() {
     { label: 'Electricity', get: p => dash(p.price?.electricity) },
     { label: 'Water charge', get: p => dash(p.price?.water) },
     { label: 'Rent negotiable', get: p => dash(p.price?.negotiable) },
-    { label: 'Rent escalation', get: p => p.price?.rentIncrease ? `${p.price.rentIncrease}%` : '—' },
+    { label: 'Rent escalation', get: p => p.price?.rentIncrease ? `${String(p.price.rentIncrease).replace('%','')}%` : '—' },
 
     section('Property Details'),
     { label: 'Property type', get: p => dash(p.property?.type ?? p.pg?.type ?? p.shortStay?.type) },
@@ -8673,12 +8699,14 @@ function renderCompareTable() {
     const maintenance = p.price?.maintenance || 0;
     const leaseDur = p.terms?.lease || '';
     const ptype = p.property?.type || p.pg?.type || p.shortStay?.type || '';
-    const available = pTypeLabel(p) === 'PG' ? (p.pg?.available || '') : (p.property?.available || '');
-    const availableInfo = availableDateInfo(available);
+    const cmpImgs = p.media?.images || [];
     return `<th class="compare-col compare-col-head">
       <div class="compare-col-card">
         <div class="compare-col-img" style="background:${bg}">
           ${buildImgSlider(p, fg, '-cmp')}
+          ${cmpImgs.length > 1 ? `
+          <div class="compare-slide-dots">${cmpImgs.map((_,i)=>`<span class="${i===0?'active':''}"></span>`).join('')}</div>
+          ` : ''}
           <div class="prop-card-top-row">
             <div class="prop-left-badges"></div>
             <div class="prop-right-badges">
@@ -8692,21 +8720,12 @@ function renderCompareTable() {
               <div class="prop-icon-badge prop-compare-float checked" onclick="event.stopPropagation();removeFromCompare('${p.id}')" aria-label="Remove from compare" title="Remove from comparison">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="8" height="16" rx="1.5"/><rect x="13" y="4" width="8" height="16" rx="1.5" opacity="0.55"/></svg>
               </div>
-              ${p.promoted ? '<div class="prop-icon-badge prop-icon-promoted" title="Promoted"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l2.9 6.26 6.9.8-5.1 4.7 1.4 6.84L12 17.3l-6.1 3.3 1.4-6.84-5.1-4.7 6.9-.8z"/></svg></div>' : ''}
               ${(SHOW_VERIFIED_BADGE && p.verified) ? '<div class="prop-icon-badge prop-icon-verified" title="Verified"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.5" fill="#fff"/><path d="M8 12.3l2.6 2.6 5.4-5.8" stroke="#1a73e8" stroke-width="2.1" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>' : ''}
           <div class="prop-icon-badge prop-icon-call" onclick="event.stopPropagation();openCall('${p.id}')" aria-label="Call agent" title="Call agent">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
           </div>
             </div>
           </div>
-        </div>
-        <div class="compare-col-body">
-          ${availableInfo ? `<div class="prop-loc">
-            <span class="prop-loc-avail ${availableInfo.cls}" title="Available from">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-              ${availableInfo.text}
-            </span>
-          </div>` : ''}
         </div>
       </div>
     </th>`;
@@ -15382,7 +15401,7 @@ document.addEventListener('keydown',function(e){
       if (revealed) return;
       revealed = true;
       overlay.classList.add('open');
-      document.body.style.overflow = 'hidden';
+      lockBodyScroll();
     }
     // Preload off-screen first so the modal only appears once the image is
     // actually ready — avoids a blank/broken flash while it downloads.
@@ -15409,8 +15428,10 @@ document.addEventListener('keydown',function(e){
   }
 
   function closeWishModal(){
-    document.getElementById('wishModalOverlay').classList.remove('open');
-    document.body.style.overflow = '';
+    var overlay = document.getElementById('wishModalOverlay');
+    if (!overlay.classList.contains('open')) return; // never opened (or already closed) — don't touch the shared scroll lock
+    overlay.classList.remove('open');
+    unlockBodyScroll();
   }
 
   document.getElementById('wishModalClose').addEventListener('click', closeWishModal);
@@ -15421,9 +15442,22 @@ document.addEventListener('keydown',function(e){
     if (e.key === 'Escape') closeWishModal();
   });
 
+  // Don't stack the festive popup on top of a deep-linked view (a shared
+  // compare link, a shared property link, or /property/:id) — whoever the
+  // visitor actually followed a link for should be the only thing that
+  // opens on load. Checked directly against the URL (not compareSet/PROPERTIES)
+  // since this runs before those deep links finish resolving asynchronously.
+  function hasIncomingDeepLink(){
+    var params = new URLSearchParams(window.location.search);
+    if (params.has('compare') || params.has('property')) return true;
+    if (/^\/property\/[a-fA-F0-9]{24}$/.test(window.location.pathname)) return true;
+    return false;
+  }
+
   document.addEventListener('DOMContentLoaded', function(){
     var w = activeWish();
     if (!w) return;
+    if (hasIncomingDeepLink()) return;
     openWishModal(w);
   });
 })();
