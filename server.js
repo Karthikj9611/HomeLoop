@@ -1422,7 +1422,7 @@ app.get('/api/properties', async (req, res) => {
 
     // Internal/admin-only fields — never read by the public frontend
     const PUBLIC_SELECT =
-      '-remarks -userId -userReadableId -promotedPriority -__v -bookingDetails ' +
+      '-remarks -userId -userReadableId -__v -bookingDetails ' +
       // Owner PII that only ever populated hidden form inputs in the read-only
       // detail view (VIEW_ALWAYS_HIDDEN_GROUPS on the frontend). owner.phone is
       // excluded too — Call/WhatsApp now read owner.agentPhone only (dynamically),
@@ -1481,6 +1481,12 @@ app.get('/api/properties', async (req, res) => {
       (new Date(b.createdAt) - new Date(a.createdAt))
     );
     docs = docs.slice(Number(skip), Number(skip) + Number(limit));
+
+    // promotedPriority was kept in the query (unlike the rest of PUBLIC_SELECT's
+    // exclusions) purely so the sort above could read it — it's still never
+    // meant to reach the public frontend, so drop it from each doc now,
+    // same pattern as location.address above.
+    docs.forEach(doc => { delete doc.promotedPriority; });
 
     // Attach id + computed displayPrice + posted label; the nested shape itself
     // (basic/location/owner/price/property/amenities/terms/rules/media/pg)

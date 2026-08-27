@@ -2273,11 +2273,11 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
       <button class="cat-tab-btn" data-cat="Lease" onclick="switchPropCategory('Lease')">
         <i class="fas fa-file-signature"></i><span class="cat-tab-btn-label" data-mobile="Lease">Lease</span><span class="cat-count" id="cat-count-Lease">—</span>
       </button>
-      <button class="cat-tab-btn" data-cat="PG" onclick="switchPropCategory('PG')">
-        <i class="fas fa-bed"></i><span class="cat-tab-btn-label" data-mobile="PG">PG</span><span class="cat-count" id="cat-count-PG">—</span>
-      </button>
       <button class="cat-tab-btn" data-cat="Booked" onclick="switchPropCategory('Booked')">
         <i class="fas fa-lock"></i><span class="cat-tab-btn-label" data-mobile="Booked">Booked</span><span class="cat-count" id="cat-count-Booked">—</span>
+      </button>
+      <button class="cat-tab-btn" data-cat="PG" onclick="switchPropCategory('PG')">
+        <i class="fas fa-bed"></i><span class="cat-tab-btn-label" data-mobile="PG">PG</span><span class="cat-count" id="cat-count-PG">—</span>
       </button>
       <button class="cat-tab-btn" data-cat="Short Stay" onclick="switchPropCategory('Short Stay')" style="display:none">
         <i class="fas fa-suitcase-rolling"></i><span class="cat-tab-btn-label" data-mobile="Stay">Short Stay</span><span class="cat-count" id="cat-count-Short-Stay">—</span>
@@ -3298,8 +3298,8 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
 let dataTable, propTable, apptTable, honestReviewsTable;
 
 //const BASE = 'https://homeloop.in';
-const BASE = 'https://homeloop-gqti.onrender.com';
-//const BASE = 'http://localhost:5000';
+//const BASE = 'https://homeloop-gqti.onrender.com';
+const BASE = 'http://localhost:5000';
 
 /* ── ADMIN KEY – set after login ──
    Uses localStorage (not sessionStorage) so the admin stays signed in even
@@ -4462,6 +4462,54 @@ window.togglePropFlag = async function(id, field, checkboxEl){
   }
 };
 
+/* ── PROMOTED POSITION ──
+   Lets the admin type exactly where a listing should land among Promoted
+   listings — 1 for first place, 10 for tenth, 20 for twentieth, and so on.
+   Lower number = higher up the list; listings sharing a number fall back to
+   newest-first. Works whether or not Promoted is on yet, so a position can
+   be set in advance. Saves on blur/change (no confirm modal, since it's a
+   plain reorder rather than a visibility change). */
+window.setPromotedPriority = async function(id, inputEl){
+  const raw = inputEl.value.trim();
+  if(raw === ''){
+    // Cleared back to blank — nothing to save; leave promotedPriority as-is.
+    return;
+  }
+  const value = parseInt(raw, 10);
+  if(!Number.isInteger(value) || value < 1 || String(value) !== raw){
+    alert('Position must be a whole number, 1 or higher (1 = first place).');
+    inputEl.focus();
+    return;
+  }
+  inputEl.disabled = true;
+  try{
+    const res = await fetch(`${BASE}/api/properties/${id}/promoted-priority`, {
+      method: 'PATCH',
+      headers: authHeaders({'Content-Type':'application/json'}),
+      body: JSON.stringify({ promotedPriority: value })
+    });
+    const data = await res.json().catch(()=>({}));
+    if(!res.ok){
+      alert(data.message || 'Failed to update promoted position');
+      return;
+    }
+    const confirmedVal = data.promotedPriority != null ? data.promotedPriority : value;
+    inputEl.value = confirmedVal;
+    if(_adminPropCache[id] && _adminPropCache[id].full) _adminPropCache[id].full.promotedPriority = confirmedVal;
+    propTable.rows().every(function(){
+      const rd = this.data();
+      if(rd && rd._id === id && rd.full){ rd.full.promotedPriority = confirmedVal; }
+    });
+    // Re-sort/redraw so the new position is reflected immediately if the
+    // table happens to be sorted by this column.
+    propTable.draw(false);
+  } catch(err){
+    alert('Failed to update promoted position');
+  } finally {
+    inputEl.disabled = false;
+  }
+};
+
 /* ── SHARE-NUMBER PICKER MODAL ──
    Lets the agent choose Owner / Alternate / Both before the WhatsApp
    tabs open, instead of always blasting both numbers. Only offers a
@@ -5287,6 +5335,9 @@ $(document).ready(function(){
       },*/
       {
         extend:'pdf', text:'<i class="fas fa-file-pdf"></i> <span class="bulk-btn-label" data-mobile="PDF">PDF</span>',
+        // Disabled for now — flip back to true (or delete this line) to
+        // re-enable PDF export. Button stays visible but greyed out/unclickable.
+        enabled:false,
         orientation:'landscape', pageSize:'A4',
         title: function(){ return 'Customer_Leads_' + new Date().toLocaleDateString('en-GB') + (_selectedCustIds.size ? '_Selected' : ''); },
         exportOptions:{
@@ -5540,13 +5591,18 @@ $(document).ready(function(){
           if(t!=='display') return (d!=null ? String(d) : '');
           return d!=null ? escapeHtml(String(d)) : '—';
       }},
-      /* 43 – Promoted Priority (hidden on screen; the numeric tier behind
-         the Promoted toggle — lower usually means higher up in Promoted
-         ordering) */
-      { data:null, orderable:true, visible:false, className:'dt-body-center', render:(d,t,row)=>{
+      /* 43 – Promoted Priority (the place a Promoted listing lands: 1 = first,
+         10 = tenth, 20 = twentieth, etc. Lower number ranks higher; listings
+         sharing a number fall back to newest-first. Editable here — doesn't
+         require Promoted to already be on, so a position can be queued up in
+         advance and take effect the moment the toggle flips on.) */
+      { data:null, orderable:true, className:'dt-body-center', render:(d,t,row)=>{
           const p = row.full && row.full.promotedPriority;
           if(t!=='display') return (p!=null ? p : '');
-          return p!=null ? escapeHtml(String(p)) : '—';
+          return `<input type="number" min="1" step="1" class="promoted-priority-input"
+            style="width:64px;text-align:center" placeholder="pos"
+            value="${p!=null ? escapeHtml(String(p)) : ''}"
+            onchange="setPromotedPriority('${row._id}', this)">`;
       }},
       /* 44 – Amenities (list, +N more opens modal) */
       { data:null, orderable:false, render:(d,t,row)=>{
@@ -5630,6 +5686,9 @@ $(document).ready(function(){
       },*/
 	  {
         extend:'pdf', text:'<i class="fas fa-file-pdf"></i> <span class="bulk-btn-label" data-mobile="PDF">PDF</span>',
+        // Disabled for now — flip back to true (or delete this line) to
+        // re-enable PDF export. Button stays visible but greyed out/unclickable.
+        enabled:false,
         orientation:'landscape', pageSize:'A4',
         title: function(){ return 'Property_Leads_' + new Date().toLocaleDateString('en-GB') + (_selectedPropIds.size ? '_Selected' : ''); },
        exportOptions: {
@@ -5936,6 +5995,9 @@ $(document).ready(function(){
       },*/
       {
         extend:'pdf', text:'<i class="fas fa-file-pdf"></i> <span class="bulk-btn-label" data-mobile="PDF">PDF</span>',
+        // Disabled for now — flip back to true (or delete this line) to
+        // re-enable PDF export. Button stays visible but greyed out/unclickable.
+        enabled:false,
         orientation:'landscape', pageSize:'A4',
         title: function(){ return 'Appointment_Leads_' + new Date().toLocaleDateString('en-GB') + (_selectedApptIds.size ? '_Selected' : ''); },
         exportOptions: {

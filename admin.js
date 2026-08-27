@@ -684,6 +684,28 @@ module.exports = function registerAdminRoutes(app, deps) {
     }
   });
 
+  // ── PATCH /api/properties/:id/promoted-priority (admin: set where in the
+  // Promoted order this listing lands — 1 = first, 10 = tenth, etc.) ──
+  // Promoted listings are sorted ascending by this number (ties broken by
+  // newest first), so a lower value = higher up the list. Doesn't require
+  // the listing to already be promoted — an admin can pre-set a position
+  // before flipping the Promoted toggle on.
+  app.patch('/api/properties/:id/promoted-priority', requireAdmin, async (req, res) => {
+    try {
+      const { promotedPriority } = req.body || {};
+      if (typeof promotedPriority !== 'number' || !Number.isFinite(promotedPriority) ||
+          !Number.isInteger(promotedPriority) || promotedPriority < 1) {
+        return res.status(400).json({ message: 'promotedPriority must be a positive whole number (1 = first place)' });
+      }
+      const prop = await updateListingById(req.params.id, { promotedPriority }, { new: true });
+      if (!prop) return res.status(404).json({ message: 'Property not found' });
+      res.json({ message: 'Promoted position updated', promotedPriority: prop.promotedPriority });
+    } catch (err) {
+      console.error('PATCH /api/properties/:id/promoted-priority error:', err);
+      res.status(500).json({ message: 'Error updating promoted position' });
+    }
+  });
+
   // ── PATCH /api/properties/:id/booked (admin: toggle booked flag) ──
   // Once true, the listing is excluded from GET /api/properties (see the
   // `booked: { $ne: true }` filter there) and disappears from the public site,
