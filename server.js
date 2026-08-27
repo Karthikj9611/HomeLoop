@@ -1482,11 +1482,10 @@ app.get('/api/properties', async (req, res) => {
     );
     docs = docs.slice(Number(skip), Number(skip) + Number(limit));
 
-    // promotedPriority was kept in the query (unlike the rest of PUBLIC_SELECT's
-    // exclusions) purely so the sort above could read it — it's still never
-    // meant to reach the public frontend, so drop it from each doc now,
-    // same pattern as location.address above.
-    docs.forEach(doc => { delete doc.promotedPriority; });
+    // promotedPriority is now intentionally left on each doc (unlike the rest
+    // of PUBLIC_SELECT's exclusions): the frontend needs it to order listings
+    // within the Promoted section to match the priority set in admin, not
+    // just group promoted vs. non-promoted.
 
     // Attach id + computed displayPrice + posted label; the nested shape itself
     // (basic/location/owner/price/property/amenities/terms/rules/media/pg)

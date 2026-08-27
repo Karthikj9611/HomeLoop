@@ -7554,7 +7554,13 @@ function renderCards() {
   // normal type sections. On "All", `list` spans every type, so keeping
   // promoted items in both the highlights section and their type section
   // is intentional (that's what makes that view comprehensive).
-  const promoted = currentTab === 'Promoted' ? [] : list.filter(p => p.promoted);
+  // Promoted listings always display in admin's Promoted Priority order
+  // (lower number = shown first, same convention as the server-side sort),
+  // regardless of whichever Sort option (newest/price/etc.) the visitor has
+  // picked — priority is a paid placement, not just another sort choice.
+  const byPromotedPriority = (a, b) => (a.promotedPriority ?? 3) - (b.promotedPriority ?? 3);
+
+  const promoted = currentTab === 'Promoted' ? [] : list.filter(p => p.promoted).sort(byPromotedPriority);
   // On a single-type tab (Rent/Lease/PG/ShortStay), `list` is already
   // scoped to just that type, so the "promoted" and typed buckets below
   // would otherwise be drawing from the exact same set — showing every
@@ -7570,6 +7576,16 @@ function renderCards() {
     pg:        list.filter(p => (!dedupe || !p.promoted) && sectionKeyFor(p) === 'pg'),
     shortstay: list.filter(p => (!dedupe || !p.promoted) && sectionKeyFor(p) === 'shortstay'),
   };
+  // On the Promoted tab itself, `list` is already scoped to promoted items
+  // only (see matchesTab), so every item in every one of these type groups
+  // is a promoted listing — apply the same priority ordering there too,
+  // instead of leaving them in Sort-dropdown order.
+  if (currentTab === 'Promoted') {
+    groups.rent.sort(byPromotedPriority);
+    groups.lease.sort(byPromotedPriority);
+    groups.pg.sort(byPromotedPriority);
+    groups.shortstay.sort(byPromotedPriority);
+  }
 
   const gridClass = 'prop-grid' + (isListView ? ' list-view' : '');
   const pageGetters = { promoted: () => promotedPage, rent: () => rentPage, lease: () => leasePage, pg: () => pgPage, shortstay: () => shortstayPage };
