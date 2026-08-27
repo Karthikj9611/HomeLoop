@@ -4044,11 +4044,11 @@ main.tab-explore .empty-state{display:none !important}
 
   <div class="nav-tabs" role="tablist">
     
-    <div class="nav-tab active" data-tab="Promoted" role="tab" onclick="switchTab(this)" tabindex="0">
+    <div class="nav-tab" data-tab="Promoted" role="tab" onclick="switchTab(this)" tabindex="0">
       <span class="nav-tab-icon">⭐</span>
       Promoted
     </div>
-    <div class="nav-tab" data-tab="Rent" role="tab" onclick="switchTab(this)" tabindex="0">
+    <div class="nav-tab active" data-tab="Rent" role="tab" onclick="switchTab(this)" tabindex="0">
       <span class="nav-tab-icon">🔑</span>
       Rent
     </div>
@@ -5184,11 +5184,11 @@ main.tab-explore .empty-state{display:none !important}
 <!-- ─── Mobile bottom nav ────────────────────────── -->
 <nav class="bottom-nav" aria-label="Main navigation">
   
-  <div class="bottom-tab active" data-tab="Promoted" onclick="switchTabMobile(this)">
+  <div class="bottom-tab" data-tab="Promoted" onclick="switchTabMobile(this)">
     <span class="bottom-tab-icon">⭐</span>
     Promoted
   </div>
-  <div class="bottom-tab" data-tab="Rent" onclick="switchTabMobile(this)">
+  <div class="bottom-tab active" data-tab="Rent" onclick="switchTabMobile(this)">
     <span class="bottom-tab-icon">🔑</span>
     Rent
   </div>
@@ -7190,7 +7190,7 @@ function formatViews(n) {
 /* ═══════════════════════════════════════════════
    STATE
 ═══════════════════════════════════════════════ */
-let currentTab = 'Promoted'; // default tab shown on load
+let currentTab = 'Rent'; // default tab shown on load
 const SHOW_VERIFIED_BADGE = false; // verified badge hidden on cards for now — flip to true to bring it back
 let currentSort = 'newest';
 let userCoords = null;      // {lat, lng} once geolocation succeeds, used for "Near me first" sort
@@ -14063,7 +14063,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }).catch(() => { /* stats are best-effort, never block the page on this */ });
 
   syncFdBar();
-  updateAllOnlySections(); // hide UrbanAware / Reviews / Premium on initial load (default tab is Promoted)
+  updateAllOnlySections(); // hide UrbanAware / Reviews / Premium on initial load (default tab is Rent)
 
   // ── Load properties from DB ──
   // fetchBookedProperties() used to fire concurrently here, but that raced
