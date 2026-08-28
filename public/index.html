@@ -14027,8 +14027,15 @@ loadReviews();
    LOAD PROPERTIES FROM DB
    Reusable so it can be re-run after a user edits/deletes
    one of their own listings from the My Listings tab.
+
+   renderAfter=false is used only by the initial page-load path below,
+   which fetches this AND fetchBookedProperties() together and renders
+   both in one pass afterward — so Booked doesn't visibly pop in after
+   everything else just because its request happened to resolve later.
+   Every other caller leaves renderAfter at its default (true) and gets
+   the old fetch-then-render-immediately behavior.
 ═══════════════════════════════════════════════ */
-async function fetchProperties() {
+async function fetchProperties(renderAfter = true) {
   const rentGrid = document.getElementById('rentGrid');
   const leaseGrid = document.getElementById('leaseGrid');
   const pgGrid = document.getElementById('pgGrid');
@@ -14077,17 +14084,19 @@ async function fetchProperties() {
       _initialFilterRestoreDone = true;
     }
     _initialPropertiesFetchDone = true;
-    renderRecentlyViewed(); // now unblocked — falls back to snapshot cards for this session
+    if (renderAfter) renderRecentlyViewed(); // now unblocked — falls back to snapshot cards for this session
     return false;
   }
   if (!_initialFilterRestoreDone) {
     restoreFilterStateBeforeBuild(); // re-apply tab/search/filters saved before this refresh
     _initialFilterRestoreDone = true;
   }
-  buildFilterOptions();
-  renderCards();
   _initialPropertiesFetchDone = true;
-  renderRecentlyViewed();
+  if (renderAfter) {
+    buildFilterOptions();
+    renderCards();
+    renderRecentlyViewed();
+  }
   return true;
 }
 
@@ -14096,16 +14105,29 @@ async function fetchProperties() {
 // Promoted/Rent/Lease/PG. Kept as its own small, best-effort call — separate
 // from fetchProperties() — since it's supplementary and shouldn't block or
 // complicate the main listing load if it's slow or fails.
-async function fetchBookedProperties() {
+//
+// renderAfter=false is used only by the initial page-load path below, which
+// waits for this AND fetchProperties() together before rendering either —
+// see the note on fetchProperties() for why.
+async function fetchBookedProperties(renderAfter = true) {
+  // Hard timeout so a slow/hanging Booked API can't hold up the initial
+  // Promise.all render (see loadPropertiesFromDB above) — Booked is a
+  // supplementary, read-only section, and it's better to show the page
+  // with an empty Booked bucket than to block real listings on it.
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 4000);
   try {
-    const res = await fetch('/api/properties?booked=true');
+    const res = await fetch('/api/properties?booked=true', { signal: controller.signal });
     if (!res.ok) throw new Error('Server returned ' + res.status);
     const data = await res.json();
     BOOKED_PROPERTIES = data.properties || [];
   } catch (err) {
-    console.error('Could not load booked properties:', err.message);
+    console.error('Could not load booked properties:', err.name === 'AbortError' ? 'Timed out after 4s' : err.message);
     BOOKED_PROPERTIES = [];
+  } finally {
+    clearTimeout(timeoutId);
   }
+  if (!renderAfter) return;
   renderBookedSections();
   // A Recently Viewed entry may point at a property that's since been
   // booked — renderRecentlyViewed() now filters those out (booked listings
@@ -14131,20 +14153,41 @@ document.addEventListener('DOMContentLoaded', function() {
   syncFdBar();
   updateAllOnlySections(); // hide UrbanAware / Reviews / Premium on initial load (default tab is Rent)
 
+  // restoreFilterStateBeforeBuild() only reads localStorage — it doesn't
+  // need the /api/properties response, it was just nested inside
+  // fetchProperties()'s callback for convenience. Running it here, before
+  // either fetch fires, means currentTab (and the saved tab/search/filter
+  // state) is already correct no matter which of fetchProperties() /
+  // fetchBookedProperties() resolves first below.
+  if (!_initialFilterRestoreDone) {
+    restoreFilterStateBeforeBuild();
+    _initialFilterRestoreDone = true;
+  }
+
   // ── Load properties from DB ──
-  // fetchBookedProperties() used to fire concurrently here, but that raced
-  // against fetchProperties() restoring the saved tab (see
-  // restoreFilterStateBeforeBuild(), which sets currentTab from localStorage
-  // — but only inside fetchProperties()'s own success path). If the booked
-  // request happened to resolve first, renderBookedSections() would run once
-  // with currentTab still at its 'Promoted' default, dumping every booked
-  // item — unfiltered, with type badges — into the Promoted bucket, on any
-  // page load where the visitor's last tab was actually Rent/Lease/PG.
-  // Sequencing it after fetchProperties() resolves removes that race: by the
-  // time BOOKED_PROPERTIES is fetched, currentTab is already correct.
+  // Both requests fire together, and — unlike a plain Promise.all — neither
+  // one renders until BOTH have come back. Firing them concurrently alone
+  // isn't enough: they're still two independent round trips, so whichever
+  // response lands first would render first regardless, and Booked would
+  // keep visibly popping in after the rest. Fetching with renderAfter=false
+  // and doing the render step for both only once everything has arrived is
+  // what actually makes them appear together.
   (async function loadPropertiesFromDB() {
-    const ok = await fetchProperties();
-    fetchBookedProperties(); // fire-and-forget from here on — supplementary, doesn't block the main load
+    const [ok] = await Promise.all([
+      fetchProperties(false),
+      fetchBookedProperties(false)
+    ]);
+    // Only render the main grids on success — on failure, fetchProperties()
+    // has already put its own connection-error message in the grid, and
+    // rendering over it with an empty-PROPERTIES buildFilterOptions/
+    // renderCards would just stomp that message (this matches what the
+    // old failure path did: skip these two calls entirely).
+    if (ok) {
+      buildFilterOptions();
+      renderCards();
+    }
+    renderBookedSections();
+    renderRecentlyViewed();
     if (!ok) return;
     initNearbyLocation(); // ask for location once listings are in, so "Near me first" has data to sort
 
