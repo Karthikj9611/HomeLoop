@@ -793,7 +793,7 @@ main.tab-explore .empty-state{display:none !important}
   .prop-img-price .price-chip[title="Security deposit"] .unit-full{display:none}
   .prop-img-price .price-chip[title="Security deposit"] .unit-short{display:inline}
 }
-.prop-img .img-slide{transition:transform .5s cubic-bezier(.2,.7,.3,1)}
+.prop-img .img-slide{transition:transform .5s cubic-bezier(.2,.7,.3,1),opacity .32s ease}
 
 .prop-card.list-view .prop-img{width:230px;aspect-ratio:unset;height:auto;min-height:150px;border-radius:0}
 .prop-img-placeholder{
@@ -3807,8 +3807,14 @@ main.tab-explore .empty-state{display:none !important}
      enough that a 2x2 grid — 4 listings — fits in the first screen instead
      of 1-2. The floating right-badge stack (heart/views/promoted/verified)
      still fits fine at this ratio since it only needs ~140px of height. */
-  .prop-grid:not(.list-view) .prop-img,
-  .recently-viewed-strip .prop-img{aspect-ratio:1/1}
+  .prop-grid:not(.list-view) .prop-img{aspect-ratio:1/1}
+  /* Viewed/Booked don't carry the same 4-per-screen constraint driving the
+     square ratio above — they're a horizontally-scrolling strip, not a
+     grid competing with a title/location/stats block underneath (that
+     body is hidden here on mobile, see rules below), so there's headroom
+     to let the photo run taller than a plain square without costing any
+     extra vertical space elsewhere on the page. */
+  .recently-viewed-strip .prop-img{aspect-ratio:4/5}
   /* Mobile's 2-up grid is short enough (see above) that the floating
      right-badge stack — now up to 5 items deep with the type-letter badge
      added above the heart — was tall enough to spill past the image and
@@ -4031,10 +4037,8 @@ main.tab-explore .empty-state{display:none !important}
 /* ─── Card image slider ─────────────────────────── */
 .img-slides{position:absolute;inset:0;width:100%;height:100%;overflow:hidden;cursor:grab;touch-action:pan-y}
 .img-slides:active{cursor:grabbing}
-.img-slide{display:none;position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background-color:var(--bg-3);pointer-events:none;vertical-align:top}
-.img-slide.active{display:block}
-.img-slide.active{pointer-events:auto}
-.img-slide.active{opacity:1}
+.img-slide{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background-color:var(--bg-3);pointer-events:none;vertical-align:top;opacity:0;transition:opacity .32s ease}
+.img-slide.active{opacity:1;pointer-events:auto}
 
 /* ─── Image Zoom Lightbox ───────────────────────── */
 #imgZoomOverlay{
@@ -7920,16 +7924,44 @@ function slideStep(uid, dir) {
    shortlist panel cards, and the property-view gallery all share this
    markup, so one delegated listener covers all of them). A horizontal
    drag past a small threshold steps the slide; anything more vertical
-   than horizontal is left alone so the page can still scroll normally. */
+   than horizontal is left alone so the page can still scroll normally.
+   A separate, smaller "did the finger/mouse actually move" threshold
+   (SLIDE_DRAG_CANCEL_PX) marks the gesture as a drag rather than a tap —
+   even when that movement wasn't enough to change slides — so the click
+   that mouseup/touchend would otherwise fire (which browsers dispatch
+   unconditionally for mouse, and often for touch too) gets swallowed
+   instead of accidentally opening the property card or the zoom
+   lightbox mid-swipe. */
+const SLIDE_DRAG_CANCEL_PX = 8;
+let _suppressNextSlideClick = false;
+// Capturing so this runs before the img's own onclick and the card's
+// onclick — stopping the event here means neither ever sees it.
+document.addEventListener('click', function(e){
+  if (!_suppressNextSlideClick) return;
+  _suppressNextSlideClick = false;
+  if (e.target.closest('.img-slides')) {
+    e.stopPropagation();
+    e.preventDefault();
+  }
+}, true);
+
 (function(){
-  let sx = 0, sy = 0, active = null;
+  let sx = 0, sy = 0, active = null, dragged = false;
   document.addEventListener('touchstart', function(e){
     const el = e.target.closest('.img-slides');
     if (!el || !el.id) { active = null; return; }
     if (el.querySelectorAll('.img-slide').length < 2) { active = null; return; }
     active = el;
+    dragged = false;
     sx = e.touches[0].clientX;
     sy = e.touches[0].clientY;
+  }, {passive:true});
+  document.addEventListener('touchmove', function(e){
+    if (!active) return;
+    const t = e.touches[0];
+    if (Math.abs(t.clientX - sx) > SLIDE_DRAG_CANCEL_PX || Math.abs(t.clientY - sy) > SLIDE_DRAG_CANCEL_PX) {
+      dragged = true;
+    }
   }, {passive:true});
   document.addEventListener('touchend', function(e){
     if (!active) return;
@@ -7939,6 +7971,7 @@ function slideStep(uid, dir) {
     if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) {
       slideStep(active.id, dx < 0 ? 1 : -1);
     }
+    if (dragged) _suppressNextSlideClick = true;
     active = null;
   }, {passive:true});
 })();
@@ -7946,16 +7979,25 @@ function slideStep(uid, dir) {
 /* Mouse-drag swipe for desktop — same threshold/logic as the touch handler
    above, so trackpad/mouse users can swipe through photos without arrow
    buttons. A plain click (no meaningful drag) still falls through to the
-   image's own onclick (opens the lightbox). */
+   image's own onclick (opens the lightbox), while a real drag — even a
+   short one that didn't cross the slide-change threshold — is swallowed
+   by the capturing click listener above instead of opening the card. */
 (function(){
-  let mx = 0, my = 0, active = null;
+  let mx = 0, my = 0, active = null, dragged = false;
   document.addEventListener('mousedown', function(e){
     const el = e.target.closest('.img-slides');
     if (!el || !el.id) { active = null; return; }
     if (el.querySelectorAll('.img-slide').length < 2) { active = null; return; }
     active = el;
+    dragged = false;
     mx = e.clientX;
     my = e.clientY;
+  });
+  document.addEventListener('mousemove', function(e){
+    if (!active) return;
+    if (Math.abs(e.clientX - mx) > SLIDE_DRAG_CANCEL_PX || Math.abs(e.clientY - my) > SLIDE_DRAG_CANCEL_PX) {
+      dragged = true;
+    }
   });
   document.addEventListener('mouseup', function(e){
     if (!active) return;
@@ -7964,6 +8006,7 @@ function slideStep(uid, dir) {
     if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) {
       slideStep(active.id, dx < 0 ? 1 : -1);
     }
+    if (dragged) _suppressNextSlideClick = true;
     active = null;
   });
 })();
