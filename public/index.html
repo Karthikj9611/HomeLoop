@@ -862,7 +862,7 @@ main.tab-explore .empty-state{display:none !important}
 .prop-heart.liked svg{fill:var(--brand)}
 /* ─── Right-side icon stack (shortlist heart, then promoted/verified icons below it) ─── */
 .prop-right-badges{
-  display:flex;flex-direction:column;align-items:center;gap:6px;
+  display:flex;flex-direction:column;align-items:center;gap:10px;
   flex-shrink:0;
 }
 .prop-icon-badge{
@@ -8167,13 +8167,12 @@ function cardHTML(p, compact, extraLeftBadge) {
       ${priceChipsHTML(p, pType, deposit, maintenance, leaseDur, {ribbon:true})}
       <div class="prop-card-top-row">
         <div class="prop-left-badges">
+          ${(!compact && !['Rent','Lease','PG','ShortStay'].includes(currentTab)) ? `<span class="prop-badge-type-letter${pTypeLetter.length>1?' wide':''} badge-${pType.toLowerCase()}" title="${pType}">${pTypeLetter}</span>` : ''}
         </div>
         <div class="prop-right-badges">
-          ${(!compact && !['Rent','Lease','PG','ShortStay'].includes(currentTab)) ? `<span class="prop-badge-type-letter${pTypeLetter.length>1?' wide':''} badge-${pType.toLowerCase()}" title="${pType}">${pTypeLetter}</span>` : ''}
           ${extraLeftBadge || ''}
-          <div class="prop-heart${liked?' liked':''}" onclick="event.stopPropagation();toggleShortlist('${p.id}',this)" aria-label="${liked?'Remove from':'Add to'} shortlist">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-          </div>
+          ${p.promoted ? '<div class="prop-icon-badge prop-icon-promoted" title="Promoted"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l2.9 6.26 6.9.8-5.1 4.7 1.4 6.84L12 17.3l-6.1 3.3 1.4-6.84-5.1-4.7 6.9-.8z"/></svg></div>' : ''}
+          ${(SHOW_VERIFIED_BADGE && p.verified) ? '<div class="prop-icon-badge prop-icon-verified" title="Verified"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.5" fill="#fff"/><path d="M8 12.3l2.6 2.6 5.4-5.8" stroke="#1a73e8" stroke-width="2.1" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>' : ''}
           <div class="prop-icon-badge prop-views-float" title="${getViews(p).toLocaleString('en-IN')} views">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
             <span class="prop-views-float-badge">${formatViews(getViews(p))}</span>
@@ -8181,8 +8180,9 @@ function cardHTML(p, compact, extraLeftBadge) {
           <div class="prop-icon-badge prop-compare-float prop-action-compare${compared?' checked':''}${compareDisabled?' disabled':''}" onclick="event.stopPropagation();toggleCompare('${p.id}',this)" aria-label="${compared?'Remove from':'Add to'} compare" title="${compareDisabled?`You're comparing ${lockedType} properties`:(compared?'Added to compare':'Compare')}">
             <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="8" height="16" rx="1.5"/><rect x="13" y="4" width="8" height="16" rx="1.5" opacity="0.55"/></svg>
           </div>
-          ${p.promoted ? '<div class="prop-icon-badge prop-icon-promoted" title="Promoted"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l2.9 6.26 6.9.8-5.1 4.7 1.4 6.84L12 17.3l-6.1 3.3 1.4-6.84-5.1-4.7 6.9-.8z"/></svg></div>' : ''}
-          ${(SHOW_VERIFIED_BADGE && p.verified) ? '<div class="prop-icon-badge prop-icon-verified" title="Verified"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.5" fill="#fff"/><path d="M8 12.3l2.6 2.6 5.4-5.8" stroke="#1a73e8" stroke-width="2.1" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>' : ''}
+          <div class="prop-heart${liked?' liked':''}" onclick="event.stopPropagation();toggleShortlist('${p.id}',this)" aria-label="${liked?'Remove from':'Add to'} shortlist">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+          </div>
           <div class="prop-icon-badge prop-icon-call" onclick="event.stopPropagation();openCall('${p.id}')" aria-label="Call agent" title="Call agent">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
           </div>
@@ -8317,9 +8317,8 @@ function shortlistCardHTML(p) {
         <div class="prop-left-badges">
         </div>
         <div class="prop-right-badges">
-          <div class="prop-heart${liked?' liked':''}" onclick="event.stopPropagation();toggleShortlist('${p.id}',this)" aria-label="${liked?'Remove from':'Add to'} shortlist">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-          </div>
+          ${p.promoted ? '<div class="prop-icon-badge prop-icon-promoted" title="Promoted"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l2.9 6.26 6.9.8-5.1 4.7 1.4 6.84L12 17.3l-6.1 3.3 1.4-6.84-5.1-4.7 6.9-.8z"/></svg></div>' : ''}
+          ${(SHOW_VERIFIED_BADGE && p.verified) ? '<div class="prop-icon-badge prop-icon-verified" title="Verified"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.5" fill="#fff"/><path d="M8 12.3l2.6 2.6 5.4-5.8" stroke="#1a73e8" stroke-width="2.1" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>' : ''}
           <div class="prop-icon-badge prop-views-float" title="${getViews(p).toLocaleString('en-IN')} views">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
             <span class="prop-views-float-badge">${formatViews(getViews(p))}</span>
@@ -8327,8 +8326,9 @@ function shortlistCardHTML(p) {
           <div class="prop-icon-badge prop-compare-float prop-action-compare${compared?' checked':''}${compareDisabled?' disabled':''}" onclick="event.stopPropagation();toggleCompare('${p.id}',this)" aria-label="${compared?'Remove from':'Add to'} compare" title="${compareDisabled?`You're comparing ${lockedType} properties`:(compared?'Added to compare':'Compare')}">
             <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="8" height="16" rx="1.5"/><rect x="13" y="4" width="8" height="16" rx="1.5" opacity="0.55"/></svg>
           </div>
-          ${p.promoted ? '<div class="prop-icon-badge prop-icon-promoted" title="Promoted"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l2.9 6.26 6.9.8-5.1 4.7 1.4 6.84L12 17.3l-6.1 3.3 1.4-6.84-5.1-4.7 6.9-.8z"/></svg></div>' : ''}
-          ${(SHOW_VERIFIED_BADGE && p.verified) ? '<div class="prop-icon-badge prop-icon-verified" title="Verified"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.5" fill="#fff"/><path d="M8 12.3l2.6 2.6 5.4-5.8" stroke="#1a73e8" stroke-width="2.1" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>' : ''}
+          <div class="prop-heart${liked?' liked':''}" onclick="event.stopPropagation();toggleShortlist('${p.id}',this)" aria-label="${liked?'Remove from':'Add to'} shortlist">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+          </div>
           <div class="prop-icon-badge prop-icon-call" onclick="event.stopPropagation();openCall('${p.id}')" aria-label="Call agent" title="Call agent">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
           </div>
@@ -8730,9 +8730,7 @@ function renderCompareTable() {
           <div class="prop-card-top-row">
             <div class="prop-left-badges"></div>
             <div class="prop-right-badges">
-              <div class="prop-heart${liked?' liked':''}" onclick="event.stopPropagation();toggleShortlist('${p.id}',this)" aria-label="${liked?'Remove from':'Add to'} shortlist">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-              </div>
+              ${(SHOW_VERIFIED_BADGE && p.verified) ? '<div class="prop-icon-badge prop-icon-verified" title="Verified"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.5" fill="#fff"/><path d="M8 12.3l2.6 2.6 5.4-5.8" stroke="#1a73e8" stroke-width="2.1" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>' : ''}
               <div class="prop-icon-badge prop-views-float" title="${getViews(p).toLocaleString('en-IN')} views">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                 <span class="prop-views-float-badge">${formatViews(getViews(p))}</span>
@@ -8740,7 +8738,9 @@ function renderCompareTable() {
               <div class="prop-icon-badge prop-compare-float checked" onclick="event.stopPropagation();removeFromCompare('${p.id}')" aria-label="Remove from compare" title="Remove from comparison">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="8" height="16" rx="1.5"/><rect x="13" y="4" width="8" height="16" rx="1.5" opacity="0.55"/></svg>
               </div>
-              ${(SHOW_VERIFIED_BADGE && p.verified) ? '<div class="prop-icon-badge prop-icon-verified" title="Verified"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.5" fill="#fff"/><path d="M8 12.3l2.6 2.6 5.4-5.8" stroke="#1a73e8" stroke-width="2.1" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>' : ''}
+              <div class="prop-heart${liked?' liked':''}" onclick="event.stopPropagation();toggleShortlist('${p.id}',this)" aria-label="${liked?'Remove from':'Add to'} shortlist">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+              </div>
           <div class="prop-icon-badge prop-icon-call" onclick="event.stopPropagation();openCall('${p.id}')" aria-label="Call agent" title="Call agent">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
           </div>
