@@ -793,7 +793,7 @@ main.tab-explore .empty-state{display:none !important}
   .prop-img-price .price-chip[title="Security deposit"] .unit-full{display:none}
   .prop-img-price .price-chip[title="Security deposit"] .unit-short{display:inline}
 }
-.prop-img .img-slide{transition:transform .5s cubic-bezier(.2,.7,.3,1),opacity .32s ease}
+.prop-img .img-slide{transition:transform .5s cubic-bezier(.2,.7,.3,1)}
 
 .prop-card.list-view .prop-img{width:230px;aspect-ratio:unset;height:auto;min-height:150px;border-radius:0}
 .prop-img-placeholder{
@@ -1772,13 +1772,13 @@ main.tab-explore .empty-state{display:none !important}
 .recently-viewed-strip .prop-card-top-row{top:8px;left:8px}
 .recently-viewed-strip .prop-right-badges{gap:6px}
 .recently-viewed-strip .prop-left-badges{gap:4px}
-.recently-viewed-strip .prop-heart{width:26px;height:26px}
-.recently-viewed-strip .prop-heart svg{width:12px;height:12px}
-.recently-viewed-strip .prop-icon-badge{width:23px;height:23px}
-.recently-viewed-strip .prop-icon-badge svg{width:11px;height:11px}
-.recently-viewed-strip .prop-icon-badge.prop-icon-call svg{width:12px;height:12px}
-.recently-viewed-strip .prop-icon-badge.prop-views-float .prop-views-float-badge{top:-6px;left:-6px;min-width:14px;height:14px;font-size:8px}
-.recently-viewed-strip .prop-badge-type-letter{width:23px;height:23px;font-size:11px}
+.recently-viewed-strip .prop-heart{width:23px;height:23px}
+.recently-viewed-strip .prop-heart svg{width:11px;height:11px}
+.recently-viewed-strip .prop-icon-badge{width:20px;height:20px}
+.recently-viewed-strip .prop-icon-badge svg{width:10px;height:10px}
+.recently-viewed-strip .prop-icon-badge.prop-icon-call svg{width:11px;height:11px}
+.recently-viewed-strip .prop-icon-badge.prop-views-float .prop-views-float-badge{top:-5px;left:-5px;min-width:13px;height:13px;font-size:7.5px}
+.recently-viewed-strip .prop-badge-type-letter{width:20px;height:20px;font-size:10.5px}
 .rv-card{position:relative;flex:0 0 var(--rv-card-w, 260px);border:1px solid var(--border);border-radius:16px;overflow:hidden;cursor:pointer;background:var(--bg);transition:box-shadow .15s,transform .15s}
 .rv-card:hover{box-shadow:0 4px 14px rgba(0,0,0,.08);transform:translateY(-1px)}
 .rv-card-thumb{width:100%;aspect-ratio:4/3;background-size:cover;background-position:center;background-color:var(--bg-2);display:flex;align-items:center;justify-content:center;color:var(--text-3);font-size:12px}
@@ -3807,14 +3807,8 @@ main.tab-explore .empty-state{display:none !important}
      enough that a 2x2 grid — 4 listings — fits in the first screen instead
      of 1-2. The floating right-badge stack (heart/views/promoted/verified)
      still fits fine at this ratio since it only needs ~140px of height. */
-  .prop-grid:not(.list-view) .prop-img{aspect-ratio:1/1}
-  /* Viewed/Booked don't carry the same 4-per-screen constraint driving the
-     square ratio above — they're a horizontally-scrolling strip, not a
-     grid competing with a title/location/stats block underneath (that
-     body is hidden here on mobile, see rules below), so there's headroom
-     to let the photo run taller than a plain square without costing any
-     extra vertical space elsewhere on the page. */
-  .recently-viewed-strip .prop-img{aspect-ratio:4/5}
+  .prop-grid:not(.list-view) .prop-img,
+  .recently-viewed-strip .prop-img{aspect-ratio:1/1}
   /* Mobile's 2-up grid is short enough (see above) that the floating
      right-badge stack — now up to 5 items deep with the type-letter badge
      added above the heart — was tall enough to spill past the image and
@@ -3847,19 +3841,10 @@ main.tab-explore .empty-state{display:none !important}
   .recently-viewed-strip .prop-img-price .prop-price-unit::after{content:'M'}
   .recently-viewed-strip .prop-img-price .prop-price-chips .price-chip .prop-price,
   .recently-viewed-strip .prop-img-price .prop-price-chips .price-chip .prop-price-unit{font-size:9px}
-  /* Booked's grids now carry the same .recently-viewed-strip class as
-     Viewed (see renderBookedSections()), so the compact-card rules above
-     already apply to it identically — no separate #bookedSection rules
-     needed here anymore. */
-  /* Cards grew taller on mobile (see .recently-viewed-strip .prop-img
-     aspect-ratio above) but stayed the same width, so the badge stack
-     has more headroom now — scale it down less aggressively and bump
-     the explicit sizes so the buttons read proportionate to the bigger
-     card instead of staying pinned to the old square card's cramped size. */
-  .recently-viewed-strip .prop-right-badges{transform:scale(.85)}
-  .recently-viewed-strip .prop-heart{width:23px;height:23px}
-  .recently-viewed-strip .prop-icon-badge{width:20px;height:20px}
-  .recently-viewed-strip .prop-badge-type-letter{width:20px;height:20px;font-size:10px}
+  .recently-viewed-strip .prop-right-badges{transform:scale(.62)}
+  .recently-viewed-strip .prop-heart{width:20px;height:20px}
+  .recently-viewed-strip .prop-icon-badge{width:18px;height:18px}
+  .recently-viewed-strip .prop-badge-type-letter{width:18px;height:18px;font-size:9.5px}
 
   /* Compact sizing for the 2-up mobile card so title/price/deposit/buttons
      don't get squeezed or overflow the narrower card width. */
@@ -4042,8 +4027,10 @@ main.tab-explore .empty-state{display:none !important}
 /* ─── Card image slider ─────────────────────────── */
 .img-slides{position:absolute;inset:0;width:100%;height:100%;overflow:hidden;cursor:grab;touch-action:pan-y}
 .img-slides:active{cursor:grabbing}
-.img-slide{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background-color:var(--bg-3);pointer-events:none;vertical-align:top;opacity:0;transition:opacity .32s ease}
-.img-slide.active{opacity:1;pointer-events:auto}
+.img-slide{display:none;position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background-color:var(--bg-3);pointer-events:none;vertical-align:top}
+.img-slide.active{display:block}
+.img-slide.active{pointer-events:auto}
+.img-slide.active{opacity:1}
 
 /* ─── Image Zoom Lightbox ───────────────────────── */
 #imgZoomOverlay{
@@ -4777,25 +4764,25 @@ main.tab-explore .empty-state{display:none !important}
         <span class="section-divider-label booked-label">Booked<span class="section-divider-count booked-count" id="promotedBookedCount"></span></span>
       </div>
     </div>
-    <div class="recently-viewed-strip" id="promotedBookedGrid"></div>
+    <div class="prop-grid" id="promotedBookedGrid"></div>
     <div class="section-divider booked-divider" id="rentBookedDivider" style="display:none">
       <div class="section-divider-inner">
         <span class="section-divider-label booked-label">Booked<span class="section-divider-count booked-count" id="rentBookedCount"></span></span>
       </div>
     </div>
-    <div class="recently-viewed-strip" id="rentBookedGrid"></div>
+    <div class="prop-grid" id="rentBookedGrid"></div>
     <div class="section-divider booked-divider" id="leaseBookedDivider" style="display:none">
       <div class="section-divider-inner">
         <span class="section-divider-label booked-label">Booked<span class="section-divider-count booked-count" id="leaseBookedCount"></span></span>
       </div>
     </div>
-    <div class="recently-viewed-strip" id="leaseBookedGrid"></div>
+    <div class="prop-grid" id="leaseBookedGrid"></div>
     <div class="section-divider booked-divider" id="pgBookedDivider" style="display:none">
       <div class="section-divider-inner">
         <span class="section-divider-label booked-label">Booked<span class="section-divider-count booked-count" id="pgBookedCount"></span></span>
       </div>
     </div>
-    <div class="recently-viewed-strip" id="pgBookedGrid"></div>
+    <div class="prop-grid" id="pgBookedGrid"></div>
   </div>
   <div id="promotedSection">
     <div class="section-divider" id="promotedDivider" style="display:none">
@@ -7455,18 +7442,10 @@ function renderRecentlyViewed() {
 // of the visible strip width (minus the gap) so a full 3 (smaller) cards
 // fit per screen, all details legible — while staying horizontally
 // scrollable/slidable to reach the rest.
-// Sets --rv-card-w on the document root (not on any one strip) so every
-// strip that uses the compact card size — Recently Viewed AND all four
-// Booked buckets — resolves to the exact same pixel width, on any screen
-// size. Booked has no cards of its own to measure against on first paint
-// (it may render before/without Recently Viewed having any items), so it
-// shares this single source of truth rather than each strip computing its
-// own value independently.
 const RV_CARD_SCALE = 0.85;
 function syncRecentlyViewedCardWidth() {
-  const strip = document.getElementById('recentlyViewedStrip') || document.querySelector('.recently-viewed-strip');
+  const strip = document.getElementById('recentlyViewedStrip');
   if (!strip) return;
-  const root = document.documentElement;
   const isMobile = window.innerWidth <= 768;
   if (isMobile) {
     const cs = getComputedStyle(strip);
@@ -7475,13 +7454,13 @@ function syncRecentlyViewedCardWidth() {
     const padR = parseFloat(cs.paddingRight) || 0;
     const available = strip.clientWidth - padL - padR - gap * 2;
     const w = available / 3;
-    if (w > 0) root.style.setProperty('--rv-card-w', w + 'px');
+    if (w > 0) strip.style.setProperty('--rv-card-w', w + 'px');
     return;
   }
   const sample = document.querySelector('.prop-grid .prop-card');
   if (!sample) return;
   const w = sample.getBoundingClientRect().width * RV_CARD_SCALE;
-  if (w > 0) root.style.setProperty('--rv-card-w', w + 'px');
+  if (w > 0) strip.style.setProperty('--rv-card-w', w + 'px');
 }
 window.addEventListener('resize', () => { clearTimeout(window._rvWidthTimer); window._rvWidthTimer = setTimeout(syncRecentlyViewedCardWidth, 150); });
 
@@ -7731,9 +7710,8 @@ function renderBookedSections() {
   // Any other tab (e.g. "All"/Explore) leaves every bucket empty — that tab
   // hides the whole bookedSection wrapper anyway (see updateAllOnlySections()).
 
-  // Booked is a read-only quick-glance strip, not a browsable grid — it
-  // always renders like Recently Viewed (compact cards, horizontal scroll),
-  // regardless of the grid/list view toggle.
+  const gridClass = 'prop-grid' + (isListView ? ' list-view' : '');
+
   ['promoted', 'rent', 'lease', 'pg'].forEach(key => {
     const divider = document.getElementById(key + 'BookedDivider');
     const grid = document.getElementById(key + 'BookedGrid');
@@ -7748,9 +7726,8 @@ function renderBookedSections() {
 
     divider.style.display = '';
     document.getElementById(key + 'BookedCount').textContent = items.length;
-    grid.className = 'recently-viewed-strip';
+    grid.className = gridClass;
     grid.innerHTML = items.map(p => cardHTML(p, key !== 'promoted')).join('');
-    requestAnimationFrame(syncRecentlyViewedCardWidth);
   });
 }
 
@@ -7863,20 +7840,6 @@ function buildVideoSlideHtml(p) {
   return body + actions;
 }
 
-// Image-slide click router: inside Viewed/Booked (the compact `.recently-
-// viewed-strip` cards) tapping the photo should behave like tapping the
-// rest of the card — open the property detail view — rather than the
-// full-screen zoom lightbox those cards have no real use for. Every other
-// gallery (main grid, shortlist panel, compare modal, the detail page's own
-// gallery) keeps the normal zoom-on-click behavior.
-function imgSlideClick(e, id, idx) {
-  if (e.target.closest('.recently-viewed-strip')) {
-    openDetail(id);
-  } else {
-    openLightbox(id, idx);
-  }
-}
-
 function buildImgSlider(p, fg, uidSuffix, videoSlideHtml) {
   const imgs = (p.media?.images && p.media.images.length) ? p.media.images : [];
   if (imgs.length === 0 && !videoSlideHtml) {
@@ -7894,7 +7857,7 @@ function buildImgSlider(p, fg, uidSuffix, videoSlideHtml) {
   // reveals them, since they load together with the first slide as soon as
   // the card itself is in view.
   const imgSlides = imgs.map((url, i) =>
-    `<img class="img-slide${i===0?' active':''}" src="${safeUrl(url)}"${i===0?' loading="lazy"':''} decoding="async" alt="" onclick="event.stopPropagation();imgSlideClick(event,'${p.id}',${i})" />`
+    `<img class="img-slide${i===0?' active':''}" src="${safeUrl(url)}"${i===0?' loading="lazy"':''} decoding="async" alt="" onclick="event.stopPropagation();openLightbox('${p.id}',${i})" />`
   ).join('');
   // Video tour, when present, always comes after every photo — the last
   // slide in the same swipeable gallery rather than a separate section.
@@ -7929,44 +7892,16 @@ function slideStep(uid, dir) {
    shortlist panel cards, and the property-view gallery all share this
    markup, so one delegated listener covers all of them). A horizontal
    drag past a small threshold steps the slide; anything more vertical
-   than horizontal is left alone so the page can still scroll normally.
-   A separate, smaller "did the finger/mouse actually move" threshold
-   (SLIDE_DRAG_CANCEL_PX) marks the gesture as a drag rather than a tap —
-   even when that movement wasn't enough to change slides — so the click
-   that mouseup/touchend would otherwise fire (which browsers dispatch
-   unconditionally for mouse, and often for touch too) gets swallowed
-   instead of accidentally opening the property card or the zoom
-   lightbox mid-swipe. */
-const SLIDE_DRAG_CANCEL_PX = 8;
-let _suppressNextSlideClick = false;
-// Capturing so this runs before the img's own onclick and the card's
-// onclick — stopping the event here means neither ever sees it.
-document.addEventListener('click', function(e){
-  if (!_suppressNextSlideClick) return;
-  _suppressNextSlideClick = false;
-  if (e.target.closest('.img-slides')) {
-    e.stopPropagation();
-    e.preventDefault();
-  }
-}, true);
-
+   than horizontal is left alone so the page can still scroll normally. */
 (function(){
-  let sx = 0, sy = 0, active = null, dragged = false;
+  let sx = 0, sy = 0, active = null;
   document.addEventListener('touchstart', function(e){
     const el = e.target.closest('.img-slides');
     if (!el || !el.id) { active = null; return; }
     if (el.querySelectorAll('.img-slide').length < 2) { active = null; return; }
     active = el;
-    dragged = false;
     sx = e.touches[0].clientX;
     sy = e.touches[0].clientY;
-  }, {passive:true});
-  document.addEventListener('touchmove', function(e){
-    if (!active) return;
-    const t = e.touches[0];
-    if (Math.abs(t.clientX - sx) > SLIDE_DRAG_CANCEL_PX || Math.abs(t.clientY - sy) > SLIDE_DRAG_CANCEL_PX) {
-      dragged = true;
-    }
   }, {passive:true});
   document.addEventListener('touchend', function(e){
     if (!active) return;
@@ -7976,7 +7911,6 @@ document.addEventListener('click', function(e){
     if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) {
       slideStep(active.id, dx < 0 ? 1 : -1);
     }
-    if (dragged) _suppressNextSlideClick = true;
     active = null;
   }, {passive:true});
 })();
@@ -7984,25 +7918,16 @@ document.addEventListener('click', function(e){
 /* Mouse-drag swipe for desktop — same threshold/logic as the touch handler
    above, so trackpad/mouse users can swipe through photos without arrow
    buttons. A plain click (no meaningful drag) still falls through to the
-   image's own onclick (opens the lightbox), while a real drag — even a
-   short one that didn't cross the slide-change threshold — is swallowed
-   by the capturing click listener above instead of opening the card. */
+   image's own onclick (opens the lightbox). */
 (function(){
-  let mx = 0, my = 0, active = null, dragged = false;
+  let mx = 0, my = 0, active = null;
   document.addEventListener('mousedown', function(e){
     const el = e.target.closest('.img-slides');
     if (!el || !el.id) { active = null; return; }
     if (el.querySelectorAll('.img-slide').length < 2) { active = null; return; }
     active = el;
-    dragged = false;
     mx = e.clientX;
     my = e.clientY;
-  });
-  document.addEventListener('mousemove', function(e){
-    if (!active) return;
-    if (Math.abs(e.clientX - mx) > SLIDE_DRAG_CANCEL_PX || Math.abs(e.clientY - my) > SLIDE_DRAG_CANCEL_PX) {
-      dragged = true;
-    }
   });
   document.addEventListener('mouseup', function(e){
     if (!active) return;
@@ -8011,7 +7936,6 @@ document.addEventListener('click', function(e){
     if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) {
       slideStep(active.id, dx < 0 ? 1 : -1);
     }
-    if (dragged) _suppressNextSlideClick = true;
     active = null;
   });
 })();
