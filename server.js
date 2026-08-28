@@ -882,7 +882,7 @@ function buildListingSchema() {
     userReadableId:   { type: String, default: null, index: true }, // human-readable User.userId (e.g. USER-000001), stamped at creation for admin readability — same pattern as UserSession.userId
     verified:         { type: Boolean, default: false },
     promoted:         { type: Boolean, default: false },
-    promotedPriority: { type: Number,  default: 3 },
+    promotedPriority: { type: Number,  default: 0 }, // 0 = not manually ranked yet; sorts to the back of the promoted queue (see rankOf below) until an admin assigns 1, 2, 3...
     booked:           { type: Boolean, default: false }, // once true, listing is hidden from the public site regardless of verified status
     // Captured from the admin Booked-tab "Booking Details" modal — who the
     // deal was between and when. ownerId / tenantId reference registered
@@ -1475,9 +1475,15 @@ app.get('/api/properties', async (req, res) => {
 
     // Sort/paginate in memory across the merged set (same ordering as before:
     // promoted first, then promotedPriority, then newest).
+    // 0 (the schema default) and any missing/null value both mean "an admin
+    // hasn't manually ranked this one yet" — treat those as the lowest
+    // possible priority (Infinity) so a freshly-promoted listing lands at
+    // the back of the promoted queue, behind every listing an admin has
+    // explicitly set to 1, 2, 3..., rather than jumping to the front.
+    const rankOf = (p) => (p && p > 0) ? p : Infinity;
     docs.sort((a, b) =>
       (Number(b.promoted) - Number(a.promoted)) ||
-      ((a.promotedPriority ?? 3) - (b.promotedPriority ?? 3)) ||
+      (rankOf(a.promotedPriority) - rankOf(b.promotedPriority)) ||
       (new Date(b.createdAt) - new Date(a.createdAt))
     );
     docs = docs.slice(Number(skip), Number(skip) + Number(limit));

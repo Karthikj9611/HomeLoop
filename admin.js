@@ -483,9 +483,12 @@ module.exports = function registerAdminRoutes(app, deps) {
   app.get('/api/admin/properties', requireAdmin, async (req, res) => {
     try {
       const docArrays = await Promise.all(LISTING_MODEL_LIST.map(M => M.find({}).populate('userId', 'profilePhoto').lean()));
+      // 0/missing promotedPriority = not yet manually ranked; sorts to the
+      // back here too, matching the public site's rankOf() convention.
+      const rankOf = (p) => (p && p > 0) ? p : Infinity;
       const docs = docArrays.flat().sort((a, b) =>
         (Number(b.promoted) - Number(a.promoted)) ||
-        ((a.promotedPriority ?? 3) - (b.promotedPriority ?? 3)) ||
+        (rankOf(a.promotedPriority) - rankOf(b.promotedPriority)) ||
         (new Date(b.createdAt) - new Date(a.createdAt))
       );
 

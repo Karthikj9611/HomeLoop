@@ -7558,7 +7558,11 @@ function renderCards() {
   // (lower number = shown first, same convention as the server-side sort),
   // regardless of whichever Sort option (newest/price/etc.) the visitor has
   // picked — priority is a paid placement, not just another sort choice.
-  const byPromotedPriority = (a, b) => (a.promotedPriority ?? 3) - (b.promotedPriority ?? 3);
+  // 0/missing (not yet manually ranked by an admin) sorts to the back,
+  // matching the server's rankOf() — a fresh promotion doesn't jump ahead
+  // of listings an admin already ranked 1, 2, 3...
+  const rankOf = (p) => (p && p > 0) ? p : Infinity;
+  const byPromotedPriority = (a, b) => rankOf(a.promotedPriority) - rankOf(b.promotedPriority);
 
   const promoted = currentTab === 'Promoted' ? [] : list.filter(p => p.promoted).sort(byPromotedPriority);
   // On a single-type tab (Rent/Lease/PG/ShortStay), `list` is already

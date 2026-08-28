@@ -5597,7 +5597,11 @@ $(document).ready(function(){
          require Promoted to already be on, so a position can be queued up in
          advance and take effect the moment the toggle flips on.) */
       { data:null, orderable:true, className:'dt-body-center', render:(d,t,row)=>{
-          const p = row.full && row.full.promotedPriority;
+          const raw = row.full && row.full.promotedPriority;
+          // 0 is the schema default for "not manually ranked yet" — show it
+          // the same as unset (blank, with the "pos" placeholder) rather
+          // than literally displaying "0" next to a min="1" input.
+          const p = (raw != null && raw > 0) ? raw : null;
           if(t!=='display') return (p!=null ? p : '');
           return `<input type="number" min="1" step="1" class="promoted-priority-input"
             style="width:64px;text-align:center" placeholder="pos"
