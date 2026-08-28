@@ -3841,6 +3841,10 @@ main.tab-explore .empty-state{display:none !important}
   .recently-viewed-strip .prop-img-price .prop-price-unit::after{content:'M'}
   .recently-viewed-strip .prop-img-price .prop-price-chips .price-chip .prop-price,
   .recently-viewed-strip .prop-img-price .prop-price-chips .price-chip .prop-price-unit{font-size:9px}
+  /* Booked's grids now carry the same .recently-viewed-strip class as
+     Viewed (see renderBookedSections()), so the compact-card rules above
+     already apply to it identically — no separate #bookedSection rules
+     needed here anymore. */
   .recently-viewed-strip .prop-right-badges{transform:scale(.62)}
   .recently-viewed-strip .prop-heart{width:20px;height:20px}
   .recently-viewed-strip .prop-icon-badge{width:18px;height:18px}
@@ -4764,25 +4768,25 @@ main.tab-explore .empty-state{display:none !important}
         <span class="section-divider-label booked-label">Booked<span class="section-divider-count booked-count" id="promotedBookedCount"></span></span>
       </div>
     </div>
-    <div class="prop-grid" id="promotedBookedGrid"></div>
+    <div class="recently-viewed-strip" id="promotedBookedGrid"></div>
     <div class="section-divider booked-divider" id="rentBookedDivider" style="display:none">
       <div class="section-divider-inner">
         <span class="section-divider-label booked-label">Booked<span class="section-divider-count booked-count" id="rentBookedCount"></span></span>
       </div>
     </div>
-    <div class="prop-grid" id="rentBookedGrid"></div>
+    <div class="recently-viewed-strip" id="rentBookedGrid"></div>
     <div class="section-divider booked-divider" id="leaseBookedDivider" style="display:none">
       <div class="section-divider-inner">
         <span class="section-divider-label booked-label">Booked<span class="section-divider-count booked-count" id="leaseBookedCount"></span></span>
       </div>
     </div>
-    <div class="prop-grid" id="leaseBookedGrid"></div>
+    <div class="recently-viewed-strip" id="leaseBookedGrid"></div>
     <div class="section-divider booked-divider" id="pgBookedDivider" style="display:none">
       <div class="section-divider-inner">
         <span class="section-divider-label booked-label">Booked<span class="section-divider-count booked-count" id="pgBookedCount"></span></span>
       </div>
     </div>
-    <div class="prop-grid" id="pgBookedGrid"></div>
+    <div class="recently-viewed-strip" id="pgBookedGrid"></div>
   </div>
   <div id="promotedSection">
     <div class="section-divider" id="promotedDivider" style="display:none">
@@ -7442,10 +7446,18 @@ function renderRecentlyViewed() {
 // of the visible strip width (minus the gap) so a full 3 (smaller) cards
 // fit per screen, all details legible — while staying horizontally
 // scrollable/slidable to reach the rest.
+// Sets --rv-card-w on the document root (not on any one strip) so every
+// strip that uses the compact card size — Recently Viewed AND all four
+// Booked buckets — resolves to the exact same pixel width, on any screen
+// size. Booked has no cards of its own to measure against on first paint
+// (it may render before/without Recently Viewed having any items), so it
+// shares this single source of truth rather than each strip computing its
+// own value independently.
 const RV_CARD_SCALE = 0.85;
 function syncRecentlyViewedCardWidth() {
-  const strip = document.getElementById('recentlyViewedStrip');
+  const strip = document.getElementById('recentlyViewedStrip') || document.querySelector('.recently-viewed-strip');
   if (!strip) return;
+  const root = document.documentElement;
   const isMobile = window.innerWidth <= 768;
   if (isMobile) {
     const cs = getComputedStyle(strip);
@@ -7454,13 +7466,13 @@ function syncRecentlyViewedCardWidth() {
     const padR = parseFloat(cs.paddingRight) || 0;
     const available = strip.clientWidth - padL - padR - gap * 2;
     const w = available / 3;
-    if (w > 0) strip.style.setProperty('--rv-card-w', w + 'px');
+    if (w > 0) root.style.setProperty('--rv-card-w', w + 'px');
     return;
   }
   const sample = document.querySelector('.prop-grid .prop-card');
   if (!sample) return;
   const w = sample.getBoundingClientRect().width * RV_CARD_SCALE;
-  if (w > 0) strip.style.setProperty('--rv-card-w', w + 'px');
+  if (w > 0) root.style.setProperty('--rv-card-w', w + 'px');
 }
 window.addEventListener('resize', () => { clearTimeout(window._rvWidthTimer); window._rvWidthTimer = setTimeout(syncRecentlyViewedCardWidth, 150); });
 
@@ -7710,8 +7722,9 @@ function renderBookedSections() {
   // Any other tab (e.g. "All"/Explore) leaves every bucket empty — that tab
   // hides the whole bookedSection wrapper anyway (see updateAllOnlySections()).
 
-  const gridClass = 'prop-grid' + (isListView ? ' list-view' : '');
-
+  // Booked is a read-only quick-glance strip, not a browsable grid — it
+  // always renders like Recently Viewed (compact cards, horizontal scroll),
+  // regardless of the grid/list view toggle.
   ['promoted', 'rent', 'lease', 'pg'].forEach(key => {
     const divider = document.getElementById(key + 'BookedDivider');
     const grid = document.getElementById(key + 'BookedGrid');
@@ -7726,8 +7739,9 @@ function renderBookedSections() {
 
     divider.style.display = '';
     document.getElementById(key + 'BookedCount').textContent = items.length;
-    grid.className = gridClass;
+    grid.className = 'recently-viewed-strip';
     grid.innerHTML = items.map(p => cardHTML(p, key !== 'promoted')).join('');
+    requestAnimationFrame(syncRecentlyViewedCardWidth);
   });
 }
 
@@ -7840,6 +7854,20 @@ function buildVideoSlideHtml(p) {
   return body + actions;
 }
 
+// Image-slide click router: inside Viewed/Booked (the compact `.recently-
+// viewed-strip` cards) tapping the photo should behave like tapping the
+// rest of the card — open the property detail view — rather than the
+// full-screen zoom lightbox those cards have no real use for. Every other
+// gallery (main grid, shortlist panel, compare modal, the detail page's own
+// gallery) keeps the normal zoom-on-click behavior.
+function imgSlideClick(e, id, idx) {
+  if (e.target.closest('.recently-viewed-strip')) {
+    openDetail(id);
+  } else {
+    openLightbox(id, idx);
+  }
+}
+
 function buildImgSlider(p, fg, uidSuffix, videoSlideHtml) {
   const imgs = (p.media?.images && p.media.images.length) ? p.media.images : [];
   if (imgs.length === 0 && !videoSlideHtml) {
@@ -7857,7 +7885,7 @@ function buildImgSlider(p, fg, uidSuffix, videoSlideHtml) {
   // reveals them, since they load together with the first slide as soon as
   // the card itself is in view.
   const imgSlides = imgs.map((url, i) =>
-    `<img class="img-slide${i===0?' active':''}" src="${safeUrl(url)}"${i===0?' loading="lazy"':''} decoding="async" alt="" onclick="event.stopPropagation();openLightbox('${p.id}',${i})" />`
+    `<img class="img-slide${i===0?' active':''}" src="${safeUrl(url)}"${i===0?' loading="lazy"':''} decoding="async" alt="" onclick="event.stopPropagation();imgSlideClick(event,'${p.id}',${i})" />`
   ).join('');
   // Video tour, when present, always comes after every photo — the last
   // slide in the same swipeable gallery rather than a separate section.
