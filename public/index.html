@@ -1772,13 +1772,13 @@ main.tab-explore .empty-state{display:none !important}
 .recently-viewed-strip .prop-card-top-row{top:8px;left:8px}
 .recently-viewed-strip .prop-right-badges{gap:6px}
 .recently-viewed-strip .prop-left-badges{gap:4px}
-.recently-viewed-strip .prop-heart{width:23px;height:23px}
-.recently-viewed-strip .prop-heart svg{width:11px;height:11px}
-.recently-viewed-strip .prop-icon-badge{width:20px;height:20px}
-.recently-viewed-strip .prop-icon-badge svg{width:10px;height:10px}
-.recently-viewed-strip .prop-icon-badge.prop-icon-call svg{width:11px;height:11px}
-.recently-viewed-strip .prop-icon-badge.prop-views-float .prop-views-float-badge{top:-5px;left:-5px;min-width:13px;height:13px;font-size:7.5px}
-.recently-viewed-strip .prop-badge-type-letter{width:20px;height:20px;font-size:10.5px}
+.recently-viewed-strip .prop-heart{width:26px;height:26px}
+.recently-viewed-strip .prop-heart svg{width:12px;height:12px}
+.recently-viewed-strip .prop-icon-badge{width:23px;height:23px}
+.recently-viewed-strip .prop-icon-badge svg{width:11px;height:11px}
+.recently-viewed-strip .prop-icon-badge.prop-icon-call svg{width:12px;height:12px}
+.recently-viewed-strip .prop-icon-badge.prop-views-float .prop-views-float-badge{top:-6px;left:-6px;min-width:14px;height:14px;font-size:8px}
+.recently-viewed-strip .prop-badge-type-letter{width:23px;height:23px;font-size:11px}
 .rv-card{position:relative;flex:0 0 var(--rv-card-w, 260px);border:1px solid var(--border);border-radius:16px;overflow:hidden;cursor:pointer;background:var(--bg);transition:box-shadow .15s,transform .15s}
 .rv-card:hover{box-shadow:0 4px 14px rgba(0,0,0,.08);transform:translateY(-1px)}
 .rv-card-thumb{width:100%;aspect-ratio:4/3;background-size:cover;background-position:center;background-color:var(--bg-2);display:flex;align-items:center;justify-content:center;color:var(--text-3);font-size:12px}
@@ -3851,10 +3851,15 @@ main.tab-explore .empty-state{display:none !important}
      Viewed (see renderBookedSections()), so the compact-card rules above
      already apply to it identically — no separate #bookedSection rules
      needed here anymore. */
-  .recently-viewed-strip .prop-right-badges{transform:scale(.62)}
-  .recently-viewed-strip .prop-heart{width:20px;height:20px}
-  .recently-viewed-strip .prop-icon-badge{width:18px;height:18px}
-  .recently-viewed-strip .prop-badge-type-letter{width:18px;height:18px;font-size:9.5px}
+  /* Cards grew taller on mobile (see .recently-viewed-strip .prop-img
+     aspect-ratio above) but stayed the same width, so the badge stack
+     has more headroom now — scale it down less aggressively and bump
+     the explicit sizes so the buttons read proportionate to the bigger
+     card instead of staying pinned to the old square card's cramped size. */
+  .recently-viewed-strip .prop-right-badges{transform:scale(.85)}
+  .recently-viewed-strip .prop-heart{width:23px;height:23px}
+  .recently-viewed-strip .prop-icon-badge{width:20px;height:20px}
+  .recently-viewed-strip .prop-badge-type-letter{width:20px;height:20px;font-size:10px}
 
   /* Compact sizing for the 2-up mobile card so title/price/deposit/buttons
      don't get squeezed or overflow the narrower card width. */
