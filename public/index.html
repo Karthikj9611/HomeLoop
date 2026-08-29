@@ -138,7 +138,16 @@ ul{list-style:none}
    Scoped by ID suffix since all four Booked grids share the plain
    .prop-grid class with the live grids. */
 [id$="BookedGrid"] .prop-left-badges{display:none}
-[id$="BookedGrid"] .prop-card-top-row{justify-content:flex-end}
+[id$="BookedGrid"] .prop-card-top-row{top:8px;left:8px;justify-content:flex-end}
+/* Booked listings are off-market and Recently Viewed is a quick-glance
+   revisit strip — calling the agent or shortlisting isn't a relevant action
+   in either place, so both icons are dropped from the floating badge stack
+   there. Higher specificity than the base .prop-heart/.prop-icon-call rules
+   so this always wins regardless of stylesheet order. */
+[id$="BookedGrid"] .prop-heart,
+[id$="BookedGrid"] .prop-icon-call,
+#recentlyViewedStrip .prop-heart,
+#recentlyViewedStrip .prop-icon-call{display:none}
 /* ─── Scrollbar ────────────────────────────────── */
 ::-webkit-scrollbar{width:4px;height:4px}
 ::-webkit-scrollbar-track{background:transparent}
@@ -1750,13 +1759,20 @@ main.tab-explore .empty-state{display:none !important}
 }
 
 /* ─── Recently Viewed ──────────────────────────── */
-.recently-viewed-section{padding-bottom:4px}
+/* No padding-bottom here: regular sections (Promoted/Rent/Lease/PG grids)
+   rely solely on the next section-divider's own top padding for the gap
+   before it — this section and Booked below match that instead of adding
+   their own extra space on top, or Viewed reads with a bigger gap before
+   whatever comes next than every other section transition gets. */
 .recently-viewed-clear{background:none;border:none;color:var(--brand);font-size:13px;font-weight:600;cursor:pointer;padding:4px 6px;white-space:nowrap;display:flex;align-items:center;gap:4px}
 .recently-viewed-clear:hover{opacity:.75}
 .recently-viewed-strip{
   display:flex;
   gap:16px;
-  padding:16px 20px 8px;
+  /* No bottom padding — matches every regular .prop-grid (which has none of
+     its own either), so the gap before whatever section comes next is owned
+     entirely by that next section-divider's top padding, same as elsewhere. */
+  padding:16px 20px 0;
   overflow-x:auto;
   scrollbar-width:thin;
   overscroll-behavior-x:contain;
@@ -1769,22 +1785,38 @@ main.tab-explore .empty-state{display:none !important}
    dimensions, not a visual-only transform:scale, so the stack actually
    occupies less height and never overflows past the image) — so it reads
    as a quick-glance revisit list rather than a full listing card identical
-   to the main grid/shortlist. */
-.recently-viewed-strip .prop-img{aspect-ratio:4/3.3}
-.recently-viewed-strip .prop-body{padding:8px 10px 7px}
-.recently-viewed-strip .prop-title{font-size:12.5px;margin-top:0}
-.recently-viewed-strip .prop-loc{font-size:11.5px;margin-top:3px}
-.recently-viewed-strip .prop-stats{margin-top:5px;gap:2px 0}
-.recently-viewed-strip .prop-stat{font-size:11px}
+   to the main grid/shortlist. Booked cards are read-only/off-market in the
+   same way, so every rule here is mirrored onto the Booked grid's cards too
+   ([id$="BookedGrid"]) for exact visual parity — only the surrounding grid
+   layout (auto-fill columns vs. horizontal strip) differs. */
+.recently-viewed-strip .prop-img,
+[id$="BookedGrid"] .prop-img{aspect-ratio:4/3.3}
+.recently-viewed-strip .prop-body,
+[id$="BookedGrid"] .prop-body{padding:8px 10px 7px}
+.recently-viewed-strip .prop-title,
+[id$="BookedGrid"] .prop-title{font-size:12.5px;margin-top:0}
+.recently-viewed-strip .prop-loc,
+[id$="BookedGrid"] .prop-loc{font-size:11.5px;margin-top:3px}
+.recently-viewed-strip .prop-stats,
+[id$="BookedGrid"] .prop-stats{margin-top:5px;gap:2px 0}
+.recently-viewed-strip .prop-stat,
+[id$="BookedGrid"] .prop-stat{font-size:11px}
 .recently-viewed-strip .prop-card-top-row{top:8px;left:8px;justify-content:flex-end}
-.recently-viewed-strip .prop-right-badges{gap:6px}
+.recently-viewed-strip .prop-right-badges,
+[id$="BookedGrid"] .prop-right-badges{gap:6px}
 .recently-viewed-strip .prop-left-badges{display:none}
-.recently-viewed-strip .prop-heart{width:23px;height:23px}
-.recently-viewed-strip .prop-heart svg{width:11px;height:11px}
-.recently-viewed-strip .prop-icon-badge{width:20px;height:20px}
-.recently-viewed-strip .prop-icon-badge svg{width:10px;height:10px}
-.recently-viewed-strip .prop-icon-badge.prop-icon-call svg{width:11px;height:11px}
-.recently-viewed-strip .prop-icon-badge.prop-views-float .prop-views-float-badge{top:-5px;left:-5px;min-width:13px;height:13px;font-size:7.5px}
+.recently-viewed-strip .prop-heart,
+[id$="BookedGrid"] .prop-heart{width:23px;height:23px}
+.recently-viewed-strip .prop-heart svg,
+[id$="BookedGrid"] .prop-heart svg{width:11px;height:11px}
+.recently-viewed-strip .prop-icon-badge,
+[id$="BookedGrid"] .prop-icon-badge{width:20px;height:20px}
+.recently-viewed-strip .prop-icon-badge svg,
+[id$="BookedGrid"] .prop-icon-badge svg{width:10px;height:10px}
+.recently-viewed-strip .prop-icon-badge.prop-icon-call svg,
+[id$="BookedGrid"] .prop-icon-badge.prop-icon-call svg{width:11px;height:11px}
+.recently-viewed-strip .prop-icon-badge.prop-views-float .prop-views-float-badge,
+[id$="BookedGrid"] .prop-icon-badge.prop-views-float .prop-views-float-badge{top:-5px;left:-5px;min-width:13px;height:13px;font-size:7.5px}
 .rv-card{position:relative;flex:0 0 var(--rv-card-w, 260px);border:1px solid var(--border);border-radius:16px;overflow:hidden;cursor:pointer;background:var(--bg);transition:box-shadow .15s,transform .15s}
 .rv-card:hover{box-shadow:0 4px 14px rgba(0,0,0,.08);transform:translateY(-1px)}
 .rv-card-thumb{width:100%;aspect-ratio:4/3;background-size:cover;background-position:center;background-color:var(--bg-2);display:flex;align-items:center;justify-content:center;color:var(--text-3);font-size:12px}
@@ -3828,28 +3860,60 @@ main.tab-explore .empty-state{display:none !important}
   .prop-grid.list-view{grid-template-columns:1fr 1fr;gap:10px}
   .prop-card.list-view{flex-direction:column}
   .prop-card.list-view .prop-img{width:100%;aspect-ratio:4/3;height:auto;min-height:0;border-radius:0}
-  .recently-viewed-strip{gap:8px;padding:10px 12px 4px}
+  .recently-viewed-strip{gap:8px;padding:10px 12px 0}
   .recently-viewed-clear{padding:6px;gap:0}
   .recently-viewed-clear-label{display:none}
   /* 3-up mobile Recently Viewed: mobile-only simplification — desktop keeps
      the full card (ID/type/location/date/stats, full price ribbon). On
      mobile, at this smaller 3-up card size, drop the body block entirely
-     and show just the rent chip in the ribbon. */
-  .recently-viewed-strip .prop-body{display:none}
-  .recently-viewed-strip .prop-img-price .price-chip:not(.price-chip-rent){display:none}
-  .recently-viewed-strip .prop-img-price{left:0;right:auto;width:50%;max-width:50%;padding:4px 6px}
-  .recently-viewed-strip .prop-img-price .price-chip-rent{padding:0}
+     and show just the rent chip in the ribbon. Booked is mirrored here too
+     ([id$="BookedGrid"]), same as the desktop rules above, so Viewed and
+     Booked cards match exactly on mobile as well. */
+  .recently-viewed-strip .prop-body,
+  [id$="BookedGrid"] .prop-body{display:none}
+  .recently-viewed-strip .prop-img-price .price-chip:not(.price-chip-rent),
+  [id$="BookedGrid"] .prop-img-price .price-chip:not(.price-chip-rent){display:none}
+  .recently-viewed-strip .prop-img-price,
+  [id$="BookedGrid"] .prop-img-price{left:0;right:auto;width:50%;max-width:50%;padding:4px 6px}
+  .recently-viewed-strip .prop-img-price .price-chip-rent,
+  [id$="BookedGrid"] .prop-img-price .price-chip-rent{padding:0}
   /* Compact "22K/M" reading — hide the full-word and short-word ("Mo") unit
      spans and swap in a bare "M" via ::after, so the rent chip fits
      comfortably inside the half-width ribbon above. */
   .recently-viewed-strip .prop-img-price .prop-price-unit .unit-full,
-  .recently-viewed-strip .prop-img-price .prop-price-unit .unit-short{display:none}
-  .recently-viewed-strip .prop-img-price .prop-price-unit::after{content:'M'}
+  [id$="BookedGrid"] .prop-img-price .prop-price-unit .unit-full,
+  .recently-viewed-strip .prop-img-price .prop-price-unit .unit-short,
+  [id$="BookedGrid"] .prop-img-price .prop-price-unit .unit-short{display:none}
+  .recently-viewed-strip .prop-img-price .prop-price-unit::after,
+  [id$="BookedGrid"] .prop-img-price .prop-price-unit::after{content:'M'}
   .recently-viewed-strip .prop-img-price .prop-price-chips .price-chip .prop-price,
-  .recently-viewed-strip .prop-img-price .prop-price-chips .price-chip .prop-price-unit{font-size:9px}
-  .recently-viewed-strip .prop-right-badges{transform:scale(.62)}
-  .recently-viewed-strip .prop-heart{width:20px;height:20px}
-  .recently-viewed-strip .prop-icon-badge{width:18px;height:18px}
+  [id$="BookedGrid"] .prop-img-price .prop-price-chips .price-chip .prop-price,
+  .recently-viewed-strip .prop-img-price .prop-price-chips .price-chip .prop-price-unit,
+  [id$="BookedGrid"] .prop-img-price .prop-price-chips .price-chip .prop-price-unit{font-size:9px}
+  .recently-viewed-strip .prop-right-badges,
+  [id$="BookedGrid"] .prop-right-badges{transform:scale(.62)}
+  .recently-viewed-strip .prop-heart,
+  [id$="BookedGrid"] .prop-heart{width:20px;height:20px}
+  .recently-viewed-strip .prop-icon-badge,
+  [id$="BookedGrid"] .prop-icon-badge{width:18px;height:18px}
+  /* Card styling above already matches Viewed, but Booked was still laid
+     out as a 2-up grid while Viewed is a horizontally-scrolling 3-up strip
+     — different container shapes meant different card widths even with
+     identical card CSS. Switching Booked to the same flex-strip layout,
+     with the same flex-basis var (see syncRecentlyViewedCardWidth, which
+     now sizes every [id$="BookedGrid"] the same way it sizes
+     #recentlyViewedStrip), makes the two match in width/height too. */
+  [id$="BookedGrid"]{
+    display:flex;
+    gap:8px;
+    padding:10px 12px 0;
+    overflow-x:auto;
+    scrollbar-width:thin;
+    overscroll-behavior-x:contain;
+  }
+  [id$="BookedGrid"]::-webkit-scrollbar{height:6px}
+  [id$="BookedGrid"]::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+  [id$="BookedGrid"] .prop-card{flex:0 0 var(--rv-card-w, 220px)}
 
   /* Compact sizing for the 2-up mobile card so title/price/deposit/buttons
      don't get squeezed or overflow the narrower card width. */
@@ -4077,6 +4141,22 @@ main.tab-explore .empty-state{display:none !important}
   text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;
 }
 #imgZoomCaption.show{display:block}
+
+/* With Call and Shortlist gone from Viewed/Booked cards, the remaining
+   Views/Compare icons have room to breathe — bump them up a little on
+   mobile only, where the badge stack is smallest to begin with. Desktop
+   is left untouched. ID-scoped selectors here out-specificity the base
+   mobile scale rules above, so these apply regardless of source order.
+   Booked uses the exact same scale/size as Recently Viewed here (rather
+   than its own value) so the two match exactly on mobile too. */
+@media(max-width:768px){
+  [id$="BookedGrid"] .prop-right-badges,
+  #recentlyViewedStrip .prop-right-badges{transform:scale(0.78);transform-origin:top right}
+  [id$="BookedGrid"] .prop-icon-badge,
+  #recentlyViewedStrip .prop-icon-badge{width:22px;height:22px}
+  [id$="BookedGrid"] .prop-icon-badge svg,
+  #recentlyViewedStrip .prop-icon-badge svg{width:12px;height:12px}
+}
 
 </style>
 </head>
@@ -7448,20 +7528,35 @@ function renderRecentlyViewed() {
 // fit per screen, all details legible — while staying horizontally
 // scrollable/slidable to reach the rest.
 const RV_CARD_SCALE = 0.85;
+// Mobile-only 3-up sizing, shared between the Viewed strip and every Booked
+// strip: reads the container's own width/gap/padding and fits 3 cards. Each
+// container gets the var set on itself (not inherited from Viewed) since
+// Booked grids aren't descendants of #recentlyViewedStrip — but the same
+// formula on containers with the same gap/padding yields the same width, so
+// Viewed and Booked end up pixel-matched on mobile without being coupled.
+function mobileStripCardWidth(el) {
+  const cs = getComputedStyle(el);
+  const gap = parseFloat(cs.columnGap || cs.gap) || 8;
+  const padL = parseFloat(cs.paddingLeft) || 0;
+  const padR = parseFloat(cs.paddingRight) || 0;
+  const available = el.clientWidth - padL - padR - gap * 2;
+  return available / 3;
+}
 function syncRecentlyViewedCardWidth() {
   const strip = document.getElementById('recentlyViewedStrip');
-  if (!strip) return;
   const isMobile = window.innerWidth <= 768;
   if (isMobile) {
-    const cs = getComputedStyle(strip);
-    const gap = parseFloat(cs.columnGap || cs.gap) || 8;
-    const padL = parseFloat(cs.paddingLeft) || 0;
-    const padR = parseFloat(cs.paddingRight) || 0;
-    const available = strip.clientWidth - padL - padR - gap * 2;
-    const w = available / 3;
-    if (w > 0) strip.style.setProperty('--rv-card-w', w + 'px');
+    if (strip) {
+      const w = mobileStripCardWidth(strip);
+      if (w > 0) strip.style.setProperty('--rv-card-w', w + 'px');
+    }
+    document.querySelectorAll('[id$="BookedGrid"]').forEach(grid => {
+      const w = mobileStripCardWidth(grid);
+      if (w > 0) grid.style.setProperty('--rv-card-w', w + 'px');
+    });
     return;
   }
+  if (!strip) return;
   const sample = document.querySelector('.prop-grid .prop-card');
   if (!sample) return;
   const w = sample.getBoundingClientRect().width * RV_CARD_SCALE;
@@ -7725,15 +7820,28 @@ function renderBookedSections() {
     const items = groups[key];
     if (items.length === 0) {
       divider.style.display = 'none';
+      // Also hide the grid itself, not just clear it — as a flex strip (see
+      // the [id$="BookedGrid"] mobile rules) it still has its own top
+      // padding even with zero cards inside, so leaving it merely empty (as
+      // opposed to a regular .prop-grid, which has no vertical padding of
+      // its own and collapses to 0 height either way) added a stray ~10px
+      // gap for every unused Booked bucket sitting between the one that's
+      // actually showing and whatever section comes after it.
+      grid.style.display = 'none';
       grid.innerHTML = '';
       return;
     }
 
     divider.style.display = '';
+    grid.style.display = '';
     document.getElementById(key + 'BookedCount').textContent = items.length;
     grid.className = gridClass;
     grid.innerHTML = items.map(p => cardHTML(p, key !== 'promoted')).join('');
   });
+  // Booked grids are sized on mobile the same way the Viewed strip is (see
+  // syncRecentlyViewedCardWidth) — needs a fresh run once cards are in the
+  // DOM so clientWidth reflects the just-rendered content.
+  requestAnimationFrame(syncRecentlyViewedCardWidth);
 }
 
 // Only the stat/amenity row's own JS knows whether it truly overflows its
@@ -7845,6 +7953,20 @@ function buildVideoSlideHtml(p) {
   return body + actions;
 }
 
+// Viewed and Booked cards are read-only quick-glance cards — no call/
+// shortlist/compare actions (those icons are hidden there already), so
+// tapping the photo should behave like tapping the rest of the card and go
+// straight to the property view, rather than opening the zoom lightbox the
+// way an image tap does everywhere else (main grid, shortlist, etc.), where
+// the photo is genuinely worth a closer look before the user commits to
+// opening the full listing.
+function handleCardImgClick(el, id, idx) {
+  if (el.closest('.recently-viewed-strip') || el.closest('[id$="BookedGrid"]')) {
+    openDetail(id);
+  } else {
+    openLightbox(id, idx);
+  }
+}
 function buildImgSlider(p, fg, uidSuffix, videoSlideHtml) {
   const imgs = (p.media?.images && p.media.images.length) ? p.media.images : [];
   if (imgs.length === 0 && !videoSlideHtml) {
@@ -7862,7 +7984,7 @@ function buildImgSlider(p, fg, uidSuffix, videoSlideHtml) {
   // reveals them, since they load together with the first slide as soon as
   // the card itself is in view.
   const imgSlides = imgs.map((url, i) =>
-    `<img class="img-slide${i===0?' active':''}" src="${safeUrl(url)}"${i===0?' loading="lazy"':''} decoding="async" alt="" onclick="event.stopPropagation();openLightbox('${p.id}',${i})" />`
+    `<img class="img-slide${i===0?' active':''}" src="${safeUrl(url)}"${i===0?' loading="lazy"':''} decoding="async" alt="" onclick="event.stopPropagation();handleCardImgClick(this,'${p.id}',${i})" />`
   ).join('');
   // Video tour, when present, always comes after every photo — the last
   // slide in the same swipeable gallery rather than a separate section.
