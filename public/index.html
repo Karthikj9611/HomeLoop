@@ -139,15 +139,13 @@ ul{list-style:none}
    .prop-grid class with the live grids. */
 [id$="BookedGrid"] .prop-left-badges{display:none}
 [id$="BookedGrid"] .prop-card-top-row{top:8px;left:8px;justify-content:flex-end}
-/* Booked listings are off-market and Recently Viewed is a quick-glance
-   revisit strip — calling the agent or shortlisting isn't a relevant action
-   in either place, so both icons are dropped from the floating badge stack
-   there. Higher specificity than the base .prop-heart/.prop-icon-call rules
-   so this always wins regardless of stylesheet order. */
+/* Shortlisting isn't a relevant action for a quick-glance revisit strip or
+   an off-market booked listing, so the heart stays hidden in both — but the
+   call button is kept (re-enabled per request) so a visitor can still reach
+   the agent straight from these cards. Higher specificity than the base
+   .prop-heart rule so this always wins regardless of stylesheet order. */
 [id$="BookedGrid"] .prop-heart,
-[id$="BookedGrid"] .prop-icon-call,
-#recentlyViewedStrip .prop-heart,
-#recentlyViewedStrip .prop-icon-call{display:none}
+#recentlyViewedStrip .prop-heart{display:none}
 /* ─── Scrollbar ────────────────────────────────── */
 ::-webkit-scrollbar{width:4px;height:4px}
 ::-webkit-scrollbar-track{background:transparent}
