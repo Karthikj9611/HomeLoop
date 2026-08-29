@@ -4140,6 +4140,10 @@ main.tab-explore .empty-state{display:none !important}
 /* ─── Card image slider ─────────────────────────── */
 .img-slides{position:absolute;inset:0;width:100%;height:100%;overflow:hidden;cursor:grab;touch-action:pan-y}
 .img-slides:active{cursor:grabbing}
+.recently-viewed-strip .img-slides,
+[id$="BookedGrid"] .img-slides{cursor:pointer}
+.recently-viewed-strip .img-slides:active,
+[id$="BookedGrid"] .img-slides:active{cursor:pointer}
 .img-slide{display:none;position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background-color:var(--bg-3);pointer-events:none;vertical-align:top}
 .img-slide.active{display:block}
 .img-slide.active{pointer-events:auto}
@@ -8077,6 +8081,7 @@ function slideStep(uid, dir) {
   document.addEventListener('touchstart', function(e){
     const el = e.target.closest('.img-slides');
     if (!el || !el.id) { active = null; return; }
+    if (el.closest('.recently-viewed-strip, [id$="BookedGrid"]')) { active = null; return; }
     if (el.querySelectorAll('.img-slide').length < 2) { active = null; return; }
     active = el;
     sx = e.touches[0].clientX;
@@ -8103,6 +8108,7 @@ function slideStep(uid, dir) {
   document.addEventListener('mousedown', function(e){
     const el = e.target.closest('.img-slides');
     if (!el || !el.id) { active = null; return; }
+    if (el.closest('.recently-viewed-strip, [id$="BookedGrid"]')) { active = null; return; }
     if (el.querySelectorAll('.img-slide').length < 2) { active = null; return; }
     active = el;
     mx = e.clientX;
