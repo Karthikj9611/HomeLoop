@@ -711,13 +711,26 @@ main.tab-explore .empty-state{display:none !important}
   pointer-events:auto;
   overflow-x:auto;overflow-y:hidden;-ms-overflow-style:none;scrollbar-width:none;
 }
+/* Property-ID readout at the opposite corner from the price ribbon — only
+   ever shown on Viewed/Booked mobile cards (see the mobile media query
+   below), since that's the one place the body block (which normally shows
+   the ID) is hidden entirely. Hidden here by default so it's inert
+   everywhere else (main grid, shortlist, desktop Viewed/Booked). */
+.prop-img-id-badge{display:none}
 /* Only a single chip (rent alone, e.g. Short Stay): the colored bar hugs
    its content instead of stretching the full image width, so the
    property photo shows through the rest of the strip. With 2+ chips the
    bar spans full width and they divide it equally (see .price-chips-equal
-   below). */
+   below). Actually sized to content (width:max-content) rather than a flat
+   50% — a fixed half-width comment-said "hugs its content" but wasn't:
+   for Rent/Short Stay's short "/ Month"/"/ Day" it happened to look right,
+   but Lease's rent unit can be a full duration like "2 Years", which is
+   wider than half the image on a normal-size card and got clipped at the
+   ribbon's right edge (worse on the smaller Viewed/Booked cards). Genuinely
+   hugging the content — capped at the image's full width as a backstop —
+   fixes that for every card size, not just a narrower one. */
 .prop-img-price.prop-img-price-fit{
-  right:auto;width:50%;max-width:100%;
+  right:auto;width:max-content;max-width:100%;
 }
 .prop-img-price::-webkit-scrollbar{display:none}
 .prop-img-price .prop-price-chips,
@@ -1780,6 +1793,22 @@ main.tab-explore .empty-state{display:none !important}
 .recently-viewed-strip::-webkit-scrollbar{height:6px}
 .recently-viewed-strip::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
 .recently-viewed-strip .prop-card{flex:0 0 var(--rv-card-w, 220px)}
+/* Booked mirrors Viewed's container layout too now (horizontal strip, same
+   card width), not just its card styling — so [id$="BookedGrid"] repeats
+   the exact same strip rules as .recently-viewed-strip above, on desktop as
+   well as mobile (see the mobile-only block further down for the small-
+   screen version of this same pairing). */
+[id$="BookedGrid"]{
+  display:flex;
+  gap:16px;
+  padding:16px 20px 0;
+  overflow-x:auto;
+  scrollbar-width:thin;
+  overscroll-behavior-x:contain;
+}
+[id$="BookedGrid"]::-webkit-scrollbar{height:6px}
+[id$="BookedGrid"]::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+[id$="BookedGrid"] .prop-card{flex:0 0 var(--rv-card-w, 220px)}
 /* Viewed strip uses a visibly smaller/compact version of the standard card —
    shorter image, tighter body padding, and genuinely smaller badges (real
    dimensions, not a visual-only transform:scale, so the stack actually
@@ -1787,8 +1816,8 @@ main.tab-explore .empty-state{display:none !important}
    as a quick-glance revisit list rather than a full listing card identical
    to the main grid/shortlist. Booked cards are read-only/off-market in the
    same way, so every rule here is mirrored onto the Booked grid's cards too
-   ([id$="BookedGrid"]) for exact visual parity — only the surrounding grid
-   layout (auto-fill columns vs. horizontal strip) differs. */
+   ([id$="BookedGrid"]) for exact visual parity — including the surrounding
+   strip layout now, per the rule pair just above. */
 .recently-viewed-strip .prop-img,
 [id$="BookedGrid"] .prop-img{aspect-ratio:4/3.3}
 .recently-viewed-strip .prop-body,
@@ -3874,7 +3903,7 @@ main.tab-explore .empty-state{display:none !important}
   .recently-viewed-strip .prop-img-price .price-chip:not(.price-chip-rent),
   [id$="BookedGrid"] .prop-img-price .price-chip:not(.price-chip-rent){display:none}
   .recently-viewed-strip .prop-img-price,
-  [id$="BookedGrid"] .prop-img-price{left:0;right:auto;width:50%;max-width:50%;padding:4px 6px}
+  [id$="BookedGrid"] .prop-img-price{left:auto;right:0;width:50%;max-width:50%;padding:4px 6px;box-sizing:border-box}
   .recently-viewed-strip .prop-img-price .price-chip-rent,
   [id$="BookedGrid"] .prop-img-price .price-chip-rent{padding:0}
   /* Compact "22K/M" reading — hide the full-word and short-word ("Mo") unit
@@ -3896,6 +3925,21 @@ main.tab-explore .empty-state{display:none !important}
   [id$="BookedGrid"] .prop-heart{width:20px;height:20px}
   .recently-viewed-strip .prop-icon-badge,
   [id$="BookedGrid"] .prop-icon-badge{width:18px;height:18px}
+  /* Property ID takes the left half (where the price ribbon used to sit),
+     price now takes the right half — one seamless full-width bottom bar,
+     split 50/50, instead of the price ribbon hugging its own content with
+     the ID floating separately. Same height/padding as the price ribbon
+     (see .prop-img-price above) so the two halves line up exactly. */
+  .recently-viewed-strip .prop-img-id-badge,
+  [id$="BookedGrid"] .prop-img-id-badge{
+    display:flex;align-items:center;
+    position:absolute;left:0;right:auto;bottom:0;top:auto;z-index:2;
+    width:50%;max-width:50%;box-sizing:border-box;
+    background:rgba(20,16,17,.55);color:#fff;
+    font-size:9px;font-weight:700;letter-spacing:.01em;line-height:1.2;
+    padding:4px 6px;border-radius:0;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  }
   /* Card styling above already matches Viewed, but Booked was still laid
      out as a 2-up grid while Viewed is a horizontally-scrolling 3-up strip
      — different container shapes meant different card widths even with
@@ -7544,23 +7588,31 @@ function mobileStripCardWidth(el) {
 }
 function syncRecentlyViewedCardWidth() {
   const strip = document.getElementById('recentlyViewedStrip');
+  const bookedGrids = document.querySelectorAll('[id$="BookedGrid"]');
   const isMobile = window.innerWidth <= 768;
   if (isMobile) {
     if (strip) {
       const w = mobileStripCardWidth(strip);
       if (w > 0) strip.style.setProperty('--rv-card-w', w + 'px');
     }
-    document.querySelectorAll('[id$="BookedGrid"]').forEach(grid => {
+    bookedGrids.forEach(grid => {
       const w = mobileStripCardWidth(grid);
       if (w > 0) grid.style.setProperty('--rv-card-w', w + 'px');
     });
     return;
   }
-  if (!strip) return;
-  const sample = document.querySelector('.prop-grid .prop-card');
+  // Desktop: scale relative to a real full-size grid card. Booked/Viewed
+  // cards are excluded from the sample query — now that Booked is a strip
+  // too, both are .prop-grid .prop-card same as a regular listing card, and
+  // Booked's markup comes first in the DOM, so without the exclusion this
+  // would sample an already-shrunk Booked card and compound the shrink on
+  // every resize instead of always scaling off a true full-size reference.
+  const sample = document.querySelector('.prop-grid:not([id$="BookedGrid"]) .prop-card');
   if (!sample) return;
   const w = sample.getBoundingClientRect().width * RV_CARD_SCALE;
-  if (w > 0) strip.style.setProperty('--rv-card-w', w + 'px');
+  if (w <= 0) return;
+  if (strip) strip.style.setProperty('--rv-card-w', w + 'px');
+  bookedGrids.forEach(grid => grid.style.setProperty('--rv-card-w', w + 'px'));
 }
 window.addEventListener('resize', () => { clearTimeout(window._rvWidthTimer); window._rvWidthTimer = setTimeout(syncRecentlyViewedCardWidth, 150); });
 
@@ -8338,6 +8390,7 @@ function cardHTML(p, compact, extraLeftBadge) {
     <div class="prop-img" style="background:${bg}" data-idx="0">
       ${buildImgSlider(p, fg, '-grid')}
       ${priceChipsHTML(p, pType, deposit, maintenance, leaseDur, {ribbon:true})}
+      <span class="prop-img-id-badge">${esc(p.propertyId || '')}</span>
       <div class="prop-card-top-row">
         <div class="prop-left-badges">
           ${(!compact && !['Rent','Lease','PG','ShortStay'].includes(currentTab)) ? `<span class="prop-badge-type-letter${pTypeLetter.length>1?' wide':''} badge-${pType.toLowerCase()}" title="${pType}">${pTypeLetter}</span>` : ''}
