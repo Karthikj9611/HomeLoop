@@ -8149,6 +8149,11 @@ function preloadLightboxNeighbors() {
 function openLightbox(propId, idx) {
   const p = PROPERTIES.find(x => x.id === propId) || BOOKED_PROPERTIES.find(x => x.id === propId);
   if (!p || !p.media?.images || !p.media.images.length) return;
+  closeAllFd();        // the image's own onclick stops propagation (see below),
+                        // so the document-level outside-click listener that
+                        // normally closes open filter dropdowns never fires —
+                        // close them explicitly so one doesn't get left
+                        // floating (z-index:2000) on top of the lightbox
   incrementViews(p);   // clicking a card's photo also counts as a view — the
                         // image's own onclick stops propagation so it never
                         // reaches the card's openDetail(id) handler
@@ -10471,6 +10476,12 @@ let editingPropertyId = null;
 function openDetail(id) {
   const p = PROPERTIES.find(x => x.id === id) || BOOKED_PROPERTIES.find(x => x.id === id);
   if (!p) return;
+  closeAllFd();        // clicks that reach here (card body, or an image/icon
+                        // whose own onclick stopped propagation) may never
+                        // reach the document-level listener that normally
+                        // closes open filter dropdowns — close them here too
+                        // so one doesn't stay floating (z-index:2000) on top
+                        // of the detail modal
   incrementViews(p);   // count this open as a view, persisted to storage
   // Booked listings are read-only/off-market — they don't belong in Recently
   // Viewed, so only record it when it's a live (non-booked) property, i.e.
@@ -10747,6 +10758,11 @@ function openScheduleModal(propId) {
   if (!getLoggedInUser()) { showToast('Please log in to schedule a visit', 'warning'); openAuthModal(); return; }
   const p = PROPERTIES.find(x => x.id === propId);
   if (!p) return;
+  closeAllFd();        // this is triggered by a quick-action icon whose own
+                        // onclick stops propagation, so it never reaches the
+                        // document-level listener that closes open filter
+                        // dropdowns — close them here so one doesn't stay
+                        // floating (z-index:2000) on top of this modal
   scheduleForPropId = propId;
   document.getElementById('scheduleModalSubtitle').textContent = (p.propertyId || '') + ' · ' + (p.location?.area || '');
   // reset fields, pre-filling name/phone if the visitor is logged in
@@ -10922,6 +10938,11 @@ function openBookingModal(propId) {
   if (!getLoggedInUser()) { showToast('Please log in to book', 'warning'); openAuthModal(); return; }
   const p = PROPERTIES.find(x => x.id === propId);
   if (!p) return;
+  closeAllFd();        // this is triggered by a quick-action icon whose own
+                        // onclick stops propagation, so it never reaches the
+                        // document-level listener that closes open filter
+                        // dropdowns — close them here so one doesn't stay
+                        // floating (z-index:2000) on top of this modal
   bookingForPropId = propId;
   document.getElementById('bookingModalSubtitle').textContent = (p.propertyId || '') + ' · ' + (p.location?.area || '');
   const user = getLoggedInUser();
