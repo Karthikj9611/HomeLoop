@@ -2193,6 +2193,11 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
       <span class="tab-btn-label" data-mobile="Reviews">Honest Reviews</span>
       <span class="tab-count" id="tab-honest-reviews-count">—</span>
     </button>
+    <button class="tab-btn" id="tab-partners" onclick="switchTab('partners')">
+      <i class="fas fa-handshake"></i>
+      <span class="tab-btn-label" data-mobile="Partners">Partners</span>
+      <span class="tab-count" id="tab-partners-count">—</span>
+    </button>
   </div>
 
 
@@ -2708,6 +2713,45 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
               <th>Video</th>
               <th>Meta</th>
               <th>Status</th>
+              <th>Active</th>
+              <th>Order</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td colspan="7" class="empty-state"><i class="fas fa-circle-notch fa-spin"></i>Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ PARTNERS PANEL ══ -->
+  <div class="tab-panel" id="panel-partners">
+    <div class="card">
+      <div class="table-wrapper">
+        <div class="bulk-toolbar" id="partnerBulkToolbar">
+          <div class="bulk-toolbar-left">
+            <button type="button" class="bulk-selected-count" id="partnerSelectedCount" style="display:none" onclick="clearPartnerSelection()" title="Clear selection">
+              <i class="fas fa-check-circle bulk-selected-icon"></i> <span id="partnerSelectedNum" class="bulk-selected-num">0</span><span class="bulk-btn-label" data-mobile="Selected"> selected</span> <span class="bulk-selected-clear-x">X</span>
+            </button>
+            <button type="button" class="bulk-btn bulk-btn-danger" id="partnerDeleteSelectedBtn" style="display:none" onclick="deleteSelectedPartners()">
+              <i class="fas fa-trash"></i> <span class="bulk-btn-label" data-mobile="Delete">Delete (<span id="partnerDeleteCount">0</span>)</span>
+            </button>
+          </div>
+          <div class="bulk-toolbar-right">
+            <button class="btn-add-review" onclick="openPartnerModal()" title="Add partner">
+              <i class="fas fa-plus"></i> <span class="bulk-btn-label" data-mobile="Add">Add Partner</span>
+            </button>
+          </div>
+        </div>
+        <table id="partnersTable" class="display nowrap" style="width:100%">
+          <thead>
+            <tr>
+              <th><input type="checkbox" class="partner-select-all-checkbox" id="partnerSelectAllCheckbox" onchange="onPartnerSelectAllChange(this)"></th>
+              <th>Partner</th>
+              <th>Contact</th>
+              <th>Location</th>
               <th>Active</th>
               <th>Order</th>
               <th>Action</th>
@@ -3309,7 +3353,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
 
 <script>
 
-let dataTable, propTable, apptTable, honestReviewsTable;
+let dataTable, propTable, apptTable, honestReviewsTable, partnersTable;
 
 
 const BASE = 'https://www.homeloop.in';
@@ -3602,6 +3646,9 @@ function switchTab(tab){
   }
   if(tab === 'honest-reviews' && honestReviewsTable){
     setTimeout(()=>{ honestReviewsTable.columns.adjust().draw(false); }, 50);
+  }
+  if(tab === 'partners' && partnersTable){
+    setTimeout(()=>{ partnersTable.columns.adjust().draw(false); }, 50);
   }
 }
 
@@ -4228,6 +4275,204 @@ window.saveHonestReview = async function(){
     }
     closeHonestReviewModal();
     honestReviewsTable.ajax.reload(null, false);
+  } catch(err){
+    errEl.textContent = 'Save failed. Please try again.';
+    errEl.classList.add('show');
+  } finally {
+    saveBtn.disabled = false;
+  }
+};
+
+/* ── PARTNERS: SELECTION & BULK DELETE ── */
+const _selectedPartnerIds = new Set();
+
+window.onPartnerRowCheck = function(checkboxEl, id){
+  if(checkboxEl.checked) _selectedPartnerIds.add(id);
+  else _selectedPartnerIds.delete(id);
+  updatePartnerBulkToolbarUI();
+  syncPartnerSelectionUI();
+};
+
+window.onPartnerSelectAllChange = function(headerCheckboxEl){
+  const filteredRows = partnersTable.rows({search:'applied'}).data().toArray();
+  if(headerCheckboxEl.checked){
+    filteredRows.forEach(r => _selectedPartnerIds.add(r._id));
+  } else {
+    filteredRows.forEach(r => _selectedPartnerIds.delete(r._id));
+  }
+  partnersTable.draw(false);
+  updatePartnerBulkToolbarUI();
+  syncPartnerSelectionUI();
+  setTimeout(syncPartnerSelectionUI, 0);
+};
+
+function syncVisiblePartnerCheckboxes(){
+  document.querySelectorAll('#partnersTable tbody .partner-row-check').forEach(cb=>{
+    cb.checked = _selectedPartnerIds.has(cb.getAttribute('data-id'));
+  });
+}
+
+function syncPartnerSelectAllCheckbox(){
+  if(typeof partnersTable === 'undefined' || !partnersTable) return;
+  const headerCbs = document.querySelectorAll('.partner-select-all-checkbox');
+  if(!headerCbs.length) return;
+  const filteredRows = partnersTable.rows({search:'applied'}).data().toArray();
+  let checked, indeterminate;
+  if(!filteredRows.length){
+    checked = false; indeterminate = false;
+  } else {
+    const selectedCount = filteredRows.filter(r => _selectedPartnerIds.has(r._id)).length;
+    checked = selectedCount === filteredRows.length;
+    indeterminate = selectedCount > 0 && selectedCount < filteredRows.length;
+  }
+  headerCbs.forEach(cb=>{ cb.checked = checked; cb.indeterminate = indeterminate; });
+}
+
+function syncPartnerSelectionUI(){
+  syncVisiblePartnerCheckboxes();
+  syncPartnerSelectAllCheckbox();
+}
+
+function updatePartnerBulkToolbarUI(){
+  const n = _selectedPartnerIds.size;
+  const countEl   = document.getElementById('partnerSelectedCount');
+  const numEl     = document.getElementById('partnerSelectedNum');
+  const delBtn    = document.getElementById('partnerDeleteSelectedBtn');
+  const delCountEl= document.getElementById('partnerDeleteCount');
+  const show = n > 0;
+  countEl.style.display = show ? 'inline-flex' : 'none';
+  if (delBtn) delBtn.style.display = show ? 'inline-flex' : 'none';
+  numEl.textContent = n;
+  if (delCountEl) delCountEl.textContent = n;
+}
+
+window.clearPartnerSelection = function(){
+  _selectedPartnerIds.clear();
+  partnersTable.draw(false);
+  updatePartnerBulkToolbarUI();
+  syncPartnerSelectionUI();
+  setTimeout(syncPartnerSelectionUI, 0);
+};
+
+window.deleteSelectedPartners = async function(){
+  const ids = Array.from(_selectedPartnerIds);
+  if(!ids.length) return;
+  const ok = await showConfirmModal({
+    title: `Delete ${ids.length} partner${ids.length===1?'':'s'}?`,
+    message: 'This will permanently remove the selected partners. This cannot be undone.'
+  });
+  if(!ok) return;
+  try{
+    const res = await fetch(`${BASE}/api/partners/bulk-delete`, {
+      method:'POST',
+      headers: authHeaders({'Content-Type':'application/json'}),
+      body: JSON.stringify({ ids })
+    });
+    const data = await res.json().catch(()=>({}));
+    if(!res.ok){ alert(data.error || data.message || 'Bulk delete failed'); return; }
+    _selectedPartnerIds.clear();
+    partnersTable.ajax.reload(null, false);
+    updatePartnerBulkToolbarUI();
+  } catch(err){ alert('Bulk delete failed. Please try again.'); }
+};
+
+window.deletePartner = async function(id){
+  if(!await showConfirmModal({ title:'Delete this partner?', message:'This partner card will be permanently removed from the About page.' })) return;
+  try{
+    const res = await fetch(`${BASE}/api/partners/${id}`, { method:'DELETE', headers: authHeaders() });
+    const data = await res.json().catch(()=>({}));
+    if(!res.ok){ alert(data.error || data.message || 'Delete failed'); return; }
+    _selectedPartnerIds.delete(id);
+    partnersTable.ajax.reload(null, false);
+    updatePartnerBulkToolbarUI();
+  } catch(err){ alert('Delete failed. Please try again.'); }
+};
+
+window.togglePartnerActive = async function(id, checkboxEl){
+  const desired = checkboxEl.checked;
+  checkboxEl.disabled = true;
+  try{
+    const res = await fetch(`${BASE}/api/partners/${id}`, {
+      method:'PUT',
+      headers: authHeaders({'Content-Type':'application/json'}),
+      body: JSON.stringify({ active: desired })
+    });
+    const data = await res.json().catch(()=>({}));
+    if(!res.ok){ checkboxEl.checked = !desired; alert(data.error || data.message || 'Failed to update active status'); return; }
+  } catch(err){
+    checkboxEl.checked = !desired;
+    alert('Failed to update active status');
+  } finally {
+    checkboxEl.disabled = false;
+  }
+};
+
+/* ── PARTNERS: ADD / EDIT MODAL ── */
+window.openPartnerModal = function(id){
+  const errEl = document.getElementById('partnerFormError');
+  errEl.classList.remove('show'); errEl.textContent = '';
+  document.getElementById('partnerFormId').value = id || '';
+
+  const row = id ? partnersTable.rows().data().toArray().find(r => r._id === id) : null;
+  document.getElementById('partnerModalTitle').textContent = row ? 'Edit Partner' : 'Add Partner';
+  document.getElementById('partnerFormName').value = row ? (row.name||'') : '';
+  document.getElementById('partnerFormRole').value = row ? (row.role||'') : '';
+  document.getElementById('partnerFormPhone').value = row ? (row.phone||'') : '';
+  document.getElementById('partnerFormEmail').value = row ? (row.email||'') : '';
+  document.getElementById('partnerFormLocation').value = row ? (row.location||'') : '';
+  document.getElementById('partnerFormAvatarText').value = row ? (row.avatarText||'') : '';
+  document.getElementById('partnerFormOrder').value = row ? Number(row.order||0) : 0;
+  document.getElementById('partnerFormActive').checked = row ? row.active !== false : true;
+
+  document.getElementById('partnerModal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+};
+
+function closePartnerModal(){
+  document.getElementById('partnerModal').classList.remove('open');
+  document.body.style.overflow = '';
+}
+window.closePartnerModal = closePartnerModal;
+
+window.savePartner = async function(){
+  const errEl = document.getElementById('partnerFormError');
+  errEl.classList.remove('show'); errEl.textContent = '';
+
+  const id         = document.getElementById('partnerFormId').value.trim();
+  const name       = document.getElementById('partnerFormName').value.trim();
+  const role       = document.getElementById('partnerFormRole').value.trim();
+  const phone      = document.getElementById('partnerFormPhone').value.trim();
+  const email      = document.getElementById('partnerFormEmail').value.trim();
+  const location   = document.getElementById('partnerFormLocation').value.trim();
+  const avatarText = document.getElementById('partnerFormAvatarText').value.trim();
+  const order      = Number(document.getElementById('partnerFormOrder').value) || 0;
+  const active     = document.getElementById('partnerFormActive').checked;
+
+  if(!name || !role){
+    errEl.textContent = 'Name and Role are required.';
+    errEl.classList.add('show');
+    return;
+  }
+
+  const payload = { name, role, phone, email, location, avatarText, order, active };
+  const saveBtn = document.getElementById('partnerFormSaveBtn');
+  saveBtn.disabled = true;
+  try{
+    const url = id ? `${BASE}/api/partners/${id}` : `${BASE}/api/partners`;
+    const method = id ? 'PUT' : 'POST';
+    const res = await fetch(url, {
+      method,
+      headers: authHeaders({'Content-Type':'application/json'}),
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json().catch(()=>({}));
+    if(!res.ok){
+      errEl.textContent = data.error || data.message || 'Save failed';
+      errEl.classList.add('show');
+      return;
+    }
+    closePartnerModal();
+    partnersTable.ajax.reload(null, false);
   } catch(err){
     errEl.textContent = 'Save failed. Please try again.';
     errEl.classList.add('show');
@@ -6178,6 +6423,84 @@ $(document).ready(function(){
   });
   initColumnToggle('review');
   } catch(e){ console.error('Honest Reviews table failed to initialize:', e); }
+
+  /* ════════════════════════════════════
+     PARTNERS TABLE
+  ════════════════════════════════════ */
+  try{
+  partnersTable = $('#partnersTable').DataTable({
+    ajax:{
+      url: BASE+'/api/admin/partners',
+      beforeSend: function(xhr){ xhr.setRequestHeader('x-admin-key', ADMIN_KEY); },
+      error: function(){ },
+      dataSrc: function(res){
+        const partners = (res && Array.isArray(res.partners)) ? res.partners : [];
+        document.getElementById('tab-partners-count').innerText = partners.length;
+        return partners;
+      }
+    },
+    columns:[
+      /* 0 – Select checkbox */
+      { data:null, orderable:false, className:'dt-body-center', render:(d,t,row)=>{
+          if(t!=='display') return '';
+          const checked = _selectedPartnerIds.has(row._id) ? 'checked' : '';
+          return `<input type="checkbox" class="partner-row-check" data-id="${row._id}" onchange="onPartnerRowCheck(this,'${row._id}')" ${checked}>`;
+      }},
+      /* 1 – Partner: avatar initials + name + role */
+      { data:null, render:(d,t,row)=>{
+          if(t!=='display') return escapeHtml(row.name||'');
+          const initials = escapeHtml(row.avatarText || (row.name||'').split(' ').map(w=>w[0]).filter(Boolean).slice(0,2).join('').toUpperCase());
+          return `<div class="hr-thumb-wrap">
+            <div class="hr-thumb" style="display:flex;align-items:center;justify-content:center;background:var(--surface2);font-weight:700;color:var(--ink2)">${initials}</div>
+            <div>
+              <div class="prop-title">${escapeHtml(row.name||'')}</div>
+              <div class="prop-sub">${escapeHtml(row.role||'')}</div>
+            </div>
+          </div>`;
+      }},
+      /* 2 – Contact */
+      { data:null, render:(d,t,row)=>{
+          if(t!=='display') return escapeHtml(row.phone||row.email||'');
+          const bits = [];
+          if(row.phone) bits.push(escapeHtml(row.phone));
+          if(row.email) bits.push(escapeHtml(row.email));
+          return bits.join('<br>') || '—';
+      }},
+      /* 3 – Location */
+      { data:'location', render:(d)=> escapeHtml(d||'—') },
+      /* 4 – Active toggle */
+      { data:null, orderable:false, className:'dt-body-center', render:(d,t,row)=>{
+          if(t!=='display') return row.active ? 'Yes' : 'No';
+          const checked = row.active ? 'checked' : '';
+          return `<div class="mini-toggle-wrap"><label class="mini-toggle">
+            <input type="checkbox" ${checked} onchange="togglePartnerActive('${row._id}', this)">
+            <span class="slider"></span>
+          </label></div>`;
+      }},
+      /* 5 – Order */
+      { data:'order', className:'dt-body-center', render:(d)=> Number(d||0) },
+      /* 6 – Action */
+      { data:null, orderable:false, render:(d,t,row)=>{
+          if(t!=='display') return '';
+          return `<div style="display:inline-flex;gap:6px;flex-wrap:nowrap;justify-content:center">
+            <button class="btn-view" onclick="openPartnerModal('${row._id}')"><i class="fas fa-pen"></i><span class="btn-label"> Edit</span></button>
+            <button class="btn-view" onclick="deletePartner('${row._id}')"><i class="fas fa-trash"></i><span class="btn-label"> Delete</span></button>
+          </div>`;
+      }}
+    ],
+    order:[[5,'asc']],
+    pageLength:10,
+    scrollX:true,
+    language:{
+      emptyTable:'<div class="empty-state"><i class="fas fa-handshake"></i>No partners added yet</div>',
+      zeroRecords:'<div class="empty-state"><i class="fas fa-magnifying-glass"></i>No matching partners</div>',
+      lengthMenu:'Show _MENU_ entries',
+      info:'Showing _START_–_END_ of _TOTAL_ partners',
+      paginate:{previous:'‹ Prev',next:'Next ›'}
+    },
+    drawCallback:function(){}
+  });
+  } catch(e){ console.error('Partners table failed to initialize:', e); }
 
   // Restore whichever main tab (Visits/Customers/Properties/Appointments/
   // Honest Reviews) was last selected — survives a refresh or reopening the
@@ -9435,6 +9758,78 @@ markRequiredLabels();
       <div class="hr-modal-actions">
         <button class="hr-btn-cancel" onclick="closeHonestReviewModal()">Cancel</button>
         <button class="hr-btn-save" id="hrFormSaveBtn" onclick="saveHonestReview()">Save</button>
+      </div>
+
+    </div>
+
+  </div>
+</div>
+
+<!-- ═════════ PARTNER ADD/EDIT MODAL ═════════ -->
+<div class="prop-modal-wrap" id="partnerModal" onclick="if(event.target===this)closePartnerModal()">
+
+  <div class="prop-modal">
+
+    <div class="prop-modal-close-row">
+      <button class="prop-modal-close-btn" onclick="closePartnerModal()">✕</button>
+    </div>
+
+    <div class="prop-modal-body">
+
+      <div style="text-align:center;font-size:1.4rem;font-weight:700;margin-bottom:20px;color:var(--ink)" id="partnerModalTitle">
+        Add Partner
+      </div>
+
+      <div class="hr-form-error" id="partnerFormError"></div>
+
+      <input type="hidden" id="partnerFormId">
+
+      <div class="hr-form-grid">
+        <div class="hr-form-row">
+          <label>Name</label>
+          <input type="text" id="partnerFormName" maxlength="80" placeholder="e.g. Karthik Reddy">
+        </div>
+        <div class="hr-form-row">
+          <label>Role</label>
+          <input type="text" id="partnerFormRole" maxlength="80" placeholder="e.g. Legal Advisor">
+        </div>
+      </div>
+
+      <div class="hr-form-grid">
+        <div class="hr-form-row">
+          <label>Phone</label>
+          <input type="text" id="partnerFormPhone" maxlength="20" placeholder="Optional">
+        </div>
+        <div class="hr-form-row">
+          <label>Email</label>
+          <input type="text" id="partnerFormEmail" maxlength="120" placeholder="Optional">
+        </div>
+      </div>
+
+      <div class="hr-form-row">
+        <label>Location</label>
+        <input type="text" id="partnerFormLocation" maxlength="80" placeholder="e.g. Indiranagar, Bengaluru">
+      </div>
+
+      <div class="hr-form-grid">
+        <div class="hr-form-row">
+          <label>Avatar initials (optional override)</label>
+          <input type="text" id="partnerFormAvatarText" maxlength="4" placeholder="Auto from name if blank">
+        </div>
+        <div class="hr-form-row">
+          <label>Order (lower shows first)</label>
+          <input type="number" id="partnerFormOrder" value="0">
+        </div>
+      </div>
+
+      <div class="hr-form-check">
+        <input type="checkbox" id="partnerFormActive" checked>
+        <label for="partnerFormActive" style="margin:0">Active (visible on site's About page)</label>
+      </div>
+
+      <div class="hr-modal-actions">
+        <button class="hr-btn-cancel" onclick="closePartnerModal()">Cancel</button>
+        <button class="hr-btn-save" id="partnerFormSaveBtn" onclick="savePartner()">Save</button>
       </div>
 
     </div>
