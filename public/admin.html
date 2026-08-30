@@ -8871,6 +8871,17 @@ function validateListingForm() {
       if (!firstErrorEl) firstErrorEl = el;
     }
   });
+  // Title must contain at least one letter or digit — blocks punctuation/
+  // whitespace-only junk (e.g. a lone ".") from slipping past the generic
+  // non-empty check above and ending up in owner-facing messages.
+  const titleEl = document.getElementById('f-title');
+  if (titleEl && isFieldVisible(titleEl)) {
+    const titleVal = (titleEl.value || '').trim();
+    if (titleVal !== '' && !/[a-zA-Z0-9]/.test(titleVal)) {
+      setGroupError(titleEl.closest('.form-group'), 'Title must contain letters or numbers');
+      if (!firstErrorEl) firstErrorEl = titleEl;
+    }
+  }
   const imgGroup = document.getElementById('imgFormGroup');
   if (imgGroup && isFieldVisible(imgGroup) && (!Array.isArray(fImages) || fImages.length === 0)) {
     setGroupError(imgGroup, 'Please add at least one property image');
@@ -8952,7 +8963,9 @@ async function adminSubmitListing() {
   if (firstError) {
     const label = firstError.id === 'imgFormGroup'
       ? 'Please add at least one property image'
-      : fieldLabelText(firstError) + ' is required';
+      : firstError.id === 'f-title' && firstError.value.trim() !== ''
+        ? 'Title must contain letters or numbers'
+        : fieldLabelText(firstError) + ' is required';
     _adminToast(label);
     firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
     if (typeof firstError.focus === 'function') firstError.focus();
