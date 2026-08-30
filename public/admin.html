@@ -6315,38 +6315,75 @@ function propertyDirectionsUrl(row) {
 // _userGeoRequested so repeated table draws don't re-prompt/re-fetch —
 // once geolocation resolves (or fails), propTable is redrawn so the
 // distance labels pick up the result.
-let _userGeoPos = null;
+//
+// _userGeoPos is seeded synchronously from a localStorage cache (see
+// _loadCachedGeoPos below) the moment this script runs — i.e. before the
+// table even does its first draw — so distances render on the very first
+// paint after a refresh instead of popping in a few seconds later once
+// getCurrentPosition resolves. The real geolocation call below still runs
+// in the background and overwrites this with a live fix (redrawing the
+// table) as soon as it's available.
+const USER_GEO_CACHE_KEY = 'kr_admin_lastGeoPos';
+function _loadCachedGeoPos(){
+  try {
+    const raw = localStorage.getItem(USER_GEO_CACHE_KEY);
+    if (!raw) return null;
+    const cached = JSON.parse(raw);
+    if (cached && typeof cached.lat === 'number' && typeof cached.lng === 'number') return cached;
+  } catch(e) { /* ignore corrupt/blocked storage */ }
+  return null;
+}
+function _saveCachedGeoPos(pos){
+  try { localStorage.setItem(USER_GEO_CACHE_KEY, JSON.stringify(pos)); } catch(e) { /* ignore quota/blocked storage */ }
+}
+let _userGeoPos = _loadCachedGeoPos(); // last-known fix, shown immediately; refined below
 let _userGeoRequested = false;
 let _userGeoBusy = false; // true while a fetch (auto or manual) is in flight
 function requestUserLocation(){
   if (_userGeoRequested || !navigator.geolocation) return;
   _userGeoRequested = true;
-  fetchUserLocation();
+  // Lenient options for the automatic on-load lookup: accept a fix the
+  // browser/OS already has cached (up to 5 min old) and don't force
+  // high-accuracy GPS. This resolves fast and reliably on page load/
+  // refresh. Forcing a brand-new high-accuracy fix here (as we still do
+  // for the manual Recalculate button below) is slow enough — especially
+  // indoors or without a GPS chip handy — that it was routinely blowing
+  // past the timeout on refresh, silently failing with no retry, and
+  // leaving every Directions button without a distance. Meanwhile
+  // _userGeoPos already has last visit's cached fix showing distances
+  // right away, so there's no rush here.
+  fetchUserLocation(null, { enableHighAccuracy: false, timeout: 15000, maximumAge: 300000 });
 }
 // Shared fetch used by both the automatic one-time lookup above and the
-// manual "Recalculate" button below. Always asks the device for a brand
-// new fix (maximumAge:0) rather than a cached one.
-function fetchUserLocation(onDone){
+// manual "Recalculate" button below. `opts` lets each caller control
+// accuracy/freshness; see the callers for why they differ.
+function fetchUserLocation(onDone, opts){
   if (!navigator.geolocation) { if (onDone) onDone(false); return; }
   _userGeoBusy = true;
   navigator.geolocation.getCurrentPosition(
     (pos) => {
       _userGeoPos = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+      _saveCachedGeoPos(_userGeoPos); // so next refresh can show it instantly too
       _userGeoBusy = false;
       if (propTable) propTable.draw(false);
       if (onDone) onDone(true);
     },
     () => {
-      // denied/unavailable — buttons just render without a distance
+      // denied/unavailable — buttons keep showing whatever cached distance
+      // _userGeoPos already had (from localStorage or an earlier fix this
+      // session); nothing to update otherwise.
       _userGeoBusy = false;
       if (onDone) onDone(false);
     },
-    { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
+    opts || { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
   );
 }
 // Manual "Recalculate" button handler — ignores the one-time guard above
 // so the admin can force a fresh fix (e.g. after actually moving) instead
-// of waiting for a full page reload.
+// of waiting for a full page reload. Always asks for a brand-new,
+// high-accuracy fix (maximumAge:0) since that's the whole point of this
+// button — unlike the automatic lookup above, it's fine if this one takes
+// a little longer since it's a deliberate, one-off admin action.
 function recalculateUserLocation(){
   if (_userGeoBusy) return;
   _userGeoRequested = true; // in case the automatic lookup never ran/succeeded
@@ -6355,7 +6392,7 @@ function recalculateUserLocation(){
   fetchUserLocation((ok) => {
     if (btn) { btn.disabled = false; btn.classList.remove('bulk-btn-loading'); }
     if (!ok) alert('Could not get your current location. Check location permission and try again.');
-  });
+  }, { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 });
 }
 // Straight-line (as-the-crow-flies) distance in km between two lat/lng
 // points — not the actual driving distance Google Maps will route, just
