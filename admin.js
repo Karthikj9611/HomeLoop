@@ -483,12 +483,9 @@ module.exports = function registerAdminRoutes(app, deps) {
   app.get('/api/admin/properties', requireAdmin, async (req, res) => {
     try {
       const docArrays = await Promise.all(LISTING_MODEL_LIST.map(M => M.find({}).populate('userId', 'profilePhoto').lean()));
-      // 0/missing promotedPriority = not yet manually ranked; sorts to the
-      // back here too, matching the public site's rankOf() convention.
-      const rankOf = (p) => (p && p > 0) ? p : Infinity;
       const docs = docArrays.flat().sort((a, b) =>
         (Number(b.promoted) - Number(a.promoted)) ||
-        (rankOf(a.promotedPriority) - rankOf(b.promotedPriority)) ||
+        ((a.promotedPriority ?? 3) - (b.promotedPriority ?? 3)) ||
         (new Date(b.createdAt) - new Date(a.createdAt))
       );
 
@@ -697,8 +694,8 @@ module.exports = function registerAdminRoutes(app, deps) {
     try {
       const { promotedPriority } = req.body || {};
       if (typeof promotedPriority !== 'number' || !Number.isFinite(promotedPriority) ||
-          !Number.isInteger(promotedPriority) || promotedPriority < 1) {
-        return res.status(400).json({ message: 'promotedPriority must be a positive whole number (1 = first place)' });
+          !Number.isInteger(promotedPriority) || promotedPriority < 0) {
+        return res.status(400).json({ message: 'promotedPriority must be a whole number, 0 or higher (0 = unranked, 1 = first place)' });
       }
       const prop = await updateListingById(req.params.id, { promotedPriority }, { new: true });
       if (!prop) return res.status(404).json({ message: 'Property not found' });

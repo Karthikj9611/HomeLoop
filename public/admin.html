@@ -214,6 +214,8 @@ body{
 .bulk-btn-outline-danger:hover{background:var(--surface2);color:var(--ink)}
 .bulk-btn:disabled{opacity:0.4;cursor:not-allowed;pointer-events:none}
 .bulk-btn:disabled:hover{background:transparent;color:var(--ink3)}
+.bulk-btn-loading i{animation:bulkBtnSpin 0.8s linear infinite}
+@keyframes bulkBtnSpin{to{transform:rotate(360deg)}}
 .bulk-toolbar-below{
   justify-content:center;
 }
@@ -1691,6 +1693,17 @@ footer i{color:var(--gold)}
   table.dataTable thead th{padding:10px 10px;font-size:0.67rem}
   table.dataTable tbody td{padding:10px 10px;font-size:0.8rem}
 
+  /* Action-column buttons (View/Navigate/Directions/Share/Booking/Edit):
+     full labels don't fit alongside each other on a narrow screen — icon
+     only here, same technique as .bulk-btn-label above. */
+  .btn-view .btn-label,
+  .btn-booking-details .btn-label{display:none}
+  .btn-view,.btn-booking-details{
+    padding:8px 10px;min-width:34px;justify-content:center;
+  }
+  .btn-view i,.btn-booking-details i{font-size:0.85rem}
+  .btn-dist{font-size:0.68rem;margin-left:3px}
+
   /* Login card */
   .login-card{padding:32px 24px 28px;border-radius:20px}
 
@@ -2302,6 +2315,9 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
         </button>
       </div>
       <div class="bulk-toolbar-right">
+        <button class="bulk-btn" id="recalcDistanceBtn" onclick="recalculateUserLocation()" title="Re-fetch your current location and recalculate the distance shown on every Directions button">
+          <i class="fas fa-location-crosshairs"></i> <span class="bulk-btn-label" data-mobile="Recalc">Recalculate Distance</span>
+        </button>
         <button class="bulk-btn bulk-btn-outline-danger" id="resetAllViewsBtn" disabled title="Resetting all views is disabled" style="opacity:.4;cursor:not-allowed;pointer-events:none">
           <i class="fas fa-rotate-left"></i> <span class="bulk-btn-label" data-mobile="Reset">Reset All Views</span>
         </button>
@@ -2371,7 +2387,6 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
               <th>Longitude</th>
               <th>Promoted Priority</th>
               <th>Amenities</th>
-              <th>Property ID</th>
               <th>User ID</th>
               <th>Listed On</th>
               <th>Remarks</th>
@@ -2424,7 +2439,6 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
               <th></th>
               <th></th>
               <th><input type="text" class="col-filter-input" data-filter-key="amenities" placeholder="Search…" oninput="onPropColumnFilter('amenities', this.value, this)"></th>
-              <th><input type="text" class="col-filter-input" data-filter-key="propertyId" placeholder="Search…" oninput="onPropColumnFilter('propertyId', this.value, this)"></th>
               <th><input type="text" class="col-filter-input" data-filter-key="userId" placeholder="Search…" oninput="onPropColumnFilter('userId', this.value, this)"></th>
               <th><div class="col-date-range">
                 <select class="date-preset-select" onchange="applyDatePreset(this,'onPropListedOnRangeFilter')">
@@ -3297,9 +3311,9 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
 
 let dataTable, propTable, apptTable, honestReviewsTable;
 
-//const BASE = 'https://homeloop.in';
-//const BASE = 'https://homeloop-gqti.onrender.com';
-const BASE = 'http://localhost:5000';
+
+const BASE = 'https://www.homeloop.in';
+//const BASE = 'http://localhost:5000';
 
 /* ── ADMIN KEY – set after login ──
    Uses localStorage (not sessionStorage) so the admin stays signed in even
@@ -4466,9 +4480,12 @@ window.togglePropFlag = async function(id, field, checkboxEl){
    Lets the admin type exactly where a listing should land among Promoted
    listings — 1 for first place, 10 for tenth, 20 for twentieth, and so on.
    Lower number = higher up the list; listings sharing a number fall back to
-   newest-first. Works whether or not Promoted is on yet, so a position can
-   be set in advance. Saves on blur/change (no confirm modal, since it's a
-   plain reorder rather than a visibility change). */
+   newest-first. 0 is also a valid, explicit input — it resets the listing
+   back to "unranked" (same as never having set a position), sending it to
+   the back of the promoted queue behind every ranked listing. Works whether
+   or not Promoted is on yet, so a position can be set in advance. Saves on
+   blur/change (no confirm modal, since it's a plain reorder rather than a
+   visibility change). */
 window.setPromotedPriority = async function(id, inputEl){
   const raw = inputEl.value.trim();
   if(raw === ''){
@@ -4476,8 +4493,8 @@ window.setPromotedPriority = async function(id, inputEl){
     return;
   }
   const value = parseInt(raw, 10);
-  if(!Number.isInteger(value) || value < 1 || String(value) !== raw){
-    alert('Position must be a whole number, 1 or higher (1 = first place).');
+  if(!Number.isInteger(value) || value < 0 || String(value) !== raw){
+    showAlertModal('Position must be a whole number, 0 or higher (0 = unranked, 1 = first place).', { variant: 'error', title: 'Invalid position' });
     inputEl.focus();
     return;
   }
@@ -4490,7 +4507,7 @@ window.setPromotedPriority = async function(id, inputEl){
     });
     const data = await res.json().catch(()=>({}));
     if(!res.ok){
-      alert(data.message || 'Failed to update promoted position');
+      showAlertModal(data.message || 'Failed to update promoted position', { variant: 'error', title: 'Update failed' });
       return;
     }
     const confirmedVal = data.promotedPriority != null ? data.promotedPriority : value;
@@ -4501,8 +4518,15 @@ window.setPromotedPriority = async function(id, inputEl){
       if(rd && rd._id === id && rd.full){ rd.full.promotedPriority = confirmedVal; }
     });
     // Re-sort/redraw so the new position is reflected immediately if the
-    // table happens to be sorted by this column.
+    // table happens to be sorted by this column. Also, for a reset to 0,
+    // this redraw is what turns the input blank again (the column's render
+    // function treats 0 as unset), rather than the input awkwardly showing
+    // a literal "0" next to a field that's otherwise blank when unranked.
     propTable.draw(false);
+    const propertyLabel = (_adminPropCache[id] && _adminPropCache[id].propertyId) || 'Listing';
+    alert(confirmedVal > 0
+      ? `${propertyLabel} updated to position ${confirmedVal}`
+      : `${propertyLabel} reset — now unranked and will show at the back of the promoted queue.`);
   } catch(err){
     alert('Failed to update promoted position');
   } finally {
@@ -5280,7 +5304,7 @@ $(document).ready(function(){
 			  <div style="display:inline-flex;gap:6px;flex-wrap:nowrap;justify-content:center">
 
 				<button class="btn-view" onclick="openCustomerModal('${row.mobile || row._id}')">
-				  <i class="fas fa-eye"></i> View
+				  <i class="fas fa-eye"></i><span class="btn-label"> View</span>
 				</button>
 
 			  </div>
@@ -5598,12 +5622,13 @@ $(document).ready(function(){
          advance and take effect the moment the toggle flips on.) */
       { data:null, orderable:true, className:'dt-body-center', render:(d,t,row)=>{
           const raw = row.full && row.full.promotedPriority;
-          // 0 is the schema default for "not manually ranked yet" — show it
-          // the same as unset (blank, with the "pos" placeholder) rather
-          // than literally displaying "0" next to a min="1" input.
+          // 0 is the schema default for "not manually ranked yet" and is
+          // also what typing 0 into this box explicitly resets it to — show
+          // it blank (with the "pos" placeholder) either way, rather than
+          // literally displaying "0" as if it were a real position.
           const p = (raw != null && raw > 0) ? raw : null;
           if(t!=='display') return (p!=null ? p : '');
-          return `<input type="number" min="1" step="1" class="promoted-priority-input"
+          return `<input type="number" min="0" step="1" class="promoted-priority-input"
             style="width:64px;text-align:center" placeholder="pos"
             value="${p!=null ? escapeHtml(String(p)) : ''}"
             onchange="setPromotedPriority('${row._id}', this)">`;
@@ -5619,8 +5644,6 @@ $(document).ready(function(){
           const encoded = escapeHtml(JSON.stringify(list));
           return `<div style="white-space:normal;max-width:260px">${shown}, <a href="javascript:void(0)" class="amenities-more-link" data-list="${encoded}" onclick="openAmenitiesModal(this)">+${more} more</a></div>`;
       }},
-      /* 45 – Property ID */
-      { data:'propertyId', render:(d)=> escapeHtml(d||'—') },
       /* 46 – User ID */
       { data:'userId', visible:false, render:(d)=> escapeHtml(d||'—') },
       /* 47 – Listed On */
@@ -5638,24 +5661,30 @@ $(document).ready(function(){
       { data:null, orderable:false, render:(d,t,row)=>{
           _adminPropCache[row._id] = row;
           const bookingBtn = row.booked
-            ? `<button class="btn-booking-details" title="Booking details" onclick="openBookingDetailsModal('${row._id}')"><i class="fas fa-file-signature"></i> Booking</button>`
+            ? `<button class="btn-booking-details" title="Booking details" onclick="openBookingDetailsModal('${row._id}')"><i class="fas fa-file-signature"></i><span class="btn-label"> Booking</span></button>`
             : '';
           const shareBtn = row.verified
-            ? `<button class="btn-view" style="background:#25D366;border-color:#25D366;color:#fff" title="Share the live link with the owner (and alt number) via WhatsApp" onclick="shareListingToOwner('${row._id}')"><i class="fab fa-whatsapp"></i> Share</button>`
-            : `<button class="btn-view" disabled title="Verify this listing first to enable sharing" style="opacity:.4;cursor:not-allowed;pointer-events:none"><i class="fab fa-whatsapp"></i> Share</button>`;
+            ? `<button class="btn-view" style="background:#25D366;border-color:#25D366;color:#fff" title="Share the live link with the owner (and alt number) via WhatsApp" onclick="shareListingToOwner('${row._id}')"><i class="fab fa-whatsapp"></i><span class="btn-label"> Share</span></button>`
+            : `<button class="btn-view" disabled title="Verify this listing first to enable sharing" style="opacity:.4;cursor:not-allowed;pointer-events:none"><i class="fab fa-whatsapp"></i><span class="btn-label"> Share</span></button>`;
           const mapsUrl = propertyMapsUrl(row);
           const navigateBtn = mapsUrl
-            ? `<button class="btn-view" style="background:#4285F4;border-color:#4285F4;color:#fff" title="Open this property's location in Google Maps" onclick="window.open('${mapsUrl.replace(/'/g, "\\'")}', '_blank', 'noopener')"><i class="fas fa-location-arrow"></i> Navigate</button>`
-            : `<button class="btn-view" disabled title="No address or coordinates on file for this listing" style="opacity:.4;cursor:not-allowed;pointer-events:none"><i class="fas fa-location-arrow"></i> Navigate</button>`;
+            ? `<button class="btn-view" style="background:#4285F4;border-color:#4285F4;color:#fff" title="Open this property's location in Google Maps" onclick="window.open('${mapsUrl.replace(/'/g, "\\'")}', '_blank', 'noopener')"><i class="fas fa-location-arrow"></i><span class="btn-label"> Navigate</span></button>`
+            : `<button class="btn-view" disabled title="No address or coordinates on file for this listing" style="opacity:.4;cursor:not-allowed;pointer-events:none"><i class="fas fa-location-arrow"></i><span class="btn-label"> Navigate</span></button>`;
+          const dirUrl = propertyDirectionsUrl(row);
+          const dirDistLabel = directionsDistanceLabel(row);
+          const directionsBtn = dirUrl
+            ? `<button class="btn-view" style="background:#34A853;border-color:#34A853;color:#fff" title="Get driving directions from your current location to this property" onclick="window.open('${dirUrl.replace(/'/g, "\\'")}', '_blank', 'noopener')"><i class="fas fa-route"></i><span class="btn-label"> Directions${dirDistLabel ? ' · ' : ''}</span><span class="btn-dist">${dirDistLabel}</span></button>`
+            : `<button class="btn-view" disabled title="No address or coordinates on file for this listing" style="opacity:.4;cursor:not-allowed;pointer-events:none"><i class="fas fa-route"></i><span class="btn-label"> Directions</span></button>`;
           return `<div style="display:inline-flex;gap:6px;flex-wrap:nowrap;justify-content:center">
-            <button class="btn-view" onclick="openAdminPropModal('${row._id}')"><i class="fas fa-eye"></i> View</button>
+            <button class="btn-view" onclick="openAdminPropModal('${row._id}')"><i class="fas fa-eye"></i><span class="btn-label"> View</span></button>
             ${navigateBtn}
+            ${directionsBtn}
             ${shareBtn}
             ${bookingBtn}
           </div>`;
       }}
     ],
-    order:[[48,'asc']], // Listed On (createdAt) — oldest to newest
+    order:[[47,'asc']], // Listed On (createdAt) — oldest to newest
     orderCellsTop:true,
     pageLength:-1,
     scrollX:true,
@@ -5701,7 +5730,7 @@ $(document).ready(function(){
 				// Column 0 is the select checkbox — it has no printable
 				// value, so leave it out of the PDF entirely instead of
 				// exporting a blank column.
-				return idx !== 0 && idx !== 49 && idx !== 50 &&
+				return idx !== 0 && idx !== 48 && idx !== 49 &&
 					   propTable.column(idx).visible();
 			},
 			// Use each column's dedicated "export" text instead of stripping
@@ -5825,6 +5854,7 @@ $(document).ready(function(){
     drawCallback:function(){
       updatePropStickyOffset();
       try{ syncPropSelectionUI(); }catch(e){ /* table not fully initialized yet */ }
+      requestUserLocation();
     }
   });
   // With scrollX enabled, DataTables clones the <table> element for the
@@ -5946,7 +5976,7 @@ $(document).ready(function(){
       { data:null, orderable:false, render:(d,t,row)=>{
           _apptCache[row._id] = row;
           return `<div style="display:inline-flex;gap:6px;flex-wrap:nowrap;justify-content:center">
-            <button class="btn-view" onclick="openApptModal('${row._id}')"><i class="fas fa-eye"></i> View</button>
+            <button class="btn-view" onclick="openApptModal('${row._id}')"><i class="fas fa-eye"></i><span class="btn-label"> View</span></button>
           </div>`;
       }}
     ],
@@ -6130,7 +6160,7 @@ $(document).ready(function(){
       { data:null, orderable:false, render:(d,t,row)=>{
           if(t!=='display') return '';
           return `<div style="display:inline-flex;gap:6px;flex-wrap:nowrap;justify-content:center">
-            <button class="btn-view" onclick="openHonestReviewModal('${row._id}')"><i class="fas fa-pen"></i> Edit</button>
+            <button class="btn-view" onclick="openHonestReviewModal('${row._id}')"><i class="fas fa-pen"></i><span class="btn-label"> Edit</span></button>
           </div>`;
       }}
     ],
@@ -6259,6 +6289,98 @@ function propertyMapsUrl(row) {
     return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addressParts.join(', '))}`;
   }
   return null;
+}
+// Same destination resolution as propertyMapsUrl, but as a turn-by-turn
+// Directions link instead of a plain pin search. Leaving "origin" out of
+// the Directions API URL makes Google Maps default the starting point to
+// the visitor's current device location (it'll prompt for location access
+// if not already granted) and route straight to the property.
+function propertyDirectionsUrl(row) {
+  const loc = (row.full && row.full.location) || {};
+  const lat = parseFloat(row.latitude), lng = parseFloat(row.longitude);
+  if (!isNaN(lat) && !isNaN(lng) && (lat !== 0 || lng !== 0)) {
+    return `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving`;
+  }
+  const addressParts = [loc.address, loc.area || row.loc, loc.city, loc.pincode].filter(Boolean);
+  if (addressParts.length) {
+    return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(addressParts.join(', '))}&travelmode=driving`;
+  }
+  // mapLink (a full Google Maps URL pasted by an admin) isn't a reliable
+  // destination param for the Directions API, so it's intentionally not
+  // used as a fallback here the way it is in propertyMapsUrl.
+  return null;
+}
+// One-time request for the admin's current position, used to show a
+// straight-line distance on each Directions button. Guarded by
+// _userGeoRequested so repeated table draws don't re-prompt/re-fetch —
+// once geolocation resolves (or fails), propTable is redrawn so the
+// distance labels pick up the result.
+let _userGeoPos = null;
+let _userGeoRequested = false;
+let _userGeoBusy = false; // true while a fetch (auto or manual) is in flight
+function requestUserLocation(){
+  if (_userGeoRequested || !navigator.geolocation) return;
+  _userGeoRequested = true;
+  fetchUserLocation();
+}
+// Shared fetch used by both the automatic one-time lookup above and the
+// manual "Recalculate" button below. Always asks the device for a brand
+// new fix (maximumAge:0) rather than a cached one.
+function fetchUserLocation(onDone){
+  if (!navigator.geolocation) { if (onDone) onDone(false); return; }
+  _userGeoBusy = true;
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      _userGeoPos = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+      _userGeoBusy = false;
+      if (propTable) propTable.draw(false);
+      if (onDone) onDone(true);
+    },
+    () => {
+      // denied/unavailable — buttons just render without a distance
+      _userGeoBusy = false;
+      if (onDone) onDone(false);
+    },
+    { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
+  );
+}
+// Manual "Recalculate" button handler — ignores the one-time guard above
+// so the admin can force a fresh fix (e.g. after actually moving) instead
+// of waiting for a full page reload.
+function recalculateUserLocation(){
+  if (_userGeoBusy) return;
+  _userGeoRequested = true; // in case the automatic lookup never ran/succeeded
+  const btn = document.getElementById('recalcDistanceBtn');
+  if (btn) { btn.disabled = true; btn.classList.add('bulk-btn-loading'); }
+  fetchUserLocation((ok) => {
+    if (btn) { btn.disabled = false; btn.classList.remove('bulk-btn-loading'); }
+    if (!ok) alert('Could not get your current location. Check location permission and try again.');
+  });
+}
+// Straight-line (as-the-crow-flies) distance in km between two lat/lng
+// points — not the actual driving distance Google Maps will route, just
+// a quick at-a-glance figure for the Directions button.
+function haversineKm(lat1, lon1, lat2, lon2){
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat/2) ** 2 +
+            Math.cos(lat1 * Math.PI/180) * Math.cos(lat2 * Math.PI/180) * Math.sin(dLon/2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+// Returns '1.2 km' / '850 m' — the bare distance, no separator (the
+// caller adds ' · ' when placing this next to the word 'Directions', see
+// the Action-column render above) — or '' when the current position
+// isn't known yet or the property has no usable coordinates (address-only
+// listings can't be distanced without a geocoding lookup, so they're left
+// without a label).
+function directionsDistanceLabel(row){
+  if (!_userGeoPos) return '';
+  const lat = parseFloat(row.latitude), lng = parseFloat(row.longitude);
+  if (isNaN(lat) || isNaN(lng) || (lat === 0 && lng === 0)) return '';
+  const km = haversineKm(_userGeoPos.lat, _userGeoPos.lng, lat, lng);
+  const text = km < 1 ? `${Math.round(km * 1000)} m` : `${km.toFixed(km < 10 ? 1 : 0)} km`;
+  return text;
 }
 
 /* ── Photo gallery + lightbox — ported from index.html's buildImgSlider /
@@ -6856,8 +6978,8 @@ const PROP_COL_GROUPS = [
     {idx:36, label:'Visits'}, {idx:37, label:'Views'}, {idx:38, label:'Photos'},
     {idx:39, label:'Image URLs'}, {idx:40, label:'Video URL'}, {idx:41, label:'Description'},
     {idx:42, label:'Latitude'}, {idx:43, label:'Longitude'}, {idx:44, label:'Promoted Priority'},
-    {idx:45, label:'Amenities'}, {idx:46, label:'Property ID'}, {idx:47, label:'User ID'},
-    {idx:48, label:'Listed On'}, {idx:49, label:'Remarks'}
+    {idx:45, label:'Amenities'}, {idx:46, label:'User ID'},
+    {idx:47, label:'Listed On'}, {idx:48, label:'Remarks'}
   ]}
 ];
 
@@ -6896,15 +7018,15 @@ function apptExportRowSelector(idx){
 }
 
 function propExportColumnPredicate(idx){
-  return idx!==0 && idx!==49 && idx!==50 && propTable.column(idx).visible();
+  return idx!==0 && idx!==48 && idx!==49 && propTable.column(idx).visible();
 }
 function propExportColumnIndices(){
   const idxs=[];
-  for(let i=0;i<=50;i++){ if(propExportColumnPredicate(i)) idxs.push(i); }
+  for(let i=0;i<=49;i++){ if(propExportColumnPredicate(i)) idxs.push(i); }
   return idxs;
 }
 
-const PROP_COL_VISIBILITY_KEY = 'rip_admin_propColVisibility';
+const PROP_COL_VISIBILITY_KEY = 'rip_admin_propColVisibility_v2'; // bumped: column indices shifted after removing the duplicate Property ID column
 
 function savePropColVisibility(){
   if(!propTable) return;
