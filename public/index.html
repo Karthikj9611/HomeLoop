@@ -11957,8 +11957,9 @@ function restoreSignupDraft() {
   }
 }
 
-// Holds the collected signup form data between "send OTP" and "verify OTP",
-// since the account isn't actually created until the code is confirmed.
+// OTP verification is disabled for signup — the account is created directly
+// on password entry. pendingSignupBody/verifySignupOtp() etc. below are kept
+// (unused) in case OTP is turned back on later.
 let pendingSignupBody = null;
 
 async function submitAuth() {
@@ -11966,10 +11967,6 @@ async function submitAuth() {
   if (btn.disabled) return; // already submitting — ignore extra clicks/taps
 
   const isLogin = document.getElementById('authTabLogin').classList.contains('active');
-
-  // Second click after a code's already been sent — same button now verifies
-  // it and creates the account, instead of re-sending/re-validating details.
-  if (!isLogin && pendingSignupBody) { return verifySignupOtp(); }
 
   const password = document.getElementById('auth-password').value;
 
@@ -12002,32 +11999,11 @@ async function submitAuth() {
   }
 
   btn.disabled = true;
-  btn.textContent = isLogin ? 'Logging in…' : 'Sending code…';
+  btn.textContent = isLogin ? 'Logging in…' : 'Creating account…';
 
   try {
-    if (!isLogin) {
-      // Signup: don't create the account yet — send the email OTP first, and
-      // only call /api/user/signup once verifySignupOtp() confirms the code.
-      const otpRes  = await fetch('/api/user/signup/send-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: body.email })
-      });
-      const otpData = await otpRes.json();
-      if (!otpRes.ok) { showToast(otpData.message || 'Could not send verification code', 'error'); return; }
-
-      // Reveal the code field right in the same form (no separate step/modal) —
-      // lock the rest of the details so an edit mid-verification can't drift
-      // from what the emailed code was actually sent for.
-      pendingSignupBody = body;
-      document.getElementById('authOtpEmailLabel').textContent = body.email;
-      document.getElementById('auth-otp').value = '';
-      document.getElementById('authSignupOtpField').style.display = '';
-      setSignupFieldsDisabled(true);
-      return;
-    }
-
-    const res  = await fetch('/api/user/login', {
+    const url  = isLogin ? '/api/user/login' : '/api/user/signup';
+    const res  = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body)
@@ -12042,7 +12018,7 @@ async function submitAuth() {
     showToast('Network error. Please try again.', 'error');
   } finally {
     btn.disabled = false;
-    btn.textContent = isLogin ? 'Log in' : (pendingSignupBody ? 'Verify & create account' : 'Sign up');
+    btn.textContent = isLogin ? 'Log in' : 'Sign up';
   }
 }
 

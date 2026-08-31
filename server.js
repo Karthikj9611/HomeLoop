@@ -371,12 +371,12 @@ app.post('/api/user/signup', userAuthLimiter, async (req, res) => {
     if (existingEmail)  return res.status(409).json({ message: 'Account already exists for this email. Please log in.' });
     if (existingMobile) return res.status(409).json({ message: 'Account already exists for this mobile number. Please log in.' });
 
-    // Email must have gone through the OTP flow above and come back verified —
-    // this is what actually stops an account from being created on an email the
-    // person doesn't own. The OTP doc still carries its original 5-minute TTL,
-    // so this also enforces "finish signup shortly after verifying".
-    const otpRecord = await EmailOtp.findOne({ email: cleanEmail, verified: true });
-    if (!otpRecord) return res.status(403).json({ message: 'Please verify your email with the code we sent before continuing.' });
+    // OTP is no longer required to create the account — email sending can
+    // fail (Brevo down, quota, bad key, etc.) and that shouldn't block
+    // signup. If the person did go through send-otp/verify-otp and it
+    // succeeded, that's honored (and the doc is cleared below); if OTP was
+    // skipped, failed to send, entered wrong, or never attempted, the
+    // account is still created here on password entry.
 
     // Only trust a photo URL that actually points at an image we generated via
     // /api/upload-images — never store an arbitrary attacker-supplied URL here.
