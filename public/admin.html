@@ -687,6 +687,8 @@ table.dataTable.no-footer{border-bottom:none!important}
 .status-shortstay{background:#ede7f6;color:#6a3fb5}
 .status-acct-customer{background:var(--green-light);color:var(--green)}
 .status-acct-owner{background:var(--gold-light);color:var(--gold-dark)}
+.status-verified{background:var(--green-light);color:var(--green)}
+.status-unverified{background:#fdecea;color:#c0392b}
 
 /* ── HONEST REVIEWS TAB ── */
 .hr-thumb-wrap{display:flex;align-items:center;gap:12px}
@@ -3428,9 +3430,10 @@ function showConfirmModal({ title='Are you sure?', message='This action cannot b
     cancelBtn.textContent = cancelText;
 
     const isInfo = variant === 'info';
-    iconEl.className = 'confirm-icon' + (isInfo ? ' info' : '');
-    iconEl.innerHTML = `<i class="fas ${isInfo ? 'fa-circle-info' : 'fa-trash-alt'}"></i>`;
-    okBtn.className = 'confirm-ok-btn' + (isInfo ? ' info' : '');
+    const isSuccess = variant === 'success';
+    iconEl.className = 'confirm-icon' + (isSuccess ? ' success' : isInfo ? ' info' : '');
+    iconEl.innerHTML = `<i class="fas ${isSuccess ? 'fa-circle-check' : isInfo ? 'fa-circle-info' : 'fa-trash-alt'}"></i>`;
+    okBtn.className = 'confirm-ok-btn' + (isSuccess ? ' success' : isInfo ? ' info' : '');
 
     function cleanup(result){
       overlay.style.display = 'none';
@@ -3922,10 +3925,41 @@ function accountTypeBadge(t){
   const isOwner = t === 'owner';
   return `<span class="status-badge ${isOwner?'status-acct-owner':'status-acct-customer'}">${isOwner?'Owner':'Customer'}</span>`;
 }
+function verifiedBadge(v){
+  return `<span class="status-badge ${v?'status-verified':'status-unverified'}">${v?'Verified':'Pending'}</span>`;
+}
 function renderOwnerPhone(row){
   if(row.ownerNumber) return `<a href="tel:${row.ownerNumber}" class="phone-link">${escapeHtml(row.ownerNumber)}</a>`;
   return `<span class="no-contact">—</span>`;
 }
+
+/* ── VERIFY / UNVERIFY HANDLER ── */
+// Flips a customer's isVerified flag. Until verified, that user's own submit
+// actions (new listing, visit request, booking, honest review, payment
+// request/proof) are blocked server-side — see requireVerified in server.js.
+window.toggleUserVerified = async function(id, nextVerified){
+  const title = nextVerified ? 'Verify this customer?' : 'Revoke verification?';
+  const message = nextVerified
+    ? 'They\'ll be able to submit listings, visit requests, bookings, reviews, and payments once verified.'
+    : 'They will no longer be able to submit listings, visit requests, bookings, reviews, or payments.';
+  const okText = nextVerified ? 'Verify' : 'Unverify';
+  const variant = nextVerified ? 'success' : 'info';
+  // showConfirmModal defaults to a trash icon + red "Delete" button (its
+  // normal use is delete confirmations) — override okText/variant here so
+  // this doesn't look like a delete.
+  if(!await showConfirmModal({ title, message, okText, variant })) return;
+  const res = await fetch(`${BASE}/api/users/${id}/verify`, {
+    method:'PATCH',
+    headers:{ ...authHeaders(), 'Content-Type':'application/json' },
+    body: JSON.stringify({ verified: nextVerified })
+  });
+  const data = await res.json().catch(()=>({}));
+  if(res.ok){
+    dataTable.ajax.reload(null,false);
+  } else {
+    alert(data.message || 'Error updating verification status');
+  }
+};
 
 /* ── DELETE HANDLERS ── */
 window.deleteBooking = async function(mobile){
@@ -5624,12 +5658,25 @@ $(document).ready(function(){
 
 			_customerCache[row.mobile || row._id] = row;
 
+			const isVerified = !!row.isVerified;
+			const verifyBtn = isVerified
+			  ? `<button class="btn-view" style="color:#c0392b" onclick="toggleUserVerified('${row._id}', false)" title="Revoke verification">
+				   <i class="fas fa-user-xmark"></i><span class="btn-label"> Unverify</span>
+				 </button>`
+			  : `<button class="btn-view" style="color:var(--green)" onclick="toggleUserVerified('${row._id}', true)" title="Verify this account">
+				   <i class="fas fa-user-check"></i><span class="btn-label"> Verify</span>
+				 </button>`;
+
 			return `
-			  <div style="display:inline-flex;gap:6px;flex-wrap:nowrap;justify-content:center">
+			  <div style="display:inline-flex;gap:6px;flex-wrap:wrap;justify-content:center;align-items:center">
+
+				${verifiedBadge(isVerified)}
 
 				<button class="btn-view" onclick="openCustomerModal('${row.mobile || row._id}')">
 				  <i class="fas fa-eye"></i><span class="btn-label"> View</span>
 				</button>
+
+				${verifyBtn}
 
 			  </div>
 			`;
@@ -8144,6 +8191,12 @@ function openCustomerModal(id){
     {
       label:'Email Address',
       value:c.email || '—'
+    },
+    {
+      label:'Verification Status',
+      value:c.isVerified
+        ? ('Verified' + (c.verifiedAt ? ' on ' + fmtDateDMY(new Date(c.verifiedAt)) : ''))
+        : 'Pending — cannot submit listings, visits, bookings, reviews or payments yet'
     },
     {
       label:'Property Listings',

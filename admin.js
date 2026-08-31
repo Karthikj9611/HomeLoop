@@ -237,6 +237,9 @@ module.exports = function registerAdminRoutes(app, deps) {
         password:      u.password || '',
         profilePhoto:  u.profilePhoto || '',
         remarks:       u.remarks || [],
+        accountType:   u.accountType || 'customer',
+        isVerified:    !!u.isVerified,
+        verifiedAt:    u.verifiedAt || null,
         listingsCount: propMap[String(u._id)]  || 0,
         visitsCount:   visitMap[String(u._id)] || 0,
         createdAt:     u.createdAt,
@@ -285,6 +288,33 @@ module.exports = function registerAdminRoutes(app, deps) {
     } catch (err) {
       console.error('POST /api/users/bulk-delete error:', err);
       res.status(500).json({ message: 'Error deleting customers' });
+    }
+  });
+
+  // ── PATCH /api/users/:id/verify (admin: approve/unapprove a signup) ──
+  // Flips User.isVerified. Until this is true, the account's own "submit"
+  // routes (new listing, visit request, booking, honest review, payment
+  // request/proof — see requireVerified in server.js) are blocked with a 403.
+  // Body: { verified: true | false }. Defaults to true (the common case —
+  // clicking "Verify" on a freshly signed-up user).
+  app.patch('/api/users/:id/verify', requireAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      if (!mongoose.Types.ObjectId.isValid(id)) return res.status(400).json({ message: 'Invalid user id' });
+      const verified = req.body && req.body.verified === false ? false : true;
+      const user = await User.findByIdAndUpdate(
+        id,
+        { isVerified: verified, verifiedAt: verified ? new Date() : null },
+        { new: true }
+      ).lean();
+      if (!user) return res.status(404).json({ message: 'Customer not found' });
+      res.json({
+        message: verified ? 'Customer verified' : 'Customer verification revoked',
+        _id: user._id, isVerified: !!user.isVerified, verifiedAt: user.verifiedAt || null,
+      });
+    } catch (err) {
+      console.error('PATCH /api/users/:id/verify error:', err);
+      res.status(500).json({ message: 'Error updating verification status' });
     }
   });
 

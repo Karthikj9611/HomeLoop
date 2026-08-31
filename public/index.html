@@ -5566,7 +5566,7 @@ main.tab-explore .empty-state{display:none !important}
   <div class="add-modal" style="max-width:460px">
     <div class="add-modal-header">
       <div class="add-modal-title">Post Your Video Review</div>
-      <button class="icon-btn" onclick="closeSubmitVideoModal()" aria-label="Close">
+      <button class="modal-close" onclick="closeSubmitVideoModal()" aria-label="Close">
         <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
     </div>
@@ -5596,7 +5596,7 @@ main.tab-explore .empty-state{display:none !important}
   <div class="add-modal" style="max-width:440px">
     <div class="add-modal-header">
       <div class="add-modal-title">Write a Review</div>
-      <button class="icon-btn" onclick="closeReviewModal()" aria-label="Close">
+      <button class="modal-close" onclick="closeReviewModal()" aria-label="Close">
         <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
     </div>
@@ -6925,6 +6925,28 @@ main.tab-explore .empty-state{display:none !important}
       </button>
     </div>
     <p id="editRestrictedMessage" style="font-size:13.5px;color:var(--text-2);line-height:1.6;margin-bottom:18px"></p>
+    <div class="help-quick-strip">
+      <a class="help-quick-btn" href="tel:9035205230">
+        <svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.8 19.8 0 0 1 1.61 3.4 2 2 0 0 1 3.59 1.22h3a2 2 0 0 1 2 1.72 12.8 12.8 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 8.78a16 16 0 0 0 6.29 6.29l1.14-1.14a2 2 0 0 1 2.11-.45 12.8 12.8 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+        Call Us
+      </a>
+      <a class="help-quick-btn help-quick-wa" href="https://wa.me/919035205230" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+        WhatsApp
+      </a>
+    </div>
+  </div>
+</div>
+
+<div class="add-modal-overlay" id="pendingVerificationModal" role="dialog" aria-modal="true" aria-label="Account pending verification">
+  <div class="add-modal" id="pendingVerificationModalBox" style="max-width:400px">
+    <div class="add-modal-header">
+      <div class="add-modal-title">Your account is under review</div>
+      <button class="modal-close" onclick="closePendingVerificationModal()" aria-label="Close">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <p style="font-size:13.5px;color:var(--text-2);line-height:1.6;margin-bottom:18px">Your details need to be verified by our admin team before you can post anything — listings, reviews, visit requests, bookings, or payments. Please wait until you receive confirmation.</p>
     <div class="help-quick-strip">
       <a class="help-quick-btn" href="tel:9035205230">
         <svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.8 19.8 0 0 1 1.61 3.4 2 2 0 0 1 3.59 1.22h3a2 2 0 0 1 2 1.72 12.8 12.8 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 8.78a16 16 0 0 0 6.29 6.29l1.14-1.14a2 2 0 0 1 2.11-.45 12.8 12.8 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
@@ -10848,6 +10870,7 @@ let bookingForPropId = null;
 
 function openScheduleModal(propId) {
   if (!getLoggedInUser()) { showToast('Please log in to schedule a visit', 'warning'); openAuthModal(); return; }
+  if (blockIfNotVerified()) return;
   const p = PROPERTIES.find(x => x.id === propId);
   if (!p) return;
   closeAllFd();        // this is triggered by a quick-action icon whose own
@@ -10980,7 +11003,7 @@ async function submitScheduleVisit() {
       })
     });
     const data = await res.json();
-    if (!res.ok) { showToast(data.message || 'Could not request the visit. Please try again.', 'error'); return; }
+    if (!res.ok) { if (handleNotVerifiedError(data)) return; showToast(data.message || 'Could not request the visit. Please try again.', 'error'); return; }
 
     // Reflect the server's authoritative visitCount locally so the badge in
     // the detail modal / My Listings updates immediately, without touching
@@ -11028,6 +11051,7 @@ async function submitScheduleVisit() {
 ═══════════════════════════════════════════════ */
 function openBookingModal(propId) {
   if (!getLoggedInUser()) { showToast('Please log in to book', 'warning'); openAuthModal(); return; }
+  if (blockIfNotVerified()) return;
   const p = PROPERTIES.find(x => x.id === propId);
   if (!p) return;
   closeAllFd();        // this is triggered by a quick-action icon whose own
@@ -11107,7 +11131,7 @@ async function submitBookingRequest() {
       })
     });
     const data = await res.json();
-    if (!res.ok) { showToast(data.message || 'Could not complete the booking. Please try again.', 'error'); return; }
+    if (!res.ok) { if (handleNotVerifiedError(data)) return; showToast(data.message || 'Could not complete the booking. Please try again.', 'error'); return; }
 
     const dateLabel = formatDateDisplay(checkin);
     closeBookingModal();
@@ -11421,6 +11445,7 @@ function unlockIdentityFieldsForEdit() {
 }
 function openAddModal(presetType) {
   if (!getLoggedInUser()) { openAuthModal(); return; }
+  if (blockIfNotVerified()) return;
   const restored = restoreListingDraft();
   if (!restored) resetListingForm();
   if (presetType) {
@@ -11732,6 +11757,39 @@ function availableDateInfo(available) {
 function getLoggedInUser() {
   try { return JSON.parse(localStorage.getItem('homeloop_user')); } catch { return null; }
 }
+// Silent background sync so the cached isVerified flag (set at login/signup)
+// doesn't stay stale for a user who was verified by admin mid-session — runs
+// once on page load. Never shows an error; this is best-effort only, and
+// the server-side requireVerified check on each submit route remains the
+// real source of truth either way.
+async function refreshVerificationStatus() {
+  const user = getLoggedInUser();
+  if (!user || !user.userKey) return;
+  try {
+    const res = await fetch('/api/user/me', { headers: userAuthHeaders() });
+    if (!res.ok) return;
+    const data = await res.json();
+    const fresh = getLoggedInUser();
+    if (!fresh) return; // logged out while this was in flight
+    fresh.isVerified = !!data.isVerified;
+    fresh.accountType = data.accountType || fresh.accountType;
+    localStorage.setItem('homeloop_user', JSON.stringify(fresh));
+  } catch (err) { /* best-effort */ }
+}
+// Call at the top of any "open the submit form" function, right after the
+// existing getLoggedInUser() login check. Shows the pending-verification
+// modal and returns true (blocked) if the account isn't verified yet, so
+// the caller can `if (blockIfNotVerified()) return;`. Not a security
+// boundary — server-side requireVerified is — this is purely so people
+// don't fill out a whole form before finding out they can't submit it.
+function blockIfNotVerified() {
+  const user = getLoggedInUser();
+  if (user && !user.isVerified) {
+    showPendingVerificationModal();
+    return true;
+  }
+  return false;
+}
 // Fills an avatar circle with the user's uploaded photo when they have one,
 // falling back to their initial on a colored background otherwise. Shared by
 // the nav menu avatar and the profile modal's large avatar.
@@ -12030,6 +12088,7 @@ function finishAuthSuccess(data) {
     firstName: data.firstName, lastName: data.lastName, name: data.name,
     email: data.email, mobile: data.mobile, accountType: data.accountType,
     profilePhoto: data.profilePhoto || '',
+    isVerified: !!data.isVerified,
     userKey: data.userKey
   }));
   clearSignupDraft();
@@ -12331,6 +12390,32 @@ function openEditRestrictedModal(context, propertyLabel) {
 function closeEditRestrictedModal() {
   document.getElementById('editRestrictedModal').classList.remove('open');
   unlockBodyScroll();
+}
+
+/* ═══════════════════════════════════════════════
+   PENDING VERIFICATION MODAL — shown instead of a toast whenever the
+   server rejects a submit action (new listing, review, visit request,
+   booking, payment) because the account hasn't been verified by admin yet
+   (see requireVerified in server.js, code 'NOT_VERIFIED'). Call
+   showPendingVerificationModal() from any submit handler's error branch.
+═══════════════════════════════════════════════ */
+function showPendingVerificationModal() {
+  document.getElementById('pendingVerificationModal').classList.add('open');
+  lockBodyScroll();
+}
+function closePendingVerificationModal() {
+  document.getElementById('pendingVerificationModal').classList.remove('open');
+  unlockBodyScroll();
+}
+// Call from a submit handler's error branch with the parsed error response.
+// Returns true (and shows the modal) if this was a not-verified rejection,
+// so the caller can `return` instead of falling through to its usual toast.
+function handleNotVerifiedError(data) {
+  if (data && data.code === 'NOT_VERIFIED') {
+    showPendingVerificationModal();
+    return true;
+  }
+  return false;
 }
 
 /* ═══════════════════════════════════════════════
@@ -12647,6 +12732,7 @@ function populatePayPropertyOptions(selectedId, selectedLabel) {
 function openPaymentModal(purpose, propertyId, propertyLabel) {
   const user = getLoggedInUser();
   if (!user) { openAuthModal(); return; }
+  if (blockIfNotVerified()) return;
 
   CURRENT_PAYMENT_REQUEST = null;
   CURRENT_PAY_PROPERTY_ID = propertyId || null;
@@ -12891,7 +12977,7 @@ async function finalizePaymentRequestCreation(purpose, amount, note, propertyId,
     body: JSON.stringify({ purpose, amount, note, propertyId: propertyId || undefined, category, rentTotal })
   });
   const data = await res.json();
-  if (!res.ok) { showToast(data.message || 'Could not start payment', 'error'); return null; }
+  if (!res.ok) { if (handleNotVerifiedError(data)) return null; showToast(data.message || 'Could not start payment', 'error'); return null; }
 
   CURRENT_PAYMENT_REQUEST = {
     id: data.request._id, refCode: data.request.refCode, amount: data.request.amount,
@@ -13039,7 +13125,7 @@ async function submitPaymentProof() {
       body: formData
     });
     const data = await res.json();
-    if (!res.ok) { showToast(data.message || 'Could not submit payment proof', 'error'); return; }
+    if (!res.ok) { if (handleNotVerifiedError(data)) return; showToast(data.message || 'Could not submit payment proof', 'error'); return; }
     showToast('Payment submitted — we\'ll verify it shortly');
     closePaymentModal();
   } catch (err) {
@@ -13716,6 +13802,7 @@ async function loadHonestReviews() {
 /* ── Post Your Video Review (any logged-in user) ── */
 function openSubmitVideoModal() {
   if (!getLoggedInUser()) { showToast('Please log in to submit your video', 'warning'); openAuthModal(); return; }
+  if (blockIfNotVerified()) return;
   document.getElementById('submitVideoModal').classList.add('open');
   lockBodyScroll();
 }
@@ -13738,7 +13825,7 @@ async function submitVideoReview(evt) {
       body: JSON.stringify({ videoUrl, title, caption })
     });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Could not submit your video');
+    if (!res.ok) { if (handleNotVerifiedError(data)) return; throw new Error(data.error || 'Could not submit your video'); }
     showToast(data.message || 'Thanks! Your video has been submitted for review and will go live once approved.');
     document.getElementById('submitVideoForm').reset();
     closeSubmitVideoModal();
@@ -14188,6 +14275,7 @@ async function initReviewForm() {
 function openReviewModal() {
   const user = getLoggedInUser();
   if (!user) { openAuthModal(); return; }
+  if (blockIfNotVerified()) return;
   document.getElementById('reviewModal').classList.add('open');
 }
 function closeReviewModal() {
@@ -14237,6 +14325,7 @@ async function submitReview() {
     });
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
+      if (handleNotVerifiedError(data)) return;
       if (res.status === 409) {
         showToast(data.error || 'You have already posted a review', 'error');
         closeReviewModal();
@@ -15520,7 +15609,7 @@ function submitListing() {
   })
   .then(async res => {
     const data = await res.json();
-    if (!res.ok) throw new Error(data.message || 'Server error');
+    if (!res.ok) { if (data.code === 'NOT_VERIFIED') { showPendingVerificationModal(); return; } throw new Error(data.message || 'Server error'); }
     if (isEditing) {
       showToast('Updated!');
       closeEditListingFull();
@@ -15756,6 +15845,9 @@ document.getElementById('helpModal').addEventListener('click', function(e) {
 document.getElementById('editRestrictedModal').addEventListener('click', function(e) {
   if (e.target === this) closeEditRestrictedModal();
 });
+document.getElementById('pendingVerificationModal').addEventListener('click', function(e) {
+  if (e.target === this) closePendingVerificationModal();
+});
 document.getElementById('aboutModal').addEventListener('click', function(e) {
   if (e.target === this) closeAboutModal();
 });
@@ -15773,6 +15865,7 @@ updateShortlistCount();
 renderShortlistPanel();
 renderRecentlyViewed();
 updateNavAuth();
+refreshVerificationStatus(); // silent — keeps cached isVerified from going stale between logins
 loadHonestReviews();
 markRequiredLabels();
 document.getElementById('addModal').addEventListener('input', function(e){

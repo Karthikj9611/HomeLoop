@@ -69,6 +69,13 @@ const UserSchema = new mongoose.Schema({
   // and can later drive customer- vs owner-specific UI. Defaults to
   // 'customer' for any pre-existing accounts created before this field existed.
   accountType: { type: String, enum: ['customer', 'owner'], default: 'customer' },
+  // Manual admin approval gate. Every account starts false on signup; an
+  // admin flips it true from the Customers grid (see PATCH /api/users/:id/verify
+  // in admin.js). requireVerified (below) blocks all user "submit" routes
+  // (new listings, visits, bookings, honest reviews, payment requests/proof)
+  // until this is true — login/profile/browsing still work either way.
+  isVerified:  { type: Boolean, default: false },
+  verifiedAt:  { type: Date, default: null },
   remarks:   { type: [RemarkEntrySchema], default: [] },
   // Human-readable unique id, same pattern as Property.propertyId (e.g. USER-000001).
   // This is a *display* identifier, distinct from the Mongo _id. Session docs
@@ -233,6 +240,29 @@ async function requireOwner(req, res, next) {
     next();
   } catch (err) {
     console.error('requireOwner error:', err);
+    res.status(500).json({ message: 'Server error. Please try again.' });
+  }
+}
+
+// Runs after requireUser. Blocks every "submit" route (new listing, visit
+// request, booking, honest review, payment request/proof) until an admin has
+// manually verified the account (User.isVerified, flipped via
+// PATCH /api/users/:id/verify in admin.js). Browsing, login, and profile
+// routes are NOT behind this — only content the user is submitting into the
+// system.
+async function requireVerified(req, res, next) {
+  try {
+    const user = await User.findById(req.userId).select('isVerified').lean();
+    if (!user || !user.isVerified) {
+      return res.status(403).json({
+        code: 'NOT_VERIFIED',
+        error: 'Your account is pending admin verification. Please wait for confirmation before posting anything.',
+        message: 'Your account is pending admin verification. Please wait for confirmation before posting anything.',
+      });
+    }
+    next();
+  } catch (err) {
+    console.error('requireVerified error:', err);
     res.status(500).json({ message: 'Server error. Please try again.' });
   }
 }
@@ -407,6 +437,7 @@ app.post('/api/user/signup', userAuthLimiter, async (req, res) => {
       firstName: user.firstName, lastName: user.lastName, name: user.name,
       email: user.email, mobile: user.mobile, accountType: user.accountType,
       profilePhoto: user.profilePhoto || '',
+      isVerified: !!user.isVerified,
       userKey,
     });
   } catch (err) {
@@ -442,6 +473,7 @@ app.post('/api/user/login', userAuthLimiter, async (req, res) => {
       firstName: user.firstName, lastName: user.lastName, name: user.name,
       email: user.email, mobile: user.mobile, accountType: user.accountType,
       profilePhoto: user.profilePhoto || '',
+      isVerified: !!user.isVerified,
       userKey,
     });
   } catch (err) {
@@ -472,6 +504,8 @@ app.get('/api/user/me', requireUser, async (req, res) => {
       firstName: user.firstName || '', lastName: user.lastName || '', name: user.name || '',
       email: user.email || '', mobile: user.mobile || '',
       profilePhoto: user.profilePhoto || '',
+      accountType: user.accountType || 'customer',
+      isVerified: !!user.isVerified,
       createdAt: user.createdAt,
     });
   } catch (err) {
@@ -1309,7 +1343,7 @@ const listingWriteLimiter = rateLimit({
 });
 
 // ── POST /api/properties ──
-app.post('/api/properties', listingLimiter, requireUser, requireOwner, async (req, res) => {
+app.post('/api/properties', listingLimiter, requireUser, requireOwner, requireVerified, async (req, res) => {
   try {
     const body = req.body || {};
     const fields = NESTED_SECTIONS.reduce((acc, k) => {
@@ -1697,7 +1731,7 @@ const visitLimiter = rateLimit({
   message: { message: 'Too many visit requests. Please try again later.' }
 });
 
-app.post('/api/visits', visitLimiter, requireUser, async (req, res) => {
+app.post('/api/visits', visitLimiter, requireUser, requireVerified, async (req, res) => {
   try {
     const { propertyId, visitorName, visitorPhone, email, note, visitDate, visitTime } = req.body || {};
 
@@ -1795,7 +1829,7 @@ const bookingLimiter = rateLimit({
   message: { message: 'Too many booking requests. Please try again later.' }
 });
 
-app.post('/api/bookings', bookingLimiter, requireUser, async (req, res) => {
+app.post('/api/bookings', bookingLimiter, requireUser, requireVerified, async (req, res) => {
   try {
     const { propertyId, guestName, guestPhone, email, note, checkinDate, days, guests } = req.body || {};
 
@@ -2165,6 +2199,13 @@ app.post('/api/reviews', reviewLimiter, async (req, res) => {
     const user = await User.findById(userId);
     if (!user) return res.status(401).json({ error: 'Invalid or expired session' });
 
+    if (!user.isVerified) {
+      return res.status(403).json({
+        code: 'NOT_VERIFIED',
+        error: 'Your account is pending admin verification. Please wait for confirmation before posting anything.',
+      });
+    }
+
     const rating = Number(req.body.rating);
     const text = (req.body.text || '').trim();
     if (!rating || rating < 1 || rating > 5) {
@@ -2274,7 +2315,7 @@ app.get('/api/honest-reviews/mine', requireUser, async (req, res) => {
 // YouTube video. Goes live immediately (no manage/approve UI exists yet on
 // the site) — if moderation is added back later, flip `active`/`status`
 // below to false/'pending' and reintroduce an approve step.
-app.post('/api/honest-reviews/submit', honestReviewLimiter, requireUser, async (req, res) => {
+app.post('/api/honest-reviews/submit', honestReviewLimiter, requireUser, requireVerified, async (req, res) => {
   try {
     const user = await User.findById(req.userId);
     if (!user) return res.status(401).json({ error: 'Invalid or expired session' });
@@ -2604,7 +2645,7 @@ const paymentLimiter = rateLimit({
 // Step 1 — user starts a payment: creates the PaymentRequest with a fresh
 // refCode. The frontend follows up by showing our UPI/QR/bank details
 // (fetched separately from /api/payment-settings) alongside this refCode.
-app.post('/api/payments/request', paymentLimiter, requireUser, async (req, res) => {
+app.post('/api/payments/request', paymentLimiter, requireUser, requireVerified, async (req, res) => {
   try {
     const { purpose, amount, note, propertyId, category, rentTotal } = req.body || {};
     if (!['brokerage', 'booking', 'visit_deposit', 'promotion'].includes(purpose)) {
@@ -2692,7 +2733,7 @@ app.post('/api/payments/request', paymentLimiter, requireUser, async (req, res) 
 // longer required — the frontend no longer collects it. Only the request's
 // own owner can submit for it. An admin reviews the submission by hand
 // (see /api/admin/payments/:id/verify below).
-app.post('/api/payments/:id/submit-proof', paymentLimiter, requireUser, upload.single('screenshot'), async (req, res) => {
+app.post('/api/payments/:id/submit-proof', paymentLimiter, requireUser, requireVerified, upload.single('screenshot'), async (req, res) => {
   try {
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ message: 'Invalid payment id' });
     const request = await PaymentRequest.findOne({ _id: req.params.id, userId: req.userId });
