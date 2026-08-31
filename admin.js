@@ -18,7 +18,7 @@ module.exports = function registerAdminRoutes(app, deps) {
     nextPropertyId, modelForStatus,
     notifyUser, visitCalendarMeta,
     HonestReview, Partner, PaymentSettings, PaymentRequest,
-    SiteStat, DailyStat, todayStr,
+    SiteStat, DailyStat, todayStr, Referral,
   } = deps;
 
   if (process.env.NODE_ENV === 'production' && (!process.env.ADMIN_EMAIL || !process.env.ADMIN_PASSWORD)) {
@@ -1219,6 +1219,71 @@ module.exports = function registerAdminRoutes(app, deps) {
     } catch (err) {
       console.error('PATCH /api/admin/payments/:id/reject error:', err.message);
       res.status(500).json({ message: 'Error rejecting payment' });
+    }
+  });
+
+  // ────────────────────────────────────────────────────────────────────────────
+  // ── ADMIN: Referrals tab ──
+  // Backs the "Refer & Earn" register — list every submission (newest first),
+  // let the admin move a referral through Pending → Rewarded/Rejected, and
+  // delete stray/duplicate entries. Mirrors the payments queue pattern above.
+  // ────────────────────────────────────────────────────────────────────────────
+  const REFERRAL_STATUSES = ['Pending', 'Rewarded', 'Rejected'];
+
+  // GET /api/admin/referrals — optional ?status= filter, defaulting to everything.
+  app.get('/api/admin/referrals', requireAdmin, async (req, res) => {
+    try {
+      const { status } = req.query;
+      const filter = status && status !== 'all' ? { status } : {};
+      const referrals = await Referral.find(filter).sort({ createdAt: -1 }).lean();
+      res.json({ referrals });
+    } catch (err) {
+      console.error('GET /api/admin/referrals error:', err.message);
+      res.status(500).json({ message: 'Error fetching referrals' });
+    }
+  });
+
+  // PATCH /api/admin/referrals/:id/status — move a referral to Pending/Rewarded/Rejected.
+  app.patch('/api/admin/referrals/:id/status', requireAdmin, async (req, res) => {
+    try {
+      const { status } = req.body || {};
+      if (!REFERRAL_STATUSES.includes(status)) {
+        return res.status(400).json({ message: `status must be one of: ${REFERRAL_STATUSES.join(', ')}` });
+      }
+      const referral = await Referral.findByIdAndUpdate(req.params.id, { $set: { status } }, { new: true });
+      if (!referral) return res.status(404).json({ message: 'Referral not found' });
+      res.json({ message: 'Referral status updated', referral });
+    } catch (err) {
+      console.error('PATCH /api/admin/referrals/:id/status error:', err.message);
+      res.status(500).json({ message: 'Error updating referral status' });
+    }
+  });
+
+  // DELETE /api/admin/referrals/:id — remove a single referral entry.
+  app.delete('/api/admin/referrals/:id', requireAdmin, async (req, res) => {
+    try {
+      const referral = await Referral.findByIdAndDelete(req.params.id);
+      if (!referral) return res.status(404).json({ message: 'Referral not found' });
+      res.json({ message: 'Referral deleted' });
+    } catch (err) {
+      console.error('DELETE /api/admin/referrals/:id error:', err.message);
+      res.status(500).json({ message: 'Error deleting referral' });
+    }
+  });
+
+  // POST /api/admin/referrals/bulk-delete — remove several referrals at once
+  // (same shape as the partners bulk-delete route used by the admin UI).
+  app.post('/api/admin/referrals/bulk-delete', requireAdmin, async (req, res) => {
+    try {
+      const { ids } = req.body || {};
+      if (!Array.isArray(ids) || !ids.length) {
+        return res.status(400).json({ message: 'ids array is required' });
+      }
+      await Referral.deleteMany({ _id: { $in: ids } });
+      res.json({ message: 'Referrals deleted' });
+    } catch (err) {
+      console.error('POST /api/admin/referrals/bulk-delete error:', err.message);
+      res.status(500).json({ message: 'Error deleting referrals' });
     }
   });
 

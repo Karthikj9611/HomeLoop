@@ -2934,7 +2934,7 @@ require('./admin')(app, {
   nextPropertyId, modelForStatus,
   notifyUser, visitCalendarMeta,
   HonestReview, Partner, PaymentSettings, PaymentRequest,
-  SiteStat, DailyStat, todayStr,
+  SiteStat, DailyStat, todayStr, Referral,
 });
 
 // 404 for any API route that didn't match above.
