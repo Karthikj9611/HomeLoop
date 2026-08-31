@@ -2323,7 +2323,7 @@ const referralSchema = new mongoose.Schema({
   referrerName:   { type: String, required: true, trim: true },
   referrerPhone:  { type: String, required: true, trim: true },
   tenantName:     { type: String, required: true, trim: true },
-  tenantPhone:    { type: String, required: true, trim: true },
+  tenantPhone:    { type: String, required: true, trim: true, index: true }, // dedup is enforced in the route below, not via a DB-level unique index — see comment there for why
   status:         { type: String, enum: ['Pending', 'Rewarded', 'Rejected'], default: 'Pending' },
   createdAt:      { type: Date, default: Date.now },
 });
@@ -2351,13 +2351,37 @@ app.post('/api/referrals', referralLimiter, attachUserIfPresent, async (req, res
       return res.status(400).json({ message: "A valid 10-digit tenant phone number is required" });
     }
 
+    const normalizedReferrerPhone = normalizeMobile(referrerPhone);
+    const normalizedTenantPhone   = normalizeMobile(tenantPhone);
+
+    if (normalizedReferrerPhone === normalizedTenantPhone) {
+      return res.status(400).json({ message: "You can't refer yourself.", selfReferral: true });
+    }
+
+    // Dedup on tenant number, but a Rejected referral (bad number, fraud,
+    // etc.) shouldn't permanently block that tenant from being referred
+    // again — only an active (Pending/Rewarded) referral counts as a
+    // duplicate. That "not Rejected" condition can't be expressed as a
+    // MongoDB partial-unique index (partialFilterExpression only supports
+    // equality/$exists/$gt(e)/$lt(e)/$type, not $ne/$in), so this check —
+    // not a DB-level unique constraint — is the actual dedup guarantee.
+    // The referralLimiter above keeps concurrent-duplicate races rare
+    // enough not to need one.
+    const existing = await Referral.findOne({
+      tenantPhone: normalizedTenantPhone,
+      status: { $ne: 'Rejected' },
+    });
+    if (existing) {
+      return res.status(409).json({ message: 'This tenant has already been referred.', duplicate: true });
+    }
+
     const referral = await Referral.create({
       userId:         req.userId,
       userReadableId: req.userReadableId || null,
       referrerName:   String(referrerName).trim(),
-      referrerPhone:  normalizeMobile(referrerPhone),
+      referrerPhone:  normalizedReferrerPhone,
       tenantName:     String(tenantName).trim(),
-      tenantPhone:    normalizeMobile(tenantPhone),
+      tenantPhone:    normalizedTenantPhone,
     });
 
     res.status(201).json({ message: 'Thanks! We\'ll reach out to your referral shortly.', referral });

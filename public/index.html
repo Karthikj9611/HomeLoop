@@ -3268,6 +3268,7 @@ main.tab-explore .empty-state{display:none !important}
   padding:12px 14px;background:var(--bg-2);margin-bottom:14px;
 }
 .refer-code{flex:1;font-size:15px;font-weight:700;letter-spacing:.06em;color:var(--text)}
+.refer-detail-value{background:var(--bg-2,#f4f4f6);color:var(--text);cursor:default;min-height:16px;overflow-wrap:anywhere}
 .refer-copy-btn{
   font-size:12px;font-weight:600;color:var(--brand);
   background:var(--brand-light);padding:7px 14px;border-radius:8px;
@@ -6627,6 +6628,79 @@ main.tab-explore .empty-state{display:none !important}
       </div>
     </div>
     <button class="form-submit" id="referSubmitBtn" onclick="inviteAndRegisterReferral()">Share invite link</button>
+  </div>
+</div>
+
+<!-- ─── Referral Registered Modal ──────────────
+     Shown after a referral is successfully registered (all four fields
+     valid), so the referrer can confirm what got recorded before the
+     invite link actually goes out. -->
+<div class="add-modal-overlay" id="referDetailsModal" role="dialog" aria-modal="true" aria-label="Referral registered">
+  <div class="add-modal" id="referDetailsModalBox" style="max-width:400px">
+    <div class="add-modal-header">
+      <div class="add-modal-title">Referral registered</div>
+      <button class="modal-close" onclick="closeReferDetailsModal()" aria-label="Close">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="refer-required-hint" style="font-size:12px;color:var(--text-2);margin-bottom:14px">These details have been saved against your account for the ₹1,000 reward.</div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Your name</label>
+        <div class="form-input refer-detail-value" id="referDetailsName"></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Your phone</label>
+        <div class="form-input refer-detail-value" id="referDetailsPhone"></div>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Tenant's name</label>
+        <div class="form-input refer-detail-value" id="referDetailsTenantName"></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Tenant's phone</label>
+        <div class="form-input refer-detail-value" id="referDetailsTenantPhone"></div>
+      </div>
+    </div>
+    <button class="form-submit" id="referDetailsContinueBtn" onclick="continueShareAfterRegistration()">Continue to share</button>
+  </div>
+</div>
+
+<!-- ─── Referral Already Registered Modal ──────
+     Shown when the tenant's number has already been referred (by anyone) —
+     the backend rejects it as a duplicate before saving a second entry. -->
+<div class="add-modal-overlay" id="referDuplicateModal" role="dialog" aria-modal="true" aria-label="Tenant already referred">
+  <div class="add-modal" id="referDuplicateModalBox" style="max-width:400px">
+    <div class="add-modal-header">
+      <div class="add-modal-title">Already referred</div>
+      <button class="modal-close" onclick="closeReferDuplicateModal()" aria-label="Close">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="refer-required-hint" style="font-size:13px;color:var(--text-2);margin-bottom:14px">
+      <span id="referDuplicateTenantName"></span> (<span id="referDuplicateTenantPhone"></span>) has already been referred, so this one won't be registered for the reward. You can still forward the invite link to them.
+    </div>
+    <button class="form-submit" id="referDuplicateShareBtn" onclick="shareAnywayAfterDuplicate()">Share anyway</button>
+  </div>
+</div>
+
+<!-- ─── Referral Self-Refer Modal ───────────────
+     Shown when the tenant's number matches the referrer's own number —
+     no referral is registered for a self-refer attempt. -->
+<div class="add-modal-overlay" id="referSelfModal" role="dialog" aria-modal="true" aria-label="Can't refer yourself">
+  <div class="add-modal" id="referSelfModalBox" style="max-width:400px">
+    <div class="add-modal-header">
+      <div class="add-modal-title">Can't refer yourself</div>
+      <button class="modal-close" onclick="closeReferSelfModal()" aria-label="Close">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="refer-required-hint" style="font-size:13px;color:var(--text-2);margin-bottom:14px">
+      The tenant number (<span id="referSelfTenantPhone"></span>) matches your own, so this can't be registered as a referral. You can still share the invite link with someone else.
+    </div>
+    <button class="form-submit" id="referSelfShareBtn" onclick="shareAnywayAfterSelfReferral()">Share anyway</button>
   </div>
 </div>
 
@@ -13373,38 +13447,162 @@ function closeReferModal() {
 //  - tenant's phone given → invite goes straight to their WhatsApp
 //  - tenant's phone blank → generic "share with anyone" link (native share
 //    sheet / clipboard fallback), same as before
-// Registering the referral (for reward credit) is a separate, optional
-// side effect: it only fires, silently and in the background, when every
-// field is filled in and valid — it never blocks or gates the share.
+// Registering the referral (for reward credit) only happens when every
+// field is filled in and valid. When it does, the user sees a confirmation
+// modal with exactly what got registered *before* the invite is shared —
+// sharing is resumed only once they hit "Continue to share" on that modal.
+// If registration isn't attempted (fields missing/invalid) or it fails,
+// sharing still goes out immediately, same as before.
+let _pendingReferralShare = null;
+
 async function inviteAndRegisterReferral() {
   const referrerName  = document.getElementById('refer-name').value.trim();
   const referrerPhone = document.getElementById('refer-phone').value.trim();
   const tenantName    = document.getElementById('refer-tenant-name').value.trim();
   const tenantPhone   = document.getElementById('refer-tenant-phone').value.trim();
 
-  if (isValidIndianMobile(tenantPhone)) {
-    shareToTenantWhatsApp(tenantPhone, tenantName);
-  } else {
-    shareReferralCode(tenantName);
+  // Catch the common case immediately, without a round trip — both fields
+  // are already digit-only via sanitizeMobileInput, so a plain compare works.
+  if (referrerPhone && tenantPhone && referrerPhone === tenantPhone) {
+    openReferSelfModal({ tenantName, tenantPhone });
+    return;
   }
 
-  if (referrerName && isValidIndianMobile(referrerPhone) && tenantName && isValidIndianMobile(tenantPhone)) {
+  const canRegister = referrerName && isValidIndianMobile(referrerPhone) && tenantName && isValidIndianMobile(tenantPhone);
+
+  if (canRegister) {
     try {
       const res = await fetch('/api/referrals', {
         method: 'POST',
         headers: userAuthHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ referrerName, referrerPhone, tenantName, tenantPhone })
       });
-      if (res.ok) showToast("Referral registered — you'll get credit for the reward!", 'success');
+      if (res.ok) {
+        _pendingReferralShare = { tenantName, tenantPhone };
+        openReferDetailsModal({ referrerName, referrerPhone, tenantName, tenantPhone });
+        return; // share happens from the details modal's "Continue" action
+      }
+      if (res.status === 409 || res.status === 400) {
+        let body = {};
+        try { body = await res.json(); } catch (e) {}
+        if (body && body.duplicate) {
+          _pendingReferralShare = { tenantName, tenantPhone };
+          openReferDuplicateModal({ tenantName, tenantPhone });
+          return; // share happens from the duplicate modal's "Share anyway" action
+        }
+        // Belt-and-braces: the client-side check above should already have
+        // caught this, but a normalization difference server-side (or a
+        // stale/pre-filled field) could still slip one through.
+        if (body && body.selfReferral) {
+          openReferSelfModal({ tenantName, tenantPhone });
+          return; // share happens from the self-referral modal's "Share anyway" action
+        }
+      }
     } catch (err) {
-      // Best-effort only — registration failing silently shouldn't
-      // interrupt or roll back the invite that was just shared.
+      // Registration failed — fall through and share anyway below,
+      // honoring the "sharing always works" guarantee.
     }
   }
 
+  if (isValidIndianMobile(tenantPhone)) {
+    shareToTenantWhatsApp(tenantPhone, tenantName);
+  } else {
+    shareReferralCode(tenantName);
+  }
   document.getElementById('refer-tenant-name').value = '';
   document.getElementById('refer-tenant-phone').value = '';
   closeReferModal();
+}
+
+// Swaps the entry form for the confirmation modal without releasing the
+// scroll lock in between (one modal is open at all times here).
+function openReferDetailsModal(details) {
+  document.getElementById('referDetailsName').textContent = details.referrerName;
+  document.getElementById('referDetailsPhone').textContent = details.referrerPhone;
+  document.getElementById('referDetailsTenantName').textContent = details.tenantName;
+  document.getElementById('referDetailsTenantPhone').textContent = details.tenantPhone;
+  document.getElementById('referModal').classList.remove('open');
+  document.getElementById('referDetailsModal').classList.add('open');
+}
+
+// Closing without continuing (✕ / backdrop) cancels the pending share —
+// the referral stays registered, but nothing gets sent to the tenant.
+function closeReferDetailsModal() {
+  document.getElementById('referDetailsModal').classList.remove('open');
+  unlockBodyScroll();
+  _pendingReferralShare = null;
+  document.getElementById('refer-tenant-name').value = '';
+  document.getElementById('refer-tenant-phone').value = '';
+}
+
+function continueShareAfterRegistration() {
+  const pending = _pendingReferralShare;
+  document.getElementById('referDetailsModal').classList.remove('open');
+  unlockBodyScroll();
+  _pendingReferralShare = null;
+  document.getElementById('refer-tenant-name').value = '';
+  document.getElementById('refer-tenant-phone').value = '';
+  if (!pending) return;
+  shareToTenantWhatsApp(pending.tenantPhone, pending.tenantName);
+  showToast("Referral registered — you'll get credit for the reward!", 'success');
+}
+
+// This tenant's number was already referred (by anyone) — the backend
+// rejects it as a duplicate before it ever reaches Referral.create, so no
+// second entry is written and no reward is registered for this attempt.
+// The referrer can still forward the link; they just won't get credited
+// twice for the same tenant.
+function openReferDuplicateModal(details) {
+  document.getElementById('referDuplicateTenantName').textContent = details.tenantName;
+  document.getElementById('referDuplicateTenantPhone').textContent = details.tenantPhone;
+  document.getElementById('referModal').classList.remove('open');
+  document.getElementById('referDuplicateModal').classList.add('open');
+}
+
+function closeReferDuplicateModal() {
+  document.getElementById('referDuplicateModal').classList.remove('open');
+  unlockBodyScroll();
+  _pendingReferralShare = null;
+  document.getElementById('refer-tenant-name').value = '';
+  document.getElementById('refer-tenant-phone').value = '';
+}
+
+function shareAnywayAfterDuplicate() {
+  const pending = _pendingReferralShare;
+  document.getElementById('referDuplicateModal').classList.remove('open');
+  unlockBodyScroll();
+  _pendingReferralShare = null;
+  document.getElementById('refer-tenant-name').value = '';
+  document.getElementById('refer-tenant-phone').value = '';
+  if (!pending) return;
+  shareToTenantWhatsApp(pending.tenantPhone, pending.tenantName);
+}
+
+// The tenant number matches the referrer's own number — no referral gets
+// registered. "Share anyway" uses the generic link (not a WhatsApp message
+// to yourself), same as leaving the tenant fields blank.
+function openReferSelfModal(details) {
+  document.getElementById('referSelfTenantPhone').textContent = details.tenantPhone;
+  document.getElementById('referModal').classList.remove('open');
+  document.getElementById('referSelfModal').classList.add('open');
+}
+
+function closeReferSelfModal() {
+  document.getElementById('referSelfModal').classList.remove('open');
+  unlockBodyScroll();
+  _pendingReferralShare = null;
+  document.getElementById('refer-tenant-name').value = '';
+  document.getElementById('refer-tenant-phone').value = '';
+}
+
+function shareAnywayAfterSelfReferral() {
+  const tenantName = document.getElementById('refer-tenant-name').value.trim();
+  document.getElementById('referSelfModal').classList.remove('open');
+  unlockBodyScroll();
+  _pendingReferralShare = null;
+  document.getElementById('refer-tenant-name').value = '';
+  document.getElementById('refer-tenant-phone').value = '';
+  shareReferralCode(tenantName);
 }
 
 // Opens a WhatsApp chat pre-filled with the invite, addressed directly to
@@ -15566,6 +15764,15 @@ document.getElementById('chargesModal').addEventListener('click', function(e) {
 });
 document.getElementById('referModal').addEventListener('click', function(e) {
   if (e.target === this) closeReferModal();
+});
+document.getElementById('referDetailsModal').addEventListener('click', function(e) {
+  if (e.target === this) closeReferDetailsModal();
+});
+document.getElementById('referDuplicateModal').addEventListener('click', function(e) {
+  if (e.target === this) closeReferDuplicateModal();
+});
+document.getElementById('referSelfModal').addEventListener('click', function(e) {
+  if (e.target === this) closeReferSelfModal();
 });
 document.getElementById('helpModal').addEventListener('click', function(e) {
   if (e.target === this) closeHelpModal();
