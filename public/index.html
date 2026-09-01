@@ -4149,6 +4149,10 @@ main.tab-explore .empty-state{display:none !important}
 .img-slide.active{display:block}
 .img-slide.active{pointer-events:auto}
 .img-slide.active{opacity:1}
+/* Deter casual drag-to-desktop saving of listing photos. Doesn't stop
+   screenshots (impossible from a web page) or determined users — see
+   the contextmenu blocker in JS for the matching right-click deterrent. */
+.img-slide,.lightbox-img,.lightbox-thumb{-webkit-user-drag:none;user-drag:none;-webkit-touch-callout:none}
 
 /* ─── Image Zoom Lightbox ───────────────────────── */
 #imgZoomOverlay{
@@ -5436,7 +5440,7 @@ main.tab-explore .empty-state{display:none !important}
 <!-- ─── Lightbox (full-image viewer) ───────────────────────── -->
 <div class="lightbox-overlay" id="lightboxOverlay" role="dialog" aria-modal="true" aria-label="Image viewer">
   <div class="lightbox-stage">
-    <img class="lightbox-img" id="lightboxImg" src="" alt="Property photo" />
+    <img class="lightbox-img" id="lightboxImg" src="" alt="Property photo" draggable="false" />
     <div class="lightbox-video" id="lightboxVideo" style="display:none"></div>
     <button class="lightbox-close" onclick="closeLightbox()" aria-label="Close image viewer">
       <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -8150,7 +8154,7 @@ function buildImgSlider(p, fg, uidSuffix, videoSlideHtml) {
   // reveals them, since they load together with the first slide as soon as
   // the card itself is in view.
   const imgSlides = imgs.map((url, i) =>
-    `<img class="img-slide${i===0?' active':''}" src="${safeUrl(url)}"${i===0?' loading="lazy"':''} decoding="async" alt="" onclick="event.stopPropagation();handleCardImgClick(this,'${p.id}',${i})" />`
+    `<img class="img-slide${i===0?' active':''}" src="${safeUrl(url)}"${i===0?' loading="lazy"':''} decoding="async" alt="" draggable="false" onclick="event.stopPropagation();handleCardImgClick(this,'${p.id}',${i})" />`
   ).join('');
   // Video tour, when present, always comes after every photo — the last
   // slide in the same swipeable gallery rather than a separate section.
@@ -8159,6 +8163,17 @@ function buildImgSlider(p, fg, uidSuffix, videoSlideHtml) {
     : '';
   return `<div class="img-slides" id="${uid}">${imgSlides}${videoSlide}</div>`;
 }
+
+// Blocks the right-click "Save image as..." menu on listing photos (cards,
+// detail gallery, and the fullscreen lightbox + its thumbnails) as a casual
+// deterrent. Delegated on document so it covers slides/thumbs added after
+// this script runs, with no per-image listener bookkeeping needed. This is
+// a speed bump, not real protection: dev tools, disabling JS, or a
+// screenshot bypass it entirely (screenshots are OS-level and no website
+// can block them). Does not affect right-click anywhere else on the site.
+document.addEventListener('contextmenu', e => {
+  if (e.target.closest('.img-slide, .lightbox-img, .lightbox-thumb')) e.preventDefault();
+});
 
 function slideGo(uid, idx) {
   const c = document.getElementById(uid);
