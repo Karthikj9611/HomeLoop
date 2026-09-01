@@ -8137,12 +8137,27 @@ function handleCardImgClick(el, id, idx) {
     openLightbox(id, idx);
   }
 }
+// Same property can legitimately be rendered into more than one place at
+// once — e.g. a listing sits in Recently Viewed AND in its normal Rent/
+// Lease/PG/Promoted grid card at the same time, or a promoted listing
+// appears in both the Promoted highlight bucket and its own type section.
+// buildImgSlider used to id each slider purely as 'sl' + property id (+ a
+// per-caller suffix like '-grid'), so any two of those simultaneous
+// renders produced the exact same DOM id. getElementById only ever finds
+// the first one, so the swipe/drag handlers (which look the element up by
+// id) silently updated that first copy while the card the visitor was
+// actually touching never visibly changed — e.g. swiping the property card
+// appeared to do nothing while the Recently Viewed copy of the same
+// property changed instead. A per-render counter keeps every slider's id
+// unique regardless of how many times the same property gets drawn on the
+// page.
+let _imgSliderSeq = 0;
 function buildImgSlider(p, fg, uidSuffix, videoSlideHtml) {
   const imgs = (p.media?.images && p.media.images.length) ? p.media.images : [];
   if (imgs.length === 0 && !videoSlideHtml) {
     return `<div class="prop-img-placeholder"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" stroke="${fg}" opacity=".3"/><polyline points="9 22 9 12 15 12 15 22" stroke="${fg}" opacity=".3"/></svg></div>`;
   }
-  const uid = 'sl' + p.id + (uidSuffix || '');
+  const uid = 'sl' + p.id + (uidSuffix || '') + '-' + (_imgSliderSeq++);
   // Only the first slide (the one actually shown) is native-lazy-loaded —
   // that's what lets the browser defer it until the card scrolls near the
   // viewport. The rest of a card's slides sit right behind it, hidden with
