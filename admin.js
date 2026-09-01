@@ -2,6 +2,8 @@ const mongoose  = require('mongoose');
 const crypto    = require('crypto');
 const bcrypt    = require('bcryptjs');
 const rateLimit = require('express-rate-limit');
+const multer    = require('multer');
+const sharp     = require('sharp');
 
 // ── Admin routes ──
 // Everything admin-only lives here: admin login/session handling and every
@@ -19,6 +21,7 @@ module.exports = function registerAdminRoutes(app, deps) {
     notifyUser, visitCalendarMeta,
     HonestReview, Partner, PaymentSettings, PaymentRequest,
     SiteStat, DailyStat, todayStr, Referral,
+    ImageAsset,
   } = deps;
 
   if (process.env.NODE_ENV === 'production' && (!process.env.ADMIN_EMAIL || !process.env.ADMIN_PASSWORD)) {
@@ -813,10 +816,14 @@ module.exports = function registerAdminRoutes(app, deps) {
         tenantEmail: (body.tenantEmail || '').toString().trim(),
         bookedOn:    (body.bookedOn    || '').toString().trim(), // 'YYYY-MM-DD'
         description: (body.description || '').toString().trim(),
+        // URLs returned by /api/upload-images, same as property media.images
+        agreementImages: Array.isArray(body.agreementImages) ? body.agreementImages.filter(u => typeof u === 'string' && u.trim()) : [],
+        proofImages:     Array.isArray(body.proofImages)     ? body.proofImages.filter(u => typeof u === 'string' && u.trim())     : [],
       };
 
-      // All fields are required — mirrors the admin.html modal's own validation,
-      // enforced again here since the API can be called directly.
+      // Owner/tenant/booked-on/description are required — mirrors the admin.html
+      // modal's own validation, enforced again here since the API can be called
+      // directly. Agreement/proof uploads are optional (attach-when-you-have-them).
       const phoneOk = (v) => /^\d{10}$/.test(v);
       const emailOk = (v) => /^[^\s@"'<>\\]+@[^\s@"'<>\\]+\.[^\s@"'<>\\]+$/.test(v);
       if (
@@ -824,7 +831,7 @@ module.exports = function registerAdminRoutes(app, deps) {
         !bookingDetails.ownerName  || !phoneOk(bookingDetails.ownerPhone)  || !emailOk(bookingDetails.ownerEmail) ||
         !bookingDetails.tenantName || !phoneOk(bookingDetails.tenantPhone) || !emailOk(bookingDetails.tenantEmail)
       ) {
-        return res.status(400).json({ message: 'All booking detail fields are required — please fill in owner, tenant, and booked-on date.' });
+        return res.status(400).json({ message: 'Please fill in owner, tenant, booked-on date, and booking description.' });
       }
 
       const prop = await updateListingById(req.params.id, { bookingDetails }, { new: true });
@@ -834,6 +841,103 @@ module.exports = function registerAdminRoutes(app, deps) {
       console.error('PATCH /api/properties/:id/booking-details error:', err);
       res.status(500).json({ message: 'Error saving booking details' });
     }
+  });
+
+  // ── Booking Details modal uploads (admin-only) ──
+  // Agreement and Proof files in that modal are only ever uploaded by an
+  // admin, so — unlike the public /api/upload-images in server.js, which has
+  // to stay open for anyone submitting a property listing's photos — both
+  // routes below sit behind requireAdmin like everything else in this file.
+  // Both write into the same ImageAsset store / GET /uploads/:id route
+  // server.js already set up for property photos.
+  const bookingUploadLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000, max: 30,
+    standardHeaders: true, legacyHeaders: false,
+    message: { message: 'Too many upload requests. Please try again later.' }
+  });
+
+  // Proof — images only, same sharp→WebP treatment as property photos.
+  const uploadBookingImages = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 8 * 1024 * 1024 },
+    fileFilter: (req, file, cb) => {
+      const ok = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/heic', 'image/heif'].includes(file.mimetype);
+      cb(ok ? null : new Error('Only image files are allowed'), ok);
+    },
+  });
+  app.post('/api/upload-booking-images', requireAdmin, bookingUploadLimiter, uploadBookingImages.array('images'), async (req, res) => {
+    try {
+      const files = req.files || [];
+      if (!files.length) return res.status(400).json({ message: 'No images uploaded' });
+      const urls = [];
+      for (const file of files) {
+        const webpBuffer = await sharp(file.buffer)
+          .rotate()
+          .resize({ width: 1200, height: 1200, fit: 'inside', withoutEnlargement: true })
+          .webp({ quality: 80 })
+          .toBuffer();
+        const doc = await ImageAsset.create({ data: webpBuffer, contentType: 'image/webp' });
+        // .webp suffix lets the admin.html Booking Details modal tell images
+        // and PDFs apart from the URL alone (see uploadBookingDocs below) —
+        // GET /uploads/:id strips it before the DB lookup, so this stays
+        // backward-compatible with the bare-id URLs everything else here uses.
+        urls.push(`/uploads/${doc._id}.webp`);
+      }
+      res.status(201).json({ message: 'Images uploaded successfully', urls });
+    } catch (err) {
+      console.error('POST /api/upload-booking-images error:', err);
+      res.status(500).json({ message: 'Error uploading images' });
+    }
+  });
+
+  // Agreement — image or PDF; PDFs are stored as-is (sharp can't touch them).
+  const uploadBookingDocs = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 15 * 1024 * 1024 }, // PDFs run larger than photos
+    fileFilter: (req, file, cb) => {
+      const ok = [
+        'image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/heic', 'image/heif',
+        'application/pdf',
+      ].includes(file.mimetype);
+      cb(ok ? null : new Error('Only image or PDF files are allowed'), ok);
+    },
+  });
+  app.post('/api/upload-documents', requireAdmin, bookingUploadLimiter, uploadBookingDocs.array('documents'), async (req, res) => {
+    try {
+      const files = req.files || [];
+      if (!files.length) return res.status(400).json({ message: 'No files uploaded' });
+      const urls = [];
+      for (const file of files) {
+        if (file.mimetype === 'application/pdf') {
+          const doc = await ImageAsset.create({ data: file.buffer, contentType: 'application/pdf' });
+          // Extension in the URL is what lets the client distinguish a PDF
+          // from an image without a round trip — see the .webp comment above.
+          urls.push(`/uploads/${doc._id}.pdf`);
+          continue;
+        }
+        const webpBuffer = await sharp(file.buffer)
+          .rotate()
+          .resize({ width: 1200, height: 1200, fit: 'inside', withoutEnlargement: true })
+          .webp({ quality: 80 })
+          .toBuffer();
+        const doc = await ImageAsset.create({ data: webpBuffer, contentType: 'image/webp' });
+        urls.push(`/uploads/${doc._id}.webp`);
+      }
+      res.status(201).json({ message: 'Files uploaded successfully', urls });
+    } catch (err) {
+      console.error('POST /api/upload-documents error:', err);
+      res.status(500).json({ message: 'Error uploading files' });
+    }
+  });
+
+  // Multer errors from either route above come through as thrown errors
+  // rather than rejections multer formats itself — catch them here so the
+  // client gets a clean 400 instead of a raw 500.
+  app.use((err, req, res, next) => {
+    if (err instanceof multer.MulterError || (err && /Only image( or PDF)? files/.test(err.message || ''))) {
+      return res.status(400).json({ message: err.message });
+    }
+    next(err);
   });
 
   // ── POST /api/properties/bulk-delete (admin: delete many properties at once) ──

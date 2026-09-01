@@ -884,6 +884,13 @@ footer i{color:var(--gold)}
 }
 .btn-booking-details:hover{background:var(--brand);color:#fff;box-shadow:0 4px 12px rgba(224,58,82,0.3)}
 .btn-booking-details i{font-size:0.72rem}
+/* Green variant once booking details have actually been saved for this
+   property, so the admin can tell "still needs details" (pink) apart from
+   "already filled in" (green) at a glance without opening the modal. */
+.btn-booking-details.bd-filled{
+  background:rgba(52,168,83,0.12);color:#1e8e3e;border-color:rgba(52,168,83,0.3);
+}
+.btn-booking-details.bd-filled:hover{background:#34A853;color:#fff;box-shadow:0 4px 12px rgba(52,168,83,0.3)}
 
 /* ── BOOKING DETAILS MODAL ── */
 .bd-modal-header{text-align:center;margin-bottom:22px}
@@ -913,6 +920,10 @@ footer i{color:var(--gold)}
 }
 .bd-field-msg{color:var(--red);font-size:0.72rem;margin-top:4px;display:none}
 .bd-field-msg.show{display:block}
+.hr-form-row.bd-invalid{
+  border:1.5px solid var(--red)!important;border-radius:9px;
+  padding:10px;background:var(--red-light)!important;
+}
 
 /* ── MODERN DATE FIELD (Booked On) ── */
 .bd-date-wrap{position:relative}
@@ -1464,6 +1475,29 @@ footer i{color:var(--gold)}
   font-size:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;
 }
 .img-hint{font-size:11px;color:var(--text-3);margin-bottom:6px}
+.img-thumb-pdf{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:4px;width:100%;height:100%;background:var(--surface2);color:var(--brand);
+  font-size:9px;font-weight:700;text-decoration:none;
+}
+.img-thumb-pdf i{font-size:20px}
+/* Preview (view) + download affordances on Booking Details agreement/proof
+   thumbs — bottom-left so they never collide with img-thumb-del (top-right). */
+.img-thumb-view{cursor:zoom-in}
+.img-thumb-dl{
+  position:absolute;bottom:3px;left:3px;width:18px;height:18px;
+  background:rgba(0,0,0,.65);color:#fff;border:none;border-radius:50%;
+  font-size:9px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;
+  text-decoration:none;
+}
+.img-thumb-dl:hover{background:var(--brand-hover,rgba(0,0,0,.85))}
+.lightbox-dl{
+  position:absolute;top:16px;right:64px;width:36px;height:36px;border-radius:50%;
+  background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;
+  color:#fff;text-decoration:none;z-index:2;
+}
+.lightbox-dl svg{width:16px;height:16px;stroke:#fff;fill:none;stroke-width:2.2}
+.lightbox-dl:hover{background:var(--brand-hover,rgba(0,0,0,.8))}
 
 
 /* Video tour */
@@ -3385,6 +3419,9 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
 <div class="lightbox-overlay" id="adminLightboxOverlay" role="dialog" aria-modal="true" aria-label="Image viewer">
   <div class="lightbox-stage">
     <img class="lightbox-img" id="adminLightboxImg" src="" alt="Property photo" />
+    <a class="lightbox-dl" id="adminLightboxDl" href="" aria-label="Download image" onclick="event.stopPropagation();event.preventDefault();downloadAsset(this.href, this.dataset.filename||'photo.jpg')">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>
+    </a>
     <button class="lightbox-close" onclick="closeAdminLightbox()" aria-label="Close image viewer">
       <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
     </button>
@@ -4650,12 +4687,112 @@ window.openBookingDetailsModal = async function(id){
   document.getElementById('bdFormTenantPhone').value = bd.tenantPhone || '';
   document.getElementById('bdFormTenantEmail').value = bd.tenantEmail || '';
 
+  bdAgreementImages = Array.isArray(bd.agreementImages) ? bd.agreementImages.slice() : [];
+  bdProofImages     = Array.isArray(bd.proofImages)     ? bd.proofImages.slice()     : [];
+  _bdRenderImages('agreement');
+  _bdRenderImages('proof');
+
   const users = await _bdGetUsers();
   _bdPopulateSelect(document.getElementById('bdFormOwnerSelect'),  users, bd.ownerId);
   _bdPopulateSelect(document.getElementById('bdFormTenantSelect'), users, bd.tenantId);
 
   document.getElementById('bookingDetailsModal').classList.add('open');
   document.body.style.overflow = 'hidden';
+};
+
+/* ── Booking details: agreement & proof uploads. Both go through admin-only
+   endpoints in admin.js (requireAdmin) — separate from the public
+   /api/upload-images used by the listing form, since only admins should be
+   able to hit these. ── */
+let bdAgreementImages = [];
+let bdProofImages = [];
+
+function _bdImgConfig(kind){
+  return kind === 'agreement'
+    ? { arr: bdAgreementImages, grid: 'bdAgreementGrid', hint: 'bdAgreementHint', err: 'bdErrAgreement', group: 'bdAgreementFormGroup', empty: 'No agreement files added yet.' }
+    : { arr: bdProofImages,     grid: 'bdProofGrid',     hint: 'bdProofHint',     err: 'bdErrProof',     group: 'bdProofFormGroup',     empty: 'No proof images added yet.' };
+}
+
+function _bdRenderImages(kind){
+  const cfg = _bdImgConfig(kind);
+  const grid = document.getElementById(cfg.grid);
+  const hint = document.getElementById(cfg.hint);
+  // This same render path draws the grid whether the modal was just opened
+  // to review previously-saved Agreement/Proof files or is mid-upload, so
+  // preview + download need to work in both cases, not only while adding
+  // new files.
+  grid.innerHTML = cfg.arr.map((src, i) => {
+    const isPdf = /\.pdf($|\?)/i.test(src);
+    // Images are always re-encoded to WebP server-side (see /api/upload-documents
+    // and /api/upload-booking-images in admin.js), so the downloaded file must be
+    // named .webp to match its real bytes — labeling it .jpg here would give a
+    // file whose extension lies about its format. PDFs, by contrast, are stored
+    // unmodified, so naming those .pdf is both correct and byte-identical to
+    // whatever was originally uploaded.
+    const filename = (kind === 'agreement' ? 'agreement-' : 'proof-') + (i + 1) + (isPdf ? '.pdf' : '.webp');
+    const body = isPdf
+      ? '<a class="img-thumb-pdf" href="' + src + '" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="Open PDF preview"><i class="fas fa-file-pdf"></i>PDF</a>'
+      : '<img class="img-thumb-view" src="' + src + '" alt="img" onclick="event.stopPropagation();_bdPreview(\'' + kind + '\',' + i + ')" title="Click to preview"/>';
+    return '<div class="img-thumb">' + body +
+      '<button type="button" class="img-thumb-del" onclick="_bdRemoveImage(\'' + kind + '\',' + i + ')" title="Remove">✕</button>' +
+      '<a class="img-thumb-dl" href="' + src + '" onclick="event.stopPropagation();event.preventDefault();downloadAsset(\'' + src + '\',\'' + filename + '\')" title="Download">' +
+        '<i class="fas fa-download"></i>' +
+      '</a>' +
+    '</div>';
+  }).join('');
+  hint.textContent = cfg.empty;
+  hint.style.display = cfg.arr.length ? 'none' : 'block';
+}
+// Preview an Agreement/Proof image full-screen using the same lightbox the
+// property photo gallery uses. PDFs already get a native browser preview
+// via their own new-tab link, so this only handles the image entries —
+// but the lightbox's slideshow/thumb-strip only makes sense scoped to the
+// images of the SAME kind, so PDFs mixed into that array are filtered out
+// and the clicked index is remapped onto the images-only list.
+function _bdPreview(kind, i){
+  const cfg = _bdImgConfig(kind);
+  const imgUrls = cfg.arr.filter(src => !/\.pdf($|\?)/i.test(src));
+  const clicked = cfg.arr[i];
+  const idx = imgUrls.indexOf(clicked);
+  openAdminLightboxArr(imgUrls, idx < 0 ? 0 : idx);
+}
+
+window._bdRemoveImage = function(kind, i){
+  _bdImgConfig(kind).arr.splice(i, 1);
+  _bdRenderImages(kind);
+};
+
+window.bdAddImagesFromFiles = async function(input, kind){
+  const files = Array.from(input.files || []);
+  input.value = '';
+  if (!files.length) return;
+
+  const cfg = _bdImgConfig(kind);
+  const hint = document.getElementById(cfg.hint);
+  hint.style.display = 'block';
+  hint.textContent = 'Uploading…';
+
+  // Agreement accepts PDFs too, which the image-only endpoint (sharp
+  // resize/optimize) can't handle — routed to its own admin-only endpoint.
+  // Proof stays image-only, also admin-only (not the public upload-images).
+  const endpoint = kind === 'agreement' ? '/api/upload-documents' : '/api/upload-booking-images';
+  const fieldName = kind === 'agreement' ? 'documents' : 'images';
+
+  const form = new FormData();
+  files.forEach(file => form.append(fieldName, file));
+
+  try{
+    const res = await fetch(`${BASE}${endpoint}`, { method: 'POST', body: form, headers: authHeaders() });
+    const data = await res.json();
+    if(!res.ok) throw new Error(data.message || 'Upload failed');
+    (data.urls || []).forEach(u => { if (cfg.arr.indexOf(u) < 0) cfg.arr.push(u); });
+    document.getElementById(cfg.group).classList.remove('bd-invalid');
+    document.getElementById(cfg.err).classList.remove('show');
+  } catch(err){
+    alert(err.message || 'Could not upload files. Please try again.');
+  } finally {
+    _bdRenderImages(kind);
+  }
 };
 
 function closeBookingDetailsModal(){
@@ -4684,6 +4821,11 @@ function _bdClearErrors(){
     document.getElementById(f.input).classList.remove('bd-invalid');
     document.getElementById(f.err).classList.remove('show');
   });
+  ['agreement','proof'].forEach(kind => {
+    const cfg = _bdImgConfig(kind);
+    document.getElementById(cfg.group).classList.remove('bd-invalid');
+    document.getElementById(cfg.err).classList.remove('show');
+  });
 }
 
 // Validates every field, marking each invalid one (red border + inline
@@ -4703,6 +4845,7 @@ function _bdValidate(){
       if(!firstInvalid) firstInvalid = el;
     }
   });
+  // Agreement/Proof uploads are optional — no length check here.
   if(firstInvalid) firstInvalid.scrollIntoView({behavior:'smooth', block:'center'});
   return allValid;
 }
@@ -4744,6 +4887,8 @@ window.saveBookingDetails = async function(){
     tenantName:  document.getElementById('bdFormTenantName').value.trim(),
     tenantPhone: document.getElementById('bdFormTenantPhone').value.trim(),
     tenantEmail: document.getElementById('bdFormTenantEmail').value.trim(),
+    agreementImages: bdAgreementImages,
+    proofImages: bdProofImages,
   };
 
   const saveBtn = document.getElementById('bdFormSaveBtn');
@@ -6031,8 +6176,10 @@ $(document).ready(function(){
       /* 49 – Action */
       { data:null, orderable:false, render:(d,t,row)=>{
           _adminPropCache[row._id] = row;
+          const bd = row.bookingDetails || {};
+          const bdHasDetails = !!(bd.bookedOn || bd.description || bd.ownerId || bd.tenantId);
           const bookingBtn = row.booked
-            ? `<button class="btn-booking-details" title="Booking details" onclick="openBookingDetailsModal('${row._id}')"><i class="fas fa-file-signature"></i><span class="btn-label"> Booking</span></button>`
+            ? `<button class="btn-booking-details${bdHasDetails ? ' bd-filled' : ''}" title="${bdHasDetails ? 'Booking details saved — view or edit' : 'Add booking details'}" onclick="openBookingDetailsModal('${row._id}')"><i class="fas fa-file-signature"></i><span class="btn-label"> Booking</span></button>`
             : '';
           const shareBtn = row.verified
             ? `<button class="btn-view" style="background:#25D366;border-color:#25D366;color:#fff" title="Share the live link with the owner (and alt number) via WhatsApp" onclick="shareListingToOwner('${row._id}')"><i class="fab fa-whatsapp"></i><span class="btn-label"> Share</span></button>`
@@ -6725,6 +6872,31 @@ function fmtRupee(n){
   if (n >= 1000)     return '₹' + trim(n/1000) + 'k';
   return '₹' + n;
 }
+// Force a real download (rather than a same-tab navigation) for an
+// /uploads/:id asset, regardless of whether the browser would otherwise
+// just render it inline (images) or hand off to a PDF viewer. Fetches the
+// bytes and saves them via a temporary object URL — more reliable than a
+// bare `download` attribute, which browsers ignore for PDFs and for any
+// case where the asset isn't strictly same-origin.
+async function downloadAsset(url, filename){
+  try{
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('Download failed');
+    const blob = await res.blob();
+    const objUrl = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = objUrl;
+    a.download = filename || 'download';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(objUrl), 4000);
+  } catch(err){
+    // Fall back to letting the browser handle it directly (e.g. opens the
+    // PDF/image in a new tab) if the fetch-and-save approach didn't work.
+    window.open(url, '_blank', 'noopener');
+  }
+}
 function safeUrl(v){
   if(!v) return '';
   const s = String(v).trim();
@@ -7262,7 +7434,16 @@ let _adminLightboxIdx = 0;
 function openAdminLightbox(id, idx){
   const p = _adminPropCache[id];
   if (!p || !Array.isArray(p.images) || !p.images.length) return;
-  _adminLightboxImgs = p.images;
+  openAdminLightboxArr(p.images, idx);
+}
+// Generic entry point — opens the same full-screen viewer for any list of
+// image URLs, not just a cached property's photos. Used by the Booking
+// Details modal (Agreement/Proof) so those uploads get the same preview +
+// download experience as listing photos, whether the modal is being filled
+// in or just being reopened to view details that were already saved.
+function openAdminLightboxArr(urls, idx){
+  if (!Array.isArray(urls) || !urls.length) return;
+  _adminLightboxImgs = urls;
   _adminLightboxIdx = idx || 0;
   _renderAdminLightbox();
   document.getElementById('adminLightboxOverlay').classList.add('open');
@@ -7272,7 +7453,11 @@ function closeAdminLightbox(){
 }
 function _renderAdminLightbox(){
   if (!_adminLightboxImgs.length) return;
-  document.getElementById('adminLightboxImg').src = _adminLightboxImgs[_adminLightboxIdx];
+  const url = _adminLightboxImgs[_adminLightboxIdx];
+  document.getElementById('adminLightboxImg').src = url;
+  const dl = document.getElementById('adminLightboxDl');
+  dl.href = url;
+  dl.dataset.filename = 'photo-' + (_adminLightboxIdx + 1) + '.webp';
   document.getElementById('adminLightboxCounter').textContent = (_adminLightboxIdx + 1) + ' / ' + _adminLightboxImgs.length;
   const multi = _adminLightboxImgs.length > 1;
   document.getElementById('adminLightboxThumbs').innerHTML = multi
@@ -10042,7 +10227,7 @@ markRequiredLabels();
       <div class="bd-modal-header">
         <div class="bd-modal-icon"><i class="fas fa-file-signature"></i></div>
         <div class="bd-modal-title">Booking Details</div>
-        <div class="bd-modal-sub">All fields are required</div>
+        <div class="bd-modal-sub">Fields marked * are required</div>
       </div>
 
       <div class="hr-form-error" id="bdFormError"></div>
@@ -10119,6 +10304,40 @@ markRequiredLabels();
           <label>Email<span class="bd-req">*</span></label>
           <input type="text" id="bdFormTenantEmail" placeholder="Tenant email">
           <div class="bd-field-msg" id="bdErrTenantEmail">Enter a valid email address.</div>
+        </div>
+      </div>
+
+      <div class="bd-section">
+        <div class="bd-section-title"><i class="fas fa-file-contract"></i> Agreement &amp; Proof</div>
+
+        <div class="hr-form-row" id="bdAgreementFormGroup">
+          <label>Agreement (image or PDF, optional)</label>
+          <div class="img-row">
+            <div class="img-btns">
+              <button type="button" class="img-btn-sec" onclick="document.getElementById('bdAgreementFileInput').click()">📁 Upload</button>
+              <button type="button" class="img-btn-sec" onclick="document.getElementById('bdAgreementCameraInput').click()">📷 Camera</button>
+            </div>
+            <input type="file" id="bdAgreementFileInput" accept="image/*,application/pdf,.pdf" multiple style="display:none" onchange="bdAddImagesFromFiles(this,'agreement')"/>
+            <input type="file" id="bdAgreementCameraInput" accept="image/*" capture="environment" style="display:none" onchange="bdAddImagesFromFiles(this,'agreement')"/>
+          </div>
+          <div class="img-thumb-grid" id="bdAgreementGrid"></div>
+          <div class="img-hint" id="bdAgreementHint">No agreement files added yet.</div>
+          <div class="bd-field-msg" id="bdErrAgreement">Please add at least one agreement file.</div>
+        </div>
+
+        <div class="hr-form-row" id="bdProofFormGroup">
+          <label>Proof Images (optional)</label>
+          <div class="img-row">
+            <div class="img-btns">
+              <button type="button" class="img-btn-sec" onclick="document.getElementById('bdProofFileInput').click()">📁 Upload</button>
+              <button type="button" class="img-btn-sec" onclick="document.getElementById('bdProofCameraInput').click()">📷 Camera</button>
+            </div>
+            <input type="file" id="bdProofFileInput" accept="image/*" multiple style="display:none" onchange="bdAddImagesFromFiles(this,'proof')"/>
+            <input type="file" id="bdProofCameraInput" accept="image/*" capture="environment" style="display:none" onchange="bdAddImagesFromFiles(this,'proof')"/>
+          </div>
+          <div class="img-thumb-grid" id="bdProofGrid"></div>
+          <div class="img-hint" id="bdProofHint">No proof images added yet.</div>
+          <div class="bd-field-msg" id="bdErrProof">Please add at least one proof image.</div>
         </div>
       </div>
 

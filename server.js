@@ -934,6 +934,10 @@ function buildListingSchema() {
       tenantEmail: { type: String, default: '' },
       bookedOn:    { type: String, default: '' }, // 'YYYY-MM-DD'
       description: { type: String, default: '', trim: true, maxlength: 1000 }, // free-text notes captured with the booking (terms agreed, move-in details, etc.)
+      // URLs (from /api/upload-images or /api/upload-documents) for the signed
+      // agreement and any supporting ID/proof files — both optional.
+      agreementImages: { type: [String], default: [] },
+      proofImages:     { type: [String], default: [] },
     },
     views:            { type: Number,  default: 0 },
     visitCount:       { type: Number,  default: 0 }, // # of "Schedule a Visit" requests made for this listing
@@ -2482,7 +2486,13 @@ const ImageAsset = mongoose.model('ImageAsset', ImageAssetSchema);
 // Cached hard since each id's bytes never change (a re-upload creates a new id).
 app.get('/uploads/:id', async (req, res) => {
   try {
-    const img = await ImageAsset.findById(req.params.id).lean();
+    // Most callers still pass a bare ObjectId (property photos, profile
+    // photos, payment screenshots), but the Booking Details agreement/proof
+    // uploads (admin.js) now append a .pdf/.webp suffix so the client can
+    // tell content types apart from the URL alone — strip it here before
+    // the lookup so both forms resolve to the same document.
+    const rawId = req.params.id.replace(/\.[a-zA-Z0-9]+$/, '');
+    const img = await ImageAsset.findById(rawId).lean();
     if (!img) return res.status(404).end();
     res.set('Content-Type', img.contentType);
     res.set('Cache-Control', 'public, max-age=31536000, immutable');
@@ -2541,6 +2551,12 @@ app.use((err, req, res, next) => {
   }
   next(err);
 });
+
+// NOTE: the Booking Details modal's Agreement/Proof uploads (admin.html) are
+// handled by /api/upload-documents and /api/upload-booking-images in admin.js,
+// not here — they need to sit behind requireAdmin (admin-only), which only
+// exists inside admin.js's module scope. Both reuse the ImageAsset model and
+// GET /uploads/:id route defined just above.
 
 // ────────────────────────────────────────────────────────────────────────────
 // ── PAYMENTS (UPI/QR/bank transfer, verified by hand) ──
@@ -3000,6 +3016,7 @@ require('./admin')(app, {
   notifyUser, visitCalendarMeta,
   HonestReview, Partner, PaymentSettings, PaymentRequest,
   SiteStat, DailyStat, todayStr, Referral,
+  ImageAsset, // Booking Details modal's Agreement/Proof uploads reuse this store
 });
 
 // 404 for any API route that didn't match above.
