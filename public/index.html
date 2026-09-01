@@ -8303,6 +8303,11 @@ function openLightbox(propId, idx) {
   incrementViews(p);   // clicking a card's photo also counts as a view — the
                         // image's own onclick stops propagation so it never
                         // reaches the card's openDetail(id) handler
+  // Zooming into a card's photos is a real "viewed this property" signal
+  // too, even if the visitor never opens the full detail page — so it
+  // should land in Recently Viewed exactly like openDetail() does. Same
+  // booked-listing guard: booked/off-market listings don't belong there.
+  if (PROPERTIES.some(x => x.id === propId)) recordRecentlyViewed(p);
   renderCards();        // reflect the new count on the card grid
   lightboxImgs = p.media.images;
   lightboxVideoHtml = buildVideoSlideHtml(p);
@@ -16095,7 +16100,6 @@ document.addEventListener('keydown',function(e){
   });
 })();
 </script>
-
 
 </body>
 </html>
