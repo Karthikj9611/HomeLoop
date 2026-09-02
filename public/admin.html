@@ -102,7 +102,7 @@ body{
   background:var(--surface);border:1px solid var(--border);
   border-radius:var(--radius);padding:6px;
   box-shadow:var(--shadow);margin-bottom:24px;
-  width:fit-content;
+  width:100%;
 }
 .tab-btn{
   display:flex;align-items:center;gap:8px;
@@ -137,7 +137,7 @@ body{
   background:var(--surface);border:1px solid var(--border);
   border-radius:var(--radius);padding:6px;
   box-shadow:var(--shadow);
-  width:fit-content;margin-bottom:24px;flex-wrap:wrap;
+  width:100%;margin-bottom:24px;flex-wrap:wrap;
 }
 .cat-tab-btn{
   display:flex;align-items:center;gap:8px;
@@ -322,6 +322,7 @@ table.dataTable thead tr.col-filter-row th{
 
 /* ── MAIN CARD ── */
 .card{
+  width:100%;
   background:var(--surface);border-radius:var(--radius);
   box-shadow:var(--shadow-md);border:1px solid var(--border);overflow:hidden;
 }
@@ -439,7 +440,14 @@ table.dataTable.no-footer{border-bottom:none!important}
   font-size:0.68rem;font-weight:700;color:var(--gold-dark);
   text-transform:uppercase;letter-spacing:0.6px;
   padding:8px 8px 4px;
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
 }
+.col-toggle-group-label label{
+  display:flex;align-items:center;gap:6px;cursor:pointer;
+  font-size:0.68rem;font-weight:700;color:var(--gold-dark);
+  text-transform:uppercase;letter-spacing:0.4px;
+}
+.col-toggle-group-label input{width:13px;height:13px;cursor:pointer;accent-color:var(--gold-dark)}
 .col-toggle-item{
   display:flex;align-items:center;gap:9px;padding:6px 8px;border-radius:8px;
   cursor:pointer;font-size:0.82rem;color:var(--ink2);font-weight:500;
@@ -2563,7 +2571,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
               <th></th>
               <th></th>
               <th></th>
-              <th></th>
+              <th><input type="text" class="col-filter-input" data-filter-key="promotedPriority" placeholder="e.g. 1" oninput="onPropColumnFilter('promotedPriority', this.value, this)"></th>
               <th><input type="text" class="col-filter-input" data-filter-key="amenities" placeholder="Search…" oninput="onPropColumnFilter('amenities', this.value, this)"></th>
               <th><input type="text" class="col-filter-input" data-filter-key="userId" placeholder="Search…" oninput="onPropColumnFilter('userId', this.value, this)"></th>
               <th><div class="col-date-range">
@@ -7738,7 +7746,7 @@ const _propColumnFilters = {
   area:'', floor:'', furnishing:'', toilet:'', carparking:'', bikeparking:'', facing:'', age:'',
   pgGender:'', pgRoomType:'', pgMeals:'', pgOccupancy:'', pgNotice:'',
   ssRoomType:'', ssAvailable24hrs:'', ssCancellation:'', ssCouplesAllowed:'',
-  visitCount:'', views:'', propertyId:'', userId:'',
+  visitCount:'', views:'', propertyId:'', userId:'', promotedPriority:'',
   listedOnStart:'', listedOnEnd:'', promoted:'', verified:'', booked:'', remarks:'', amenities:''
 };
 
@@ -7990,8 +7998,12 @@ function buildPropColumnToggle(){
   const menu = document.getElementById('propColToggleMenu');
   if(!menu || !propTable) return;
   let html = '';
-  PROP_COL_GROUPS.forEach(group=>{
-    html += `<div class="col-toggle-group-label">${group.label}</div>`;
+  PROP_COL_GROUPS.forEach((group, gi)=>{
+    const allVisible = group.cols.every(c=>propTable.column(c.idx).visible());
+    html += `<div class="col-toggle-group-label">
+      <span>${group.label}</span>
+      <label><input type="checkbox" data-group-idx="${gi}" ${allVisible?'checked':''} onchange="onPropColGroupToggle(this)"> All</label>
+    </div>`;
     group.cols.forEach(c=>{
       const visible = propTable.column(c.idx).visible();
       html += `<label class="col-toggle-item">
@@ -8007,10 +8019,29 @@ function buildPropColumnToggle(){
   menu.innerHTML = html;
 }
 
+window.onPropColGroupToggle = function(inputEl){
+  const gi = parseInt(inputEl.getAttribute('data-group-idx'), 10);
+  const group = PROP_COL_GROUPS[gi];
+  if(!group || !propTable) return;
+  const show = inputEl.checked;
+  group.cols.forEach(c=>{ propTable.column(c.idx).visible(show, false); });
+  propTable.columns.adjust();
+  updatePropStickyOffset();
+  buildPropColumnToggle();
+  savePropColVisibility();
+};
+
 window.onPropColToggleChange = function(inputEl){
   const idx = parseInt(inputEl.getAttribute('data-col-idx'), 10);
   if(propTable) propTable.column(idx).visible(inputEl.checked);
   savePropColVisibility();
+  // Keep this column's group "All" checkbox in sync (checked only when
+  // every column in that group is now visible).
+  const gi = PROP_COL_GROUPS.findIndex(g => g.cols.some(c => c.idx === idx));
+  if(gi !== -1){
+    const groupCb = document.querySelector('#propColToggleMenu input[data-group-idx="'+gi+'"]');
+    if(groupCb) groupCb.checked = PROP_COL_GROUPS[gi].cols.every(c => propTable.column(c.idx).visible());
+  }
 };
 
 window.setAllPropColumns = function(show){
@@ -8322,6 +8353,7 @@ $.fn.dataTable.ext.search.push(function(settings, data, dataIndex){
   if(cf.visitCount && !contains(row.visitCount, cf.visitCount)) return false;
   if(cf.views && !contains(row.views, cf.views)) return false;
   if(cf.propertyId && !contains(row.propertyId, cf.propertyId)) return false;
+  if(cf.promotedPriority && !contains(row.full && row.full.promotedPriority, cf.promotedPriority)) return false;
   if(cf.userId && !contains(row.userId, cf.userId)) return false;
   if(cf.listedOnStart || cf.listedOnEnd){
     if(!row.createdAt) return false;
