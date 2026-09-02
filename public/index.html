@@ -7961,15 +7961,16 @@ function renderCards() {
 // Renders the read-only "Booked" bucket under Promoted/Rent/Lease/PG. Source
 // data is BOOKED_PROPERTIES (fetched separately — see fetchBookedProperties()
 // — since the main /api/properties response never includes booked listings).
-// Promoted's bucket is the "everything booked" view (no type filter);
-// Rent/Lease/PG each show only their own type's booked listings. Ignores
-// search/filter state — a booked listing has nothing left to filter on
-// (price/BHK/etc. no longer matter once it's off the market) — and only one
-// bucket is ever populated at a time, matching whichever tab is active.
+// Each tab's bucket is scoped to match what that tab actually shows:
+// Promoted's bucket is only booked listings that were promoted (p.promoted),
+// same as Rent/Lease/PG each showing only their own type's booked listings.
+// Ignores search/filter state — a booked listing has nothing left to filter
+// on (price/BHK/etc. no longer matter once it's off the market) — and only
+// one bucket is ever populated at a time, matching whichever tab is active.
 function renderBookedSections() {
   const groups = { promoted: [], rent: [], lease: [], pg: [] };
   if (currentTab === 'Promoted') {
-    groups.promoted = BOOKED_PROPERTIES;
+    groups.promoted = BOOKED_PROPERTIES.filter(p => p.promoted);
   } else if (currentTab === 'Rent') {
     groups.rent = BOOKED_PROPERTIES.filter(p => sectionKeyFor(p) === 'rent');
   } else if (currentTab === 'Lease') {
