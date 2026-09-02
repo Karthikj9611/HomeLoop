@@ -431,21 +431,43 @@ table.dataTable.no-footer{border-bottom:none!important}
 .col-toggle-btn.active{background:var(--ink);color:#fff;border-color:var(--ink)}
 .col-toggle-menu{
   display:none;position:fixed;z-index:9999;
-  width:300px;max-height:420px;overflow-y:auto;
+  width:340px;max-width:92vw;max-height:78vh;
   background:var(--surface);border:1px solid var(--border);
-  border-radius:var(--radius-sm);box-shadow:var(--shadow-lg);padding:10px;
+  border-radius:var(--radius-sm);box-shadow:var(--shadow-lg);
+  top:50%;left:50%;transform:translate(-50%,-50%);
+  flex-direction:column;overflow:hidden;
 }
-.col-toggle-menu.open{display:block}
+.col-toggle-menu.open{display:flex}
+.col-toggle-menu-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 16px;border-bottom:1px solid var(--border);flex-shrink:0;
+}
+.col-toggle-menu-title{font-size:0.9rem;font-weight:700;color:var(--ink)}
+.col-toggle-menu-close{
+  width:28px;height:28px;border-radius:50%;border:none;background:var(--surface2);
+  color:var(--ink2);cursor:pointer;font-size:1rem;line-height:1;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  transition:all 0.15s;
+}
+.col-toggle-menu-close:hover{background:var(--border);color:var(--ink)}
+.col-toggle-menu-body{overflow-y:auto;padding:10px;flex:1}
+.col-modal-backdrop{
+  display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9998;
+}
+.col-modal-backdrop.open{display:block}
 .col-toggle-group-label{
   font-size:0.68rem;font-weight:700;color:var(--gold-dark);
   text-transform:uppercase;letter-spacing:0.6px;
-  padding:8px 8px 4px;
+  padding:9px 12px;margin:6px 0 4px;
+  background:var(--surface2);border-radius:8px;
   display:flex;align-items:center;justify-content:space-between;gap:8px;
 }
+.col-toggle-group-label:first-child{margin-top:0}
 .col-toggle-group-label label{
   display:flex;align-items:center;gap:6px;cursor:pointer;
   font-size:0.68rem;font-weight:700;color:var(--gold-dark);
   text-transform:uppercase;letter-spacing:0.4px;
+  line-height:1;
 }
 .col-toggle-group-label input{width:13px;height:13px;cursor:pointer;accent-color:var(--gold-dark)}
 .col-toggle-item{
@@ -2153,6 +2175,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
 </style>
 </head>
 <body>
+<div class="col-modal-backdrop" id="colModalBackdrop" onclick="closeAllColMenus()"></div>
 
 
 <!-- ══ LOGIN OVERLAY ══ -->
@@ -8015,8 +8038,13 @@ function buildPropColumnToggle(){
   html += `<div class="col-toggle-footer">
     <button type="button" onclick="setAllPropColumns(true)">Show all</button>
     <button type="button" onclick="setAllPropColumns(false)">Hide all</button>
+    <button type="button" onclick="togglePropColMenu()">Done</button>
   </div>`;
-  menu.innerHTML = html;
+  menu.innerHTML = `<div class="col-toggle-menu-header">
+      <span class="col-toggle-menu-title">Columns</span>
+      <button type="button" class="col-toggle-menu-close" onclick="togglePropColMenu()" aria-label="Close">&times;</button>
+    </div>
+    <div class="col-toggle-menu-body">${html}</div>`;
 }
 
 window.onPropColGroupToggle = function(inputEl){
@@ -8077,10 +8105,11 @@ function positionColToggleMenu(btn, menu){
 window.togglePropColMenu = function(){
   const menu = document.getElementById('propColToggleMenu');
   const btn = document.getElementById('propColToggleBtn');
+  const backdrop = document.getElementById('colModalBackdrop');
   if(!menu) return;
   const opening = !menu.classList.contains('open');
-  if(opening) positionColToggleMenu(btn, menu);
   menu.classList.toggle('open', opening);
+  if(backdrop) backdrop.classList.toggle('open', opening);
   if(btn) btn.classList.toggle('active', opening);
 };
 document.addEventListener('click', function(e){
@@ -8088,9 +8117,11 @@ document.addEventListener('click', function(e){
   const menu = document.getElementById('propColToggleMenu');
   const btn = document.getElementById('propColToggleBtn');
   if(!wrap || !menu || !menu.classList.contains('open')) return;
-  if(!wrap.contains(e.target)){
+  if(!wrap.contains(e.target) && !menu.contains(e.target)){
     menu.classList.remove('open');
     if(btn) btn.classList.remove('active');
+    const backdrop = document.getElementById('colModalBackdrop');
+    if(backdrop) backdrop.classList.remove('open');
   }
 });
 // The dropdown is position:fixed now, so it won't track its button if the
@@ -8188,8 +8219,13 @@ function buildColumnToggle(key){
   html += `<div class="col-toggle-footer">
     <button type="button" onclick="setAllColumns('${key}',true)">Show all</button>
     <button type="button" onclick="setAllColumns('${key}',false)">Hide all</button>
+    <button type="button" onclick="toggleColMenu('${key}')">Done</button>
   </div>`;
-  menu.innerHTML = html;
+  menu.innerHTML = `<div class="col-toggle-menu-header">
+      <span class="col-toggle-menu-title">Columns</span>
+      <button type="button" class="col-toggle-menu-close" onclick="toggleColMenu('${key}')" aria-label="Close">&times;</button>
+    </div>
+    <div class="col-toggle-menu-body">${html}</div>`;
 }
 
 window.onColToggleChange = function(key, inputEl){
@@ -8214,11 +8250,19 @@ window.toggleColMenu = function(key){
   const cfg = COL_TOGGLE_CONFIGS[key];
   const menu = document.getElementById(cfg.menuId);
   const btn = document.getElementById(cfg.btnId);
+  const backdrop = document.getElementById('colModalBackdrop');
   if(!menu) return;
   const opening = !menu.classList.contains('open');
-  if(opening) positionColToggleMenu(btn, menu);
   menu.classList.toggle('open', opening);
+  if(backdrop) backdrop.classList.toggle('open', opening);
   if(btn) btn.classList.toggle('active', opening);
+};
+
+window.closeAllColMenus = function(){
+  document.querySelectorAll('.col-toggle-menu.open').forEach(menu => menu.classList.remove('open'));
+  document.querySelectorAll('.col-toggle-btn.active').forEach(btn => btn.classList.remove('active'));
+  const backdrop = document.getElementById('colModalBackdrop');
+  if(backdrop) backdrop.classList.remove('open');
 };
 
 document.addEventListener('click', function(e){
@@ -8228,9 +8272,11 @@ document.addEventListener('click', function(e){
     const menu = document.getElementById(cfg.menuId);
     const btn = document.getElementById(cfg.btnId);
     if(!wrap || !menu || !menu.classList.contains('open')) return;
-    if(!wrap.contains(e.target)){
+    if(!wrap.contains(e.target) && !menu.contains(e.target)){
       menu.classList.remove('open');
       if(btn) btn.classList.remove('active');
+      const backdrop = document.getElementById('colModalBackdrop');
+      if(backdrop) backdrop.classList.remove('open');
     }
   });
 });
