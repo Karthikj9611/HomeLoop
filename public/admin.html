@@ -1158,6 +1158,51 @@ footer i{color:var(--gold)}
    index.html so the row layout/behaviour (sections, diff-only, sticky
    label column) matches exactly. ── */
 .add-modal.compare-modal-box{max-width:1000px}
+
+/* ══════════════════════════════════════
+   SHARE LINKS MODAL — bulk multiselect → Share Links button → this.
+   Reuses the .add-modal-overlay/.add-modal shell and .compare-modal-header
+   classes for a consistent look with the Compare modal. ── */
+.add-modal.share-links-modal-box{max-width:640px}
+.share-links-number-row{margin-bottom:16px}
+.share-links-number-row label{
+  display:block;font-size:0.78rem;font-weight:700;color:var(--ink2);
+  margin-bottom:6px;letter-spacing:0.3px;
+}
+.share-links-number-row input{
+  width:100%;padding:11px 15px;box-sizing:border-box;
+  border:1.5px solid var(--border);border-radius:var(--radius-xs);
+  font-family:'Plus Jakarta Sans',sans-serif;font-size:0.92rem;
+  color:var(--ink);background:var(--surface2);outline:none;
+  transition:border-color 0.18s,background 0.18s;
+}
+.share-links-number-row input:focus{border-color:var(--gold);background:#fff}
+.share-links-list{
+  display:flex;flex-direction:column;gap:10px;
+  max-height:48vh;overflow-y:auto;margin:0 -4px;padding:0 4px 4px;
+}
+.share-link-card{
+  border:1.5px solid var(--border);border-radius:var(--radius-sm);
+  padding:12px 14px;background:var(--surface2);
+}
+.share-link-card-name{font-size:0.92rem;font-weight:700;color:var(--ink);margin-bottom:2px}
+.share-link-card-loc{font-size:0.8rem;color:var(--ink3);margin-bottom:8px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.share-link-card-loc a{color:var(--gold-dark);text-decoration:underline;font-weight:600;white-space:nowrap}
+.share-link-card-owner{
+  display:flex;flex-wrap:wrap;gap:6px 16px;font-size:0.8rem;color:var(--ink2);
+}
+.share-link-card-owner span{white-space:nowrap}
+.share-link-card-owner a{color:inherit;text-decoration:underline}
+.share-links-empty{font-size:0.85rem;color:var(--ink3);text-align:center;padding:20px 0}
+.share-links-footer{
+  display:flex;gap:10px;margin-top:18px;padding-top:16px;border-top:1px solid var(--border);
+}
+.share-links-footer button{
+  padding:12px;border-radius:var(--radius-xs);border:none;
+  font-family:'Plus Jakarta Sans',sans-serif;font-size:0.86rem;font-weight:700;
+  cursor:pointer;transition:all 0.18s;letter-spacing:0.2px;
+  display:flex;align-items:center;justify-content:center;gap:7px;
+}
 .compare-modal-header{
   display:flex;align-items:center;justify-content:space-between;
   margin:-24px -24px 16px;padding:18px 24px;border-bottom:1px solid var(--border);
@@ -2185,6 +2230,33 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
   </div>
 </div>
 
+<!-- ══ SHARE LINKS MODAL (bulk multiselect → Share Links → this) ══
+     Lets the admin type a WhatsApp number once and see full context for
+     every selected property — name, location, owner name/number/alt
+     number, and a Directions link to the map location — before sending
+     one bundled message with all the property links. No cap on count. -->
+<div class="add-modal-overlay" id="shareLinksModal" role="dialog" aria-modal="true" aria-label="Share property links">
+  <div class="add-modal share-links-modal-box" id="shareLinksModalBox">
+    <div class="compare-modal-header">
+      <span class="compare-modal-title">Share Property Links</span>
+      <button class="modal-close" onclick="closeShareLinksModal()" aria-label="Close">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="share-links-number-row">
+      <label for="shareLinksNumberInput">WhatsApp number to send to</label>
+      <input type="tel" id="shareLinksNumberInput" inputmode="numeric" placeholder="10-digit mobile, or with country code" oninput="this.value=this.value.replace(/[^0-9+]/g,'')" maxlength="15"/>
+    </div>
+    <div class="share-links-list" id="shareLinksList"></div>
+    <div class="share-links-footer">
+      <button class="confirm-cancel-btn" onclick="closeShareLinksModal()" style="flex:1">Cancel</button>
+      <button class="confirm-ok-btn success" onclick="sendShareLinksToNumber()" style="flex:2">
+        <i class="fab fa-whatsapp"></i> Send <span id="shareLinksSendCount">0</span> link<span id="shareLinksSendPlural">s</span> via WhatsApp
+      </button>
+    </div>
+  </div>
+</div>
+
 <div class="dashboard-container" style="max-width:100%;margin:0 auto">
 
   <!-- HEADER -->
@@ -2354,6 +2426,9 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
         </button>
         <button class="bulk-btn" id="bulkCompareBtn" style="display:none;background:var(--brand);color:#fff;border-color:var(--brand)" onclick="openAdminCompareModal()" title="Compare the selected properties and share the link with a customer">
           <i class="fas fa-code-compare"></i> <span class="bulk-btn-label" data-mobile="Compare">Compare - </span><span id="bulkCompareCount">0</span>
+        </button>
+        <button class="bulk-btn" id="bulkShareLinksBtn" style="display:none;background:#25D366;color:#fff;border-color:#25D366" onclick="shareSelectedLinksToNumber()" title="Share links for all selected properties to a WhatsApp number you enter">
+          <i class="fab fa-whatsapp"></i> <span class="bulk-btn-label" data-mobile="Share">Share Links - </span><span id="bulkShareLinksCount">0</span>
         </button>
         <span id="addPropertyDivider" style="width:1px;align-self:stretch;background:var(--border,#ddd);margin:2px 4px;flex-shrink:0"></span>
         <button type="button" class="bulk-selected-count" id="bulkSelectedCount" style="display:none" onclick="clearPropSelection()" title="Clear selection">
@@ -5135,6 +5210,96 @@ window.shareListingToOwner = async function(id){
   openWhatsAppTabs(numbers, text);
 };
 
+/* ── SHARE SELECTED PROPERTY LINKS TO A NUMBER YOU ENTER (WhatsApp) ──
+   Bundles every currently-selected property (any count — 10, 20, however
+   many; no ADMIN_COMPARE_MAX-style ceiling, since this isn't the compare
+   modal) into one message and sends it to a WhatsApp number the admin
+   types in, rather than to whichever number is already on the listing.
+   Reuses the same _selectedPropIds set as bulk-delete/Compare, and the
+   same waDigits()/wa.me pattern as shareListingToOwner(). Opens a modal
+   (rather than window.prompt) so the admin can see each selected
+   property's name, location (with a Directions link to navigate there),
+   and owner name/number/alt number before sending. */
+window.shareSelectedLinksToNumber = function(){
+  const ids = Array.from(_selectedPropIds);
+  if(!ids.length){ alert('Select at least one property first.'); return; }
+  renderShareLinksModal(ids);
+  document.getElementById('shareLinksModal').classList.add('open');
+  lockBodyScroll();
+  setTimeout(()=>{ const inp = document.getElementById('shareLinksNumberInput'); if(inp) inp.focus(); }, 0);
+};
+
+window.closeShareLinksModal = function(){
+  document.getElementById('shareLinksModal').classList.remove('open');
+  unlockBodyScroll();
+};
+
+function mapsDirectionsUrl(row){
+  const lat = row.latitude, lng = row.longitude;
+  if(lat != null && lng != null && lat !== '' && lng !== ''){
+    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(lat)},${encodeURIComponent(lng)}`;
+  }
+  const q = [row.loc, row.city].filter(Boolean).join(', ') || row.title || 'property location';
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`;
+}
+
+function renderShareLinksModal(ids){
+  const listEl = document.getElementById('shareLinksList');
+  const sendCountEl = document.getElementById('shareLinksSendCount');
+  const sendPluralEl = document.getElementById('shareLinksSendPlural');
+  sendCountEl.textContent = ids.length;
+  sendPluralEl.textContent = ids.length === 1 ? '' : 's';
+
+  if(!ids.length){
+    listEl.innerHTML = `<div class="share-links-empty">No properties selected.</div>`;
+    return;
+  }
+
+  listEl.innerHTML = ids.map(id=>{
+    const row = _adminPropCache[id] || {};
+    const name = escapeHtml(row.title || row.propertyId || 'Untitled property');
+    const loc  = escapeHtml([row.loc, row.city].filter(Boolean).join(', ') || '—');
+    const dirUrl = mapsDirectionsUrl(row);
+    const ownerName = escapeHtml(row.ownerName || '—');
+    const ownerNum  = row.ownerNumber ? `<a href="tel:${escapeHtml(row.ownerNumber)}">${escapeHtml(row.ownerNumber)}</a>` : '—';
+    const ownerAlt  = row.ownerAltPhone ? `<a href="tel:${escapeHtml(row.ownerAltPhone)}">${escapeHtml(row.ownerAltPhone)}</a>` : '—';
+    return `<div class="share-link-card">
+      <div class="share-link-card-name">${name}</div>
+      <div class="share-link-card-loc"><i class="fas fa-location-dot"></i> ${loc}
+        <a href="${dirUrl}" target="_blank" rel="noopener noreferrer"><i class="fas fa-diamond-turn-right"></i> Directions</a>
+      </div>
+      <div class="share-link-card-owner">
+        <span><i class="fas fa-user"></i> ${ownerName}</span>
+        <span><i class="fas fa-phone"></i> ${ownerNum}</span>
+        <span><i class="fas fa-phone-flip"></i> Alt: ${ownerAlt}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+window.sendShareLinksToNumber = function(){
+  const ids = Array.from(_selectedPropIds);
+  if(!ids.length){ alert('Select at least one property first.'); return; }
+
+  const raw = document.getElementById('shareLinksNumberInput').value;
+  const num = waDigits(raw);
+  if(!num){ showAlertModal('Enter a valid WhatsApp number.', { variant:'error', title:'Number needed' }); return; }
+
+  const lines = ids.map((id, i) => {
+    const row = _adminPropCache[id] || {};
+    const label = [row.propertyId, row.type, row.loc].filter(Boolean).join(' - ') || (row.title || 'Property');
+    const link = `${BASE}/property/${id}`;
+    return `${i + 1}. ${label}\n${link}`;
+  });
+  const msg = `Sharing ${ids.length} propert${ids.length===1?'y':'ies'}:\n\n${lines.join('\n\n')}`;
+  openWhatsAppTabs([num], encodeURIComponent(msg));
+  closeShareLinksModal();
+};
+
+document.getElementById('shareLinksModal').addEventListener('click', function(e){
+  if (e.target === this) closeShareLinksModal();
+});
+
 /* ── PROPERTY VIEWS: INDIVIDUAL & RESET-ALL ── */
 window.resetPropertyViews = async function(id, btnEl){
   const ok = await showConfirmModal({ title:'Reset views?', message:"This listing's view count will be set back to 0. This cannot be undone.", okText:'Reset' });
@@ -5262,6 +5427,16 @@ function updateBulkToolbarUI(){
   if (cmpBtn){
     cmpBtn.style.display = n >= 2 ? 'inline-flex' : 'none';
     if (cmpCountEl) cmpCountEl.textContent = Math.min(n, ADMIN_COMPARE_MAX);
+  }
+
+  // Share Links — unlike Compare, has no ADMIN_COMPARE_MAX ceiling; any
+  // number of selected properties (10+, unlimited) can be bundled into one
+  // WhatsApp message sent to a number the admin types in.
+  const shareLinksBtn = document.getElementById('bulkShareLinksBtn');
+  const shareLinksCountEl = document.getElementById('bulkShareLinksCount');
+  if (shareLinksBtn){
+    shareLinksBtn.style.display = n >= 1 ? 'inline-flex' : 'none';
+    if (shareLinksCountEl) shareLinksCountEl.textContent = n;
   }
   // If the modal is already open and the selection changed underneath it
   // (row unchecked while modal was up), keep the table in sync live.
