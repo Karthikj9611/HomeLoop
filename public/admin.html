@@ -1188,6 +1188,11 @@ footer i{color:var(--gold)}
 .share-link-card-name{font-size:0.92rem;font-weight:700;color:var(--ink);margin-bottom:2px}
 .share-link-card-loc{font-size:0.8rem;color:var(--ink3);margin-bottom:8px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 .share-link-card-loc a{color:var(--gold-dark);text-decoration:underline;font-weight:600;white-space:nowrap}
+.share-link-card-meta{
+  display:flex;flex-wrap:wrap;gap:6px 16px;font-size:0.8rem;color:var(--ink2);
+  padding-bottom:8px;margin-bottom:8px;border-bottom:1px dashed var(--border);
+}
+.share-link-card-meta span{white-space:nowrap}
 .share-link-card-owner{
   display:flex;flex-wrap:wrap;gap:6px 16px;font-size:0.8rem;color:var(--ink2);
 }
@@ -2251,7 +2256,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
     <div class="share-links-footer">
       <button class="confirm-cancel-btn" onclick="closeShareLinksModal()" style="flex:1">Cancel</button>
       <button class="confirm-ok-btn success" onclick="sendShareLinksToNumber()" style="flex:2">
-        <i class="fab fa-whatsapp"></i> Send <span id="shareLinksSendCount">0</span> link<span id="shareLinksSendPlural">s</span> via WhatsApp
+        <i class="fab fa-whatsapp"></i> Send (<span id="shareLinksSendCount">0</span>)
       </button>
     </div>
   </div>
@@ -5243,12 +5248,20 @@ function mapsDirectionsUrl(row){
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`;
 }
 
+function shareLinksPropDetails(row){
+  const rent = row.displayPrice || (row.rent!=null && row.rent!=='' ? `₹${row.rent}` : '') || '—';
+  const deposit = (row.deposit!=null && row.deposit!=='') ? `₹${row.deposit}` : '—';
+  const config = row.bhk || row.pgPropertyType || row.ssPropertyType || '—';
+  const toilet = row.toilet || row.toiletType || '—';
+  const carParking = (row.carparking!=null && row.carparking!=='') ? String(row.carparking) : '—';
+  const bikeParking = (row.bikeparking!=null && row.bikeparking!=='') ? String(row.bikeparking) : '—';
+  return { rent, deposit, config, toilet, carParking, bikeParking };
+}
+
 function renderShareLinksModal(ids){
   const listEl = document.getElementById('shareLinksList');
   const sendCountEl = document.getElementById('shareLinksSendCount');
-  const sendPluralEl = document.getElementById('shareLinksSendPlural');
   sendCountEl.textContent = ids.length;
-  sendPluralEl.textContent = ids.length === 1 ? '' : 's';
 
   if(!ids.length){
     listEl.innerHTML = `<div class="share-links-empty">No properties selected.</div>`;
@@ -5263,15 +5276,24 @@ function renderShareLinksModal(ids){
     const ownerName = escapeHtml(row.ownerName || '—');
     const ownerNum  = row.ownerNumber ? `<a href="tel:${escapeHtml(row.ownerNumber)}">${escapeHtml(row.ownerNumber)}</a>` : '—';
     const ownerAlt  = row.ownerAltPhone ? `<a href="tel:${escapeHtml(row.ownerAltPhone)}">${escapeHtml(row.ownerAltPhone)}</a>` : '—';
+    const { rent, deposit, config, toilet, carParking, bikeParking } = shareLinksPropDetails(row);
     return `<div class="share-link-card">
       <div class="share-link-card-name">${name}</div>
-      <div class="share-link-card-loc"><i class="fas fa-location-dot"></i> ${loc}
-        <a href="${dirUrl}" target="_blank" rel="noopener noreferrer"><i class="fas fa-diamond-turn-right"></i> Directions</a>
+      <div class="share-link-card-loc">📍 ${loc}
+        <a href="${dirUrl}" target="_blank" rel="noopener noreferrer">🧭 Directions</a>
+      </div>
+      <div class="share-link-card-meta">
+        <span>💰 Rent: ${escapeHtml(String(rent))}</span>
+        <span>💵 Deposit: ${escapeHtml(String(deposit))}</span>
+        <span>🛏️ ${escapeHtml(String(config))}</span>
+        <span>🚻 ${escapeHtml(String(toilet))}</span>
+        <span>🚗 Car: ${escapeHtml(String(carParking))}</span>
+        <span>🏍️ Bike: ${escapeHtml(String(bikeParking))}</span>
       </div>
       <div class="share-link-card-owner">
-        <span><i class="fas fa-user"></i> ${ownerName}</span>
-        <span><i class="fas fa-phone"></i> ${ownerNum}</span>
-        <span><i class="fas fa-phone-flip"></i> Alt: ${ownerAlt}</span>
+        <span>👤 ${ownerName}</span>
+        <span>📞 ${ownerNum}</span>
+        <span>☎️ Alt: ${ownerAlt}</span>
       </div>
     </div>`;
   }).join('');
@@ -5287,9 +5309,14 @@ window.sendShareLinksToNumber = function(){
 
   const lines = ids.map((id, i) => {
     const row = _adminPropCache[id] || {};
-    const label = [row.propertyId, row.type, row.loc].filter(Boolean).join(' - ') || (row.title || 'Property');
-    const link = `${BASE}/property/${id}`;
-    return `${i + 1}. ${label}\n${link}`;
+    const name = row.title || row.propertyId || 'Property';
+    const loc  = [row.loc, row.city].filter(Boolean).join(', ') || '—';
+    const dirUrl = mapsDirectionsUrl(row);
+    const ownerName = row.ownerName || '—';
+    const ownerNum  = row.ownerNumber || '—';
+    const ownerAlt  = row.ownerAltPhone ? `\nAlt: ${row.ownerAltPhone}` : '';
+    const { rent, deposit, config, toilet, carParking, bikeParking } = shareLinksPropDetails(row);
+    return `${i + 1}. ${name}\n📍 ${loc}\nDirections: ${dirUrl}\n💰 Rent: ${rent}\n💵 Deposit: ${deposit}\n🚪 ${config}\n🚻 Toilet: ${toilet}\n🚗 Car parking: ${carParking}\n🏍️ Bike parking: ${bikeParking}\n👤 ${ownerName}\n📞 ${ownerNum}${ownerAlt}`;
   });
   const msg = `Sharing ${ids.length} propert${ids.length===1?'y':'ies'}:\n\n${lines.join('\n\n')}`;
   openWhatsAppTabs([num], encodeURIComponent(msg));
