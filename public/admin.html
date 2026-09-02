@@ -5323,7 +5323,7 @@ window.sendShareLinksToNumber = function(){
       `Directions: ${dirUrl}`
     ].join('\n');
   });
-  const msg = `Sharing ${ids.length} propert${ids.length===1?'y':'ies'}:\n\n${lines.join('\n———\n')}`;
+  const msg = `Sharing ${ids.length} propert${ids.length===1?'y':'ies'}:\n\n${lines.join('\n*******************************\n')}`;
   openWhatsAppTabs([num], encodeURIComponent(msg));
   closeShareLinksModal();
 };
