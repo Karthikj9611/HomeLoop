@@ -5314,11 +5314,16 @@ window.sendShareLinksToNumber = function(){
     const dirUrl = mapsDirectionsUrl(row);
     const ownerName = row.ownerName || '—';
     const ownerNum  = row.ownerNumber || '—';
-    const ownerAlt  = row.ownerAltPhone ? `\nAlt: ${row.ownerAltPhone}` : '';
+    const ownerAlt  = row.ownerAltPhone ? ` (Alt: ${row.ownerAltPhone})` : '';
     const { rent, deposit, config, toilet, carParking, bikeParking } = shareLinksPropDetails(row);
-    return `${i + 1}. ${name}\n📍 ${loc}\nDirections: ${dirUrl}\n💰 Rent: ${rent}\n💵 Deposit: ${deposit}\n🚪 ${config}\n🚻 Toilet: ${toilet}\n🚗 Car parking: ${carParking}\n🏍️ Bike parking: ${bikeParking}\n👤 ${ownerName}\n📞 ${ownerNum}${ownerAlt}`;
+    return [
+      `${i + 1}. ${name} — ${loc}`,
+      `Rent ${rent} | Deposit ${deposit} | ${config} | Toilet: ${toilet} | Car: ${carParking} | Bike: ${bikeParking}`,
+      `Owner: ${ownerName}, ${ownerNum}${ownerAlt}`,
+      `Directions: ${dirUrl}`
+    ].join('\n');
   });
-  const msg = `Sharing ${ids.length} propert${ids.length===1?'y':'ies'}:\n\n${lines.join('\n\n')}`;
+  const msg = `Sharing ${ids.length} propert${ids.length===1?'y':'ies'}:\n\n${lines.join('\n———\n')}`;
   openWhatsAppTabs([num], encodeURIComponent(msg));
   closeShareLinksModal();
 };
