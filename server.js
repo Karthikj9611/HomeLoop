@@ -972,6 +972,27 @@ function modelForStatus(status) {
   if (status === 'Short Stay') return HourlyStay;
   return Rent; // For Rent, For Sale, New Launch, Sold, Booked
 }
+// Builds the Mongo filter used to decide which listings a logged-in user is
+// allowed to see/manage as "their own": either they created it (listing.userId
+// matches their account) OR the listing's owner.phone / owner.altPhone matches
+// their login mobile number. The second case covers listings that were added
+// (e.g. by an admin, or before the owner had an account) without ever being
+// linked to that owner's userId — once the real owner signs up/logs in with
+// the same mobile number, the listing should still show up for them.
+// owner.phone/altPhone are stored as plain 10-digit strings by the listing
+// form (see f-ownerPhone/f-ownerAltPhone + isValidIndianMobile on the
+// frontend), same shape normalizeMobile() produces, so a direct match works;
+// normalizing both sides here just guards against stray old data.
+async function getUserOwnershipFilter(userId) {
+  const or = [{ userId }];
+  if (mongoose.Types.ObjectId.isValid(userId)) {
+    const user = await User.findById(userId).select('mobile').lean();
+    const mobile = user && user.mobile ? normalizeMobile(user.mobile) : '';
+    if (mobile) or.push({ 'owner.phone': mobile }, { 'owner.altPhone': mobile });
+  }
+  return { $or: or };
+}
+
 // Finds a listing by Mongo _id without knowing in advance which of the four
 // collections it lives in — tries all four in parallel (a given ObjectId can
 // only ever exist in one, since each collection mints its own _ids).
@@ -989,11 +1010,14 @@ async function findListingById(id, { lean = false } = {}) {
 }
 
 // Same idea, scoped to a specific owner — used by the user-owned-listing routes.
+// "Owned" here means either userId matches or owner.phone/altPhone matches the
+// user's login mobile — see getUserOwnershipFilter().
 async function findUserListingById(id, userId, { lean = false } = {}) {
   if (!mongoose.Types.ObjectId.isValid(id)) return { doc: null, model: null, type: null };
+  const ownershipFilter = await getUserOwnershipFilter(userId);
   const types = Object.keys(LISTING_MODELS);
   const results = await Promise.all(types.map(t => {
-    const q = LISTING_MODELS[t].findOne({ _id: id, userId });
+    const q = LISTING_MODELS[t].findOne({ _id: id, ...ownershipFilter });
     return lean ? q.lean() : q;
   }));
   for (let i = 0; i < types.length; i++) {
@@ -1992,7 +2016,8 @@ app.patch('/api/user/notifications/read-all', requireUser, async (req, res) => {
 // ── GET /api/user/my-listings ──
 app.get('/api/user/my-listings', requireUser, async (req, res) => {
   try {
-    const docArrays = await Promise.all(LISTING_MODEL_LIST.map(M => M.find({ userId: req.userId }).lean()));
+    const ownershipFilter = await getUserOwnershipFilter(req.userId);
+    const docArrays = await Promise.all(LISTING_MODEL_LIST.map(M => M.find(ownershipFilter).lean()));
     const docs = docArrays.flat().sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
     const mapped = docs.map(doc => {
@@ -2083,9 +2108,10 @@ app.patch('/api/user/listings/:id/booked', listingWriteLimiter, requireUser, asy
     if (typeof booked !== 'boolean') {
       return res.status(400).json({ message: 'booked must be a boolean' });
     }
+    const ownershipFilter = await getUserOwnershipFilter(req.userId);
     let updated = null;
     for (const M of LISTING_MODEL_LIST) {
-      updated = await M.findOneAndUpdate({ _id: req.params.id, userId: req.userId }, { booked }, { new: true });
+      updated = await M.findOneAndUpdate({ _id: req.params.id, ...ownershipFilter }, { booked }, { new: true });
       if (updated) break;
     }
     if (!updated) return res.status(404).json({ message: 'Listing not found, or you do not have permission to update it' });
@@ -2098,9 +2124,10 @@ app.patch('/api/user/listings/:id/booked', listingWriteLimiter, requireUser, asy
 
 app.delete('/api/user/listings/:id', listingWriteLimiter, requireUser, async (req, res) => {
   try {
+    const ownershipFilter = await getUserOwnershipFilter(req.userId);
     let deleted = null;
     for (const M of LISTING_MODEL_LIST) {
-      deleted = await M.findOneAndDelete({ _id: req.params.id, userId: req.userId });
+      deleted = await M.findOneAndDelete({ _id: req.params.id, ...ownershipFilter });
       if (deleted) break;
     }
     if (!deleted) return res.status(404).json({ message: 'Listing not found, or you do not have permission to delete it' });
