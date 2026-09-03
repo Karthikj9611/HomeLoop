@@ -311,6 +311,18 @@ module.exports = function registerAdminRoutes(app, deps) {
         { new: true }
       ).lean();
       if (!user) return res.status(404).json({ message: 'Customer not found' });
+
+      // Let the user know either way — approved or rejected/revoked — so
+      // they're not left wondering why their submit routes are still locked.
+      await notifyUser(user._id, {
+        type: 'account_verification',
+        title: verified ? 'Account verified' : 'Account verification rejected',
+        message: verified
+          ? 'Your account has been verified by our team. You can now post listings, book visits, and more.'
+          : 'Your account verification was not approved. Please contact support if you have questions.',
+        meta: { status: verified ? 'approved' : 'rejected' },
+      });
+
       res.json({
         message: verified ? 'Customer verified' : 'Customer verification revoked',
         _id: user._id, isVerified: !!user.isVerified, verifiedAt: user.verifiedAt || null,
