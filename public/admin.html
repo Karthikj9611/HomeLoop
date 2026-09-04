@@ -2167,6 +2167,20 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
 .notif-item-title{font-size:0.82rem;font-weight:700;color:var(--ink)}
 .notif-item-msg{font-size:0.78rem;color:var(--ink2);margin-top:2px}
 .notif-item-time{font-size:0.7rem;color:var(--ink2);margin-top:4px;opacity:0.8}
+.notif-item-action{margin-top:8px}
+.notif-action-btn{
+  display:inline-flex;align-items:center;gap:6px;
+  background:var(--green-light,#dcf5e6);color:var(--green,#1e9e57);
+  border:1px solid rgba(30,158,87,0.25);border-radius:99px;
+  padding:5px 12px;font-size:0.75rem;font-weight:700;cursor:pointer;
+  transition:all 0.15s;font-family:inherit;
+}
+.notif-action-btn:hover{background:var(--green,#1e9e57);color:#fff}
+.notif-action-btn:disabled{opacity:0.6;cursor:default}
+.notif-action-done{
+  display:inline-flex;align-items:center;gap:6px;margin-top:8px;
+  color:var(--green,#1e9e57);font-size:0.75rem;font-weight:700;
+}
 
 /* ── CONFIRM MODAL ── */
 #confirmOverlay,#alertOverlay,#sharePickOverlay{
@@ -3870,10 +3884,111 @@ function renderNotifPanel(notifications){
         <div class="notif-item-title">${escapeHtmlNotif(n.title)}</div>
         ${n.message ? `<div class="notif-item-msg">${escapeHtmlNotif(n.message)}</div>` : ''}
         <div class="notif-item-time">${timeAgo(n.createdAt)}</div>
+        ${notifActionHtml(n)}
       </div>
     </div>
   `).join('');
 }
+
+// Type-specific inline action button — lets the admin verify the user/property
+// the notification is about without leaving the modal. meta.userId (Mongo _id)
+// comes from the user_registered notifyAdmin() call in server.js; meta.mongoId
+// (Mongo _id, distinct from the human-readable meta.propertyId code) comes
+// from the property_listed one. Falls back to no button if the id is missing
+// (e.g. an older notification saved before mongoId was added to meta).
+function notifActionHtml(n){
+  const meta = n.meta || {};
+  if(n.type === 'user_registered' && meta.userId){
+    return `<div class="notif-item-action">
+      <button class="notif-action-btn" onclick="event.stopPropagation();verifyUserFromNotif('${meta.userId}', '${n._id}', this)">
+        <i class="fas fa-check"></i> Verify user
+      </button>
+    </div>`;
+  }
+  if(n.type === 'property_listed' && meta.mongoId){
+    return `<div class="notif-item-action">
+      <button class="notif-action-btn" onclick="event.stopPropagation();verifyPropertyFromNotif('${meta.mongoId}', '${n._id}', this)">
+        <i class="fas fa-check"></i> Verify property
+      </button>
+    </div>`;
+  }
+  return '';
+}
+
+// Marks a notification read straight in the DOM + a fire-and-forget PATCH,
+// instead of calling fetchNotifications() (which would re-render the whole
+// panel from server data and wipe out the "✓ Verified" swap the caller just
+// made in the DOM — the server has no "verified via notif" flag to restore it).
+function markNotifReadLocally(notifId){
+  fetch(BASE + '/api/admin/notifications/' + notifId + '/read', { method:'PATCH', headers: authHeaders() }).catch(()=>{});
+  const item = document.querySelector('.notif-item[data-id="' + notifId + '"]');
+  if(item && item.classList.contains('unread')){
+    item.classList.remove('unread');
+    item.classList.add('read');
+    const badge = document.getElementById('notifBadge');
+    const current = parseInt(badge.textContent, 10);
+    if(!isNaN(current)){
+      const next = Math.max(0, current - 1);
+      if(next > 0){ badge.textContent = next; } else { badge.style.display = 'none'; }
+    }
+  }
+}
+
+// Verifies straight from the notification — same PATCH /api/users/:id/verify
+// endpoint (and confirm-modal UX) as the Customers grid's own Verify action.
+window.verifyUserFromNotif = async function(userId, notifId, btnEl){
+  const ok = await showConfirmModal({
+    title: 'Verify this customer?',
+    message: 'They\'ll be able to submit listings, visit requests, bookings, reviews, and payments once verified.',
+    okText: 'Verify',
+    variant: 'success'
+  });
+  if(!ok) return;
+  btnEl.disabled = true;
+  try{
+    const res = await fetch(`${BASE}/api/users/${userId}/verify`, {
+      method: 'PATCH',
+      headers: authHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({ verified: true })
+    });
+    const data = await res.json().catch(()=>({}));
+    if(!res.ok){ alert(data.message || 'Error verifying customer'); btnEl.disabled = false; return; }
+    btnEl.outerHTML = '<span class="notif-action-done"><i class="fas fa-check-circle"></i> Verified</span>';
+    markNotifReadLocally(notifId);
+    if(typeof dataTable !== 'undefined' && dataTable) dataTable.ajax.reload(null, false);
+  } catch(err){
+    alert('Network error. Please try again.');
+    btnEl.disabled = false;
+  }
+};
+
+// Same idea for properties — PATCH /api/properties/:id/verified, same
+// endpoint the Properties grid's Verified checkbox uses.
+window.verifyPropertyFromNotif = async function(mongoId, notifId, btnEl){
+  const ok = await showConfirmModal({
+    title: 'Verify this property?',
+    message: 'This will set "verified" to ON for this listing and make it visible on the public site.',
+    okText: 'Verify',
+    variant: 'success'
+  });
+  if(!ok) return;
+  btnEl.disabled = true;
+  try{
+    const res = await fetch(`${BASE}/api/properties/${mongoId}/verified`, {
+      method: 'PATCH',
+      headers: authHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({ verified: true })
+    });
+    const data = await res.json().catch(()=>({}));
+    if(!res.ok){ alert(data.message || 'Error verifying property'); btnEl.disabled = false; return; }
+    btnEl.outerHTML = '<span class="notif-action-done"><i class="fas fa-check-circle"></i> Verified</span>';
+    markNotifReadLocally(notifId);
+    if(typeof propTable !== 'undefined' && propTable) propTable.ajax.reload(null, false);
+  } catch(err){
+    alert('Network error. Please try again.');
+    btnEl.disabled = false;
+  }
+};
 
 // Local escaper (kept self-contained so this feature doesn't depend on
 // whichever esc()/escapeHtml() helper happens to live elsewhere in this file).
