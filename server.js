@@ -46,6 +46,15 @@ app.use(express.json({
 }));
 app.use(express.static('public', { maxAge: '7d', etag: true }));
 
+// Admin-notification creator (raises the bell icon in admin.html for events
+// like a new signup or a new listing). Real implementation lives in admin.js
+// and is wired in once that module is required near the bottom of this file
+// — declared here as a no-op `let` so routes defined earlier in the file can
+// still reference it by closure; by the time any request actually reaches
+// them (after app.listen), require('./admin') below has already reassigned
+// it to the real function.
+let notifyAdmin = async () => {};
+
  // 4 hours
 
 // ── User Schema ──
@@ -431,6 +440,12 @@ app.post('/api/user/signup', userAuthLimiter, async (req, res) => {
     const userKey = await issueUserSession(user);
     await EmailOtp.deleteOne({ email: cleanEmail }); // one-time use — clear it now that the account exists
     bumpDailyStat('registration'); // fire-and-forget; doesn't block the response
+    notifyAdmin({
+      type:    'user_registered',
+      title:   'New user registered',
+      message: `${name} (${cleanAccountType}) signed up — ${user.userId}`,
+      meta:    { userId: String(user._id), userReadableId: user.userId, accountType: cleanAccountType },
+    }); // fire-and-forget; notifyAdmin swallows its own errors, doesn't block the response
     return res.status(201).json({
       message: 'Account created successfully',
       _id: user._id, userId: user.userId,
@@ -1447,6 +1462,13 @@ app.post('/api/properties', listingLimiter, requireUser, requireOwner, requireVe
 
     const saved = prop.toObject();
     saved.displayPrice = displayPrice;
+
+    notifyAdmin({
+      type:    'property_listed',
+      title:   'New property listed',
+      message: `${fields.owner.propertyName || 'Untitled'} — ${fields.location.area || ''} (${status}), ${propertyId}`,
+      meta:    { propertyId, status, userId: req.userId || null },
+    }); // fire-and-forget; notifyAdmin swallows its own errors, doesn't block the response
 
     res.status(201).json({ message: 'Property added successfully!', property: saved });
   } catch (err) {
@@ -3035,7 +3057,11 @@ app.get('/api/stats', async (req, res) => {
 // ── Admin routes (separated out to admin.js) ── mounted last among real
 // routes so every model/helper it needs is already defined above, but
 // still before the catch-all 404 below.
-require('./admin')(app, {
+// Captures the real notifyAdmin() from admin.js and reassigns the top-level
+// `notifyAdmin` binding declared above, so the signup/listing routes (defined
+// earlier in the file, but only ever *invoked* after the server is up) call
+// the real thing instead of the no-op placeholder.
+({ notifyAdmin } = require('./admin')(app, {
   User, VisitRequest, LISTING_MODEL_LIST,
   findListingById, updateListingById, deleteListingById, moveListingIfNeeded,
   NESTED_SECTIONS, validatePropertyFields, formatPrice,
@@ -3044,7 +3070,7 @@ require('./admin')(app, {
   HonestReview, Partner, PaymentSettings, PaymentRequest,
   SiteStat, DailyStat, todayStr, Referral,
   ImageAsset, // Booking Details modal's Agreement/Proof uploads reuse this store
-});
+}));
 
 // 404 for any API route that didn't match above.
 app.use('/api', (req, res) => res.status(404).json({ message: 'Not found' }));

@@ -2121,6 +2121,53 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
 }
 .logout-btn:hover{background:var(--red-light);color:var(--red);border-color:rgba(224,68,68,0.25)}
 
+/* ── ADMIN NOTIFICATION BELL ── */
+.notif-bell-wrap{position:relative}
+.notif-bell-btn{
+  display:inline-flex;align-items:center;justify-content:center;position:relative;
+  width:38px;height:38px;background:var(--surface);color:var(--ink2);
+  border:1.5px solid var(--border);border-radius:50%;cursor:pointer;
+  font-size:0.95rem;transition:all 0.18s;
+}
+.notif-bell-btn:hover{background:var(--red-light);color:var(--ink);border-color:var(--border)}
+.notif-badge{
+  position:absolute;top:-4px;right:-4px;min-width:17px;height:17px;padding:0 4px;
+  background:var(--red);color:#fff;border-radius:99px;font-size:0.62rem;font-weight:700;
+  display:flex;align-items:center;justify-content:center;line-height:1;
+}
+/* Notifications modal — reuses the .add-modal-overlay/.add-modal shell (same
+   one as Compare/Share Links) so it opens centered and full-size instead of
+   a small bell dropdown. .notif-panel-header/-actions/-list and .notif-item*
+   below are unchanged from the old dropdown version and still apply as-is. */
+.add-modal.notif-modal-box{max-width:560px}
+.notif-modal-box .notif-panel-list{max-height:62vh}
+.notif-panel-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding-bottom:12px;border-bottom:1px solid var(--border);font-weight:700;font-size:0.85rem;
+  margin-bottom:4px;
+}
+.notif-panel-actions{display:flex;gap:6px}
+.notif-panel-actions button{
+  background:none;border:none;color:var(--ink2);cursor:pointer;padding:5px 7px;
+  border-radius:8px;font-size:0.78rem;
+}
+.notif-panel-actions button:hover{background:var(--red-light);color:var(--ink)}
+.notif-panel-list{max-height:380px;overflow-y:auto}
+.notif-empty{padding:24px 14px;text-align:center;color:var(--ink2);font-size:0.83rem}
+.notif-item{
+  display:flex;gap:10px;padding:11px 14px;border-bottom:1px solid var(--border);
+  cursor:pointer;transition:background 0.15s;
+}
+.notif-item:last-child{border-bottom:none}
+.notif-item:hover{background:var(--surface2,#f7f7f9)}
+.notif-item.unread{background:rgba(224,68,68,0.05)}
+.notif-item-dot{width:8px;height:8px;border-radius:50%;background:var(--red);margin-top:5px;flex:none}
+.notif-item.read .notif-item-dot{background:transparent}
+.notif-item-body{flex:1;min-width:0}
+.notif-item-title{font-size:0.82rem;font-weight:700;color:var(--ink)}
+.notif-item-msg{font-size:0.78rem;color:var(--ink2);margin-top:2px}
+.notif-item-time{font-size:0.7rem;color:var(--ink2);margin-top:4px;opacity:0.8}
+
 /* ── CONFIRM MODAL ── */
 #confirmOverlay,#alertOverlay,#sharePickOverlay{
   display:none;position:fixed;inset:0;z-index:10000;
@@ -2306,9 +2353,33 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
     </div>
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
       <div class="header-badge"><i class="fas fa-circle-dot"></i> Live &nbsp;·&nbsp; <span id="adminNameBadge">—</span></div>
+      <div class="notif-bell-wrap" id="notifBellWrap">
+        <button class="notif-bell-btn" id="notifBellBtn" onclick="openNotifModal()" title="Notifications" aria-haspopup="dialog" aria-expanded="false">
+          <i class="fas fa-bell"></i>
+          <span class="notif-badge" id="notifBadge" style="display:none">0</span>
+        </button>
+      </div>
       <button class="logout-btn" onclick="doLogout()"><i class="fas fa-right-from-bracket"></i> Sign Out</button>
     </div>
   </div>
+
+<div class="add-modal-overlay" id="notifModal" role="dialog" aria-modal="true" aria-label="Notifications">
+  <div class="add-modal notif-modal-box" id="notifModalBox">
+    <button class="modal-close" onclick="closeNotifModal()" aria-label="Close">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <div class="notif-panel-header">
+      <span>Notifications</span>
+      <div class="notif-panel-actions">
+        <button onclick="markAllNotificationsRead()" title="Mark all as read"><i class="fas fa-check-double"></i></button>
+        <button onclick="clearAllNotifications()" title="Clear all"><i class="fas fa-trash"></i></button>
+      </div>
+    </div>
+    <div class="notif-panel-list" id="notifPanelList">
+      <div class="notif-empty">Loading…</div>
+    </div>
+  </div>
+</div>
 
   <!-- TAB BAR -->
   <div class="tab-bar">
@@ -3691,6 +3762,7 @@ async function doLogin(){
     if(propTable) propTable.ajax.reload();
     if(apptTable) apptTable.ajax.reload();
     checkForListingDraftOnLoad();
+    startNotifPolling();
   } catch(e){
     errEl.textContent = 'Network error. Please try again.';
   }
@@ -3767,6 +3839,113 @@ function doLogout(){
   location.reload();
 }
 
+/* ── ADMIN NOTIFICATIONS (bell icon) ──
+   Polls GET /api/admin/notifications every 30s and whenever the panel is
+   opened. Notifications are raised server-side (see admin.js's notifyAdmin)
+   for two events for now: a user registering, and a property being listed. */
+let notifPollTimer = null;
+let notifPanelOpen = false;
+
+function timeAgo(dateStr){
+  const diffMs = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diffMs / 60000);
+  if(mins < 1) return 'just now';
+  if(mins < 60) return mins + 'm ago';
+  const hrs = Math.floor(mins / 60);
+  if(hrs < 24) return hrs + 'h ago';
+  const days = Math.floor(hrs / 24);
+  return days + 'd ago';
+}
+
+function renderNotifPanel(notifications){
+  const list = document.getElementById('notifPanelList');
+  if(!notifications || !notifications.length){
+    list.innerHTML = '<div class="notif-empty">No notifications yet.</div>';
+    return;
+  }
+  list.innerHTML = notifications.map(n => `
+    <div class="notif-item ${n.read ? 'read' : 'unread'}" data-id="${n._id}" onclick="onNotifItemClick('${n._id}', ${!!n.read})">
+      <div class="notif-item-dot"></div>
+      <div class="notif-item-body">
+        <div class="notif-item-title">${escapeHtmlNotif(n.title)}</div>
+        ${n.message ? `<div class="notif-item-msg">${escapeHtmlNotif(n.message)}</div>` : ''}
+        <div class="notif-item-time">${timeAgo(n.createdAt)}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// Local escaper (kept self-contained so this feature doesn't depend on
+// whichever esc()/escapeHtml() helper happens to live elsewhere in this file).
+function escapeHtmlNotif(str){
+  return String(str == null ? '' : str)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+async function fetchNotifications(){
+  if(!ADMIN_KEY) return;
+  try {
+    const res = await fetch(BASE + '/api/admin/notifications', { headers: authHeaders() });
+    if(!res.ok) return;
+    const data = await res.json();
+    const badge = document.getElementById('notifBadge');
+    if(data.unreadCount > 0){
+      badge.style.display = 'flex';
+      badge.textContent = data.unreadCount > 99 ? '99+' : data.unreadCount;
+    } else {
+      badge.style.display = 'none';
+    }
+    if(notifPanelOpen) renderNotifPanel(data.notifications);
+  } catch(e){ /* ignore — next poll will retry */ }
+}
+
+function openNotifModal(){
+  notifPanelOpen = true;
+  document.getElementById('notifModal').classList.add('open');
+  document.getElementById('notifBellBtn').setAttribute('aria-expanded', 'true');
+  fetchNotifications();
+}
+
+function closeNotifModal(){
+  notifPanelOpen = false;
+  document.getElementById('notifModal').classList.remove('open');
+  document.getElementById('notifBellBtn').setAttribute('aria-expanded', 'false');
+}
+
+document.getElementById('notifModal').addEventListener('click', function(e){
+  if (e.target === this) closeNotifModal();
+});
+
+async function onNotifItemClick(id, alreadyRead){
+  if(alreadyRead) return;
+  try {
+    await fetch(BASE + '/api/admin/notifications/' + id + '/read', { method:'PATCH', headers: authHeaders() });
+    fetchNotifications();
+  } catch(e){}
+}
+
+async function markAllNotificationsRead(){
+  try {
+    await fetch(BASE + '/api/admin/notifications/mark-all-read', { method:'POST', headers: authHeaders() });
+    fetchNotifications();
+  } catch(e){}
+}
+
+async function clearAllNotifications(){
+  if(!await showConfirmModal({ title:'Clear all notifications?', message:'This removes every notification. This cannot be undone.', okText:'Clear all' })) return;
+  try {
+    await fetch(BASE + '/api/admin/notifications/clear-all', { method:'POST', headers: authHeaders() });
+    fetchNotifications();
+  } catch(e){}
+}
+
+function startNotifPolling(){
+  fetchNotifications();
+  if(notifPollTimer) clearInterval(notifPollTimer);
+  notifPollTimer = setInterval(fetchNotifications, 30000);
+}
+
 if(!ADMIN_KEY){
   window.addEventListener('DOMContentLoaded', showLogin);
 } else {
@@ -3790,6 +3969,7 @@ if(!ADMIN_KEY){
       const stored = localStorage.getItem('kr_admin_name');
       if(stored) document.getElementById('adminNameBadge').textContent = stored;
       checkForListingDraftOnLoad();
+      startNotifPolling();
     });
 }
 

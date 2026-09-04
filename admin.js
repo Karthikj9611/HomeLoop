@@ -154,6 +154,96 @@ module.exports = function registerAdminRoutes(app, deps) {
     }
   }
 
+  // ────────────────────────────────────────────────────────────────────────────
+  // ── ADMIN NOTIFICATIONS ──
+  // In-app notifications *for the admin* (as opposed to notifyUser, which
+  // notifies a customer/owner). For now raised on two events: a new user
+  // registering, and a new property being listed. Call notifyAdmin(...) from
+  // wherever those happen in server.js (see the returned helper at the bottom
+  // of this file). Read by admin.html's bell icon via the routes below.
+  // ────────────────────────────────────────────────────────────────────────────
+  const AdminNotificationSchema = new mongoose.Schema({
+    type:    { type: String, required: true }, // e.g. 'user_registered', 'property_listed'
+    title:   { type: String, required: true },
+    message: { type: String, default: '' },
+    meta:    { type: mongoose.Schema.Types.Mixed, default: {} },
+    read:    { type: Boolean, default: false },
+    createdAt: { type: Date, default: Date.now, index: true },
+  });
+  const AdminNotification = mongoose.model('AdminNotification', AdminNotificationSchema);
+
+  // Fire-and-forget style creator — swallow errors so a notification failure
+  // never breaks the registration/listing flow that triggered it.
+  async function notifyAdmin({ type, title, message = '', meta = {} }) {
+    try {
+      await AdminNotification.create({ type, title, message, meta });
+    } catch (err) {
+      console.error('notifyAdmin error:', err.message);
+    }
+  }
+
+  // GET /api/admin/notifications — newest first, capped at 200, plus unread count.
+  app.get('/api/admin/notifications', requireAdmin, async (req, res) => {
+    try {
+      const [notifications, unreadCount] = await Promise.all([
+        AdminNotification.find({}).sort({ createdAt: -1 }).limit(200).lean(),
+        AdminNotification.countDocuments({ read: false }),
+      ]);
+      res.json({ notifications, unreadCount });
+    } catch (err) {
+      console.error('GET /api/admin/notifications error:', err.message);
+      res.status(500).json({ message: 'Error fetching notifications' });
+    }
+  });
+
+  // PATCH /api/admin/notifications/:id/read — mark one notification as read.
+  app.patch('/api/admin/notifications/:id/read', requireAdmin, async (req, res) => {
+    try {
+      const notification = await AdminNotification.findByIdAndUpdate(
+        req.params.id, { read: true }, { new: true }
+      ).lean();
+      if (!notification) return res.status(404).json({ message: 'Notification not found' });
+      res.json({ message: 'Marked as read', notification });
+    } catch (err) {
+      console.error('PATCH /api/admin/notifications/:id/read error:', err.message);
+      res.status(500).json({ message: 'Error updating notification' });
+    }
+  });
+
+  // POST /api/admin/notifications/mark-all-read
+  app.post('/api/admin/notifications/mark-all-read', requireAdmin, async (req, res) => {
+    try {
+      await AdminNotification.updateMany({ read: false }, { $set: { read: true } });
+      res.json({ message: 'All notifications marked as read' });
+    } catch (err) {
+      console.error('POST /api/admin/notifications/mark-all-read error:', err.message);
+      res.status(500).json({ message: 'Error updating notifications' });
+    }
+  });
+
+  // DELETE /api/admin/notifications/:id — remove a single notification.
+  app.delete('/api/admin/notifications/:id', requireAdmin, async (req, res) => {
+    try {
+      const notification = await AdminNotification.findByIdAndDelete(req.params.id);
+      if (!notification) return res.status(404).json({ message: 'Notification not found' });
+      res.json({ message: 'Notification deleted' });
+    } catch (err) {
+      console.error('DELETE /api/admin/notifications/:id error:', err.message);
+      res.status(500).json({ message: 'Error deleting notification' });
+    }
+  });
+
+  // POST /api/admin/notifications/clear-all — remove every notification.
+  app.post('/api/admin/notifications/clear-all', requireAdmin, async (req, res) => {
+    try {
+      await AdminNotification.deleteMany({});
+      res.json({ message: 'All notifications cleared' });
+    } catch (err) {
+      console.error('POST /api/admin/notifications/clear-all error:', err.message);
+      res.status(500).json({ message: 'Error clearing notifications' });
+    }
+  });
+
   // ── GET /api/admin/visits (admin panel — all visit requests, newest first) ──
   app.get('/api/admin/visits', requireAdmin, async (req, res) => {
     try {
@@ -1560,4 +1650,11 @@ module.exports = function registerAdminRoutes(app, deps) {
       res.status(500).json({ message: 'Error deleting records' });
     }
   });
+
+  // Exposed so server.js can raise admin notifications from the registration
+  // and property-creation routes (see notes at the top of this file):
+  //   const { notifyAdmin } = require('./admin')(app, { ...deps });
+  //   ...then call notifyAdmin({ type, title, message, meta }) after a
+  //   successful signup / listing creation.
+  return { notifyAdmin };
 };
