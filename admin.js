@@ -618,9 +618,13 @@ module.exports = function registerAdminRoutes(app, deps) {
   app.get('/api/admin/properties', requireAdmin, async (req, res) => {
     try {
       const docArrays = await Promise.all(LISTING_MODEL_LIST.map(M => M.find({}).populate('userId', 'profilePhoto').lean()));
+      // 0 and null/undefined both mean "unranked" (see the promoted-priority
+      // route below and admin.html's column render) and must sort to the
+      // back, behind any listing with a real (>0) position.
+      const rankOf = v => (v != null && v > 0) ? v : Infinity;
       const docs = docArrays.flat().sort((a, b) =>
         (Number(b.promoted) - Number(a.promoted)) ||
-        ((a.promotedPriority ?? 3) - (b.promotedPriority ?? 3)) ||
+        (rankOf(a.promotedPriority) - rankOf(b.promotedPriority)) ||
         (new Date(b.createdAt) - new Date(a.createdAt))
       );
 
