@@ -1235,6 +1235,17 @@ footer i{color:var(--gold)}
 }
 .share-link-card-owner span{white-space:nowrap}
 .share-link-card-owner a{color:inherit;text-decoration:underline}
+
+.checkavail-send-btn{
+  display:inline-flex;align-items:center;gap:6px;margin-top:8px;
+  background:#25D366;color:#fff;border:none;border-radius:8px;
+  padding:7px 14px;font-size:0.85rem;font-weight:600;cursor:pointer;
+  text-decoration:none;
+}
+.checkavail-card.sent{opacity:.55}
+.checkavail-card.sent .checkavail-send-btn{background:var(--ink3,#999);pointer-events:none}
+.checkavail-card.skipped{opacity:.55}
+.checkavail-skip-note{font-size:0.8rem;color:var(--ink3);font-style:italic;margin-top:6px}
 .share-links-empty{font-size:0.85rem;color:var(--ink3);text-align:center;padding:20px 0}
 .share-links-footer{
   display:flex;gap:10px;margin-top:18px;padding-top:16px;border-top:1px solid var(--border);
@@ -2367,6 +2378,29 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
   </div>
 </div>
 
+<!-- ══ CHECK AVAILABILITY MODAL — one WhatsApp "Send" link per owner ══
+     Browsers only ever trust the FIRST window.open() in a click as a real
+     user gesture and silently block any more opened in a loop — so instead
+     of trying (and failing) to auto-open one tab per owner, each owner
+     gets their own link here. Clicking one is itself a genuine click, so
+     it's never blocked; the card then grays out so you can track which
+     owners you've already messaged across a long list. -->
+<div class="add-modal-overlay" id="checkAvailabilityModal" role="dialog" aria-modal="true" aria-label="Check availability with owners">
+  <div class="add-modal share-links-modal-box" id="checkAvailabilityModalBox">
+    <div class="compare-modal-header">
+      <span class="compare-modal-title">Check Availability With Owners</span>
+      <button class="modal-close" onclick="closeCheckAvailabilityModal()" aria-label="Close">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <p style="margin:0 0 12px;font-size:0.85rem;color:var(--ink3)">Click "Send" on each owner below — one tab opens per click. Sent cards gray out so you can track progress.</p>
+    <div class="share-links-list" id="checkAvailabilityList"></div>
+    <div class="share-links-footer">
+      <button class="confirm-cancel-btn" onclick="closeCheckAvailabilityModal()" style="flex:1">Close</button>
+    </div>
+  </div>
+</div>
+
 <div class="dashboard-container" style="max-width:100%;margin:0 auto">
 
   <!-- HEADER -->
@@ -2564,7 +2598,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
         <button class="bulk-btn" id="bulkShareLinksBtn" style="display:none;background:#25D366;color:#fff;border-color:#25D366" onclick="shareSelectedLinksToNumber()" title="Share links for all selected properties to a WhatsApp number you enter">
           <i class="fab fa-whatsapp"></i> <span class="bulk-btn-label" data-mobile="Share">Share Links - </span><span id="bulkShareLinksCount">0</span>
         </button>
-        <button class="bulk-btn" id="bulkCheckAvailabilityBtn" style="display:none;background:#25D366;color:#fff;border-color:#25D366" onclick="checkAvailabilityWithOwners()" title="Ask each selected property's owner (alt number only) via WhatsApp whether it's still available">
+        <button class="bulk-btn" id="bulkCheckAvailabilityBtn" style="display:none;background:#25D366;color:#fff;border-color:#25D366" onclick="checkAvailabilityWithOwners()" title="Review and send a WhatsApp availability check to each selected property's owner (alt number only)">
           <i class="fab fa-whatsapp"></i> <span class="bulk-btn-label" data-mobile="Check">Check Availability - </span><span id="bulkCheckAvailabilityCount">0</span>
         </button>
         <span id="addPropertyDivider" style="width:1px;align-self:stretch;background:var(--border,#ddd);margin:2px 4px;flex-shrink:0"></span>
@@ -5672,56 +5706,105 @@ window.sendShareLinksToNumber = function(){
 
 /* ── BULK: CHECK AVAILABILITY WITH OWNERS (WhatsApp) ──
    Unlike Share Links (one bundled message to a single number the admin
-   types in), this fires one personalized WhatsApp message PER selected
-   property to that property's own owner — using ONLY the owner's ALTERNATE
-   number (row.ownerAltPhone). No fallback to the main owner number: a
-   listing with no alt number on file is skipped (and reported), rather
-   than silently sent to the main owner number instead. */
-function openWhatsAppTabsMulti(pairs){
-  pairs.forEach(({ number, text }, i) => {
-    // Same stagger as openWhatsAppTabs, for the same reason: back-to-back
-    // window.open() calls need a little spacing to reliably all land as
-    // separate tabs/app handoffs within one click's user-gesture window.
-    setTimeout(() => { window.open(`https://wa.me/${number}?text=${text}`, '_blank'); }, i * 400);
-  });
-}
+   types in), this builds one personalized WhatsApp message PER selected
+   property for that property's own owner — using ONLY the owner's
+   ALTERNATE number (row.ownerAltPhone). No fallback to the main owner
+   number: a listing with no alt number on file is listed as skipped
+   rather than silently sent to the main owner number instead.
 
-window.checkAvailabilityWithOwners = async function(){
+   IMPORTANT: these are NOT auto-opened in a loop. Browsers only treat the
+   FIRST window.open() from a single click as a genuine user gesture and
+   silently block the rest as pop-ups, so trying to fire N tabs off one
+   button click reliably fails for anything more than one or two owners.
+   Instead, checkAvailabilityWithOwners() opens a review modal listing
+   every owner with their own "Send" link — each click is its own real
+   user gesture, so it's never blocked — and grays the card out once
+   clicked so progress is trackable across a long list. */
+/* ── SINGLE-ROW: CHECK AVAILABILITY (Action column "Check" button) ──
+   Same message/number logic as the bulk flow above, but for exactly one
+   listing — a direct wa.me link opened from the button's own click, so
+   there's no popup-blocker concern here at all (only the bulk case, with
+   many tabs from one click, needs the review-modal workaround). */
+window.checkAvailabilityForRow = function(id){
+  const row = _adminPropCache[id];
+  if(!row){ alert('Listing details not loaded yet — please retry.'); return; }
+  const num = waDigits(row.ownerAltPhone);
+  if(!num){ alert('No owner alternate number on file for this listing.'); return; }
+  const { rent, config } = shareLinksPropDetails(row);
+  const locStr = [row.loc, row.city].filter(Boolean).join(', ') || 'your listed location';
+  const msg = `Hi, just checking in on your property "${row.title || 'listing'}" (Property ID: ${row.propertyId || '—'}), a ${config} at ${locStr}, listed for ${rent} on HomeLoop. Is it still available? Please let us know.`;
+  window.open(`https://wa.me/${num}?text=${encodeURIComponent(msg)}`, '_blank');
+};
+
+let _checkAvailPairs = [];
+
+window.checkAvailabilityWithOwners = function(){
   const ids = Array.from(_selectedPropIds);
   if(!ids.length){ alert('Select at least one property first.'); return; }
 
-  const pairs = [];
-  const skipped = [];
-  ids.forEach(id => {
+  _checkAvailPairs = ids.map(id => {
     const row = _adminPropCache[id];
-    if(!row) return;
+    if(!row) return null;
     const num = waDigits(row.ownerAltPhone);
-    if(!num){ skipped.push(row.title || row.propertyId || id); return; }
     const { rent, config } = shareLinksPropDetails(row);
     const locStr = [row.loc, row.city].filter(Boolean).join(', ') || 'your listed location';
     const msg = `Hi, just checking in on your property "${row.title || 'listing'}" (Property ID: ${row.propertyId || '—'}), a ${config} at ${locStr}, listed for ${rent} on HomeLoop. Is it still available? Please let us know.`;
-    pairs.push({ number: num, text: encodeURIComponent(msg) });
-  });
+    return {
+      id,
+      title: row.title || row.propertyId || 'Property',
+      propertyId: row.propertyId || '',
+      loc: locStr,
+      num,
+      href: num ? `https://wa.me/${num}?text=${encodeURIComponent(msg)}` : null,
+    };
+  }).filter(Boolean);
 
-  if(!pairs.length){
+  if(!_checkAvailPairs.some(p => p.num)){
     showAlertModal('None of the selected properties have an owner alternate number on file.', { variant:'error', title:'No alt numbers found' });
     return;
   }
 
-  const skipNote = skipped.length ? ` (${skipped.length} skipped — no alt number on file)` : '';
-  const ok = await showConfirmModal({
-    title: 'Send availability check?',
-    message: `This opens a WhatsApp tab per owner (${pairs.length} total)${skipNote}.`,
-    okText: 'Send',
-    variant: 'info',
-  });
-  if(!ok) return;
+  renderCheckAvailabilityModal();
+  document.getElementById('checkAvailabilityModal').classList.add('open');
+  lockBodyScroll();
+};
 
-  openWhatsAppTabsMulti(pairs);
+window.closeCheckAvailabilityModal = function(){
+  document.getElementById('checkAvailabilityModal').classList.remove('open');
+  unlockBodyScroll();
+};
+
+function renderCheckAvailabilityModal(){
+  const listEl = document.getElementById('checkAvailabilityList');
+  listEl.innerHTML = _checkAvailPairs.map((p, i) => {
+    if(!p.num){
+      return `<div class="share-link-card checkavail-card skipped">
+        <div class="share-link-card-name">${escapeHtml(p.title)}${p.propertyId ? ` (${escapeHtml(p.propertyId)})` : ''}</div>
+        <div class="share-link-card-loc">📍 ${escapeHtml(p.loc)}</div>
+        <div class="checkavail-skip-note">Skipped — no owner alternate number on file.</div>
+      </div>`;
+    }
+    return `<div class="share-link-card checkavail-card" id="checkAvailCard-${i}">
+      <div class="share-link-card-name">${escapeHtml(p.title)}${p.propertyId ? ` (${escapeHtml(p.propertyId)})` : ''}</div>
+      <div class="share-link-card-loc">📍 ${escapeHtml(p.loc)} · Alt: ${escapeHtml(p.num)}</div>
+      <a class="checkavail-send-btn" href="${p.href}" target="_blank" rel="noopener noreferrer" onclick="markCheckAvailSent(${i})">
+        <i class="fab fa-whatsapp"></i> Send
+      </a>
+    </div>`;
+  }).join('');
+}
+
+window.markCheckAvailSent = function(i){
+  const card = document.getElementById(`checkAvailCard-${i}`);
+  if(card) card.classList.add('sent');
 };
 
 document.getElementById('shareLinksModal').addEventListener('click', function(e){
   if (e.target === this) closeShareLinksModal();
+});
+
+document.getElementById('checkAvailabilityModal').addEventListener('click', function(e){
+  if (e.target === this) closeCheckAvailabilityModal();
 });
 
 /* ── PROPERTY VIEWS: INDIVIDUAL & RESET-ALL ── */
@@ -6794,6 +6877,9 @@ $(document).ready(function(){
           const shareBtn = row.verified
             ? `<button class="btn-view" style="background:#25D366;border-color:#25D366;color:#fff" title="Share the live link with the owner (and alt number) via WhatsApp" onclick="shareListingToOwner('${row._id}')"><i class="fab fa-whatsapp"></i><span class="btn-label"> Share</span></button>`
             : `<button class="btn-view" disabled title="Verify this listing first to enable sharing" style="opacity:.4;cursor:not-allowed;pointer-events:none"><i class="fab fa-whatsapp"></i><span class="btn-label"> Share</span></button>`;
+          const checkAvailBtn = row.ownerAltPhone
+            ? `<button class="btn-view" style="background:#25D366;border-color:#25D366;color:#fff" title="Ask the owner (alt number) via WhatsApp whether this listing is still available" onclick="checkAvailabilityForRow('${row._id}')"><i class="fas fa-circle-question"></i><span class="btn-label"> Check</span></button>`
+            : `<button class="btn-view" disabled title="No owner alternate number on file for this listing" style="opacity:.4;cursor:not-allowed;pointer-events:none"><i class="fas fa-circle-question"></i><span class="btn-label"> Check</span></button>`;
           const mapsUrl = propertyMapsUrl(row);
           const navigateBtn = mapsUrl
             ? `<button class="btn-view" style="background:#4285F4;border-color:#4285F4;color:#fff" title="Open this property's location in Google Maps" onclick="window.open('${mapsUrl.replace(/'/g, "\\'")}', '_blank', 'noopener')"><i class="fas fa-location-arrow"></i><span class="btn-label"> Navigate</span></button>`
@@ -6808,6 +6894,7 @@ $(document).ready(function(){
             ${navigateBtn}
             ${directionsBtn}
             ${shareBtn}
+            ${checkAvailBtn}
             ${bookingBtn}
           </div>`;
       }}
