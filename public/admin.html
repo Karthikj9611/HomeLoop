@@ -5732,7 +5732,8 @@ function buildAvailabilityCheckMessage(row){
   const { rent, deposit, config } = shareLinksPropDetails(row);
   const furnish = row.furnishing || '—';
   const locStr = [row.loc, row.city].filter(Boolean).join(', ') || 'your listed location';
-  return `Hi, this is Prashanth Gowda from HomeLoop. I'm just checking in on your property "${row.title || 'listing'}" (Property ID: ${row.propertyId || '—'}), a ${config} at ${locStr}, listed for ${rent} (Deposit: ${deposit}, Furnishing: ${furnish}) on HomeLoop. Is it still available? Please let us know at your convenience.`;
+  const link = row._id ? `${BASE}/property/${row._id}` : '';
+  return `Hi, this is Prashanth Gowda from HomeLoop. I'm just checking in on your property "${row.title || 'listing'}" (Property ID: ${row.propertyId || '—'}), a ${config} at ${locStr}, listed for ${rent} (Deposit: ${deposit}, Furnishing: ${furnish}) on HomeLoop.${link ? `\n\nView it here: ${link}` : ''}\n\nIs it still available? Please let us know at your convenience.`;
 }
 
 window.checkAvailabilityForRow = function(id){
