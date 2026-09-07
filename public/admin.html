@@ -5725,14 +5725,22 @@ window.sendShareLinksToNumber = function(){
    listing — a direct wa.me link opened from the button's own click, so
    there's no popup-blocker concern here at all (only the bulk case, with
    many tabs from one click, needs the review-modal workaround). */
+/* ── SHARED: build the availability-check message text ──
+   Used by both the single-row "Check" button and the bulk review modal,
+   so the wording only needs to change in one place. */
+function buildAvailabilityCheckMessage(row){
+  const { rent, deposit, config } = shareLinksPropDetails(row);
+  const furnish = row.furnishing || '—';
+  const locStr = [row.loc, row.city].filter(Boolean).join(', ') || 'your listed location';
+  return `Hi, this is Prashanth Gowda from HomeLoop. I'm just checking in on your property "${row.title || 'listing'}" (Property ID: ${row.propertyId || '—'}), a ${config} at ${locStr}, listed for ${rent} (Deposit: ${deposit}, Furnishing: ${furnish}) on HomeLoop. Is it still available? Please let us know at your convenience.`;
+}
+
 window.checkAvailabilityForRow = function(id){
   const row = _adminPropCache[id];
   if(!row){ alert('Listing details not loaded yet — please retry.'); return; }
   const num = waDigits(row.ownerAltPhone);
   if(!num){ alert('No owner alternate number on file for this listing.'); return; }
-  const { rent, config } = shareLinksPropDetails(row);
-  const locStr = [row.loc, row.city].filter(Boolean).join(', ') || 'your listed location';
-  const msg = `Hi, just checking in on your property "${row.title || 'listing'}" (Property ID: ${row.propertyId || '—'}), a ${config} at ${locStr}, listed for ${rent} on HomeLoop. Is it still available? Please let us know.`;
+  const msg = buildAvailabilityCheckMessage(row);
   window.open(`https://wa.me/${num}?text=${encodeURIComponent(msg)}`, '_blank');
 };
 
@@ -5746,9 +5754,7 @@ window.checkAvailabilityWithOwners = function(){
     const row = _adminPropCache[id];
     if(!row) return null;
     const num = waDigits(row.ownerAltPhone);
-    const { rent, config } = shareLinksPropDetails(row);
-    const locStr = [row.loc, row.city].filter(Boolean).join(', ') || 'your listed location';
-    const msg = `Hi, just checking in on your property "${row.title || 'listing'}" (Property ID: ${row.propertyId || '—'}), a ${config} at ${locStr}, listed for ${rent} on HomeLoop. Is it still available? Please let us know.`;
+    const msg = buildAvailabilityCheckMessage(row);
     return {
       id,
       title: row.title || row.propertyId || 'Property',
