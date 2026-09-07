@@ -377,9 +377,15 @@ table.dataTable thead tr.col-filter-row th{
   box-shadow:0 1px 0 var(--border);
 }
 
-/* ── TABLE ── */
+/* ── TABLE ──
+   width:auto (not 100%) so DataTables' own column-width calculation
+   (based on each column's content, via autoWidth + scrollX) actually
+   takes effect — forcing 100% here previously stretched every column,
+   including short-value ones like Floor/Bathroom/Visits, to fill the
+   wrapper. table-wrapper still scrolls horizontally if content is
+   wider than the viewport. */
 table.dataTable{
-  border-collapse:collapse!important;width:100%!important;
+  border-collapse:collapse!important;width:auto!important;
   font-family:'Inter',sans-serif;min-width:680px;
 }
 table.dataTable thead th{
@@ -516,7 +522,7 @@ table.dataTable.no-footer{border-bottom:none!important}
   background:var(--gold-light);color:var(--gold-dark);
   text-decoration:none;font-size:0.76rem;font-weight:500;
   padding:4px 10px;border-radius:99px;border:1px solid rgba(184,144,60,0.2);
-  transition:all 0.18s;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  transition:all 0.18s;white-space:nowrap;
 }
 .email-link:hover{background:var(--gold);color:var(--ink);box-shadow:0 4px 12px rgba(184,144,60,0.3)}
 /* Image URLs / Video URL cells: unlike phone/email these are long http(s)
@@ -536,11 +542,12 @@ table.dataTable.no-footer{border-bottom:none!important}
 .no-contact{font-size:0.78rem;color:var(--ink3);font-style:italic}
 
 /* ── DATE CELL ── */
-.date-cell{display:flex;flex-direction:column;align-items:center;gap:3px}
-.date-main{font-size:0.82rem;font-weight:600;color:var(--ink)}
+.date-cell{display:flex;flex-direction:row;align-items:center;justify-content:center;gap:6px}
+.date-main{font-size:0.82rem;font-weight:600;color:var(--ink);white-space:nowrap}
 .date-time{
   display:inline-block;font-size:0.7rem;color:var(--gold-dark);
   background:var(--gold-light);padding:2px 8px;border-radius:99px;font-weight:600;
+  white-space:nowrap;
 }
 
 /* ── BUTTONS ── */
@@ -921,6 +928,17 @@ footer i{color:var(--gold)}
 }
 .btn-booking-details:hover{background:var(--brand);color:#fff;box-shadow:0 4px 12px rgba(224,58,82,0.3)}
 .btn-booking-details i{font-size:0.72rem}
+
+/* Action-column buttons (View/Navigate/Directions/Share/Check/Booking):
+   icon-only on every screen size now, not just mobile — each button's
+   existing title attribute still provides the tooltip. */
+.btn-view .btn-label,
+.btn-booking-details .btn-label{display:none}
+.btn-view,.btn-booking-details{
+  padding:8px 10px;min-width:34px;justify-content:center;
+}
+.btn-view i,.btn-booking-details i{font-size:0.85rem}
+.btn-dist{font-size:0.68rem;margin-left:3px}
 /* Green variant once booking details have actually been saved for this
    property, so the admin can tell "still needs details" (pink) apart from
    "already filled in" (green) at a glance without opening the modal. */
@@ -1826,17 +1844,6 @@ footer i{color:var(--gold)}
   /* Table cells */
   table.dataTable thead th{padding:10px 10px;font-size:0.67rem}
   table.dataTable tbody td{padding:10px 10px;font-size:0.8rem}
-
-  /* Action-column buttons (View/Navigate/Directions/Share/Booking/Edit):
-     full labels don't fit alongside each other on a narrow screen — icon
-     only here, same technique as .bulk-btn-label above. */
-  .btn-view .btn-label,
-  .btn-booking-details .btn-label{display:none}
-  .btn-view,.btn-booking-details{
-    padding:8px 10px;min-width:34px;justify-content:center;
-  }
-  .btn-view i,.btn-booking-details i{font-size:0.85rem}
-  .btn-dist{font-size:0.68rem;margin-left:3px}
 
   /* Login card */
   .login-card{padding:32px 24px 28px;border-radius:20px}
@@ -6818,7 +6825,7 @@ $(document).ready(function(){
          include the full listing description) */
       { data:'desc', orderable:false, visible:false, render:(d,t,row)=>{
           if(t!=='display') return d||'';
-          return d ? `<div style="white-space:normal;max-width:280px">${escapeHtml(d)}</div>` : '—';
+          return d ? `<div style="white-space:nowrap">${escapeHtml(d)}</div>` : '—';
       }},
       /* 41 – Latitude (hidden on screen; kept so PDF/other exports can
          include the exact map coordinates) */
@@ -6855,10 +6862,10 @@ $(document).ready(function(){
           if(t!=='display') return list.join(' ');
           if(!list.length) return '—';
           const shown = list.slice(0,4).map(a=>escapeHtml(a)).join(', ');
-          if(list.length<=4) return `<div style="white-space:normal;max-width:260px">${shown}</div>`;
+          if(list.length<=4) return `<div style="white-space:nowrap">${shown}</div>`;
           const more = list.length-4;
           const encoded = escapeHtml(JSON.stringify(list));
-          return `<div style="white-space:normal;max-width:260px">${shown}, <a href="javascript:void(0)" class="amenities-more-link" data-list="${encoded}" onclick="openAmenitiesModal(this)">+${more} more</a></div>`;
+          return `<div style="white-space:nowrap">${shown}, <a href="javascript:void(0)" class="amenities-more-link" data-list="${encoded}" onclick="openAmenitiesModal(this)">+${more} more</a></div>`;
       }},
       /* 46 – User ID */
       { data:'userId', visible:false, render:(d)=> escapeHtml(d||'—') },
@@ -6885,7 +6892,7 @@ $(document).ready(function(){
             ? `<button class="btn-view" style="background:#25D366;border-color:#25D366;color:#fff" title="Share the live link with the owner (and alt number) via WhatsApp" onclick="shareListingToOwner('${row._id}')"><i class="fab fa-whatsapp"></i><span class="btn-label"> Share</span></button>`
             : `<button class="btn-view" disabled title="Verify this listing first to enable sharing" style="opacity:.4;cursor:not-allowed;pointer-events:none"><i class="fab fa-whatsapp"></i><span class="btn-label"> Share</span></button>`;
           const checkAvailBtn = row.ownerAltPhone
-            ? `<button class="btn-view" style="background:#25D366;border-color:#25D366;color:#fff" title="Ask the owner (alt number) via WhatsApp whether this listing is still available" onclick="checkAvailabilityForRow('${row._id}')"><i class="fas fa-circle-question"></i><span class="btn-label"> Check</span></button>`
+            ? `<button class="btn-view" style="background:#7C4DFF;border-color:#7C4DFF;color:#fff" title="Ask the owner (alt number) via WhatsApp whether this listing is still available" onclick="checkAvailabilityForRow('${row._id}')"><i class="fas fa-circle-question"></i><span class="btn-label"> Check</span></button>`
             : `<button class="btn-view" disabled title="No owner alternate number on file for this listing" style="opacity:.4;cursor:not-allowed;pointer-events:none"><i class="fas fa-circle-question"></i><span class="btn-label"> Check</span></button>`;
           const mapsUrl = propertyMapsUrl(row);
           const navigateBtn = mapsUrl
@@ -6894,7 +6901,7 @@ $(document).ready(function(){
           const dirUrl = propertyDirectionsUrl(row);
           const dirDistLabel = directionsDistanceLabel(row);
           const directionsBtn = dirUrl
-            ? `<button class="btn-view" style="background:#34A853;border-color:#34A853;color:#fff" title="Get driving directions from your current location to this property" onclick="window.open('${dirUrl.replace(/'/g, "\\'")}', '_blank', 'noopener')"><i class="fas fa-route"></i><span class="btn-label"> Directions${dirDistLabel ? ' · ' : ''}</span><span class="btn-dist">${dirDistLabel}</span></button>`
+            ? `<button class="btn-view" style="background:#FB8C00;border-color:#FB8C00;color:#fff" title="Get driving directions from your current location to this property" onclick="window.open('${dirUrl.replace(/'/g, "\\'")}', '_blank', 'noopener')"><i class="fas fa-route"></i><span class="btn-label"> Directions${dirDistLabel ? ' · ' : ''}</span><span class="btn-dist">${dirDistLabel}</span></button>`
             : `<button class="btn-view" disabled title="No address or coordinates on file for this listing" style="opacity:.4;cursor:not-allowed;pointer-events:none"><i class="fas fa-route"></i><span class="btn-label"> Directions</span></button>`;
           return `<div style="display:inline-flex;gap:6px;flex-wrap:nowrap;justify-content:center">
             <button class="btn-view" onclick="openAdminPropModal('${row._id}')"><i class="fas fa-eye"></i><span class="btn-label"> View</span></button>
