@@ -2564,7 +2564,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
         <button class="bulk-btn" id="bulkShareLinksBtn" style="display:none;background:#25D366;color:#fff;border-color:#25D366" onclick="shareSelectedLinksToNumber()" title="Share links for all selected properties to a WhatsApp number you enter">
           <i class="fab fa-whatsapp"></i> <span class="bulk-btn-label" data-mobile="Share">Share Links - </span><span id="bulkShareLinksCount">0</span>
         </button>
-        <button class="bulk-btn" id="bulkCheckAvailabilityBtn" style="display:none;background:#25D366;color:#fff;border-color:#25D366" onclick="checkAvailabilityWithOwners()" title="Ask each selected property's owner (alt number, if on file, else owner number) via WhatsApp whether it's still available">
+        <button class="bulk-btn" id="bulkCheckAvailabilityBtn" style="display:none;background:#25D366;color:#fff;border-color:#25D366" onclick="checkAvailabilityWithOwners()" title="Ask each selected property's owner (alt number only) via WhatsApp whether it's still available">
           <i class="fab fa-whatsapp"></i> <span class="bulk-btn-label" data-mobile="Check">Check Availability - </span><span id="bulkCheckAvailabilityCount">0</span>
         </button>
         <span id="addPropertyDivider" style="width:1px;align-self:stretch;background:var(--border,#ddd);margin:2px 4px;flex-shrink:0"></span>
@@ -5673,12 +5673,10 @@ window.sendShareLinksToNumber = function(){
 /* ── BULK: CHECK AVAILABILITY WITH OWNERS (WhatsApp) ──
    Unlike Share Links (one bundled message to a single number the admin
    types in), this fires one personalized WhatsApp message PER selected
-   property to that property's own owner — using the owner's ALTERNATE
-   number, falling back to the main owner number only when no alt number
-   is on file (same "use whichever number exists" fallback shareListingToOwner
-   already uses), asking whether the property is still available. Skips
-   (and reports) any selected property with no phone number at all rather
-   than silently dropping it. */
+   property to that property's own owner — using ONLY the owner's ALTERNATE
+   number (row.ownerAltPhone). No fallback to the main owner number: a
+   listing with no alt number on file is skipped (and reported), rather
+   than silently sent to the main owner number instead. */
 function openWhatsAppTabsMulti(pairs){
   pairs.forEach(({ number, text }, i) => {
     // Same stagger as openWhatsAppTabs, for the same reason: back-to-back
@@ -5697,7 +5695,7 @@ window.checkAvailabilityWithOwners = async function(){
   ids.forEach(id => {
     const row = _adminPropCache[id];
     if(!row) return;
-    const num = waDigits(row.ownerAltPhone) || waDigits(row.ownerNumber);
+    const num = waDigits(row.ownerAltPhone);
     if(!num){ skipped.push(row.title || row.propertyId || id); return; }
     const { rent, config } = shareLinksPropDetails(row);
     const locStr = [row.loc, row.city].filter(Boolean).join(', ') || 'your listed location';
@@ -5706,11 +5704,11 @@ window.checkAvailabilityWithOwners = async function(){
   });
 
   if(!pairs.length){
-    showAlertModal('None of the selected properties have an owner phone number on file.', { variant:'error', title:'No numbers found' });
+    showAlertModal('None of the selected properties have an owner alternate number on file.', { variant:'error', title:'No alt numbers found' });
     return;
   }
 
-  const skipNote = skipped.length ? ` (${skipped.length} skipped — no phone number on file)` : '';
+  const skipNote = skipped.length ? ` (${skipped.length} skipped — no alt number on file)` : '';
   const ok = await showConfirmModal({
     title: 'Send availability check?',
     message: `This opens a WhatsApp tab per owner (${pairs.length} total)${skipNote}.`,
