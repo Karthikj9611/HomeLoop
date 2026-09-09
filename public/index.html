@@ -489,20 +489,23 @@ ul{list-style:none}
 }
 
 /* Tab-aware dropdown button visibility */
-.fd-rent,.fd-lease,.fd-pg,.fd-shortstay{display:none}
+.fd-rent,.fd-lease,.fd-pg,.fd-shortstay,.fd-sell{display:none}
 .filter-dd-bar.tab-all .fd-rent,
 .filter-dd-bar.tab-all .fd-lease,
 .filter-dd-bar.tab-all .fd-pg,
-.filter-dd-bar.tab-all .fd-shortstay{display:inline-flex}
+.filter-dd-bar.tab-all .fd-shortstay,
+.filter-dd-bar.tab-all .fd-sell{display:inline-flex}
 .filter-dd-bar.tab-rent .fd-rent{display:inline-flex}
 .filter-dd-bar.tab-lease .fd-lease{display:inline-flex}
 .filter-dd-bar.tab-pg .fd-pg{display:inline-flex}
 .filter-dd-bar.tab-shortstay .fd-shortstay{display:inline-flex}
-/* Promoted crosses all four listing types, so show the same full filter set as "All" */
+.filter-dd-bar.tab-sell .fd-sell{display:inline-flex}
+/* Promoted crosses all listing types, so show the same full filter set as "All" */
 .filter-dd-bar.tab-promoted .fd-rent,
 .filter-dd-bar.tab-promoted .fd-lease,
 .filter-dd-bar.tab-promoted .fd-pg,
-.filter-dd-bar.tab-promoted .fd-shortstay{display:inline-flex}
+.filter-dd-bar.tab-promoted .fd-shortstay,
+.filter-dd-bar.tab-promoted .fd-sell{display:inline-flex}
 .sort-modal{
   position:fixed;inset:0;z-index:200;
   display:none;align-items:flex-end;justify-content:center;
@@ -4316,7 +4319,7 @@ main.tab-explore .empty-state{display:none !important}
        live-data pattern as Pincode/Locality below. Includes a search box
        since the id list can get long and isn't meaningfully sortable for
        scanning by eye the way Pincode/Locality are. -->
-  <div class="fd-btn fd-rent fd-lease fd-pg fd-shortstay" id="fdb-propertyIdFilter" onclick="toggleFd('propertyIdFilter',this)">
+  <div class="fd-btn fd-rent fd-lease fd-pg fd-shortstay fd-sell" id="fdb-propertyIdFilter" onclick="toggleFd('propertyIdFilter',this)">
     <span class="fd-icon">🔖</span>
     <span class="fd-label">Property ID</span> <span class="fd-badge" id="fdbc-propertyIdFilter" style="display:none"></span>
     <svg class="chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
@@ -4334,7 +4337,7 @@ main.tab-explore .empty-state{display:none !important}
   <!-- Locality — location.area (e.g. "Singasandra, AECS Layout"), options
        built dynamically the same way as Pincode (see fdCollectLocalities).
        Distinct from the existing "Area" filter below, which is sqft size. -->
-  <div class="fd-btn fd-rent fd-lease fd-pg fd-shortstay" id="fdb-locality" onclick="toggleFd('locality',this)">
+  <div class="fd-btn fd-rent fd-lease fd-pg fd-shortstay fd-sell" id="fdb-locality" onclick="toggleFd('locality',this)">
     <span class="fd-icon">🏘️</span>
     <span class="fd-label">Locality</span> <span class="fd-badge" id="fdbc-locality" style="display:none"></span>
     <svg class="chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
@@ -4352,7 +4355,7 @@ main.tab-explore .empty-state{display:none !important}
     <!-- Pincode — options are built dynamically from whatever pincodes actually
        exist across current listings (see fdCollectPincodes), so this list
        always reflects real data instead of a hardcoded set of codes. -->
-  <div class="fd-btn fd-rent fd-lease fd-pg fd-shortstay" id="fdb-pincode" onclick="toggleFd('pincode',this)">
+  <div class="fd-btn fd-rent fd-lease fd-pg fd-shortstay fd-sell" id="fdb-pincode" onclick="toggleFd('pincode',this)">
     <span class="fd-icon">📍</span>
     <span class="fd-label">Pincode</span> <span class="fd-badge" id="fdbc-pincode" style="display:none"></span>
     <svg class="chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
@@ -4370,7 +4373,7 @@ main.tab-explore .empty-state{display:none !important}
 
 
   <!-- ALL TYPES: Price (Rent / Lease amount / PG rent / Per-day rate — same underlying price.rent field) -->
-  <div class="fd-btn fd-rent fd-lease fd-pg fd-shortstay" id="fdb-price" onclick="toggleFd('price',this)">
+  <div class="fd-btn fd-rent fd-lease fd-pg fd-shortstay fd-sell" id="fdb-price" onclick="toggleFd('price',this)">
     <span class="fd-icon">💰</span>
     <span class="fd-label">Price</span> <span class="fd-badge" id="fdbc-price" style="display:none"></span>
     <svg class="chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
@@ -4392,7 +4395,7 @@ main.tab-explore .empty-state{display:none !important}
 
 
   <!-- RENT + LEASE: BHK -->
-  <div class="fd-btn fd-rent fd-lease" id="fdb-bhk" onclick="toggleFd('bhk',this)">
+  <div class="fd-btn fd-rent fd-lease fd-sell" id="fdb-bhk" onclick="toggleFd('bhk',this)">
     <span class="fd-icon">🛏️</span>
     <span class="fd-label">BHK</span> <span class="fd-badge" id="fdbc-bhk" style="display:none"></span>
     <svg class="chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
@@ -4408,7 +4411,7 @@ main.tab-explore .empty-state{display:none !important}
   </div>
   
       <!-- RENT + LEASE: Area -->
-  <div class="fd-btn fd-rent fd-lease" id="fdb-area" onclick="toggleFd('area',this)">
+  <div class="fd-btn fd-rent fd-lease fd-sell" id="fdb-area" onclick="toggleFd('area',this)">
     <span class="fd-icon">📐</span>
     <span class="fd-label">Sqft</span> <span class="fd-badge" id="fdbc-area" style="display:none"></span>
     <svg class="chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
@@ -4430,7 +4433,7 @@ main.tab-explore .empty-state{display:none !important}
   </div>
 
   <!-- RENT + LEASE + PG + SHORT STAY: Property Type -->
-  <div class="fd-btn fd-rent fd-lease fd-pg fd-shortstay" id="fdb-type" onclick="toggleFd('type',this)">
+  <div class="fd-btn fd-rent fd-lease fd-pg fd-shortstay fd-sell" id="fdb-type" onclick="toggleFd('type',this)">
     <span class="fd-icon">🏢</span>
     <span class="fd-label">Type</span> <span class="fd-badge" id="fdbc-type" style="display:none"></span>
     <svg class="chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
@@ -4447,7 +4450,7 @@ main.tab-explore .empty-state{display:none !important}
   
   
   <!-- ALL: Available from -->
-  <div class="fd-btn fd-rent fd-lease fd-pg" id="fdb-availFrom" onclick="toggleFd('availFrom',this)">
+  <div class="fd-btn fd-rent fd-lease fd-pg fd-sell" id="fdb-availFrom" onclick="toggleFd('availFrom',this)">
     <span class="fd-icon">📅</span>
     <span class="fd-label">Available</span> <span class="fd-badge" id="fdbc-availFrom" style="display:none"></span>
     <svg class="chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
@@ -4471,7 +4474,7 @@ main.tab-explore .empty-state{display:none !important}
 
 
   <!-- RENT + LEASE: Furnishing -->
-  <div class="fd-btn fd-rent fd-lease fd-pg fd-shortstay" id="fdb-furnishing" onclick="toggleFd('furnishing',this)">
+  <div class="fd-btn fd-rent fd-lease fd-pg fd-shortstay fd-sell" id="fdb-furnishing" onclick="toggleFd('furnishing',this)">
     <span class="fd-icon">🛋️</span>
     <span class="fd-label">Furnishing</span> <span class="fd-badge" id="fdbc-furnishing" style="display:none"></span>
     <svg class="chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
@@ -4487,7 +4490,7 @@ main.tab-explore .empty-state{display:none !important}
   </div>
   
     <!-- RENT + LEASE: Bathrooms -->
-  <div class="fd-btn fd-rent fd-lease fd-pg" id="fdb-bathrooms" onclick="toggleFd('bathrooms',this)">
+  <div class="fd-btn fd-rent fd-lease fd-pg fd-sell" id="fdb-bathrooms" onclick="toggleFd('bathrooms',this)">
     <span class="fd-icon">🚿</span>
     <span class="fd-label">Bathrooms</span> <span class="fd-badge" id="fdbc-bathrooms" style="display:none"></span>
     <svg class="chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
@@ -4503,7 +4506,7 @@ main.tab-explore .empty-state{display:none !important}
   </div>
 
   <!-- ALL TYPES: Amenities -->
-  <div class="fd-btn fd-rent fd-lease fd-pg fd-shortstay" id="fdb-amenities" onclick="toggleFd('amenities',this)">
+  <div class="fd-btn fd-rent fd-lease fd-pg fd-shortstay fd-sell" id="fdb-amenities" onclick="toggleFd('amenities',this)">
     <span class="fd-icon">✨</span>
     <span class="fd-label">Amenities</span> <span class="fd-badge" id="fdbc-amenities" style="display:none"></span>
     <svg class="chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
@@ -4539,7 +4542,7 @@ main.tab-explore .empty-state{display:none !important}
   </div>
 
   <!-- ALL TYPES: Maintenance (same underlying price.maintenance field) -->
-  <div class="fd-btn fd-rent fd-lease fd-pg fd-shortstay" id="fdb-maintenance" onclick="toggleFd('maintenance',this)">
+  <div class="fd-btn fd-rent fd-lease fd-pg fd-shortstay fd-sell" id="fdb-maintenance" onclick="toggleFd('maintenance',this)">
     <span class="fd-icon">🛠️</span>
     <span class="fd-label">Maintenance</span> <span class="fd-badge" id="fdbc-maintenance" style="display:none"></span>
     <svg class="chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
@@ -4564,7 +4567,7 @@ main.tab-explore .empty-state{display:none !important}
   
   
   <!-- RENT + LEASE: Floor -->
-  <div class="fd-btn fd-rent fd-lease" id="fdb-floor" onclick="toggleFd('floor',this)">
+  <div class="fd-btn fd-rent fd-lease fd-sell" id="fdb-floor" onclick="toggleFd('floor',this)">
     <span class="fd-icon">🏬</span>
     <span class="fd-label">Floor</span> <span class="fd-badge" id="fdbc-floor" style="display:none"></span>
     <svg class="chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
@@ -4591,7 +4594,7 @@ main.tab-explore .empty-state{display:none !important}
 
   
     <!-- RENT + LEASE: Facing -->
-  <div class="fd-btn fd-rent fd-lease" id="fdb-facing" onclick="toggleFd('facing',this)">
+  <div class="fd-btn fd-rent fd-lease fd-sell" id="fdb-facing" onclick="toggleFd('facing',this)">
     <span class="fd-icon">🧭</span>
     <span class="fd-label">Facing</span> <span class="fd-badge" id="fdbc-facing" style="display:none"></span>
     <svg class="chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
@@ -4609,7 +4612,7 @@ main.tab-explore .empty-state{display:none !important}
 
 
   <!-- RENT + LEASE: Age -->
-  <div class="fd-btn fd-rent fd-lease" id="fdb-age" onclick="toggleFd('age',this)">
+  <div class="fd-btn fd-rent fd-lease fd-sell" id="fdb-age" onclick="toggleFd('age',this)">
     <span class="fd-icon">🏗️</span>
     <span class="fd-label">Age</span> <span class="fd-badge" id="fdbc-age" style="display:none"></span>
     <svg class="chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
@@ -9340,6 +9343,7 @@ function updateAllOnlySections() {
   const rentSection = document.getElementById('rentSection');
   const leaseSection = document.getElementById('leaseSection');
   const pgSection = document.getElementById('pgSection');
+  const sellSection = document.getElementById('sellSection');
   const bookedSection = document.getElementById('bookedSection');
 
   // Show only on "All"
@@ -9347,11 +9351,16 @@ function updateAllOnlySections() {
   if (reviewsSection) reviewsSection.style.display = show ? '' : 'none';
   if (premiumServices) premiumServices.style.display = show ? '' : 'none';
 
-  // Hide Promoted, Rent, Lease, PG and the Booked bucket when "All" is selected
+  // Hide Promoted, Rent, Lease, PG, Sell and the Booked bucket when "All" is
+  // selected — each of these already has its own dedicated bottom-nav tab,
+  // so showing them again on Explore would just duplicate that tab's
+  // content. Short Stay has no tab of its own, so it's deliberately left
+  // out of this list and stays visible on Explore.
   if (promotedSection) promotedSection.style.display = show ? 'none' : '';
   if (rentSection) rentSection.style.display = show ? 'none' : '';
   if (leaseSection) leaseSection.style.display = show ? 'none' : '';
   if (pgSection) pgSection.style.display = show ? 'none' : '';
+  if (sellSection) sellSection.style.display = show ? 'none' : '';
   if (bookedSection) bookedSection.style.display = show ? 'none' : '';
 
   // The results-header (count + ad banner + view toggle) only makes sense on
@@ -9835,7 +9844,7 @@ function buildFilterOptions() {
 function syncFdBar() {
   const bar = document.getElementById('filterDdBar');
   if (!bar) return;
-  bar.classList.remove('tab-all','tab-rent','tab-lease','tab-pg','tab-promoted','tab-shortstay');
+  bar.classList.remove('tab-all','tab-rent','tab-lease','tab-pg','tab-promoted','tab-shortstay','tab-sell');
   bar.classList.add('tab-' + currentTab.toLowerCase());
 }
 
