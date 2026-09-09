@@ -859,6 +859,20 @@ const ShortStaySchema = new mongoose.Schema({
   furnish:         { type: String, default: null }, // ssFurnish — lives here only, same reasoning as pg.furnish; property.furnish is omitted for Short Stay
 }, { _id: false });
 
+// Sell-only fields — the resale-specific data NoBroker/Housing/99acres all
+// collect on top of the shared property.* details (type/BHK/floor/area/age
+// etc., still used as-is for Sell). Lives here only, same reasoning as
+// pg/shortStay above — left unset entirely for non-Sale listings.
+const SaleSchema = new mongoose.Schema({
+  totalFloors:    { type: String, default: null }, // total floors in the building (property.floor is which floor this unit is on)
+  balconies:      { type: String, default: null },
+  ownership:      { type: String, default: null }, // Freehold / Leasehold / Co-operative Society / Power of Attorney
+  possession:     { type: String, default: null }, // Ready to Move / Under Construction
+  possessionDate: { type: String, default: null }, // 'YYYY-MM-DD' — only meaningful when possession is Under Construction; optional either way
+  reraRegistered: { type: String, default: null }, // Yes / No
+  reraId:         { type: String, default: null }, // optional even when reraRegistered is Yes — some resale sellers won't have it handy
+}, { _id: false });
+
 // ── Counter (atomic per-type sequence for human-readable property IDs) ──
 // Using a dedicated collection with $inc (rather than e.g. Property.countDocuments()+1)
 // so two simultaneous submissions can never be handed the same number.
@@ -925,6 +939,7 @@ function buildListingSchema() {
     media:      { type: MediaSchema,            default: () => ({}) },
     pg:         { type: PgSchema }, // no default — left unset for non-PG listings so we don't store an all-null subdocument
     shortStay:  { type: ShortStaySchema }, // no default — left unset for non-Short-Stay listings, same reasoning as pg above
+    sale:       { type: SaleSchema }, // no default — left unset for non-Sale listings, same reasoning as pg/shortStay above
     // ── Meta (kept top-level / flat — not part of the submitted payload) ──
     propertyId:       { type: String, unique: true, sparse: true, index: true }, // random alphanumeric code, e.g. AAA123
     userId:           { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null, index: true }, // owner of this listing, null = posted while logged out
@@ -1214,7 +1229,7 @@ function formatPostedDateTime(date) {
 }
 
 // Top-level keys accepted from the client, matching the nested submission shape exactly.
-const NESTED_SECTIONS = ['basic','location','owner','price','property','amenities','terms','rules','media','pg','shortStay'];
+const NESTED_SECTIONS = ['basic','location','owner','price','property','amenities','terms','rules','media','pg','shortStay','sale'];
 
 const URL_FIELDS_BY_SECTION = { location: ['mapLink'], media: ['video'] };
 const MAX_LENGTHS = {
@@ -1354,12 +1369,38 @@ const TYPE_REQUIRED_FIELDS = {
     ['shortStay.couplesAllowed', 'Unmarried couples allowed'],
     ['shortStay.furnish',        'Furnishing'],
   ],
+  // "Sell" listings — deliberately a smaller set than 'For Rent': no
+  // deposit (nothing to hold as a security deposit on a sale), no
+  // lease/rent terms, no pets/non-veg house rules. price.negotiable IS
+  // still collected by the Sell form (see onFTypeChange in index.html) but
+  // isn't enforced here, same as it isn't for 'For Rent'. Sale-specific
+  // fields (ownership, possession, RERA, total floors, balconies) mirror
+  // what NoBroker/Housing/99acres collect for a resale listing.
+  'For Sale': [
+    ['property.type',      'Property type'],
+    ['property.bhk',       'BHK'],
+    ['property.floor',     'Floor'],
+    ['property.area',      'Area (sqft)'],
+    ['property.age',       'Age of property'],
+    ['sale.totalFloors',   'Total floors in building'],
+    ['sale.balconies',     'Balconies'],
+    ['sale.ownership',     'Ownership type'],
+    ['sale.possession',    'Possession status'],
+    ['sale.reraRegistered','RERA registered'],
+  ],
 };
 
 // Returns a list of human-readable labels for every required field that's
 // missing/empty for this listing's status — empty array means nothing's missing.
 function findMissingRequiredFields(fields, status) {
-  const required = BASE_REQUIRED_FIELDS.concat(TYPE_REQUIRED_FIELDS[status] || []);
+  let required = BASE_REQUIRED_FIELDS.concat(TYPE_REQUIRED_FIELDS[status] || []);
+  // A Sell listing marked "Plot / Land" has no BHK, floor, age, total-floors,
+  // or balcony count — nothing's built on it yet. Same fields the Sell form
+  // hides for Plot/Land in onSellPropertyTypeChange() on the frontend.
+  if (status === 'For Sale' && (fields.property || {}).type === 'Plot / Land') {
+    const landExempt = new Set(['property.bhk', 'property.floor', 'property.age', 'sale.totalFloors', 'sale.balconies']);
+    required = required.filter(([path]) => !landExempt.has(path));
+  }
   if ((fields.basic || {}).listedBy === 'Agent') {
     required.push(['owner.agentPhone', 'Agent phone number'], ['owner.agentArea', 'Agent service area']);
   }
@@ -1408,6 +1449,7 @@ app.post('/api/properties', listingLimiter, requireUser, requireOwner, requireVe
     const priceLabel = status === 'Lease'      ? 'price.rent (lease amount)'
                       : status === 'PG'         ? 'price.rent (monthly charge)'
                       : status === 'Short Stay' ? 'price.rent (per day rate)'
+                      : status === 'For Sale'   ? 'price.rent (expected price)'
                       :                           'price.rent (monthly rent)';
     if (!fields.owner.propertyName || !fields.location.area ||
         fields.price.rent === undefined || fields.price.rent === null || fields.price.rent === '') {
@@ -1452,11 +1494,15 @@ app.post('/api/properties', listingLimiter, requireUser, requireOwner, requireVe
       // terms.notice mirroring pg.notice, or an all-null rules object).
       property:  status === 'PG' ? undefined : fields.property,
       amenities: fields.amenities,
-      terms:     (status === 'PG' || status === 'Short Stay') ? undefined : fields.terms,
-      rules:     (status === 'PG' || status === 'Short Stay') ? undefined : fields.rules,
+      // Sale listings don't collect lease/rent terms (notice period, lease
+      // duration) or pets/non-veg house rules — same reasoning as PG/Short
+      // Stay, just for a different reason (nothing to rent out).
+      terms:     (status === 'PG' || status === 'Short Stay' || status === 'For Sale') ? undefined : fields.terms,
+      rules:     (status === 'PG' || status === 'Short Stay' || status === 'For Sale') ? undefined : fields.rules,
       media:     fields.media,
       pg:        status === 'PG' ? fields.pg : undefined,
       shortStay: status === 'Short Stay' ? fields.shortStay : undefined,
+      sale:      status === 'For Sale' ? fields.sale : undefined,
     });
     await prop.save();
 
