@@ -490,11 +490,10 @@ ul{list-style:none}
 
 /* Tab-aware dropdown button visibility */
 .fd-rent,.fd-lease,.fd-pg,.fd-shortstay,.fd-sell{display:none}
-.filter-dd-bar.tab-all .fd-rent,
-.filter-dd-bar.tab-all .fd-lease,
-.filter-dd-bar.tab-all .fd-pg,
-.filter-dd-bar.tab-all .fd-shortstay,
-.filter-dd-bar.tab-all .fd-sell{display:inline-flex}
+/* Explore/"All" mixes every listing type with no single applicable filter
+   set — per KR, filters have no use there, so hide the whole bar instead
+   of showing every group's fields at once. */
+.filter-dd-bar.tab-all{display:none}
 .filter-dd-bar.tab-rent .fd-rent{display:inline-flex}
 .filter-dd-bar.tab-lease .fd-lease{display:inline-flex}
 .filter-dd-bar.tab-pg .fd-pg{display:inline-flex}
@@ -10445,7 +10444,11 @@ function getFiltered() {
       const bhk = (p.property?.bhk || '').toLowerCase();
       if (!area.includes(q) && !bhk.includes(q)) return false;
     }
-    if (!hasFilters) return true;
+    // Filters have no use on Explore/"All" (per KR) — the bar is hidden
+    // there (see .filter-dd-bar.tab-all), so any filter state left over
+    // from another tab must be ignored here too, or it'd keep silently
+    // narrowing this view with no visible controls left to see or clear it.
+    if (currentTab === 'All' || !hasFilters) return true;
 
     if (fs.propertyType) {
       const typeVal = p.property?.type ?? p.pg?.type ?? p.shortStay?.type;
