@@ -10612,15 +10612,18 @@ function getFiltered() {
     if (fs._maintenanceMin != null && fdPriceNum(p.price?.maintenance) < fs._maintenanceMin) return false;
     if (fs._maintenanceMax != null && fdPriceNum(p.price?.maintenance) > fs._maintenanceMax) return false;
 
+    // Area / Floor range filters are shown on Rent, Lease, AND Sell — apply
+    // them unconditionally (any listing with a property.area/floor value)
+    // instead of nesting them only inside the Rent/Lease blocks below, which
+    // silently ignored these filters whenever a Sell listing was checked.
+    if (fs._floorBucket && !fdValueInBuckets(fdFloorNum(p.property?.floor), fs._floorBucket)) return false;
+    if (fs._areaBucket && !fdValueInBuckets(fdAreaNum(p.property?.area), fs._areaBucket)) return false;
+
     if (pType==='Rent') {
       if (fs._escalationBucket && !fdValueInBuckets(fdEscalationNum(p.price?.rentIncrease), fs._escalationBucket)) return false;
-      if (fs._floorBucket && !fdValueInBuckets(fdFloorNum(p.property?.floor), fs._floorBucket)) return false;
-      if (fs._areaBucket && !fdValueInBuckets(fdAreaNum(p.property?.area), fs._areaBucket)) return false;
       if (fs.leaseDuration && !fs.leaseDuration.includes(p.terms?.lease)) return false;
     }
     if (pType==='Lease') {
-      if (fs._floorBucket && !fdValueInBuckets(fdFloorNum(p.property?.floor), fs._floorBucket)) return false;
-      if (fs._areaBucket && !fdValueInBuckets(fdAreaNum(p.property?.area), fs._areaBucket)) return false;
       if (fs.leaseDuration && !fs.leaseDuration.includes(p.terms?.lease)) return false;
       if (fs.leaseType && !fs.leaseType.includes(p.terms?.leaseType)) return false;
       if (fs.lockIn && !fs.lockIn.includes(p.terms?.lockIn)) return false;
