@@ -2139,6 +2139,13 @@ main.tab-explore .empty-state{display:none !important}
 .compare-section-row.sec-terms td{color:#00646e;background:#e0f7fa}
 .compare-section-row.sec-rules td{color:#8a5a00;background:#fdf0dd}
 .compare-section-row.sec-pg-details td{color:#9c2f5a;background:#fbe6ee}
+/* Sell-specific sections — reuse the same amber used for the Sell badge
+   elsewhere (see the `colors` map in renderCompareTable's headCells), with
+   two closely-related shades so the three Sell sub-sections stay visually
+   grouped without being identical. */
+.compare-section-row.sec-sale-details td{color:#a15c00;background:#fdf1e0}
+.compare-section-row.sec-legal-ownership-details td{color:#8a4a00;background:#fbe9d0}
+.compare-section-row.sec-structure-site-details td{color:#734000;background:#f9e1c0}
 .compare-section-row.sec-media-amenities td{color:#35415c;background:#e7ebf5}
 .compare-diff-dot{
   display:inline-block;width:6px;height:6px;border-radius:50%;
@@ -6235,7 +6242,7 @@ main.tab-explore .empty-state{display:none !important}
         </div>
         <div class="form-group" style="grid-column:span 2">
           <label class="form-label">Society / Project name (optional)</label>
-          <input class="form-input" type="text" id="f-sellProjectName" placeholder="e.g. Prestige Shantiniketan" />
+          <input class="form-input" type="text" id="f-sellProjectName" maxlength="120" placeholder="e.g. Prestige Shantiniketan" />
         </div>
       </div>
 
@@ -9312,6 +9319,8 @@ function renderCompareTable() {
   });
   const anyPG = props.some(p => pTypeLabel(p) === 'PG');
   const anyLease = props.some(p => pTypeLabel(p) === 'Lease');
+  const anySell = props.some(p => pTypeLabel(p) === 'Sell');
+  const allSell = props.length > 0 && props.every(p => pTypeLabel(p) === 'Sell');
   const section = (label) => ({ section: label });
 
   const rows = [
@@ -9320,9 +9329,16 @@ function renderCompareTable() {
     { label: 'City', get: p => dash(p.location?.city) },
 
     section('Pricing'),
-    { label: 'Rent / Month', get: p => `<span style="font-weight:700;color:var(--text)">${fmtRupee(p.price?.rent||0)}</span>` },
-    { label: 'Deposit', get: p => `${fmtRupee(p.price?.deposit||0)}` },
-    { label: 'Maintenance', get: p => p.price?.maintenance ? `${fmtRupee(p.price.maintenance)}` : 'Included' },
+    // Label flips to "Price" when every compared listing is a sale — "Rent /
+    // Month" on a resale flat's expected price was misleading.
+    { label: allSell ? 'Price' : 'Rent / Month', get: p => `<span style="font-weight:700;color:var(--text)">${fmtRupee(p.price?.rent||0)}</span>` },
+    // No security deposit on a sale — same reasoning as the listing form
+    // hiding f-depositWrap for Sell. Was previously showing "₹0" for every
+    // Sell listing instead of degrading gracefully like the other rows here.
+    { label: 'Deposit', get: p => pTypeLabel(p) === 'Sell' ? '—' : `${fmtRupee(p.price?.deposit||0)}` },
+    // "Included" (meaning "folded into the rent") doesn't make sense for a
+    // one-time sale — show "—" instead when a Sell listing has none entered.
+    { label: 'Maintenance', get: p => p.price?.maintenance ? `${fmtRupee(p.price.maintenance)}` : (pTypeLabel(p) === 'Sell' ? '—' : 'Included') },
     { label: 'Electricity', get: p => dash(p.price?.electricity) },
     { label: 'Water charge', get: p => dash(p.price?.water) },
     { label: 'Rent negotiable', get: p => dash(p.price?.negotiable) },
@@ -9370,6 +9386,37 @@ function renderCompareTable() {
       { label: 'Food type', get: p => dash(p.pg?.food) },
       { label: 'Visitor policy', get: p => dash(p.pg?.visitors) },
       { label: 'Gate time', get: p => dash(p.pg?.gateTime) },
+    ] : []),
+
+    // Was entirely missing — a Sell-vs-Sell comparison showed nothing about
+    // ownership, RERA, or any of the resale-specific fields at all before
+    // this. Mirrors the same fields buildDetailTable() shows in the
+    // single-listing view.
+    ...(anySell ? [
+      section('Sale Details'),
+      { label: 'Total floors in building', get: p => dash(p.sale?.totalFloors) },
+      { label: 'Balconies', get: p => dash(p.sale?.balconies) },
+      { label: 'Ownership type', get: p => dash(p.sale?.ownership) },
+      { label: 'Possession status', get: p => dash(p.sale?.possession) },
+      { label: 'Possession date', get: p => p.sale?.possessionDate ? formatDateDisplay(p.sale.possessionDate) : '—' },
+      { label: 'RERA registered', get: p => dash(p.sale?.reraRegistered) },
+      { label: 'RERA ID', get: p => dash(p.sale?.reraId) },
+      section('Legal & Ownership Details'),
+      { label: 'Khata type', get: p => dash(p.sale?.khataType) },
+      { label: 'Property tax paid up to date', get: p => dash(p.sale?.propertyTaxPaid) },
+      { label: 'Loan status', get: p => dash(p.sale?.loanStatus) },
+      { label: 'OC available', get: p => dash(p.sale?.ocAvailable) },
+      { label: 'CC available', get: p => dash(p.sale?.ccAvailable) },
+      { label: 'Previous owners', get: p => dash(p.sale?.previousOwners) },
+      { label: 'Society / Project name', get: p => dash(p.sale?.projectName) },
+      section('Structure & Site Details'),
+      { label: 'Flooring type', get: p => dash(p.sale?.flooring) },
+      { label: 'Water source', get: p => dash(p.sale?.waterSource) },
+      { label: 'Boundary wall', get: p => dash(p.sale?.boundaryWall) },
+      { label: 'Width of facing road', get: p => p.sale?.roadWidth ? p.sale.roadWidth + ' ft' : '—' },
+      { label: 'Open sides', get: p => dash(p.sale?.openSides) },
+      { label: 'Corner property', get: p => dash(p.sale?.cornerProperty) },
+      { label: 'Overlooking', get: p => dash(p.sale?.overlooking) },
     ] : []),
 
     section('Media & Amenities'),
@@ -11084,7 +11131,11 @@ function buildDetailTable(p) {
     ]);
   } else {
     section('💰 Pricing', 'sec-pricing', [
-      kv('Rent', price.rent != null ? fmtRupee(price.rent) + '/month' : null),
+      // Label and unit both need to vary here: "Rent ... /month" was wrong
+      // for a Sell listing's expected price (no "/month" on a sale) and
+      // technically wrong for Short Stay too (that's a per-day rate, not
+      // monthly) — neither had ever been corrected for this shared branch.
+      kv(isSell ? 'Price' : 'Rent', price.rent != null ? fmtRupee(price.rent) + (isSell ? '' : isShortStay ? '/day' : '/month') : null),
       !isShortStay ? kv('Deposit', price.deposit != null ? fmtRupee(price.deposit) : null) : null,
       kv('Maintenance', price.maintenance != null ? fmtRupee(price.maintenance) : null),
       kv('Rent increase', price.rentIncrease),
@@ -13060,14 +13111,19 @@ async function toggleMyListingBooked(id, btnEl) {
 function shareMyListingViaWhatsApp(id) {
   const p = MY_LISTINGS_CACHE.find(x => x.id === id);
   if (!p) return;
+  const status = p.basic?.status || 'For Rent';
+  const isSell = status === 'For Sale';
+  const isShortStay = status === 'Short Stay';
   const rent = p.price?.rent != null ? fmtRupee(p.price.rent) : null;
   const propertyUrl = `${window.location.origin}/property/${p.id}`;
   const lines = [
     `Check out my property "${p.propertyId}" on HomeLoop:`,
     `📍 ${p.location?.area || '—'}`,
   ];
-  if (rent) lines.push(`💰 ${rent}/month`);
-  lines.push(`🏷️ ${p.basic?.status || 'For Rent'}`);
+  // "/month" was wrong for a Sell listing's one-time price, and technically
+  // wrong for Short Stay's per-day rate too — same fix as buildDetailTable().
+  if (rent) lines.push(`💰 ${rent}${isSell ? '' : isShortStay ? '/day' : '/month'}`);
+  lines.push(`🏷️ ${status}`);
   lines.push('', `View details: ${propertyUrl}`);
   const msg = lines.join('\n');
   const url = 'https://wa.me/?text=' + encodeURIComponent(msg);

@@ -1258,6 +1258,10 @@ const MAX_LENGTHS = {
   'owner.name':         100,
   'owner.address':      300,
   'owner.contactTime':  100,
+  // sale.reraId had a client-side maxlength (50) but no server-side check —
+  // closing that gap while adding one for the new free-text projectName.
+  'sale.reraId':        50,
+  'sale.projectName':   120,
 };
 
 function validatePropertyFields(fields) {
