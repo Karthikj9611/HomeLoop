@@ -871,6 +871,23 @@ const SaleSchema = new mongoose.Schema({
   possessionDate: { type: String, default: null }, // 'YYYY-MM-DD' — only meaningful when possession is Under Construction; optional either way
   reraRegistered: { type: String, default: null }, // Yes / No
   reraId:         { type: String, default: null }, // optional even when reraRegistered is Yes — some resale sellers won't have it handy
+  // ── Added per KR's NoBroker/Housing/99acres comparison — resale trust,
+  // legal, and structural details none of the original fields captured. ──
+  khataType:       { type: String, default: null }, // A Khata / B Khata / Not Applicable — Bangalore-specific trust signal
+  propertyTaxPaid: { type: String, default: null }, // Yes / No — optional, older properties may have irregular records
+  loanStatus:      { type: String, default: null }, // Free & Clear / Home Loan Cleared Before Sale / Bank Loan Pending
+  ocAvailable:     { type: String, default: null }, // Occupancy Certificate — Yes / No, optional (many pre-2000 buildings lack one)
+  ccAvailable:     { type: String, default: null }, // Completion Certificate — Yes / No, optional, same reasoning as ocAvailable
+  previousOwners:  { type: String, default: null }, // '0 (First Owner)' / '1' / '2' / '3+' — optional
+  projectName:     { type: String, default: null }, // Society/project name, separate from owner.propertyName — optional, independent houses may not have one
+  flooring:        { type: String, default: null }, // Vitrified Tiles / Marble / Wooden / Cement / Mosaic — optional, doesn't apply to Plot/Land
+  waterSource:     { type: String, default: null }, // Corporation / Borewell / Both — optional
+  boundaryWall:    { type: String, default: null }, // Full / Partial / None — optional
+  roadWidth:       { type: String, default: null }, // width of the facing road, in feet — optional
+  openSides:       { type: String, default: null }, // number of open sides (1-4) — optional
+  cornerProperty:  { type: String, default: null }, // Yes / No — optional
+  overlooking:     { type: String, default: null }, // comma-joined multi-select: Main Road / Garden-Park / Pool / Club — optional
+  areaType:        { type: String, default: null }, // Carpet Area / Super Built-up Area / Built-up Area — clarifies property.area; required for a built (non-land) Sell listing
 }, { _id: false });
 
 // ── Counter (atomic per-type sequence for human-readable property IDs) ──
@@ -1387,6 +1404,16 @@ const TYPE_REQUIRED_FIELDS = {
     ['sale.ownership',     'Ownership type'],
     ['sale.possession',    'Possession status'],
     ['sale.reraRegistered','RERA registered'],
+    // Added per KR's NoBroker/Housing/99acres comparison. khataType and
+    // loanStatus are core resale-trust questions (mirrors ownership/
+    // possession above); areaType clarifies which area figure was entered.
+    // OC/CC, property tax status, previous owners, project name, and the
+    // structural details (flooring/water/boundary/road width/open sides/
+    // corner/overlooking) are deliberately left optional — same reasoning
+    // as reraId above, many legit resale listings won't have a tidy answer.
+    ['sale.khataType',     'Khata type'],
+    ['sale.loanStatus',    'Loan status'],
+    ['sale.areaType',      'Area type'],
   ],
 };
 
@@ -1398,7 +1425,11 @@ function findMissingRequiredFields(fields, status) {
   // or balcony count — nothing's built on it yet. Same fields the Sell form
   // hides for Plot/Land in onSellPropertyTypeChange() on the frontend.
   if (status === 'For Sale' && (fields.property || {}).type === 'Plot / Land') {
-    const landExempt = new Set(['property.bhk', 'property.floor', 'property.age', 'sale.totalFloors', 'sale.balconies']);
+    // Nothing's built on vacant land — no floor plan, no flooring, no
+    // Carpet/Super-Built-up distinction, and nothing for a municipal body
+    // to certify occupancy/completion against. Matches the frontend's
+    // onSellPropertyTypeChange() field hiding for the same property type.
+    const landExempt = new Set(['property.bhk', 'property.floor', 'property.age', 'sale.totalFloors', 'sale.balconies', 'sale.areaType']);
     required = required.filter(([path]) => !landExempt.has(path));
   }
   if ((fields.basic || {}).listedBy === 'Agent') {
