@@ -2715,6 +2715,7 @@ main.tab-explore .empty-state{display:none !important}
   overflow-y:auto;padding:24px;
   animation:modalIn .2s ease;
   position:relative;
+  box-shadow:0 30px 80px -16px rgba(15,12,13,.38),0 8px 24px rgba(15,12,13,.14);
 }
 .add-modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;padding-right:40px}
 .add-modal-title{font-size:17px;font-weight:700}
@@ -2790,16 +2791,6 @@ main.tab-explore .empty-state{display:none !important}
 .add-modal.view-mode #listingFormSections{display:none}
 .detail-table-wrap{display:none}
 .add-modal.view-mode #detailTableWrap{display:block;margin-bottom:16px}
-.detail-kv-table{width:100%;font-size:13px;display:grid;grid-template-columns:1fr 1fr;border-top:1px solid var(--border);border-left:1px solid var(--border)}
-.detail-kv-table .kv-cell{padding:9px 10px;border-right:1px solid var(--border);border-bottom:1px solid var(--border);min-width:0}
-.detail-kv-table .kv-cell.wide{grid-column:1 / -1}
-.detail-kv-table .kv-label{color:var(--text-3);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.03em;margin-bottom:3px}
-.detail-kv-table .kv-value{color:var(--brand);font-weight:600;word-break:break-word}
-@media (max-width:520px){
-  .detail-kv-table .kv-cell{padding:8px 6px}
-  .detail-kv-table .kv-label{font-size:9.5px}
-  .detail-kv-table .kv-value{font-size:12px}
-}
 /* The amenities picker's "Select all" / "Clear all" buttons, and each
    selected-amenity tag's ✕ button, mutate checkbox state directly via JS —
    disabling the checkboxes themselves doesn't stop that. Hide the whole
@@ -4214,6 +4205,103 @@ main.tab-explore .empty-state{display:none !important}
   #recentlyViewedStrip .prop-icon-badge{width:22px;height:22px}
   [id$="BookedGrid"] .prop-icon-badge svg,
   #recentlyViewedStrip .prop-icon-badge svg{width:12px;height:12px}
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   PROPERTY VIEW (addModal, view-mode) — full redesign.
+   A heavier, more professional read: a dark dossier-style header, a
+   framed hero gallery, spec sections rendered as unified bordered panels
+   (tab header fused to its table), and a sticky, elevated action bar.
+   Scoped entirely to .add-modal.view-mode so the Add/Edit listing form
+   is completely untouched.
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* ── Header: kept in the app's original brand-pink gradient (same as the
+   Add/Edit form header) rather than a separate dark treatment. */
+.add-modal.view-mode .add-modal-header{
+  background:linear-gradient(135deg,var(--brand) 0%,var(--brand-hover) 100%) !important;
+  padding:22px 28px 20px !important;
+  margin-bottom:0 !important;
+}
+.add-modal.view-mode .add-modal-title{
+  font-size:19px;font-weight:800;letter-spacing:-.02em;line-height:1.25;
+}
+.add-modal.view-mode #addModalSubtitleText{
+  display:flex !important;align-items:center;gap:5px;
+  font-size:12px !important;font-weight:600;letter-spacing:.02em;
+}
+.add-modal.view-mode #addModalSubtitleText::before{
+  content:'';width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.85);flex-shrink:0;
+}
+.add-modal.view-mode .modal-close{
+  background:var(--brand) !important;
+  box-shadow:0 3px 8px rgba(0,0,0,.25) !important;
+}
+.add-modal.view-mode .modal-close:hover{background:var(--brand-hover) !important;transform:scale(1.06)}
+
+/* ── Hero gallery: framed like a lead photo in a listing dossier. */
+.add-modal.view-mode .detail-gallery{margin-bottom:24px}
+.add-modal.view-mode .detail-gallery .prop-img{
+  aspect-ratio:16/10;border-radius:14px;
+  border:1px solid var(--border);
+  box-shadow:0 10px 28px -14px rgba(20,16,17,.28);
+}
+
+/* ── Spec table: same visual language as the Compare table — one flowing
+   table with colored "section band" rows (color-coded per category, same
+   palette as .compare-section-row.sec-*) instead of separate boxed panels. */
+.detail-table-card{
+  border:1px solid var(--border);
+  border-radius:14px;
+  overflow:hidden;
+  box-shadow:0 1px 3px rgba(20,16,17,.05);
+  margin-top:24px;
+}
+.detail-table{
+  width:100%;border-collapse:separate;border-spacing:0;
+  font-size:13px;background:var(--bg);
+}
+.detail-table td{
+  padding:12px 18px;vertical-align:top;
+  border-bottom:1px solid var(--border);
+}
+.detail-table tr:last-child td{border-bottom:none}
+.detail-row-label{
+  font-size:11px;font-weight:700;color:var(--text-3);
+  text-transform:uppercase;letter-spacing:.04em;
+  white-space:nowrap;width:38%;
+}
+.detail-row-value{font-weight:600;color:var(--brand);font-size:14px;letter-spacing:-.01em;word-break:break-word}
+.detail-section-row td{
+  padding:9px 18px;border-bottom:none;
+  font-size:10.5px;font-weight:800;
+  text-transform:uppercase;letter-spacing:.06em;
+}
+.detail-section-row td{color:var(--brand);background:var(--brand-light)}
+@media (max-width:520px){
+  .detail-table td{padding:10px 13px}
+  .detail-row-label{font-size:9.5px}
+  .detail-row-value{font-size:13px}
+}
+
+/* ── Action bar: sits inline at the end of the content and scrolls with
+   it (not pinned), keeping the buttons' refined styling only. */
+.add-modal.view-mode .view-actions-footer{
+  margin-top:26px;
+  padding-top:16px;
+  background:var(--bg);
+  border-top:1px solid var(--border);
+}
+.add-modal.view-mode .view-actions-footer .modal-actions,
+.add-modal.view-mode .view-actions-footer .modal-actions-row{gap:10px}
+.add-modal.view-mode .view-actions-footer .modal-btn-primary,
+.add-modal.view-mode .view-actions-footer .modal-btn-secondary,
+.add-modal.view-mode .view-actions-footer .modal-btn-outline,
+.add-modal.view-mode .view-actions-footer .modal-btn-whatsapp{
+  font-weight:700;letter-spacing:-.01em;border-radius:10px;padding:13px;
+}
+.add-modal.view-mode .view-actions-footer .modal-btn-primary{
+  box-shadow:0 6px 16px -6px rgba(224,58,82,.45);
 }
 
 </style>
@@ -10851,40 +10939,41 @@ function buildDetailTable(p) {
   const status = basic.status || 'For Rent';
   const isPG = status === 'PG', isLease = status === 'Lease', isShortStay = status === 'Short Stay';
 
-  // Each section is built independently — a header (matching the .lm-section
-  // style used by the "list your property" form) followed by its own
-  // key/value table — instead of one long flat table, so the view mirrors
-  // how the create form itself is broken into labelled sections.
-  const sections = [];
-  function section(label, rows) {
+  // Single continuous <table>, one colored "section band" row per group
+  // (same color-per-category language as the Compare table's
+  // .compare-section-row.sec-*) followed by its plain label/value rows —
+  // rather than separate boxed panels, this reads as one flowing table.
+  const rowsHtml = [];
+  function section(label, sectionClass, rows) {
     const filtered = rows.filter(Boolean);
     if (!filtered.length) return;
-    sections.push('<div class="lm-section">' + label + '</div><div class="detail-kv-table">' + filtered.join('') + '</div>');
+    rowsHtml.push('<tr class="detail-section-row ' + sectionClass + '"><td colspan="2">' + label + '</td></tr>');
+    rowsHtml.push(...filtered);
   }
-  function kv(label, value, wide) {
+  function kv(label, value) {
     if (value === null || value === undefined) return null;
     const text = String(value).trim();
     if (!text) return null;
-    return '<div class="kv-cell' + (wide ? ' wide' : '') + '"><div class="kv-label">' + esc(label) + '</div><div class="kv-value">' + esc(text) + '</div></div>';
+    return '<tr><td class="detail-row-label">' + esc(label) + '</td><td class="detail-row-value">' + esc(text) + '</td></tr>';
   }
 
-  section('📋 Basic Information', [
+  section('📋 Basic Information', 'sec-listing-info', [
     kv('Status', status),
     kv('Listed by', basic.listedBy),
   ]);
 
-  section('📍 Location', [
+  section('📍 Location', 'sec-listing-info', [
     kv('Area / Locality', location.area),
     kv('City', location.city),
   ]);
 
   if (isLease) {
-    section('💰 Pricing', [
+    section('💰 Pricing', 'sec-pricing', [
       kv('Lease amount', price.rent != null ? fmtRupee(price.rent) + '/month' : null),
       kv('Maintenance', price.maintenance != null ? fmtRupee(price.maintenance) : null),
     ]);
   } else {
-    section('💰 Pricing', [
+    section('💰 Pricing', 'sec-pricing', [
       kv('Rent', price.rent != null ? fmtRupee(price.rent) + '/month' : null),
       !isShortStay ? kv('Deposit', price.deposit != null ? fmtRupee(price.deposit) : null) : null,
       kv('Maintenance', price.maintenance != null ? fmtRupee(price.maintenance) : null),
@@ -10895,7 +10984,7 @@ function buildDetailTable(p) {
     ]);
   }
 
-  section('🏢 Property Details', [
+  section('🏢 Property Details', 'sec-property-details', [
     !isPG && !isShortStay ? kv('Property type', property.type) : null,
     !isPG && !isShortStay ? kv('BHK', property.bhk) : null,
     !isPG && !isShortStay ? kv('Built-up area', property.area) : null,
@@ -10911,7 +11000,7 @@ function buildDetailTable(p) {
     !isPG ? kv('Available from', property.available ? formatDateDisplay(property.available) : property.available) : null,
   ]);
 
-  section('📅 Availability & Terms', [
+  section('📅 Availability & Terms', 'sec-terms', [
     isLease ? kv('Notice period', terms.notice) : (!isPG && !isShortStay ? kv('Notice period', terms.notice) : null),
     isLease ? kv('Contract Term', terms.lease) : (!isPG && !isShortStay ? kv('Contract Term', terms.lease) : null),
     isLease ? kv('Lease type', terms.leaseType) : null,
@@ -10919,7 +11008,7 @@ function buildDetailTable(p) {
   ]);
 
   if (!isShortStay) {
-    section('⚖️ Tenant Rules', [
+    section('⚖️ Tenant Rules', 'sec-rules', [
       kv('Pets allowed', rules.pets),
       kv('Non-veg allowed', rules.nonVeg),
       kv('Piped gas', rules.gas),
@@ -10927,7 +11016,7 @@ function buildDetailTable(p) {
   }
 
   if (isPG) {
-    section('🛏 PG Details', [
+    section('🛏 PG Details', 'sec-pg-details', [
       kv('Property type', pg.type),
       kv('Gender preference', pg.gender),
       kv('Room type', pg.room),
@@ -10945,7 +11034,7 @@ function buildDetailTable(p) {
   }
 
   if (isShortStay) {
-    section('🛎 Short Stay Details', [
+    section('🛎 Short Stay Details', 'sec-pg-details', [
       kv('Property type', shortStay.type),
       kv('Room type', shortStay.roomType),
       kv('Available 24 hours', shortStay.available24hrs),
@@ -10956,17 +11045,17 @@ function buildDetailTable(p) {
   }
 
   const selected = Array.isArray(amenities.selected) ? amenities.selected : [];
-  section('✨ Amenities', [
-    kv('Amenities', selected.join(', '), true),
-    kv('Additional amenities', amenities.extra, true),
+  section('✨ Amenities', 'sec-media-amenities', [
+    kv('Amenities', selected.join(', ')),
+    kv('Additional amenities', amenities.extra),
   ]);
 
-  section('📝 Description', [
-    kv('Description', media.desc, true),
+  section('📝 Description', 'sec-media-amenities', [
+    kv('Description', media.desc),
   ]);
 
-  if (!sections.length) return '<div class="profile-list-empty" style="padding:14px 0">No details added yet.</div>';
-  return sections.join('');
+  if (!rowsHtml.length) return '<div class="profile-list-empty" style="padding:14px 0">No details added yet.</div>';
+  return '<div class="detail-table-card"><table class="detail-table"><tbody>' + rowsHtml.join('') + '</tbody></table></div>';
 }
 
 function closeDetail() {
