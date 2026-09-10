@@ -2558,7 +2558,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
 
   <!-- ══ PROPERTIES PANEL ══ -->
   <div class="tab-panel active" id="panel-properties">
-    <!-- Category sub-tabs: All / Rent / Lease / PG -->
+    <!-- Category sub-tabs: All / Rent / Lease / Sell / PG -->
     <div class="cat-tab-bar" id="propCatTabs">
       <button class="cat-tab-btn" data-cat="all" onclick="switchPropCategory('all')">
         <i class="fas fa-layer-group"></i><span class="cat-tab-btn-label" data-mobile="All">All</span><span class="cat-count" id="cat-count-all">—</span>
@@ -2571,6 +2571,9 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
       </button>
       <button class="cat-tab-btn" data-cat="Lease" onclick="switchPropCategory('Lease')">
         <i class="fas fa-file-signature"></i><span class="cat-tab-btn-label" data-mobile="Lease">Lease</span><span class="cat-count" id="cat-count-Lease">—</span>
+      </button>
+      <button class="cat-tab-btn" data-cat="Sell" onclick="switchPropCategory('Sell')">
+        <i class="fas fa-tag"></i><span class="cat-tab-btn-label" data-mobile="Sell">Sell</span><span class="cat-count" id="cat-count-Sell">—</span>
       </button>
       <button class="cat-tab-btn" data-cat="Booked" onclick="switchPropCategory('Booked')">
         <i class="fas fa-lock"></i><span class="cat-tab-btn-label" data-mobile="Booked">Booked</span><span class="cat-count" id="cat-count-Booked">—</span>
@@ -3174,7 +3177,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
       <div class="form-group" id="f-typeWrap">
         <label class="form-label">Status <span style="color:var(--brand)">*</span></label>
         <select class="form-select" id="f-type" onchange="onFTypeChange(this.value)">
-          <option value="Rent">Rent</option><option value="Lease">Lease</option><option value="PG">PG / Co-living</option><option value="ShortStay">Short Stay (Per Day)</option>
+          <option value="Rent">Rent</option><option value="Lease">Lease</option><option value="PG">PG / Co-living</option><option value="ShortStay">Short Stay (Per Day)</option><option value="Sell">Sell</option>
         </select>
       </div>
       <div class="form-group">
@@ -3300,7 +3303,11 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
     <div id="addPricingSection">
     <div class="lm-section">💰 Pricing</div>
     <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
-      <div class="form-group"><label class="form-label" id="f-rentLabel">Monthly rent (₹) <span style="color:var(--brand)">*</span></label><input class="form-input" type="number" id="f-rent" min="0" max="9999999" /></div>
+      <div class="form-group"><label class="form-label" id="f-rentLabel">Monthly rent (₹) <span style="color:var(--brand)">*</span></label><input class="form-input" type="number" id="f-rent" min="0" max="9999999" oninput="updateSellPricePerSqft()" /></div>
+      <div class="form-group" id="f-pricePerSqftWrap" style="display:none">
+        <label class="form-label">Price per sqft (auto)</label>
+        <input class="form-input" type="text" id="f-pricePerSqft" readonly />
+      </div>
       <div class="form-group" id="f-depositWrap"><label class="form-label">Security deposit (₹) <span style="color:var(--brand)">*</span></label><input class="form-input" type="number" id="f-deposit" min="0" max="9999999" /></div>
       <div class="form-group" id="f-maintenanceWrap"><label class="form-label">Maintenance (₹/ Month)</label><input class="form-input" type="number" id="f-maintenance" oninput="onMaintenanceChange()" /></div>
       <div class="form-group" id="f-escalationWrap"><label class="form-label">Escalation (%)</label><input class="form-input" type="number" step="0.5" id="f-escalation" /></div>
@@ -3325,32 +3332,32 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
     <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
       <div class="form-group">
         <label class="form-label">Property type</label>
-        <select class="form-select" id="f-propertyType">
-          <option>Apartment</option><option>House</option><option>Standalone</option><option>Villa</option><option>Studio</option><option>Duplex</option><option>Penthouse</option><option>Bungalow</option><option>Loft</option><option>Cottage</option><option>Farmhouse</option><option>PG</option><option>Hostel</option><option>Homestay</option>
+        <select class="form-select" id="f-propertyType" onchange="onSellPropertyTypeChange()">
+          <option>Apartment</option><option>House</option><option>Standalone</option><option>Villa</option><option>Studio</option><option>Duplex</option><option>Penthouse</option><option>Bungalow</option><option>Loft</option><option>Cottage</option><option>Farmhouse</option><option>PG</option><option>Hostel</option><option>Homestay</option><option>Plot / Land</option>
         </select>
       </div>
-      <div class="form-group">
+      <div class="form-group" id="f-bhkWrap">
         <label class="form-label">BHK</label>
         <select class="form-select" id="f-bhk">
           <option>1 RK</option><option>1 BHK</option><option>2 BHK</option><option>3 BHK</option><option>4 BHK</option>
         </select>
       </div>
 	  
-	  <div class="form-group">
+	  <div class="form-group" id="f-bikeparkWrap">
         <label class="form-label">Bike Parking</label>
         <select class="form-select" id="f-bikepark">
           <option>0</option><option>1</option><option>2</option><option>3</option><option>4</option>
         </select>
       </div>
 	  
-	  <div class="form-group">
+	  <div class="form-group" id="f-carparkWrap">
         <label class="form-label">Car Parking</label>
         <select class="form-select" id="f-carpark">
           <option>0</option><option>1</option><option>2</option><option>3</option><option>4</option>
         </select>
       </div>
 	  
-      <div class="form-group">
+      <div class="form-group" id="f-floorWrap">
         <label class="form-label">Floor</label>
         <select class="form-select" id="f-floor">
           <option value="">Select</option>
@@ -3358,18 +3365,22 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
         </select>
       </div>
       <div class="form-group">
-        <label class="form-label">Area (sqft)</label>
-        <input class="form-input" type="text" inputmode="numeric" id="f-area" onfocus="stripAreaSqft(this)" onblur="formatAreaSqft(this)" />
+        <label class="form-label" id="f-areaLabel">Area (sqft)</label>
+        <input class="form-input" type="text" inputmode="numeric" id="f-area" onfocus="stripAreaSqft(this)" onblur="formatAreaSqft(this)" oninput="updateSellPricePerSqft()" />
       </div>
-      <div class="form-group">
+      <div class="form-group" id="f-areaTypeWrap" style="display:none">
+        <label class="form-label">Area type</label>
+        <select class="form-select" id="f-areaType"><option value="">Select</option><option>Carpet Area</option><option>Super Built-up Area</option><option>Built-up Area</option></select>
+      </div>
+      <div class="form-group" id="f-bathsWrap">
         <label class="form-label">Bathrooms</label>
         <select class="form-select" id="f-baths"><option>1</option><option>2</option><option>3</option><option>4+</option></select>
       </div>
-      <div class="form-group">
+      <div class="form-group" id="f-toiletTypeWrap">
         <label class="form-label">Toilet Type</label>
         <select class="form-select" id="f-toiletType"><option>Western</option><option>Indian</option><option>Both</option></select>
       </div>
-      <div class="form-group">
+      <div class="form-group" id="f-furnishingWrap">
         <label class="form-label">Furnishing</label>
         <select class="form-select" id="f-furnishing">
           <option>Fully</option><option>Semi</option><option>Basic</option>
@@ -3381,7 +3392,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
           <option>North</option><option>South</option><option>East</option><option>West</option><option>North-East</option><option>North-West</option><option>South-East</option><option>South-West</option>
         </select>
       </div>
-      <div class="form-group">
+      <div class="form-group" id="f-ageWrap">
         <label class="form-label">Age of property</label>
         <select class="form-select" id="f-age">
           <option value="">Select</option><option>New</option><option>1 yr</option><option>2 yrs</option><option>3 yrs</option><option>4 yrs</option><option>5 yrs</option><option>6 yrs</option><option>7 yrs</option><option>8 yrs</option><option>9 yrs</option><option>10 yrs</option><option>11 yrs</option><option>12 yrs</option><option>13 yrs</option><option>14 yrs</option><option>15 yrs</option><option>16 yrs</option><option>17 yrs</option><option>18 yrs</option><option>19 yrs</option><option>20 yrs</option>
@@ -3448,6 +3459,123 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
       <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
         <div class="form-group"><label class="form-label">Pets allowed</label><select class="form-select" id="f-leasePets"><option value="">Select</option><option>Yes</option><option selected>No</option></select></div>
         <div class="form-group"><label class="form-label">Non-veg allowed</label><select class="form-select" id="f-leaseNonVeg"><option value="">Select</option><option selected>Yes</option><option>No</option></select></div>
+      </div>
+    </div>
+
+    <!-- SELL extras -->
+    <div id="addSellSection" style="display:none">
+      <div class="lm-section">🏷️ Sale Details</div>
+      <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
+        <div class="form-group" id="f-sellTotalFloorsWrap">
+          <label class="form-label">Total floors in building</label>
+          <select class="form-select" id="f-sellTotalFloors">
+            <option value="">Select</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option>9</option><option>10</option><option>10+</option>
+          </select>
+        </div>
+        <div class="form-group" id="f-sellBalconiesWrap">
+          <label class="form-label">Balconies</label>
+          <select class="form-select" id="f-sellBalconies"><option value="">Select</option><option>0</option><option>1</option><option>2</option><option>3</option><option>4+</option></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Ownership type</label>
+          <select class="form-select" id="f-sellOwnership">
+            <option value="">Select</option><option>Freehold</option><option>Leasehold</option><option>Co-operative Society</option><option>Power of Attorney</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Possession status</label>
+          <select class="form-select" id="f-sellPossession"><option value="">Select</option><option>Ready to Move</option><option>Under Construction</option></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Possession date (optional)</label>
+          <input class="form-input" type="date" id="f-sellPossessionDate" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">RERA registered</label>
+          <select class="form-select" id="f-sellRera"><option value="">Select</option><option>Yes</option><option>No</option></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">RERA ID (optional)</label>
+          <input class="form-input" type="text" id="f-sellReraId" maxlength="50" />
+        </div>
+      </div>
+
+      <div class="lm-section">🏛️ Legal &amp; Ownership Details</div>
+      <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
+        <div class="form-group">
+          <label class="form-label">Khata type</label>
+          <select class="form-select" id="f-sellKhataType"><option value="">Select</option><option>A Khata</option><option>B Khata</option><option>Not Applicable</option></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Property tax paid up to date (optional)</label>
+          <select class="form-select" id="f-sellTaxPaid"><option value="">Select</option><option>Yes</option><option>No</option></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Loan status</label>
+          <select class="form-select" id="f-sellLoanStatus"><option value="">Select</option><option>Free &amp; Clear (No Loan)</option><option>Home Loan Cleared Before Sale</option><option>Bank Loan Pending / To Be Transferred</option></select>
+        </div>
+        <div class="form-group" id="f-sellOcAvailableWrap">
+          <label class="form-label">Occupancy Certificate (OC) available (optional)</label>
+          <select class="form-select" id="f-sellOcAvailable"><option value="">Select</option><option>Yes</option><option>No</option></select>
+        </div>
+        <div class="form-group" id="f-sellCcAvailableWrap">
+          <label class="form-label">Completion Certificate (CC) available (optional)</label>
+          <select class="form-select" id="f-sellCcAvailable"><option value="">Select</option><option>Yes</option><option>No</option></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Number of previous owners (optional)</label>
+          <select class="form-select" id="f-sellPreviousOwners"><option value="">Select</option><option>0 (First Owner)</option><option>1</option><option>2</option><option>3+</option></select>
+        </div>
+        <div class="form-group" style="grid-column:span 2">
+          <label class="form-label">Society / Project name (optional)</label>
+          <input class="form-input" type="text" id="f-sellProjectName" maxlength="120" placeholder="e.g. Prestige Shantiniketan" />
+        </div>
+      </div>
+
+      <div class="lm-section">🧱 Structure &amp; Site Details</div>
+      <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
+        <div class="form-group" id="f-sellFlooringWrap">
+          <label class="form-label">Flooring type (optional)</label>
+          <select class="form-select" id="f-sellFlooring"><option value="">Select</option><option>Vitrified Tiles</option><option>Marble</option><option>Wooden</option><option>Cement</option><option>Mosaic</option></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Water source (optional)</label>
+          <select class="form-select" id="f-sellWaterSource"><option value="">Select</option><option>Corporation</option><option>Borewell</option><option>Both</option></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Boundary wall (optional)</label>
+          <select class="form-select" id="f-sellBoundaryWall"><option value="">Select</option><option>Full</option><option>Partial</option><option>None</option></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Width of facing road, ft (optional)</label>
+          <input class="form-input" type="number" min="0" id="f-sellRoadWidth" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Number of open sides (optional)</label>
+          <select class="form-select" id="f-sellOpenSides"><option value="">Select</option><option>1</option><option>2</option><option>3</option><option>4</option></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Corner property (optional)</label>
+          <select class="form-select" id="f-sellCornerProperty"><option value="">Select</option><option>Yes</option><option>No</option></select>
+        </div>
+        <div class="form-group" style="grid-column:span 3" id="overlookingFormGroup">
+          <label class="form-label">Overlooking (optional)</label>
+          <div class="am-dd" id="overlookingDropdown">
+            <button type="button" class="am-dd-trigger" onclick="toggleOverlookingDropdown(event)">
+              <span><span class="am-dd-count" id="overlookingDdCount" style="display:none">0</span><span id="overlookingDdLabel">Choose what it overlooks…</span></span>
+              <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <div class="am-dd-panel" id="overlookingDdPanel">
+              <div class="am-dd-grid" style="grid-template-columns:1fr">
+                <label class="am-dd-item"><input type="checkbox" id="ov-mainroad" onchange="onOverlookingCheck()"/> Main Road</label>
+                <label class="am-dd-item"><input type="checkbox" id="ov-gardenpark" onchange="onOverlookingCheck()"/> Garden / Park</label>
+                <label class="am-dd-item"><input type="checkbox" id="ov-pool" onchange="onOverlookingCheck()"/> Pool</label>
+                <label class="am-dd-item"><input type="checkbox" id="ov-club" onchange="onOverlookingCheck()"/> Club</label>
+              </div>
+            </div>
+          </div>
+          <input type="hidden" id="f-sellOverlooking" />
+        </div>
       </div>
     </div>
 
@@ -5841,7 +5969,7 @@ window.resetAllViews = async function(){
   if(!allRows.length){ alert('There are no properties to reset.'); return; }
   const ok = await showConfirmModal({
     title: 'Reset all views?',
-    message: 'Every property listing\'s view count — Rent, Lease, PG, and Short Stay — will be set back to 0. This cannot be undone.',
+    message: 'Every property listing\'s view count — Rent, Lease, Sell, PG, and Short Stay — will be set back to 0. This cannot be undone.',
     okText: 'Reset all'
   });
   if(!ok) return;
@@ -6012,7 +6140,7 @@ window.deleteAllProperties = async function(){
   if(!allRows.length){ alert('There are no properties to delete.'); return; }
   const ok = await showConfirmModal({
     title: `Delete all ${allRows.length} properties?`,
-    message: 'Every property listing — Rent, Lease, PG, and Short Stay — will be permanently deleted. This cannot be undone.',
+    message: 'Every property listing — Rent, Lease, Sell, PG, and Short Stay — will be permanently deleted. This cannot be undone.',
     okText: 'Delete All'
   });
   if(!ok) return;
@@ -7913,6 +8041,7 @@ function pTypeLabel(p){
   if (status === 'Lease') return 'Lease';
   if (status === 'PG') return 'PG';
   if (status === 'Short Stay') return 'ShortStay';
+  if (status === 'For Sale') return 'Sell';
   return status || 'Rent';
 }
 function pHasLift(p){
@@ -7979,6 +8108,8 @@ function renderAdminCompareTable(){
   });
   const anyPG = props.some(p => pTypeLabel(p) === 'PG');
   const anyLease = props.some(p => pTypeLabel(p) === 'Lease');
+  const anySell = props.some(p => pTypeLabel(p) === 'Sell');
+  const allSell = props.length > 0 && props.every(p => pTypeLabel(p) === 'Sell');
   const section = (label) => ({ section: label });
 
   const dataRows = [
@@ -7989,9 +8120,9 @@ function renderAdminCompareTable(){
     { label: 'Posted', get: p => p.posted ? formatDateDisplay(p.posted, true) : '—' },
 
     section('Pricing'),
-    { label: 'Rent / Month', get: p => `<span style="font-weight:700;color:var(--ink)">${fmtRupee(p.price?.rent||0)}</span>` },
-    { label: 'Deposit', get: p => `${fmtRupee(p.price?.deposit||0)}` },
-    { label: 'Maintenance', get: p => p.price?.maintenance ? `${fmtRupee(p.price.maintenance)}` : 'Included' },
+    { label: allSell ? 'Price' : 'Rent / Month', get: p => `<span style="font-weight:700;color:var(--ink)">${fmtRupee(p.price?.rent||0)}</span>` },
+    { label: 'Deposit', get: p => pTypeLabel(p) === 'Sell' ? '—' : `${fmtRupee(p.price?.deposit||0)}` },
+    { label: 'Maintenance', get: p => p.price?.maintenance ? `${fmtRupee(p.price.maintenance)}` : (pTypeLabel(p) === 'Sell' ? '—' : 'Included') },
     { label: 'Electricity', get: p => dash(p.price?.electricity) },
     { label: 'Water charge', get: p => dash(p.price?.water) },
     { label: 'Rent negotiable', get: p => dash(p.price?.negotiable) },
@@ -8041,6 +8172,33 @@ function renderAdminCompareTable(){
       { label: 'Gate time', get: p => dash(p.pg?.gateTime) },
     ] : []),
 
+    ...(anySell ? [
+      section('Sale Details'),
+      { label: 'Total floors in building', get: p => dash(p.sale?.totalFloors) },
+      { label: 'Balconies', get: p => dash(p.sale?.balconies) },
+      { label: 'Ownership type', get: p => dash(p.sale?.ownership) },
+      { label: 'Possession status', get: p => dash(p.sale?.possession) },
+      { label: 'Possession date', get: p => p.sale?.possessionDate ? formatDateDisplay(p.sale.possessionDate) : '—' },
+      { label: 'RERA registered', get: p => dash(p.sale?.reraRegistered) },
+      { label: 'RERA ID', get: p => dash(p.sale?.reraId) },
+      section('Legal & Ownership Details'),
+      { label: 'Khata type', get: p => dash(p.sale?.khataType) },
+      { label: 'Property tax paid up to date', get: p => dash(p.sale?.propertyTaxPaid) },
+      { label: 'Loan status', get: p => dash(p.sale?.loanStatus) },
+      { label: 'OC available', get: p => dash(p.sale?.ocAvailable) },
+      { label: 'CC available', get: p => dash(p.sale?.ccAvailable) },
+      { label: 'Previous owners', get: p => dash(p.sale?.previousOwners) },
+      { label: 'Society / Project name', get: p => dash(p.sale?.projectName) },
+      section('Structure & Site Details'),
+      { label: 'Flooring type', get: p => dash(p.sale?.flooring) },
+      { label: 'Water source', get: p => dash(p.sale?.waterSource) },
+      { label: 'Boundary wall', get: p => dash(p.sale?.boundaryWall) },
+      { label: 'Width of facing road', get: p => p.sale?.roadWidth ? p.sale.roadWidth + ' ft' : '—' },
+      { label: 'Open sides', get: p => dash(p.sale?.openSides) },
+      { label: 'Corner property', get: p => dash(p.sale?.cornerProperty) },
+      { label: 'Overlooking', get: p => dash(p.sale?.overlooking) },
+    ] : []),
+
     section('Media & Amenities'),
     { label: 'Video tour', get: p => p.media?.video ? '<span class="compare-yes">Available</span>' : '<span class="compare-no">Not added</span>' },
     { label: 'Description', get: p => p.media?.desc ? `<span class="compare-desc-cell">${esc(p.media.desc)}</span>` : '—' },
@@ -8054,7 +8212,7 @@ function renderAdminCompareTable(){
   const headCells = rows.map(row => {
     const full = row.full || {};
     const pType = pTypeLabel(full);
-    const colors = {Rent:'#e8f5ee:#1a6640',Lease:'#dde9fa:#1a4680',PG:'#eee8fa:#4a2a9a',ShortStay:'#e0f7fa:#00646e'};
+    const colors = {Rent:'#e8f5ee:#1a6640',Lease:'#dde9fa:#1a4680',PG:'#eee8fa:#4a2a9a',ShortStay:'#e0f7fa:#00646e',Sell:'#fdf1e0:#a15c00'};
     const [bg] = (colors[pType]||'#f0f0f0:#333').split(':');
     const available = pType === 'PG' ? (full.pg?.available || '') : (full.property?.available || '');
     const availableInfo = availableDateInfo(available);
@@ -8332,6 +8490,7 @@ function propCategoryOf(status){
   if(status === 'Lease')      return 'Lease';
   if(status === 'PG')         return 'PG';
   if(status === 'Short Stay') return 'Short Stay';
+  if(status === 'For Sale')   return 'Sell';
   return 'Rent';
 }
 
@@ -8801,16 +8960,16 @@ function switchPropCategory(cat){
 }
 
 function updatePropCategoryCounts(data){
-  const counts = {all:0, Promoted:0, Booked:0, Rent:0, Lease:0, PG:0, 'Short Stay':0};
+  const counts = {all:0, Promoted:0, Booked:0, Rent:0, Lease:0, Sell:0, PG:0, 'Short Stay':0};
   data.forEach(r=>{
     if(!r.booked){
       counts.all++;
-      counts[propCategoryOf(r.status)]++; // once booked, no longer counted under All or its Rent/Lease/PG/Short Stay tab
+      counts[propCategoryOf(r.status)]++; // once booked, no longer counted under All or its Rent/Lease/Sell/PG/Short Stay tab
       if(r.promoted) counts.Promoted++; // once booked, no longer counted under Promoted either
     }
     if(r.booked) counts.Booked++;
   });
-  ['all','Promoted','Booked','Rent','Lease','PG','Short Stay'].forEach(cat=>{
+  ['all','Promoted','Booked','Rent','Lease','Sell','PG','Short Stay'].forEach(cat=>{
     const el = document.getElementById('cat-count-'+cat.replace(/\s+/g,'-'));
     if(el) el.innerText = counts[cat];
   });
@@ -9482,6 +9641,8 @@ function resetListingForm() {
   document.querySelectorAll('#addModal input[type="checkbox"]').forEach(el => { el.checked = false; });
   amClearAll();
   if (typeof renderTenantSelected === 'function') renderTenantSelected();
+  if (typeof renderOverlookingSelected === 'function') renderOverlookingSelected();
+  if (typeof updateSellPricePerSqft === 'function') updateSellPricePerSqft();
   if (typeof applySameAsBuildingAddressState === 'function') applySameAsBuildingAddressState();
   pincodeManuallyEdited = false;
   const importBody = document.getElementById('importPanelBody');
@@ -9633,7 +9794,7 @@ function _setAdminListingMode(mode){
   const gallerySlot = document.getElementById('aeGallerySlot');
   if (gallerySlot){
     if (isView){
-      const colors = {'For Rent':'#e8f5ee:#1a6640','Lease':'#dde9fa:#1a4680','PG':'#eee8fa:#4a2a9a','Short Stay':'#e0f7fa:#00646e'};
+      const colors = {'For Rent':'#e8f5ee:#1a6640','Lease':'#dde9fa:#1a4680','PG':'#eee8fa:#4a2a9a','Short Stay':'#e0f7fa:#00646e','For Sale':'#fdf1e0:#a15c00'};
       const [gbg, gfg] = (colors[p.status] || '#f0f0f0:#333').split(':');
       gallerySlot.innerHTML = `<div class="prop-img" style="background:${gbg}" data-idx="0">${buildImgSlider(p, gfg)}</div>`;
       gallerySlot.style.display = 'block';
@@ -9725,9 +9886,9 @@ function applyImportedProperty(p) {
   function sv(id, val) { const el = document.getElementById(id); if (el && val !== undefined && val !== null) el.value = val; }
   const basic = p.basic || {}, location = p.location || {}, owner = p.owner || {}, price = p.price || {},
         property = p.property || {}, amenities = p.amenities || {}, terms = p.terms || {}, rules = p.rules || {},
-        media = p.media || {}, pg = p.pg || {}, shortStay = p.shortStay || {};
+        media = p.media || {}, pg = p.pg || {}, shortStay = p.shortStay || {}, sale = p.sale || {};
 
-  const reverseStatusMap = { 'For Rent': 'Rent', 'Lease': 'Lease', 'PG': 'PG', 'Short Stay': 'ShortStay' };
+  const reverseStatusMap = { 'For Rent': 'Rent', 'Lease': 'Lease', 'PG': 'PG', 'Short Stay': 'ShortStay', 'For Sale': 'Sell' };
   const typeVal = reverseStatusMap[basic.status] || (basic.status || 'Rent');
   sv('f-type', typeVal);
   sv('f-listedBy', basic.listedBy);
@@ -9855,6 +10016,32 @@ function applyImportedProperty(p) {
     sv('f-ssFurnish', shortStay.furnish);
   }
 
+  if (typeVal === 'Sell') {
+    sv('f-sellTotalFloors', sale.totalFloors);
+    sv('f-sellBalconies', sale.balconies);
+    sv('f-sellOwnership', sale.ownership);
+    sv('f-sellPossession', sale.possession);
+    sv('f-sellPossessionDate', sale.possessionDate);
+    sv('f-sellRera', sale.reraRegistered);
+    sv('f-sellReraId', sale.reraId);
+    sv('f-sellKhataType', sale.khataType);
+    sv('f-sellTaxPaid', sale.propertyTaxPaid);
+    sv('f-sellLoanStatus', sale.loanStatus);
+    sv('f-sellOcAvailable', sale.ocAvailable);
+    sv('f-sellCcAvailable', sale.ccAvailable);
+    sv('f-sellPreviousOwners', sale.previousOwners);
+    sv('f-sellProjectName', sale.projectName);
+    sv('f-sellFlooring', sale.flooring);
+    sv('f-sellWaterSource', sale.waterSource);
+    sv('f-sellBoundaryWall', sale.boundaryWall);
+    sv('f-sellRoadWidth', sale.roadWidth);
+    sv('f-sellOpenSides', sale.openSides);
+    sv('f-sellCornerProperty', sale.cornerProperty);
+    sv('f-areaType', sale.areaType);
+    if (typeof syncOverlookingCheckboxesFromValue === 'function') syncOverlookingCheckboxesFromValue(sale.overlooking);
+    updateSellPricePerSqft();
+  }
+
   onFTypeChange(typeVal);
 }
 
@@ -9862,25 +10049,49 @@ function onFTypeChange(val) {
   const isPG = val === 'PG';
   const isLease = val === 'Lease';
   const isShortStay = val === 'ShortStay';
+  const isSell = val === 'Sell';
   document.getElementById('addPgSection').style.display = isPG ? '' : 'none';
   document.getElementById('addShortStaySection').style.display = isShortStay ? '' : 'none';
-  document.getElementById('addRentSection').style.display = (!isPG && !isLease && !isShortStay) ? '' : 'none';
+  document.getElementById('addSellSection').style.display = isSell ? '' : 'none';
+  // addRentSection doubles as the Rent-only "Terms & Rules" block (notice
+  // period, contract term, pets, non-veg) — none of that applies to a sale.
+  document.getElementById('addRentSection').style.display = (!isPG && !isLease && !isShortStay && !isSell) ? '' : 'none';
   document.getElementById('addLeaseSection').style.display = isLease ? '' : 'none';
   document.getElementById('addPropDetailsSection').style.display = (isPG || isShortStay) ? 'none' : '';
   document.getElementById('addAmenitiesSection').style.display = '';
   document.getElementById('addPricingSection').style.display = isLease ? 'none' : '';
-  ['f-maintenanceWrap', 'f-escalationWrap', 'f-electricityWrap', 'f-waterWrap'].forEach(id => {
+  // Maintenance still applies to a resale flat (society maintenance) — only
+  // hidden for PG/Short Stay. Rent escalation, electricity-included and
+  // water/borewell charges are rental-only concepts, so those three are
+  // hidden for Sell too on top of PG/Short Stay.
+  document.getElementById('f-maintenanceWrap').style.display = (isPG || isShortStay) ? 'none' : '';
+  ['f-escalationWrap', 'f-electricityWrap', 'f-waterWrap'].forEach(id => {
     const el = document.getElementById(id);
-    if (el) el.style.display = (isPG || isShortStay) ? 'none' : '';
+    if (el) el.style.display = (isPG || isShortStay || isSell) ? 'none' : '';
   });
-  document.getElementById('f-depositWrap').style.display = (isPG || isShortStay) ? 'none' : '';
+  // No security deposit on a sale (nothing being held/returned).
+  document.getElementById('f-depositWrap').style.display = (isPG || isShortStay || isSell) ? 'none' : '';
   document.getElementById('f-negotiableWrap').style.display = (isPG || isShortStay) ? 'none' : '';
   document.getElementById('f-availWrap').style.display = (isLease || isShortStay) ? 'none' : '';
+  // Tenant preference is a rental-only concept — doesn't apply when selling.
+  const tenantGroup = document.getElementById('tenantFormGroup');
+  if (tenantGroup) tenantGroup.style.display = isSell ? 'none' : '';
   const lbl = document.getElementById('f-rentLabel');
   if (lbl) lbl.innerHTML = (val === 'For Rent' || val === 'Rent') ? 'Monthly rent (₹) <span style="color:var(--brand)">*</span>'
     : isLease ? 'Token rent (₹) <span style="color:var(--brand)">*</span>'
     : isShortStay ? 'Per day rate (₹) <span style="color:var(--brand)">*</span>'
+    : isSell ? 'Expected price (₹) <span style="color:var(--brand)">*</span>'
     : 'Monthly charge (₹) <span style="color:var(--brand)">*</span>';
+  // Area-type clarifier and the auto price-per-sqft nudge only make sense
+  // once there's a sale price and an area to divide it by.
+  const areaTypeWrap = document.getElementById('f-areaTypeWrap');
+  if (areaTypeWrap) areaTypeWrap.style.display = isSell ? '' : 'none';
+  const pricePerSqftWrap = document.getElementById('f-pricePerSqftWrap');
+  if (pricePerSqftWrap) pricePerSqftWrap.style.display = isSell ? '' : 'none';
+  updateSellPricePerSqft();
+  // Re-apply the Plot/Land field toggling now that Sell's own sections are
+  // showing/hiding — matters when switching type away from and back to Sell.
+  onSellPropertyTypeChange();
 }
 
 function stripAreaSqft(el) {
@@ -10034,6 +10245,69 @@ function syncTenantCheckboxesFromValue(val) {
     if (cb) cb.checked = parts.includes(name);
   });
   renderTenantSelected();
+}
+
+/* ── Sell-only "Overlooking" multi-select dropdown (mirrors tenant pattern) ── */
+const OVERLOOKING_LIST = [
+  ['ov-mainroad',   'Main Road'],
+  ['ov-gardenpark', 'Garden / Park'],
+  ['ov-pool',       'Pool'],
+  ['ov-club',       'Club'],
+];
+function toggleOverlookingDropdown(e) {
+  e.stopPropagation();
+  document.getElementById('overlookingDropdown').classList.toggle('open');
+}
+function onOverlookingCheck() {
+  renderOverlookingSelected();
+}
+function renderOverlookingSelected() {
+  const label = document.getElementById('overlookingDdLabel');
+  const count = document.getElementById('overlookingDdCount');
+  const hidden = document.getElementById('f-sellOverlooking');
+  if (!label || !count || !hidden) return;
+  const selected = OVERLOOKING_LIST.filter(([id]) => document.getElementById(id) && document.getElementById(id).checked).map(([, name]) => name);
+  hidden.value = selected.join(', ');
+  label.textContent = selected.length ? selected.join(', ') : 'Choose what it overlooks…';
+  count.style.display = selected.length ? '' : 'none';
+  count.textContent = selected.length;
+}
+/* Checks the boxes matching a comma-joined value (used on view/edit prefill). */
+function syncOverlookingCheckboxesFromValue(val) {
+  const parts = String(val || '').split(',').map(s => s.trim()).filter(Boolean);
+  OVERLOOKING_LIST.forEach(([id, name]) => {
+    const cb = document.getElementById(id);
+    if (cb) cb.checked = parts.includes(name);
+  });
+  renderOverlookingSelected();
+}
+
+/* ── Sell pricing helper: live price-per-sqft + Plot/Land field hiding ── */
+function updateSellPricePerSqft() {
+  const out = document.getElementById('f-pricePerSqft');
+  if (!out) return;
+  const typeEl = document.getElementById('f-type');
+  const isSell = typeEl && typeEl.value === 'Sell';
+  if (!isSell) { out.value = ''; return; }
+  const price = parseFloat(document.getElementById('f-rent').value);
+  const areaRaw = (document.getElementById('f-area').value || '').replace(/[^\d.]/g, '');
+  const area = parseFloat(areaRaw);
+  if (!price || !area) { out.value = ''; return; }
+  out.value = '₹' + Math.round(price / area).toLocaleString('en-IN') + ' / sqft';
+}
+function onSellPropertyTypeChange() {
+  const typeEl = document.getElementById('f-type');
+  const isSell = typeEl && typeEl.value === 'Sell';
+  const propTypeEl = document.getElementById('f-propertyType');
+  const isLand = isSell && propTypeEl && propTypeEl.value === 'Plot / Land';
+  ['f-bhkWrap', 'f-floorWrap', 'f-bathsWrap', 'f-toiletTypeWrap', 'f-furnishingWrap', 'f-ageWrap',
+   'f-bikeparkWrap', 'f-carparkWrap', 'f-sellTotalFloorsWrap', 'f-sellBalconiesWrap',
+   'f-sellFlooringWrap', 'f-areaTypeWrap', 'f-sellOcAvailableWrap', 'f-sellCcAvailableWrap'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = isLand ? 'none' : '';
+  });
+  const areaLbl = document.getElementById('f-areaLabel');
+  if (areaLbl) areaLbl.textContent = isLand ? 'Plot area (sqft)' : 'Area (sqft)';
 }
 
 /* ═══════════════════════════════════════════════
@@ -10294,6 +10568,14 @@ const OPTIONAL_FIELD_IDS = new Set([
   'f-amenities-extra',
   'f-ownerAltPhone', 'f-videoUrl', 'f-age', 'f-area',
   'f-maintenance', 'f-leaseMaintenance',
+  'f-sellPossessionDate', 'f-sellReraId', 'f-pricePerSqft',
+  // Sell-only trust/detail fields kept optional — many legit resale
+  // listings won't have a tidy answer for these. Khata type, loan status,
+  // and area type are left OUT on purpose — mandatory whenever Sell shows.
+  'f-sellTaxPaid', 'f-sellOcAvailable', 'f-sellCcAvailable',
+  'f-sellPreviousOwners', 'f-sellProjectName', 'f-sellFlooring',
+  'f-sellWaterSource', 'f-sellBoundaryWall', 'f-sellRoadWidth',
+  'f-sellOpenSides', 'f-sellCornerProperty',
 ]);
 function isUnitField(id) { return /Units$/.test(id); }
 function getAllListingFields() {
@@ -10506,11 +10788,13 @@ async function adminSubmitListing() {
   const images = fImages.slice();
 
   const typeRaw = document.getElementById('f-type').value;
-  const statusMap = { 'Rent': 'For Rent', 'For Rent': 'For Rent', 'Lease': 'Lease', 'PG': 'PG', 'ShortStay': 'Short Stay' };
+  const statusMap = { 'Rent': 'For Rent', 'For Rent': 'For Rent', 'Lease': 'Lease', 'PG': 'PG', 'ShortStay': 'Short Stay', 'Sell': 'For Sale' };
   const status = statusMap[typeRaw] || 'For Rent';
   const isPG = status === 'PG';
   const isLease = status === 'Lease';
   const isShortStay = status === 'Short Stay';
+  const isSell = status === 'For Sale';
+  const isLand = isSell && gv('f-propertyType') === 'Plot / Land';
 
   const newProp = {
     basic: {
@@ -10542,15 +10826,17 @@ async function adminSubmitListing() {
       maintenance:  parseFloat(gv('f-leaseMaintenance')) || null,
     } : {
       rent:         parseInt(rent) || 0,
-      ...(isShortStay ? {} : {
+      ...(isShortStay || isSell ? {} : {
         deposit: isPG ? (parseInt(gv('f-pgDeposit')) || 0)
                       : (parseInt(document.getElementById('f-deposit').value) || 0),
       }),
-      ...((isPG || isShortStay) ? {} : {
+      ...((isPG || isShortStay || isSell) ? {} : {
         maintenance:  parseFloat(gv('f-maintenance')) || null,
         rentIncrease: parseFloat(gv('f-escalation')) ? gv('f-escalation') + '%' : null,
         electricity:  gv('f-electricityIncluded') || null,
         water:        gv('f-waterCharge') || null,
+      }),
+      ...((isPG || isShortStay) ? {} : {
         negotiable:   gv('f-negotiable').toLowerCase() === 'yes' ? 'Yes'
                     : gv('f-negotiable').toLowerCase() === 'no'  ? 'No'
                     : null,
@@ -10558,16 +10844,21 @@ async function adminSubmitListing() {
     },
     ...(isPG ? {} : {
       property: {
-        ...(isShortStay ? {} : { type: gv('f-propertyType'), bhk: gv('f-bhk'), area: gv('f-area'), age: gv('f-age') }),
-        bike:      isShortStay ? String(parseInt(document.getElementById('f-ssBikePark').value, 10) || 0)
-                 : String(parseInt(document.getElementById('f-bikepark').value, 10) || 0),
-        car:       isShortStay ? String(parseInt(document.getElementById('f-ssCarPark').value, 10) || 0)
-                 : String(parseInt(document.getElementById('f-carpark').value, 10) || 0),
+        ...(isShortStay ? {} : { type: gv('f-propertyType'), area: gv('f-area') }),
+        ...(isShortStay || isLand ? {} : { bhk: gv('f-bhk'), age: gv('f-age') }),
+        ...(isLand ? {} : {
+          bike:      isShortStay ? String(parseInt(document.getElementById('f-ssBikePark').value, 10) || 0)
+                   : String(parseInt(document.getElementById('f-bikepark').value, 10) || 0),
+          car:       isShortStay ? String(parseInt(document.getElementById('f-ssCarPark').value, 10) || 0)
+                   : String(parseInt(document.getElementById('f-carpark').value, 10) || 0),
+        }),
         ...(isShortStay ? {} : {
-          floor:     document.getElementById('f-floor').value || 'G',
-          bathrooms: document.getElementById('f-baths').value || '1',
-          toiletType: gv('f-toiletType') || null,
-          furnish:   document.getElementById('f-furnishing').value,
+          ...(isLand ? {} : {
+            floor:     document.getElementById('f-floor').value || 'G',
+            bathrooms: document.getElementById('f-baths').value || '1',
+            toiletType: gv('f-toiletType') || null,
+            furnish:   document.getElementById('f-furnishing').value,
+          }),
           facing:    document.getElementById('f-facing').value,
           tenant:    document.getElementById('f-tenant').value,
           available: isLease ? gv('f-leaseAvailableFrom') : (document.getElementById('f-avail').value || null),
@@ -10578,7 +10869,7 @@ async function adminSubmitListing() {
       selected: amenitiesSelected,
       extra:    amenitiesExtra,
     },
-    ...((isPG || isShortStay) ? {} : {
+    ...((isPG || isShortStay || isSell) ? {} : {
       terms: {
         notice: isLease ? (gv('f-leaseNoticePeriod') || null)
               : (gv('f-noticePeriod') || null),
@@ -10587,7 +10878,7 @@ async function adminSubmitListing() {
         ...(isLease ? { leaseType: gv('f-leaseType') || null, lockIn: gv('f-lockInPeriod') || null } : {}),
       },
     }),
-    ...((isPG || isShortStay) ? {} : {
+    ...((isPG || isShortStay || isSell) ? {} : {
       rules: {
         pets:   isLease ? (gv('f-leasePets') || null) : (gv('f-petsAllowed') || null),
         nonVeg: isLease ? (gv('f-leaseNonVeg') || null) : (gv('f-nonVegAllowed') || null),
@@ -10622,6 +10913,32 @@ async function adminSubmitListing() {
       cancellation:  gv('f-ssCancellation') || null,
       couplesAllowed: gv('f-ssCouples') || null,
       furnish:       gv('f-ssFurnish') || null,
+    } : {},
+    sale: isSell ? {
+      ...(isLand ? {} : {
+        totalFloors: gv('f-sellTotalFloors') || null,
+        balconies:   gv('f-sellBalconies') || null,
+        flooring:    gv('f-sellFlooring') || null,
+        ocAvailable: gv('f-sellOcAvailable') || null,
+        ccAvailable: gv('f-sellCcAvailable') || null,
+        areaType:    gv('f-areaType') || null,
+      }),
+      ownership:       gv('f-sellOwnership') || null,
+      possession:      gv('f-sellPossession') || null,
+      possessionDate:  gv('f-sellPossessionDate') || null,
+      reraRegistered:  gv('f-sellRera') || null,
+      reraId:          gv('f-sellReraId') || null,
+      khataType:       gv('f-sellKhataType') || null,
+      propertyTaxPaid: gv('f-sellTaxPaid') || null,
+      loanStatus:      gv('f-sellLoanStatus') || null,
+      previousOwners:  gv('f-sellPreviousOwners') || null,
+      projectName:     gv('f-sellProjectName') || null,
+      waterSource:     gv('f-sellWaterSource') || null,
+      boundaryWall:    gv('f-sellBoundaryWall') || null,
+      roadWidth:       gv('f-sellRoadWidth') || null,
+      openSides:       gv('f-sellOpenSides') || null,
+      cornerProperty:  gv('f-sellCornerProperty') || null,
+      overlooking:     gv('f-sellOverlooking') || null,
     } : {},
   };
 
