@@ -1022,7 +1022,7 @@ main.tab-explore .empty-state{display:none !important}
 .prop-title-text{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .prop-title-icon{width:11px;height:11px;stroke:#a85c6e;fill:#a85c6e;fill-opacity:.12;stroke-width:2;flex-shrink:0;display:none}
 .prop-title-buildtype{
-  justify-self:stretch;min-width:0;overflow:hidden;
+  justify-self:end;min-width:0;overflow:hidden;
   font-size:12px;font-weight:600;color:var(--text-2);
   background:none;box-shadow:none;
   padding:0;border-radius:0;
@@ -8251,11 +8251,6 @@ function renderCards() {
   syncScrollCardWidth();
 
   renderBookedSections();
-
-  // Shrink any location names that don't fit their card at this width —
-  // must run after renderBookedSections() too, since Booked cards use the
-  // same .prop-title-buildtype markup.
-  fitLocationText();
 }
 
 // Renders the read-only "Booked" bucket under Promoted/Rent/Lease/PG. Source
@@ -8331,40 +8326,6 @@ let _chipRowFadeTimer = null;
 window.addEventListener('resize', () => {
   clearTimeout(_chipRowFadeTimer);
   _chipRowFadeTimer = setTimeout(syncChipRowFade, 150);
-});
-
-// A long location/area name (e.g. "Electronic City, Phase 2") can be wider
-// than the space the card has for it, especially in the narrow 2-up mobile
-// layout — CSS alone can only wrap or ellipsis-truncate it, it can't shrink
-// the font to fit based on how long the text actually is. So instead, once
-// real card widths are known, measure each .prop-title-buildtype (the area
-// name span — see the comment above .prop-verified-badge: it's the only
-// part of the title row allowed to shrink) and step its own font-size down
-// until the full name fits, or a readable floor is hit and the CSS ellipsis
-// takes over as a last resort. Short names that already fit are left at
-// full size and untouched.
-function fitLocationText() {
-  const FLOOR_PX = 9;
-  const STEP_PX = 0.5;
-  document.querySelectorAll('.prop-title-buildtype').forEach(el => {
-    // Remember each element's natural (CSS-defined) font-size once, so a
-    // later re-run (e.g. after a resize gives it more room back) grows the
-    // text back up instead of only ever shrinking further.
-    if (!el.dataset.baseFontSize) {
-      el.dataset.baseFontSize = parseFloat(getComputedStyle(el).fontSize);
-    }
-    let size = parseFloat(el.dataset.baseFontSize);
-    el.style.fontSize = size + 'px';
-    while (el.scrollWidth > el.clientWidth && size > FLOOR_PX) {
-      size -= STEP_PX;
-      el.style.fontSize = size + 'px';
-    }
-  });
-}
-let _locationFitTimer = null;
-window.addEventListener('resize', () => {
-  clearTimeout(_locationFitTimer);
-  _locationFitTimer = setTimeout(fitLocationText, 150);
 });
 
 function syncScrollCardWidth() {
