@@ -15338,10 +15338,19 @@ document.addEventListener('DOMContentLoaded', function() {
     track.style.transform = 'translateX(-' + (cur * 100) + '%)';
     dots.forEach((d, i) => d.classList.toggle('active', i === cur));
   }
-  function start() { timer = setInterval(() => goTo(cur + 1), 10000); }
+  function start() {
+    timer = setInterval(() => {
+      // Skip advancing while the banner itself is hidden (e.g. on the
+      // Explore tab) or the browser tab is backgrounded — nothing to
+      // animate for, no point waking up every 10s for it.
+      if (banner.style.display === 'none' || document.hidden) return;
+      goTo(cur + 1);
+    }, 10000);
+  }
   function stop()  { clearInterval(timer); }
   document.getElementById('adBanner').addEventListener('mouseenter', stop);
   document.getElementById('adBanner').addEventListener('mouseleave', start);
+  document.addEventListener('visibilitychange', () => { document.hidden ? stop() : start(); });
   allDots.forEach(d => d.addEventListener('click', e => { e.stopPropagation(); stop(); goTo(visibleDots().indexOf(d)); start(); }));
   window.refreshAdBannerCarousel = () => goTo(0);
   updateAdBannerAudience(); // set initial owner/tenant/guest slide set before first render
