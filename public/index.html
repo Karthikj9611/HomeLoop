@@ -1030,6 +1030,10 @@ main.tab-explore .empty-state{display:none !important}
   display:inline-flex;align-items:center;gap:3px;
 }
 .prop-title-buildtype svg{width:10.5px;height:10.5px;margin-left:1px;stroke:#a85c6e;fill:none;stroke-width:2;flex-shrink:0;display:none}
+/* Reuses the existing .prop-loc-full/.prop-loc-short toggle (already defined
+   for .prop-loc-area below) so the property-card title-row location also
+   collapses to the part before the first comma on mobile, full text on desktop. */
+.prop-title-buildtype .prop-loc-short{display:none}
 .prop-card.prop-card-promoted .prop-title-buildtype{
   background:none;box-shadow:none;
 }
@@ -3979,6 +3983,8 @@ main.tab-explore .empty-state{display:none !important}
   .prop-loc{font-size:11px;margin-top:4px}
   .prop-loc-area .prop-loc-full{display:none}
   .prop-loc-area .prop-loc-short{display:block}
+  .prop-title-buildtype .prop-loc-full{display:none}
+  .prop-title-buildtype .prop-loc-short{display:inline}
   .prop-stats{gap:2px 0;margin-top:5px}
   .prop-stat{font-size:11px;padding:0 4px 0 0;gap:3px}
   .prop-stat-icon{width:15px;height:15px;font-size:11px}
@@ -8877,7 +8883,7 @@ function cardHTML(p, compact, extraLeftBadge) {
           <svg viewBox="0 0 24 24" aria-hidden="true" class="prop-title-icon"><path d="M20.59 13.41L11 3.83A2 2 0 0 0 9.59 3.24L4 3a1 1 0 0 0-1 1l.24 5.59a2 2 0 0 0 .59 1.41l9.58 9.58a2 2 0 0 0 2.83 0l4.35-4.35a2 2 0 0 0 0-2.82z"/><circle cx="7.5" cy="7.5" r="1.4"/></svg>
           <span class="prop-title-text">${esc(p.propertyId || 'Untitled listing')}</span>
         </span>
-        ${p.location?.area ? `<span class="prop-title-buildtype" title="${esc(p.location.area)}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21h18M6 21V7l6-4 6 4v14M10 21v-5h4v5"/></svg>${esc(p.location.area)}</span>` : ''}
+        ${p.location?.area ? `<span class="prop-title-buildtype" title="${esc(p.location.area)}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21h18M6 21V7l6-4 6 4v14M10 21v-5h4v5"/></svg><span class="prop-loc-full">${esc(p.location.area)}</span><span class="prop-loc-short">${esc(locShort(p.location.area))}</span></span>` : ''}
       </div>
       </div>
 	  <div class="prop-stats">
@@ -9011,7 +9017,7 @@ function shortlistCardHTML(p) {
           <svg viewBox="0 0 24 24" aria-hidden="true" class="prop-title-icon"><path d="M20.59 13.41L11 3.83A2 2 0 0 0 9.59 3.24L4 3a1 1 0 0 0-1 1l.24 5.59a2 2 0 0 0 .59 1.41l9.58 9.58a2 2 0 0 0 2.83 0l4.35-4.35a2 2 0 0 0 0-2.82z"/><circle cx="7.5" cy="7.5" r="1.4"/></svg>
           <span class="prop-title-text">${esc(p.propertyId || 'Untitled listing')}</span>
         </span>
-        ${p.location?.area ? `<span class="prop-title-buildtype" title="${esc(p.location.area)}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21h18M6 21V7l6-4 6 4v14M10 21v-5h4v5"/></svg>${esc(p.location.area)}</span>` : ''}
+        ${p.location?.area ? `<span class="prop-title-buildtype" title="${esc(p.location.area)}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21h18M6 21V7l6-4 6 4v14M10 21v-5h4v5"/></svg><span class="prop-loc-full">${esc(p.location.area)}</span><span class="prop-loc-short">${esc(locShort(p.location.area))}</span></span>` : ''}
       </div>
       </div>
       <div class="prop-stats">
