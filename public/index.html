@@ -654,10 +654,12 @@ main.tab-explore .empty-state{display:none !important}
   background:#a85c6e;
   opacity:1;
 }
-.prop-card.type-rent::before{background:linear-gradient(90deg,#2E7D32,#66BB6A)}
-.prop-card.type-lease::before{background:linear-gradient(90deg,#1565C0,#42A5F5)}
-.prop-card.type-pg::before{background:linear-gradient(90deg,#8E24AA,#BA68C8)}
-.prop-card.type-shortstay::before{background:linear-gradient(90deg,#E65100,#FFA726)}
+/* Top accent bar color is driven by the "available from" date rather than
+   listing type: overdue (yesterday or earlier) reads red, today/upcoming
+   reads green. Applies across all listing types (rent/lease/pg/shortstay/sell).
+   Cards with no available date fall back to the neutral default above. */
+.prop-card.avail-past::before{background:linear-gradient(90deg,#C62828,#E57373)}
+.prop-card.avail-future::before{background:linear-gradient(90deg,#2E7D32,#66BB6A)}
 .prop-card:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
 /* ─── Promoted cards get their own gold/rose gradient treatment, overriding
    the type-based top strip, plus a matching border glow so they read as a
@@ -8847,7 +8849,8 @@ function cardHTML(p, compact, extraLeftBadge) {
   const availableInfo = availableDateInfo(available);
   const compactClass = compact ? ' compact' : '';
   const promotedClass = p.promoted ? ' prop-card-promoted' : '';
-  return `<div class="prop-card${listClass}${compactClass}${promotedClass} type-${pType.toLowerCase()}" data-property-id="${p.id}" onclick="openDetail('${p.id}')">
+  const availAccentClass = availableInfo ? (availableInfo.cls === 'prop-loc-avail-past' ? ' avail-past' : ' avail-future') : '';
+  return `<div class="prop-card${listClass}${compactClass}${promotedClass} type-${pType.toLowerCase()}${availAccentClass}" data-property-id="${p.id}" onclick="openDetail('${p.id}')">
     <div class="prop-img" style="background:${bg}" data-idx="0">
       ${buildImgSlider(p, fg, '-grid')}
       ${priceChipsHTML(p, pType, deposit, maintenance, leaseDur, {ribbon:true})}
@@ -8986,7 +8989,8 @@ function shortlistCardHTML(p) {
   const ptype = p.property?.type || pgSL.type || p.shortStay?.type || '';
   const available = isPGCardSL ? (pgSL.available || '') : (p.property?.available || '');
   const availableInfo = availableDateInfo(available);
-  return `<div class="prop-card type-${pType.toLowerCase()}" data-property-id="${p.id}" onclick="toggleShortlistPanel();openDetail('${p.id}')">
+  const availAccentClassSL = availableInfo ? (availableInfo.cls === 'prop-loc-avail-past' ? ' avail-past' : ' avail-future') : '';
+  return `<div class="prop-card type-${pType.toLowerCase()}${availAccentClassSL}" data-property-id="${p.id}" onclick="toggleShortlistPanel();openDetail('${p.id}')">
     <div class="prop-img" style="background:${bg}" data-idx="0">
       ${buildImgSlider(p, fg, '-sl')}
       ${priceChipsHTML(p, pType, deposit, maintenance, leaseDur, {ribbon:true})}
