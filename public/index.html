@@ -3899,8 +3899,13 @@ main.tab-explore .empty-state{display:none !important}
      scrolled down. */
   .main.needs-nav-clear{padding-bottom:calc(56px + env(safe-area-inset-bottom) + 68px)}
   .results-header{padding:0 12px}
-  .ad-banner{height:56px;border-radius:14px}
-  .ad-slide{padding:0 16px;gap:10px;font-size:12.5px}
+  .ad-banner{height:66px;border-radius:14px}
+  .ad-slide{padding:0 16px;gap:10px;font-size:12.5px;align-items:center}
+  .ad-slide-text{
+    white-space:normal;line-height:1.25;
+    display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;
+    overflow:hidden;text-overflow:ellipsis;
+  }
   .ad-slide-icon{font-size:15px;width:30px;height:30px}
   .ad-slide-cta{font-size:11px;padding:6px 13px}
   /* A few px back from the chrome around the grid (banner/section header)
