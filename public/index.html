@@ -612,6 +612,11 @@ main.tab-explore .empty-state{display:none !important}
   box-shadow:0 4px 12px rgba(0,0,0,.2);
   transition:transform .18s ease,box-shadow .18s ease;
 }
+.ad-slide-audience{
+  position:absolute;top:6px;left:24px;z-index:1;
+  font-size:9px;font-weight:800;letter-spacing:.5px;
+  text-transform:uppercase;opacity:.8;
+}
 .ad-slide:hover .ad-slide-cta{transform:translateY(-1px) scale(1.04);box-shadow:0 6px 16px rgba(0,0,0,.24)}
 /* slide themes — vivid full-bleed gradients, CTA pill tinted to match */
 .ad-slide-1{background:linear-gradient(135deg,#ff6a7a,#a51845)}
@@ -622,6 +627,18 @@ main.tab-explore .empty-state{display:none !important}
 .ad-slide-3 .ad-slide-cta{color:#0f7a45}
 .ad-slide-4{background:linear-gradient(135deg,#ffb020,#b3690a)}
 .ad-slide-4 .ad-slide-cta{color:#b3690a}
+/* Slides: tenant-facing ads (find/browse/agreement/nearby/compare) shown first, then owner-facing ads — distinct hues
+   from the owner set above so the two audiences read as visually separate. */
+.ad-slide-5{background:linear-gradient(135deg,#38bdf8,#0369a1)}
+.ad-slide-5 .ad-slide-cta{color:#0369a1}
+.ad-slide-6{background:linear-gradient(135deg,#facc15,#a16207)}
+.ad-slide-6 .ad-slide-cta{color:#a16207}
+.ad-slide-7{background:linear-gradient(135deg,#f472b6,#a3116b)}
+.ad-slide-7 .ad-slide-cta{color:#a3116b}
+.ad-slide-8{background:linear-gradient(135deg,#2dd4bf,#0f766e)}
+.ad-slide-8 .ad-slide-cta{color:#0f766e}
+.ad-slide-9{background:linear-gradient(135deg,#c084fc,#6b21a8)}
+.ad-slide-9 .ad-slide-cta{color:#6b21a8}
 .ad-dots{
   position:absolute;bottom:8px;left:50%;transform:translateX(-50%);
   display:flex;gap:5px;z-index:2;
@@ -4986,29 +5003,65 @@ main.tab-explore .empty-state{display:none !important}
 <div class="ad-banner" id="adBanner">
   <div class="ad-track" id="adTrack">
 
-    <!-- Slide 1 -->
-    <div class="ad-slide ad-slide-1" onclick="window.location.href='tel:9035205230'">
+    <!-- Slide 1 (tenant) -->
+    <div class="ad-slide ad-slide-5" data-audience="tenant" onclick="window.location.href='tel:9035205230'">
+      <span class="ad-slide-audience">For Tenants</span>
+      <span class="ad-slide-icon">🔎</span>
+      <span class="ad-slide-text">Find Your Perfect Home, Easily.</span>
+      <span class="ad-slide-cta">Explore Homes</span>
+    </div>
+
+    <!-- Slide 2 (tenant) -->
+    <div class="ad-slide ad-slide-6" data-audience="tenant" onclick="window.location.href='tel:9035205230'">
+      <span class="ad-slide-audience">For Tenants</span>
+      <span class="ad-slide-icon">🏡</span>
+      <span class="ad-slide-text">Verified Homes. Clear Details.</span>
+      <span class="ad-slide-cta">Browse Homes</span>
+    </div>
+
+    <!-- Slide 3 (tenant) -->
+    <div class="ad-slide ad-slide-7" data-audience="tenant" onclick="window.location.href='tel:9035205230'">
+      <span class="ad-slide-audience">For Tenants</span>
+      <span class="ad-slide-icon">📝</span>
+      <span class="ad-slide-text">Rental Agreement Made Easy.</span>
+      <span class="ad-slide-cta">Get Started</span>
+    </div>
+
+    <!-- Slide 4 (tenant) -->
+    <div class="ad-slide ad-slide-9" data-audience="tenant" onclick="window.location.href='tel:9035205230'">
+      <span class="ad-slide-audience">For Tenants</span>
+      <span class="ad-slide-icon">💰</span>
+      <span class="ad-slide-text">Compare Homes. Choose Better.</span>
+      <span class="ad-slide-cta">Explore Homes</span>
+    </div>
+
+    <!-- Slide 5 (owner) -->
+    <div class="ad-slide ad-slide-1" data-audience="owner" onclick="window.location.href='tel:9035205230'">
+      <span class="ad-slide-audience">For Owners</span>
       <span class="ad-slide-icon">🏠</span>
       <span class="ad-slide-text">Vacating Soon? We'll Find Your Next Tenant Before they Vacate.</span>
       <span class="ad-slide-cta">Get Started</span>
     </div>
 
-    <!-- Slide 2 -->
-    <div class="ad-slide ad-slide-2" onclick="window.location.href='tel:9035205230'">
+    <!-- Slide 6 (owner) -->
+    <div class="ad-slide ad-slide-2" data-audience="owner" onclick="window.location.href='tel:9035205230'">
+      <span class="ad-slide-audience">For Owners</span>
       <span class="ad-slide-icon">📢</span>
       <span class="ad-slide-text">List Your Property for Free.</span>
       <span class="ad-slide-cta">List Now</span>
     </div>
 
-    <!-- Slide 3 -->
-    <div class="ad-slide ad-slide-3" onclick="window.location.href='tel:9035205230'">
+    <!-- Slide 7 (owner) -->
+    <div class="ad-slide ad-slide-3" data-audience="owner" onclick="window.location.href='tel:9035205230'">
+      <span class="ad-slide-audience">For Owners</span>
       <span class="ad-slide-icon">✅</span>
       <span class="ad-slide-text">Verify Your Property. Build Tenant Trust.</span>
       <span class="ad-slide-cta">Verify</span>
     </div>
 
-    <!-- Slide 4 -->
-    <div class="ad-slide ad-slide-4" onclick="window.location.href='tel:9035205230'">
+    <!-- Slide 8 (owner) -->
+    <div class="ad-slide ad-slide-4" data-audience="owner" onclick="window.location.href='tel:9035205230'">
+      <span class="ad-slide-audience">For Owners</span>
       <span class="ad-slide-icon">⭐</span>
       <span class="ad-slide-text">Promote Your Listing. Get More Enquiries.</span>
       <span class="ad-slide-cta">Promote</span>
@@ -5017,10 +5070,14 @@ main.tab-explore .empty-state{display:none !important}
   </div>
 
   <div class="ad-dots" id="adDots">
-    <div class="ad-dot"></div>
-    <div class="ad-dot"></div>
-    <div class="ad-dot"></div>
-    <div class="ad-dot"></div>
+    <div class="ad-dot" data-audience="tenant"></div>
+    <div class="ad-dot" data-audience="tenant"></div>
+    <div class="ad-dot" data-audience="tenant"></div>
+    <div class="ad-dot" data-audience="tenant"></div>
+    <div class="ad-dot" data-audience="owner"></div>
+    <div class="ad-dot" data-audience="owner"></div>
+    <div class="ad-dot" data-audience="owner"></div>
+    <div class="ad-dot" data-audience="owner"></div>
   </div>
 </div>
 
@@ -12366,6 +12423,23 @@ function updateNavAuth() {
 // FAB add buttons and the four "List ... Property" items (plus their
 // Manage section label) in the menu panel; "Post Your Video Review" stays
 // visible for everyone since it's a testimonial, not a listing.
+// Ad banner has two sets of slides tagged data-audience="owner"/"tenant"
+// (see the #adTrack/#adDots markup) — guests see both sets, a logged-in
+// owner sees only the owner set, a logged-in tenant sees only the tenant
+// set. Called on load and again on every login/logout.
+function updateAdBannerAudience() {
+  const user = getLoggedInUser();
+  const audience = !user ? 'all' : (user.accountType === 'owner' ? 'owner' : 'tenant');
+  document.querySelectorAll('#adTrack .ad-slide[data-audience]').forEach(el => {
+    el.style.display = (audience === 'all' || el.dataset.audience === audience) ? '' : 'none';
+  });
+  document.querySelectorAll('#adDots .ad-dot[data-audience]').forEach(el => {
+    el.style.display = (audience === 'all' || el.dataset.audience === audience) ? '' : 'none';
+  });
+  // Carousel already initialized (DOMContentLoaded) reads live DOM state, but
+  // needs a nudge to reset `cur` after the visible slide set just changed.
+  if (typeof window.refreshAdBannerCarousel === 'function') window.refreshAdBannerCarousel();
+}
 function updateListPropertyVisibility(user) {
   const canList = !user || user.accountType === 'owner';
   const display = canList ? '' : 'none';
@@ -12376,10 +12450,7 @@ function updateListPropertyVisibility(user) {
   // setting them here — avoids this function stomping the per-tab decision
   // right after a login/logout on a non-Explore tab.
   updateAllOnlySections();
-  // Carousel already initialized (DOMContentLoaded) reads live DOM state, but
-  // needs a nudge to reset `cur` if it was mid-rotation when the banner got
-  // hidden/shown by a login/logout that happened after page load.
-  if (typeof window.refreshAdBannerCarousel === 'function') window.refreshAdBannerCarousel();
+  updateAdBannerAudience();
 }
 function switchAuthTab(tab) {
   backToSignupForm();
@@ -15264,6 +15335,7 @@ document.addEventListener('DOMContentLoaded', function() {
   document.getElementById('adBanner').addEventListener('mouseleave', start);
   allDots.forEach(d => d.addEventListener('click', e => { e.stopPropagation(); stop(); goTo(visibleDots().indexOf(d)); start(); }));
   window.refreshAdBannerCarousel = () => goTo(0);
+  updateAdBannerAudience(); // set initial owner/tenant/guest slide set before first render
   goTo(0);
   start();
 
