@@ -4456,8 +4456,10 @@ main.tab-explore .empty-state{display:none !important}
 
     <!-- Pincode — options are built dynamically from whatever pincodes actually
        exist across current listings (see fdCollectPincodes), so this list
-       always reflects real data instead of a hardcoded set of codes. -->
-  <div class="fd-btn fd-rent fd-lease fd-pg fd-shortstay fd-sell" id="fdb-pincode" onclick="toggleFd('pincode',this)">
+       always reflects real data instead of a hardcoded set of codes.
+       Hidden for now (style="display:none") — kept in the DOM/markup as-is
+       so it can be re-enabled later by simply removing that style attribute. -->
+  <div class="fd-btn fd-rent fd-lease fd-pg fd-shortstay fd-sell" id="fdb-pincode" onclick="toggleFd('pincode',this)" style="display:none">
     <span class="fd-icon">📍</span>
     <span class="fd-label">Pincode</span> <span class="fd-badge" id="fdbc-pincode" style="display:none"></span>
     <svg class="chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
