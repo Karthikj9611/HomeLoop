@@ -12439,6 +12439,12 @@ function updateAdBannerAudience() {
   document.querySelectorAll('#adDots .ad-dot[data-audience]').forEach(el => {
     el.style.display = (audience === 'all' || el.dataset.audience === audience) ? '' : 'none';
   });
+  // The "For Tenants"/"For Owners" tag only earns its place when a guest is
+  // seeing both sets mixed together — once logged in, every visible slide
+  // already belongs to that person's own audience, so the tag is redundant.
+  document.querySelectorAll('#adTrack .ad-slide-audience').forEach(el => {
+    el.style.display = (audience === 'all') ? '' : 'none';
+  });
   // Carousel already initialized (DOMContentLoaded) reads live DOM state, but
   // needs a nudge to reset `cur` after the visible slide set just changed.
   if (typeof window.refreshAdBannerCarousel === 'function') window.refreshAdBannerCarousel();
