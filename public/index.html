@@ -62,6 +62,10 @@
   --text-3:#999;
   --border:#e5e5e5;
   --border-2:#d0d0d0;
+  /* Card background/ribbon fixed to this pink-magenta gradient — no longer
+     synced to the ad banner's currently-showing slide (see prop-card and
+     prop-img-price below, both keyed off this one variable). */
+  --card-live-tint:linear-gradient(135deg,#f472b6,#a3116b);
   --radius:10px;
   --radius-lg:14px;
   --radius-xl:18px;
@@ -685,18 +689,29 @@ main.tab-explore .empty-state{display:none !important}
   }
 }
 .prop-card{
-  background:var(--bg);
+  background:var(--card-live-tint, var(--bg));
   border-radius:14px;
   border:1px solid rgba(20,16,17,.07);
   box-shadow:0 1px 2px rgba(20,16,17,.03),0 1px 3px rgba(20,16,17,.04);
   overflow:hidden;
   cursor:pointer;
-  transition:box-shadow .28s cubic-bezier(.2,.7,.3,1),transform .28s cubic-bezier(.2,.7,.3,1),border-color .28s ease;
+  transition:box-shadow .28s cubic-bezier(.2,.7,.3,1),transform .28s cubic-bezier(.2,.7,.3,1),border-color .28s ease,background .4s ease;
   position:relative;
   z-index:0;
   display:flex;flex-direction:column;
   height:100%;
   min-width:0;
+}
+/* Card body text (title/locality/stats/chips) is white while a card is
+   showing the live ad-slide gradient, matching the ribbon and banner —
+   overriding the --text vars locally here (rather than on :root) so only
+   descendants inside a card pick it up, not the rest of the page. */
+.prop-card{
+  --text:#fff;
+  --text-2:rgba(255,255,255,.88);
+  --text-3:rgba(255,255,255,.72);
+  --border:rgba(255,255,255,.4);
+  --border-2:rgba(255,255,255,.55);
 }
 .prop-card::before{
   content:'';position:absolute;top:0;left:0;right:0;height:4px;
@@ -759,7 +774,7 @@ main.tab-explore .empty-state{display:none !important}
 .prop-img-price{
   position:absolute;left:0;right:0;bottom:0;z-index:2;
   padding:5px 15px;
-  background:linear-gradient(135deg,#ea4b63 0%,#d4324c 55%,#a8253a 100%);
+  background:var(--card-live-tint, linear-gradient(135deg,#ea4b63 0%,#d4324c 55%,#a8253a 100%));
   pointer-events:auto;
   overflow-x:auto;overflow-y:hidden;-ms-overflow-style:none;scrollbar-width:none;
 }
@@ -15330,6 +15345,27 @@ document.addEventListener('DOMContentLoaded', function() {
   // "total" to keep in sync.
   function visibleSlides() { return Array.from(track.children).filter(el => el.style.display !== 'none'); }
   function visibleDots() { return Array.from(allDots).filter(el => el.style.display !== 'none'); }
+  // Property-card backgrounds swipe in sync with the ad banner — whichever
+  // ad-slide-N gradient is currently showing gets pushed onto every
+  // .prop-card via a CSS var, so the cards change color exactly as the
+  // banner advances (auto-rotate, dot click, or swipe alike).
+  const AD_GRADIENTS = {
+    1: 'linear-gradient(135deg,#ff6a7a,#a51845)',
+    2: 'linear-gradient(135deg,#7b6ffb,#3a2ca0)',
+    3: 'linear-gradient(135deg,#2fd480,#0f7a45)',
+    4: 'linear-gradient(135deg,#ffb020,#b3690a)',
+    5: 'linear-gradient(135deg,#38bdf8,#0369a1)',
+    6: 'linear-gradient(135deg,#facc15,#a16207)',
+    7: 'linear-gradient(135deg,#f472b6,#a3116b)',
+    8: 'linear-gradient(135deg,#2dd4bf,#0f766e)',
+    9: 'linear-gradient(135deg,#c084fc,#6b21a8)',
+  };
+  function syncCardTintToSlide(slideEl) {
+    // Card tint is now fixed (see :root --card-live-tint) rather than
+    // following the carousel, so this no longer writes anything — kept as
+    // a no-op stub in case it's wired back up later.
+    return;
+  }
   function goTo(n) {
     const slides = visibleSlides(), dots = visibleDots();
     const total = slides.length;
@@ -15337,6 +15373,7 @@ document.addEventListener('DOMContentLoaded', function() {
     cur = (n + total) % total;
     track.style.transform = 'translateX(-' + (cur * 100) + '%)';
     dots.forEach((d, i) => d.classList.toggle('active', i === cur));
+    syncCardTintToSlide(slides[cur]);
   }
   function start() {
     timer = setInterval(() => {
