@@ -47,9 +47,9 @@
 /* ─── Reset & Base ─────────────────────────────── */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --brand:#E03A52;
-  --brand-hover:#c72e43;
-  --brand-light:#fef0f2;
+  --brand:#ca8a04;
+  --brand-hover:#a16207;
+  --brand-light:#fdf8e7;
   --gold:#a97a2f;
   --gold-2:#d4af6a;
   --gold-3:#7a5a22;
@@ -62,10 +62,11 @@
   --text-3:#999;
   --border:#e5e5e5;
   --border-2:#d0d0d0;
-  /* Card background/ribbon fixed to this pink-magenta gradient — no longer
-     synced to the ad banner's currently-showing slide (see prop-card and
-     prop-img-price below, both keyed off this one variable). */
-  --card-live-tint:linear-gradient(135deg,#f472b6,#a3116b);
+  /* Default theme matches ad-slide-6's gold color (see AD_GRADIENTS/
+     AD_BRAND_COLORS in the ad-banner script) so the site loads already
+     themed gold — from there it only changes when the person manually taps,
+     clicks a dot, or swipes the banner (see applyAdTheme). */
+  --card-live-tint:linear-gradient(135deg,#facc15,#a16207);
   --radius:10px;
   --radius-lg:14px;
   --radius-xl:18px;
@@ -5029,18 +5030,18 @@ main.tab-explore .empty-state{display:none !important}
   <div class="ad-track" id="adTrack">
 
     <!-- Slide 1 (tenant) -->
-    <div class="ad-slide ad-slide-5" data-audience="tenant">
-      <span class="ad-slide-audience">For Tenants</span>
-      <span class="ad-slide-icon">🔎</span>
-      <span class="ad-slide-text">Find Your Perfect Home, Easily.</span>
-      <span class="ad-slide-cta"><svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor"><path d="M6.62 10.79a15.05 15.05 0 0 0 6.59 6.59l2.2-2.2a1 1 0 0 1 1.02-.24c1.12.37 2.33.57 3.57.57a1 1 0 0 1 1 1V20a1 1 0 0 1-1 1C10.61 21 3 13.39 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.24.2 2.45.57 3.57a1 1 0 0 1-.25 1.02z"/></svg>Call Now</span>
-    </div>
-
-    <!-- Slide 2 (tenant) -->
     <div class="ad-slide ad-slide-6" data-audience="tenant">
       <span class="ad-slide-audience">For Tenants</span>
       <span class="ad-slide-icon">🏡</span>
       <span class="ad-slide-text">Verified Homes. Clear Details.</span>
+      <span class="ad-slide-cta"><svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor"><path d="M6.62 10.79a15.05 15.05 0 0 0 6.59 6.59l2.2-2.2a1 1 0 0 1 1.02-.24c1.12.37 2.33.57 3.57.57a1 1 0 0 1 1 1V20a1 1 0 0 1-1 1C10.61 21 3 13.39 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.24.2 2.45.57 3.57a1 1 0 0 1-.25 1.02z"/></svg>Call Now</span>
+    </div>
+
+    <!-- Slide 2 (tenant) -->
+    <div class="ad-slide ad-slide-5" data-audience="tenant">
+      <span class="ad-slide-audience">For Tenants</span>
+      <span class="ad-slide-icon">🔎</span>
+      <span class="ad-slide-text">Find Your Perfect Home, Easily.</span>
       <span class="ad-slide-cta"><svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor"><path d="M6.62 10.79a15.05 15.05 0 0 0 6.59 6.59l2.2-2.2a1 1 0 0 1 1.02-.24c1.12.37 2.33.57 3.57.57a1 1 0 0 1 1 1V20a1 1 0 0 1-1 1C10.61 21 3 13.39 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.24.2 2.45.57 3.57a1 1 0 0 1-.25 1.02z"/></svg>Call Now</span>
     </div>
 
@@ -15361,8 +15362,8 @@ document.addEventListener('DOMContentLoaded', function() {
   // advances, no matter how it advances (auto-rotate, dot click, swipe, or
   // tap alike).
   const AD_GRADIENTS = {
-    1: 'linear-gradient(135deg,#ff6a7a,#a51845)',
-    2: 'linear-gradient(135deg,#7b6ffb,#3a2ca0)',
+    1: 'linear-gradient(135deg,#7b6ffb,#3a2ca0)',
+    2: 'linear-gradient(135deg,#ff6a7a,#a51845)',
     3: 'linear-gradient(135deg,#2fd480,#0f7a45)',
     4: 'linear-gradient(135deg,#ffb020,#b3690a)',
     5: 'linear-gradient(135deg,#38bdf8,#0369a1)',
@@ -15376,8 +15377,8 @@ document.addEventListener('DOMContentLoaded', function() {
   // (var(--brand) is used as a solid fill under white text in buttons/badges)
   // and against dark text (var(--brand-light) is used as a pale tint background).
   const AD_BRAND_COLORS = {
-    1: { brand:'#e0435a', hover:'#c72e43', light:'#fef0f2' }, // rose (default)
-    2: { brand:'#6d5cf0', hover:'#5847d1', light:'#f1f0fe' }, // violet
+    1: { brand:'#6d5cf0', hover:'#5847d1', light:'#f1f0fe' }, // violet
+    2: { brand:'#e0435a', hover:'#c72e43', light:'#fef0f2' }, // rose (default)
     3: { brand:'#16a34a', hover:'#0f7a45', light:'#eafaf1' }, // green
     4: { brand:'#d97706', hover:'#b3690a', light:'#fef6ea' }, // amber
     5: { brand:'#0284c7', hover:'#0369a1', light:'#eaf6fd' }, // blue
@@ -15420,7 +15421,7 @@ document.addEventListener('DOMContentLoaded', function() {
       // animate for, no point waking up every 10s for it.
       if (banner.style.display === 'none' || document.hidden) return;
       goTo(cur + 1); // autoplay — slide moves, theme does not
-    }, 10000);
+    }, 30000);
   }
   function stop()  { clearInterval(timer); }
   document.getElementById('adBanner').addEventListener('mouseenter', stop);
