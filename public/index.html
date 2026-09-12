@@ -993,7 +993,7 @@ main.tab-explore .empty-state{display:none !important}
   background:rgba(255,255,255,.92);backdrop-filter:blur(6px);
   box-shadow:0 2px 6px rgba(20,16,17,.12);
 }
-.prop-icon-badge.prop-views-float svg{width:13px;height:13px;stroke:var(--text-2);fill:none;stroke-width:1.9}
+.prop-icon-badge.prop-views-float svg{width:13px;height:13px;stroke:#555;fill:none;stroke-width:1.9}
 .prop-icon-badge.prop-views-float .prop-views-float-badge{
   position:absolute;top:-6px;left:-6px;min-width:15px;height:15px;padding:0 3px;
   border-radius:99px;background:var(--brand);color:#fff;font-size:8.5px;font-weight:700;
@@ -1009,7 +1009,7 @@ main.tab-explore .empty-state{display:none !important}
   transition:background .12s,transform .12s;
 }
 .prop-icon-badge.prop-compare-float:hover{background:#fff;transform:scale(1.07)}
-.prop-icon-badge.prop-compare-float svg{width:13px;height:13px;fill:var(--text-2);stroke:none}
+.prop-icon-badge.prop-compare-float svg{width:13px;height:13px;fill:#555;stroke:none}
 .prop-icon-badge.prop-compare-float.checked{background:var(--brand)}
 .prop-icon-badge.prop-compare-float.checked svg{fill:#fff}
 .prop-icon-badge.prop-compare-float.disabled{opacity:.45;cursor:not-allowed}
@@ -10467,20 +10467,20 @@ function priceChipsHTML(p, pType, deposit, maintenance, leaseDur, opts) {
   const rentChip = `<div class="prop-chip price-chip price-chip-rent">
     <span class="price-ico-3d">${rentSvg}</span>
     <span class="price-text-stack">
-      <span class="prop-price">₹${fmtRupeeResponsive(p.price?.rent||0, true)}${pType === 'Sell' ? '' : `<span class="prop-price-unit">/ <span class="unit-full">${rentUnit}</span><span class="unit-short">${rentUnitShort}</span></span>`}</span>
+      <span class="prop-price">${fmtRupeeResponsive(p.price?.rent||0, true)}${pType === 'Sell' ? '' : `<span class="prop-price-unit">/ <span class="unit-full">${rentUnit}</span><span class="unit-short">${rentUnitShort}</span></span>`}</span>
     </span>
   </div>`;
   const maintChip = maintenance > 0 ? `<div class="prop-chip price-chip" title="Monthly maintenance">
     <span class="price-ico-3d">${maintSvg}</span>
     <span class="price-text-stack">
-      <span class="prop-deposit-val">₹${fmtRupeeResponsive(maintenance, true)}</span>
+      <span class="prop-deposit-val">${fmtRupeeResponsive(maintenance, true)}</span>
       <span class="prop-deposit-lbl"><span class="unit-full">Maintenance</span><span class="unit-short">Maint</span></span>
     </span>
   </div>` : '';
   const depositChip = deposit > 0 ? `<div class="prop-chip price-chip" title="Security deposit">
     <span class="price-ico-3d">${depositSvg}</span>
     <span class="price-text-stack">
-      <span class="prop-deposit-val">₹${fmtRupeeResponsive(deposit, true)}</span>
+      <span class="prop-deposit-val">${fmtRupeeResponsive(deposit, true)}</span>
       <span class="prop-deposit-lbl"><span class="unit-full">Deposit</span><span class="unit-short">SD</span></span>
     </span>
   </div>` : '';
