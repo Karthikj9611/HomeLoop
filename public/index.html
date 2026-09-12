@@ -574,6 +574,14 @@ main.tab-explore .empty-state{display:none !important}
   position:relative;height:72px;cursor:pointer;
   box-shadow:0 10px 26px -10px rgba(20,16,17,.28);
 }
+/* Desktop mouse-drag fix: without this, click-dragging over the slide's
+   text starts a native text-selection/drag gesture (touch never does
+   this), which swallows the mousemove events the custom swipe/drag
+   handler below relies on — so swiping silently failed on desktop only. */
+.ad-banner,.ad-track,.ad-slide,.ad-slide *{
+  -webkit-user-select:none;-moz-user-select:none;user-select:none;
+  -webkit-user-drag:none;user-drag:none;
+}
 .ad-track{
   display:flex;height:100%;
   transition:transform .6s cubic-bezier(.22,1,.36,1);
@@ -5021,7 +5029,7 @@ main.tab-explore .empty-state{display:none !important}
   <div class="ad-track" id="adTrack">
 
     <!-- Slide 1 (tenant) -->
-    <div class="ad-slide ad-slide-5" data-audience="tenant" onclick="window.location.href='tel:9035205230'">
+    <div class="ad-slide ad-slide-5" data-audience="tenant">
       <span class="ad-slide-audience">For Tenants</span>
       <span class="ad-slide-icon">🔎</span>
       <span class="ad-slide-text">Find Your Perfect Home, Easily.</span>
@@ -5029,7 +5037,7 @@ main.tab-explore .empty-state{display:none !important}
     </div>
 
     <!-- Slide 2 (tenant) -->
-    <div class="ad-slide ad-slide-6" data-audience="tenant" onclick="window.location.href='tel:9035205230'">
+    <div class="ad-slide ad-slide-6" data-audience="tenant">
       <span class="ad-slide-audience">For Tenants</span>
       <span class="ad-slide-icon">🏡</span>
       <span class="ad-slide-text">Verified Homes. Clear Details.</span>
@@ -5037,7 +5045,7 @@ main.tab-explore .empty-state{display:none !important}
     </div>
 
     <!-- Slide 3 (tenant) -->
-    <div class="ad-slide ad-slide-9" data-audience="tenant" onclick="window.location.href='tel:9035205230'">
+    <div class="ad-slide ad-slide-9" data-audience="tenant">
       <span class="ad-slide-audience">For Tenants</span>
       <span class="ad-slide-icon">💰</span>
       <span class="ad-slide-text">Compare Homes. Choose Better.</span>
@@ -5045,7 +5053,7 @@ main.tab-explore .empty-state{display:none !important}
     </div>
 
     <!-- Slide 4 (tenant) -->
-    <div class="ad-slide ad-slide-7" data-audience="tenant" onclick="window.location.href='tel:9035205230'">
+    <div class="ad-slide ad-slide-7" data-audience="tenant">
       <span class="ad-slide-audience">For Tenants</span>
       <span class="ad-slide-icon">📝</span>
       <span class="ad-slide-text">Rental Agreement Made Easy.</span>
@@ -5053,7 +5061,7 @@ main.tab-explore .empty-state{display:none !important}
     </div>
 
     <!-- Slide 5 (owner) -->
-    <div class="ad-slide ad-slide-1" data-audience="owner" onclick="window.location.href='tel:9035205230'">
+    <div class="ad-slide ad-slide-1" data-audience="owner">
       <span class="ad-slide-audience">For Owners</span>
       <span class="ad-slide-icon">🏠</span>
       <span class="ad-slide-text">Vacating Soon? We'll Find Your Next Tenant Before they Vacate.</span>
@@ -5061,7 +5069,7 @@ main.tab-explore .empty-state{display:none !important}
     </div>
 
     <!-- Slide 6 (owner) -->
-    <div class="ad-slide ad-slide-2" data-audience="owner" onclick="window.location.href='tel:9035205230'">
+    <div class="ad-slide ad-slide-2" data-audience="owner">
       <span class="ad-slide-audience">For Owners</span>
       <span class="ad-slide-icon">📢</span>
       <span class="ad-slide-text">List Your Property for Free.</span>
@@ -5069,7 +5077,7 @@ main.tab-explore .empty-state{display:none !important}
     </div>
 
     <!-- Slide 7 (owner) -->
-    <div class="ad-slide ad-slide-3" data-audience="owner" onclick="window.location.href='tel:9035205230'">
+    <div class="ad-slide ad-slide-3" data-audience="owner">
       <span class="ad-slide-audience">For Owners</span>
       <span class="ad-slide-icon">✅</span>
       <span class="ad-slide-text">Verify Your Property. Build Tenant Trust.</span>
@@ -5077,7 +5085,7 @@ main.tab-explore .empty-state{display:none !important}
     </div>
 
     <!-- Slide 8 (owner) -->
-    <div class="ad-slide ad-slide-4" data-audience="owner" onclick="window.location.href='tel:9035205230'">
+    <div class="ad-slide ad-slide-4" data-audience="owner">
       <span class="ad-slide-audience">For Owners</span>
       <span class="ad-slide-icon">⭐</span>
       <span class="ad-slide-text">Promote Your Listing. Get More Enquiries.</span>
@@ -15447,6 +15455,28 @@ document.addEventListener('DOMContentLoaded', function() {
   banner.addEventListener('pointerup', onDragEnd);
   banner.addEventListener('pointercancel', onDragEnd);
   banner.addEventListener('pointerleave', e => { if (dragging && e.buttons === 0) onDragEnd(); });
+  // Extra safety net: if a browser still tries to start a native
+  // text/element drag inside the banner (desktop mouse only), cancel it
+  // outright so it can never hijack the custom swipe above.
+  banner.addEventListener('dragstart', e => e.preventDefault());
+
+  // ── Tap-to-advance ──────────────────────────────────────────────
+  // A plain click/tap (not a drag) on the banner now behaves like a dot
+  // click and advances to the next slide, exactly like tapping a dot —
+  // except a click on the "Call Now" pill itself still places the call.
+  banner.addEventListener('click', e => {
+    if (dragMoved) return; // a real swipe already handled itself above
+    if (e.target.closest('.ad-slide-cta')) {
+      window.location.href = 'tel:9035205230';
+      return;
+    }
+    stop();
+    goTo(cur + 1);
+    // Tapping to advance syncs the card tint on every screen size
+    // (unlike drag-swiping, which stays mobile-only below).
+    syncCardTintToSlide(visibleSlides()[cur]);
+    start();
+  });
 });
 
 /* ─── Auto-slide the property-card icon/chip rows (stats + furnished/
