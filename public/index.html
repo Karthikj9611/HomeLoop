@@ -4015,7 +4015,7 @@ main.tab-explore .empty-state{display:none !important}
     display:flex;align-items:center;
     position:absolute;left:0;right:auto;bottom:0;top:auto;z-index:2;
     width:50%;max-width:50%;box-sizing:border-box;
-    background:rgba(20,16,17,.55);color:#fff;
+    background:var(--card-live-tint, rgba(20,16,17,.55));color:#fff;
     font-size:9px;font-weight:700;letter-spacing:.01em;line-height:1.2;
     padding:4px 6px;border-radius:0;
     overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
@@ -15361,10 +15361,10 @@ document.addEventListener('DOMContentLoaded', function() {
     9: 'linear-gradient(135deg,#c084fc,#6b21a8)',
   };
   function syncCardTintToSlide(slideEl) {
-    // Card tint is now fixed (see :root --card-live-tint) rather than
-    // following the carousel, so this no longer writes anything — kept as
-    // a no-op stub in case it's wired back up later.
-    return;
+    if (!slideEl) return;
+    const m = slideEl.className.match(/ad-slide-(\d)/);
+    const gradient = m && AD_GRADIENTS[m[1]];
+    if (gradient) document.documentElement.style.setProperty('--card-live-tint', gradient);
   }
   function goTo(n) {
     const slides = visibleSlides(), dots = visibleDots();
@@ -15373,7 +15373,6 @@ document.addEventListener('DOMContentLoaded', function() {
     cur = (n + total) % total;
     track.style.transform = 'translateX(-' + (cur * 100) + '%)';
     dots.forEach((d, i) => d.classList.toggle('active', i === cur));
-    syncCardTintToSlide(slides[cur]);
   }
   function start() {
     timer = setInterval(() => {
@@ -15428,6 +15427,12 @@ document.addEventListener('DOMContentLoaded', function() {
     if (dragDeltaX <= -threshold) goTo(cur + 1);
     else if (dragDeltaX >= threshold) goTo(cur - 1);
     else goTo(cur);
+    // Property-card background follows the ad only when a person manually
+    // swipes the banner, and only on mobile — autoplay, dot clicks, and
+    // desktop drags leave the card tint at its fixed pink.
+    if (window.matchMedia('(max-width:640px)').matches) {
+      syncCardTintToSlide(visibleSlides()[cur]);
+    }
     start();
     // A real drag shouldn't also fire the slide's tel: link click — swallow
     // just the click that immediately follows a drag past the move threshold.
