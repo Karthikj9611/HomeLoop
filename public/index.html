@@ -113,29 +113,29 @@ ul{list-style:none}
   display:flex;align-items:center;
 }
 .promoted-label{
-  color:var(--brand);
-  background:var(--brand-light);
+  color:#fff;
+  background:var(--card-live-tint, var(--brand));
   padding:4px 12px;border-radius:99px;
-  border:1px solid #f5c0c8;
+  border:1px solid rgba(255,255,255,.4);
 }
 .section-divider-count{
   margin-left:7px;font-weight:700;font-size:11px;
-  background:var(--brand);color:#fff;
+  background:rgba(255,255,255,.92);color:var(--ink);
   padding:1px 8px;border-radius:99px;
   letter-spacing:normal;text-transform:none;
 }
 .section-divider-count:empty{display:none}
 /* Booked section dividers reuse the same layout as the normal Rent/Lease/PG/
-   Promoted ones, but in the app's existing red "booked" color (see
-   .profile-status-pill.booked-pill) instead of the brand pink, so a Booked
-   bucket never gets mistaken for another live/available section at a glance. */
+   Promoted ones, and now the same live card-tint background too, so every
+   section pill (Viewed/Promoted/Rent/Lease/PG/Sell/Booked) reads as one
+   family with the property cards below it. */
 .booked-label{
-  color:#e04444;
-  background:#fdecec;
+  color:#fff;
+  background:var(--card-live-tint, #e04444);
   padding:4px 12px;border-radius:99px;
-  border:1px solid #f6c6c6;
+  border:1px solid rgba(255,255,255,.4);
 }
-.booked-count{background:#e04444}
+.booked-count{background:rgba(255,255,255,.92);color:var(--ink)}
 /* Booked cards are read-only/off-market — the Rent/Lease/PG type-letter
    badge is redundant here (each bucket is already labeled by its divider
    above), so hide it the same way it's hidden in the Recently Viewed strip.
@@ -723,7 +723,7 @@ main.tab-explore .empty-state{display:none !important}
    listing type: overdue (yesterday or earlier) reads red, today/upcoming
    reads green. Applies across all listing types (rent/lease/pg/shortstay/sell).
    Cards with no available date fall back to the neutral default above. */
-.prop-card.avail-past::before{background:linear-gradient(90deg,#C62828,#E57373)}
+.prop-card.avail-past::before{background:var(--card-live-tint, var(--bg))}
 .prop-card.avail-future::before{background:linear-gradient(90deg,#2E7D32,#66BB6A)}
 .prop-card:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
 /* ─── Promoted cards get their own gold/rose gradient treatment, overriding
