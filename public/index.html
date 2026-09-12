@@ -15353,10 +15353,13 @@ document.addEventListener('DOMContentLoaded', function() {
   // "total" to keep in sync.
   function visibleSlides() { return Array.from(track.children).filter(el => el.style.display !== 'none'); }
   function visibleDots() { return Array.from(allDots).filter(el => el.style.display !== 'none'); }
-  // Property-card backgrounds swipe in sync with the ad banner — whichever
-  // ad-slide-N gradient is currently showing gets pushed onto every
-  // .prop-card via a CSS var, so the cards change color exactly as the
-  // banner advances (auto-rotate, dot click, or swipe alike).
+  // The whole site's theming swaps in sync with the ad banner — whichever
+  // ad-slide-N is currently showing pushes its color onto every element
+  // that reads var(--brand)/--brand-hover/--brand-light (buttons, borders,
+  // icons, badges, modals — anything themed off those three vars) plus the
+  // property-card tint, so the site re-themes exactly as the banner
+  // advances, no matter how it advances (auto-rotate, dot click, swipe, or
+  // tap alike).
   const AD_GRADIENTS = {
     1: 'linear-gradient(135deg,#ff6a7a,#a51845)',
     2: 'linear-gradient(135deg,#7b6ffb,#3a2ca0)',
@@ -15368,11 +15371,34 @@ document.addEventListener('DOMContentLoaded', function() {
     8: 'linear-gradient(135deg,#2dd4bf,#0f766e)',
     9: 'linear-gradient(135deg,#c084fc,#6b21a8)',
   };
-  function syncCardTintToSlide(slideEl) {
+  // One brand/hover/light triple per slide, hue-matched to that slide's
+  // AD_GRADIENTS colors, each checked for contrast against white text
+  // (var(--brand) is used as a solid fill under white text in buttons/badges)
+  // and against dark text (var(--brand-light) is used as a pale tint background).
+  const AD_BRAND_COLORS = {
+    1: { brand:'#e0435a', hover:'#c72e43', light:'#fef0f2' }, // rose (default)
+    2: { brand:'#6d5cf0', hover:'#5847d1', light:'#f1f0fe' }, // violet
+    3: { brand:'#16a34a', hover:'#0f7a45', light:'#eafaf1' }, // green
+    4: { brand:'#d97706', hover:'#b3690a', light:'#fef6ea' }, // amber
+    5: { brand:'#0284c7', hover:'#0369a1', light:'#eaf6fd' }, // blue
+    6: { brand:'#ca8a04', hover:'#a16207', light:'#fdf8e7' }, // gold
+    7: { brand:'#db2777', hover:'#a3116b', light:'#fdeef6' }, // magenta
+    8: { brand:'#0d9488', hover:'#0f766e', light:'#eafbf9' }, // teal
+    9: { brand:'#9333ea', hover:'#6b21a8', light:'#f7eefd' }, // purple
+  };
+  function applyAdTheme(slideEl) {
     if (!slideEl) return;
     const m = slideEl.className.match(/ad-slide-(\d)/);
-    const gradient = m && AD_GRADIENTS[m[1]];
-    if (gradient) document.documentElement.style.setProperty('--card-live-tint', gradient);
+    if (!m) return;
+    const gradient = AD_GRADIENTS[m[1]];
+    const colors = AD_BRAND_COLORS[m[1]];
+    const root = document.documentElement.style;
+    if (gradient) root.setProperty('--card-live-tint', gradient);
+    if (colors) {
+      root.setProperty('--brand', colors.brand);
+      root.setProperty('--brand-hover', colors.hover);
+      root.setProperty('--brand-light', colors.light);
+    }
   }
   function goTo(n) {
     const slides = visibleSlides(), dots = visibleDots();
@@ -15381,6 +15407,9 @@ document.addEventListener('DOMContentLoaded', function() {
     cur = (n + total) % total;
     track.style.transform = 'translateX(-' + (cur * 100) + '%)';
     dots.forEach((d, i) => d.classList.toggle('active', i === cur));
+    // Re-theme on every advance path — autoplay, dot click, drag/swipe, and
+    // tap — so the site-wide theme always matches whichever slide is showing.
+    applyAdTheme(slides[cur]);
   }
   function start() {
     timer = setInterval(() => {
@@ -15435,12 +15464,6 @@ document.addEventListener('DOMContentLoaded', function() {
     if (dragDeltaX <= -threshold) goTo(cur + 1);
     else if (dragDeltaX >= threshold) goTo(cur - 1);
     else goTo(cur);
-    // Property-card background follows the ad only when a person manually
-    // swipes the banner, and only on mobile — autoplay, dot clicks, and
-    // desktop drags leave the card tint at its fixed pink.
-    if (window.matchMedia('(max-width:640px)').matches) {
-      syncCardTintToSlide(visibleSlides()[cur]);
-    }
     start();
     // A real drag shouldn't also fire the slide's tel: link click — swallow
     // just the click that immediately follows a drag past the move threshold.
@@ -15472,9 +15495,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     stop();
     goTo(cur + 1);
-    // Tapping to advance syncs the card tint on every screen size
-    // (unlike drag-swiping, which stays mobile-only below).
-    syncCardTintToSlide(visibleSlides()[cur]);
     start();
   });
 });
