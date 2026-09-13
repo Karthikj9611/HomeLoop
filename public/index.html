@@ -9528,23 +9528,28 @@ function toggleMenuPanel() {
    tab (e.g. "Lease Amt" when moving to the Rent tab) must have its selected
    options cleared. Otherwise the selection stays active and silently affects
    results / the total-selected badge while being invisible to the user. */
+// Clears every active filter — pills, search boxes, and the Price/Deposit/
+// Maintenance range inputs — whenever the visitor switches tabs, so each
+// tab (Rent/Lease/PG/ShortStay/Sell/Promoted) always starts from a clean
+// slate instead of inheriting the previous tab's selections. Previously
+// this only cleared filters whose button wasn't visible on the new tab
+// (e.g. PG-only filters when leaving PG) — but many filter buttons (like
+// BHK) are shown on more than one tab (Rent + Lease + Sell), so a BHK
+// selection made on Rent used to silently carry over to Lease and could
+// hide every Lease listing that didn't share that exact BHK value. Tabs
+// are meant to filter independently of one another, so every tab switch
+// now resets the whole filter bar unconditionally.
 function clearFiltersHiddenByTab() {
-  document.querySelectorAll('.fd-btn').forEach(btn => {
-    const tabClass = 'fd-' + currentTab.toLowerCase();
-    // Promoted spans all four listing types, so (per the CSS rules above)
-    // it shows the same full filter set as "All" — no button ever carries
-    // a literal "fd-promoted" class. Treat it the same as "All" here too,
-    // or every filter would look "hidden" on this tab and get wiped.
-    const visible = currentTab === 'All' || currentTab === 'Promoted' || btn.classList.contains(tabClass);
-    if (visible) return;
-    const id = btn.id.replace(/^fdb-/, '');
-    const pop = document.getElementById('fdp-' + id);
-    if (!pop) return;
-    const hadSel = pop.querySelectorAll('.fp-opt.sel').length > 0;
-    if (hadSel) {
-      pop.querySelectorAll('.fp-opt.sel').forEach(o => o.classList.remove('sel'));
-      refreshFdBtn(id);
-    }
+  document.querySelectorAll('.fp-opt.sel').forEach(o => o.classList.remove('sel'));
+  document.querySelectorAll('.fd-search').forEach(s => s.value = '');
+  document.querySelectorAll('.fp-opt.fd-hidden').forEach(o => o.classList.remove('fd-hidden'));
+  Object.keys(FD_GROUPS).forEach(id => refreshFdBtn(id));
+  FD_RANGE_IDS.forEach(id => {
+    const minEl = document.getElementById('fd-' + id + '-min');
+    const maxEl = document.getElementById('fd-' + id + '-max');
+    if (minEl) minEl.value = '';
+    if (maxEl) maxEl.value = '';
+    refreshFdRangeBtn(id, true);
   });
 }
 
@@ -10667,7 +10672,17 @@ function getFiltered() {
     if (fs.locality) {
       if (!fs.locality.includes((p.location?.area || '').trim())) return false;
     }
-    if (fs.bhk) {
+    // Section-scoped filters below only ever narrow the listing types whose
+    // filter bar actually shows that button (see the .fd-rent/.fd-lease/
+    // .fd-pg/.fd-shortstay/.fd-sell classes on each fd-btn in the markup).
+    // On a single-type tab this is a no-op (every row already matches), but
+    // on the Promoted tab — which mixes every type together and shows every
+    // filter button at once — it stops e.g. a Rent-only "BHK" filter from
+    // wrongly excluding a promoted PG/ShortStay listing that simply has no
+    // BHK value. Each block below is a no-op for out-of-scope types instead
+    // of falling through to a false/empty-value comparison that would
+    // otherwise exclude them.
+    if (fs.bhk && ['Rent','Lease','Sell'].includes(pType)) {
       const bhkVal = (p.property?.bhk||'').trim();
       const match = fs.bhk.some(b => b==='4 BHK' ? parseInt(bhkVal)>=4 : bhkVal===b);
       if (!match) return false;
@@ -10676,12 +10691,12 @@ function getFiltered() {
       const furnishVal = p.property?.furnish ?? p.pg?.furnish ?? p.shortStay?.furnish;
       if (furnishVal != null && furnishVal !== '' && !fs.furnishing.includes(furnishVal)) return false;
     }
-    if (fs.tenant) {
+    if (fs.tenant && ['Rent','Lease'].includes(pType)) {
       const tenantList = String(p.property?.tenant || '').split(',').map(s => s.trim()).filter(Boolean);
       if (!fs.tenant.some(t => t==='Any' || tenantList.includes(t) || tenantList.includes('Any'))) return false;
     }
-    if (fs.facing && !fs.facing.includes(p.property?.facing)) return false;
-    if (fs.bathrooms) {
+    if (fs.facing && ['Rent','Lease','Sell'].includes(pType) && !fs.facing.includes(p.property?.facing)) return false;
+    if (fs.bathrooms && ['Rent','Lease','PG','Sell'].includes(pType)) {
       const pgBath = p.pg?.bathroom;
       if (pgBath != null && pgBath !== '') {
         if (!fs.bathrooms.includes(pgBath)) return false;
@@ -10690,9 +10705,9 @@ function getFiltered() {
         if (baths > 0 && !fs.bathrooms.some(b => parseInt(b)===4 ? baths>=4 : baths===parseInt(b))) return false;
       }
     }
-    if (fs.age && !fs.age.includes(p.property?.age)) return false;
+    if (fs.age && ['Rent','Lease','Sell'].includes(pType) && !fs.age.includes(p.property?.age)) return false;
     if (fs.negotiable && !fs.negotiable.includes(String(p.price?.negotiable || '').toLowerCase())) return false;
-    if (fs._availBucket) {
+    if (fs._availBucket && ['Rent','Lease','PG','Sell'].includes(pType)) {
       const availVal = p.pg?.available ?? p.property?.available;
       const days = fdDaysFromToday(availVal);
       if (days === null || !fdValueInBuckets(Math.max(days, 0), fs._availBucket)) return false;
@@ -10723,17 +10738,24 @@ function getFiltered() {
        Min/Max inputs, apply across Rent, Lease, PG, and Short Stay alike. */
     if (fs._priceMin != null && fdPriceNum(p.price?.rent) < fs._priceMin) return false;
     if (fs._priceMax != null && fdPriceNum(p.price?.rent) > fs._priceMax) return false;
-    if (fs._depositMin != null && fdPriceNum(p.price?.deposit) < fs._depositMin) return false;
-    if (fs._depositMax != null && fdPriceNum(p.price?.deposit) > fs._depositMax) return false;
+    // Deposit is only shown on Rent/Lease/PG — guard it the same way as the
+    // other section-scoped filters above, so it never wrongly filters out a
+    // promoted Sell/ShortStay listing (which has no deposit field) on the
+    // mixed-type Promoted tab.
+    if (['Rent','Lease','PG'].includes(pType)) {
+      if (fs._depositMin != null && fdPriceNum(p.price?.deposit) < fs._depositMin) return false;
+      if (fs._depositMax != null && fdPriceNum(p.price?.deposit) > fs._depositMax) return false;
+    }
     if (fs._maintenanceMin != null && fdPriceNum(p.price?.maintenance) < fs._maintenanceMin) return false;
     if (fs._maintenanceMax != null && fdPriceNum(p.price?.maintenance) > fs._maintenanceMax) return false;
 
-    // Area / Floor range filters are shown on Rent, Lease, AND Sell — apply
-    // them unconditionally (any listing with a property.area/floor value)
-    // instead of nesting them only inside the Rent/Lease blocks below, which
-    // silently ignored these filters whenever a Sell listing was checked.
-    if (fs._floorBucket && !fdValueInBuckets(fdFloorNum(p.property?.floor), fs._floorBucket)) return false;
-    if (fs._areaBucket && !fdValueInBuckets(fdAreaNum(p.property?.area), fs._areaBucket)) return false;
+    // Area / Floor range filters are shown on Rent, Lease, AND Sell only —
+    // guarded here so they're a no-op for PG/ShortStay listings (which have
+    // no floor/area concept) instead of excluding them via a null/0 mismatch.
+    if (['Rent','Lease','Sell'].includes(pType)) {
+      if (fs._floorBucket && !fdValueInBuckets(fdFloorNum(p.property?.floor), fs._floorBucket)) return false;
+      if (fs._areaBucket && !fdValueInBuckets(fdAreaNum(p.property?.area), fs._areaBucket)) return false;
+    }
 
     if (pType==='Rent') {
       if (fs._escalationBucket && !fdValueInBuckets(fdEscalationNum(p.price?.rentIncrease), fs._escalationBucket)) return false;
