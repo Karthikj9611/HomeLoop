@@ -8962,12 +8962,13 @@ function switchPropCategory(cat){
 function updatePropCategoryCounts(data){
   const counts = {all:0, Promoted:0, Booked:0, Rent:0, Lease:0, Sell:0, PG:0, 'Short Stay':0};
   data.forEach(r=>{
+    counts.all++; // All now includes booked properties too, unlike Promoted/Rent/Lease/Sell/PG/Short Stay
     if(!r.booked){
-      counts.all++;
-      counts[propCategoryOf(r.status)]++; // once booked, no longer counted under All or its Rent/Lease/Sell/PG/Short Stay tab
+      counts[propCategoryOf(r.status)]++; // once booked, no longer counted under its Rent/Lease/Sell/PG/Short Stay tab
       if(r.promoted) counts.Promoted++; // once booked, no longer counted under Promoted either
+    } else {
+      counts.Booked++;
     }
-    if(r.booked) counts.Booked++;
   });
   ['all','Promoted','Booked','Rent','Lease','Sell','PG','Short Stay'].forEach(cat=>{
     const el = document.getElementById('cat-count-'+cat.replace(/\s+/g,'-'));
@@ -8981,8 +8982,8 @@ $.fn.dataTable.ext.search.push(function(settings, data, dataIndex){
   if(!row) return true;
   if(_propCategoryState === 'Booked'){
     if(!row.booked) return false;
-  } else if(row.booked){
-    return false; // once booked, hidden from every other tab (All, Promoted, Rent/Lease/PG/Short Stay) — only the Booked tab shows it
+  } else if(row.booked && _propCategoryState !== 'all'){
+    return false; // once booked, hidden from Promoted/Rent/Lease/PG/Short Stay — All and Booked still show it
   } else if(_propCategoryState === 'Promoted'){
     if(!row.promoted) return false;
   } else if(_propCategoryState !== 'all'){
