@@ -1299,12 +1299,21 @@ module.exports = function registerAdminRoutes(app, deps) {
     }
   });
 
+  // Only trust a photoUrl that points at an image this admin panel actually
+  // generated via /api/upload-partner-photo — same reasoning as the
+  // profilePhoto check in server.js. An empty string clears the photo.
+  const isValidPartnerPhotoUrl = (val) => val === '' || /^\/uploads\/[a-f0-9]{24}$/.test(val);
+
   // POST /api/partners — admin-only, add a new partner
   app.post('/api/partners', requireAdmin, async (req, res) => {
     try {
-      const { name, role, phone, email, location, avatarText, order, active } = req.body;
+      const { name, role, phone, email, location, avatarText, photoUrl, order, active } = req.body;
       if (!name || !role) {
         return res.status(400).json({ error: 'name and role are required' });
+      }
+      const cleanPhotoUrl = typeof photoUrl === 'string' ? photoUrl.trim() : '';
+      if (!isValidPartnerPhotoUrl(cleanPhotoUrl)) {
+        return res.status(400).json({ error: 'Invalid photo' });
       }
       const partner = await Partner.create({
         name, role,
@@ -1312,6 +1321,7 @@ module.exports = function registerAdminRoutes(app, deps) {
         email: email || '',
         location: location || '',
         avatarText: avatarText || '',
+        photoUrl: cleanPhotoUrl,
         order: Number(order) || 0,
         active: active !== false
       });
@@ -1325,8 +1335,15 @@ module.exports = function registerAdminRoutes(app, deps) {
   // PUT /api/partners/:id — admin-only, edit an existing partner
   app.put('/api/partners/:id', requireAdmin, async (req, res) => {
     try {
-      const fields = (({ name, role, phone, email, location, avatarText, order, active }) => ({ name, role, phone, email, location, avatarText, order, active }))(req.body);
+      const fields = (({ name, role, phone, email, location, avatarText, photoUrl, order, active }) => ({ name, role, phone, email, location, avatarText, photoUrl, order, active }))(req.body);
       Object.keys(fields).forEach(k => fields[k] === undefined && delete fields[k]);
+
+      if (fields.photoUrl !== undefined) {
+        fields.photoUrl = fields.photoUrl.trim();
+        if (!isValidPartnerPhotoUrl(fields.photoUrl)) {
+          return res.status(400).json({ error: 'Invalid photo' });
+        }
+      }
 
       const partner = await Partner.findByIdAndUpdate(req.params.id, fields, { new: true }).lean();
       if (!partner) return res.status(404).json({ error: 'Partner not found' });
@@ -1334,6 +1351,34 @@ module.exports = function registerAdminRoutes(app, deps) {
     } catch (err) {
       console.error('PUT /api/partners/:id error:', err.message);
       res.status(500).json({ error: 'Could not update partner' });
+    }
+  });
+
+  // POST /api/upload-partner-photo — admin-only, single headshot upload for
+  // the Partners modal. Same sharp→WebP pipeline as the booking-details
+  // uploads above, sized down for an avatar-sized image, and returns a bare
+  // '/uploads/<id>' URL (no ambiguity with PDFs here, so no suffix needed).
+  const uploadPartnerPhoto = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 8 * 1024 * 1024 },
+    fileFilter: (req, file, cb) => {
+      const ok = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/heic', 'image/heif'].includes(file.mimetype);
+      cb(ok ? null : new Error('Only image files are allowed'), ok);
+    },
+  });
+  app.post('/api/upload-partner-photo', requireAdmin, bookingUploadLimiter, uploadPartnerPhoto.single('photo'), async (req, res) => {
+    try {
+      if (!req.file) return res.status(400).json({ message: 'No photo uploaded' });
+      const webpBuffer = await sharp(req.file.buffer)
+        .rotate()
+        .resize({ width: 500, height: 500, fit: 'cover', position: 'top' })
+        .webp({ quality: 82 })
+        .toBuffer();
+      const doc = await ImageAsset.create({ data: webpBuffer, contentType: 'image/webp' });
+      res.status(201).json({ message: 'Photo uploaded successfully', url: `/uploads/${doc._id}` });
+    } catch (err) {
+      console.error('POST /api/upload-partner-photo error:', err);
+      res.status(500).json({ message: 'Error uploading photo' });
     }
   });
 

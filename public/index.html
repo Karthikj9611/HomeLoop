@@ -3700,6 +3700,7 @@ main.tab-explore .empty-state{display:none !important}
   font-size:13px;font-weight:700;letter-spacing:.02em;
   box-shadow:0 3px 8px rgba(224,58,82,.25);
 }
+.about-partner-avatar-photo{object-fit:cover;background:var(--surface,#f3f3f3)}
 .about-partner-name{font-size:13px;font-weight:700;color:var(--text)}
 .about-partner-role{font-size:11px;font-weight:600;color:var(--brand);margin-top:2px}
 .about-partner-contact{
@@ -14560,7 +14561,9 @@ function renderPartners(partners) {
   }
   wrap.innerHTML = partners.map(p => `
     <div class="about-partner-card">
-      <div class="about-partner-avatar">${esc(p.avatarText || partnerInitials(p.name))}</div>
+      ${p.photoUrl
+        ? `<img class="about-partner-avatar about-partner-avatar-photo" src="${esc(p.photoUrl)}" alt="${esc(p.name)}">`
+        : `<div class="about-partner-avatar">${esc(p.avatarText || partnerInitials(p.name))}</div>`}
       <div>
         <div class="about-partner-name">${esc(p.name)}</div>
         <div class="about-partner-role">${esc(p.role)}</div>

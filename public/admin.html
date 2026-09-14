@@ -5158,6 +5158,9 @@ window.openPartnerModal = function(id){
   document.getElementById('partnerFormOrder').value = row ? Number(row.order||0) : 0;
   document.getElementById('partnerFormActive').checked = row ? row.active !== false : true;
 
+  document.getElementById('partnerFormPhotoUrl').value = row ? (row.photoUrl||'') : '';
+  _renderPartnerPhotoPreview(row ? (row.photoUrl||'') : '');
+
   document.getElementById('partnerModal').classList.add('open');
   document.body.style.overflow = 'hidden';
 };
@@ -5167,6 +5170,54 @@ function closePartnerModal(){
   document.body.style.overflow = '';
 }
 window.closePartnerModal = closePartnerModal;
+
+function _renderPartnerPhotoPreview(url){
+  const img = document.getElementById('partnerPhotoPreview');
+  const icon = document.getElementById('partnerPhotoPlaceholderIcon');
+  const removeBtn = document.getElementById('partnerPhotoRemoveBtn');
+  const hint = document.getElementById('partnerPhotoHint');
+  if(url){
+    img.src = url;
+    img.style.display = 'block';
+    icon.style.display = 'none';
+    removeBtn.style.display = '';
+    hint.textContent = 'Shown instead of initials.';
+  } else {
+    img.style.display = 'none';
+    img.src = '';
+    icon.style.display = '';
+    removeBtn.style.display = 'none';
+    hint.textContent = 'No photo — initials will be shown instead.';
+  }
+}
+
+window.uploadPartnerPhotoFromFile = async function(input){
+  const file = (input.files || [])[0];
+  input.value = '';
+  if(!file) return;
+
+  const hint = document.getElementById('partnerPhotoHint');
+  hint.textContent = 'Uploading…';
+
+  const form = new FormData();
+  form.append('photo', file);
+
+  try{
+    const res = await fetch(`${BASE}/api/upload-partner-photo`, { method:'POST', body: form, headers: authHeaders() });
+    const data = await res.json();
+    if(!res.ok) throw new Error(data.message || 'Upload failed');
+    document.getElementById('partnerFormPhotoUrl').value = data.url;
+    _renderPartnerPhotoPreview(data.url);
+  } catch(err){
+    alert(err.message || 'Could not upload photo. Please try again.');
+    _renderPartnerPhotoPreview(document.getElementById('partnerFormPhotoUrl').value);
+  }
+};
+
+window.removePartnerPhoto = function(){
+  document.getElementById('partnerFormPhotoUrl').value = '';
+  _renderPartnerPhotoPreview('');
+};
 
 window.savePartner = async function(){
   const errEl = document.getElementById('partnerFormError');
@@ -5179,6 +5230,7 @@ window.savePartner = async function(){
   const email      = document.getElementById('partnerFormEmail').value.trim();
   const location   = document.getElementById('partnerFormLocation').value.trim();
   const avatarText = document.getElementById('partnerFormAvatarText').value.trim();
+  const photoUrl   = document.getElementById('partnerFormPhotoUrl').value.trim();
   const order      = Number(document.getElementById('partnerFormOrder').value) || 0;
   const active     = document.getElementById('partnerFormActive').checked;
 
@@ -5188,7 +5240,7 @@ window.savePartner = async function(){
     return;
   }
 
-  const payload = { name, role, phone, email, location, avatarText, order, active };
+  const payload = { name, role, phone, email, location, avatarText, photoUrl, order, active };
   const saveBtn = document.getElementById('partnerFormSaveBtn');
   saveBtn.disabled = true;
   try{
@@ -7555,8 +7607,11 @@ $(document).ready(function(){
       { data:null, render:(d,t,row)=>{
           if(t!=='display') return escapeHtml(row.name||'');
           const initials = escapeHtml(row.avatarText || (row.name||'').split(' ').map(w=>w[0]).filter(Boolean).slice(0,2).join('').toUpperCase());
+          const avatar = row.photoUrl
+            ? `<img class="hr-thumb" src="${escapeHtml(row.photoUrl)}" alt="" style="object-fit:cover">`
+            : `<div class="hr-thumb" style="display:flex;align-items:center;justify-content:center;background:var(--surface2);font-weight:700;color:var(--ink2)">${initials}</div>`;
           return `<div class="hr-thumb-wrap">
-            <div class="hr-thumb" style="display:flex;align-items:center;justify-content:center;background:var(--surface2);font-weight:700;color:var(--ink2)">${initials}</div>
+            ${avatar}
             <div>
               <div class="prop-title">${escapeHtml(row.name||'')}</div>
               <div class="prop-sub">${escapeHtml(row.role||'')}</div>
@@ -11253,6 +11308,25 @@ markRequiredLabels();
       <div class="hr-form-row">
         <label>Location</label>
         <input type="text" id="partnerFormLocation" maxlength="80" placeholder="e.g. Indiranagar, Bengaluru">
+      </div>
+
+      <div class="hr-form-row">
+        <label>Photo (optional)</label>
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="width:64px;height:64px;border-radius:10px;overflow:hidden;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            <img id="partnerPhotoPreview" src="" alt="" style="width:100%;height:100%;object-fit:cover;display:none">
+            <i class="fas fa-user" id="partnerPhotoPlaceholderIcon" style="color:var(--ink2)"></i>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <div style="display:flex;gap:8px">
+              <button type="button" class="img-btn-sec" onclick="document.getElementById('partnerPhotoFileInput').click()">📁 Upload</button>
+              <button type="button" class="img-btn-sec" id="partnerPhotoRemoveBtn" style="display:none" onclick="removePartnerPhoto()">✕ Remove</button>
+            </div>
+            <div class="img-hint" id="partnerPhotoHint">No photo — initials will be shown instead.</div>
+          </div>
+        </div>
+        <input type="file" id="partnerPhotoFileInput" accept="image/*" style="display:none" onchange="uploadPartnerPhotoFromFile(this)">
+        <input type="hidden" id="partnerFormPhotoUrl" value="">
       </div>
 
       <div class="hr-form-grid">

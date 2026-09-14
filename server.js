@@ -2574,6 +2574,7 @@ const partnerSchema = new mongoose.Schema({
   email:      { type: String, default: '', maxlength: 120 },
   location:   { type: String, default: '', maxlength: 80 },     // e.g. "Indiranagar, Bengaluru"
   avatarText: { type: String, default: '', maxlength: 4 },      // optional override; frontend derives initials from name if blank
+  photoUrl:   { type: String, default: '', trim: true },        // optional headshot — '/uploads/<ImageAsset id>' from /api/upload-partner-photo; falls back to avatarText initials when blank
   order:      { type: Number, default: 0 },                      // lower shows first
   active:     { type: Boolean, default: true },
   createdAt:  { type: Date, default: Date.now }
