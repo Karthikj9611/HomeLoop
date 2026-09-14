@@ -8666,6 +8666,20 @@ function closeLightbox() {
   document.getElementById('lightboxOverlay').classList.remove('open');
 }
 
+// Generic entry point for viewing a single image (or plain array of images)
+// full-size without any of openLightbox()'s property-specific side effects
+// (view counts, Recently Viewed, card re-render) — used e.g. by the About
+// modal's partner photos.
+function openLightboxSimple(urls, idx) {
+  if (!Array.isArray(urls) || !urls.length) return;
+  lightboxImgs = urls;
+  lightboxVideoHtml = '';
+  lightboxIdx = idx || 0;
+  lightboxPreloaded.clear();
+  renderLightbox();
+  document.getElementById('lightboxOverlay').classList.add('open');
+}
+
 function lightboxTotal() {
   return lightboxImgs.length + (lightboxVideoHtml ? 1 : 0);
 }
@@ -14562,7 +14576,7 @@ function renderPartners(partners) {
   wrap.innerHTML = partners.map(p => `
     <div class="about-partner-card">
       ${p.photoUrl
-        ? `<img class="about-partner-avatar about-partner-avatar-photo" src="${esc(p.photoUrl)}" alt="${esc(p.name)}">`
+        ? `<img class="about-partner-avatar about-partner-avatar-photo" src="${esc(p.photoUrl)}" alt="${esc(p.name)}" style="cursor:pointer" onclick="openLightboxSimple(['${esc(p.photoUrl)}'],0)">`
         : `<div class="about-partner-avatar">${esc(p.avatarText || partnerInitials(p.name))}</div>`}
       <div>
         <div class="about-partner-name">${esc(p.name)}</div>

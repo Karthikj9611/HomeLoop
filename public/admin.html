@@ -19,9 +19,11 @@
 <script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
 <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
 <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.print.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
 
 <style>
 :root{
@@ -5179,11 +5181,15 @@ function _renderPartnerPhotoPreview(url){
   if(url){
     img.src = url;
     img.style.display = 'block';
+    img.style.cursor = 'pointer';
+    img.onclick = () => openAdminLightboxArr([url], 0);
     icon.style.display = 'none';
     removeBtn.style.display = '';
-    hint.textContent = 'Shown instead of initials.';
+    hint.textContent = 'Shown instead of initials. Click photo to view full size.';
   } else {
     img.style.display = 'none';
+    img.style.cursor = '';
+    img.onclick = null;
     img.src = '';
     icon.style.display = '';
     removeBtn.style.display = 'none';
@@ -5191,16 +5197,83 @@ function _renderPartnerPhotoPreview(url){
   }
 }
 
-window.uploadPartnerPhotoFromFile = async function(input){
+let _partnerCropper = null;
+
+window.uploadPartnerPhotoFromFile = function(input){
   const file = (input.files || [])[0];
   input.value = '';
   if(!file) return;
+  if(!/^image\//.test(file.type)){
+    alert('Please choose an image file.');
+    return;
+  }
 
+  const reader = new FileReader();
+  reader.onload = (e) => openPartnerCropModal(e.target.result);
+  reader.readAsDataURL(file);
+};
+
+function openPartnerCropModal(dataUrl){
+  const img = document.getElementById('partnerCropImage');
+  img.src = dataUrl;
+  document.getElementById('partnerCropModal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+
+  if(_partnerCropper){ _partnerCropper.destroy(); _partnerCropper = null; }
+  // Image needs to actually be in the DOM/visible before Cropper measures it.
+  img.onload = () => {
+    _partnerCropper = new Cropper(img, {
+      aspectRatio: 1,        // partner photos default to a square headshot…
+      viewMode: 1,
+      dragMode: 'move',
+      autoCropArea: 1,
+      background: false,
+      responsive: true
+    });
+  };
+}
+
+window.setPartnerCropAspect = function(ratio){
+  if(_partnerCropper) _partnerCropper.setAspectRatio(ratio); // NaN = free-form crop
+};
+
+window.rotatePartnerCrop = function(deg){
+  if(_partnerCropper) _partnerCropper.rotate(deg);
+};
+
+window.closePartnerCropModal = function(){
+  document.getElementById('partnerCropModal').classList.remove('open');
+  document.body.style.overflow = '';
+  if(_partnerCropper){ _partnerCropper.destroy(); _partnerCropper = null; }
+  document.getElementById('partnerCropImage').src = '';
+};
+
+window.applyPartnerCrop = async function(){
+  if(!_partnerCropper) return;
+  const applyBtn = document.getElementById('partnerCropApplyBtn');
+  applyBtn.disabled = true;
+
+  const canvas = _partnerCropper.getCroppedCanvas({
+    maxWidth: 1600, maxHeight: 1600,
+    imageSmoothingQuality: 'high'
+  });
+
+  canvas.toBlob(async (blob) => {
+    try{
+      await _uploadPartnerPhotoBlob(blob);
+      closePartnerCropModal();
+    } finally {
+      applyBtn.disabled = false;
+    }
+  }, 'image/jpeg', 0.92);
+};
+
+async function _uploadPartnerPhotoBlob(blob){
   const hint = document.getElementById('partnerPhotoHint');
   hint.textContent = 'Uploading…';
 
   const form = new FormData();
-  form.append('photo', file);
+  form.append('photo', blob, 'partner-photo.jpg');
 
   try{
     const res = await fetch(`${BASE}/api/upload-partner-photo`, { method:'POST', body: form, headers: authHeaders() });
@@ -5212,7 +5285,7 @@ window.uploadPartnerPhotoFromFile = async function(input){
     alert(err.message || 'Could not upload photo. Please try again.');
     _renderPartnerPhotoPreview(document.getElementById('partnerFormPhotoUrl').value);
   }
-};
+}
 
 window.removePartnerPhoto = function(){
   document.getElementById('partnerFormPhotoUrl').value = '';
@@ -7608,7 +7681,7 @@ $(document).ready(function(){
           if(t!=='display') return escapeHtml(row.name||'');
           const initials = escapeHtml(row.avatarText || (row.name||'').split(' ').map(w=>w[0]).filter(Boolean).slice(0,2).join('').toUpperCase());
           const avatar = row.photoUrl
-            ? `<img class="hr-thumb" src="${escapeHtml(row.photoUrl)}" alt="" style="object-fit:cover">`
+            ? `<img class="hr-thumb" src="${escapeHtml(row.photoUrl)}" alt="" style="object-fit:cover;cursor:pointer" onclick="openAdminLightboxArr(['${escapeHtml(row.photoUrl)}'],0)">`
             : `<div class="hr-thumb" style="display:flex;align-items:center;justify-content:center;background:var(--surface2);font-weight:700;color:var(--ink2)">${initials}</div>`;
           return `<div class="hr-thumb-wrap">
             ${avatar}
@@ -11348,6 +11421,43 @@ markRequiredLabels();
       <div class="hr-modal-actions">
         <button class="hr-btn-cancel" onclick="closePartnerModal()">Cancel</button>
         <button class="hr-btn-save" id="partnerFormSaveBtn" onclick="savePartner()">Save</button>
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+<!-- ═════════ PARTNER PHOTO CROP MODAL ═════════ -->
+<div class="prop-modal-wrap" id="partnerCropModal" onclick="if(event.target===this)closePartnerCropModal()">
+
+  <div class="prop-modal" style="max-width:520px">
+
+    <div class="prop-modal-close-row">
+      <button class="prop-modal-close-btn" onclick="closePartnerCropModal()">✕</button>
+    </div>
+
+    <div class="prop-modal-body">
+
+      <div style="text-align:center;font-size:1.4rem;font-weight:700;margin-bottom:16px;color:var(--ink)">
+        Crop Photo
+      </div>
+
+      <div style="display:flex;gap:8px;justify-content:center;margin-bottom:14px">
+        <button type="button" class="img-btn-sec" onclick="setPartnerCropAspect(1)">Square</button>
+        <button type="button" class="img-btn-sec" onclick="setPartnerCropAspect(NaN)">Free</button>
+        <button type="button" class="img-btn-sec" onclick="rotatePartnerCrop(-90)">↺ Rotate</button>
+        <button type="button" class="img-btn-sec" onclick="rotatePartnerCrop(90)">↻ Rotate</button>
+      </div>
+
+      <div style="max-height:60vh;background:#000;border-radius:10px;overflow:hidden">
+        <img id="partnerCropImage" src="" alt="" style="display:block;max-width:100%">
+      </div>
+
+      <div class="hr-modal-actions">
+        <button class="hr-btn-cancel" onclick="closePartnerCropModal()">Cancel</button>
+        <button class="hr-btn-save" id="partnerCropApplyBtn" onclick="applyPartnerCrop()">Use this crop</button>
       </div>
 
     </div>
