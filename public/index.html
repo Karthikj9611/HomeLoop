@@ -7959,6 +7959,7 @@ function renderRecentlyViewed() {
   }
   section.style.display = '';
   strip.innerHTML = ids.map(id => recentlyViewedCardHTML(recentlyViewedData[id])).join('');
+  observeCardImgs(strip);
   requestAnimationFrame(syncRecentlyViewedCardWidth);
 }
 // Keeps Recently Viewed cards sized relative to the real property cards
@@ -8257,6 +8258,7 @@ function renderCards() {
   syncScrollCardWidth();
 
   renderBookedSections();
+  observeCardImgs();
 }
 
 // Renders the read-only "Booked" bucket under Promoted/Rent/Lease/PG. Source
@@ -8311,6 +8313,7 @@ function renderBookedSections() {
     document.getElementById(key + 'BookedCount').textContent = items.length;
     grid.className = gridClass;
     grid.innerHTML = items.map(p => cardHTML(p, key !== 'promoted')).join('');
+    observeCardImgs(grid);
   });
   // Booked grids are sized on mobile the same way the Viewed strip is (see
   // syncRecentlyViewedCardWidth) — needs a fresh run once cards are in the
@@ -8462,18 +8465,21 @@ function buildImgSlider(p, fg, uidSuffix, videoSlideHtml) {
     return `<div class="prop-img-placeholder"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" stroke="${fg}" opacity=".3"/><polyline points="9 22 9 12 15 12 15 22" stroke="${fg}" opacity=".3"/></svg></div>`;
   }
   const uid = 'sl' + p.id + (uidSuffix || '') + '-' + (_imgSliderSeq++);
-  // Only the first slide (the one actually shown) is native-lazy-loaded —
-  // that's what lets the browser defer it until the card scrolls near the
+  // The first slide (the one actually shown) uses native lazy-loading, so
+  // the browser defers fetching it until the card scrolls near the
   // viewport. The rest of a card's slides sit right behind it, hidden with
-  // display:none, until the user swipes. If they were lazy too, the browser
-  // wouldn't start fetching them until the moment they become visible —
-  // i.e. exactly when the swipe happens — which is what caused the delay/
-  // lag between sliding and the next photo actually appearing. Loading them
-  // eagerly means they're already fetched (or fetching) by the time a swipe
-  // reveals them, since they load together with the first slide as soon as
-  // the card itself is in view.
+  // display:none, until the user swipes — they're marked data-src instead
+  // of src, so the browser doesn't fetch them at all yet. observeCardImgs()
+  // then loads all of a card's slides together (via IntersectionObserver,
+  // same near-viewport threshold as the native lazy first slide) the
+  // moment the *card itself* nears the viewport, well before any swipe.
+  // That still avoids the old swipe-lag (everything's fetched together,
+  // ahead of time) without the eager-loading-every-card's-extra-photos
+  // approach, which fired for every rendered card regardless of scroll
+  // position and congested the network enough to blank out the very
+  // images that were actually scrolling into view.
   const imgSlides = imgs.map((url, i) =>
-    `<img class="img-slide${i===0?' active':''}" src="${safeUrl(url)}"${i===0?' loading="lazy"':''} decoding="async" alt="" draggable="false" onclick="event.stopPropagation();handleCardImgClick(this,'${p.id}',${i})" />`
+    `<img class="img-slide${i===0?' active':''}" ${i===0?`src="${safeUrl(url)}" loading="lazy"`:`data-src="${safeUrl(url)}"`} decoding="async" alt="" draggable="false" onclick="event.stopPropagation();handleCardImgClick(this,'${p.id}',${i})" />`
   ).join('');
   // Video tour, when present, always comes after every photo — the last
   // slide in the same swipeable gallery rather than a separate section.
@@ -8481,6 +8487,40 @@ function buildImgSlider(p, fg, uidSuffix, videoSlideHtml) {
     ? `<div class="img-slide video-slide${imgs.length===0?' active':''}">${videoSlideHtml}</div>`
     : '';
   return `<div class="img-slides" id="${uid}">${imgSlides}${videoSlide}</div>`;
+}
+
+// Loads a card's non-first slides (see the data-src comment in
+// buildImgSlider above) once the card nears the viewport, instead of all
+// at once for every card on the page. rootMargin gives it a head start —
+// slides are ready by the time the card is actually visible, so swiping
+// still feels instant — without fetching photos for cards the user hasn't
+// scrolled anywhere near yet.
+let _cardImgObserver = null;
+function observeCardImgs(root) {
+  if (!_cardImgObserver) {
+    if (!('IntersectionObserver' in window)) {
+      // No IntersectionObserver support — fall back to loading everything
+      // immediately rather than never loading the extra slides at all.
+      (root || document).querySelectorAll('.img-slide[data-src]').forEach(img => {
+        img.src = img.dataset.src;
+        img.removeAttribute('data-src');
+      });
+      return;
+    }
+    _cardImgObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (!entry.isIntersecting) return;
+        entry.target.querySelectorAll('.img-slide[data-src]').forEach(img => {
+          img.src = img.dataset.src;
+          img.removeAttribute('data-src');
+        });
+        _cardImgObserver.unobserve(entry.target);
+      });
+    }, { rootMargin: '800px 0px' });
+  }
+  (root || document).querySelectorAll('.img-slides').forEach(el => {
+    if (el.querySelector('.img-slide[data-src]')) _cardImgObserver.observe(el);
+  });
 }
 
 // Blocks the right-click "Save image as..." menu on listing photos (cards,
@@ -9116,6 +9156,7 @@ function renderShortlistPanel() {
     return;
   }
   list.innerHTML = ids.map(id => shortlistCardHTML(shortlistedData[id])).join('');
+  observeCardImgs(list);
 }
 
 
@@ -9498,6 +9539,7 @@ function renderCompareTable() {
       </thead>
       <tbody>${bodyRows}</tbody>
     </table>`;
+  observeCardImgs(document.getElementById('compareTableWrap'));
 }
 
 document.getElementById('compareModal').addEventListener('click', function(e) {
@@ -11009,6 +11051,7 @@ function openDetail(id) {
     const [gbg, gfg] = (colors[pType]||'#f0f0f0:#333').split(':');
     const videoSlideHtml = buildVideoSlideHtml(p);
     gallerySlot.innerHTML = `<div class="prop-img" style="background:${gbg}" data-idx="0">${buildImgSlider(p, gfg, '-detail', videoSlideHtml)}</div>`;
+    observeCardImgs(gallerySlot);
   }
 
   // Plain key/value table with every spec — see buildDetailTable() below.
