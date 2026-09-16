@@ -935,19 +935,21 @@ function buildImgSlider(p, fg, uidSuffix, videoSlideHtml) {
     return `<div class="prop-img-placeholder"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" stroke="${fg}" opacity=".3"/><polyline points="9 22 9 12 15 12 15 22" stroke="${fg}" opacity=".3"/></svg></div>`;
   }
   const uid = 'sl' + p.id + (uidSuffix || '') + '-' + (_imgSliderSeq++);
-  // Every slide — including the first, visible one — is marked data-src
-  // instead of src, so nothing fetches until observeCardImgs() below
-  // decides it's time. The first slide used to rely on the browser's own
-  // native loading="lazy" instead, but that threshold is much tighter
-  // than our IntersectionObserver's 1200px rootMargin and doesn't get a
-  // head start the way the rest of the slides do — on a fast mobile
-  // scroll fling, cards could reach the viewport before their own first
-  // photo had even started downloading, leaving a blank gap where the
-  // image should be until it finally loaded in. Routing every slide
-  // through the same generously-early observer keeps that photo ready by
-  // the time the card is actually visible, same as the others.
+  // The first slide (the one actually shown) uses native lazy-loading, so
+  // the browser defers fetching it until the card scrolls near the
+  // viewport. The rest of a card's slides sit right behind it, hidden with
+  // display:none, until the user swipes — they're marked data-src instead
+  // of src, so the browser doesn't fetch them at all yet. observeCardImgs()
+  // then loads all of a card's slides together (via IntersectionObserver,
+  // same near-viewport threshold as the native lazy first slide) the
+  // moment the *card itself* nears the viewport, well before any swipe.
+  // That still avoids the old swipe-lag (everything's fetched together,
+  // ahead of time) without the eager-loading-every-card's-extra-photos
+  // approach, which fired for every rendered card regardless of scroll
+  // position and congested the network enough to blank out the very
+  // images that were actually scrolling into view.
   const imgSlides = imgs.map((url, i) =>
-    `<img class="img-slide${i===0?' active':''}" data-src="${safeUrl(url)}" decoding="async" alt="" draggable="false" onclick="event.stopPropagation();handleCardImgClick(this,'${p.id}',${i})" />`
+    `<img class="img-slide${i===0?' active':''}" ${i===0?`src="${safeUrl(url)}" loading="lazy"`:`data-src="${safeUrl(url)}"`} decoding="async" alt="" draggable="false" onclick="event.stopPropagation();handleCardImgClick(this,'${p.id}',${i})" />`
   ).join('');
   // Video tour, when present, always comes after every photo — the last
   // slide in the same swipeable gallery rather than a separate section.
@@ -957,14 +959,12 @@ function buildImgSlider(p, fg, uidSuffix, videoSlideHtml) {
   return `<div class="img-slides" id="${uid}">${imgSlides}${videoSlide}</div>`;
 }
 
-// Loads a card's slides (see the data-src comment in buildImgSlider above)
-// once the card nears the viewport, instead of all at once for every card
-// on the page. rootMargin gives it a head start — 1200px (roughly two
-// mobile screens' worth) so slides are ready well before the card is
-// actually visible, even on a fast momentum-scroll fling where the
-// browser can cover a lot of ground between IntersectionObserver ticks —
-// without fetching photos for cards the user hasn't scrolled anywhere
-// near yet.
+// Loads a card's non-first slides (see the data-src comment in
+// buildImgSlider above) once the card nears the viewport, instead of all
+// at once for every card on the page. rootMargin gives it a head start —
+// slides are ready by the time the card is actually visible, so swiping
+// still feels instant — without fetching photos for cards the user hasn't
+// scrolled anywhere near yet.
 let _cardImgObserver = null;
 function observeCardImgs(root) {
   if (!_cardImgObserver) {
@@ -986,31 +986,12 @@ function observeCardImgs(root) {
         });
         _cardImgObserver.unobserve(entry.target);
       });
-    }, { rootMargin: '1200px 0px' });
+    }, { rootMargin: '800px 0px' });
   }
   (root || document).querySelectorAll('.img-slides').forEach(el => {
     if (el.querySelector('.img-slide[data-src]')) _cardImgObserver.observe(el);
   });
 }
-// Fades each slide in once its photo has actually finished loading
-// (or failed to), instead of it just popping in — the .img-slide's own
-// gray background-color (see styles.css) already fills the space while
-// it waits, and this turns the moment the photo lands from an abrupt
-// pop into a quick, deliberate fade so a still-loading card in view
-// during a scroll doesn't read as a blank/white flash. 'load'/'error'
-// don't bubble, so this listener runs in the capture phase; delegated on
-// document once here so it covers every slide added to the page from
-// here on, with no per-image listener bookkeeping needed.
-document.addEventListener('load', e => {
-  if (e.target.classList && e.target.classList.contains('img-slide')) {
-    e.target.classList.add('img-loaded');
-  }
-}, true);
-document.addEventListener('error', e => {
-  if (e.target.classList && e.target.classList.contains('img-slide')) {
-    e.target.classList.add('img-loaded');
-  }
-}, true);
 
 // Blocks the right-click "Save image as..." menu on listing photos (cards,
 // detail gallery, and the fullscreen lightbox + its thumbnails) as a casual
