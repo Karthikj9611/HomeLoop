@@ -5844,6 +5844,58 @@ window.shareListingToOwner = async function(id){
   openWhatsAppTabs(numbers, text);
 };
 
+/* ── SHARE VERIFIED LISTING TO FACEBOOK / INSTAGRAM (company account) ──
+   Manual-assist version — there's no server-side Meta Graph API app/Page
+   token wired up yet, so this can't auto-post as the Page. Instead it:
+     1. Copies a ready-made caption to the clipboard.
+     2. Opens Facebook's share dialog pre-filled with the listing link —
+        the admin picks the HomeLoop Page as the poster and clicks Post.
+     3. Opens the listing's first photo in a new tab (Instagram has no web
+        posting flow at all — the admin saves the photo, opens Instagram,
+        and pastes the already-copied caption when uploading it).
+   Gated on row.verified, same as shareListingToOwner's WhatsApp button —
+   nothing worth promoting on social until the listing is actually live.
+   If/when a Meta app + Page access token exist, this is the function to
+   swap for a real POST to the Graph API instead of window.open(). */
+window.shareListingToSocial = async function(id){
+  const row = _adminPropCache[id];
+  if(!row){ alert('Listing details not loaded yet — please retry.'); return; }
+  if(!row.verified){ alert("This listing isn't verified yet — verify it first, then share."); return; }
+
+  const link = `${BASE}/property/${id}`;
+  const captionBits = [row.title || 'Property listing'];
+  if(row.loc) captionBits.push(row.loc);
+  if(row.displayPrice) captionBits.push(row.displayPrice);
+  const caption = `${captionBits.join(' · ')}\n\nView more photos & details: ${link}\n\n#HomeLoop #Bangalore #RealEstate`;
+
+  // Best-effort clipboard copy — Instagram has no way to receive the
+  // caption automatically, so this just saves the admin a retype.
+  try{ await navigator.clipboard.writeText(caption); } catch(err){ /* clipboard blocked — caption is still shown below */ }
+
+  // Facebook: opens the native share dialog. It's the logged-in admin's
+  // own share flow, not a Page post via API, so they still pick the
+  // destination (the HomeLoop Page) and click Post themselves.
+  const fbUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(link)}&quote=${encodeURIComponent(caption)}`;
+  window.open(fbUrl, '_blank', 'noopener');
+
+  // Instagram: no web share/posting intent exists, so open the first photo
+  // (if any) so the admin can save it and upload manually.
+  const firstImage = Array.isArray(row.images) && row.images.length ? row.images[0] : '';
+  const firstImageUrl = firstImage ? (/^https?:\/\//i.test(firstImage) ? firstImage : `${BASE}${firstImage}`) : '';
+  if(firstImageUrl){
+    setTimeout(() => window.open(firstImageUrl, '_blank', 'noopener'), 400);
+  }
+
+  showAlertModal(
+    `Caption copied to your clipboard.\n\nFacebook: a share window just opened — pick the HomeLoop Page as the poster and click Post.\n\nInstagram has no direct web-posting option, so:\n1. ${firstImageUrl ? 'Save the photo that just opened in a new tab' : 'Save a photo from this listing'}\n2. Open Instagram (app or instagram.com)\n3. Paste the caption (already copied) and upload the photo`,
+    { variant: 'info', title: 'Share to Facebook / Instagram' }
+  );
+  // The default modal renders this as plain text with normal wrapping —
+  // force the line breaks above to actually show as separate lines.
+  const alertMsgEl = document.getElementById('alertMsg');
+  if(alertMsgEl) alertMsgEl.style.whiteSpace = 'pre-line';
+};
+
 /* ── SHARE SELECTED PROPERTY LINKS TO A NUMBER YOU ENTER (WhatsApp) ──
    Bundles every currently-selected property (any count — 10, 20, however
    many; no ADMIN_COMPARE_MAX-style ceiling, since this isn't the compare
@@ -7137,6 +7189,9 @@ $(document).ready(function(){
           const shareBtn = row.verified
             ? `<button class="btn-view" style="background:#25D366;border-color:#25D366;color:#fff" title="Share the live link with the owner (and alt number) via WhatsApp" onclick="shareListingToOwner('${row._id}')"><i class="fab fa-whatsapp"></i><span class="btn-label"> Share</span></button>`
             : `<button class="btn-view" disabled title="Verify this listing first to enable sharing" style="opacity:.4;cursor:not-allowed;pointer-events:none"><i class="fab fa-whatsapp"></i><span class="btn-label"> Share</span></button>`;
+          const socialShareBtn = row.verified
+            ? `<button class="btn-view" style="background:linear-gradient(45deg,#405DE6,#5851DB,#833AB4,#C13584,#E1306C,#FD1D1D);border-color:#C13584;color:#fff" title="Share this listing to HomeLoop's Facebook Page and Instagram" onclick="shareListingToSocial('${row._id}')"><i class="fab fa-facebook"></i><i class="fab fa-instagram" style="margin-left:3px"></i><span class="btn-label"> Social</span></button>`
+            : `<button class="btn-view" disabled title="Verify this listing first to enable sharing" style="opacity:.4;cursor:not-allowed;pointer-events:none"><i class="fab fa-facebook"></i><i class="fab fa-instagram" style="margin-left:3px"></i><span class="btn-label"> Social</span></button>`;
           const checkAvailBtn = row.ownerAltPhone
             ? `<button class="btn-view" style="background:#25D366;border-color:#25D366;color:#fff" title="Ask the owner (alt number) via WhatsApp whether this listing is still available" onclick="checkAvailabilityForRow('${row._id}')"><i class="fas fa-circle-question"></i><span class="btn-label"> Check</span></button>`
             : `<button class="btn-view" disabled title="No owner alternate number on file for this listing" style="opacity:.4;cursor:not-allowed;pointer-events:none"><i class="fas fa-circle-question"></i><span class="btn-label"> Check</span></button>`;
@@ -7154,6 +7209,7 @@ $(document).ready(function(){
             ${navigateBtn}
             ${directionsBtn}
             ${shareBtn}
+            ${socialShareBtn}
             ${checkAvailBtn}
             ${bookingBtn}
           </div>`;
