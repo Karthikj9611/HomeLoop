@@ -3406,6 +3406,13 @@ main.tab-explore .empty-state{display:none !important}
 .charges-mini-label{font-size:9px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.03em;margin-bottom:5px;line-height:1.3}
 .charges-mini-amount{font-size:12.5px;font-weight:800;color:var(--brand);line-height:1.3}
 .charges-audience-divider{height:1px;background:var(--border-2);margin:18px 0}
+.charges-or-divider{
+  display:flex;align-items:center;gap:10px;margin:2px 0;
+  color:var(--text-3);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;
+}
+.charges-or-divider::before,.charges-or-divider::after{content:'';flex:1;height:1px;background:var(--border-2)}
+#chargesModal .charges-audience-head{margin:0 0 8px}
+#chargesModal .charges-audience-name{font-size:13px}
 
 /* ═══════════════════════════════════════════════════════════
    Charges Modal Redesign — modern gradient hero, icon price
@@ -3472,7 +3479,7 @@ main.tab-explore .empty-state{display:none !important}
 #chargesModal .charges-price-example{color:var(--brand);font-weight:600}
 
 /* Compact 3-up pricing grid for the guest view */
-#chargesModal .charges-mini-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+#chargesModal .charges-mini-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
 #chargesModal .charges-mini-card{
   background:var(--bg-2);border:1px solid var(--border);border-radius:14px;
   padding:12px 6px 11px;text-align:center;
@@ -6792,7 +6799,8 @@ main.tab-explore .empty-state{display:none !important}
         <select class="form-input" id="pay-category" onchange="handlePayCategoryChange()">
           <option value="rent">Rent</option>
           <option value="lease">Lease</option>
-          <option value="pg">PG</option>
+          <option value="sell">Sell</option>
+          <option value="contact">Verified Contact (by BHK)</option>
           <option value="other">Other</option>
         </select>
       </div>
@@ -6818,12 +6826,40 @@ main.tab-explore .empty-state{display:none !important}
         </div>
       </div>
 
-      <!-- PG: flat fee, no total-amount entry needed. -->
-      <div id="payPgFlat" style="display:none">
-        <div class="payment-detail-row" style="margin-bottom:16px">
-          <span>Amount payable (flat fee)</span>
-          <span class="detail-value-with-copy"><b>₹1,000</b><button type="button" class="detail-copy-btn" title="Copy amount" onclick="copyCurrentAmount(this, event)"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></button></span>
+      <!-- Sell: enter the sale price, we show the 0.5%–1% payable range —
+           left editable since it's a range, not a fixed percentage. -->
+      <div id="paySellCalc" style="display:none">
+        <div class="form-group">
+          <label class="form-label">Sale price (₹)</label>
+          <input class="form-input" type="number" id="pay-sell-total" min="1" placeholder="e.g. 5000000" oninput="updateSellComputedDisplay()" onblur="handleSellTotalBlur()" />
         </div>
+        <div class="payment-detail-row" style="margin-bottom:16px">
+          <span>Payable range (0.5%–1%)</span>
+          <b id="pay-sell-computed">₹0 – ₹0</b>
+        </div>
+      </div>
+
+      <!-- Verified Contact: priced by BHK count (₹1000/2000/3000 for
+           1/2/3 BHK, flat fee, amount locked). 4-6 properties is a bundle
+           handled directly, not a fixed self-serve price — selecting it
+           hides the amount entirely and points them to Contact us instead.
+           Owner contact details for listings matching the tenant's saved
+           filters are sent to them on WhatsApp after payment. -->
+      <div id="payContactFlat" style="display:none">
+        <div class="form-group">
+          <label class="form-label">BHK / bundle</label>
+          <select class="form-input" id="pay-contact-tier" onchange="handleContactTierChange()">
+            <option value="1" data-amount="1000">1 BHK — ₹1,000</option>
+            <option value="2" data-amount="2000">2 BHK — ₹2,000</option>
+            <option value="3" data-amount="3000">3 BHK — ₹3,000</option>
+            <option value="bundle" data-amount="0">4–6 Properties (bundle) — contact us</option>
+          </select>
+        </div>
+        <div class="payment-detail-row" style="margin-bottom:16px" id="pay-contact-amount-row">
+          <span>Amount payable (flat fee)</span>
+          <span class="detail-value-with-copy"><b id="pay-contact-amount">₹1,000</b><button type="button" class="detail-copy-btn" title="Copy amount" onclick="copyCurrentAmount(this, event)"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></button></span>
+        </div>
+        <div class="identity-locked-hint" style="margin-bottom:16px" id="pay-contact-hint">Verified owner contact details for homes matching your filters will be sent to you on WhatsApp.</div>
       </div>
 
       <div id="paymentAmountEntry">
@@ -7027,7 +7063,13 @@ main.tab-explore .empty-state{display:none !important}
     <div class="charges-body">
     <!-- ═══ Tenant / default view ═══ -->
     <div id="chargesTenantView">
-      <div class="charges-mini-grid">
+
+      <!-- ─ Option 1: full service (agent shortlists & shows homes) ─ -->
+      <div class="charges-audience-head">
+        <div class="charges-audience-icon"><svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7"/><path d="M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9"/></svg></div>
+        <div class="charges-audience-name">Option 1 — We find &amp; show you homes</div>
+      </div>
+      <div class="charges-mini-grid" style="grid-template-columns:repeat(3,1fr)">
         <div class="charges-mini-card">
           <div class="charges-mini-icon">
             <svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7"/><path d="M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9"/></svg>
@@ -7046,15 +7088,14 @@ main.tab-explore .empty-state{display:none !important}
         </div>
         <div class="charges-mini-card">
           <div class="charges-mini-icon">
-            <svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7"/><path d="M4 10v10h16V10"/></svg>
           </div>
-          <div class="charges-mini-label">PG</div>
-          <div class="charges-mini-amount">₹1,000</div>
-          <div class="charges-mini-example">Flat fee</div>
+          <div class="charges-mini-label">Sell</div>
+          <div class="charges-mini-amount">0.5–1%</div>
+          <div class="charges-mini-example">e.g. ₹50L → ₹25k–50k</div>
         </div>
       </div>
 
-      <!-- What you get -->
       <div class="charges-includes-title">What's included</div>
       <div class="charges-includes">
         <div class="charges-include-item">
@@ -7071,11 +7112,49 @@ main.tab-explore .empty-state{display:none !important}
         </div>
       </div>
 
-      <!-- Online payment option -->
       <div class="charges-warning">
         <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-        <span><strong>Pay only after you find a good home</strong> — NEVER BEFORE.</span>
+        <span><strong>₹2,000 to start</strong> — pay the rest only after your deal closes.</span>
       </div>
+
+      <div class="charges-or-divider">or</div>
+
+      <!-- ─ Option 2: contact-only (pay a flat fee, get owner details) ─ -->
+      <div class="charges-audience-head">
+        <div class="charges-audience-icon"><svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg></div>
+        <div class="charges-audience-name">Option 2 — Just get owner contact</div>
+      </div>
+      <div class="charges-mini-grid">
+        <div class="charges-mini-card">
+          <div class="charges-mini-icon">
+            <svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+          </div>
+          <div class="charges-mini-label">1 BHK</div>
+          <div class="charges-mini-amount">₹1,000</div>
+        </div>
+        <div class="charges-mini-card">
+          <div class="charges-mini-icon">
+            <svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+          </div>
+          <div class="charges-mini-label">2 BHK</div>
+          <div class="charges-mini-amount">₹2,000</div>
+        </div>
+        <div class="charges-mini-card">
+          <div class="charges-mini-icon">
+            <svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+          </div>
+          <div class="charges-mini-label">3 BHK</div>
+          <div class="charges-mini-amount">₹3,000</div>
+        </div>
+        <div class="charges-mini-card">
+          <div class="charges-mini-icon">
+            <svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+          </div>
+          <div class="charges-mini-label">4–6 Properties</div>
+          <div class="charges-mini-amount">Bundle</div>
+        </div>
+      </div>
+      <div class="svc-price-note">1–3 BHK: pay online, get verified owner details on WhatsApp instantly. 4–6 properties: contact us directly — we share details only after payment, never before.</div>
 
       <button class="form-submit pay-online-btn" onclick="closeChargesModal(); openPaymentModal('brokerage');">Pay brokerage online</button>
       <button class="charges-contact-link" onclick="closeChargesModal(); openHelpModal();">Got a question? Contact us</button>
@@ -7083,6 +7162,12 @@ main.tab-explore .empty-state{display:none !important}
 
     <!-- ═══ Owner view ═══ -->
     <div id="chargesOwnerView" style="display:none">
+
+      <!-- ─ Option 1: full service (we find & manage your tenant) ─ -->
+      <div class="charges-audience-head">
+        <div class="charges-audience-icon"><svg viewBox="0 0 24 24"><path d="M6 3h12"/><path d="M6 8h12"/><path d="M6 13l8.5 8"/><path d="M6 13h3a5 5 0 0 0 0-10"/></svg></div>
+        <div class="charges-audience-name">Option 1 — We find you a tenant</div>
+      </div>
       <div class="charges-price-card">
         <div class="charges-price-icon">
           <svg viewBox="0 0 24 24"><path d="M6 3h12"/><path d="M6 8h12"/><path d="M6 13l8.5 8"/><path d="M6 13h3a5 5 0 0 0 0-10"/></svg>
@@ -7107,8 +7192,33 @@ main.tab-explore .empty-state{display:none !important}
 
       <div class="charges-warning">
         <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-        <span><strong>Pay only after your flat is filled</strong> — NEVER BEFORE.</span>
+        <span><strong>Pay only after your flat is filled</strong> — never before.</span>
       </div>
+
+      <div class="charges-or-divider">or</div>
+
+      <!-- ─ Option 2: do it yourself (pay a flat fee) ─ -->
+      <div class="charges-audience-head">
+        <div class="charges-audience-icon"><svg viewBox="0 0 24 24"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg></div>
+        <div class="charges-audience-name">Option 2 — Do it yourself</div>
+      </div>
+      <div class="charges-mini-grid" style="grid-template-columns:repeat(2,1fr)">
+        <div class="charges-mini-card">
+          <div class="charges-mini-icon">
+            <svg viewBox="0 0 24 24"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>
+          </div>
+          <div class="charges-mini-label">Promote listing</div>
+          <div class="charges-mini-amount">₹1,000</div>
+        </div>
+        <div class="charges-mini-card">
+          <div class="charges-mini-icon">
+            <svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+          </div>
+          <div class="charges-mini-label">Direct tenant contact</div>
+          <div class="charges-mini-amount">₹2,000</div>
+        </div>
+      </div>
+      <div class="svc-price-note">Promote: more visibility for your listing. Direct contact: we connect you with a verified tenant on WhatsApp.</div>
 
       <button class="form-submit pay-online-btn" onclick="closeChargesModal(); openPaymentModal('brokerage');">Pay online</button>
       <button class="charges-contact-link" onclick="closeChargesModal(); openHelpModal();">Got a question? Contact us</button>
@@ -7128,7 +7238,13 @@ main.tab-explore .empty-state{display:none !important}
       </div>
 
       <div class="charges-audience-panel active" id="chargesTabPanel-tenant">
-        <div class="charges-mini-grid">
+
+        <!-- ─ Option 1: full service (agent shortlists & shows homes) ─ -->
+        <div class="charges-audience-head">
+          <div class="charges-audience-icon"><svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7"/><path d="M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9"/></svg></div>
+          <div class="charges-audience-name">Option 1 — We find &amp; show you homes</div>
+        </div>
+        <div class="charges-mini-grid" style="grid-template-columns:repeat(3,1fr)">
           <div class="charges-mini-card">
             <div class="charges-mini-icon">
               <svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7"/><path d="M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9"/></svg>
@@ -7147,11 +7263,11 @@ main.tab-explore .empty-state{display:none !important}
           </div>
           <div class="charges-mini-card">
             <div class="charges-mini-icon">
-              <svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7"/><path d="M4 10v10h16V10"/></svg>
             </div>
-            <div class="charges-mini-label">PG</div>
-            <div class="charges-mini-amount">₹1,000</div>
-            <div class="charges-mini-example">Flat fee</div>
+            <div class="charges-mini-label">Sell</div>
+            <div class="charges-mini-amount">0.5–1%</div>
+            <div class="charges-mini-example">e.g. ₹50L → ₹25k–50k</div>
           </div>
         </div>
 
@@ -7173,11 +7289,56 @@ main.tab-explore .empty-state{display:none !important}
 
         <div class="charges-warning">
           <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-          <span><strong>Pay only after you find a home</strong> — NEVER BEFORE.</span>
+          <span><strong>₹2,000 to start</strong> — pay the rest only after your deal closes.</span>
         </div>
+
+        <div class="charges-or-divider">or</div>
+
+        <!-- ─ Option 2: contact-only (pay a flat fee, get owner details) ─ -->
+        <div class="charges-audience-head">
+          <div class="charges-audience-icon"><svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg></div>
+          <div class="charges-audience-name">Option 2 — Just get owner contact</div>
+        </div>
+        <div class="charges-mini-grid">
+          <div class="charges-mini-card">
+            <div class="charges-mini-icon">
+              <svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+            </div>
+            <div class="charges-mini-label">1 BHK</div>
+            <div class="charges-mini-amount">₹1,000</div>
+          </div>
+          <div class="charges-mini-card">
+            <div class="charges-mini-icon">
+              <svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+            </div>
+            <div class="charges-mini-label">2 BHK</div>
+            <div class="charges-mini-amount">₹2,000</div>
+          </div>
+          <div class="charges-mini-card">
+            <div class="charges-mini-icon">
+              <svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+            </div>
+            <div class="charges-mini-label">3 BHK</div>
+            <div class="charges-mini-amount">₹3,000</div>
+          </div>
+          <div class="charges-mini-card">
+            <div class="charges-mini-icon">
+              <svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+            </div>
+            <div class="charges-mini-label">4–6 Properties</div>
+            <div class="charges-mini-amount">Bundle</div>
+          </div>
+        </div>
+        <div class="svc-price-note">1–3 BHK: pay online, get verified owner details on WhatsApp instantly. 4–6 properties: contact us directly — we share details only after payment, never before.</div>
       </div>
 
       <div class="charges-audience-panel" id="chargesTabPanel-owner">
+
+        <!-- ─ Option 1: full service (we find & manage your tenant) ─ -->
+        <div class="charges-audience-head">
+          <div class="charges-audience-icon"><svg viewBox="0 0 24 24"><path d="M6 3h12"/><path d="M6 8h12"/><path d="M6 13l8.5 8"/><path d="M6 13h3a5 5 0 0 0 0-10"/></svg></div>
+          <div class="charges-audience-name">Option 1 — We find you a tenant</div>
+        </div>
         <div class="charges-price-card">
           <div class="charges-price-icon">
             <svg viewBox="0 0 24 24"><path d="M6 3h12"/><path d="M6 8h12"/><path d="M6 13l8.5 8"/><path d="M6 13h3a5 5 0 0 0 0-10"/></svg>
@@ -7202,8 +7363,33 @@ main.tab-explore .empty-state{display:none !important}
 
         <div class="charges-warning">
           <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-          <span><strong>Pay only after your flat is filled</strong> — NEVER BEFORE.</span>
+          <span><strong>Pay only after your flat is filled</strong> — never before.</span>
         </div>
+
+        <div class="charges-or-divider">or</div>
+
+        <!-- ─ Option 2: do it yourself (pay a flat fee) ─ -->
+        <div class="charges-audience-head">
+          <div class="charges-audience-icon"><svg viewBox="0 0 24 24"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg></div>
+          <div class="charges-audience-name">Option 2 — Do it yourself</div>
+        </div>
+        <div class="charges-mini-grid" style="grid-template-columns:repeat(2,1fr)">
+          <div class="charges-mini-card">
+            <div class="charges-mini-icon">
+              <svg viewBox="0 0 24 24"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>
+            </div>
+            <div class="charges-mini-label">Promote listing</div>
+            <div class="charges-mini-amount">₹1,000</div>
+          </div>
+          <div class="charges-mini-card">
+            <div class="charges-mini-icon">
+              <svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+            </div>
+            <div class="charges-mini-label">Direct tenant contact</div>
+            <div class="charges-mini-amount">₹2,000</div>
+          </div>
+        </div>
+        <div class="svc-price-note">Promote: more visibility for your listing. Direct contact: we connect you with a verified tenant on WhatsApp.</div>
       </div>
 
     </div>
@@ -13310,7 +13496,8 @@ function openPaymentModal(purpose, propertyId, propertyLabel) {
 
   if (isOwnerBrokerage) {
     document.getElementById('payRentCalc').style.display = 'none';
-    document.getElementById('payPgFlat').style.display = 'none';
+    document.getElementById('paySellCalc').style.display = 'none';
+    document.getElementById('payContactFlat').style.display = 'none';
     document.getElementById('paymentAmountEntry').style.display = 'none';
     amtInline.value = 2000;
     amtInline.readOnly = true;
@@ -13420,21 +13607,26 @@ function renderPaymentDetailsBox() {
 
 // Switches the payment modal's visible section based on the "Payment for"
 // dropdown: Rent auto-calculates 30% of the entered monthly rent, Lease
-// auto-calculates 50% (half a month's rent), PG is a flat ₹1000 fee with no
-// total-amount entry needed, and Other keeps the plain manual amount field.
-// In every case the computed figure feeds the same hidden pay-amount-inline
-// field, so the existing PaymentRequest/UPI-link plumbing needs no changes.
+// auto-calculates 50% (half a month's rent), Sell shows a 0.5%–1% payable
+// range off the entered sale price (left editable since it's a range, not a
+// fixed cut), Verified Contact is priced by BHK count via its own tier
+// picker (see handleContactTierChange()), and Other keeps the plain manual
+// amount field. In every case the figure feeds the same hidden
+// pay-amount-inline field, so the existing PaymentRequest/UPI-link plumbing
+// needs no changes.
 function handlePayCategoryChange() {
   const cat = document.getElementById('pay-category').value;
   const rentBox = document.getElementById('payRentCalc');
-  const pgBox = document.getElementById('payPgFlat');
+  const sellBox = document.getElementById('paySellCalc');
+  const contactBox = document.getElementById('payContactFlat');
   const amountEntry = document.getElementById('paymentAmountEntry');
   const rentLabel = document.getElementById('pay-rent-label');
   const computedLabel = document.getElementById('pay-rent-computed-label');
   const amt = document.getElementById('pay-amount-inline');
 
   rentBox.style.display = 'none';
-  pgBox.style.display = 'none';
+  sellBox.style.display = 'none';
+  contactBox.style.display = 'none';
   amountEntry.style.display = 'none';
 
   if (cat === 'rent' || cat === 'lease') {
@@ -13446,12 +13638,19 @@ function handlePayCategoryChange() {
     amt.value = '';
     amt.readOnly = true;
     amt.classList.add('identity-locked');
-  } else if (cat === 'pg') {
-    pgBox.style.display = '';
-    amt.value = 1000;
-    amt.readOnly = true;
-    amt.classList.add('identity-locked');
-    handleAmountBlur(); // quietly create the PaymentRequest for the flat ₹1000
+  } else if (cat === 'sell') {
+    sellBox.style.display = '';
+    document.getElementById('pay-sell-total').value = '';
+    document.getElementById('pay-sell-computed').textContent = `${fmtINR(0)} – ${fmtINR(0)}`;
+    amountEntry.style.display = '';
+    amt.value = '';
+    amt.readOnly = false;
+    amt.classList.remove('identity-locked');
+    document.getElementById('payAmountChangeBtn').style.display = 'none';
+  } else if (cat === 'contact') {
+    contactBox.style.display = '';
+    document.getElementById('pay-contact-tier').value = '1';
+    handleContactTierChange();
   } else {
     amountEntry.style.display = '';
     amt.value = '';
@@ -13473,6 +13672,17 @@ function updateRentComputedDisplay() {
   document.getElementById('pay-amount-inline').value = amount > 0 ? amount : '';
 }
 
+// Live display only — shows the 0.5%–1% payable range as the sale price is
+// typed. Unlike Rent/Lease this doesn't lock pay-amount-inline: the exact
+// figure within the range is agreed with the owner, so the tenant/owner
+// still types it into the (now-visible) plain amount field themselves.
+function updateSellComputedDisplay() {
+  const total = Number(document.getElementById('pay-sell-total').value) || 0;
+  const low = Math.round(total * 0.005);
+  const high = Math.round(total * 0.01);
+  document.getElementById('pay-sell-computed').textContent = `${fmtINR(low)} – ${fmtINR(high)}`;
+}
+
 // Fires once the rent-total field loses focus: finalizes the computed
 // display, then quietly creates/refreshes the PaymentRequest for the 30%
 // amount so the UPI link/QR are ready, same as handleAmountBlur() does for
@@ -13480,6 +13690,44 @@ function updateRentComputedDisplay() {
 function handleRentTotalBlur() {
   updateRentComputedDisplay();
   handleAmountBlur();
+}
+
+// Fires once the sale-price field loses focus: finalizes the computed range
+// display only — the amount field stays manual for Sell, so there's no
+// amount to quietly create a PaymentRequest for yet.
+function handleSellTotalBlur() {
+  updateSellComputedDisplay();
+}
+
+// Fires on the Verified Contact BHK/bundle picker: 1/2/3 BHK are flat,
+// locked amounts (₹1000/2000/3000) same as the old PG flat-fee pattern.
+// 4-6 Properties is a bundle handled directly rather than a fixed
+// self-serve price — selecting it hides the amount row entirely and swaps
+// the hint to point at Contact us instead of quietly creating a
+// PaymentRequest.
+function handleContactTierChange() {
+  const tier = document.getElementById('pay-contact-tier').value;
+  const amt = document.getElementById('pay-amount-inline');
+  const amountRow = document.getElementById('pay-contact-amount-row');
+  const amountLabel = document.getElementById('pay-contact-amount');
+  const hint = document.getElementById('pay-contact-hint');
+
+  if (tier === 'bundle') {
+    amountRow.style.display = 'none';
+    hint.textContent = "4–6 properties is a bundle we handle directly — tap \"Got a question? Contact us\" or message us on WhatsApp and we'll share verified owner details there.";
+    amt.value = '';
+    amt.readOnly = true;
+    amt.classList.add('identity-locked');
+  } else {
+    const amount = Number(tier) * 1000;
+    amountRow.style.display = '';
+    amountLabel.textContent = fmtINR(amount);
+    hint.textContent = 'Verified owner contact details for homes matching your filters will be sent to you on WhatsApp.';
+    amt.value = amount;
+    amt.readOnly = true;
+    amt.classList.add('identity-locked');
+    handleAmountBlur(); // quietly create the PaymentRequest for the flat fee
+  }
 }
 
 // Fires on the amount field losing focus: creates the PaymentRequest quietly
@@ -13603,7 +13851,8 @@ async function resumePaymentRequest(payment) {
   // plain amount field rather than the rent-calc/charges-redirect UI.
   document.getElementById('pay-category').value = 'other';
   document.getElementById('payRentCalc').style.display = 'none';
-  document.getElementById('payPgFlat').style.display = 'none';
+  document.getElementById('paySellCalc').style.display = 'none';
+  document.getElementById('payContactFlat').style.display = 'none';
   document.getElementById('paymentAmountEntry').style.display = '';
   const amtInline = document.getElementById('pay-amount-inline');
   amtInline.value = payment.amount;
