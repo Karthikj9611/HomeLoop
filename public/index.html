@@ -7058,7 +7058,33 @@ main.tab-explore .empty-state{display:none !important}
     <!-- ═══ Tenant / default view ═══ -->
     <div id="chargesTenantView">
 
-      <!-- ─ Option 1: full service (agent shortlists & shows homes) ─ -->
+      <!-- ─ Option 1: contact-only (pay a flat fee, get owner details) ─ -->
+      <div class="charges-audience-head">
+        <div class="charges-audience-icon"><svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg></div>
+        <div class="charges-audience-name">Direct Plan</div>
+      </div>
+      <div class="charges-mini-grid" style="grid-template-columns:repeat(3,1fr)">
+        <div class="charges-mini-card">
+          <div class="charges-mini-label">1 BHK</div>
+          <div class="charges-mini-amount">₹1,000</div>
+          <div class="charges-mini-example">e.g. ~₹15k rent flats</div>
+        </div>
+        <div class="charges-mini-card">
+          <div class="charges-mini-label">2 BHK</div>
+          <div class="charges-mini-amount">₹2,000</div>
+          <div class="charges-mini-example">e.g. ~₹25k rent flats</div>
+        </div>
+        <div class="charges-mini-card">
+          <div class="charges-mini-label">3 BHK</div>
+          <div class="charges-mini-amount">₹3,000</div>
+          <div class="charges-mini-example">e.g. ~₹35k rent flats</div>
+        </div>
+      </div>
+      <div class="svc-price-note">Visit our office to meet us first. We’ll help you shortlist properties — sharing details for 4–6 as per your requirement — then you pay us to get the owner’s contact details, and visit the property yourself to finalize.</div>
+
+      <div class="charges-or-divider">or</div>
+
+      <!-- ─ Option 2: full service (agent shortlists & shows homes) ─ -->
       <div class="charges-audience-head">
         <div class="charges-audience-icon"><svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7"/><path d="M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9"/></svg></div>
         <div class="charges-audience-name">Managed Plan</div>
@@ -7095,32 +7121,6 @@ main.tab-explore .empty-state{display:none !important}
         <span><strong>₹2,000 to start</strong> — includes a personalised shortlist, agent-guided visits &amp; owner negotiation help; pay the rest only after your deal closes.</span>
       </div>
 
-      <div class="charges-or-divider">or</div>
-
-      <!-- ─ Option 2: contact-only (pay a flat fee, get owner details) ─ -->
-      <div class="charges-audience-head">
-        <div class="charges-audience-icon"><svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg></div>
-        <div class="charges-audience-name">Direct Plan</div>
-      </div>
-      <div class="charges-mini-grid" style="grid-template-columns:repeat(3,1fr)">
-        <div class="charges-mini-card">
-          <div class="charges-mini-label">1 BHK</div>
-          <div class="charges-mini-amount">₹1,000</div>
-          <div class="charges-mini-example">e.g. ~₹15k rent flats</div>
-        </div>
-        <div class="charges-mini-card">
-          <div class="charges-mini-label">2 BHK</div>
-          <div class="charges-mini-amount">₹2,000</div>
-          <div class="charges-mini-example">e.g. ~₹25k rent flats</div>
-        </div>
-        <div class="charges-mini-card">
-          <div class="charges-mini-label">3 BHK</div>
-          <div class="charges-mini-amount">₹3,000</div>
-          <div class="charges-mini-example">e.g. ~₹35k rent flats</div>
-        </div>
-      </div>
-      <div class="svc-price-note">Visit our office to meet us first. We’ll help you shortlist properties — sharing details for 4–6 as per your requirement — then you pay us to get the owner’s contact details, and visit the property yourself to finalize.</div>
-
       <button class="form-submit pay-online-btn" onclick="closeChargesModal(); openPaymentModal('brokerage');">Pay brokerage online</button>
       <button class="charges-contact-link" onclick="closeChargesModal(); openHelpModal();">Got a question? Contact us</button>
     </div>
@@ -7128,29 +7128,7 @@ main.tab-explore .empty-state{display:none !important}
     <!-- ═══ Owner view ═══ -->
     <div id="chargesOwnerView" style="display:none">
 
-      <!-- ─ Option 1: full service (we find & manage your tenant) ─ -->
-      <div class="charges-audience-head">
-        <div class="charges-audience-icon"><svg viewBox="0 0 24 24"><path d="M6 3h12"/><path d="M6 8h12"/><path d="M6 13l8.5 8"/><path d="M6 13h3a5 5 0 0 0 0-10"/></svg></div>
-        <div class="charges-audience-name">Managed Plan</div>
-      </div>
-      <div class="charges-price-card">
-        <div class="charges-price-icon">
-          <svg viewBox="0 0 24 24"><path d="M6 3h12"/><path d="M6 8h12"/><path d="M6 13l8.5 8"/><path d="M6 13h3a5 5 0 0 0 0-10"/></svg>
-        </div>
-        <div class="charges-price-info">
-          <div class="charges-price-label">Every successful placement</div>
-          <div class="charges-price-amount">Based on your property's rent<br><span class="charges-price-example">e.g. ₹10k rent → ₹1k</span></div>
-        </div>
-      </div>
-
-      <div class="charges-warning">
-        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-        <span><strong>Pay only after your flat is filled</strong> — never before; includes priority listing, verified tenant leads, visit coordination &amp; agreement help.</span>
-      </div>
-
-      <div class="charges-or-divider">or</div>
-
-      <!-- ─ Option 2: do it yourself (pay a flat fee) ─ -->
+      <!-- ─ Option 1: do it yourself (pay a flat fee) ─ -->
       <div class="charges-audience-head">
         <div class="charges-audience-icon"><svg viewBox="0 0 24 24"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg></div>
         <div class="charges-audience-name">Direct Plan</div>
@@ -7159,15 +7137,38 @@ main.tab-explore .empty-state{display:none !important}
         <div class="charges-mini-card">
           <div class="charges-mini-label">Promote listing</div>
           <div class="charges-mini-amount">₹1,000</div>
-          <div class="charges-mini-example">e.g. featured for 7 days</div>
+          <div class="charges-mini-example">e.g. featured for 1 month</div>
         </div>
         <div class="charges-mini-card">
           <div class="charges-mini-label">Direct tenant contact</div>
           <div class="charges-mini-amount">₹2,000</div>
-          <div class="charges-mini-example">e.g. instant WhatsApp intro</div>
+          <div class="charges-mini-example">e.g. instant call/WhatsApp intro</div>
         </div>
       </div>
       <div class="svc-price-note">Promote boosts visibility. Direct contact connects you with a verified tenant on WhatsApp.</div>
+
+      <div class="charges-or-divider">or</div>
+
+      <!-- ─ Option 2: full service (we find & manage your tenant) ─ -->
+      <div class="charges-audience-head">
+        <div class="charges-audience-icon"><svg viewBox="0 0 24 24"><path d="M6 3h12"/><path d="M6 8h12"/><path d="M6 13l8.5 8"/><path d="M6 13h3a5 5 0 0 0 0-10"/></svg></div>
+        <div class="charges-audience-name">Managed Plan</div>
+      </div>
+      <div class="charges-mini-grid" style="grid-template-columns:1fr">
+        <div class="charges-mini-card">
+          <div class="charges-mini-icon">
+            <svg viewBox="0 0 24 24"><path d="M6 3h12"/><path d="M6 8h12"/><path d="M6 13l8.5 8"/><path d="M6 13h3a5 5 0 0 0 0-10"/></svg>
+          </div>
+          <div class="charges-mini-label">Every successful placement</div>
+          <div class="charges-mini-amount">Based on rent</div>
+          <div class="charges-mini-example">e.g. ₹10k rent → ₹1k</div>
+        </div>
+      </div>
+
+      <div class="charges-warning">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <span><strong>Pay only after your flat is filled</strong> — never before; includes priority listing, verified tenant leads, visit coordination &amp; agreement help.</span>
+      </div>
 
       <button class="form-submit pay-online-btn" onclick="closeChargesModal(); openPaymentModal('brokerage');">Pay online</button>
       <button class="charges-contact-link" onclick="closeChargesModal(); openHelpModal();">Got a question? Contact us</button>
@@ -7188,7 +7189,33 @@ main.tab-explore .empty-state{display:none !important}
 
       <div class="charges-audience-panel active" id="chargesTabPanel-tenant">
 
-        <!-- ─ Option 1: full service (agent shortlists & shows homes) ─ -->
+        <!-- ─ Option 1: contact-only (pay a flat fee, get owner details) ─ -->
+        <div class="charges-audience-head">
+          <div class="charges-audience-icon"><svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg></div>
+          <div class="charges-audience-name">Direct Plan</div>
+        </div>
+        <div class="charges-mini-grid" style="grid-template-columns:repeat(3,1fr)">
+          <div class="charges-mini-card">
+            <div class="charges-mini-label">1 BHK</div>
+            <div class="charges-mini-amount">₹1,000</div>
+            <div class="charges-mini-example">e.g. ~₹15k rent flats</div>
+          </div>
+          <div class="charges-mini-card">
+            <div class="charges-mini-label">2 BHK</div>
+            <div class="charges-mini-amount">₹2,000</div>
+            <div class="charges-mini-example">e.g. ~₹25k rent flats</div>
+          </div>
+          <div class="charges-mini-card">
+            <div class="charges-mini-label">3 BHK</div>
+            <div class="charges-mini-amount">₹3,000</div>
+            <div class="charges-mini-example">e.g. ~₹35k rent flats</div>
+          </div>
+        </div>
+        <div class="svc-price-note">Visit our office to meet us first. We’ll help you shortlist properties — sharing details for 4–6 as per your requirement — then you pay us to get the owner’s contact details, and visit the property yourself to finalize.</div>
+
+        <div class="charges-or-divider">or</div>
+
+        <!-- ─ Option 2: full service (agent shortlists & shows homes) ─ -->
         <div class="charges-audience-head">
           <div class="charges-audience-icon"><svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7"/><path d="M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9"/></svg></div>
           <div class="charges-audience-name">Managed Plan</div>
@@ -7224,59 +7251,11 @@ main.tab-explore .empty-state{display:none !important}
           <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
           <span><strong>₹2,000 to start</strong> — includes a matched shortlist, agent-guided visits &amp; owner negotiation help; pay the rest only after your deal closes.</span>
         </div>
-
-        <div class="charges-or-divider">or</div>
-
-        <!-- ─ Option 2: contact-only (pay a flat fee, get owner details) ─ -->
-        <div class="charges-audience-head">
-          <div class="charges-audience-icon"><svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg></div>
-          <div class="charges-audience-name">Direct Plan</div>
-        </div>
-        <div class="charges-mini-grid" style="grid-template-columns:repeat(3,1fr)">
-          <div class="charges-mini-card">
-            <div class="charges-mini-label">1 BHK</div>
-            <div class="charges-mini-amount">₹1,000</div>
-            <div class="charges-mini-example">e.g. ~₹15k rent flats</div>
-          </div>
-          <div class="charges-mini-card">
-            <div class="charges-mini-label">2 BHK</div>
-            <div class="charges-mini-amount">₹2,000</div>
-            <div class="charges-mini-example">e.g. ~₹25k rent flats</div>
-          </div>
-          <div class="charges-mini-card">
-            <div class="charges-mini-label">3 BHK</div>
-            <div class="charges-mini-amount">₹3,000</div>
-            <div class="charges-mini-example">e.g. ~₹35k rent flats</div>
-          </div>
-        </div>
-        <div class="svc-price-note">Visit our office to meet us first. We’ll help you shortlist properties — sharing details for 4–6 as per your requirement — then you pay us to get the owner’s contact details, and visit the property yourself to finalize.</div>
       </div>
 
       <div class="charges-audience-panel" id="chargesTabPanel-owner">
 
-        <!-- ─ Option 1: full service (we find & manage your tenant) ─ -->
-        <div class="charges-audience-head">
-          <div class="charges-audience-icon"><svg viewBox="0 0 24 24"><path d="M6 3h12"/><path d="M6 8h12"/><path d="M6 13l8.5 8"/><path d="M6 13h3a5 5 0 0 0 0-10"/></svg></div>
-          <div class="charges-audience-name">Managed Plan</div>
-        </div>
-        <div class="charges-price-card">
-          <div class="charges-price-icon">
-            <svg viewBox="0 0 24 24"><path d="M6 3h12"/><path d="M6 8h12"/><path d="M6 13l8.5 8"/><path d="M6 13h3a5 5 0 0 0 0-10"/></svg>
-          </div>
-          <div class="charges-price-info">
-            <div class="charges-price-label">Every successful placement</div>
-			<div class="charges-price-amount">Based on your property's rent<br><span class="charges-price-example">e.g. ₹10k rent → ₹1k</span></div>
-          </div>
-        </div>
-
-        <div class="charges-warning">
-          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-          <span><strong>Pay only after your flat is filled</strong> — never before; includes priority listing, verified tenant leads, visit coordination &amp; agreement help.</span>
-        </div>
-
-        <div class="charges-or-divider">or</div>
-
-        <!-- ─ Option 2: do it yourself (pay a flat fee) ─ -->
+        <!-- ─ Option 1: do it yourself (pay a flat fee) ─ -->
         <div class="charges-audience-head">
           <div class="charges-audience-icon"><svg viewBox="0 0 24 24"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg></div>
           <div class="charges-audience-name">Direct Plan</div>
@@ -7285,15 +7264,38 @@ main.tab-explore .empty-state{display:none !important}
           <div class="charges-mini-card">
             <div class="charges-mini-label">Promote listing</div>
             <div class="charges-mini-amount">₹1,000</div>
-            <div class="charges-mini-example">e.g. featured for 7 days</div>
+            <div class="charges-mini-example">e.g. featured for 1 month</div>
           </div>
           <div class="charges-mini-card">
             <div class="charges-mini-label">Direct tenant contact</div>
             <div class="charges-mini-amount">₹2,000</div>
-            <div class="charges-mini-example">e.g. instant WhatsApp intro</div>
+            <div class="charges-mini-example">e.g. instant call/WhatsApp intro</div>
           </div>
         </div>
         <div class="svc-price-note">Promote boosts visibility. Direct contact connects you with a verified tenant on WhatsApp.</div>
+
+        <div class="charges-or-divider">or</div>
+
+        <!-- ─ Option 2: full service (we find & manage your tenant) ─ -->
+        <div class="charges-audience-head">
+          <div class="charges-audience-icon"><svg viewBox="0 0 24 24"><path d="M6 3h12"/><path d="M6 8h12"/><path d="M6 13l8.5 8"/><path d="M6 13h3a5 5 0 0 0 0-10"/></svg></div>
+          <div class="charges-audience-name">Managed Plan</div>
+        </div>
+        <div class="charges-mini-grid" style="grid-template-columns:1fr">
+          <div class="charges-mini-card">
+            <div class="charges-mini-icon">
+              <svg viewBox="0 0 24 24"><path d="M6 3h12"/><path d="M6 8h12"/><path d="M6 13l8.5 8"/><path d="M6 13h3a5 5 0 0 0 0-10"/></svg>
+            </div>
+            <div class="charges-mini-label">Every successful placement</div>
+            <div class="charges-mini-amount">Based on rent</div>
+            <div class="charges-mini-example">e.g. ₹10k rent → ₹1k</div>
+          </div>
+        </div>
+
+        <div class="charges-warning">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <span><strong>Pay only after your flat is filled</strong> — never before; includes priority listing, verified tenant leads, visit coordination &amp; agreement help.</span>
+        </div>
       </div>
 
     </div>
