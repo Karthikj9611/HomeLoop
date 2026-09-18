@@ -20,10 +20,12 @@
 <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
 <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.print.min.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 
 <style>
 :root{
@@ -2612,6 +2614,16 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
         </button>
       </div>
       <div class="bulk-toolbar-right">
+        <input type="text" id="officeLocationInput" class="col-filter-input" style="width:200px" placeholder="Office location or lat,lng" title="Type a place, area or company name (e.g. &quot;HSR Layout&quot; or your office name) — or paste exact coordinates as lat,lng. Once set, every Directions distance, the km filter, and the property sort use this as the origin instead of your device location." onkeydown="if(event.key==='Enter'){event.preventDefault();setOfficeLocation();}">
+        <button class="bulk-btn" id="setOfficeLocationBtn" onclick="setOfficeLocation()" title="Look up this location and sort properties nearest-first">
+          <i class="fas fa-building"></i> <span class="bulk-btn-label" data-mobile="Set">Set Office</span>
+        </button>
+        <button class="bulk-btn" id="pickOfficeMapBtn" onclick="openOfficeMapModal()" title="Pick your office location by clicking/dragging on a map instead of typing">
+          <i class="fas fa-map-location-dot"></i> <span class="bulk-btn-label" data-mobile="Map">Pick on Map</span>
+        </button>
+        <button class="bulk-btn bulk-btn-outline-danger" id="clearOfficeLocationBtn" style="display:none" onclick="clearOfficeLocation()" title="Stop using the office location; go back to your device location for distances">
+          <i class="fas fa-xmark"></i> <span class="bulk-btn-label" data-mobile="Clear">Clear Office</span>
+        </button>
         <button class="bulk-btn" id="recalcDistanceBtn" onclick="recalculateUserLocation()" title="Re-fetch your current location and recalculate the distance shown on every Directions button">
           <i class="fas fa-location-crosshairs"></i> <span class="bulk-btn-label" data-mobile="Recalc">Recalculate Distance</span>
         </button>
@@ -2687,7 +2699,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
               <th>User ID</th>
               <th>Listed On</th>
               <th>Remarks</th>
-              <th>Action</th>
+              <th title="Click to sort nearest→farthest (distance from your office location, or your device location if none is set)">Action</th>
             </tr>
             <tr class="col-filter-row">
               <th class="col-sticky-1"></th>
@@ -7194,8 +7206,16 @@ $(document).ready(function(){
           if(t==='display') return remarkCellHtml(row._id, d, 'property');
           return d||'';
       }},
-      /* 49 – Action */
-      { data:null, orderable:false, render:(d,t,row)=>{
+      /* 49 – Action (orderable purely so setOfficeLocation() above can sort
+         nearest-first via propTable.order([[49,'asc']]) — the 'sort'/'type'
+         branch returns the plain distance number computeDistanceKm() already
+         powers the Directions button and ≤km filter with; display is
+         untouched. Rows with no computable distance sort to the end.) */
+      { data:null, orderable:true, render:(d,t,row)=>{
+          if(t === 'sort' || t === 'type'){
+            const km = computeDistanceKm(row);
+            return km === null ? Number.MAX_SAFE_INTEGER : km;
+          }
           _adminPropCache[row._id] = row;
           const bd = row.bookingDetails || {};
           const bdHasDetails = !!(bd.bookedOn || bd.description || bd.ownerId || bd.tenantId);
@@ -8054,6 +8074,198 @@ function _saveCachedGeoPos(pos){
 let _userGeoPos = _loadCachedGeoPos(); // last-known fix, shown immediately; refined below
 let _userGeoRequested = false;
 let _userGeoBusy = false; // true while a fetch (auto or manual) is in flight
+
+// A manually-entered "office" origin overrides the device's own geolocation
+// everywhere a distance is computed (Directions button label, the ≤km
+// column filter, and nearest-first sorting) — see setOfficeLocation() below.
+// Cached the same way as the device fix so it survives a page refresh.
+const OFFICE_GEO_CACHE_KEY = 'kr_admin_officeGeoPos';
+function _loadCachedOfficePos(){
+  try {
+    const raw = localStorage.getItem(OFFICE_GEO_CACHE_KEY);
+    if (!raw) return null;
+    const cached = JSON.parse(raw);
+    if (cached && typeof cached.lat === 'number' && typeof cached.lng === 'number') return cached;
+  } catch(e) { /* ignore corrupt/blocked storage */ }
+  return null;
+}
+function _saveCachedOfficePos(pos){
+  try { localStorage.setItem(OFFICE_GEO_CACHE_KEY, JSON.stringify(pos)); } catch(e) { /* ignore quota/blocked storage */ }
+}
+let _officeGeoPos = _loadCachedOfficePos(); // may include a human-readable `label` alongside lat/lng
+// The origin every distance calculation should measure from: the office
+// location when one's been set, otherwise the device's own geolocation.
+function effectiveGeoOrigin(){
+  return _officeGeoPos || _userGeoPos;
+}
+// Seed the office-location input and Clear button from whatever was cached,
+// once the DOM is ready.
+document.addEventListener('DOMContentLoaded', function(){
+  const input = document.getElementById('officeLocationInput');
+  const clearBtn = document.getElementById('clearOfficeLocationBtn');
+  if (_officeGeoPos && input) input.value = _officeGeoPos.label || `${_officeGeoPos.lat}, ${_officeGeoPos.lng}`;
+  if (_officeGeoPos && clearBtn) clearBtn.style.display = '';
+});
+// Free-text geocoding for the office-location box (place name, landmark, or
+// company/building name) via OpenStreetMap's Nominatim — no API key needed.
+// Biased toward Bengaluru (viewbox, not bounded) since every listing here is
+// Bengaluru-based, so a bare locality name like "HSR Layout" resolves to the
+// right one instead of a same-named place elsewhere. Rate-limited by
+// Nominatim's usage policy — fine for the occasional manual "Set Office"
+// click this button is used for, not for bulk/automated lookups.
+async function geocodePlace(query){
+  const BLR_VIEWBOX = '77.35,13.15,77.75,12.75'; // left,top,right,bottom
+  const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&viewbox=${BLR_VIEWBOX}&q=${encodeURIComponent(query)}`;
+  const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+  if (!res.ok) throw new Error('Geocoding request failed');
+  const results = await res.json();
+  if (!results.length) return null;
+  return { lat: parseFloat(results[0].lat), lng: parseFloat(results[0].lon), label: results[0].display_name };
+}
+// Accepts either raw "lat,lng" (fast path, no network call) or a free-text
+// place/company name (geocoded via geocodePlace() above), saves it as the
+// distance origin, and re-sorts the Properties grid nearest-first using the
+// same distance value the Action column's Directions button already computes.
+window.setOfficeLocation = async function(){
+  const input = document.getElementById('officeLocationInput');
+  const btn = document.getElementById('setOfficeLocationBtn');
+  const raw = (input && input.value || '').trim();
+  if (!raw) return;
+
+  const parts = raw.split(',').map(s => parseFloat(s.trim()));
+  let pos;
+  if (parts.length === 2 && !parts.some(isNaN) && Math.abs(parts[0]) <= 90 && Math.abs(parts[1]) <= 180){
+    pos = { lat: parts[0], lng: parts[1] }; // pasted coordinates — no geocoding needed
+  } else {
+    if (btn) { btn.disabled = true; btn.classList.add('bulk-btn-loading'); }
+    try {
+      pos = await geocodePlace(raw);
+    } catch(e){
+      pos = null;
+    } finally {
+      if (btn) { btn.disabled = false; btn.classList.remove('bulk-btn-loading'); }
+    }
+    if (!pos){
+      alert(`Couldn't find "${raw}". Try a more specific place/area name, or paste exact coordinates as "lat,lng".`);
+      return;
+    }
+  }
+
+  _officeGeoPos = pos;
+  _saveCachedOfficePos(_officeGeoPos);
+  if (pos.label && input) input.value = pos.label; // show the resolved place, not raw input
+  const clearBtn = document.getElementById('clearOfficeLocationBtn');
+  if (clearBtn) clearBtn.style.display = '';
+  if (propTable){
+    propTable.order([[49, 'asc']]); // Action column's sort value is distance-from-origin
+    propTable.draw();
+  }
+};
+
+/* ── Pick-office-location-on-a-map modal ──
+   Leaflet + OpenStreetMap tiles, no API key needed (unlike the Google Maps
+   JS API, which requires a billed key just to render an interactive map).
+   Reuses geocodePlace() above for the search box; reverse-geocodes the
+   dropped pin via Nominatim's /reverse endpoint purely for a human-readable
+   label — the actual distance math only ever uses the raw lat/lng. */
+let _officeMap = null;
+let _officeMapMarker = null;
+const BLR_CENTER = { lat: 12.9716, lng: 77.5946 };
+
+window.openOfficeMapModal = function(){
+  document.getElementById('officeMapModal').classList.add('open');
+  // Leaflet sizes itself off the container's on-screen dimensions, so it
+  // must be initialized (or told to re-measure) only after the modal is
+  // actually visible — hence the short defer.
+  setTimeout(() => {
+    const start = _officeGeoPos || BLR_CENTER;
+    if (!_officeMap){
+      _officeMap = L.map('officeMapDiv').setView([start.lat, start.lng], _officeGeoPos ? 15 : 12);
+      // CARTO's free basemap tiles — not OSM's own tile.openstreetmap.org
+      // server, which explicitly reserves itself for casual/testing use
+      // only and blocks apps embedding it (osm.wiki/Tile_usage_policy).
+      // CARTO's are meant for exactly this kind of embedding, no API key.
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+        maxZoom: 20,
+        subdomains: 'abcd',
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+      }).addTo(_officeMap);
+      _officeMapMarker = L.marker([start.lat, start.lng], { draggable: true }).addTo(_officeMap);
+      _officeMapMarker.on('dragend', updateOfficeMapLabel);
+      _officeMap.on('click', (e) => {
+        _officeMapMarker.setLatLng(e.latlng);
+        updateOfficeMapLabel();
+      });
+      updateOfficeMapLabel();
+    } else {
+      _officeMap.invalidateSize();
+      _officeMap.setView([start.lat, start.lng], _officeGeoPos ? 15 : 12);
+      _officeMapMarker.setLatLng([start.lat, start.lng]);
+      updateOfficeMapLabel();
+    }
+  }, 50);
+};
+window.closeOfficeMapModal = function(){
+  document.getElementById('officeMapModal').classList.remove('open');
+};
+// Reverse-geocodes the marker's current position into a human-readable
+// address for the label under the map. Best-effort only — if it fails,
+// falls back to plain coordinates; the Confirm button works either way.
+async function updateOfficeMapLabel(){
+  const pos = _officeMapMarker.getLatLng();
+  const labelEl = document.getElementById('officeMapLabel');
+  const coordText = `${pos.lat.toFixed(5)}, ${pos.lng.toFixed(5)}`;
+  if (labelEl) labelEl.textContent = `${coordText} — looking up address…`;
+  _officeMapMarker._resolvedLabel = null;
+  try {
+    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${pos.lat}&lon=${pos.lng}`, { headers: { 'Accept': 'application/json' } });
+    const data = await res.json();
+    _officeMapMarker._resolvedLabel = data.display_name || null;
+    if (labelEl) labelEl.textContent = data.display_name || coordText;
+  } catch(e){
+    if (labelEl) labelEl.textContent = coordText;
+  }
+}
+window.searchOfficeMap = async function(){
+  const input = document.getElementById('officeMapSearchInput');
+  const q = (input && input.value || '').trim();
+  if (!q) return;
+  const btn = document.getElementById('officeMapSearchBtn');
+  if (btn) { btn.disabled = true; btn.classList.add('bulk-btn-loading'); }
+  try {
+    const pos = await geocodePlace(q);
+    if (!pos){ alert(`Couldn't find "${q}". Try a more specific name, or just click/drag the pin on the map.`); return; }
+    _officeMap.setView([pos.lat, pos.lng], 16);
+    _officeMapMarker.setLatLng([pos.lat, pos.lng]);
+    updateOfficeMapLabel();
+  } finally {
+    if (btn) { btn.disabled = false; btn.classList.remove('bulk-btn-loading'); }
+  }
+};
+window.confirmOfficeMapLocation = function(){
+  const pos = _officeMapMarker.getLatLng();
+  const coordText = `${pos.lat.toFixed(5)}, ${pos.lng.toFixed(5)}`;
+  _officeGeoPos = { lat: pos.lat, lng: pos.lng, label: _officeMapMarker._resolvedLabel || coordText };
+  _saveCachedOfficePos(_officeGeoPos);
+  const input = document.getElementById('officeLocationInput');
+  if (input) input.value = _officeGeoPos.label;
+  const clearBtn = document.getElementById('clearOfficeLocationBtn');
+  if (clearBtn) clearBtn.style.display = '';
+  if (propTable){
+    propTable.order([[49, 'asc']]);
+    propTable.draw();
+  }
+  closeOfficeMapModal();
+};
+window.clearOfficeLocation = function(){
+  _officeGeoPos = null;
+  try { localStorage.removeItem(OFFICE_GEO_CACHE_KEY); } catch(e) { /* ignore blocked storage */ }
+  const input = document.getElementById('officeLocationInput');
+  if (input) input.value = '';
+  const clearBtn = document.getElementById('clearOfficeLocationBtn');
+  if (clearBtn) clearBtn.style.display = 'none';
+  if (propTable) propTable.draw(false); // distances fall back to device location; keep current sort/filter
+};
 function requestUserLocation(){
   if (_userGeoRequested || !navigator.geolocation) return;
   _userGeoRequested = true;
@@ -8127,10 +8339,11 @@ function haversineKm(lat1, lon1, lat2, lon2){
 // listings can't be distanced without a geocoding lookup, so they're left
 // without a label).
 function computeDistanceKm(row){
-  if (!_userGeoPos) return null;
+  const origin = effectiveGeoOrigin();
+  if (!origin) return null;
   const lat = parseFloat(row.latitude), lng = parseFloat(row.longitude);
   if (isNaN(lat) || isNaN(lng) || (lat === 0 && lng === 0)) return null;
-  return haversineKm(_userGeoPos.lat, _userGeoPos.lng, lat, lng);
+  return haversineKm(origin.lat, origin.lng, lat, lng);
 }
 function directionsDistanceLabel(row){
   const km = computeDistanceKm(row);
@@ -11291,6 +11504,42 @@ markRequiredLabels();
       </div>
 
       <div id="amenitiesModalList" style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center"></div>
+
+    </div>
+
+  </div>
+
+</div>
+
+<div class="prop-modal-wrap" id="officeMapModal" onclick="if(event.target===this)closeOfficeMapModal()">
+
+  <div class="prop-modal" style="max-width:640px">
+
+    <div class="prop-modal-close-row">
+      <button class="prop-modal-close-btn" onclick="closeOfficeMapModal()">✕</button>
+    </div>
+
+    <div class="prop-modal-body">
+
+      <div style="text-align:center;font-size:1.2rem;font-weight:700;margin-bottom:16px;color:var(--ink)">
+        Pick Office Location
+      </div>
+
+      <div style="display:flex;gap:8px;margin-bottom:10px">
+        <input type="text" id="officeMapSearchInput" class="col-filter-input" style="flex:1" placeholder="Jump to a place, area or company name…" onkeydown="if(event.key==='Enter'){event.preventDefault();searchOfficeMap();}">
+        <button class="bulk-btn" id="officeMapSearchBtn" onclick="searchOfficeMap()"><i class="fas fa-magnifying-glass"></i> <span class="bulk-btn-label">Search</span></button>
+      </div>
+
+      <div id="officeMapDiv" style="height:380px;border-radius:12px;overflow:hidden;border:1px solid var(--border,#ddd)"></div>
+
+      <div id="officeMapLabel" style="margin:12px 0;font-size:0.85rem;color:var(--muted,#666);text-align:center;min-height:1.2em">
+        Click or drag the pin to your exact office location.
+      </div>
+
+      <div style="display:flex;gap:8px;justify-content:center">
+        <button class="bulk-btn" onclick="closeOfficeMapModal()">Cancel</button>
+        <button class="bulk-btn" style="background:var(--brand);color:#fff;border-color:var(--brand)" onclick="confirmOfficeMapLocation()"><i class="fas fa-check"></i> Use This Location</button>
+      </div>
 
     </div>
 
