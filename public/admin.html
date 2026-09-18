@@ -2749,7 +2749,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
                 <input type="date" data-filter-key="listedOnEnd" title="To" onchange="onPropListedOnRangeFilter('end', this.value, this)">
               </div></th>
               <th><input type="text" class="col-filter-input" data-filter-key="remarks" placeholder="Search…" oninput="onPropColumnFilter('remarks', this.value, this)"></th>
-              <th></th>
+              <th><input type="number" min="0" step="0.1" class="col-filter-input" data-filter-key="maxDistanceKm" placeholder="≤ km" title="Show only listings within this many km of your current location (needs location access, used by the Directions button)" oninput="onPropColumnFilter('maxDistanceKm', this.value, this)"></th>
             </tr>
           </thead>
           <tbody>
@@ -8126,11 +8126,15 @@ function haversineKm(lat1, lon1, lat2, lon2){
 // isn't known yet or the property has no usable coordinates (address-only
 // listings can't be distanced without a geocoding lookup, so they're left
 // without a label).
-function directionsDistanceLabel(row){
-  if (!_userGeoPos) return '';
+function computeDistanceKm(row){
+  if (!_userGeoPos) return null;
   const lat = parseFloat(row.latitude), lng = parseFloat(row.longitude);
-  if (isNaN(lat) || isNaN(lng) || (lat === 0 && lng === 0)) return '';
-  const km = haversineKm(_userGeoPos.lat, _userGeoPos.lng, lat, lng);
+  if (isNaN(lat) || isNaN(lng) || (lat === 0 && lng === 0)) return null;
+  return haversineKm(_userGeoPos.lat, _userGeoPos.lng, lat, lng);
+}
+function directionsDistanceLabel(row){
+  const km = computeDistanceKm(row);
+  if (km === null) return '';
   const text = km < 1 ? `${Math.round(km * 1000)} m` : `${km.toFixed(km < 10 ? 1 : 0)} km`;
   return text;
 }
@@ -8598,7 +8602,8 @@ const _propColumnFilters = {
   pgGender:'', pgRoomType:'', pgMeals:'', pgOccupancy:'', pgNotice:'',
   ssRoomType:'', ssAvailable24hrs:'', ssCancellation:'', ssCouplesAllowed:'',
   visitCount:'', views:'', propertyId:'', userId:'', promotedPriority:'',
-  listedOnStart:'', listedOnEnd:'', promoted:'', verified:'', booked:'', remarks:'', amenities:''
+  listedOnStart:'', listedOnEnd:'', promoted:'', verified:'', booked:'', remarks:'', amenities:'',
+  maxDistanceKm:''
 };
 
 // ── QUICK DATE-RANGE PRESETS ──
@@ -9251,6 +9256,13 @@ $.fn.dataTable.ext.search.push(function(settings, data, dataIndex){
   if(cf.booked === 'no'  && row.booked)  return false;
   if(cf.remarks && !contains(flattenRemarks(row.remarks||[]), cf.remarks)) return false;
   if(cf.amenities && !contains((Array.isArray(row.amenities)?row.amenities:[]).join(', '), cf.amenities)) return false;
+  if(cf.maxDistanceKm){
+    const maxKm = parseFloat(cf.maxDistanceKm);
+    if(!isNaN(maxKm)){
+      const km = computeDistanceKm(row);
+      if(km === null || km > maxKm) return false;
+    }
+  }
 
   return true;
 });
