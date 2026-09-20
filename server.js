@@ -965,6 +965,8 @@ function buildListingSchema() {
     promoted:         { type: Boolean, default: false },
     promotedPriority: { type: Number,  default: 0 }, // 0 = not manually ranked yet; sorts to the back of the promoted queue (see rankOf below) until an admin assigns 1, 2, 3...
     booked:           { type: Boolean, default: false }, // once true, listing is hidden from the public site regardless of verified status
+    ownerDirectCall:  { type: Boolean, default: false }, // admin "Public call" toggle on the alt number: when true, GET /api/properties exposes owner.altPhone (as ownerAltPhone)
+    ownerPhoneCall:   { type: Boolean, default: false }, // admin "Public call" toggle on the main owner number: when true, GET /api/properties exposes owner.phone (as ownerPhone)
     // Captured from the admin Booked-tab "Booking Details" modal — who the
     // deal was between and when. ownerId / tenantId reference registered
     // Users (picked from the two dropdowns in that modal); the *Name/Phone/
@@ -1595,7 +1597,7 @@ app.get('/api/properties', async (req, res) => {
       // owner.propertyName excluded too (client-side search no longer matches on
       // it — search now matches area/BHK only). owner.agentPhone is kept for
       // Call/WhatsApp.
-      '-owner.name -owner.propertyName -owner.email -owner.phone -owner.altPhone -owner.contactTime -owner.address -owner.agentArea ' +
+      '-owner.name -owner.propertyName -owner.email -owner.contactTime -owner.address -owner.agentArea ' +
       // Location detail that's likewise only used to fill the always-hidden
       // full-address/lat-lng/Google-Maps-link form groups.
       // NOTE: location.address is intentionally *not* excluded at the query
@@ -1661,6 +1663,20 @@ app.get('/api/properties', async (req, res) => {
     // Attach id + computed displayPrice + posted label; the nested shape itself
     // (basic/location/owner/price/property/amenities/terms/rules/media/pg)
     // is returned as-is and read directly by the frontend.
+    // owner.phone / owner.altPhone are fetched (no longer excluded above) but never
+    // sent as-is: each only leaves the server as top-level ownerPhone / ownerAltPhone,
+    // and only when an admin switched on that number's "Public call" toggle
+    // (ownerPhoneCall / ownerDirectCall respectively).
+    docs.forEach(doc => {
+      const alt  = String((doc.owner && doc.owner.altPhone) || '').trim();
+      const main = String((doc.owner && doc.owner.phone) || '').trim();
+      doc.ownerDirectCall = !!doc.ownerDirectCall && !!alt;
+      doc.ownerPhoneCall  = !!doc.ownerPhoneCall  && !!main;
+      if (doc.ownerDirectCall) doc.ownerAltPhone = alt;
+      if (doc.ownerPhoneCall)  doc.ownerPhone = main;
+      if (doc.owner) { delete doc.owner.altPhone; delete doc.owner.phone; }
+    });
+
     const mapped = docs.map(doc => ({
       ...doc,
       id:           String(doc._id),

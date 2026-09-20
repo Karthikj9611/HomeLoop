@@ -316,6 +316,10 @@ table.dataTable thead tr.col-filter-row th{
 .mini-toggle input:checked + .slider::before{transform:translateX(16px)}
 .mini-toggle.verified-toggle input:checked + .slider{background:var(--green, #1a7a5e)}
 .mini-toggle.booked-toggle input:checked + .slider{background:var(--red, #e04444)}
+.mini-toggle.altcall-toggle input:checked + .slider{background:var(--green, #1a7a5e)}
+.altcall-cell{display:flex;flex-direction:column;align-items:flex-start;gap:5px}
+.altcall-wrap{justify-content:flex-start;gap:6px;cursor:pointer}
+.altcall-label{font-size:11px;color:var(--ink3, #777);white-space:nowrap}
 .mini-toggle input:disabled + .slider{opacity:0.55;cursor:wait}
 .mini-toggle input:focus-visible + .slider{outline:2px solid var(--ink3);outline-offset:2px}
 
@@ -5641,7 +5645,7 @@ window.saveBookingDetails = async function(){
    Checkbox flips instantly on click (native behavior), but the DB update
    only happens if the admin confirms in the modal. Cancel reverts the
    checkbox with no API call. */
-const PROP_FLAG_LABELS = { promoted: 'promoted', verified: 'verified', booked: 'booked' };
+const PROP_FLAG_LABELS = { promoted: 'promoted', verified: 'verified', booked: 'booked', ownerDirectCall: 'public call (alt number)', ownerPhoneCall: 'public call (owner number)' };
 window.togglePropFlag = async function(id, field, checkboxEl){
   const desired = checkboxEl.checked;
   const label = PROP_FLAG_LABELS[field] || field;
@@ -7023,15 +7027,25 @@ $(document).ready(function(){
           const name  = escapeHtml(row.ownerName||'—');
           return `<div style="display:flex;gap:8px;align-items:center"><div class="prop-title">${name}</div></div>`;
       }},
-      /* 6 – Owner Number */
+      /* 6 – Owner Number (+ toggle: lets index visitors call this number) */
       { data:null, render:(d,t,row)=>{
-          if(t==='display') return renderOwnerPhone(row);
-          return row.ownerNumber||'—';
+          if(t!=='display') return row.ownerNumber||'—';
+          if(!row.ownerNumber) return renderOwnerPhone(row);
+          return `<div class="altcall-cell">${renderOwnerPhone(row)}
+            <label class="mini-toggle-wrap altcall-wrap" title="When ON, visitors on the site get a Call owner button that dials this number"><span class="mini-toggle altcall-toggle">
+              <input type="checkbox" ${row.ownerPhoneCall?'checked':''} onchange="togglePropFlag('${row._id}','ownerPhoneCall',this)">
+              <span class="slider"></span>
+            </span><span class="altcall-label">Public call</span></label></div>`;
       }},
-      /* 7 – Owner Alt Phone */
-      { data:'ownerAltPhone', render:(d,t)=>{
+      /* 7 – Owner Alt Phone (+ toggle: lets index visitors call this number) */
+      { data:'ownerAltPhone', render:(d,t,row)=>{
           if(t!=='display') return d||'';
-          return d ? `<a href="tel:${escapeHtml(d)}" class="phone-link">${escapeHtml(d)}</a>` : '—';
+          if(!d) return '—'; // no alt number on file → nothing to expose, so no toggle
+          return `<div class="altcall-cell"><a href="tel:${escapeHtml(d)}" class="phone-link">${escapeHtml(d)}</a>
+            <label class="mini-toggle-wrap altcall-wrap" title="When ON, visitors on the site get a Call owner button that dials this number"><span class="mini-toggle altcall-toggle">
+              <input type="checkbox" ${row.ownerDirectCall?'checked':''} onchange="togglePropFlag('${row._id}','ownerDirectCall',this)">
+              <span class="slider"></span>
+            </span><span class="altcall-label">Public call</span></label></div>`;
       }},
       /* 8 – Owner Email */
       { data:'ownerEmail', render:(d,t)=>{

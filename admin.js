@@ -658,6 +658,8 @@ module.exports = function registerAdminRoutes(app, deps) {
             promoted:         !!doc.promoted,
             promotedPriority: doc.promotedPriority != null ? doc.promotedPriority : null,
             booked:           !!doc.booked,
+            ownerDirectCall:  !!doc.ownerDirectCall,
+            ownerPhoneCall:   !!doc.ownerPhoneCall,
             views:            doc.views != null ? doc.views : 0,
             visitCount:       doc.visitCount != null ? doc.visitCount : 0,
           },
@@ -676,6 +678,8 @@ module.exports = function registerAdminRoutes(app, deps) {
           verified:     !!doc.verified,
           promoted:     !!doc.promoted,
           booked:       !!doc.booked,
+          ownerDirectCall: !!doc.ownerDirectCall,
+          ownerPhoneCall:  !!doc.ownerPhoneCall,
           bookingDetails: doc.bookingDetails || null,
           bhk:          property.bhk || '',
           area:         property.area || '',
@@ -843,6 +847,33 @@ module.exports = function registerAdminRoutes(app, deps) {
       console.error('PATCH /api/properties/:id/promoted-priority error:', err);
       res.status(500).json({ message: 'Error updating promoted position' });
     }
+  });
+
+  // ── PATCH /api/properties/:id/ownerDirectCall | ownerPhoneCall (admin: "Public call" toggles) ──
+  // ownerDirectCall → let index visitors call owner.altPhone; ownerPhoneCall → owner.phone.
+  // Each is only allowed while that number is actually on file.
+  [['ownerDirectCall', 'altPhone', 'alternate'], ['ownerPhoneCall', 'phone', 'owner']].forEach(([flag, numField, label]) => {
+    app.patch('/api/properties/:id/' + flag, requireAdmin, async (req, res) => {
+      try {
+        const value = (req.body || {})[flag];
+        if (typeof value !== 'boolean') {
+          return res.status(400).json({ message: flag + ' must be a boolean' });
+        }
+        if (value) {
+          const found = await findListingById(req.params.id, { lean: true });
+          if (!found.doc) return res.status(404).json({ message: 'Property not found' });
+          if (!String((found.doc.owner || {})[numField] || '').trim()) {
+            return res.status(400).json({ message: 'Add the ' + label + ' number first' });
+          }
+        }
+        const prop = await updateListingById(req.params.id, { [flag]: value }, { new: true });
+        if (!prop) return res.status(404).json({ message: 'Property not found' });
+        res.json({ message: 'Public call updated', [flag]: !!prop[flag] });
+      } catch (err) {
+        console.error('PATCH /api/properties/:id/' + flag + ' error:', err);
+        res.status(500).json({ message: 'Error updating public call' });
+      }
+    });
   });
 
   // ── PATCH /api/properties/:id/booked (admin: toggle booked flag) ──
