@@ -9049,7 +9049,7 @@ function cardHTML(p, compact, extraLeftBadge) {
           <div class="prop-heart${liked?' liked':''}" onclick="event.stopPropagation();toggleShortlist('${p.id}',this)" aria-label="${liked?'Remove from':'Add to'} shortlist">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
           </div>
-          <div class="prop-icon-badge prop-icon-call" onclick="event.stopPropagation();openCall('${p.id}')" aria-label="Call agent" title="Call agent">
+          <div class="prop-icon-badge prop-icon-call" onclick="event.stopPropagation();openCardCall('${p.id}')" aria-label="Call" title="${(p.ownerPhoneCall && p.ownerPhone) || (p.ownerDirectCall && p.ownerAltPhone) ? 'Call owner' : 'Call agent'}">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
           </div>
         </div>
@@ -9184,7 +9184,7 @@ function shortlistCardHTML(p) {
           <div class="prop-heart${liked?' liked':''}" onclick="event.stopPropagation();toggleShortlist('${p.id}',this)" aria-label="${liked?'Remove from':'Add to'} shortlist">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
           </div>
-          <div class="prop-icon-badge prop-icon-call" onclick="event.stopPropagation();openCall('${p.id}')" aria-label="Call agent" title="Call agent">
+          <div class="prop-icon-badge prop-icon-call" onclick="event.stopPropagation();openCardCall('${p.id}')" aria-label="Call" title="${(p.ownerPhoneCall && p.ownerPhone) || (p.ownerDirectCall && p.ownerAltPhone) ? 'Call owner' : 'Call agent'}">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
           </div>
         </div>
@@ -9626,7 +9626,7 @@ function renderCompareTable() {
               <div class="prop-heart${liked?' liked':''}" onclick="event.stopPropagation();toggleShortlist('${p.id}',this)" aria-label="${liked?'Remove from':'Add to'} shortlist">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
               </div>
-          <div class="prop-icon-badge prop-icon-call" onclick="event.stopPropagation();openCall('${p.id}')" aria-label="Call agent" title="Call agent">
+          <div class="prop-icon-badge prop-icon-call" onclick="event.stopPropagation();openCardCall('${p.id}')" aria-label="Call" title="${(p.ownerPhoneCall && p.ownerPhone) || (p.ownerDirectCall && p.ownerAltPhone) ? 'Call owner' : 'Call agent'}">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
           </div>
             </div>
@@ -11244,6 +11244,11 @@ function openDetail(id) {
     actionsRow2.insertBefore(callBtn, whatsappBtn);
     actionsRow2.style.display = '';
   }
+  // When a public owner number is enabled, the agent Call/WhatsApp buttons aren't needed.
+  const _hideAgent = _mainOn || _altOn;
+  callBtn.style.display = _hideAgent ? 'none' : '';
+  whatsappBtn.style.display = (viewerIsOwner || _hideAgent) ? 'none' : '';
+  if (_hideAgent) actionsRow2.style.display = 'none';
   document.getElementById('viewActionsFooter').style.display = 'block';
 
   // Read-only view of an existing property — "Clear form" only makes sense
@@ -11777,9 +11782,18 @@ function openCall(propId) {
   window.location.href = 'tel:' + phone;
 }
 
+/* Property-card call icon: dials the owner's number that admin made public (main first, then alternate);
+   listings with no public number keep the old behaviour and call the agent. */
+function openCardCall(propId) {
+  const p = PROPERTIES.find(x => x.id === propId) || BOOKED_PROPERTIES.find(x => x.id === propId);
+  if (p && p.ownerPhoneCall && p.ownerPhone) return openOwnerCall(propId, 'main');
+  if (p && p.ownerDirectCall && p.ownerAltPhone) return openOwnerCall(propId, 'alt');
+  return openCall(propId);
+}
+
 /* Calls the owner's main ('main') or alternate ('alt') number — only reachable when admin enabled Public call (numbers are absent otherwise). */
 function openOwnerCall(propId, which) {
-  const p = PROPERTIES.find(x => x.id === propId);
+  const p = PROPERTIES.find(x => x.id === propId) || BOOKED_PROPERTIES.find(x => x.id === propId);
   if (!p) return;
   const rawPhone = String((which === 'main' ? (p.ownerPhoneCall && p.ownerPhone) : (p.ownerDirectCall && p.ownerAltPhone)) || '').replace(/\D/g, '');
   if (!rawPhone) {
@@ -11792,7 +11806,7 @@ function openOwnerCall(propId, which) {
 
 /* WhatsApp on the owner's main ('main') or alternate ('alt') number — only when admin enabled Public call for it. */
 function openOwnerWhatsApp(propId, which) {
-  const p = PROPERTIES.find(x => x.id === propId);
+  const p = PROPERTIES.find(x => x.id === propId) || BOOKED_PROPERTIES.find(x => x.id === propId);
   if (!p) return;
   const raw = String((which === 'main' ? (p.ownerPhoneCall && p.ownerPhone) : (p.ownerDirectCall && p.ownerAltPhone)) || '').replace(/\D/g, '');
   if (!raw) {
