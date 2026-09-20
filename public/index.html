@@ -11258,8 +11258,11 @@ function openDetail(id) {
   callBtn.style.display = _hideAgent ? 'none' : '';
   whatsappBtn.style.display = (viewerIsOwner || _hideAgent) ? 'none' : '';
   if (_hideAgent) actionsRow2.style.display = 'none';
-  // Shortlist + Schedule visit row is hidden too when the owner contact rows are shown.
-  actionsRow1.style.display = (_hideAgent && HIDE_SAVE_SCHEDULE_ON_PUBLIC_CALL) ? 'none' : '';
+  // Shortlist + Schedule visit are hidden by default (flag below) — buttons stay in the markup.
+  saveBtn.style.display = HIDE_SAVE_SCHEDULE ? 'none' : '';
+  document.getElementById('viewScheduleBtn').style.display = (HIDE_SAVE_SCHEDULE || viewerIsOwner) ? 'none' : '';
+  // Collapse the first row only when nothing in it is visible (owner accounts keep Call there).
+  actionsRow1.style.display = [...actionsRow1.children].every(c => getComputedStyle(c).display === 'none') ? 'none' : '';
   document.getElementById('viewActionsFooter').style.display = 'block';
 
   // Read-only view of an existing property — "Clear form" only makes sense
@@ -11793,8 +11796,8 @@ function openCall(propId) {
   window.location.href = 'tel:' + phone;
 }
 
-/* Flip to false to show Shortlist + Schedule visit again on properties with Public call (they're only hidden, not removed). */
-const HIDE_SAVE_SCHEDULE_ON_PUBLIC_CALL = true;
+/* Shortlist + Schedule visit in the property view are hidden by default. Set to false to show them again (they're only hidden, not removed). */
+const HIDE_SAVE_SCHEDULE = true;
 
 /* Opens Google Maps directions to the property — only listings with a public owner number carry navigateUrl. */
 function openPropertyNavigate(propId) {
