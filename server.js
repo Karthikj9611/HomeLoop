@@ -1605,7 +1605,9 @@ app.get('/api/properties', async (req, res) => {
       // to derive a pincode for listings that never got location.pincode set
       // directly. It's deleted from each doc right after that, so the full
       // address still never reaches the public response.
-      '-location.lat -location.lng -location.mapLink';
+      // lat/lng/mapLink are fetched too, only to build navigateUrl for listings whose
+      // owner number(s) are public (see below); they're deleted from every doc after that.
+      '';
 
     // If a status was requested, we already know exactly which single
     // collection to query. Otherwise we need to fan out to all four and
@@ -1635,9 +1637,28 @@ app.get('/api/properties', async (req, res) => {
         const matches = String(doc.location.address || '').match(/\b\d{6}\b/g);
         if (matches) doc.location.pincode = matches[matches.length - 1];
       }
+      // Listings with a public owner number (admin "Public call" on) also get a
+      // ready-made Google Maps directions link so visitors can navigate to the
+      // property. Only the link is sent — never the raw address/lat/lng.
+      const _own = doc.owner || {};
+      const _pub = (doc.ownerPhoneCall && String(_own.phone || '').trim()) || (doc.ownerDirectCall && String(_own.altPhone || '').trim());
+      if (_pub) {
+        const lat = parseFloat(doc.location.lat), lng = parseFloat(doc.location.lng);
+        const parts = [doc.location.address, doc.location.area, doc.location.city, doc.location.pincode].filter(Boolean);
+        if (!isNaN(lat) && !isNaN(lng) && (lat !== 0 || lng !== 0)) {
+          doc.navigateUrl = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving`;
+        } else if (parts.length) {
+          doc.navigateUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(parts.join(', '))}&travelmode=driving`;
+        } else if (/^https?:\/\//i.test(String(doc.location.mapLink || ''))) {
+          doc.navigateUrl = String(doc.location.mapLink);
+        }
+      }
       // Full free-text address itself is still never sent to the public
       // frontend — only the derived pincode above survives past this point.
       delete doc.location.address;
+      delete doc.location.lat;
+      delete doc.location.lng;
+      delete doc.location.mapLink;
     });
 
     // Sort/paginate in memory across the merged set (same ordering as before:

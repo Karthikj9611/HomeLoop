@@ -6461,6 +6461,12 @@ main.tab-explore .empty-state{display:none !important}
           <span id="viewOwnerCallWaLabel">WhatsApp</span>
         </button>
       </div>
+      <div class="modal-actions-row" id="viewNavigateRow" style="margin-top:10px;display:none">
+        <button class="modal-btn-primary" id="viewNavigateBtn" style="background:#4285F4;border-color:#4285F4;box-shadow:none">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l19-9-9 19-2-8-8-2z"/></svg>
+          Navigate to Property
+        </button>
+      </div>
     </div>
     </div>
   </div>
@@ -11220,6 +11226,9 @@ function openDetail(id) {
   document.getElementById('viewOwnerCallLabel').textContent  = 'Call Alternate · ' + (p.ownerAltPhone || '');
   document.getElementById('viewOwnerPhoneWaLabel').textContent = 'WhatsApp Owner';
   document.getElementById('viewOwnerCallWaLabel').textContent  = 'WhatsApp Alternate';
+  // Navigate button: only for listings with a public owner number (server sends navigateUrl only then).
+  document.getElementById('viewNavigateRow').style.display = ((_mainOn || _altOn) && p.navigateUrl) ? '' : 'none';
+  document.getElementById('viewNavigateBtn').onclick = () => openPropertyNavigate(p.id);
   // Owner accounts don't need to schedule a visit or WhatsApp-contact through
   // the property view — those actions are for prospective tenants only.
   const viewerIsOwner = (() => { const u = getLoggedInUser(); return !!u && u.accountType === 'owner'; })();
@@ -11249,6 +11258,8 @@ function openDetail(id) {
   callBtn.style.display = _hideAgent ? 'none' : '';
   whatsappBtn.style.display = (viewerIsOwner || _hideAgent) ? 'none' : '';
   if (_hideAgent) actionsRow2.style.display = 'none';
+  // Shortlist + Schedule visit row is hidden too when the owner contact rows are shown.
+  actionsRow1.style.display = (_hideAgent && HIDE_SAVE_SCHEDULE_ON_PUBLIC_CALL) ? 'none' : '';
   document.getElementById('viewActionsFooter').style.display = 'block';
 
   // Read-only view of an existing property — "Clear form" only makes sense
@@ -11780,6 +11791,20 @@ function openCall(propId) {
   }
   const phone = rawPhone.length === 10 ? '+91' + rawPhone : ('+' + rawPhone);
   window.location.href = 'tel:' + phone;
+}
+
+/* Flip to false to show Shortlist + Schedule visit again on properties with Public call (they're only hidden, not removed). */
+const HIDE_SAVE_SCHEDULE_ON_PUBLIC_CALL = true;
+
+/* Opens Google Maps directions to the property — only listings with a public owner number carry navigateUrl. */
+function openPropertyNavigate(propId) {
+  const p = PROPERTIES.find(x => x.id === propId) || BOOKED_PROPERTIES.find(x => x.id === propId);
+  const url = p && p.navigateUrl;
+  if (!url || !/^https?:\/\//i.test(url)) {
+    showToast('Location not available for this listing', 'warning');
+    return;
+  }
+  window.open(url, '_blank', 'noopener');
 }
 
 /* Property-card call icon: dials the owner's number that admin made public (main first, then alternate);
