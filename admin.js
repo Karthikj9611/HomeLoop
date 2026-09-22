@@ -82,14 +82,18 @@ module.exports = function registerAdminRoutes(app, deps) {
 
   const AdminSessionSchema = new mongoose.Schema({
     key:       { type: String, required: true, unique: true, index: true },
+    // Which admin account this session belongs to — needed so requireAdmin
+    // can tell the primary admin (ADMIN_EMAIL) apart from the numbered
+    // sub-admins (ADMIN_EMAIL_2, _3, ...) and enforce per-feature access below.
+    email:     { type: String, default: '' },
     expiresAt: { type: Date, required: true, expires: 0 }, // TTL index: Mongo auto-deletes once expiresAt passes
   });
 
   const AdminSession = mongoose.model('AdminSession', AdminSessionSchema);
 
-  async function issueAdminSession() {
+  async function issueAdminSession(email) {
     const key = crypto.randomBytes(32).toString('hex');
-    await AdminSession.create({ key, expiresAt: new Date(Date.now() + SESSION_TTL_MS) });
+    await AdminSession.create({ key, email: email || '', expiresAt: new Date(Date.now() + SESSION_TTL_MS) });
     return key;
   }
 
@@ -97,6 +101,138 @@ module.exports = function registerAdminRoutes(app, deps) {
     if (!key) return false;
     const session = await AdminSession.findOne({ key, expiresAt: { $gt: new Date() } }).lean();
     return !!session;
+  }
+
+  // Returns the session doc (with email) for a key, or null. Used by
+  // requireAdmin to attach req.adminEmail / req.isSuperAdmin.
+  async function getAdminSession(key) {
+    if (!key) return null;
+    return AdminSession.findOne({ key, expiresAt: { $gt: new Date() } }).lean();
+  }
+
+  // ────────────────────────────────────────────────────────────────────────────
+  // ── SUB-ADMIN FEATURE PERMISSIONS ──
+  // ADMIN_EMAIL (the first/primary admin account) is the "super admin" — it
+  // always has full access and is the only account that can grant or revoke
+  // features for the numbered sub-admins (ADMIN_EMAIL_2, ADMIN_EMAIL_3, ...).
+  // Every feature is allowed by default for a sub-admin; the super admin can
+  // switch individual features off per sub-admin from the "Admin Access" tab.
+  // ────────────────────────────────────────────────────────────────────────────
+  const SUPER_ADMIN_EMAIL = ADMIN_ACCOUNTS[0].email;
+
+  // One entry per feature a sub-admin's access can be toggled for — keep this
+  // list in sync with the requireModule(...) calls used on the routes below.
+  const ADMIN_MODULES = {
+    visits:        'Visits',
+    customers:     'Customers',
+    properties:    'Properties',
+    appointments:  'Appointments',
+    reviews:       'Honest Reviews',
+    partners:      'Partners',
+    referrals:     'Referrals',
+    payments:      'Payments',
+    stats:         'Visitor & Registration Stats',
+    notifications: 'Admin Notifications',
+  };
+
+  const AdminPermissionSchema = new mongoose.Schema({
+    email:   { type: String, required: true, unique: true, lowercase: true, trim: true, index: true },
+    // Explicit false = blocked for this sub-admin; missing/true = allowed
+    // (allowed is the default so a freshly-added sub-admin isn't locked out
+    // of everything until the super admin visits the Admin Access tab).
+    // `modules` controls whether the sub-admin can see/read a feature at all
+    // (its tab, its GET routes). `actions` is a second, finer-grained layer
+    // on top: whether they can also add/edit/delete/verify/etc within a
+    // feature they can already see. A sub-admin can be view-only in a module
+    // (modules[key]=true, actions[key]=false) — they see the tab and its
+    // data, but every button that changes something is hidden/blocked.
+    modules: { type: Map, of: Boolean, default: {} },
+    actions: { type: Map, of: Boolean, default: {} },
+  });
+  const AdminPermission = mongoose.model('AdminPermission', AdminPermissionSchema);
+
+  // Builds the full { moduleKey: boolean } map for an email — every key in
+  // ADMIN_MODULES, defaulting to true unless a sub-admin's doc explicitly
+  // sets it false. The super admin always gets every module true.
+  async function getModulePermissions(email) {
+    const full = {};
+    for (const key of Object.keys(ADMIN_MODULES)) full[key] = true;
+    if (email === SUPER_ADMIN_EMAIL) return full;
+    const perm = await AdminPermission.findOne({ email }).lean();
+    if (perm && perm.modules) {
+      for (const [key, allowed] of Object.entries(perm.modules)) {
+        if (key in full) full[key] = !!allowed;
+      }
+    }
+    return full;
+  }
+
+  // Same shape as getModulePermissions, but for the action layer — whether
+  // this email can perform mutating (add/edit/delete/verify/...) requests
+  // within a module it can already view. Super admin always gets every
+  // action true. A module the sub-admin can't even view is reported as
+  // action-false too, since there's no meaningful "can edit something you
+  // can't see" state.
+  async function getActionPermissions(email) {
+    const full = {};
+    for (const key of Object.keys(ADMIN_MODULES)) full[key] = true;
+    if (email === SUPER_ADMIN_EMAIL) return full;
+    const perm = await AdminPermission.findOne({ email }).lean();
+    if (perm) {
+      for (const key of Object.keys(full)) {
+        const moduleAllowed = !perm.modules || perm.modules[key] !== false;
+        const actionAllowed = !perm.actions || perm.actions[key] !== false;
+        full[key] = moduleAllowed && actionAllowed;
+      }
+    }
+    return full;
+  }
+
+  // Route-level gate for a single feature — apply right after requireAdmin,
+  // e.g. app.get('/api/users', requireAdmin, requireModule('customers'), ...).
+  // The super admin always passes; a sub-admin is blocked only if the super
+  // admin explicitly switched this module off for them.
+  function requireModule(moduleKey) {
+    return async (req, res, next) => {
+      try {
+        if (req.isSuperAdmin) return next();
+        const perm = await AdminPermission.findOne({ email: req.adminEmail }).lean();
+        const allowed = !perm || !perm.modules || perm.modules[moduleKey] !== false;
+        if (!allowed) {
+          return res.status(403).json({ message: 'Your admin account does not have access to this feature. Ask the primary admin to enable it.' });
+        }
+        next();
+      } catch (err) {
+        console.error('requireModule error:', err);
+        res.status(500).json({ message: 'Server error. Please try again.' });
+      }
+    };
+  }
+
+  // Route-level gate for a MUTATING request within a feature (add/edit/
+  // delete/verify/bulk-delete/etc) — apply in place of requireModule (not
+  // in addition to it) on POST/PUT/PATCH/DELETE routes, e.g.
+  //   app.delete('/api/properties/:id', requireAdmin, requireModuleAction('properties'), ...).
+  // Blocks the request unless BOTH the module itself is viewable and the
+  // action layer is allowed, so a sub-admin who can't see a feature at all
+  // is also blocked from its write routes, and one who can see it but was
+  // set view-only is blocked from anything that changes data.
+  function requireModuleAction(moduleKey) {
+    return async (req, res, next) => {
+      try {
+        if (req.isSuperAdmin) return next();
+        const perm = await AdminPermission.findOne({ email: req.adminEmail }).lean();
+        const moduleAllowed = !perm || !perm.modules || perm.modules[moduleKey] !== false;
+        const actionAllowed = !perm || !perm.actions || perm.actions[moduleKey] !== false;
+        if (!moduleAllowed || !actionAllowed) {
+          return res.status(403).json({ message: 'Your admin account has view-only access to this feature. Ask the primary admin to enable actions.' });
+        }
+        next();
+      } catch (err) {
+        console.error('requireModuleAction error:', err);
+        res.status(500).json({ message: 'Server error. Please try again.' });
+      }
+    };
   }
 
   // Simple rate limiter on the login route to slow down brute-force attempts
@@ -117,8 +253,11 @@ module.exports = function registerAdminRoutes(app, deps) {
       const passwordMatch = typeof password === 'string'
         && await bcrypt.compare(password, account ? account.passwordHash : DUMMY_PASSWORD_HASH);
       if (account && passwordMatch) {
-        const adminKey = await issueAdminSession();
-        return res.json({ message: 'Login successful', adminKey, firstName: ADMIN_NAME });
+        const adminKey = await issueAdminSession(account.email);
+        return res.json({
+          message: 'Login successful', adminKey, firstName: ADMIN_NAME,
+          isSuperAdmin: account.email === SUPER_ADMIN_EMAIL,
+        });
       }
       return res.status(401).json({ message: 'Invalid email or password' });
     } catch (err) {
@@ -144,15 +283,110 @@ module.exports = function registerAdminRoutes(app, deps) {
   async function requireAdmin(req, res, next) {
     try {
       const key = (req.headers['x-admin-key'] || '').toString();
-      if (!(await isValidAdminSession(key))) {
+      const session = await getAdminSession(key);
+      if (!session) {
         return res.status(401).json({ message: 'Not authenticated' });
       }
+      // Older sessions (issued before email was tracked) have no email —
+      // treat them as the super admin so an already-logged-in primary admin
+      // isn't locked out by this change; they'll pick up email on next login.
+      req.adminEmail   = session.email || SUPER_ADMIN_EMAIL;
+      req.isSuperAdmin = !session.email || session.email === SUPER_ADMIN_EMAIL;
       next();
     } catch (err) {
       console.error('requireAdmin error:', err);
       res.status(500).json({ message: 'Server error. Please try again.' });
     }
   }
+
+  // ── GET /api/admin/me — who's logged in, and which features they can see ──
+  // admin.html calls this right after login (and on auto-login) to decide
+  // which tabs/buttons to show for a sub-admin account.
+  app.get('/api/admin/me', requireAdmin, async (req, res) => {
+    try {
+      const [modules, actions] = await Promise.all([
+        getModulePermissions(req.adminEmail),
+        getActionPermissions(req.adminEmail),
+      ]);
+      res.json({ email: req.adminEmail, isSuperAdmin: req.isSuperAdmin, modules, actions });
+    } catch (err) {
+      console.error('GET /api/admin/me error:', err.message);
+      res.status(500).json({ message: 'Error fetching admin profile' });
+    }
+  });
+
+  // Only the super admin (ADMIN_EMAIL) may view or change sub-admin access —
+  // shared guard for the two routes below.
+  function requireSuperAdmin(req, res, next) {
+    if (!req.isSuperAdmin) {
+      return res.status(403).json({ message: 'Only the primary admin can manage sub-admin access.' });
+    }
+    next();
+  }
+
+  // ── GET /api/admin/sub-admins — list every ADMIN_EMAIL_2/_3/... account
+  // and its current feature access, for the "Admin Access" tab. ──
+  app.get('/api/admin/sub-admins', requireAdmin, requireSuperAdmin, async (req, res) => {
+    try {
+      const subAccounts = ADMIN_ACCOUNTS.filter(a => a.email !== SUPER_ADMIN_EMAIL);
+      const subAdmins = await Promise.all(subAccounts.map(async a => {
+        const [modules, perm] = await Promise.all([
+          getModulePermissions(a.email),
+          AdminPermission.findOne({ email: a.email }).lean(),
+        ]);
+        // Reported here as the raw per-key action flag (default true), not
+        // ANDed with module visibility like getActionPermissions() does for
+        // route-gating — the Admin Access tab needs to show/restore each
+        // switch's own saved state independent of the module switch above it.
+        const actions = {};
+        for (const key of Object.keys(ADMIN_MODULES)) {
+          actions[key] = !perm || !perm.actions || perm.actions[key] !== false;
+        }
+        return { email: a.email, modules, actions };
+      }));
+      res.json({ subAdmins, availableModules: ADMIN_MODULES });
+    } catch (err) {
+      console.error('GET /api/admin/sub-admins error:', err.message);
+      res.status(500).json({ message: 'Error fetching sub-admins' });
+    }
+  });
+
+  // ── PUT /api/admin/sub-admins/:email/modules — toggle which features a
+  // given sub-admin can see, and (via `actions`) which of those features
+  // they can also add/edit/delete/verify in, vs. view-only.
+  // Body: { modules: { <key>: true|false, ... }, actions: { <key>: true|false, ... } }.
+  app.put('/api/admin/sub-admins/:email/modules', requireAdmin, requireSuperAdmin, async (req, res) => {
+    try {
+      const targetEmail = String(req.params.email || '').toLowerCase().trim();
+      const account = ADMIN_ACCOUNTS.find(a => a.email === targetEmail);
+      if (!account) return res.status(404).json({ message: 'No admin account with that email' });
+      if (targetEmail === SUPER_ADMIN_EMAIL) {
+        return res.status(400).json({ message: 'The primary admin always has full access.' });
+      }
+      const { modules, actions } = req.body || {};
+      if ((!modules || typeof modules !== 'object') && (!actions || typeof actions !== 'object')) {
+        return res.status(400).json({ message: 'modules and/or actions object is required' });
+      }
+      const update = {};
+      for (const key of Object.keys(ADMIN_MODULES)) {
+        if (modules && key in modules) update[`modules.${key}`] = !!modules[key];
+        if (actions && key in actions) update[`actions.${key}`] = !!actions[key];
+      }
+      await AdminPermission.findOneAndUpdate(
+        { email: targetEmail },
+        { $set: update },
+        { upsert: true }
+      );
+      const [fullModules, fullActions] = await Promise.all([
+        getModulePermissions(targetEmail),
+        getActionPermissions(targetEmail),
+      ]);
+      res.json({ message: 'Access updated', email: targetEmail, modules: fullModules, actions: fullActions });
+    } catch (err) {
+      console.error('PUT /api/admin/sub-admins/:email/modules error:', err.message);
+      res.status(500).json({ message: 'Error updating sub-admin access' });
+    }
+  });
 
   // ────────────────────────────────────────────────────────────────────────────
   // ── ADMIN NOTIFICATIONS ──
@@ -183,7 +417,7 @@ module.exports = function registerAdminRoutes(app, deps) {
   }
 
   // GET /api/admin/notifications — newest first, capped at 200, plus unread count.
-  app.get('/api/admin/notifications', requireAdmin, async (req, res) => {
+  app.get('/api/admin/notifications', requireAdmin, requireModule('notifications'), async (req, res) => {
     try {
       const [notifications, unreadCount] = await Promise.all([
         AdminNotification.find({}).sort({ createdAt: -1 }).limit(200).lean(),
@@ -197,7 +431,7 @@ module.exports = function registerAdminRoutes(app, deps) {
   });
 
   // PATCH /api/admin/notifications/:id/read — mark one notification as read.
-  app.patch('/api/admin/notifications/:id/read', requireAdmin, async (req, res) => {
+  app.patch('/api/admin/notifications/:id/read', requireAdmin, requireModuleAction('notifications'), async (req, res) => {
     try {
       const notification = await AdminNotification.findByIdAndUpdate(
         req.params.id, { read: true }, { new: true }
@@ -211,7 +445,7 @@ module.exports = function registerAdminRoutes(app, deps) {
   });
 
   // POST /api/admin/notifications/mark-all-read
-  app.post('/api/admin/notifications/mark-all-read', requireAdmin, async (req, res) => {
+  app.post('/api/admin/notifications/mark-all-read', requireAdmin, requireModuleAction('notifications'), async (req, res) => {
     try {
       await AdminNotification.updateMany({ read: false }, { $set: { read: true } });
       res.json({ message: 'All notifications marked as read' });
@@ -222,7 +456,7 @@ module.exports = function registerAdminRoutes(app, deps) {
   });
 
   // DELETE /api/admin/notifications/:id — remove a single notification.
-  app.delete('/api/admin/notifications/:id', requireAdmin, async (req, res) => {
+  app.delete('/api/admin/notifications/:id', requireAdmin, requireModuleAction('notifications'), async (req, res) => {
     try {
       const notification = await AdminNotification.findByIdAndDelete(req.params.id);
       if (!notification) return res.status(404).json({ message: 'Notification not found' });
@@ -234,7 +468,7 @@ module.exports = function registerAdminRoutes(app, deps) {
   });
 
   // POST /api/admin/notifications/clear-all — remove every notification.
-  app.post('/api/admin/notifications/clear-all', requireAdmin, async (req, res) => {
+  app.post('/api/admin/notifications/clear-all', requireAdmin, requireModuleAction('notifications'), async (req, res) => {
     try {
       await AdminNotification.deleteMany({});
       res.json({ message: 'All notifications cleared' });
@@ -245,7 +479,7 @@ module.exports = function registerAdminRoutes(app, deps) {
   });
 
   // ── GET /api/admin/visits (admin panel — all visit requests, newest first) ──
-  app.get('/api/admin/visits', requireAdmin, async (req, res) => {
+  app.get('/api/admin/visits', requireAdmin, requireModule('visits'), async (req, res) => {
     try {
       const docs = await VisitRequest.find({})
         .sort({ createdAt: -1 })
@@ -259,7 +493,7 @@ module.exports = function registerAdminRoutes(app, deps) {
   });
 
   // ── PATCH /api/admin/visits/:id/status (admin: confirm/cancel/complete a visit) ──
-  app.patch('/api/admin/visits/:id/status', requireAdmin, async (req, res) => {
+  app.patch('/api/admin/visits/:id/status', requireAdmin, requireModuleAction('visits'), async (req, res) => {
     try {
       const { status } = req.body || {};
       if (!['Pending', 'Confirmed', 'Cancelled', 'Completed'].includes(status)) {
@@ -292,7 +526,7 @@ module.exports = function registerAdminRoutes(app, deps) {
   // ─────────────────────────────────────────────────────────────────────────
   // ── ADMIN: CUSTOMERS GRID ──
   // ─────────────────────────────────────────────────────────────────────────
-  app.get('/api/users', requireAdmin, async (req, res) => {
+  app.get('/api/users', requireAdmin, requireModule('customers'), async (req, res) => {
     try {
       const users = await User.find({}).sort({ createdAt: -1 }).lean();
       const userIds = users.map(u => u._id);
@@ -354,7 +588,7 @@ module.exports = function registerAdminRoutes(app, deps) {
     return User.findOne({ $or: [{ mobile: decoded }, { email: decoded }] });
   }
 
-  app.delete('/api/users/mobile/:mobile', requireAdmin, async (req, res) => {
+  app.delete('/api/users/mobile/:mobile', requireAdmin, requireModuleAction('customers'), async (req, res) => {
     try {
       const user = await findUserByMobileOrId(req.params.mobile);
       if (!user) return res.status(404).json({ message: 'Customer not found' });
@@ -367,7 +601,7 @@ module.exports = function registerAdminRoutes(app, deps) {
   });
 
   // ── POST /api/users/bulk-delete (admin: delete many customers at once) ──
-  app.post('/api/users/bulk-delete', requireAdmin, async (req, res) => {
+  app.post('/api/users/bulk-delete', requireAdmin, requireModuleAction('customers'), async (req, res) => {
     try {
       const { mobiles } = req.body || {};
       if (!Array.isArray(mobiles) || !mobiles.length) {
@@ -390,7 +624,7 @@ module.exports = function registerAdminRoutes(app, deps) {
   // request/proof — see requireVerified in server.js) are blocked with a 403.
   // Body: { verified: true | false }. Defaults to true (the common case —
   // clicking "Verify" on a freshly signed-up user).
-  app.patch('/api/users/:id/verify', requireAdmin, async (req, res) => {
+  app.patch('/api/users/:id/verify', requireAdmin, requireModuleAction('customers'), async (req, res) => {
     try {
       const { id } = req.params;
       if (!mongoose.Types.ObjectId.isValid(id)) return res.status(400).json({ message: 'Invalid user id' });
@@ -423,7 +657,7 @@ module.exports = function registerAdminRoutes(app, deps) {
     }
   });
 
-  app.patch('/api/users/mobile/:mobile/remarks', requireAdmin, async (req, res) => {
+  app.patch('/api/users/mobile/:mobile/remarks', requireAdmin, requireModuleAction('customers'), async (req, res) => {
     try {
       const { remarks } = req.body || {};
       if (!remarks || !String(remarks).trim()) return res.status(400).json({ message: 'Remark text is required' });
@@ -438,7 +672,7 @@ module.exports = function registerAdminRoutes(app, deps) {
     }
   });
 
-  app.delete('/api/users/mobile/:mobile/remarks/:idx', requireAdmin, async (req, res) => {
+  app.delete('/api/users/mobile/:mobile/remarks/:idx', requireAdmin, requireModuleAction('customers'), async (req, res) => {
     try {
       const idx  = Number(req.params.idx);
       const user = await findUserByMobileOrId(req.params.mobile);
@@ -506,7 +740,7 @@ module.exports = function registerAdminRoutes(app, deps) {
     };
   }
 
-  app.get('/api/appointments', requireAdmin, async (req, res) => {
+  app.get('/api/appointments', requireAdmin, requireModule('appointments'), async (req, res) => {
     try {
       const docs = await VisitRequest.find({})
         .sort({ createdAt: -1 })
@@ -520,7 +754,7 @@ module.exports = function registerAdminRoutes(app, deps) {
     }
   });
 
-  app.patch('/api/appointments/:id', requireAdmin, async (req, res) => {
+  app.patch('/api/appointments/:id', requireAdmin, requireModuleAction('appointments'), async (req, res) => {
     try {
       const { status } = req.body || {};
       const STATUS_MAP = { pending:'Pending', confirmed:'Confirmed', cancelled:'Cancelled', completed:'Completed' };
@@ -550,7 +784,7 @@ module.exports = function registerAdminRoutes(app, deps) {
     }
   });
 
-  app.patch('/api/appointments/:id/remarks', requireAdmin, async (req, res) => {
+  app.patch('/api/appointments/:id/remarks', requireAdmin, requireModuleAction('appointments'), async (req, res) => {
     try {
       const { remarks } = req.body || {};
       if (!remarks || !String(remarks).trim()) return res.status(400).json({ message: 'Remark text is required' });
@@ -565,7 +799,7 @@ module.exports = function registerAdminRoutes(app, deps) {
     }
   });
 
-  app.delete('/api/appointments/:id/remarks/:idx', requireAdmin, async (req, res) => {
+  app.delete('/api/appointments/:id/remarks/:idx', requireAdmin, requireModuleAction('appointments'), async (req, res) => {
     try {
       const idx   = Number(req.params.idx);
       const visit = await VisitRequest.findById(req.params.id);
@@ -581,7 +815,7 @@ module.exports = function registerAdminRoutes(app, deps) {
     }
   });
 
-  app.delete('/api/appointments/:id', requireAdmin, async (req, res) => {
+  app.delete('/api/appointments/:id', requireAdmin, requireModuleAction('appointments'), async (req, res) => {
     try {
       const visit = await VisitRequest.findByIdAndDelete(req.params.id);
       if (!visit) return res.status(404).json({ message: 'Appointment not found' });
@@ -593,7 +827,7 @@ module.exports = function registerAdminRoutes(app, deps) {
   });
 
   // ── POST /api/appointments/bulk-delete (admin: delete many appointments at once) ──
-  app.post('/api/appointments/bulk-delete', requireAdmin, async (req, res) => {
+  app.post('/api/appointments/bulk-delete', requireAdmin, requireModuleAction('appointments'), async (req, res) => {
     try {
       const { ids } = req.body || {};
       if (!Array.isArray(ids) || !ids.length) {
@@ -615,7 +849,7 @@ module.exports = function registerAdminRoutes(app, deps) {
   // everything is flattened to match what the modal's MODAL_FIELD_GROUPS expects.
   // Kept separate from the public GET /api/properties so that endpoint's
   // nested shape stays untouched for whatever already consumes it.
-  app.get('/api/admin/properties', requireAdmin, async (req, res) => {
+  app.get('/api/admin/properties', requireAdmin, requireModule('properties'), async (req, res) => {
     try {
       const docArrays = await Promise.all(LISTING_MODEL_LIST.map(M => M.find({}).populate('userId', 'profilePhoto').lean()));
       // 0 and null/undefined both mean "unranked" (see the promoted-priority
@@ -744,7 +978,7 @@ module.exports = function registerAdminRoutes(app, deps) {
   });
 
   // ── PATCH /api/properties/:id/remarks (admin: add a remark) ──
-  app.patch('/api/properties/:id/remarks', requireAdmin, async (req, res) => {
+  app.patch('/api/properties/:id/remarks', requireAdmin, requireModuleAction('properties'), async (req, res) => {
     try {
       const { remarks } = req.body || {};
       if (!remarks || !String(remarks).trim()) {
@@ -765,7 +999,7 @@ module.exports = function registerAdminRoutes(app, deps) {
   });
 
   // ── DELETE /api/properties/:id/remarks/:idx (admin: remove a remark) ──
-  app.delete('/api/properties/:id/remarks/:idx', requireAdmin, async (req, res) => {
+  app.delete('/api/properties/:id/remarks/:idx', requireAdmin, requireModuleAction('properties'), async (req, res) => {
     try {
       const idx = Number(req.params.idx);
       const { doc: prop } = await findListingById(req.params.id);
@@ -783,7 +1017,7 @@ module.exports = function registerAdminRoutes(app, deps) {
   });
 
   // ── PATCH /api/properties/:id/verified (admin: toggle verified flag) ──
-  app.patch('/api/properties/:id/verified', requireAdmin, async (req, res) => {
+  app.patch('/api/properties/:id/verified', requireAdmin, requireModuleAction('properties'), async (req, res) => {
     try {
       const { verified } = req.body || {};
       if (typeof verified !== 'boolean') {
@@ -812,7 +1046,7 @@ module.exports = function registerAdminRoutes(app, deps) {
   });
 
   // ── PATCH /api/properties/:id/promoted (admin: toggle promoted flag) ──
-  app.patch('/api/properties/:id/promoted', requireAdmin, async (req, res) => {
+  app.patch('/api/properties/:id/promoted', requireAdmin, requireModuleAction('properties'), async (req, res) => {
     try {
       const { promoted } = req.body || {};
       if (typeof promoted !== 'boolean') {
@@ -833,7 +1067,7 @@ module.exports = function registerAdminRoutes(app, deps) {
   // newest first), so a lower value = higher up the list. Doesn't require
   // the listing to already be promoted — an admin can pre-set a position
   // before flipping the Promoted toggle on.
-  app.patch('/api/properties/:id/promoted-priority', requireAdmin, async (req, res) => {
+  app.patch('/api/properties/:id/promoted-priority', requireAdmin, requireModuleAction('properties'), async (req, res) => {
     try {
       const { promotedPriority } = req.body || {};
       if (typeof promotedPriority !== 'number' || !Number.isFinite(promotedPriority) ||
@@ -880,7 +1114,7 @@ module.exports = function registerAdminRoutes(app, deps) {
   // Once true, the listing is excluded from GET /api/properties (see the
   // `booked: { $ne: true }` filter there) and disappears from the public site,
   // regardless of its verified status.
-  app.patch('/api/properties/:id/booked', requireAdmin, async (req, res) => {
+  app.patch('/api/properties/:id/booked', requireAdmin, requireModuleAction('properties'), async (req, res) => {
     try {
       const { booked } = req.body || {};
       if (typeof booked !== 'boolean') {
@@ -896,7 +1130,7 @@ module.exports = function registerAdminRoutes(app, deps) {
   });
 
   // ── PATCH /api/properties/:id/views/reset (admin: reset one listing's view count to 0) ──
-  app.patch('/api/properties/:id/views/reset', requireAdmin, async (req, res) => {
+  app.patch('/api/properties/:id/views/reset', requireAdmin, requireModuleAction('properties'), async (req, res) => {
     try {
       const prop = await updateListingById(req.params.id, { views: 0 }, { new: true });
       if (!prop) return res.status(404).json({ message: 'Property not found' });
@@ -908,7 +1142,7 @@ module.exports = function registerAdminRoutes(app, deps) {
   });
 
   // ── POST /api/properties/views/reset-all (admin: reset every listing's view count to 0) ──
-  app.post('/api/properties/views/reset-all', requireAdmin, async (req, res) => {
+  app.post('/api/properties/views/reset-all', requireAdmin, requireModuleAction('properties'), async (req, res) => {
     try {
       const results = await Promise.all(LISTING_MODEL_LIST.map(M => M.updateMany({}, { $set: { views: 0 } })));
       const modifiedCount = results.reduce((sum, r) => sum + (r.modifiedCount || 0), 0);
@@ -920,7 +1154,7 @@ module.exports = function registerAdminRoutes(app, deps) {
   });
 
   // ── DELETE /api/properties/:id (example admin-protected route) ──
-  app.delete('/api/properties/:id', requireAdmin, async (req, res) => {
+  app.delete('/api/properties/:id', requireAdmin, requireModuleAction('properties'), async (req, res) => {
     try {
       const deleted = await deleteListingById(req.params.id);
       if (!deleted) return res.status(404).json({ message: 'Property not found' });
@@ -936,7 +1170,7 @@ module.exports = function registerAdminRoutes(app, deps) {
   // button shown only on rows in the admin Booked tab. ownerId/tenantId are
   // optional — the admin may free-type details for someone not in the Users
   // list — but when present they should be valid User _ids.
-  app.patch('/api/properties/:id/booking-details', requireAdmin, async (req, res) => {
+  app.patch('/api/properties/:id/booking-details', requireAdmin, requireModuleAction('properties'), async (req, res) => {
     try {
       const body = req.body || {};
       const asId = (v) => (v && mongoose.Types.ObjectId.isValid(v)) ? v : null;
@@ -1002,7 +1236,7 @@ module.exports = function registerAdminRoutes(app, deps) {
       cb(ok ? null : new Error('Only image files are allowed'), ok);
     },
   });
-  app.post('/api/upload-booking-images', requireAdmin, bookingUploadLimiter, uploadBookingImages.array('images'), async (req, res) => {
+  app.post('/api/upload-booking-images', requireAdmin, requireModuleAction('properties'), bookingUploadLimiter, uploadBookingImages.array('images'), async (req, res) => {
     try {
       const files = req.files || [];
       if (!files.length) return res.status(400).json({ message: 'No images uploaded' });
@@ -1039,7 +1273,7 @@ module.exports = function registerAdminRoutes(app, deps) {
       cb(ok ? null : new Error('Only image or PDF files are allowed'), ok);
     },
   });
-  app.post('/api/upload-documents', requireAdmin, bookingUploadLimiter, uploadBookingDocs.array('documents'), async (req, res) => {
+  app.post('/api/upload-documents', requireAdmin, requireModuleAction('properties'), bookingUploadLimiter, uploadBookingDocs.array('documents'), async (req, res) => {
     try {
       const files = req.files || [];
       if (!files.length) return res.status(400).json({ message: 'No files uploaded' });
@@ -1078,7 +1312,7 @@ module.exports = function registerAdminRoutes(app, deps) {
   });
 
   // ── POST /api/properties/bulk-delete (admin: delete many properties at once) ──
-  app.post('/api/properties/bulk-delete', requireAdmin, async (req, res) => {
+  app.post('/api/properties/bulk-delete', requireAdmin, requireModuleAction('properties'), async (req, res) => {
     try {
       const { ids } = req.body || {};
       if (!Array.isArray(ids) || !ids.length) {
@@ -1108,7 +1342,7 @@ module.exports = function registerAdminRoutes(app, deps) {
   // already blocks submission client-side until every visible required
   // field is filled, and validatePropertyFields() below still catches
   // malformed values same as the PUT route just above. ──
-  app.post('/api/admin/properties', requireAdmin, async (req, res) => {
+  app.post('/api/admin/properties', requireAdmin, requireModuleAction('properties'), async (req, res) => {
     try {
       const body = req.body || {};
       const fields = NESTED_SECTIONS.reduce((acc, k) => {
@@ -1178,7 +1412,7 @@ module.exports = function registerAdminRoutes(app, deps) {
   // owner) — same field-handling logic as PUT /api/user/listings/:id above,
   // just scoped by requireAdmin + findListingById instead of requireUser +
   // findUserListingById(id, userId), since admin isn't the listing's owner. ──
-  app.put('/api/admin/properties/:id', requireAdmin, async (req, res) => {
+  app.put('/api/admin/properties/:id', requireAdmin, requireModuleAction('properties'), async (req, res) => {
     try {
       const { doc: prop, model: currentModel } = await findListingById(req.params.id);
       if (!prop) return res.status(404).json({ message: 'Listing not found' });
@@ -1225,7 +1459,7 @@ module.exports = function registerAdminRoutes(app, deps) {
 
   // GET /api/honest-reviews/all — admin-only, returns every entry regardless
   // of status (pending/approved/rejected) or active flag, for the manage UI.
-  app.get('/api/honest-reviews/all', requireAdmin, async (req, res) => {
+  app.get('/api/honest-reviews/all', requireAdmin, requireModule('reviews'), async (req, res) => {
     try {
       const reviews = await HonestReview.find({})
         .sort({ createdAt: -1 })
@@ -1238,7 +1472,7 @@ module.exports = function registerAdminRoutes(app, deps) {
   });
 
   // POST /api/honest-reviews — admin-only, add a new video card (goes live immediately)
-  app.post('/api/honest-reviews', requireAdmin, async (req, res) => {
+  app.post('/api/honest-reviews', requireAdmin, requireModuleAction('reviews'), async (req, res) => {
     try {
       const { videoUrl, thumbUrl, caption, title, meta, verifiedLabel, order, active } = req.body;
       if (!videoUrl || !thumbUrl || !caption || !title) {
@@ -1262,7 +1496,7 @@ module.exports = function registerAdminRoutes(app, deps) {
   // PUT /api/honest-reviews/:id — admin-only, edit an existing video card.
   // Also used to approve/reject user submissions by setting `status` (and
   // typically `active` alongside it).
-  app.put('/api/honest-reviews/:id', requireAdmin, async (req, res) => {
+  app.put('/api/honest-reviews/:id', requireAdmin, requireModuleAction('reviews'), async (req, res) => {
     try {
       const fields = (({ videoUrl, thumbUrl, caption, title, meta, verifiedLabel, order, active, status }) =>
         ({ videoUrl, thumbUrl, caption, title, meta, verifiedLabel, order, active, status }))(req.body);
@@ -1291,7 +1525,7 @@ module.exports = function registerAdminRoutes(app, deps) {
   });
 
   // DELETE /api/honest-reviews/:id — admin-only
-  app.delete('/api/honest-reviews/:id', requireAdmin, async (req, res) => {
+  app.delete('/api/honest-reviews/:id', requireAdmin, requireModuleAction('reviews'), async (req, res) => {
     try {
       const deleted = await HonestReview.findByIdAndDelete(req.params.id);
       if (!deleted) return res.status(404).json({ error: 'Honest review not found' });
@@ -1303,7 +1537,7 @@ module.exports = function registerAdminRoutes(app, deps) {
   });
 
   // POST /api/honest-reviews/bulk-delete — admin-only, delete several cards at once
-  app.post('/api/honest-reviews/bulk-delete', requireAdmin, async (req, res) => {
+  app.post('/api/honest-reviews/bulk-delete', requireAdmin, requireModuleAction('reviews'), async (req, res) => {
     try {
       const { ids } = req.body || {};
       if (!Array.isArray(ids) || !ids.length) {
@@ -1320,7 +1554,7 @@ module.exports = function registerAdminRoutes(app, deps) {
   });
 
   // GET /api/admin/partners — admin-only, returns every entry (active or not) for the manage UI.
-  app.get('/api/admin/partners', requireAdmin, async (req, res) => {
+  app.get('/api/admin/partners', requireAdmin, requireModule('partners'), async (req, res) => {
     try {
       const partners = await Partner.find({}).sort({ order: 1, createdAt: 1 }).lean();
       res.json({ partners });
@@ -1336,7 +1570,7 @@ module.exports = function registerAdminRoutes(app, deps) {
   const isValidPartnerPhotoUrl = (val) => val === '' || /^\/uploads\/[a-f0-9]{24}$/.test(val);
 
   // POST /api/partners — admin-only, add a new partner
-  app.post('/api/partners', requireAdmin, async (req, res) => {
+  app.post('/api/partners', requireAdmin, requireModuleAction('partners'), async (req, res) => {
     try {
       const { name, role, phone, email, location, avatarText, photoUrl, order, active } = req.body;
       if (!name || !role) {
@@ -1364,7 +1598,7 @@ module.exports = function registerAdminRoutes(app, deps) {
   });
 
   // PUT /api/partners/:id — admin-only, edit an existing partner
-  app.put('/api/partners/:id', requireAdmin, async (req, res) => {
+  app.put('/api/partners/:id', requireAdmin, requireModuleAction('partners'), async (req, res) => {
     try {
       const fields = (({ name, role, phone, email, location, avatarText, photoUrl, order, active }) => ({ name, role, phone, email, location, avatarText, photoUrl, order, active }))(req.body);
       Object.keys(fields).forEach(k => fields[k] === undefined && delete fields[k]);
@@ -1397,7 +1631,7 @@ module.exports = function registerAdminRoutes(app, deps) {
       cb(ok ? null : new Error('Only image files are allowed'), ok);
     },
   });
-  app.post('/api/upload-partner-photo', requireAdmin, bookingUploadLimiter, uploadPartnerPhoto.single('photo'), async (req, res) => {
+  app.post('/api/upload-partner-photo', requireAdmin, requireModuleAction('partners'), bookingUploadLimiter, uploadPartnerPhoto.single('photo'), async (req, res) => {
     try {
       if (!req.file) return res.status(400).json({ message: 'No photo uploaded' });
       const webpBuffer = await sharp(req.file.buffer)
@@ -1414,7 +1648,7 @@ module.exports = function registerAdminRoutes(app, deps) {
   });
 
   // DELETE /api/partners/:id — admin-only
-  app.delete('/api/partners/:id', requireAdmin, async (req, res) => {
+  app.delete('/api/partners/:id', requireAdmin, requireModuleAction('partners'), async (req, res) => {
     try {
       const deleted = await Partner.findByIdAndDelete(req.params.id);
       if (!deleted) return res.status(404).json({ error: 'Partner not found' });
@@ -1426,7 +1660,7 @@ module.exports = function registerAdminRoutes(app, deps) {
   });
 
   // POST /api/partners/bulk-delete — admin-only, delete several partners at once
-  app.post('/api/partners/bulk-delete', requireAdmin, async (req, res) => {
+  app.post('/api/partners/bulk-delete', requireAdmin, requireModuleAction('partners'), async (req, res) => {
     try {
       const { ids } = req.body || {};
       if (!Array.isArray(ids) || !ids.length) {
@@ -1443,7 +1677,7 @@ module.exports = function registerAdminRoutes(app, deps) {
   });
 
   // Admin — edit the one shared payment destination shown on every payment screen.
-  app.put('/api/admin/payment-settings', requireAdmin, async (req, res) => {
+  app.put('/api/admin/payment-settings', requireAdmin, requireModuleAction('payments'), async (req, res) => {
     try {
       const { upiId, qrImageUrl, bankAccountName, bankAccountNumber, bankIfsc, paymentPhone } = req.body || {};
       const settings = await PaymentSettings.findOneAndUpdate(
@@ -1485,7 +1719,7 @@ module.exports = function registerAdminRoutes(app, deps) {
   // Optional ?status= filter, defaulting to everything (newest first) — the
   // admin tab can default its own view to 'submitted' (awaiting review) while
   // still being able to browse verified/rejected history through this same route.
-  app.get('/api/admin/payments', requireAdmin, async (req, res) => {
+  app.get('/api/admin/payments', requireAdmin, requireModule('payments'), async (req, res) => {
     try {
       const { status } = req.query;
       const filter = status && status !== 'all' ? { status } : {};
@@ -1503,7 +1737,7 @@ module.exports = function registerAdminRoutes(app, deps) {
   // deleted) still leaves the payment marked verified rather than blocking
   // the admin's review action — brokerage/booking/visit_deposit payments are
   // pure financial records with nothing further to flip.
-  app.patch('/api/admin/payments/:id/verify', requireAdmin, async (req, res) => {
+  app.patch('/api/admin/payments/:id/verify', requireAdmin, requireModuleAction('payments'), async (req, res) => {
     try {
       const request = await PaymentRequest.findById(req.params.id);
       if (!request) return res.status(404).json({ message: 'Payment request not found' });
@@ -1522,7 +1756,7 @@ module.exports = function registerAdminRoutes(app, deps) {
     }
   });
 
-  app.patch('/api/admin/payments/:id/reject', requireAdmin, async (req, res) => {
+  app.patch('/api/admin/payments/:id/reject', requireAdmin, requireModuleAction('payments'), async (req, res) => {
     try {
       const request = await PaymentRequest.findById(req.params.id);
       if (!request) return res.status(404).json({ message: 'Payment request not found' });
@@ -1547,7 +1781,7 @@ module.exports = function registerAdminRoutes(app, deps) {
   const REFERRAL_STATUSES = ['Pending', 'Rewarded', 'Rejected'];
 
   // GET /api/admin/referrals — optional ?status= filter, defaulting to everything.
-  app.get('/api/admin/referrals', requireAdmin, async (req, res) => {
+  app.get('/api/admin/referrals', requireAdmin, requireModule('referrals'), async (req, res) => {
     try {
       const { status } = req.query;
       const filter = status && status !== 'all' ? { status } : {};
@@ -1560,7 +1794,7 @@ module.exports = function registerAdminRoutes(app, deps) {
   });
 
   // PATCH /api/admin/referrals/:id/status — move a referral to Pending/Rewarded/Rejected.
-  app.patch('/api/admin/referrals/:id/status', requireAdmin, async (req, res) => {
+  app.patch('/api/admin/referrals/:id/status', requireAdmin, requireModuleAction('referrals'), async (req, res) => {
     try {
       const { status } = req.body || {};
       if (!REFERRAL_STATUSES.includes(status)) {
@@ -1576,7 +1810,7 @@ module.exports = function registerAdminRoutes(app, deps) {
   });
 
   // DELETE /api/admin/referrals/:id — remove a single referral entry.
-  app.delete('/api/admin/referrals/:id', requireAdmin, async (req, res) => {
+  app.delete('/api/admin/referrals/:id', requireAdmin, requireModuleAction('referrals'), async (req, res) => {
     try {
       const referral = await Referral.findByIdAndDelete(req.params.id);
       if (!referral) return res.status(404).json({ message: 'Referral not found' });
@@ -1589,7 +1823,7 @@ module.exports = function registerAdminRoutes(app, deps) {
 
   // POST /api/admin/referrals/bulk-delete — remove several referrals at once
   // (same shape as the partners bulk-delete route used by the admin UI).
-  app.post('/api/admin/referrals/bulk-delete', requireAdmin, async (req, res) => {
+  app.post('/api/admin/referrals/bulk-delete', requireAdmin, requireModuleAction('referrals'), async (req, res) => {
     try {
       const { ids } = req.body || {};
       if (!Array.isArray(ids) || !ids.length) {
@@ -1604,7 +1838,7 @@ module.exports = function registerAdminRoutes(app, deps) {
   });
 
   // GET /api/admin/total-visits — admin-only, all-time visit counter for its own tab.
-  app.get('/api/admin/total-visits', requireAdmin, async (req, res) => {
+  app.get('/api/admin/total-visits', requireAdmin, requireModule('stats'), async (req, res) => {
     try {
       const doc = await SiteStat.findOne({ key: 'totalVisits' }).lean();
       res.json({ totalVisits: doc ? doc.value : 0 });
@@ -1615,7 +1849,7 @@ module.exports = function registerAdminRoutes(app, deps) {
   });
 
   // POST /api/admin/total-visits/reset — reset the all-time counter to 0.
-  app.post('/api/admin/total-visits/reset', requireAdmin, async (req, res) => {
+  app.post('/api/admin/total-visits/reset', requireAdmin, requireModuleAction('stats'), async (req, res) => {
     try {
       const doc = await SiteStat.findOneAndUpdate(
         { key: 'totalVisits' },
@@ -1631,7 +1865,7 @@ module.exports = function registerAdminRoutes(app, deps) {
 
   // GET /api/admin/total-users — admin-only, all-time count of registered user accounts
   // (actual User collection count, distinct from the daily-registration log below).
-  app.get('/api/admin/total-users', requireAdmin, async (req, res) => {
+  app.get('/api/admin/total-users', requireAdmin, requireModule('stats'), async (req, res) => {
     try {
       const totalUsers = await User.countDocuments();
       res.json({ totalUsers });
@@ -1658,7 +1892,7 @@ module.exports = function registerAdminRoutes(app, deps) {
   // "Daily visits — monthly view" table) — `total`, `today`, and `todayDate`
   // always reflect the FULL history regardless of the month filter, so the
   // big-number cards stay correct even while browsing a past month.
-  app.get('/api/admin/daily-stats/:type', requireAdmin, async (req, res) => {
+  app.get('/api/admin/daily-stats/:type', requireAdmin, requireModule('stats'), async (req, res) => {
     try {
       if (!checkDailyStatType(req, res)) return;
       const allDays = await DailyStat.find({ type: req.params.type }).sort({ date: -1 }).lean();
@@ -1679,7 +1913,7 @@ module.exports = function registerAdminRoutes(app, deps) {
   });
 
   // PATCH /api/admin/daily-stats/:type/:date/clear — reset one day's count to 0, keep the row.
-  app.patch('/api/admin/daily-stats/:type/:date/clear', requireAdmin, async (req, res) => {
+  app.patch('/api/admin/daily-stats/:type/:date/clear', requireAdmin, requireModuleAction('stats'), async (req, res) => {
     try {
       if (!checkDailyStatType(req, res)) return;
       const date = req.params.date === 'today' ? todayStr() : req.params.date;
@@ -1696,7 +1930,7 @@ module.exports = function registerAdminRoutes(app, deps) {
   });
 
   // DELETE /api/admin/daily-stats/:type/:date — remove that day's row entirely.
-  app.delete('/api/admin/daily-stats/:type/:date', requireAdmin, async (req, res) => {
+  app.delete('/api/admin/daily-stats/:type/:date', requireAdmin, requireModuleAction('stats'), async (req, res) => {
     try {
       if (!checkDailyStatType(req, res)) return;
       await DailyStat.deleteOne({ type: req.params.type, date: req.params.date });
@@ -1708,7 +1942,7 @@ module.exports = function registerAdminRoutes(app, deps) {
   });
 
   // POST /api/admin/daily-stats/:type/clear-all — reset every day's count to 0, keep the rows.
-  app.post('/api/admin/daily-stats/:type/clear-all', requireAdmin, async (req, res) => {
+  app.post('/api/admin/daily-stats/:type/clear-all', requireAdmin, requireModuleAction('stats'), async (req, res) => {
     try {
       if (!checkDailyStatType(req, res)) return;
       await DailyStat.updateMany({ type: req.params.type }, { $set: { count: 0 } });
@@ -1720,7 +1954,7 @@ module.exports = function registerAdminRoutes(app, deps) {
   });
 
   // POST /api/admin/daily-stats/:type/delete-all — remove every tracked day for this type.
-  app.post('/api/admin/daily-stats/:type/delete-all', requireAdmin, async (req, res) => {
+  app.post('/api/admin/daily-stats/:type/delete-all', requireAdmin, requireModuleAction('stats'), async (req, res) => {
     try {
       if (!checkDailyStatType(req, res)) return;
       await DailyStat.deleteMany({ type: req.params.type });

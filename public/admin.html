@@ -792,10 +792,67 @@ table.dataTable.no-footer{border-bottom:none!important}
 }
 .hr-btn-cancel{background:var(--surface2);color:var(--ink2)}
 .hr-btn-cancel:hover{background:var(--border);color:var(--ink)}
-.hr-btn-save{background:var(--ink);color:#fff}
+.hr-btn-save{
+  background:var(--ink);color:#fff;padding:10px 20px;border-radius:99px;border:none;
+  font-family:inherit;font-size:0.82rem;font-weight:700;cursor:pointer;transition:all 0.18s;
+  display:inline-flex;align-items:center;gap:7px;
+}
 .hr-btn-save:hover{box-shadow:0 6px 20px rgba(12,13,16,0.25)}
+.hr-btn-save:disabled{opacity:0.6;cursor:default;box-shadow:none}
 .hr-form-error{color:var(--red);font-size:0.78rem;margin-bottom:12px;display:none}
 .hr-form-error.show{display:block}
+
+/* ── ADMIN ACCESS PANEL (sub-admin per-feature toggles) ── */
+.aa-card{
+  border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);
+  padding:18px 20px;margin-bottom:14px;transition:box-shadow 0.15s,border-color 0.15s;
+}
+.aa-card:hover{box-shadow:var(--shadow);border-color:var(--border2)}
+.aa-card-head{
+  display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;
+  padding-bottom:14px;margin-bottom:14px;border-bottom:1px solid var(--border);
+}
+.aa-identity{display:flex;align-items:center;gap:12px;min-width:0}
+.aa-avatar{
+  width:40px;height:40px;border-radius:50%;background:var(--gold-light);color:var(--gold-dark);
+  display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.92rem;flex-shrink:0;
+}
+.aa-email{font-weight:700;color:var(--ink);font-size:0.92rem;word-break:break-word}
+.aa-count{font-size:0.75rem;color:var(--ink3);margin-top:2px}
+.aa-master{display:flex;align-items:center;gap:9px;font-size:0.78rem;color:var(--ink2);font-weight:700;flex-shrink:0}
+.aa-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px;margin-bottom:16px}
+.aa-item{
+  display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;
+  border:1px solid var(--border);background:var(--surface2);transition:border-color 0.15s,background 0.15s,opacity 0.15s;
+}
+.aa-item:hover{border-color:var(--border2)}
+.aa-item.is-off{opacity:0.55}
+.aa-item i{color:var(--gold2);width:16px;text-align:center;font-size:0.85rem;flex-shrink:0}
+.aa-item span.aa-item-label{flex:1;font-size:0.81rem;font-weight:600;color:var(--ink2)}
+.aa-item-switches{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.aa-mini-switch{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer}
+.aa-mini-switch.is-disabled{opacity:0.4;cursor:not-allowed}
+.aa-mini-label{font-size:0.6rem;font-weight:700;letter-spacing:0.03em;text-transform:uppercase;color:var(--ink3)}
+.aa-footer{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.aa-dirty-note{font-size:0.76rem;color:var(--gold-dark);font-weight:600;display:flex;align-items:center;gap:6px}
+.aa-empty-hint{font-size:0.78rem;color:var(--ink3);font-weight:500}
+
+/* Toggle switch used for both the master switch and each module switch */
+.aa-switch{position:relative;display:inline-block;width:36px;height:20px;flex-shrink:0}
+.aa-switch input{opacity:0;width:0;height:0;position:absolute}
+.aa-switch .aa-slider{
+  position:absolute;inset:0;background:var(--border2);border-radius:99px;cursor:pointer;transition:background 0.15s;
+}
+.aa-switch .aa-slider::before{
+  content:'';position:absolute;width:16px;height:16px;left:2px;top:2px;background:#fff;
+  border-radius:50%;transition:transform 0.15s;box-shadow:0 1px 3px rgba(0,0,0,0.25);
+}
+.aa-switch input:checked+.aa-slider{background:var(--gold2)}
+.aa-switch input:checked+.aa-slider::before{transform:translateX(16px)}
+.aa-switch input:focus-visible+.aa-slider{box-shadow:0 0 0 3px rgba(249,115,22,0.25)}
+.aa-switch-sm{width:30px;height:17px}
+.aa-switch-sm .aa-slider::before{width:13px;height:13px}
+.aa-switch-sm input:checked+.aa-slider::before{transform:translateX(13px)}
 
 /* ── TOTAL VISITS TAB ── */
 .stat-card-big{
@@ -2487,6 +2544,11 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
       <span class="tab-btn-label" data-mobile="Referrals">Referrals</span>
       <span class="tab-count" id="tab-referrals-count">—</span>
     </button>
+    <!-- Only shown to the primary admin (ADMIN_EMAIL) — see applyAdminAccessUI() -->
+    <button class="tab-btn" id="tab-admin-access" onclick="switchTab('admin-access')" style="display:none">
+      <i class="fas fa-user-shield"></i>
+      <span class="tab-btn-label" data-mobile="Access">Admin Access</span>
+    </button>
   </div>
 
 
@@ -3104,6 +3166,25 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
             <tr><td colspan="7" class="empty-state"><i class="fas fa-circle-notch fa-spin"></i>Loading…</td></tr>
           </tbody>
         </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ ADMIN ACCESS PANEL — primary admin (ADMIN_EMAIL) only. Lets it
+       switch individual feature tabs on/off per sub-admin (ADMIN_EMAIL_2,
+       ADMIN_EMAIL_3, ...). See applyAdminAccessUI() / loadAdminAccessTab(). ══ -->
+  <div class="tab-panel" id="panel-admin-access">
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title"><i class="fas fa-user-shield" style="color:var(--gold2);margin-right:8px"></i>Admin Access</div>
+          <div class="card-sub">Turn individual features on or off for each sub-admin login. The primary admin always has full access.</div>
+        </div>
+      </div>
+      <div style="padding:16px 20px 20px">
+        <div id="adminAccessList">
+          <div class="empty-state"><i class="fas fa-circle-notch fa-spin"></i>Loading…</div>
+        </div>
       </div>
     </div>
   </div>
@@ -3973,6 +4054,7 @@ async function doLogin(){
     if(apptTable) apptTable.ajax.reload();
     checkForListingDraftOnLoad();
     startNotifPolling();
+    loadAdminMe();
   } catch(e){
     errEl.textContent = 'Network error. Please try again.';
   }
@@ -4237,6 +4319,7 @@ async function onNotifItemClick(id, alreadyRead){
 }
 
 async function markAllNotificationsRead(){
+  if(blockIfViewOnly('notifications')) return;
   try {
     await fetch(BASE + '/api/admin/notifications/mark-all-read', { method:'POST', headers: authHeaders() });
     fetchNotifications();
@@ -4244,6 +4327,7 @@ async function markAllNotificationsRead(){
 }
 
 async function clearAllNotifications(){
+  if(blockIfViewOnly('notifications')) return;
   if(!await showConfirmModal({ title:'Clear all notifications?', message:'This removes every notification. This cannot be undone.', okText:'Clear all' })) return;
   try {
     await fetch(BASE + '/api/admin/notifications/clear-all', { method:'POST', headers: authHeaders() });
@@ -4281,6 +4365,7 @@ if(!ADMIN_KEY){
       if(stored) document.getElementById('adminNameBadge').textContent = stored;
       checkForListingDraftOnLoad();
       startNotifPolling();
+      loadAdminMe();
     });
 }
 
@@ -4334,6 +4419,298 @@ function switchTab(tab){
   }
   if(tab === 'referrals' && referralsTable){
     setTimeout(()=>{ referralsTable.columns.adjust().draw(false); }, 50);
+  }
+  if(tab === 'admin-access'){
+    loadAdminAccessTab();
+  }
+}
+
+/* ── SUB-ADMIN FEATURE ACCESS ──
+   ADMIN_EMAIL (the primary admin) can enable/restrict which tabs/features
+   each numbered sub-admin (ADMIN_EMAIL_2, ADMIN_EMAIL_3, ...) can use. */
+const TAB_MODULE_MAP = {
+  'visits': 'visits',
+  'customers': 'customers',
+  'properties': 'properties',
+  'appointments': 'appointments',
+  'honest-reviews': 'reviews',
+  'partners': 'partners',
+  'referrals': 'referrals',
+};
+// Icon shown next to each module in the Admin Access panel — matches the
+// icon used for that feature's own tab button in the main nav where one exists.
+const MODULE_ICONS = {
+  visits: 'fa-globe', customers: 'fa-users', properties: 'fa-building',
+  appointments: 'fa-calendar-days', reviews: 'fa-video', partners: 'fa-handshake',
+  referrals: 'fa-share-nodes', payments: 'fa-credit-card',
+  stats: 'fa-chart-line', notifications: 'fa-bell',
+};
+function adminInitial(email){ return (email || '?').trim().charAt(0).toUpperCase() || '?'; }
+let CURRENT_ADMIN = { email:'', isSuperAdmin:true, modules:{}, actions:{} };
+
+// canAct(key): can this login perform mutating actions (add/edit/delete/
+// verify/etc) within a feature it can already see? Always true for the
+// super admin. blockIfViewOnly(key) is the guard called at the top of every
+// mutating function below — returns true (and alerts) if the action should
+// be stopped, mirroring the requireModuleAction() check admin.js makes for
+// the matching API route, so a view-only sub-admin gets a clear message
+// here instead of just seeing a generic failed request.
+function canAct(moduleKey){
+  return !!CURRENT_ADMIN.isSuperAdmin || (CURRENT_ADMIN.actions || {})[moduleKey] !== false;
+}
+function blockIfViewOnly(moduleKey){
+  if(canAct(moduleKey)) return false;
+  alert('Your admin account has view-only access to this feature. Ask the primary admin to enable actions.');
+  return true;
+}
+
+async function loadAdminMe(){
+  try {
+    const res = await fetch(BASE + '/api/admin/me', { headers: authHeaders() });
+    if(!res.ok) return;
+    const data = await res.json();
+    CURRENT_ADMIN = data;
+    applyAdminAccessUI();
+  } catch(e){}
+}
+
+function applyAdminAccessUI(){
+  const isSuper = !!CURRENT_ADMIN.isSuperAdmin;
+  const modules = CURRENT_ADMIN.modules || {};
+  const actions = CURRENT_ADMIN.actions || {};
+
+  // "Admin Access" tab: primary admin only.
+  const accessTabBtn = document.getElementById('tab-admin-access');
+  if(accessTabBtn) accessTabBtn.style.display = isSuper ? '' : 'none';
+
+  // View-only sub-admins (module visible, but actions[module] === false):
+  // hide the header-level "Add" / "Delete selected" trigger buttons for
+  // that tab. Row-level edit/delete/verify/save buttons are guarded inside
+  // their own onclick handlers via blockIfViewOnly() instead, since "View"
+  // buttons share styling with "Edit"/"Delete" buttons and can't be told
+  // apart by CSS class alone.
+  if(!isSuper){
+    const addBtnByPanel = {
+      'honest-reviews': '#panel-honest-reviews .btn-add-review',
+      'partners':       '#panel-partners .btn-add-review',
+    };
+    const bulkDeleteBtnByPanel = {
+      'partners': '#partnerDeleteSelectedBtn',
+    };
+    Object.keys(TAB_MODULE_MAP).forEach(tab=>{
+      const moduleKey = TAB_MODULE_MAP[tab];
+      const allowed = actions[moduleKey] !== false;
+      const addSel = addBtnByPanel[tab];
+      if(addSel) document.querySelectorAll(addSel).forEach(btn => btn.style.display = allowed ? '' : 'none');
+      const bulkSel = bulkDeleteBtnByPanel[tab];
+      if(bulkSel){
+        const btn = document.querySelector(bulkSel);
+        // Only force-hide when blocked; leave it alone when allowed since
+        // its own selection-count logic already controls visibility.
+        if(btn && !allowed) btn.style.display = 'none';
+      }
+    });
+  }
+
+  // Hide any tab this admin login isn't allowed to see; if the currently
+  // active tab just got hidden, fall back to the first visible one.
+  let activeHidden = false;
+  Object.keys(TAB_MODULE_MAP).forEach(tab=>{
+    const btn = document.getElementById('tab-'+tab);
+    if(!btn) return;
+    const allowed = isSuper || modules[TAB_MODULE_MAP[tab]] !== false;
+    btn.style.display = allowed ? '' : 'none';
+    if(!allowed && btn.classList.contains('active')) activeHidden = true;
+  });
+  if(activeHidden){
+    const firstVisible = Object.keys(TAB_MODULE_MAP).find(tab=>{
+      const btn = document.getElementById('tab-'+tab);
+      return btn && btn.style.display !== 'none';
+    });
+    if(firstVisible) switchTab(firstVisible);
+  }
+
+  // Notifications isn't a nav tab — it's the bell icon in the header — so it
+  // needs its own hide rule here rather than going through TAB_MODULE_MAP.
+  const notifWrap = document.getElementById('notifBellWrap');
+  if(notifWrap) notifWrap.style.display = (isSuper || modules.notifications !== false) ? '' : 'none';
+}
+
+async function loadAdminAccessTab(){
+  const list = document.getElementById('adminAccessList');
+  if(!CURRENT_ADMIN.isSuperAdmin){
+    list.innerHTML = '<div class="empty-state">Only the primary admin can manage sub-admin access.</div>';
+    return;
+  }
+  list.innerHTML = '<div class="empty-state"><i class="fas fa-circle-notch fa-spin"></i>Loading…</div>';
+  try {
+    const res = await fetch(BASE + '/api/admin/sub-admins', { headers: authHeaders() });
+    const data = await res.json();
+    if(!res.ok){ list.innerHTML = '<div class="empty-state">'+escapeHtml(data.message||'Could not load sub-admins')+'</div>'; return; }
+    if(!data.subAdmins.length){
+      list.innerHTML = '<div class="empty-state">No sub-admins configured — set ADMIN_EMAIL_2 / ADMIN_PASSWORD_2 (and so on) to add one.</div>';
+      return;
+    }
+    const moduleKeys = Object.keys(data.availableModules);
+    list.innerHTML = data.subAdmins.map(sub => {
+      const fullCount = moduleKeys.filter(k => sub.modules[k] !== false && sub.actions[k] !== false).length;
+      const allOn = fullCount === moduleKeys.length;
+      return `
+      <div class="aa-card" data-admin-email="${escapeHtml(sub.email)}">
+        <div class="aa-card-head">
+          <div class="aa-identity">
+            <div class="aa-avatar">${escapeHtml(adminInitial(sub.email))}</div>
+            <div>
+              <div class="aa-email">${escapeHtml(sub.email)}</div>
+              <div class="aa-count" data-aa-count>${fullCount} of ${moduleKeys.length} features with full access</div>
+            </div>
+          </div>
+          <label class="aa-master">
+            Full access
+            <span class="aa-switch">
+              <input type="checkbox" data-aa-master ${allOn ? 'checked' : ''}
+                onchange="toggleAllAdminModules('${escapeHtml(sub.email)}', this.checked)">
+              <span class="aa-slider"></span>
+            </span>
+          </label>
+        </div>
+        <div class="aa-grid">
+          ${moduleKeys.map(key => {
+            const viewOn = sub.modules[key] !== false;
+            const actOn  = sub.actions[key] !== false;
+            return `
+            <label class="aa-item${viewOn ? '' : ' is-off'}" data-aa-item data-item-key="${key}">
+              <i class="fas ${MODULE_ICONS[key] || 'fa-toggle-on'}"></i>
+              <span class="aa-item-label">${escapeHtml(data.availableModules[key])}</span>
+              <span class="aa-item-switches">
+                <span class="aa-mini-switch" title="Can see this feature">
+                  <span class="aa-switch aa-switch-sm">
+                    <input type="checkbox" data-module-key="${key}" ${viewOn ? 'checked' : ''}
+                      onchange="onAdminModuleToggle('${escapeHtml(sub.email)}', this)">
+                    <span class="aa-slider"></span>
+                  </span>
+                  <span class="aa-mini-label">View</span>
+                </span>
+                <span class="aa-mini-switch${viewOn ? '' : ' is-disabled'}" data-aa-action-wrap title="Can add/edit/delete within this feature">
+                  <span class="aa-switch aa-switch-sm">
+                    <input type="checkbox" data-action-key="${key}" ${(viewOn && actOn) ? 'checked' : ''} ${viewOn ? '' : 'disabled'}
+                      onchange="onAdminActionToggle('${escapeHtml(sub.email)}', this)">
+                    <span class="aa-slider"></span>
+                  </span>
+                  <span class="aa-mini-label">Edit</span>
+                </span>
+              </span>
+            </label>
+          `; }).join('')}
+        </div>
+        <div class="aa-footer">
+          <span class="aa-dirty-note" data-aa-dirty style="display:none">
+            <i class="fas fa-circle-exclamation"></i>Unsaved changes
+          </span>
+          <button class="hr-btn-save" onclick="saveAdminAccess('${escapeHtml(sub.email)}')">
+            <i class="fas fa-check"></i>Save changes
+          </button>
+        </div>
+      </div>
+    `; }).join('');
+  } catch(e){
+    list.innerHTML = '<div class="empty-state">Network error. Please try again.</div>';
+  }
+}
+
+// Recomputes the "N of 10 features with full access" summary and syncs the
+// master switch for one sub-admin's card.
+function refreshAdminAccessSummary(card){
+  const moduleBoxes = [...card.querySelectorAll('input[data-module-key]')];
+  const actionBoxes = [...card.querySelectorAll('input[data-action-key]')];
+  const fullCount = moduleBoxes.filter(mb => {
+    const key = mb.getAttribute('data-module-key');
+    const ab = card.querySelector('input[data-action-key="'+key+'"]');
+    return mb.checked && ab && ab.checked;
+  }).length;
+  const master = card.querySelector('input[data-aa-master]');
+  if(master) master.checked = fullCount === moduleBoxes.length;
+  const countEl = card.querySelector('[data-aa-count]');
+  if(countEl) countEl.textContent = fullCount + ' of ' + moduleBoxes.length + ' features with full access';
+  const dirtyNote = card.querySelector('[data-aa-dirty]');
+  if(dirtyNote) dirtyNote.style.display = '';
+}
+
+// Fired when a module's View switch changes. Turning View off also forces
+// and disables that module's Edit switch — you can't grant edit rights on
+// something the sub-admin can't even see. Turning View back on re-enables
+// Edit (left in whatever state it was, off by default the first time).
+function onAdminModuleToggle(email, checkbox){
+  const card = document.querySelector('[data-admin-email="'+CSS.escape(email)+'"]');
+  if(!card) return;
+  const key = checkbox.getAttribute('data-module-key');
+  const item = checkbox.closest('.aa-item');
+  if(item) item.classList.toggle('is-off', !checkbox.checked);
+
+  const actionBox = card.querySelector('input[data-action-key="'+key+'"]');
+  const actionWrap = card.querySelector('[data-item-key="'+key+'"] [data-aa-action-wrap]');
+  if(actionBox){
+    actionBox.disabled = !checkbox.checked;
+    if(!checkbox.checked) actionBox.checked = false;
+  }
+  if(actionWrap) actionWrap.classList.toggle('is-disabled', !checkbox.checked);
+
+  refreshAdminAccessSummary(card);
+}
+
+// Fired when a module's Edit (actions) switch changes.
+function onAdminActionToggle(email, checkbox){
+  const card = document.querySelector('[data-admin-email="'+CSS.escape(email)+'"]');
+  if(!card) return;
+  refreshAdminAccessSummary(card);
+}
+
+// Master switch — sets every module's View AND Edit switches at once, so
+// the whole set of feature + action buttons is controlled from one control.
+function toggleAllAdminModules(email, on){
+  const card = document.querySelector('[data-admin-email="'+CSS.escape(email)+'"]');
+  if(!card) return;
+  card.querySelectorAll('input[data-module-key]').forEach(cb => {
+    cb.checked = on;
+    const item = cb.closest('.aa-item');
+    if(item) item.classList.toggle('is-off', !on);
+  });
+  card.querySelectorAll('input[data-action-key]').forEach(cb => {
+    cb.checked = on;
+    cb.disabled = !on;
+  });
+  card.querySelectorAll('[data-aa-action-wrap]').forEach(wrap => wrap.classList.toggle('is-disabled', !on));
+  refreshAdminAccessSummary(card);
+}
+
+async function saveAdminAccess(email){
+  const card = document.querySelector('[data-admin-email="'+CSS.escape(email)+'"]');
+  if(!card) return;
+  const modules = {};
+  const actions = {};
+  card.querySelectorAll('input[data-module-key]').forEach(cb=>{
+    modules[cb.getAttribute('data-module-key')] = cb.checked;
+  });
+  card.querySelectorAll('input[data-action-key]').forEach(cb=>{
+    actions[cb.getAttribute('data-action-key')] = cb.checked;
+  });
+  const saveBtn = card.querySelector('.hr-btn-save');
+  const originalHtml = saveBtn ? saveBtn.innerHTML : '';
+  if(saveBtn){ saveBtn.disabled = true; saveBtn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i>Saving…'; }
+  try {
+    const res = await fetch(BASE + '/api/admin/sub-admins/' + encodeURIComponent(email) + '/modules', {
+      method:'PUT',
+      headers: Object.assign({'Content-Type':'application/json'}, authHeaders()),
+      body: JSON.stringify({ modules, actions })
+    });
+    const data = await res.json();
+    if(!res.ok){ alert(data.message || 'Could not update access.'); return; }
+    const dirtyNote = card.querySelector('[data-aa-dirty]');
+    if(dirtyNote) dirtyNote.style.display = 'none';
+  } catch(e){
+    alert('Network error. Please try again.');
+  } finally {
+    if(saveBtn){ saveBtn.disabled = false; saveBtn.innerHTML = originalHtml; }
   }
 }
 
@@ -4577,6 +4954,7 @@ function renderOwnerPhone(row){
 // actions (new listing, visit request, booking, honest review, payment
 // request/proof) are blocked server-side — see requireVerified in server.js.
 window.toggleUserVerified = async function(id, nextVerified){
+  if(blockIfViewOnly('customers')) return;
   const title = nextVerified ? 'Verify this customer?' : 'Revoke verification?';
   const message = nextVerified
     ? 'They\'ll be able to submit listings, visit requests, bookings, reviews, and payments once verified.'
@@ -4602,6 +4980,7 @@ window.toggleUserVerified = async function(id, nextVerified){
 
 /* ── DELETE HANDLERS ── */
 window.deleteBooking = async function(mobile){
+  if(blockIfViewOnly('customers')) return;
   if(!await showConfirmModal({ title:'Delete customer?', message:'This customer\'s registration will be permanently removed.' })) return;
   const res = await fetch(`${BASE}/api/users/mobile/${mobile}`, { method:'DELETE', headers: authHeaders() });
   const data = await res.json().catch(()=>({}));
@@ -4618,6 +4997,7 @@ window.deleteBooking = async function(mobile){
 };
 
 window.deleteProperty = async function(id){
+  if(blockIfViewOnly('properties')) return;
   if(!await showConfirmModal({ title:'Delete property?', message:'This listing will be permanently removed from your site.' })) return;
   const res = await fetch(`${BASE}/api/properties/${id}`, { method:'DELETE', headers: authHeaders() });
   const data = await res.json().catch(()=>({}));
@@ -4648,6 +5028,7 @@ async function loadTotalVisits(){
 }
 
 window.resetTotalVisits = async function(){
+  if(blockIfViewOnly('stats')) return;
   const ok = await showConfirmModal({ title:'Reset total visits?', message:'The all-time visit counter will be set back to 0. This cannot be undone.', okText:'Reset' });
   if(!ok) return;
   try{
@@ -4688,6 +5069,7 @@ async function loadDailyStat(type){
 }
 
 window.resetDailyStat = async function(type){
+  if(blockIfViewOnly('stats')) return;
   const meta = DAILY_STAT_LABELS[type];
   const ok = await showConfirmModal({ title:`Reset ${meta.label}?`, message:'Every day\'s count — today and every past month — will be set back to 0. This cannot be undone.', okText:'Reset all' });
   if(!ok) return;
@@ -4834,6 +5216,7 @@ window.clearReviewSelection = function(){
 };
 
 window.deleteSelectedReviews = async function(){
+  if(blockIfViewOnly('reviews')) return;
   const ids = Array.from(_selectedReviewIds);
   if(!ids.length) return;
   const ok = await showConfirmModal({
@@ -4856,6 +5239,7 @@ window.deleteSelectedReviews = async function(){
 };
 
 window.deleteAllReviews = async function(){
+  if(blockIfViewOnly('reviews')) return;
   const allRows = honestReviewsTable.rows().data().toArray();
   if(!allRows.length){ alert('There are no honest reviews to delete.'); return; }
   const ok = await showConfirmModal({
@@ -4880,6 +5264,7 @@ window.deleteAllReviews = async function(){
 };
 
 window.deleteHonestReview = async function(id){
+  if(blockIfViewOnly('reviews')) return;
   if(!await showConfirmModal({ title:'Delete this review?', message:'This video card will be permanently removed.' })) return;
   try{
     const res = await fetch(`${BASE}/api/honest-reviews/${id}`, { method:'DELETE', headers: authHeaders() });
@@ -4911,6 +5296,7 @@ window.toggleReviewActive = async function(id, checkboxEl){
 };
 
 window.setReviewStatus = async function(id, status){
+  if(blockIfViewOnly('reviews')) return;
   try{
     const res = await fetch(`${BASE}/api/honest-reviews/${id}`, {
       method:'PUT',
@@ -4952,6 +5338,7 @@ function closeHonestReviewModal(){
 window.closeHonestReviewModal = closeHonestReviewModal;
 
 window.saveHonestReview = async function(){
+  if(blockIfViewOnly('reviews')) return;
   const errEl = document.getElementById('hrFormError');
   errEl.classList.remove('show'); errEl.textContent = '';
 
@@ -5071,6 +5458,7 @@ window.clearPartnerSelection = function(){
 };
 
 window.deleteSelectedPartners = async function(){
+  if(blockIfViewOnly('partners')) return;
   const ids = Array.from(_selectedPartnerIds);
   if(!ids.length) return;
   const ok = await showConfirmModal({
@@ -5093,6 +5481,7 @@ window.deleteSelectedPartners = async function(){
 };
 
 window.deletePartner = async function(id){
+  if(blockIfViewOnly('partners')) return;
   if(!await showConfirmModal({ title:'Delete this partner?', message:'This partner card will be permanently removed from the About page.' })) return;
   try{
     const res = await fetch(`${BASE}/api/partners/${id}`, { method:'DELETE', headers: authHeaders() });
@@ -5136,6 +5525,7 @@ window.onReferralStatusFilterChange = function(value){
 };
 
 window.setReferralStatus = async function(id, status, selectEl){
+  if(blockIfViewOnly('referrals')) return;
   const prevValue = selectEl ? selectEl.getAttribute('data-prev') : null;
   if(selectEl) selectEl.disabled = true;
   try{
@@ -5309,6 +5699,7 @@ window.removePartnerPhoto = function(){
 };
 
 window.savePartner = async function(){
+  if(blockIfViewOnly('partners')) return;
   const errEl = document.getElementById('partnerFormError');
   errEl.classList.remove('show'); errEl.textContent = '';
 
@@ -5488,6 +5879,7 @@ window._bdRemoveImage = function(kind, i){
 };
 
 window.bdAddImagesFromFiles = async function(input, kind){
+  if(blockIfViewOnly('properties')){ input.value = ''; return; }
   const files = Array.from(input.files || []);
   input.value = '';
   if (!files.length) return;
@@ -5591,6 +5983,7 @@ document.addEventListener('change', (e) => {
 });
 
 window.saveBookingDetails = async function(){
+  if(blockIfViewOnly('properties')) return;
   const errEl = document.getElementById('bdFormError');
   errEl.classList.remove('show'); errEl.textContent = '';
 
@@ -5647,6 +6040,7 @@ window.saveBookingDetails = async function(){
    checkbox with no API call. */
 const PROP_FLAG_LABELS = { promoted: 'promoted', verified: 'verified', booked: 'booked', ownerDirectCall: 'public call (alt number)', ownerPhoneCall: 'public call (owner number)' };
 window.togglePropFlag = async function(id, field, checkboxEl){
+  if(blockIfViewOnly('properties')) return;
   const desired = checkboxEl.checked;
   const label = PROP_FLAG_LABELS[field] || field;
   const ok = await showConfirmModal({
@@ -5715,6 +6109,7 @@ window.togglePropFlag = async function(id, field, checkboxEl){
    blur/change (no confirm modal, since it's a plain reorder rather than a
    visibility change). */
 window.setPromotedPriority = async function(id, inputEl){
+  if(blockIfViewOnly('properties')) return;
   const raw = inputEl.value.trim();
   if(raw === ''){
     // Cleared back to blank — nothing to save; leave promotedPriority as-is.
@@ -5835,6 +6230,7 @@ function openWhatsAppTabs(numbers, text){
 }
 
 window.shareListingToOwner = async function(id){
+  if(blockIfViewOnly('properties')) return;
   const row = _adminPropCache[id];
   if(!row){ alert('Listing details not loaded yet — please retry.'); return; }
   if(!row.verified){ alert("This listing isn't verified yet — verify it first, then share."); return; }
@@ -5884,6 +6280,7 @@ function buildSocialCaption(row, link){
 }
 
 window.shareListingToFacebook = function(id){
+  if(blockIfViewOnly('properties')) return;
   const row = _adminPropCache[id];
   if(!row){ alert('Listing details not loaded yet — please retry.'); return; }
   if(!row.verified){ alert("This listing isn't verified yet — verify it first, then share."); return; }
@@ -5899,6 +6296,7 @@ window.shareListingToFacebook = function(id){
 };
 
 window.shareListingToInstagram = async function(id){
+  if(blockIfViewOnly('properties')) return;
   const row = _adminPropCache[id];
   if(!row){ alert('Listing details not loaded yet — please retry.'); return; }
   if(!row.verified){ alert("This listing isn't verified yet — verify it first, then share."); return; }
@@ -5939,6 +6337,7 @@ window.shareListingToInstagram = async function(id){
    property's name, location (with a Directions link to navigate there),
    and owner name/number/alt number before sending. */
 window.shareSelectedLinksToNumber = function(){
+  if(blockIfViewOnly('properties')) return;
   const ids = Array.from(_selectedPropIds);
   if(!ids.length){ alert('Select at least one property first.'); return; }
   renderShareLinksModal(ids);
@@ -6013,6 +6412,7 @@ function renderShareLinksModal(ids){
 }
 
 window.sendShareLinksToNumber = function(){
+  if(blockIfViewOnly('properties')) return;
   const ids = Array.from(_selectedPropIds);
   if(!ids.length){ alert('Select at least one property first.'); return; }
 
@@ -6074,6 +6474,7 @@ function buildAvailabilityCheckMessage(row){
 }
 
 window.checkAvailabilityForRow = function(id){
+  if(blockIfViewOnly('properties')) return;
   const row = _adminPropCache[id];
   if(!row){ alert('Listing details not loaded yet — please retry.'); return; }
   const num = waDigits(row.ownerAltPhone);
@@ -6085,6 +6486,7 @@ window.checkAvailabilityForRow = function(id){
 let _checkAvailPairs = [];
 
 window.checkAvailabilityWithOwners = function(){
+  if(blockIfViewOnly('properties')) return;
   const ids = Array.from(_selectedPropIds);
   if(!ids.length){ alert('Select at least one property first.'); return; }
 
@@ -6139,6 +6541,7 @@ function renderCheckAvailabilityModal(){
 }
 
 window.markCheckAvailSent = function(i){
+  if(blockIfViewOnly('properties')) return;
   const card = document.getElementById(`checkAvailCard-${i}`);
   if(card) card.classList.add('sent');
 };
@@ -6153,6 +6556,7 @@ document.getElementById('checkAvailabilityModal').addEventListener('click', func
 
 /* ── PROPERTY VIEWS: INDIVIDUAL & RESET-ALL ── */
 window.resetPropertyViews = async function(id, btnEl){
+  if(blockIfViewOnly('properties')) return;
   const ok = await showConfirmModal({ title:'Reset views?', message:"This listing's view count will be set back to 0. This cannot be undone.", okText:'Reset' });
   if(!ok) return;
   if(btnEl) btnEl.disabled = true;
@@ -6174,6 +6578,7 @@ window.resetPropertyViews = async function(id, btnEl){
 };
 
 window.resetAllViews = async function(){
+  if(blockIfViewOnly('properties')) return;
   const allRows = propTable.rows().data().toArray();
   if(!allRows.length){ alert('There are no properties to reset.'); return; }
   const ok = await showConfirmModal({
@@ -6317,6 +6722,7 @@ window.clearPropSelection = function(){
 };
 
 window.deleteSelectedProperties = async function(){
+  if(blockIfViewOnly('properties')) return;
   const ids = Array.from(_selectedPropIds);
   if(!ids.length) return;
   const ok = await showConfirmModal({
@@ -6345,6 +6751,7 @@ window.deleteSelectedProperties = async function(){
 };
 
 window.deleteAllProperties = async function(){
+  if(blockIfViewOnly('properties')) return;
   const allRows = propTable.rows().data().toArray();
   if(!allRows.length){ alert('There are no properties to delete.'); return; }
   const ok = await showConfirmModal({
@@ -6449,6 +6856,7 @@ window.clearCustSelection = function(){
 // sends the existing per-customer DELETE request for each selected row
 // (in parallel) and reports how many succeeded/failed.
 window.deleteSelectedCustomers = async function(){
+  if(blockIfViewOnly('customers')) return;
   const ids = Array.from(_selectedCustIds);
   if(!ids.length) return;
   const ok = await showConfirmModal({
@@ -6550,6 +6958,7 @@ window.clearApptSelection = function(){
 // sends the existing per-appointment DELETE request for each selected row
 // (in parallel) and reports how many succeeded/failed.
 window.deleteSelectedAppointments = async function(){
+  if(blockIfViewOnly('appointments')) return;
   const ids = Array.from(_selectedApptIds);
   if(!ids.length) return;
   const ok = await showConfirmModal({
@@ -6674,6 +7083,8 @@ window.closeRemarkInput = function(cancelBtn){
 };
 
 async function saveRemark(cell, id, type){
+  const remarkModule = type === 'customer' ? 'customers' : type === 'appointment' ? 'appointments' : 'properties';
+  if(blockIfViewOnly(remarkModule)) return;
   const input  = cell.querySelector('.remark-input');
   const newVal = input.value.trim();
   if(!newVal) return;
@@ -6702,6 +7113,8 @@ async function saveRemark(cell, id, type){
 }
 
 window.deleteRemark = async function(btn, id, type, idx){
+  const remarkModule = type === 'customer' ? 'customers' : type === 'appointment' ? 'appointments' : 'properties';
+  if(blockIfViewOnly(remarkModule)) return;
   if(!await showConfirmModal({ title:'Delete remark?', message:'This remark will be removed permanently.' })) return;
   const cell = btn.closest('.remark-cell');
   cell.classList.add('remark-saving');
@@ -7001,7 +7414,7 @@ $(document).ready(function(){
       { data:'promoted', orderable:false, className:'dt-body-center', render:(d,t,row)=>{
           if(t!=='display') return d ? 'Yes' : 'No';
           return `<label class="mini-toggle-wrap"><span class="mini-toggle promoted-toggle">
-            <input type="checkbox" ${d?'checked':''} onchange="togglePropFlag('${row._id}','promoted',this)">
+            <input type="checkbox" ${d?'checked':''} ${canAct('properties')?'':'disabled'} onchange="togglePropFlag('${row._id}','promoted',this)">
             <span class="slider"></span>
           </span></label>`;
       }},
@@ -7009,7 +7422,7 @@ $(document).ready(function(){
       { data:'verified', orderable:false, className:'dt-body-center', render:(d,t,row)=>{
           if(t!=='display') return d ? 'Yes' : 'No';
           return `<label class="mini-toggle-wrap"><span class="mini-toggle verified-toggle">
-            <input type="checkbox" ${d?'checked':''} onchange="togglePropFlag('${row._id}','verified',this)">
+            <input type="checkbox" ${d?'checked':''} ${canAct('properties')?'':'disabled'} onchange="togglePropFlag('${row._id}','verified',this)">
             <span class="slider"></span>
           </span></label>`;
       }},
@@ -7017,7 +7430,7 @@ $(document).ready(function(){
       { data:'booked', orderable:false, className:'dt-body-center', render:(d,t,row)=>{
           if(t!=='display') return d ? 'Yes' : 'No';
           return `<label class="mini-toggle-wrap"><span class="mini-toggle booked-toggle">
-            <input type="checkbox" ${d?'checked':''} onchange="togglePropFlag('${row._id}','booked',this)">
+            <input type="checkbox" ${d?'checked':''} ${canAct('properties')?'':'disabled'} onchange="togglePropFlag('${row._id}','booked',this)">
             <span class="slider"></span>
           </span></label>`;
       }},
@@ -7193,7 +7606,7 @@ $(document).ready(function(){
           if(t!=='display') return (p!=null ? p : '');
           return `<input type="number" min="0" step="1" class="promoted-priority-input"
             style="width:64px;text-align:center" placeholder="pos"
-            value="${p!=null ? escapeHtml(String(p)) : ''}"
+            value="${p!=null ? escapeHtml(String(p)) : ''}" ${canAct('properties')?'':'disabled'}
             onchange="setPromotedPriority('${row._id}', this)">`;
       }},
       /* 44 – Amenities (list, +N more opens modal) */
@@ -9567,6 +9980,7 @@ window.updateApptStatus = async function(sel){
 };
 
 window.deleteAppointment = async function(id){
+  if(blockIfViewOnly('appointments')) return;
   if(!await showConfirmModal({ title:'Delete appointment?', message:'This appointment will be permanently removed.' })) return;
   const res  = await fetch(`${BASE}/api/appointments/${id}`, { method:'DELETE', headers: authHeaders() });
   const data = await res.json().catch(()=>({}));
@@ -11171,6 +11585,7 @@ function findDuplicateOwnerPhoneListing(phone, excludeId) {
   return null;
 }
 async function adminSubmitListing() {
+  if(blockIfViewOnly('properties')) return;
   const firstError = validateListingForm();
   if (firstError) {
     const label = firstError.id === 'imgFormGroup'
