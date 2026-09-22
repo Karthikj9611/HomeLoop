@@ -836,6 +836,16 @@ table.dataTable.no-footer{border-bottom:none!important}
 .aa-footer{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .aa-dirty-note{font-size:0.76rem;color:var(--gold-dark);font-weight:600;display:flex;align-items:center;gap:6px}
 .aa-empty-hint{font-size:0.78rem;color:var(--ink3);font-weight:500}
+@media (max-width:640px){
+  .aa-card{padding:14px}
+  .aa-card-head{gap:10px}
+  .aa-master{width:100%;justify-content:space-between}
+  .aa-grid{grid-template-columns:1fr}
+  .aa-item{flex-wrap:wrap;row-gap:8px}
+  .aa-item i,.aa-item span.aa-item-label{flex-basis:auto}
+  .aa-item span.aa-item-label{flex:1 1 auto;min-width:0}
+  .aa-item-switches{flex-basis:100%;justify-content:flex-end;padding-top:6px;border-top:1px dashed var(--border)}
+}
 
 /* Toggle switch used for both the master switch and each module switch */
 .aa-switch{position:relative;display:inline-block;width:36px;height:20px;flex-shrink:0}
@@ -4471,6 +4481,19 @@ async function loadAdminMe(){
     const data = await res.json();
     CURRENT_ADMIN = data;
     applyAdminAccessUI();
+    // The property/customer/appointment tables can start their own initial
+    // ajax load independently of this call (whichever finishes first wins
+    // the race), so their row-action buttons — which check canAct() at
+    // render time — may have already rendered using the pre-login default
+    // (isSuperAdmin:true) before we knew the real permissions. Redraw any
+    // table that's already been created so it re-renders with the answer
+    // we just got, regardless of which one loaded first.
+    ['dataTable','propTable','apptTable','honestReviewsTable','partnersTable','referralsTable'].forEach(name => {
+      const t = window[name];
+      if(t && typeof t.draw === 'function'){
+        try{ t.draw(false); } catch(e){}
+      }
+    });
   } catch(e){}
 }
 
@@ -4491,6 +4514,7 @@ function applyAdminAccessUI(){
   // apart by CSS class alone.
   if(!isSuper){
     const addBtnByPanel = {
+      'properties':     '#panel-properties .btn-add-review, #panel-properties #addPropertyBtn',
       'honest-reviews': '#panel-honest-reviews .btn-add-review',
       'partners':       '#panel-partners .btn-add-review',
     };
@@ -4579,28 +4603,28 @@ async function loadAdminAccessTab(){
             const viewOn = sub.modules[key] !== false;
             const actOn  = sub.actions[key] !== false;
             return `
-            <label class="aa-item${viewOn ? '' : ' is-off'}" data-aa-item data-item-key="${key}">
+            <div class="aa-item${viewOn ? '' : ' is-off'}" data-aa-item data-item-key="${key}">
               <i class="fas ${MODULE_ICONS[key] || 'fa-toggle-on'}"></i>
               <span class="aa-item-label">${escapeHtml(data.availableModules[key])}</span>
               <span class="aa-item-switches">
-                <span class="aa-mini-switch" title="Can see this feature">
+                <label class="aa-mini-switch" title="Can see this feature">
                   <span class="aa-switch aa-switch-sm">
                     <input type="checkbox" data-module-key="${key}" ${viewOn ? 'checked' : ''}
                       onchange="onAdminModuleToggle('${escapeHtml(sub.email)}', this)">
                     <span class="aa-slider"></span>
                   </span>
                   <span class="aa-mini-label">View</span>
-                </span>
-                <span class="aa-mini-switch${viewOn ? '' : ' is-disabled'}" data-aa-action-wrap title="Can add/edit/delete within this feature">
+                </label>
+                <label class="aa-mini-switch${viewOn ? '' : ' is-disabled'}" data-aa-action-wrap title="Can add/edit/delete within this feature">
                   <span class="aa-switch aa-switch-sm">
                     <input type="checkbox" data-action-key="${key}" ${(viewOn && actOn) ? 'checked' : ''} ${viewOn ? '' : 'disabled'}
                       onchange="onAdminActionToggle('${escapeHtml(sub.email)}', this)">
                     <span class="aa-slider"></span>
                   </span>
                   <span class="aa-mini-label">Edit</span>
-                </span>
+                </label>
               </span>
-            </label>
+            </div>
           `; }).join('')}
         </div>
         <div class="aa-footer">
@@ -7646,30 +7670,39 @@ $(document).ready(function(){
           _adminPropCache[row._id] = row;
           const bd = row.bookingDetails || {};
           const bdHasDetails = !!(bd.bookedOn || bd.description || bd.ownerId || bd.tenantId);
+          // Sub-admin has view-only access to Properties: every action button
+          // below except "View" renders in its own disabled state, same as
+          // when the underlying prerequisite (verified/owner phone/address)
+          // isn't met — one flag short-circuits all of them.
+          const viewOnly = !canAct('properties');
+          const disabledBtn = (icon, label, title) =>
+            `<button class="btn-view" disabled title="${title}" style="opacity:.4;cursor:not-allowed;pointer-events:none"><i class="${icon}"></i><span class="btn-label"> ${label}</span></button>`;
           const bookingBtn = row.booked
-            ? `<button class="btn-booking-details${bdHasDetails ? ' bd-filled' : ''}" title="${bdHasDetails ? 'Booking details saved — view or edit' : 'Add booking details'}" onclick="openBookingDetailsModal('${row._id}')"><i class="fas fa-file-signature"></i><span class="btn-label"> Booking</span></button>`
+            ? (viewOnly
+                ? disabledBtn('fas fa-file-signature', 'Booking', 'View-only access — ask the primary admin to enable actions')
+                : `<button class="btn-booking-details${bdHasDetails ? ' bd-filled' : ''}" title="${bdHasDetails ? 'Booking details saved — view or edit' : 'Add booking details'}" onclick="openBookingDetailsModal('${row._id}')"><i class="fas fa-file-signature"></i><span class="btn-label"> Booking</span></button>`)
             : '';
-          const shareBtn = row.verified
+          const shareBtn = (row.verified && !viewOnly)
             ? `<button class="btn-view" style="background:#25D366;border-color:#25D366;color:#fff" title="Share the live link with the owner (and alt number) via WhatsApp" onclick="shareListingToOwner('${row._id}')"><i class="fab fa-whatsapp"></i><span class="btn-label"> Share</span></button>`
-            : `<button class="btn-view" disabled title="Verify this listing first to enable sharing" style="opacity:.4;cursor:not-allowed;pointer-events:none"><i class="fab fa-whatsapp"></i><span class="btn-label"> Share</span></button>`;
-          const fbShareBtn = row.verified
+            : disabledBtn('fab fa-whatsapp', 'Share', viewOnly ? 'View-only access — ask the primary admin to enable actions' : 'Verify this listing first to enable sharing');
+          const fbShareBtn = (row.verified && !viewOnly)
             ? `<button class="btn-view" style="background:#1877F2;border-color:#1877F2;color:#fff" title="Share this listing to HomeLoop's Facebook Page" onclick="shareListingToFacebook('${row._id}')"><i class="fab fa-facebook"></i><span class="btn-label"> Facebook</span></button>`
-            : `<button class="btn-view" disabled title="Verify this listing first to enable sharing" style="opacity:.4;cursor:not-allowed;pointer-events:none"><i class="fab fa-facebook"></i><span class="btn-label"> Facebook</span></button>`;
-          const igShareBtn = row.verified
+            : disabledBtn('fab fa-facebook', 'Facebook', viewOnly ? 'View-only access — ask the primary admin to enable actions' : 'Verify this listing first to enable sharing');
+          const igShareBtn = (row.verified && !viewOnly)
             ? `<button class="btn-view" style="background:linear-gradient(45deg,#405DE6,#5851DB,#833AB4,#C13584,#E1306C,#FD1D1D);border-color:#C13584;color:#fff" title="Share this listing to HomeLoop's Instagram" onclick="shareListingToInstagram('${row._id}')"><i class="fab fa-instagram"></i><span class="btn-label"> Instagram</span></button>`
-            : `<button class="btn-view" disabled title="Verify this listing first to enable sharing" style="opacity:.4;cursor:not-allowed;pointer-events:none"><i class="fab fa-instagram"></i><span class="btn-label"> Instagram</span></button>`;
-          const checkAvailBtn = row.ownerAltPhone
+            : disabledBtn('fab fa-instagram', 'Instagram', viewOnly ? 'View-only access — ask the primary admin to enable actions' : 'Verify this listing first to enable sharing');
+          const checkAvailBtn = (row.ownerAltPhone && !viewOnly)
             ? `<button class="btn-view" style="background:#25D366;border-color:#25D366;color:#fff" title="Ask the owner (alt number) via WhatsApp whether this listing is still available" onclick="checkAvailabilityForRow('${row._id}')"><i class="fas fa-circle-question"></i><span class="btn-label"> Check</span></button>`
-            : `<button class="btn-view" disabled title="No owner alternate number on file for this listing" style="opacity:.4;cursor:not-allowed;pointer-events:none"><i class="fas fa-circle-question"></i><span class="btn-label"> Check</span></button>`;
+            : disabledBtn('fas fa-circle-question', 'Check', viewOnly ? 'View-only access — ask the primary admin to enable actions' : 'No owner alternate number on file for this listing');
           const mapsUrl = propertyMapsUrl(row);
-          const navigateBtn = mapsUrl
+          const navigateBtn = (mapsUrl && !viewOnly)
             ? `<button class="btn-view" style="background:#4285F4;border-color:#4285F4;color:#fff" title="Open this property's location in Google Maps" onclick="window.open('${mapsUrl.replace(/'/g, "\\'")}', '_blank', 'noopener')"><i class="fas fa-location-arrow"></i><span class="btn-label"> Navigate</span></button>`
-            : `<button class="btn-view" disabled title="No address or coordinates on file for this listing" style="opacity:.4;cursor:not-allowed;pointer-events:none"><i class="fas fa-location-arrow"></i><span class="btn-label"> Navigate</span></button>`;
+            : disabledBtn('fas fa-location-arrow', 'Navigate', viewOnly ? 'View-only access — ask the primary admin to enable actions' : 'No address or coordinates on file for this listing');
           const dirUrl = propertyDirectionsUrl(row);
           const dirDistLabel = directionsDistanceLabel(row);
-          const directionsBtn = dirUrl
+          const directionsBtn = (dirUrl && !viewOnly)
             ? `<button class="btn-view" style="background:#34A853;border-color:#34A853;color:#fff" title="Get driving directions from your current location to this property" onclick="window.open('${dirUrl.replace(/'/g, "\\'")}', '_blank', 'noopener')"><i class="fas fa-route"></i><span class="btn-label"> Directions${dirDistLabel ? ' · ' : ''}</span><span class="btn-dist">${dirDistLabel}</span></button>`
-            : `<button class="btn-view" disabled title="No address or coordinates on file for this listing" style="opacity:.4;cursor:not-allowed;pointer-events:none"><i class="fas fa-route"></i><span class="btn-label"> Directions</span></button>`;
+            : disabledBtn('fas fa-route', 'Directions', viewOnly ? 'View-only access — ask the primary admin to enable actions' : 'No address or coordinates on file for this listing');
           return `<div style="display:inline-flex;gap:6px;flex-wrap:nowrap;justify-content:center">
             <button class="btn-view" onclick="openAdminPropModal('${row._id}')"><i class="fas fa-eye"></i><span class="btn-label"> View</span></button>
             ${navigateBtn}
@@ -10530,6 +10563,7 @@ function resetFieldVisibility() {
    meta block (listed-on, property ID, remarks) don't apply since there's
    nothing to view yet. */
 function openAdminAddPropertyModal() {
+  if(blockIfViewOnly('properties')) return;
   editingPropertyId = null;
   resetListingForm();
   onFTypeChange(document.getElementById('f-type').value);
