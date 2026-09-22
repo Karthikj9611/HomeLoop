@@ -4706,6 +4706,29 @@ main.tab-explore .empty-state{display:none !important}
     </div>
   </div>
 
+  <!-- ALL TYPES: Facilities (Lift / Car Parking / Bike Parking / Verified) —
+       the filter-matching logic for these (fs.lift/carpark/bikepark/verified)
+       and the FD_GROUPS.facilities entry already existed, but this button was
+       never added, so there was no way to actually use them. -->
+  <div class="fd-btn fd-rent fd-lease fd-pg fd-shortstay fd-sell" id="fdb-facilities" onclick="toggleFd('facilities',this)">
+    <span class="fd-icon">🅿️</span>
+    <span class="fd-label">Facilities</span> <span class="fd-badge" id="fdbc-facilities" style="display:none"></span>
+    <svg class="chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+    <div class="fd-pop" id="fdp-facilities" onclick="event.stopPropagation()">
+      <div class="fd-pop-label">Facilities</div>
+      <div class="fd-opts" id="fdo-facilities">
+        <div class="fp-opt" data-filter="lift" data-val="true" onclick="toggleOpt(this,'facilities')">🛗 Lift</div>
+        <div class="fp-opt" data-filter="carpark" data-val="true" onclick="toggleOpt(this,'facilities')">🚗 Car Parking</div>
+        <div class="fp-opt" data-filter="bikepark" data-val="true" onclick="toggleOpt(this,'facilities')">🛵 Bike Parking</div>
+        <div class="fp-opt" data-filter="verified" data-val="true" onclick="toggleOpt(this,'facilities')">✅ Verified</div>
+      </div>
+      <div class="fd-pop-footer">
+        <button class="fd-clear-btn" onclick="clearFd('facilities')">Clear</button>
+        <button class="fd-apply-btn" onclick="applyFd('facilities')">Apply</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ALL TYPES: Deposit (security deposit — same underlying price.deposit field) -->
   <div class="fd-btn fd-rent fd-lease fd-pg" id="fdb-deposit" onclick="toggleFd('deposit',this)">
     <span class="fd-icon">🏦</span>
