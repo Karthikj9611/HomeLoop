@@ -85,6 +85,14 @@ const UserSchema = new mongoose.Schema({
   // until this is true — login/profile/browsing still work either way.
   isVerified:  { type: Boolean, default: false },
   verifiedAt:  { type: Date, default: null },
+  // Admin "Public call" switch at the *user* level (Customers grid). While true,
+  // every listing belonging to this user (listing.userId, or owner.phone/altPhone
+  // matching this user's mobile) is served by GET /api/properties as if its own
+  // "Public call" toggle on the ALT number (ownerDirectCall) were ON — so the Call button shows up for that user's
+  // listings, including ones they post later. Nothing is written onto the
+  // listings themselves; switching this off reverts them immediately, and any
+  // per-listing toggle an admin set separately is left untouched.
+  publicCall:  { type: Boolean, default: false },
   remarks:   { type: [RemarkEntrySchema], default: [] },
   // Human-readable unique id, same pattern as Property.propertyId (e.g. USER-000001).
   // This is a *display* identifier, distinct from the Mongo _id. Session docs
@@ -1589,7 +1597,9 @@ app.get('/api/properties', async (req, res) => {
 
     // Internal/admin-only fields — never read by the public frontend
     const PUBLIC_SELECT =
-      '-remarks -userId -userReadableId -__v -bookingDetails ' +
+      // userId is fetched (not excluded) only so the user-level "Public call"
+      // switch can be resolved below — it's deleted from every doc before the response.
+      '-remarks -userReadableId -__v -bookingDetails ' +
       // Owner PII that only ever populated hidden form inputs in the read-only
       // detail view (VIEW_ALWAYS_HIDDEN_GROUPS on the frontend). owner.phone is
       // excluded too — Call/WhatsApp now read owner.agentPhone only (dynamically),
@@ -1620,6 +1630,29 @@ app.get('/api/properties', async (req, res) => {
       modelsToQuery.map(M => M.find(filter).select(PUBLIC_SELECT).lean())
     );
     let docs = docArrays.flat();
+
+    // User-level "Public call": users an admin switched ON in the Customers grid.
+    // Their listings (matched by userId, or by owner number == the user's login
+    // mobile, same ownership rule as getUserOwnershipFilter) behave as if the
+    // listing's own Public call toggle on the ALT number were ON. Computed per request, never
+    // stored on the listing.
+    const pcUsers = await User.find({ publicCall: true }).select('_id mobile').lean();
+    const pcUserIds     = new Set(pcUsers.map(u => String(u._id)));
+    const pcUserMobiles = new Set(pcUsers.map(u => normalizeMobile(u.mobile)).filter(Boolean));
+    if (pcUserIds.size || pcUserMobiles.size) {
+      docs.forEach(doc => {
+        const o = doc.owner || {};
+        const main = String(o.phone || '').trim();
+        const alt  = String(o.altPhone || '').trim();
+        const byUser   = doc.userId && pcUserIds.has(String(doc.userId));
+        const byMobile = (main && pcUserMobiles.has(normalizeMobile(main))) ||
+                         (alt  && pcUserMobiles.has(normalizeMobile(alt)));
+        if (!byUser && !byMobile) return;
+        // Same as the per-listing "Public call" on the ALT number: only when an alt number is on file.
+        if (alt) doc.ownerDirectCall = true;
+      });
+    }
+    docs.forEach(doc => { delete doc.userId; });
 
     // Backfill location.pincode from the free-text address for listings that
     // never got an explicit pincode saved (older/imported listings). Mirrors

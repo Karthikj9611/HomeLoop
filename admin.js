@@ -567,6 +567,7 @@ module.exports = function registerAdminRoutes(app, deps) {
         accountType:   u.accountType || 'customer',
         isVerified:    !!u.isVerified,
         verifiedAt:    u.verifiedAt || null,
+        publicCall:    !!u.publicCall,
         listingsCount: propMap[String(u._id)]  || 0,
         visitsCount:   visitMap[String(u._id)] || 0,
         createdAt:     u.createdAt,
@@ -654,6 +655,24 @@ module.exports = function registerAdminRoutes(app, deps) {
     } catch (err) {
       console.error('PATCH /api/users/:id/verify error:', err);
       res.status(500).json({ message: 'Error updating verification status' });
+    }
+  });
+
+  // ── PATCH /api/users/:id/publicCall (admin: user-level "Public call" toggle) ──
+  // While ON, every listing of this user shows the public Call button on the site
+  // (see GET /api/properties in server.js). Body: { publicCall: true | false }.
+  app.patch('/api/users/:id/publicCall', requireAdmin, requireModuleAction('customers'), async (req, res) => {
+    try {
+      const { id } = req.params;
+      if (!mongoose.Types.ObjectId.isValid(id)) return res.status(400).json({ message: 'Invalid user id' });
+      const value = (req.body || {}).publicCall;
+      if (typeof value !== 'boolean') return res.status(400).json({ message: 'publicCall must be a boolean' });
+      const user = await User.findByIdAndUpdate(id, { publicCall: value }, { new: true }).lean();
+      if (!user) return res.status(404).json({ message: 'Customer not found' });
+      res.json({ message: 'Public call updated', _id: user._id, publicCall: !!user.publicCall });
+    } catch (err) {
+      console.error('PATCH /api/users/:id/publicCall error:', err);
+      res.status(500).json({ message: 'Error updating public call' });
     }
   });
 
@@ -851,7 +870,28 @@ module.exports = function registerAdminRoutes(app, deps) {
   // nested shape stays untouched for whatever already consumes it.
   app.get('/api/admin/properties', requireAdmin, requireModule('properties'), async (req, res) => {
     try {
-      const docArrays = await Promise.all(LISTING_MODEL_LIST.map(M => M.find({}).populate('userId', 'profilePhoto').lean()));
+      const docArrays = await Promise.all(LISTING_MODEL_LIST.map(M => M.find({}).populate('userId', 'profilePhoto publicCall').lean()));
+
+      // User-level "Public call" — same matching rule as GET /api/properties in server.js:
+      // a listing is covered when its userId is a switched-on user, OR its owner/alt number
+      // equals that user's login mobile. (Previously admin checked userId only, so
+      // mobile-matched listings were public on the site but not flagged here.)
+      const _normMobile = raw => {
+        let d = String(raw || '').replace(/\D/g, '');
+        if (d.length > 10 && d.startsWith('0')) d = d.slice(1);
+        if (d.length > 10 && d.startsWith('91')) d = d.slice(d.length - 10);
+        return d;
+      };
+      const _pcUsers   = await User.find({ publicCall: true }).select('_id mobile').lean();
+      const _pcIds     = new Set(_pcUsers.map(u => String(u._id)));
+      const _pcMobiles = new Set(_pcUsers.map(u => _normMobile(u.mobile)).filter(Boolean));
+      const isPublicViaUser = doc => {
+        const o = doc.owner || {};
+        const uid = doc.userId && (doc.userId._id || doc.userId);
+        if (uid && _pcIds.has(String(uid))) return true;
+        const main = _normMobile(o.phone), alt = _normMobile(o.altPhone);
+        return !!((main && _pcMobiles.has(main)) || (alt && _pcMobiles.has(alt)));
+      };
       // 0 and null/undefined both mean "unranked" (see the promoted-priority
       // route below and admin.html's column render) and must sort to the
       // back, behind any listing with a real (>0) position.
@@ -914,6 +954,7 @@ module.exports = function registerAdminRoutes(app, deps) {
           booked:       !!doc.booked,
           ownerDirectCall: !!doc.ownerDirectCall,
           ownerPhoneCall:  !!doc.ownerPhoneCall,
+          userPublicCall:  isPublicViaUser(doc), // user-level Public call is ON for this listing's user (by userId or owner mobile) — same rule as the site
           bookingDetails: doc.bookingDetails || null,
           bhk:          property.bhk || '',
           area:         property.area || '',
