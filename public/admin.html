@@ -4776,16 +4776,6 @@ function renderPhone(row){
   if(row.mobile) return `<a href="tel:${escapeHtml(row.mobile)}" class="phone-link">${escapeHtml(row.mobile)}</a>`;
   return `<span class="no-contact">—</span>`;
 }
-// Phone + user-level "Public call" toggle. When ON, every listing of this user
-// gets the public Call button on the site (current and future listings).
-function renderPhoneWithPublicCall(row){
-  if(!row.mobile) return renderPhone(row);
-  return `<div class="altcall-cell">${renderPhone(row)}
-    <label class="mini-toggle-wrap altcall-wrap" title="When ON, visitors on the site get a Call owner button (alt number) on all of this user's listings"><span class="mini-toggle altcall-toggle">
-      <input type="checkbox" ${row.publicCall?'checked':''} ${canAct('customers')?'':'disabled'} onchange="toggleUserPublicCall('${row._id}',this)">
-      <span class="slider"></span>
-    </span><span class="altcall-label">Public call</span></label></div>`;
-}
 function renderEmail(row){
   if(row.email) return `<a href="mailto:${escapeHtml(row.email)}" class="email-link" title="${escapeHtml(row.email)}"><i class="fas fa-envelope"></i>${escapeHtml(row.email)}</a>`;
   return `<span class="no-contact">—</span>`;
@@ -5010,52 +5000,6 @@ window.toggleUserVerified = async function(id, nextVerified){
     dataTable.ajax.reload(null,false);
   } else {
     alert(data.message || 'Error updating verification status');
-  }
-};
-
-/* ── USER-LEVEL PUBLIC CALL ──
-   Same confirm-then-save flow as togglePropFlag. Turning it on makes every
-   listing of this user show the public Call button on the site. */
-window.toggleUserPublicCall = async function(id, checkboxEl){
-  if(blockIfViewOnly('customers')){ checkboxEl.checked = !checkboxEl.checked; return; }
-  const desired = checkboxEl.checked;
-  const ok = await showConfirmModal({
-    title: `Turn ${desired ? 'on' : 'off'} public call for this user?`,
-    message: desired
-      ? 'Visitors will see a Call button on ALL of this user\'s listings (including ones they post later), dialing the owner ALT number of each listing.'
-      : 'The public Call button will be removed from this user\'s listings, unless a listing has its own Public call turned on.',
-    okText: desired ? 'Turn on' : 'Turn off',
-    variant: 'info'
-  });
-  if(!ok){ checkboxEl.checked = !desired; return; }
-  checkboxEl.disabled = true;
-  try{
-    const res = await fetch(`${BASE}/api/users/${id}/publicCall`, {
-      method:'PATCH',
-      headers:{ ...authHeaders(), 'Content-Type':'application/json' },
-      body: JSON.stringify({ publicCall: desired })
-    });
-    const data = await res.json().catch(()=>({}));
-    if(!res.ok){
-      checkboxEl.checked = !desired;
-      alert(data.message || 'Failed to update public call');
-      return;
-    }
-    const confirmed = typeof data.publicCall === 'boolean' ? data.publicCall : desired;
-    checkboxEl.checked = confirmed;
-    // keep the row data / modal cache in sync without a full reload
-    dataTable.rows().every(function(){
-      const rd = this.data();
-      if(rd && String(rd._id) === String(id)) rd.publicCall = confirmed;
-    });
-    Object.values(_customerCache).forEach(c => { if(c && String(c._id) === String(id)) c.publicCall = confirmed; });
-    // The properties table shows "via user" hints — refresh it if it's been loaded.
-    if(typeof propTable !== 'undefined' && propTable && propTable.ajax) propTable.ajax.reload(null,false);
-  } catch(err){
-    checkboxEl.checked = !desired;
-    alert('Failed to update public call');
-  } finally {
-    checkboxEl.disabled = false;
   }
 };
 
@@ -7308,7 +7252,7 @@ $(document).ready(function(){
       /* 4 – User ID */
       { data:'userId', render:(d)=> escapeHtml(d||'—') },
       /* 5 – Phone */
-      { data:null, render:(d,t,row)=>{ if(t==='display') return renderPhoneWithPublicCall(row); return plainPhone(row); }},
+      { data:null, render:(d,t,row)=>{ if(t==='display') return renderPhone(row); return plainPhone(row); }},
       /* 6 – Email */
       { data:null, render:(d,t,row)=>{ if(t==='display') return renderEmail(row); return plainEmail(row); }},
       /* 7 – Property Listings (count) */
@@ -7535,9 +7479,7 @@ $(document).ready(function(){
       { data:'ownerAltPhone', render:(d,t,row)=>{
           if(t!=='display') return d||'';
           if(!d) return '—'; // no alt number on file → nothing to expose, so no toggle
-          const viaUser = row.userPublicCall && !row.ownerDirectCall
-            ? `<span class="altcall-label" style="color:var(--green,#1a7a5e)" title="Public call is ON for this listing's user (Customers tab)">Public via user</span>` : '';
-          return `<div class="altcall-cell"><a href="tel:${escapeHtml(d)}" class="phone-link">${escapeHtml(d)}</a>${viaUser}
+          return `<div class="altcall-cell"><a href="tel:${escapeHtml(d)}" class="phone-link">${escapeHtml(d)}</a>
             <label class="mini-toggle-wrap altcall-wrap" title="When ON, visitors on the site get a Call owner button that dials this number"><span class="mini-toggle altcall-toggle">
               <input type="checkbox" ${row.ownerDirectCall?'checked':''} onchange="togglePropFlag('${row._id}','ownerDirectCall',this)">
               <span class="slider"></span>
@@ -10242,10 +10184,6 @@ function openCustomerModal(id){
       value:c.isVerified
         ? ('Verified' + (c.verifiedAt ? ' on ' + fmtDateDMY(new Date(c.verifiedAt)) : ''))
         : 'Pending — cannot submit listings, visits, bookings, reviews or payments yet'
-    },
-    {
-      label:'Public Call',
-      value:c.publicCall ? 'ON — alt-number Call button shows on all their listings' : 'OFF'
     },
     {
       label:'Property Listings',
