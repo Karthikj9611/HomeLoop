@@ -1649,7 +1649,9 @@ app.get('/api/properties', async (req, res) => {
                          (alt  && pcUserMobiles.has(normalizeMobile(alt)));
         if (!byUser && !byMobile) return;
         // Same as the per-listing "Public call" on the ALT number: only when an alt number is on file.
-        if (alt) doc.ownerDirectCall = true;
+        // User-level Public call means "call the ALT number" — so also switch OFF the listing's own
+        // main-number public call, otherwise the site/cards dial the main owner number first.
+        if (alt) { doc.ownerDirectCall = true; doc.ownerPhoneCall = false; }
       });
     }
     docs.forEach(doc => { delete doc.userId; });
