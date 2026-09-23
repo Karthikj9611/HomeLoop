@@ -4555,22 +4555,6 @@ main.tab-explore .empty-state{display:none !important}
       </div>
     </div>
   </div>
-
-  <!-- RENT + LEASE + PG + SHORT STAY: Property Type -->
-  <div class="fd-btn fd-rent fd-lease fd-pg fd-shortstay fd-sell" id="fdb-type" onclick="toggleFd('type',this)">
-    <span class="fd-icon">🏢</span>
-    <span class="fd-label">Type</span> <span class="fd-badge" id="fdbc-type" style="display:none"></span>
-    <svg class="chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
-    <div class="fd-pop" id="fdp-type" onclick="event.stopPropagation()">
-      <div class="fd-pop-label">Property type</div>
-      <input class="fd-search" type="text" placeholder="Search type…" oninput="fdSearchOpts('fdo-type', this.value)"/>
-      <div class="fd-opts" id="fdo-type"></div>
-      <div class="fd-pop-footer">
-        <button class="fd-clear-btn" onclick="clearFd('type')">Clear</button>
-        <button class="fd-apply-btn" onclick="applyFd('type')">Apply</button>
-      </div>
-    </div>
-  </div>
   
       <!-- RENT + LEASE: Tenant -->
   <div class="fd-btn fd-rent fd-lease" id="fdb-tenant" onclick="toggleFd('tenant',this)">
@@ -4584,6 +4568,22 @@ main.tab-explore .empty-state{display:none !important}
       <div class="fd-pop-footer">
         <button class="fd-clear-btn" onclick="clearFd('tenant')">Clear</button>
         <button class="fd-apply-btn" onclick="applyFd('tenant')">Apply</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- RENT + LEASE + PG + SHORT STAY: Property Type -->
+  <div class="fd-btn fd-rent fd-lease fd-pg fd-shortstay fd-sell" id="fdb-type" onclick="toggleFd('type',this)">
+    <span class="fd-icon">🏢</span>
+    <span class="fd-label">Type</span> <span class="fd-badge" id="fdbc-type" style="display:none"></span>
+    <svg class="chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+    <div class="fd-pop" id="fdp-type" onclick="event.stopPropagation()">
+      <div class="fd-pop-label">Property type</div>
+      <input class="fd-search" type="text" placeholder="Search type…" oninput="fdSearchOpts('fdo-type', this.value)"/>
+      <div class="fd-opts" id="fdo-type"></div>
+      <div class="fd-pop-footer">
+        <button class="fd-clear-btn" onclick="clearFd('type')">Clear</button>
+        <button class="fd-apply-btn" onclick="applyFd('type')">Apply</button>
       </div>
     </div>
   </div>
@@ -4651,22 +4651,6 @@ main.tab-explore .empty-state{display:none !important}
       </div>
     </div>
   </div>
-
-  <!-- RENT + LEASE: Furnishing -->
-  <div class="fd-btn fd-rent fd-lease fd-pg fd-shortstay fd-sell" id="fdb-furnishing" onclick="toggleFd('furnishing',this)">
-    <span class="fd-icon">🛋️</span>
-    <span class="fd-label">Furnishing</span> <span class="fd-badge" id="fdbc-furnishing" style="display:none"></span>
-    <svg class="chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
-    <div class="fd-pop" id="fdp-furnishing" onclick="event.stopPropagation()">
-      <div class="fd-pop-label">Furnishing</div>
-      <input class="fd-search" type="text" placeholder="Search furnishing…" oninput="fdSearchOpts('fdo-furnishing', this.value)"/>
-      <div class="fd-opts" id="fdo-furnishing"></div>
-      <div class="fd-pop-footer">
-        <button class="fd-clear-btn" onclick="clearFd('furnishing')">Clear</button>
-        <button class="fd-apply-btn" onclick="applyFd('furnishing')">Apply</button>
-      </div>
-    </div>
-  </div>
   
 
 
@@ -4698,6 +4682,22 @@ main.tab-explore .empty-state{display:none !important}
       <div class="fd-pop-footer">
         <button class="fd-clear-btn" onclick="clearFd('bathrooms')">Clear</button>
         <button class="fd-apply-btn" onclick="applyFd('bathrooms')">Apply</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- RENT + LEASE: Furnishing -->
+  <div class="fd-btn fd-rent fd-lease fd-pg fd-shortstay fd-sell" id="fdb-furnishing" onclick="toggleFd('furnishing',this)">
+    <span class="fd-icon">🛋️</span>
+    <span class="fd-label">Furnishing</span> <span class="fd-badge" id="fdbc-furnishing" style="display:none"></span>
+    <svg class="chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+    <div class="fd-pop" id="fdp-furnishing" onclick="event.stopPropagation()">
+      <div class="fd-pop-label">Furnishing</div>
+      <input class="fd-search" type="text" placeholder="Search furnishing…" oninput="fdSearchOpts('fdo-furnishing', this.value)"/>
+      <div class="fd-opts" id="fdo-furnishing"></div>
+      <div class="fd-pop-footer">
+        <button class="fd-clear-btn" onclick="clearFd('furnishing')">Clear</button>
+        <button class="fd-apply-btn" onclick="applyFd('furnishing')">Apply</button>
       </div>
     </div>
   </div>
@@ -4750,51 +4750,6 @@ main.tab-explore .empty-state{display:none !important}
       </div>
     </div>
   </div>
-  
-      <!-- RENT + LEASE: Area -->
-  <div class="fd-btn fd-rent fd-lease fd-sell" id="fdb-area" onclick="toggleFd('area',this)">
-    <span class="fd-icon">📐</span>
-    <span class="fd-label">Sqft</span> <span class="fd-badge" id="fdbc-area" style="display:none"></span>
-    <svg class="chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
-    <div class="fd-pop" id="fdp-area" onclick="event.stopPropagation()">
-      <div class="fd-pop-label">Sqft</div>
-      <input class="fd-search" type="text" placeholder="Search sqft…" oninput="fdSearchOpts('fdo-area', this.value)"/>
-      <div class="fd-opts" id="fdo-area">
-        <div class="fp-opt" data-filter="_areaBucket" data-val="0-500" onclick="toggleOpt(this,'area')">Under 500</div>
-        <div class="fp-opt" data-filter="_areaBucket" data-val="500-1000" onclick="toggleOpt(this,'area')">500 – 1000</div>
-        <div class="fp-opt" data-filter="_areaBucket" data-val="1000-1500" onclick="toggleOpt(this,'area')">1000 – 1500</div>
-        <div class="fp-opt" data-filter="_areaBucket" data-val="1500-2000" onclick="toggleOpt(this,'area')">1500 – 2000</div>
-        <div class="fp-opt" data-filter="_areaBucket" data-val="2000-" onclick="toggleOpt(this,'area')">Above 2000</div>
-      </div>
-      <div class="fd-pop-footer">
-        <button class="fd-clear-btn" onclick="clearFd('area')">Clear</button>
-        <button class="fd-apply-btn" onclick="applyFd('area')">Apply</button>
-      </div>
-    </div>
-  </div>
-  
-  
-  <!-- ALL: Available from -->
-  <div class="fd-btn fd-rent fd-lease fd-pg fd-sell" id="fdb-availFrom" onclick="toggleFd('availFrom',this)">
-    <span class="fd-icon">📅</span>
-    <span class="fd-label">Available</span> <span class="fd-badge" id="fdbc-availFrom" style="display:none"></span>
-    <svg class="chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
-    <div class="fd-pop" id="fdp-availFrom" onclick="event.stopPropagation()">
-      <div class="fd-pop-label">Available from</div>
-      <input class="fd-search" type="text" placeholder="Search availability…" oninput="fdSearchOpts('fdo-availFrom', this.value)"/>
-      <div class="fd-opts" id="fdo-availFrom">
-        <div class="fp-opt" data-filter="_availBucket" data-val="0-7" onclick="toggleOpt(this,'availFrom')">Immediate (≤7 days)</div>
-        <div class="fp-opt" data-filter="_availBucket" data-val="7-15" onclick="toggleOpt(this,'availFrom')">Within 15 days</div>
-        <div class="fp-opt" data-filter="_availBucket" data-val="15-30" onclick="toggleOpt(this,'availFrom')">Within 1 month</div>
-        <div class="fp-opt" data-filter="_availBucket" data-val="30-90" onclick="toggleOpt(this,'availFrom')">Within 3 months</div>
-        <div class="fp-opt" data-filter="_availBucket" data-val="90-" onclick="toggleOpt(this,'availFrom')">Later</div>
-      </div>
-      <div class="fd-pop-footer">
-        <button class="fd-clear-btn" onclick="clearFd('availFrom')">Clear</button>
-        <button class="fd-apply-btn" onclick="applyFd('availFrom')">Apply</button>
-      </div>
-    </div>
-  </div>
 
   <!-- ALL TYPES: Amenities -->
   <div class="fd-btn fd-rent fd-lease fd-pg fd-shortstay fd-sell" id="fdb-amenities" onclick="toggleFd('amenities',this)">
@@ -4835,6 +4790,24 @@ main.tab-explore .empty-state{display:none !important}
 
 
 
+  <!-- RENT + LEASE: Age -->
+  <div class="fd-btn fd-rent fd-lease fd-sell" id="fdb-age" onclick="toggleFd('age',this)">
+    <span class="fd-icon">🏗️</span>
+    <span class="fd-label">Age</span> <span class="fd-badge" id="fdbc-age" style="display:none"></span>
+    <svg class="chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+    <div class="fd-pop" id="fdp-age" onclick="event.stopPropagation()">
+      <div class="fd-pop-label">Age of property</div>
+      <input class="fd-search" type="text" placeholder="Search age…" oninput="fdSearchOpts('fdo-age', this.value)"/>
+      <div class="fd-opts" id="fdo-age"></div>
+      <div class="fd-pop-footer">
+        <button class="fd-clear-btn" onclick="clearFd('age')">Clear</button>
+        <button class="fd-apply-btn" onclick="applyFd('age')">Apply</button>
+      </div>
+    </div>
+  </div>
+
+
+
 
 
 
@@ -4854,21 +4827,25 @@ main.tab-explore .empty-state{display:none !important}
       </div>
     </div>
   </div>
-
-
-
-  <!-- RENT + LEASE: Age -->
-  <div class="fd-btn fd-rent fd-lease fd-sell" id="fdb-age" onclick="toggleFd('age',this)">
-    <span class="fd-icon">🏗️</span>
-    <span class="fd-label">Age</span> <span class="fd-badge" id="fdbc-age" style="display:none"></span>
+  
+      <!-- RENT + LEASE: Area -->
+  <div class="fd-btn fd-rent fd-lease fd-sell" id="fdb-area" onclick="toggleFd('area',this)">
+    <span class="fd-icon">📐</span>
+    <span class="fd-label">Sqft</span> <span class="fd-badge" id="fdbc-area" style="display:none"></span>
     <svg class="chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
-    <div class="fd-pop" id="fdp-age" onclick="event.stopPropagation()">
-      <div class="fd-pop-label">Age of property</div>
-      <input class="fd-search" type="text" placeholder="Search age…" oninput="fdSearchOpts('fdo-age', this.value)"/>
-      <div class="fd-opts" id="fdo-age"></div>
+    <div class="fd-pop" id="fdp-area" onclick="event.stopPropagation()">
+      <div class="fd-pop-label">Sqft</div>
+      <input class="fd-search" type="text" placeholder="Search sqft…" oninput="fdSearchOpts('fdo-area', this.value)"/>
+      <div class="fd-opts" id="fdo-area">
+        <div class="fp-opt" data-filter="_areaBucket" data-val="0-500" onclick="toggleOpt(this,'area')">Under 500</div>
+        <div class="fp-opt" data-filter="_areaBucket" data-val="500-1000" onclick="toggleOpt(this,'area')">500 – 1000</div>
+        <div class="fp-opt" data-filter="_areaBucket" data-val="1000-1500" onclick="toggleOpt(this,'area')">1000 – 1500</div>
+        <div class="fp-opt" data-filter="_areaBucket" data-val="1500-2000" onclick="toggleOpt(this,'area')">1500 – 2000</div>
+        <div class="fp-opt" data-filter="_areaBucket" data-val="2000-" onclick="toggleOpt(this,'area')">Above 2000</div>
+      </div>
       <div class="fd-pop-footer">
-        <button class="fd-clear-btn" onclick="clearFd('age')">Clear</button>
-        <button class="fd-apply-btn" onclick="applyFd('age')">Apply</button>
+        <button class="fd-clear-btn" onclick="clearFd('area')">Clear</button>
+        <button class="fd-apply-btn" onclick="applyFd('area')">Apply</button>
       </div>
     </div>
   </div>
@@ -8041,6 +8018,14 @@ function renderRecentlyViewed() {
     }
   });
   if (healed) saveRecentlyViewedData();
+  // Recently Viewed should mirror the same dropdown filters (Car Parking,
+  // Bike Parking, BHK, etc.) currently applied to the main grid, not just
+  // the active tab — otherwise a "0 Car Parking" filter narrows the grid
+  // but a viewed listing with 2 parking spots keeps sitting in this strip.
+  // getFiltered() already applies tab + search + every selected filter, so
+  // reuse it as the single source of truth for "what currently matches"
+  // rather than re-implementing the filter logic here.
+  const filteredLiveIds = new Set(getFiltered().map(p => p.id));
   const ids = recentlyViewed.filter(id => {
     const rv = recentlyViewedData[id];
     if (!rv) return false;
@@ -8049,13 +8034,15 @@ function renderRecentlyViewed() {
     // too (not just at record time in openDetail) once it shows up in
     // BOOKED_PROPERTIES, rather than falling back to a booked-listing card.
     if (BOOKED_PROPERTIES.some(x => x.id === id)) return false;
-    if (currentTab === 'Promoted' || currentTab === 'Verified') {
-      const live = PROPERTIES.find(x => x.id === id);
-      return live ? matchesTab(live, currentTab) : false;
-    }
-    // Older entries saved before "type" was tracked fall back to a live
-    // lookup so they don't just vanish under a specific tab.
-    const type = rv.type || pTypeLabel(PROPERTIES.find(x => x.id === id) || {});
+    const live = PROPERTIES.find(x => x.id === id);
+    // Live listing: trust getFiltered() completely — it already matches
+    // tab, search query, and every active dropdown filter.
+    if (live) return filteredLiveIds.has(id);
+    // No live data left (listing removed) — filters can't be evaluated
+    // without it, so fall back to the old tab/type-only match rather than
+    // dropping the entry outright.
+    if (currentTab === 'Promoted' || currentTab === 'Verified') return false;
+    const type = rv.type || pTypeLabel({});
     return type === currentTab;
   });
   if (ids.length === 0) {
@@ -9073,10 +9060,10 @@ function cardHTML(p, compact, extraLeftBadge) {
           <span class="prop-stat-icon icon-car">🚗</span>
           ${carCount}
         </span>`}
-        ${bikeCount > 0 ? `<span class="prop-stat" title="${bikeCount+' bike parking spot'+(bikeCount>1?'s':'')}">
+        <span class="prop-stat" title="${bikeCount+' bike parking spot'+(bikeCount===1?'':'s')}">
           <span class="prop-stat-icon icon-bike">🏍️</span>
           ${bikeCount}
-        </span>` : ''}
+        </span>
         ${areaSqft ? `<span class="prop-stat" title="Built-up area">
           <span class="prop-stat-icon icon-area">📐</span>
           ${areaSqft}sqft
@@ -9208,10 +9195,10 @@ function shortlistCardHTML(p) {
           <span class="prop-stat-icon icon-car">🚗</span>
           ${carCount}
         </span>`}
-        ${bikeCount > 0 ? `<span class="prop-stat" title="${bikeCount+' bike parking spot'+(bikeCount>1?'s':'')}">
+        <span class="prop-stat" title="${bikeCount+' bike parking spot'+(bikeCount===1?'':'s')}">
           <span class="prop-stat-icon icon-bike">🏍️</span>
           ${bikeCount}
-        </span>` : ''}
+        </span>
         ${areaSqft ? `<span class="prop-stat" title="Built-up area">
           <span class="prop-stat-icon icon-area">📐</span>
           ${areaSqft}sqft
@@ -9875,7 +9862,6 @@ const FD_GROUPS = {
   facing:     ['facing'],
   bathrooms:  ['bathrooms'],
   age:        ['age'],
-  availFrom:  ['_availBucket'],
   escalation: ['_escalationBucket'],
   floor:      ['_floorBucket'],
   area:       ['_areaBucket'],
@@ -10336,6 +10322,7 @@ function toggleOpt(el, group) {
   el.classList.toggle('sel');
   if (group) refreshFdBtn(group);
   renderCards();
+  renderRecentlyViewed(); // keep the Recently Viewed strip in sync with the same filters
 }
 
 /* Refresh a button's badge based on selected opts + range state */
@@ -10393,6 +10380,7 @@ function applyFd(id) {
   refreshFdBtn(id);
   closeAllFd();
   renderCards();
+  renderRecentlyViewed(); // keep the Recently Viewed strip in sync with the same filters
 }
 
 /* Clear a single dropdown */
@@ -10408,6 +10396,7 @@ function clearFd(id) {
   }
   refreshFdBtn(id);
   renderCards();
+  renderRecentlyViewed(); // keep the Recently Viewed strip in sync with the same filters
 }
 
 /* Clear all filters */
@@ -10425,6 +10414,7 @@ function clearFilters() {
   });
   closeAllFd();
   renderCards();
+  renderRecentlyViewed(); // keep the Recently Viewed strip in sync with the same filters
 }
 
 /* ── Unified min/max range filters: Price, Deposit, Maintenance ──
@@ -10460,7 +10450,7 @@ function refreshFdRangeBtn(id, skipRender) {
     badge.style.display = hasAny ? '' : 'none';
   }
   refreshTotalBadge();
-  if (!skipRender) renderCards();
+  if (!skipRender) { renderCards(); renderRecentlyViewed(); }
 }
 
 /* Apply = close popover and rerender (values are already live via oninput,
@@ -10469,6 +10459,7 @@ function applyFdRange(id) {
   refreshFdRangeBtn(id, true);
   closeAllFd();
   renderCards();
+  renderRecentlyViewed(); // keep the Recently Viewed strip in sync with the same filters
 }
 
 /* Clear a single range filter's Min/Max inputs */
@@ -10479,6 +10470,7 @@ function clearFdRange(id) {
   if (maxEl) maxEl.value = '';
   refreshFdRangeBtn(id, true);
   renderCards();
+  renderRecentlyViewed(); // keep the Recently Viewed strip in sync with the same filters
 }
 
 function fmtRupee(n) {
@@ -10784,15 +10776,6 @@ function fdAreaNum(v) {
   return isNaN(n) ? 0 : n;
 }
 
-/* Days between today and a YYYY-MM-DD date string (negative if already past) */
-function fdDaysFromToday(dateStr) {
-  if (!dateStr) return null;
-  const target = new Date(dateStr + 'T00:00:00');
-  if (isNaN(target.getTime())) return null;
-  const today = new Date(); today.setHours(0,0,0,0);
-  return Math.round((target - today) / 86400000);
-}
-
 /* Robust numeric coercion for price fields coming from the API — handles
    plain numbers, numeric strings, and (just in case older/legacy records
    have it) strings with stray currency symbols, commas, or text like
@@ -10897,14 +10880,16 @@ function getFiltered() {
     }
     if (fs.age && ['Rent','Lease','Sell'].includes(pType) && !fs.age.includes(p.property?.age)) return false;
     if (fs.negotiable && !fs.negotiable.includes(String(p.price?.negotiable || '').toLowerCase())) return false;
-    if (fs._availBucket && ['Rent','Lease','PG','Sell'].includes(pType)) {
-      const availVal = p.pg?.available ?? p.property?.available;
-      const days = fdDaysFromToday(availVal);
-      if (days === null || !fdValueInBuckets(Math.max(days, 0), fs._availBucket)) return false;
-    }
     const lift = pHasLift(p);
-    const carCount = parseInt(p.pg?.car ?? p.property?.car, 10) || 0;
-    const bikeCount = parseInt(p.pg?.bike ?? p.property?.bike, 10) || 0;
+    // Same type-based selection as cardHTML's carCount/bikeCount (see
+    // above) — must NOT fall back via `??` between pg.car and
+    // property.car, since a non-PG listing can carry a stray/empty `pg`
+    // object with its own leftover car/bike value, which would make the
+    // filter read a different number than what the card actually shows
+    // (surfacing listings that don't really match a selected "0").
+    const isPGRow = pType === 'PG';
+    const carCount = isPGRow ? (parseInt(p.pg?.car, 10) || 0) : (parseInt(p.property?.car, 10) || 0);
+    const bikeCount = isPGRow ? (parseInt(p.pg?.bike, 10) || 0) : (parseInt(p.property?.bike, 10) || 0);
     const carpark = carCount > 0;
     const bikepark = bikeCount > 0;
     // Same "4 means 4+" convention as the Bathrooms filter above.
