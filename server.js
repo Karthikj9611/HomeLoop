@@ -1769,7 +1769,7 @@ const viewLimiter = rateLimit({
   message: { message: 'Too many requests. Please try again later.' }
 });
 
-app.post('/api/properties/:id/view', viewLimiter, async (req, res) => {
+app.post('/api/properties/:id/view', viewLimiter, attachUserIfPresent, async (req, res) => {
   try {
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
       return res.status(400).json({ message: 'Invalid property id' });
@@ -1799,10 +1799,76 @@ app.post('/api/properties/:id/view', viewLimiter, async (req, res) => {
       if (updated) break;
     }
     if (!updated) return res.status(404).json({ message: 'Property not found' });
+
+    // Record/refresh this as a *named* view for the "viewed by" list — only
+    // possible when the visitor is logged in (guests have no identity to
+    // attach). Upserted on (propertyId, userId) so repeat views by the same
+    // user don't pile up duplicate rows — each user appears once, with their
+    // name/photo and lastViewedAt kept current. Best-effort: a failure here
+    // must never break the (already-recorded) numeric view count above.
+    if (req.userId) {
+      try {
+        const viewer = await User.findById(req.userId).select('name profilePhoto').lean();
+        if (viewer) {
+          await PropertyViewer.findOneAndUpdate(
+            { propertyId: req.params.id, userId: req.userId },
+            {
+              $set: { userName: viewer.name || '', userPhoto: viewer.profilePhoto || '', lastViewedAt: new Date() },
+              $setOnInsert: { firstViewedAt: new Date() },
+            },
+            { upsert: true }
+          );
+        }
+      } catch (viewerErr) {
+        console.error('PropertyViewer upsert error:', viewerErr.message);
+      }
+    }
+
     res.json({ views: updated.views });
   } catch (err) {
     console.error('POST /api/properties/:id/view error:', err);
     res.status(500).json({ message: 'Error recording view' });
+  }
+});
+
+// ── GET /api/properties/:id/viewers ("viewed by" modal) ──
+// Returns the named list of logged-in users who've viewed this listing (most
+// recent first). Guest/anonymous views are not represented here (see
+// PropertyViewer above) — only the overall count on the property document
+// includes those. Behind requireUser, same as every other listing-browsing
+// route on this site (login is required site-wide to browse in the first
+// place, so this doesn't add a new gate beyond that).
+app.get('/api/properties/:id/viewers', requireUser, async (req, res) => {
+  try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ message: 'Invalid property id' });
+    }
+    const viewers = await PropertyViewer.find({ propertyId: req.params.id })
+      .sort({ lastViewedAt: -1 })
+      .limit(200)
+      .select('userId userName userPhoto firstViewedAt lastViewedAt')
+      .lean();
+
+    const { doc: property } = await findListingById(req.params.id, { lean: true });
+    const totalViews = property ? (property.views || 0) : 0;
+
+    res.json({
+      viewers: viewers.map(v => ({
+        userId:       String(v.userId),
+        name:         v.userName || 'HomeLoop user',
+        photo:        v.userPhoto || '',
+        firstViewed:  v.firstViewedAt,
+        lastViewed:   v.lastViewedAt,
+      })),
+      namedCount: viewers.length,
+      totalViews,
+      // Lets the frontend show "+N more anonymous views" instead of implying
+      // the named list below is the complete picture.
+      unnamedViews: Math.max(0, totalViews - viewers.length),
+    });
+  } catch (err) {
+    console.error('GET /api/properties/:id/viewers error:', err);
+    res.status(500).json({ message: 'Error fetching viewers' });
   }
 });
 
@@ -3062,6 +3128,32 @@ const PropertyViewSchema = new mongoose.Schema({
 });
 PropertyViewSchema.index({ propertyId: 1, fingerprint: 1 }, { unique: true });
 const PropertyView = mongoose.model('PropertyView', PropertyViewSchema);
+
+// ── Named viewers ("who viewed this listing") ──
+// Separate from PropertyView above on purpose: PropertyView dedups by
+// anonymous device fingerprint and is what the numeric view *count* is based
+// on (unchanged by this feature). This collection instead dedups by
+// (propertyId, userId) — one row per logged-in user per listing — so the
+// "viewed by" modal can list real names. Guest (logged-out) views are never
+// recorded here, since there's no identity to attach; they still count
+// toward the numeric total via PropertyView as before.
+// NOTE: this collection only starts filling in from the point this feature
+// was deployed onward — the older PropertyView docs only ever stored a
+// one-way fingerprint hash, with no userId, so there is no way to recover
+// who those earlier (pre-feature) views belonged to.
+const PropertyViewerSchema = new mongoose.Schema({
+  propertyId:    { type: String, required: true, index: true },
+  userId:        { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  // Snapshot of the name/photo at last view, refreshed every time this user
+  // is seen again — so a later profile change is reflected next visit
+  // rather than the modal showing a name/photo the user no longer has.
+  userName:      { type: String, default: '' },
+  userPhoto:     { type: String, default: '' },
+  firstViewedAt: { type: Date, default: Date.now },
+  lastViewedAt:  { type: Date, default: Date.now },
+});
+PropertyViewerSchema.index({ propertyId: 1, userId: 1 }, { unique: true });
+const PropertyViewer = mongoose.model('PropertyViewer', PropertyViewerSchema);
 
 // Minimal cookie reader — avoids pulling in cookie-parser for one cookie.
 function readCookie(req, name) {

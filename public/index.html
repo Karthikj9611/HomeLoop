@@ -975,7 +975,7 @@ main.tab-explore .empty-state{display:none !important}
    colored promoted/verified badges, with the view-count as a small overlay
    dot to match how .prop-qa-count/.prop-views-badge already look elsewhere. */
 .prop-icon-badge.prop-views-float{
-  position:relative;
+  position:relative;cursor:pointer;
   background:rgba(255,255,255,.92);backdrop-filter:blur(6px);
   box-shadow:0 2px 6px rgba(20,16,17,.12);
 }
@@ -1383,7 +1383,7 @@ main.tab-explore .empty-state{display:none !important}
 .prop-quick-actions{display:flex;align-items:center;gap:0}
 .prop-views{
   display:flex;align-items:center;justify-content:center;
-  font-size:12px;color:var(--text-3);
+  font-size:12px;color:var(--text-3);cursor:pointer;
   white-space:nowrap;flex:1 1 0;
 }
 .prop-views-icon{
@@ -2118,6 +2118,39 @@ main.tab-explore .empty-state{display:none !important}
 .compare-modal-header-actions{display:flex;align-items:center;gap:8px}
 .compare-modal-header-actions .modal-close{
   position:static;top:auto;right:auto;
+}
+
+/* ─── Viewers ("who viewed this listing") Modal ──── */
+.viewers-modal{width:100%;max-width:400px;max-height:80vh;display:flex;flex-direction:column}
+.viewers-modal-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:16px 20px;border-bottom:1px solid var(--border);
+  position:sticky;top:0;background:var(--bg);z-index:5;
+}
+.viewers-modal-title{font-size:16px;font-weight:700}
+.viewers-modal-header .modal-close{position:static;top:auto;right:auto}
+.viewers-modal-body{overflow-y:auto;padding:8px 8px 14px}
+.viewers-modal-loading,.viewers-modal-empty{
+  padding:28px 20px;text-align:center;color:var(--text-3);font-size:13.5px;
+}
+.viewer-row{
+  display:flex;align-items:center;gap:12px;padding:9px 12px;border-radius:10px;
+}
+.viewer-row:hover{background:var(--bg-2)}
+.viewer-avatar{
+  width:38px;height:38px;border-radius:50%;object-fit:cover;flex-shrink:0;
+  background:var(--bg-3);
+}
+.viewer-avatar-fallback{
+  display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(150deg,#b98af0 0%,#8b3fe0 100%);
+  color:#fff;font-size:14px;font-weight:700;
+}
+.viewer-info{min-width:0;flex:1}
+.viewer-name{font-size:13.5px;font-weight:600;color:var(--text-1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.viewer-meta{font-size:11.5px;color:var(--text-3);margin-top:1px}
+.viewers-modal-footer{
+  padding:12px 20px 4px;text-align:center;font-size:12px;color:var(--text-3);
 }
 .compare-share-btn{
   display:flex;align-items:center;gap:6px;
@@ -7700,6 +7733,18 @@ main.tab-explore .empty-state{display:none !important}
   </div>
 </div>
 
+<div class="modal-overlay" id="viewersModal" role="dialog" aria-modal="true" aria-label="Who viewed this property">
+  <div class="modal viewers-modal" id="viewersModalContent">
+    <div class="viewers-modal-header">
+      <span class="viewers-modal-title">Viewed by</span>
+      <button class="modal-close" onclick="closeViewersModal()" aria-label="Close">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="viewers-modal-body" id="viewersModalBody"></div>
+  </div>
+</div>
+
 <script>
 /* ═══════════════════════════════════════════════
    FEATURE FLAGS
@@ -7896,6 +7941,68 @@ function incrementViews(p) {
 function formatViews(n) {
   if (n >= 1000) return (n / 1000).toFixed(n >= 10000 ? 0 : 1).replace(/\.0$/, '') + 'k';
   return String(n);
+}
+
+/* ─── "Viewed by" modal ───────────────────────────
+   Shows the named list of logged-in users who've viewed a listing (see
+   GET /api/properties/:id/viewers in server.js). Guest/anonymous views
+   still count toward the overall number on the card, but can't be shown by
+   name — there's no identity attached to them. Older views recorded before
+   this feature existed also have no name to show, for the same reason. */
+let _viewersReqToken = 0; // guards against a slow, stale request overwriting a newer one if the modal is reopened quickly for a different listing
+function openViewersModal(propId) {
+  const overlay = document.getElementById('viewersModal');
+  const body = document.getElementById('viewersModalBody');
+  overlay.classList.add('open');
+  lockBodyScroll();
+  body.innerHTML = '<div class="viewers-modal-loading">Loading viewers…</div>';
+
+  const myToken = ++_viewersReqToken;
+  fetch(`/api/properties/${propId}/viewers`)
+    .then(res => res.ok ? res.json() : Promise.reject(res))
+    .then(data => { if (myToken === _viewersReqToken) renderViewersModal(data); })
+    .catch(() => {
+      if (myToken !== _viewersReqToken) return;
+      body.innerHTML = '<div class="viewers-modal-empty">Couldn\'t load viewers. Please try again.</div>';
+    });
+}
+function closeViewersModal() {
+  document.getElementById('viewersModal').classList.remove('open');
+  unlockBodyScroll();
+}
+function renderViewersModal(data) {
+  const body = document.getElementById('viewersModalBody');
+  const viewers = (data && data.viewers) || [];
+
+  if (!viewers.length) {
+    const total = (data && data.totalViews) || 0;
+    body.innerHTML = total
+      ? `<div class="viewers-modal-empty">${total.toLocaleString('en-IN')} view${total===1?'':'s'} so far — none from a named, logged-in viewer yet.</div>`
+      : '<div class="viewers-modal-empty">No views yet.</div>';
+    return;
+  }
+
+  const rows = viewers.map(v => {
+    const name = v.name || 'HomeLoop user';
+    const initials = esc(name.trim().split(/\s+/).map(w => w[0] || '').slice(0, 2).join('').toUpperCase() || 'H');
+    const avatar = v.photo
+      ? `<img class="viewer-avatar" src="${safeUrl(v.photo)}" alt="">`
+      : `<span class="viewer-avatar viewer-avatar-fallback">${initials}</span>`;
+    return `<div class="viewer-row">
+      ${avatar}
+      <div class="viewer-info">
+        <div class="viewer-name">${esc(name)}</div>
+        <div class="viewer-meta">Viewed ${notifTimeAgo(v.lastViewed).toLowerCase()}</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  const unnamed = (data && data.unnamedViews) || 0;
+  const footer = unnamed > 0
+    ? `<div class="viewers-modal-footer">+${unnamed.toLocaleString('en-IN')} more view${unnamed===1?'':'s'} from guests or older, unnamed visits</div>`
+    : '';
+
+  body.innerHTML = rows + footer;
 }
 
 
@@ -9069,7 +9176,7 @@ function cardHTML(p, compact, extraLeftBadge) {
         <div class="prop-right-badges">
           ${extraLeftBadge || ''}
           ${(SHOW_VERIFIED_BADGE && p.verified) ? '<div class="prop-icon-badge prop-icon-verified" title="Verified"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.5" fill="#fff"/><path d="M8 12.3l2.6 2.6 5.4-5.8" stroke="#1a73e8" stroke-width="2.1" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>' : ''}
-          <div class="prop-icon-badge prop-views-float" title="${getViews(p).toLocaleString('en-IN')} views">
+          <div class="prop-icon-badge prop-views-float" onclick="event.stopPropagation();openViewersModal('${p.id}')" title="${getViews(p).toLocaleString('en-IN')} views &middot; tap to see who viewed">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
             <span class="prop-views-float-badge">${formatViews(getViews(p))}</span>
           </div>
@@ -9156,7 +9263,7 @@ function cardHTML(p, compact, extraLeftBadge) {
             <span class="qa-3d-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="8" height="16" rx="1.5"/><rect x="13" y="4" width="8" height="16" rx="1.5" opacity="0.55"/></svg></span>
             <span class="prop-qa-label">${compared?'Added':'Compare'}</span>
           </div>
-          <span class="prop-views" title="${getViews(p).toLocaleString('en-IN')} views">
+          <span class="prop-views" onclick="event.stopPropagation();openViewersModal('${p.id}')" title="${getViews(p).toLocaleString('en-IN')} views &middot; tap to see who viewed">
             <span class="prop-views-icon">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
               <span class="prop-views-badge">${formatViews(getViews(p))}</span>
@@ -9208,7 +9315,7 @@ function shortlistCardHTML(p) {
       <div class="prop-card-top-row" style="justify-content:flex-end">
         <div class="prop-right-badges">
           ${(SHOW_VERIFIED_BADGE && p.verified) ? '<div class="prop-icon-badge prop-icon-verified" title="Verified"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.5" fill="#fff"/><path d="M8 12.3l2.6 2.6 5.4-5.8" stroke="#1a73e8" stroke-width="2.1" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>' : ''}
-          <div class="prop-icon-badge prop-views-float" title="${getViews(p).toLocaleString('en-IN')} views">
+          <div class="prop-icon-badge prop-views-float" onclick="event.stopPropagation();openViewersModal('${p.id}')" title="${getViews(p).toLocaleString('en-IN')} views &middot; tap to see who viewed">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
             <span class="prop-views-float-badge">${formatViews(getViews(p))}</span>
           </div>
@@ -9655,7 +9762,7 @@ function renderCompareTable() {
           <div class="prop-card-top-row" style="justify-content:flex-end">
             <div class="prop-right-badges">
               ${(SHOW_VERIFIED_BADGE && p.verified) ? '<div class="prop-icon-badge prop-icon-verified" title="Verified"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.5" fill="#fff"/><path d="M8 12.3l2.6 2.6 5.4-5.8" stroke="#1a73e8" stroke-width="2.1" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>' : ''}
-              <div class="prop-icon-badge prop-views-float" title="${getViews(p).toLocaleString('en-IN')} views">
+              <div class="prop-icon-badge prop-views-float" onclick="event.stopPropagation();openViewersModal('${p.id}')" title="${getViews(p).toLocaleString('en-IN')} views &middot; tap to see who viewed">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                 <span class="prop-views-float-badge">${formatViews(getViews(p))}</span>
               </div>
