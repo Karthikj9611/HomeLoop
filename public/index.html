@@ -2916,52 +2916,72 @@ main.tab-explore .empty-state{display:none !important}
   border:none;cursor:pointer;margin-top:8px;transition:background .12s;
 }
 
-/* ─── Auth Modal Redesign — clean, neat, professional ───────────
-   Scoped to #authModal only so no other modal in the app is
-   affected. Main goals: stop every input value / tab label from
-   defaulting to brand-red text (looked noisy), add breathing room,
-   a calmer neutral palette, subtle depth, and a clearer visual
-   hierarchy between "chrome" (tabs, labels) and real content. */
+/* ─── Auth Modal — visual refresh ─────────────────────────────────
+   Scoped to #authModal only. Same fields/layout as before — just a
+   calmer, more considered pass on spacing, color and type: a quieter
+   neutral shell around one confident brand-pink action, and a clear
+   hierarchy between the page-level Log in/Sign up toggle (flat pill)
+   and the in-form "I am a" choice (bordered, reads as an input). */
 #authModal .add-modal{
-  max-width:420px;
-  padding:26px 26px 24px;
-  border-radius:20px;
-  box-shadow:0 28px 64px -16px rgba(0,0,0,.28),0 0 0 1px rgba(0,0,0,.04);
+  max-width:424px;
+  padding:30px 28px 26px;
+  border-radius:22px;
+  box-shadow:0 32px 72px -18px rgba(20,15,16,.30),0 0 0 1px rgba(20,15,16,.04);
 }
-#authModal .add-modal-header{margin-bottom:20px;padding-right:44px}
-#authModal .add-modal-title{font-size:19px;font-weight:800;letter-spacing:-.01em;color:var(--text)}
+#authModal .add-modal-header{margin-bottom:22px;padding-right:44px}
+#authModal .add-modal-title{font-size:20px;font-weight:800;letter-spacing:-.02em;color:var(--ink)}
 #authModal .modal-close{
-  position:absolute;top:18px;right:18px;
+  position:absolute;top:20px;right:20px;
   width:30px;height:30px;
   background:var(--bg-2);box-shadow:none;
   border:1px solid var(--border);
+  transition:background .12s,border-color .12s;
 }
-#authModal .modal-close:hover{background:var(--border);transform:none}
+#authModal .modal-close:hover{background:var(--border);border-color:var(--border-2);transform:none}
 #authModal .modal-close svg{stroke:var(--text-2);width:13px;height:13px;stroke-width:2.3}
 
-#authModal .auth-tabs{background:var(--bg-3);border-radius:12px;padding:4px;margin-bottom:20px}
-#authModal .auth-tab{padding:10px 0;font-size:13.5px;border-radius:9px;font-weight:600}
-#authModal .auth-tab.active{box-shadow:0 2px 8px rgba(0,0,0,.09)}
+#authModal .auth-tabs{background:var(--bg-3);border-radius:12px;padding:4px;margin-bottom:22px}
+#authModal .auth-tab{padding:10px 0;font-size:13.5px;font-weight:650;letter-spacing:-.005em;border-radius:9px;transition:box-shadow .15s,color .15s}
+#authModal .auth-tab.active{box-shadow:0 2px 8px rgba(20,15,16,.10)}
 
-#authModal #authSignupTypeField > .form-label{margin-bottom:8px}
-#authModal #authTypeTabsRow{margin-bottom:18px!important}
-#authModal #authTypeTabsRow .auth-tab{padding:12px 8px}
+/* "I am a" reads as a real form field, not another page toggle: bordered
+   container + a visible divider between the two choices, rather than the
+   flat filled pill used for Log in/Sign up above. */
+#authModal #authSignupTypeField > .form-label{margin-bottom:9px}
+#authModal #authTypeTabsRow{
+  margin-bottom:20px!important;
+  background:var(--bg);border:1.5px solid var(--border);border-radius:13px;padding:3px;gap:0;
+  position:relative;
+}
+#authModal #authTypeTabsRow .auth-tab{
+  padding:13px 8px;font-size:13.5px;font-weight:600;color:var(--text-2);
+}
+#authModal #authTypeTabsRow .auth-tab:first-child{border-right:1px solid var(--border)}
+#authModal #authTypeTabsRow .auth-tab.active{
+  color:var(--brand);background:var(--brand-light);box-shadow:none;
+  border-right-color:transparent;
+}
 
-#authModal .form-label{font-size:12px;font-weight:700;color:var(--text-2);letter-spacing:.01em;margin-bottom:6px}
-#authModal .form-group{margin-bottom:15px}
+#authModal .form-label{font-size:12px;font-weight:700;color:var(--text-2);letter-spacing:.01em;margin-bottom:7px}
+#authModal .form-group{margin-bottom:16px}
 #authModal .form-row{gap:14px}
 #authModal .form-input{
   color:var(--text);
   border:1.5px solid var(--border);
-  border-radius:10px;
-  padding:10px 13px;font-size:13.5px;
+  border-radius:11px;
+  padding:11px 14px;font-size:13.5px;
   background:var(--bg-2);
   transition:border-color .15s,box-shadow .15s,background .15s;
 }
 #authModal .form-input::placeholder{color:var(--text-3)}
+#authModal .form-input:hover{border-color:var(--border-2)}
 #authModal .form-input:focus{
   border-color:var(--brand);background:var(--bg);
-  box-shadow:0 0 0 3px var(--brand-light);
+  box-shadow:0 0 0 3.5px var(--brand-light);
+}
+
+#authModal .form-submit{
+  margin-top:6px;padding:13px;border-radius:11px;font-size:14px;font-weight:700;letter-spacing:.01em;
 }
 
 #authModal .auth-photo-row{
@@ -2973,6 +2993,14 @@ main.tab-explore .empty-state{display:none !important}
 }
 #authModal .img-btns{gap:8px}
 #authModal .img-btn-sec{border-radius:9px;font-weight:700;background:var(--bg)}
+
+#authModal .auth-foot{margin-top:18px;font-size:12.5px;color:var(--text-3)}
+#authModal .auth-foot a{transition:opacity .12s}
+#authModal .auth-foot a:hover{opacity:.75}
+
+/* Login required: while logged out the auth modal cannot be dismissed. Background stays
+   as the normal semi-transparent overlay (see .add-modal-overlay) so the page/listings
+   still render, dimmed, behind it — only the X (close) button is hidden. */
 
 #authModal .form-submit{
   border-radius:11px;padding:12.5px;font-size:14px;letter-spacing:.01em;
@@ -4399,6 +4427,45 @@ main.tab-explore .empty-state{display:none !important}
 }
 
 </style>
+<script>
+/* Guests can browse freely — no full-page login gate. Every same-origin /api/ call still carries
+   the session key automatically when one exists, and a 401 on a logged-in session
+   (expired/revoked key) drops it and reloads so the visitor falls back to guest browsing. */
+(function () {
+  // Locally cached listing data (shortlist / recently viewed) — wiped whenever there is no session,
+  // so nothing from a previous login is left behind for the next guest on this device.
+  var PRIVATE_KEYS = ['homeloop_shortlisted_properties', 'homeloop_shortlisted_properties_data',
+                      'homeloop_recently_viewed', 'homeloop_recently_viewed_data'];
+  window.hlClearPrivateData = function () {
+    try { PRIVATE_KEYS.forEach(function (k) { localStorage.removeItem(k); }); } catch (e) {}
+  };
+  var _sess = null;
+  try { _sess = JSON.parse(localStorage.getItem('homeloop_user')); } catch (e) {}
+  if (!_sess) {                       // same test as getLoggedInUser()
+    window.hlClearPrivateData();
+  }
+  var _fetch = window.fetch.bind(window);
+  var AUTH_FREE = /^\/api\/(user\/(login|signup|password)|upload-images|stats\/visit)/;
+  window.fetch = function (input, init) {
+    var path = typeof input === 'string' ? input : '';
+    if (path.indexOf('/api/') !== 0) return _fetch(input, init);
+    var user = null;
+    try { user = JSON.parse(localStorage.getItem('homeloop_user')); } catch (e) {}
+    init = Object.assign({}, init || {});
+    var h = new Headers(init.headers || {});
+    if (user && user.userKey && !h.get('x-user-key')) h.set('x-user-key', user.userKey);
+    init.headers = h;
+    return _fetch(input, init).then(function (res) {
+      if (res.status === 401 && user && !AUTH_FREE.test(path)) {
+        try { localStorage.removeItem('homeloop_user'); } catch (e) {}
+        window.hlClearPrivateData();
+        location.reload();
+      }
+      return res;
+    });
+  };
+})();
+</script>
 </head>
 <body>
 
@@ -6446,6 +6513,7 @@ main.tab-explore .empty-state{display:none !important}
         </div>
         <div class="field-error-text" id="authTypeError" style="display:none;margin:-10px 0 12px">Please select whether you're looking for a home or a property owner</div>
       </div>
+      <!-- Profile photo on signup — commented out for now, keep markup for later re-enable
       <div id="authSignupPhotoField" style="display:none">
         <label class="form-label">Profile photo (optional)</label>
         <div class="auth-photo-row">
@@ -6466,6 +6534,7 @@ main.tab-explore .empty-state{display:none !important}
         <input type="file" id="auth-photo-camera" accept="image/*" capture="user" style="display:none" onchange="addAuthProfilePic(this)"/>
         <input type="file" id="auth-photo-file" accept="image/*" style="display:none" onchange="addAuthProfilePic(this)"/>
       </div>
+      -->
       <div id="authSignupNameField" style="display:none">
         <div class="form-row">
           <div class="form-group">
@@ -11784,9 +11853,20 @@ async function submitBookingRequest() {
 }
 
 /* ═══════════════════════════════════════════════
-   CALL CONTACT — open to any visitor, no login/verification gate
+   CALL CONTACT — login required (see requireLoginForContact())
 ═══════════════════════════════════════════════ */
+// Shared gate for every Call/WhatsApp entry point (card icon, quick-action
+// buttons, and the property view modal's Call/WhatsApp buttons, including the
+// admin-enabled owner-number variants). Shows the login/signup modal and
+// returns true (blocked) when logged out, so the caller can bail out first.
+function requireLoginForContact() {
+  if (getLoggedInUser()) return false;
+  showToast('Please log in to contact the owner', 'warning');
+  openAuthModal();
+  return true;
+}
 function openCall(propId) {
+  if (requireLoginForContact()) return;
   const p = PROPERTIES.find(x => x.id === propId);
   if (!p) return;
   const rawPhone = (p.owner?.agentPhone || '').replace(/\D/g, '');
@@ -11823,6 +11903,7 @@ function openCardCall(propId) {
 
 /* Calls the owner's main ('main') or alternate ('alt') number — only reachable when admin enabled Public call (numbers are absent otherwise). */
 function openOwnerCall(propId, which) {
+  if (requireLoginForContact()) return;
   const p = PROPERTIES.find(x => x.id === propId) || BOOKED_PROPERTIES.find(x => x.id === propId);
   if (!p) return;
   const rawPhone = String((which === 'main' ? (p.ownerPhoneCall && p.ownerPhone) : (p.ownerDirectCall && p.ownerAltPhone)) || '').replace(/\D/g, '');
@@ -11836,6 +11917,7 @@ function openOwnerCall(propId, which) {
 
 /* WhatsApp on the owner's main ('main') or alternate ('alt') number — only when admin enabled Public call for it. */
 function openOwnerWhatsApp(propId, which) {
+  if (requireLoginForContact()) return;
   const p = PROPERTIES.find(x => x.id === propId) || BOOKED_PROPERTIES.find(x => x.id === propId);
   if (!p) return;
   const raw = String((which === 'main' ? (p.ownerPhoneCall && p.ownerPhone) : (p.ownerDirectCall && p.ownerAltPhone)) || '').replace(/\D/g, '');
@@ -11853,6 +11935,7 @@ function openOwnerWhatsApp(propId, which) {
    WHATSAPP CONTACT
 ═══════════════════════════════════════════════ */
 function openWhatsApp(propId) {
+  if (requireLoginForContact()) return;
   const p = PROPERTIES.find(x => x.id === propId);
   if (!p) return;
   const rawPhone = (p.owner?.agentPhone || '').replace(/\D/g, '');
@@ -12390,6 +12473,18 @@ async function confirmClearAddModalDraft() {
 /* ═══════════════════════════════════════════════
    LOG IN / SIGN UP MODAL
 ═══════════════════════════════════════════════ */
+// Browsing works without an account — this modal is just a dismissable welcome/
+// login prompt, closable via the X, a backdrop click, or Escape like any other modal.
+// Dismissing it (without logging in) snoozes it for AUTH_SKIP_MS: it comes back
+// on its own once that time is up, still logged out, via the timer below.
+const AUTH_SKIP_MS = 5 * 60 * 1000; // "skip for a few minutes"
+let _authSkipTimer = null;
+function scheduleAuthPrompt(delayMs) {
+  clearTimeout(_authSkipTimer);
+  _authSkipTimer = setTimeout(() => {
+    if (!getLoggedInUser()) openAuthModal();
+  }, delayMs);
+}
 function openAuthModal() {
   document.getElementById('authModal').classList.add('open');
   lockBodyScroll();
@@ -12399,6 +12494,10 @@ function closeAuthModal() {
   document.getElementById('authModal').classList.remove('open');
   unlockBodyScroll();
   backToSignupForm();
+  if (!getLoggedInUser()) {
+    localStorage.setItem('homeloop_auth_skip_until', String(Date.now() + AUTH_SKIP_MS));
+    scheduleAuthPrompt(AUTH_SKIP_MS);
+  }
 }
 
 function openProfileModal() {
@@ -12542,11 +12641,8 @@ async function logoutUser() {
     }
   } catch (err) { /* best-effort; clear local session regardless */ }
   localStorage.removeItem('homeloop_user');
-  closeProfileModal();
-  updateNavAuth();
-  switchFilterIdentity();
-  showToast('Logged out successfully');
-  fetchProperties(); fetchBookedProperties(); // drop any owner numbers a Public-call tenant was seeing
+  if (window.hlClearPrivateData) window.hlClearPrivateData(); // don't leave saved-listing data on the device
+  location.reload(); // back to guest browsing
 }
 function handleMenuAuthClick() {
   if (getLoggedInUser()) openProfileModal();
@@ -12633,7 +12729,8 @@ function switchAuthTab(tab) {
   document.getElementById('authTabLogin').classList.toggle('active', isLogin);
   document.getElementById('authTabSignup').classList.toggle('active', !isLogin);
   document.getElementById('authSignupTypeField').style.display = isLogin ? 'none' : '';
-  document.getElementById('authSignupPhotoField').style.display = isLogin ? 'none' : '';
+  const authSignupPhotoField = document.getElementById('authSignupPhotoField'); // commented out in markup for now
+  if (authSignupPhotoField) authSignupPhotoField.style.display = isLogin ? 'none' : '';
   document.getElementById('authSignupNameField').style.display = isLogin ? 'none' : '';
   document.getElementById('authLoginContactField').style.display = isLogin ? '' : 'none';
   document.getElementById('authSignupContactFields').style.display = isLogin ? 'none' : '';
@@ -12826,11 +12923,9 @@ function finishAuthSuccess(data) {
     userKey: data.userKey
   }));
   clearSignupDraft();
-  closeAuthModal();
-  updateNavAuth();
-  switchFilterIdentity();
-  showToast(data.message);
-  fetchProperties(); fetchBookedProperties(); // re-fetch: tenants with admin "Public call" get owner numbers once logged in
+  // Reload so every fetch on the page (listings, reviews, partners, etc.) picks up
+  // the new session and any personalized/owner-only data it unlocks.
+  location.reload();
 }
 
 // Called via submitAuth() once a code has already been sent (second click
@@ -16896,6 +16991,17 @@ document.getElementById('reviewModal').addEventListener('click', function(e) {
 /* ═══════════════════════════════════════════════
    INIT
 ═══════════════════════════════════════════════ */
+// Shown on arrival as a welcome/login prompt — browsing works fine without
+// logging in, and this can be dismissed (X, backdrop click, Escape) like any other modal.
+// Dismissing it only skips it for AUTH_SKIP_MS (see closeAuthModal()); it then
+// reopens on its own if the visitor still hasn't logged in.
+// It also opens the same way on demand from the Profile icon via handleMenuAuthClick().
+if (!getLoggedInUser()) {
+  const skipUntil = parseInt(localStorage.getItem('homeloop_auth_skip_until'), 10) || 0;
+  const remaining = skipUntil - Date.now();
+  if (remaining > 0) scheduleAuthPrompt(remaining);
+  else openAuthModal();
+}
 buildFilterOptions();
 syncFdBar();
 renderCards();

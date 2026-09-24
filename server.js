@@ -1748,7 +1748,7 @@ app.get('/api/properties', attachUserIfPresent, async (req, res) => {
     // entitled tenant is private + uncached, and every response varies by session key so a shared cache
     // can never hand one viewer's response to another.
     res.vary('x-user-key');
-    res.set('Cache-Control', _viewerPublicCall ? 'private, no-store' : 'public, max-age=30');
+    res.set('Cache-Control', _viewerPublicCall ? 'private, no-store' : 'private, max-age=30');
     res.json({ properties: mapped, total: mapped.length });
   } catch (err) {
     console.error('GET /api/properties error:', err);
@@ -1878,9 +1878,9 @@ app.get('/property/:id', async (req, res, next) => {
         const statusPhrase = /^for\b/i.test(status) ? status : `for ${status}`;
 
         const title = `${bhk}${type}${statusPhrase} in ${area}, Bangalore \u2013 \u20B9${price} | HomeLoop`;
-        const descSource = (doc.media && doc.media.desc && doc.media.desc.trim())
-          ? doc.media.desc
-          : `${bhk}${type}available ${statusPhrase} in ${area}, Bangalore. View photos, price and contact details on HomeLoop.`;
+        // Login is mandatory, so the owner-written description (which can contain phone numbers etc.)
+        // is NOT put in the public share preview — only a generic line built from non-sensitive fields.
+        const descSource = `${bhk}${type}available ${statusPhrase} in ${area}, Bangalore. Log in to HomeLoop to view photos, price and contact details.`;
         const description = String(descSource).replace(/\s+/g, ' ').trim().slice(0, 200);
 
         const firstImage = (doc.media && Array.isArray(doc.media.images) && doc.media.images[0]) || '';
@@ -2497,12 +2497,13 @@ function extractYouTubeId(url) {
 
 // GET /api/honest-reviews — public, powers the homepage video row.
 // Only approved + active cards are ever shown to regular visitors.
-app.get('/api/honest-reviews', async (req, res) => {
+app.get('/api/honest-reviews', attachUserIfPresent, async (req, res) => {
   try {
     const reviews = await HonestReview.find({ active: true, status: 'approved' })
       .sort({ order: 1, createdAt: -1 })
       .lean();
-    res.set('Cache-Control', 'public, max-age=300'); // admin-curated content, changes rarely
+    res.vary('x-user-key');
+    res.set('Cache-Control', 'private, no-store'); // never let a browser/CDN keep a copy
     res.json({ reviews });
   } catch (err) {
     console.error('GET /api/honest-reviews error:', err.message);
@@ -2660,12 +2661,13 @@ const partnerSchema = new mongoose.Schema({
 const Partner = mongoose.model('Partner', partnerSchema);
 
 // GET /api/partners — public, powers the About Us modal's partners row.
-app.get('/api/partners', async (req, res) => {
+app.get('/api/partners', attachUserIfPresent, async (req, res) => {
   try {
     const partners = await Partner.find({ active: true })
       .sort({ order: 1, createdAt: 1 })
       .lean();
-    res.set('Cache-Control', 'public, max-age=300'); // partner logos, changes rarely
+    res.vary('x-user-key');
+    res.set('Cache-Control', 'private, no-store'); // never let a browser/CDN keep a copy
     res.json({ partners });
   } catch (err) {
     console.error('GET /api/partners error:', err.message);
@@ -2816,7 +2818,8 @@ app.get('/api/payment-settings', async (req, res) => {
   try {
     const settings = await PaymentSettings.findOne({ key: 'default' }).lean();
     if (!settings) console.warn('⚠️  No PaymentSettings in DB — serving DUMMY_PAYMENT_DETAILS. Replace these before accepting real payments.');
-    res.set('Cache-Control', 'public, max-age=60'); // rarely changes; kept short since it's payment-related
+    res.vary('x-user-key');
+    res.set('Cache-Control', 'private, no-store'); // login-gated + payment-related: never cached
     res.json(settings || DUMMY_PAYMENT_DETAILS);
   } catch (err) {
     console.error('GET /api/payment-settings error:', err.message);
@@ -3201,7 +3204,8 @@ app.get('/api/stats', async (req, res) => {
       User.countDocuments(),
       DailyStat.findOne({ date: todayStr(), type: 'visit' }).lean(),
     ]);
-    res.set('Cache-Control', 'public, max-age=10'); // short TTL — these are meant to feel live
+    res.vary('x-user-key');
+    res.set('Cache-Control', 'private, no-store'); // login-gated: never let a browser/CDN keep a copy
     res.json({
       totalVisits: visitDoc ? visitDoc.value : 0,
       totalUsers,
