@@ -4404,9 +4404,13 @@ if(!ADMIN_KEY){
   // Key already saved from a previous visit — verify it's still accepted by
   // the server before trusting it. If the session was revoked/expired,
   // fall back to the login screen instead of showing a broken admin panel.
-  fetch(BASE + '/api/users', { method:'GET', headers: authHeaders() })
+  // Uses /api/admin/me (open to every admin) rather than /api/users, which is
+  // gated by the 'customers' module — a sub-admin without Customers access got
+  // a 403 there and was wrongly logged out on every page refresh. Only a 401
+  // means the session is actually invalid.
+  fetch(BASE + '/api/admin/me', { method:'GET', headers: authHeaders() })
     .then(r => {
-      if(!r.ok){
+      if(r.status === 401){
         localStorage.removeItem('kr_admin_key');
         localStorage.removeItem('kr_admin_name');
         ADMIN_KEY = '';
@@ -4516,11 +4520,13 @@ let CURRENT_ADMIN = { email:'', isSuperAdmin:true, modules:{}, actions:{} };
 // be stopped, mirroring the requireModuleAction() check admin.js makes for
 // the matching API route, so a view-only sub-admin gets a clear message
 // here instead of just seeing a generic failed request.
-function canAct(moduleKey){
-  return !!CURRENT_ADMIN.isSuperAdmin || (CURRENT_ADMIN.actions || {})[moduleKey] !== false;
+// Accepts one or more module keys — allowed if ANY of them permits actions
+// (the Visits tab's reset buttons honour either 'stats' or 'visits').
+function canAct(...moduleKeys){
+  return !!CURRENT_ADMIN.isSuperAdmin || moduleKeys.some(k => (CURRENT_ADMIN.actions || {})[k] !== false);
 }
-function blockIfViewOnly(moduleKey){
-  if(canAct(moduleKey)) return false;
+function blockIfViewOnly(...moduleKeys){
+  if(canAct(...moduleKeys)) return false;
   alert('Your admin account has view-only access to this feature. Ask the primary admin to enable actions.');
   return true;
 }
@@ -5144,7 +5150,7 @@ async function loadTotalVisits(){
 }
 
 window.resetTotalVisits = async function(){
-  if(blockIfViewOnly('stats')) return;
+  if(blockIfViewOnly('stats', 'visits')) return;
   const ok = await showConfirmModal({ title:'Reset total visits?', message:'The all-time visit counter will be set back to 0. This cannot be undone.', okText:'Reset' });
   if(!ok) return;
   try{
@@ -5185,7 +5191,7 @@ async function loadDailyStat(type){
 }
 
 window.resetDailyStat = async function(type){
-  if(blockIfViewOnly('stats')) return;
+  if(blockIfViewOnly('stats', 'visits')) return;
   const meta = DAILY_STAT_LABELS[type];
   const ok = await showConfirmModal({ title:`Reset ${meta.label}?`, message:'Every day\'s count — today and every past month — will be set back to 0. This cannot be undone.', okText:'Reset all' });
   if(!ok) return;

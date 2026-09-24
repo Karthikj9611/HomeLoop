@@ -237,6 +237,47 @@ module.exports = function registerAdminRoutes(app, deps) {
     };
   }
 
+  // Same as requireModule / requireModuleAction, but passes if ANY of the listed
+  // modules is allowed. Used by the Visits tab's data routes (total visits,
+  // daily visits, users registered): the tab itself is toggled by the 'visits'
+  // module, but its numbers were gated by 'stats' only — so a sub-admin with
+  // Visits enabled saw an empty tab. Either permission now works.
+  function requireAnyModule(...moduleKeys) {
+    return async (req, res, next) => {
+      try {
+        if (req.isSuperAdmin) return next();
+        const perm = await AdminPermission.findOne({ email: req.adminEmail }).lean();
+        const allowed = moduleKeys.some(k => !perm || !perm.modules || perm.modules[k] !== false);
+        if (!allowed) {
+          return res.status(403).json({ message: 'Your admin account does not have access to this feature. Ask the primary admin to enable it.' });
+        }
+        next();
+      } catch (err) {
+        console.error('requireAnyModule error:', err);
+        res.status(500).json({ message: 'Server error. Please try again.' });
+      }
+    };
+  }
+
+  function requireAnyModuleAction(...moduleKeys) {
+    return async (req, res, next) => {
+      try {
+        if (req.isSuperAdmin) return next();
+        const perm = await AdminPermission.findOne({ email: req.adminEmail }).lean();
+        const allowed = moduleKeys.some(k =>
+          (!perm || !perm.modules || perm.modules[k] !== false) &&
+          (!perm || !perm.actions || perm.actions[k] !== false));
+        if (!allowed) {
+          return res.status(403).json({ message: 'Your admin account has view-only access to this feature. Ask the primary admin to enable actions.' });
+        }
+        next();
+      } catch (err) {
+        console.error('requireAnyModuleAction error:', err);
+        res.status(500).json({ message: 'Server error. Please try again.' });
+      }
+    };
+  }
+
   // Simple rate limiter on the login route to slow down brute-force attempts
   const loginLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, max: 20,
@@ -247,7 +288,7 @@ module.exports = function registerAdminRoutes(app, deps) {
   app.post('/api/login', loginLimiter, async (req, res) => {
     try {
       const { email, password } = req.body || {};
-      const normalizedEmail = String(email || '').toLowerCase();
+      const normalizedEmail = String(email || '').toLowerCase().trim();
       const account = ADMIN_ACCOUNTS.find(a => a.email === normalizedEmail);
       // Always run bcrypt.compare — even when no account matches the email, in
       // which case we compare against DUMMY_PASSWORD_HASH — so a wrong-email
@@ -563,7 +604,6 @@ module.exports = function registerAdminRoutes(app, deps) {
         lastName:      u.lastName || '',
         mobile:        u.mobile || '',
         email:         u.email  || '',
-        password:      u.password || '',
         profilePhoto:  u.profilePhoto || '',
         remarks:       u.remarks || [],
         accountType:   u.accountType || 'customer',
@@ -1109,7 +1149,7 @@ module.exports = function registerAdminRoutes(app, deps) {
   // ownerDirectCall → let index visitors call owner.altPhone; ownerPhoneCall → owner.phone.
   // Each is only allowed while that number is actually on file.
   [['ownerDirectCall', 'altPhone', 'alternate'], ['ownerPhoneCall', 'phone', 'owner']].forEach(([flag, numField, label]) => {
-    app.patch('/api/properties/:id/' + flag, requireAdmin, async (req, res) => {
+    app.patch('/api/properties/:id/' + flag, requireAdmin, requireModuleAction('properties'), async (req, res) => {
       try {
         const value = (req.body || {})[flag];
         if (typeof value !== 'boolean') {
@@ -1910,7 +1950,7 @@ module.exports = function registerAdminRoutes(app, deps) {
   });
 
   // GET /api/admin/total-visits — admin-only, all-time visit counter for its own tab.
-  app.get('/api/admin/total-visits', requireAdmin, requireModule('stats'), async (req, res) => {
+  app.get('/api/admin/total-visits', requireAdmin, requireAnyModule('stats', 'visits'), async (req, res) => {
     try {
       const doc = await SiteStat.findOne({ key: 'totalVisits' }).lean();
       res.json({ totalVisits: doc ? doc.value : 0 });
@@ -1921,7 +1961,7 @@ module.exports = function registerAdminRoutes(app, deps) {
   });
 
   // POST /api/admin/total-visits/reset — reset the all-time counter to 0.
-  app.post('/api/admin/total-visits/reset', requireAdmin, requireModuleAction('stats'), async (req, res) => {
+  app.post('/api/admin/total-visits/reset', requireAdmin, requireAnyModuleAction('stats', 'visits'), async (req, res) => {
     try {
       const doc = await SiteStat.findOneAndUpdate(
         { key: 'totalVisits' },
@@ -1937,7 +1977,7 @@ module.exports = function registerAdminRoutes(app, deps) {
 
   // GET /api/admin/total-users — admin-only, all-time count of registered user accounts
   // (actual User collection count, distinct from the daily-registration log below).
-  app.get('/api/admin/total-users', requireAdmin, requireModule('stats'), async (req, res) => {
+  app.get('/api/admin/total-users', requireAdmin, requireAnyModule('stats', 'visits'), async (req, res) => {
     try {
       const totalUsers = await User.countDocuments();
       res.json({ totalUsers });
@@ -1964,7 +2004,7 @@ module.exports = function registerAdminRoutes(app, deps) {
   // "Daily visits — monthly view" table) — `total`, `today`, and `todayDate`
   // always reflect the FULL history regardless of the month filter, so the
   // big-number cards stay correct even while browsing a past month.
-  app.get('/api/admin/daily-stats/:type', requireAdmin, requireModule('stats'), async (req, res) => {
+  app.get('/api/admin/daily-stats/:type', requireAdmin, requireAnyModule('stats', 'visits'), async (req, res) => {
     try {
       if (!checkDailyStatType(req, res)) return;
       const allDays = await DailyStat.find({ type: req.params.type }).sort({ date: -1 }).lean();
@@ -1985,7 +2025,7 @@ module.exports = function registerAdminRoutes(app, deps) {
   });
 
   // PATCH /api/admin/daily-stats/:type/:date/clear — reset one day's count to 0, keep the row.
-  app.patch('/api/admin/daily-stats/:type/:date/clear', requireAdmin, requireModuleAction('stats'), async (req, res) => {
+  app.patch('/api/admin/daily-stats/:type/:date/clear', requireAdmin, requireAnyModuleAction('stats', 'visits'), async (req, res) => {
     try {
       if (!checkDailyStatType(req, res)) return;
       const date = req.params.date === 'today' ? todayStr() : req.params.date;
@@ -2002,7 +2042,7 @@ module.exports = function registerAdminRoutes(app, deps) {
   });
 
   // DELETE /api/admin/daily-stats/:type/:date — remove that day's row entirely.
-  app.delete('/api/admin/daily-stats/:type/:date', requireAdmin, requireModuleAction('stats'), async (req, res) => {
+  app.delete('/api/admin/daily-stats/:type/:date', requireAdmin, requireAnyModuleAction('stats', 'visits'), async (req, res) => {
     try {
       if (!checkDailyStatType(req, res)) return;
       await DailyStat.deleteOne({ type: req.params.type, date: req.params.date });
@@ -2014,7 +2054,7 @@ module.exports = function registerAdminRoutes(app, deps) {
   });
 
   // POST /api/admin/daily-stats/:type/clear-all — reset every day's count to 0, keep the rows.
-  app.post('/api/admin/daily-stats/:type/clear-all', requireAdmin, requireModuleAction('stats'), async (req, res) => {
+  app.post('/api/admin/daily-stats/:type/clear-all', requireAdmin, requireAnyModuleAction('stats', 'visits'), async (req, res) => {
     try {
       if (!checkDailyStatType(req, res)) return;
       await DailyStat.updateMany({ type: req.params.type }, { $set: { count: 0 } });
@@ -2026,7 +2066,7 @@ module.exports = function registerAdminRoutes(app, deps) {
   });
 
   // POST /api/admin/daily-stats/:type/delete-all — remove every tracked day for this type.
-  app.post('/api/admin/daily-stats/:type/delete-all', requireAdmin, requireModuleAction('stats'), async (req, res) => {
+  app.post('/api/admin/daily-stats/:type/delete-all', requireAdmin, requireAnyModuleAction('stats', 'visits'), async (req, res) => {
     try {
       if (!checkDailyStatType(req, res)) return;
       await DailyStat.deleteMany({ type: req.params.type });

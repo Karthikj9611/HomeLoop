@@ -34,9 +34,14 @@ app.use(compression()); // gzip every response — index.html and JSON API paylo
 app.use(helmet({ contentSecurityPolicy: false }));
 const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGIN || 'https://homeloop.in,https://www.homeloop.in')
   .split(',').map(s => s.trim());
+// When ALLOWED_ORIGIN isn't set (dev only — production throws above), actually
+// allow any origin, as the startup warning promises. Previously this fell back to
+// the production domains, so on localhost every POST (incl. admin login) was
+// rejected with a 500.
+const ALLOW_ANY_ORIGIN = !process.env.ALLOWED_ORIGIN;
 app.use(cors({
   origin: (origin, cb) => {
-    if (!origin || ALLOWED_ORIGINS.includes(origin)) return cb(null, true);
+    if (ALLOW_ANY_ORIGIN || !origin || ALLOWED_ORIGINS.includes(origin)) return cb(null, true);
     cb(new Error('Not allowed by CORS'));
   },
   credentials: true,
