@@ -7972,7 +7972,14 @@ function closeViewersModal() {
 }
 function renderViewersModal(data) {
   const body = document.getElementById('viewersModalBody');
-  const viewers = (data && data.viewers) || [];
+  // One row per person: skip any repeat of the same user id (list is newest-first).
+  const _seenViewerIds = new Set();
+  const viewers = ((data && data.viewers) || []).filter(v => {
+    const k = String(v.userId || v.name);
+    if (_seenViewerIds.has(k)) return false;
+    _seenViewerIds.add(k);
+    return true;
+  });
 
   if (!viewers.length) {
     const total = (data && data.totalViews) || 0;

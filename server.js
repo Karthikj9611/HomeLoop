@@ -1810,7 +1810,7 @@ app.post('/api/properties/:id/view', viewLimiter, attachUserIfPresent, async (re
       try {
         const viewer = await User.findById(req.userId).select('name profilePhoto').lean();
         if (viewer) {
-          await PropertyViewer.findOneAndUpdate(
+          const doUpsert = () => PropertyViewer.findOneAndUpdate(
             { propertyId: req.params.id, userId: req.userId },
             {
               $set: { userName: viewer.name || '', userPhoto: viewer.profilePhoto || '', lastViewedAt: new Date() },
@@ -1818,6 +1818,14 @@ app.post('/api/properties/:id/view', viewLimiter, attachUserIfPresent, async (re
             },
             { upsert: true }
           );
+          try {
+            await doUpsert();
+          } catch (e) {
+            // Two requests from the same user racing each other can both try to
+            // insert; the unique index rejects the loser with E11000. The row
+            // now exists, so just retry once as a plain update — never a 2nd row.
+            if (e && e.code === 11000) await doUpsert(); else throw e;
+          }
         }
       } catch (viewerErr) {
         console.error('PropertyViewer upsert error:', viewerErr.message);
@@ -1843,11 +1851,23 @@ app.get('/api/properties/:id/viewers', requireUser, async (req, res) => {
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
       return res.status(400).json({ message: 'Invalid property id' });
     }
-    const viewers = await PropertyViewer.find({ propertyId: req.params.id })
+    const rawViewers = await PropertyViewer.find({ propertyId: req.params.id })
       .sort({ lastViewedAt: -1 })
-      .limit(200)
+      .limit(1000)
       .select('userId userName userPhoto firstViewedAt lastViewedAt')
       .lean();
+
+    // Safety net: one entry per user account, no matter what's in the DB.
+    // Rows are already newest-first, so the first one seen per user is the latest.
+    const seenUsers = new Set();
+    const viewers = [];
+    for (const v of rawViewers) {
+      const key = String(v.userId);
+      if (seenUsers.has(key)) continue;
+      seenUsers.add(key);
+      viewers.push(v);
+      if (viewers.length >= 200) break;
+    }
 
     const { doc: property } = await findListingById(req.params.id, { lean: true });
     const totalViews = property ? (property.views || 0) : 0;
