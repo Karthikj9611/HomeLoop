@@ -2932,13 +2932,16 @@ main.tab-explore .empty-state{display:none !important}
 #authModal .add-modal-title{font-size:20px;font-weight:800;letter-spacing:-.02em;color:var(--ink)}
 #authModal .modal-close{
   position:absolute;top:20px;right:20px;
-  width:30px;height:30px;
-  background:var(--bg-2);box-shadow:none;
-  border:1px solid var(--border);
-  transition:background .12s,border-color .12s;
+  width:32px;height:32px;
+  background:rgba(224,58,82,.08);
+  border:1px solid rgba(224,58,82,.22);
+  box-shadow:0 1px 3px rgba(20,15,16,.06);
+  transition:background .2s ease,border-color .2s ease,box-shadow .2s ease,transform .25s cubic-bezier(.34,1.56,.64,1);
 }
-#authModal .modal-close:hover{background:var(--border);border-color:var(--border-2);transform:none}
-#authModal .modal-close svg{stroke:var(--text-2);width:13px;height:13px;stroke-width:2.3}
+#authModal .modal-close:hover{background:var(--brand);border-color:var(--brand);transform:rotate(90deg) scale(1.08);box-shadow:0 4px 14px rgba(224,58,82,.35)}
+#authModal .modal-close:active{transform:rotate(90deg) scale(.92)}
+#authModal .modal-close svg{stroke:var(--brand);width:13px;height:13px;stroke-width:2.3;transition:stroke .2s ease}
+#authModal .modal-close:hover svg{stroke:#fff}
 
 #authModal .auth-tabs{background:var(--bg-3);border-radius:12px;padding:4px;margin-bottom:22px}
 #authModal .auth-tab{padding:10px 0;font-size:13.5px;font-weight:650;letter-spacing:-.005em;border-radius:9px;transition:box-shadow .15s,color .15s}
@@ -11214,6 +11217,7 @@ let propertyViewMode = false;
 let editingPropertyId = null;
 
 function openDetail(id) {
+  if (requireLoginForContact('Please log in to view property details')) return;
   const p = PROPERTIES.find(x => x.id === id) || BOOKED_PROPERTIES.find(x => x.id === id);
   if (!p) return;
   closeAllFd();        // clicks that reach here (card body, or an image/icon
@@ -11859,9 +11863,9 @@ async function submitBookingRequest() {
 // buttons, and the property view modal's Call/WhatsApp buttons, including the
 // admin-enabled owner-number variants). Shows the login/signup modal and
 // returns true (blocked) when logged out, so the caller can bail out first.
-function requireLoginForContact() {
+function requireLoginForContact(message) {
   if (getLoggedInUser()) return false;
-  showToast('Please log in to contact the owner', 'warning');
+  showToast(message || 'Please log in to contact the owner', 'warning');
   openAuthModal();
   return true;
 }
