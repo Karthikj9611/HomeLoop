@@ -78,7 +78,7 @@ const UserSchema = new mongoose.Schema({
   lastName:  { type: String, trim: true },
   email:     { type: String, trim: true, lowercase: true, sparse: true, unique: true },
   mobile:    { type: String, trim: true, sparse: true, unique: true },
-  password:  { type: String, required: true },
+  password:  { type: String, default: '' }, // legacy — login/signup are passwordless now (mobile number only); old hashes are kept but unused
   // URL of the user's avatar, e.g. '/uploads/<ImageAsset id>' — set at signup
   // (or later via PUT /api/user/me) using the same image pipeline as listing
   // photos. Empty string means "no photo", and the UI falls back to initials.
@@ -400,7 +400,7 @@ app.post('/api/user/signup/verify-otp', otpLimiter, async (req, res) => {
 // ── User Signup ──
 app.post('/api/user/signup', userAuthLimiter, async (req, res) => {
   try {
-    const { firstName, lastName, email, mobile, password, confirmPassword, accountType, profilePic } = req.body || {};
+    const { firstName, lastName, email, mobile, accountType, profilePic } = req.body || {};
 
     if (!firstName || !String(firstName).trim()) return res.status(400).json({ message: 'First name is required' });
     if (!lastName  || !String(lastName).trim())  return res.status(400).json({ message: 'Last name is required' });
@@ -408,8 +408,6 @@ app.post('/api/user/signup', userAuthLimiter, async (req, res) => {
     if (!/^[^\s@"'<>\\]+@[^\s@"'<>\\]+\.[^\s@"'<>\\]+$/.test(String(email).trim())) return res.status(400).json({ message: 'Please enter a valid email address' });
     if (!mobile    || !String(mobile).trim())    return res.status(400).json({ message: 'Mobile number is required' });
     if (!/^[\d+\-\s]{7,15}$/.test(String(mobile).trim())) return res.status(400).json({ message: 'Please enter a valid mobile number' });
-    if (!password || password.length < 6) return res.status(400).json({ message: 'Password must be at least 6 characters' });
-    if (password !== confirmPassword) return res.status(400).json({ message: 'Passwords do not match' });
 
     const cleanAccountType = accountType === 'owner' ? 'owner' : 'customer';
 
@@ -429,7 +427,7 @@ app.post('/api/user/signup', userAuthLimiter, async (req, res) => {
     // signup. If the person did go through send-otp/verify-otp and it
     // succeeded, that's honored (and the doc is cleared below); if OTP was
     // skipped, failed to send, entered wrong, or never attempted, the
-    // account is still created here on password entry.
+    // account is still created here (no password — mobile number is the login).
 
     // Only trust a photo URL that actually points at an image we generated via
     // /api/upload-images — never store an arbitrary attacker-supplied URL here.
@@ -437,7 +435,6 @@ app.post('/api/user/signup', userAuthLimiter, async (req, res) => {
       ? profilePic.trim()
       : '';
 
-    const hashed = await bcrypt.hash(password, 10);
     const userId = await nextSequenceId('USER');
     const name = `${String(firstName).trim()} ${String(lastName).trim()}`.trim();
     const user = await User.create({
@@ -446,7 +443,6 @@ app.post('/api/user/signup', userAuthLimiter, async (req, res) => {
       name,
       email:     cleanEmail,
       mobile:    cleanMobile,
-      password:  hashed,
       accountType: cleanAccountType,
       profilePhoto: cleanProfilePhoto,
       userId,
@@ -478,22 +474,19 @@ app.post('/api/user/signup', userAuthLimiter, async (req, res) => {
 // ── User Login ──
 app.post('/api/user/login', userAuthLimiter, async (req, res) => {
   try {
-    const { contact, password } = req.body || {};
-    if (!contact || !password) return res.status(400).json({ message: 'Please enter your details' });
+    const { contact } = req.body || {};
+    if (!contact) return res.status(400).json({ message: 'Please enter your mobile number' });
 
     // 'contact' is whatever the person typed into the single "Phone or email"
     // field — figure out which one it is and match the corresponding column.
     const identifier = String(contact).toLowerCase().trim();
-    const query = identifier.includes('@') ? { email: identifier } : { mobile: normalizeMobile(identifier) };
+    const cleanMobile = normalizeMobile(identifier);
+    // With no password, a malformed identifier must never reach the query (e.g. '' matching a legacy blank-mobile row).
+    if (!identifier.includes('@') && !/^\d{10}$/.test(cleanMobile)) return res.status(400).json({ message: 'Please enter a valid 10-digit mobile number' });
+    const query = identifier.includes('@') ? { email: identifier } : { mobile: cleanMobile };
     const user = await User.findOne(query);
-    // Same message either way (wrong identifier vs. wrong password) — a
-    // different message per case would let the response be used to check
-    // which emails/numbers have accounts on the site.
-    const genericError = { message: 'Incorrect email/mobile or password' };
-    if (!user) return res.status(401).json(genericError);
-
-    const match = await bcrypt.compare(password, user.password);
-    if (!match) return res.status(401).json(genericError);
+    // Passwordless login: the number/email just has to exist in the DB.
+    if (!user) return res.status(401).json({ message: 'No account found. Please sign up.' });
 
     const userKey = await issueUserSession(user);
     return res.json({

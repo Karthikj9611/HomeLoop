@@ -2974,8 +2974,6 @@ main.tab-explore .empty-state{display:none !important}
 #authModal .img-btns{gap:8px}
 #authModal .img-btn-sec{border-radius:9px;font-weight:700;background:var(--bg)}
 
-#authModal #authForgotRow{margin-bottom:14px}
-
 #authModal .form-submit{
   border-radius:11px;padding:12.5px;font-size:14px;letter-spacing:.01em;
   box-shadow:0 10px 22px -8px rgba(224,58,82,.55);
@@ -6498,16 +6496,6 @@ main.tab-explore .empty-state{display:none !important}
           </div>
         </div>
       </div>
-      <div class="form-group">
-        <label class="form-label">Password <span style="color:var(--brand)">*</span></label>
-        <input class="form-input" type="password" id="auth-password" />
-      </div>
-      <div id="authSignupConfirmField" style="display:none">
-        <div class="form-group">
-          <label class="form-label">Re-enter password <span style="color:var(--brand)">*</span></label>
-          <input class="form-input" type="password" id="auth-confirm-password" />
-        </div>
-      </div>
 
       <!-- ── Email verification — appears in place, right in the signup form,
            once "Sign up" is submitted and a code has been emailed. Nothing
@@ -6528,9 +6516,6 @@ main.tab-explore .empty-state{display:none !important}
           <a onclick="cancelSignupOtp()">&larr; Edit details</a>
           <a id="authOtpResendLink" onclick="resendSignupOtp()">Resend code</a>
         </div>
-      </div>
-      <div id="authForgotRow" style="text-align:right;margin-bottom:6px">
-        <span style="font-size:12px;color:var(--brand);font-weight:600;cursor:pointer" onclick="openForgotPassword()">Forgot password?</span>
       </div>
 
       <button class="form-submit" id="authSubmitBtn" onclick="submitAuth()">Log in</button>
@@ -6674,7 +6659,6 @@ main.tab-explore .empty-state{display:none !important}
             </div>
           </div>
 
-          <button class="profile-btn-secondary" onclick="enterPasswordEditMode()">Change password</button>
         </div>
 
         <div id="profileEditMode" style="display:none">
@@ -12653,8 +12637,6 @@ function switchAuthTab(tab) {
   document.getElementById('authSignupNameField').style.display = isLogin ? 'none' : '';
   document.getElementById('authLoginContactField').style.display = isLogin ? '' : 'none';
   document.getElementById('authSignupContactFields').style.display = isLogin ? 'none' : '';
-  document.getElementById('authSignupConfirmField').style.display = isLogin ? 'none' : '';
-  document.getElementById('authForgotRow').style.display = isLogin ? '' : 'none';
   document.getElementById('authModalTitle').textContent = isLogin ? 'Welcome back' : 'Create your account';
   document.getElementById('authSubmitBtn').textContent = isLogin ? 'Log in' : 'Sign up';
   document.getElementById('authFoot').innerHTML = isLogin
@@ -12773,7 +12755,7 @@ function restoreSignupDraft() {
 }
 
 // OTP verification is disabled for signup — the account is created directly
-// on password entry. pendingSignupBody/verifySignupOtp() etc. below are kept
+// (no password). pendingSignupBody/verifySignupOtp() etc. below are kept
 // (unused) in case OTP is turned back on later.
 let pendingSignupBody = null;
 
@@ -12783,14 +12765,12 @@ async function submitAuth() {
 
   const isLogin = document.getElementById('authTabLogin').classList.contains('active');
 
-  const password = document.getElementById('auth-password').value;
-
   let body;
 
   if (isLogin) {
     const contact = document.getElementById('auth-contact').value.trim();
-    if (!contact || !password) { showToast('Please fill in your details', 'warning'); return; }
-    body = { contact, password };
+    if (!contact) { showToast('Please enter your mobile number', 'warning'); return; }
+    body = { contact };
   } else {
     if (!selectedAccountType) {
       document.getElementById('authTypeTabsRow').classList.add('has-error');
@@ -12802,15 +12782,12 @@ async function submitAuth() {
     const lastName        = document.getElementById('auth-lastname').value.trim();
     const email            = document.getElementById('auth-email').value.trim();
     const mobile            = document.getElementById('auth-mobile').value.trim();
-    const confirmPassword = document.getElementById('auth-confirm-password').value;
 
     if (!firstName || !lastName) { showToast('Please enter your first and last name', 'warning'); return; }
     if (!email)  { showToast('Please enter your email', 'warning'); return; }
     if (!mobile) { showToast('Please enter your mobile number', 'warning'); return; }
     if (!isValidIndianMobile(mobile)) { showToast('Enter a valid 10-digit mobile number starting with 6, 7, 8 or 9', 'warning'); return; }
-    if (!password) { showToast('Please enter a password', 'warning'); return; }
-    if (password !== confirmPassword) { showToast('Passwords do not match', 'warning'); return; }
-    body = { firstName, lastName, email, mobile, password, confirmPassword, accountType: selectedAccountType, profilePic: authProfilePicUrl || null };
+    body = { firstName, lastName, email, mobile, accountType: selectedAccountType, profilePic: authProfilePicUrl || null };
   }
 
   btn.disabled = true;
@@ -12923,7 +12900,7 @@ async function resendSignupOtp() {
 // pending — prevents editing the email (or anything else) out from under a
 // code that's already been sent for the original details.
 function setSignupFieldsDisabled(disabled) {
-  ['auth-firstname', 'auth-lastname', 'auth-email', 'auth-mobile', 'auth-password', 'auth-confirm-password'].forEach(id => {
+  ['auth-firstname', 'auth-lastname', 'auth-email', 'auth-mobile'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.disabled = disabled;
   });
