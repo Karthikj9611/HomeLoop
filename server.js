@@ -85,6 +85,10 @@ const UserSchema = new mongoose.Schema({
   // until this is true — login/profile/browsing still work either way.
   isVerified:  { type: Boolean, default: false },
   verifiedAt:  { type: Date, default: null },
+  // Admin "Public call" switch for this account (Customers grid). When true, every
+  // listing this user owns exposes its owner number(s) publicly in GET /api/properties,
+  // exactly as if the per-listing Public call toggles were on (see that route).
+  publicCall:  { type: Boolean, default: false },
   remarks:   { type: [RemarkEntrySchema], default: [] },
   // Human-readable unique id, same pattern as Property.propertyId (e.g. USER-000001).
   // This is a *display* identifier, distinct from the Mongo _id. Session docs
@@ -1588,8 +1592,10 @@ app.get('/api/properties', async (req, res) => {
     }
 
     // Internal/admin-only fields — never read by the public frontend
+    // NOTE: userId is fetched (needed for the per-user Public call lookup below) but
+    // deleted from every doc before the response is sent.
     const PUBLIC_SELECT =
-      '-remarks -userId -userReadableId -__v -bookingDetails ' +
+      '-remarks -userReadableId -__v -bookingDetails ' +
       // Owner PII that only ever populated hidden form inputs in the read-only
       // detail view (VIEW_ALWAYS_HIDDEN_GROUPS on the frontend). owner.phone is
       // excluded too — Call/WhatsApp now read owner.agentPhone only (dynamically),
@@ -1620,6 +1626,23 @@ app.get('/api/properties', async (req, res) => {
       modelsToQuery.map(M => M.find(filter).select(PUBLIC_SELECT).lean())
     );
     let docs = docArrays.flat();
+
+    // Per-user Public call: listings owned by an account with User.publicCall on behave
+    // as if both per-listing toggles (ownerPhoneCall / ownerDirectCall) were on. Applied
+    // to the in-memory response only — nothing is written to the listing docs. Runs
+    // before the navigateUrl / owner-number steps below, which key off those flags.
+    const _ownerIds = [...new Set(docs.map(d => d.userId).filter(Boolean).map(String))];
+    if (_ownerIds.length) {
+      const _pubUsers = new Set(
+        (await User.find({ _id: { $in: _ownerIds }, publicCall: true }).select('_id').lean())
+          .map(u => String(u._id))
+      );
+      if (_pubUsers.size) {
+        docs.forEach(d => {
+          if (d.userId && _pubUsers.has(String(d.userId))) { d.ownerPhoneCall = true; d.ownerDirectCall = true; }
+        });
+      }
+    }
 
     // Backfill location.pincode from the free-text address for listings that
     // never got an explicit pincode saved (older/imported listings). Mirrors
@@ -1696,6 +1719,7 @@ app.get('/api/properties', async (req, res) => {
       if (doc.ownerDirectCall) doc.ownerAltPhone = alt;
       if (doc.ownerPhoneCall)  doc.ownerPhone = main;
       if (doc.owner) { delete doc.owner.altPhone; delete doc.owner.phone; }
+      delete doc.userId; // internal — only used above for the per-user Public call lookup
     });
 
     const mapped = docs.map(doc => ({

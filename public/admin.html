@@ -5003,6 +5003,40 @@ window.toggleUserVerified = async function(id, nextVerified){
   }
 };
 
+/* ── PUBLIC CALL (per user) ──
+   ON = every listing this user owns shows its owner number(s) to site visitors,
+   same as switching Public call on for each of their properties individually. */
+window.toggleUserPublicCall = async function(id, checkboxEl){
+  if(blockIfViewOnly('customers')){ checkboxEl.checked = !checkboxEl.checked; return; }
+  const desired = checkboxEl.checked;
+  const ok = await showConfirmModal({
+    title: desired ? 'Enable public call for this user?' : 'Disable public call for this user?',
+    message: desired
+      ? 'All listings owned by this user will show their owner number(s) to site visitors (Call / WhatsApp / Navigate).'
+      : 'Their listings go back to following each property\'s own Public call toggle.',
+    okText: desired ? 'Turn on' : 'Turn off',
+    variant: 'info'
+  });
+  if(!ok){ checkboxEl.checked = !desired; return; }
+  checkboxEl.disabled = true;
+  try{
+    const res = await fetch(`${BASE}/api/users/${id}/publicCall`, {
+      method:'PATCH',
+      headers:{ ...authHeaders(), 'Content-Type':'application/json' },
+      body: JSON.stringify({ publicCall: desired })
+    });
+    const data = await res.json().catch(()=>({}));
+    if(!res.ok){ checkboxEl.checked = !desired; alert(data.message || 'Error updating public call'); return; }
+    checkboxEl.checked = !!data.publicCall;
+    dataTable.rows().every(function(){ const rd = this.data(); if(rd && rd._id === id) rd.publicCall = !!data.publicCall; });
+  }catch(e){
+    checkboxEl.checked = !desired;
+    alert('Network error updating public call');
+  }finally{
+    checkboxEl.disabled = false;
+  }
+};
+
 /* ── DELETE HANDLERS ── */
 window.deleteBooking = async function(mobile){
   if(blockIfViewOnly('customers')) return;
@@ -7297,6 +7331,11 @@ $(document).ready(function(){
 				</button>
 
 				${verifyBtn}
+
+				${row.accountType==='owner' ? `<label class="mini-toggle-wrap altcall-wrap" title="When ON, all of this owner's listings show their owner number(s) to site visitors"><span class="mini-toggle altcall-toggle">
+				  <input type="checkbox" ${row.publicCall?'checked':''} ${canAct('customers')?'':'disabled'} onchange="toggleUserPublicCall('${row._id}',this)">
+				  <span class="slider"></span>
+				</span><span class="altcall-label">Public call</span></label>` : ''}
 
 			  </div>
 			`;
