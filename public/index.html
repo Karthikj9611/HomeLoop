@@ -12528,6 +12528,7 @@ async function logoutUser() {
   updateNavAuth();
   switchFilterIdentity();
   showToast('Logged out successfully');
+  fetchProperties(); fetchBookedProperties(); // drop any owner numbers a Public-call tenant was seeing
 }
 function handleMenuAuthClick() {
   if (getLoggedInUser()) openProfileModal();
@@ -12818,6 +12819,7 @@ function finishAuthSuccess(data) {
   updateNavAuth();
   switchFilterIdentity();
   showToast(data.message);
+  fetchProperties(); fetchBookedProperties(); // re-fetch: tenants with admin "Public call" get owner numbers once logged in
 }
 
 // Called via submitAuth() once a code has already been sent (second click
@@ -15365,7 +15367,7 @@ async function fetchProperties(renderAfter = true) {
   if (pgGrid) pgGrid.innerHTML = '';
   if (promotedGrid) promotedGrid.innerHTML = '';
   try {
-    const res = await fetch('/api/properties');
+    const res = await fetch('/api/properties', { headers: userAuthHeaders() });
     if (!res.ok) throw new Error('Server returned ' + res.status);
     const data = await res.json();
     if (data.properties && data.properties.length > 0) {
@@ -15432,7 +15434,7 @@ async function fetchBookedProperties(renderAfter = true) {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 4000);
   try {
-    const res = await fetch('/api/properties?booked=true', { signal: controller.signal });
+    const res = await fetch('/api/properties?booked=true', { headers: userAuthHeaders(), signal: controller.signal });
     if (!res.ok) throw new Error('Server returned ' + res.status);
     const data = await res.json();
     BOOKED_PROPERTIES = data.properties || [];

@@ -5004,16 +5004,22 @@ window.toggleUserVerified = async function(id, nextVerified){
 };
 
 /* ── PUBLIC CALL (per user) ──
-   ON = every listing this user owns shows its owner number(s) to site visitors,
-   same as switching Public call on for each of their properties individually. */
-window.toggleUserPublicCall = async function(id, checkboxEl){
+   Owner account ON = all of that owner's listings show owner number(s) to everyone.
+   Tenant account ON = that tenant, when logged in, sees owner number(s) on every listing. */
+window.toggleUserPublicCall = async function(id, checkboxEl, accountType){
   if(blockIfViewOnly('customers')){ checkboxEl.checked = !checkboxEl.checked; return; }
   const desired = checkboxEl.checked;
+  const isOwner = accountType === 'owner';
+  const who = isOwner ? 'owner' : 'tenant';
   const ok = await showConfirmModal({
-    title: desired ? 'Enable public call for this user?' : 'Disable public call for this user?',
-    message: desired
-      ? 'All listings owned by this user will show their owner number(s) to site visitors (Call / WhatsApp / Navigate).'
-      : 'Their listings go back to following each property\'s own Public call toggle.',
+    title: desired ? `Enable public call for this ${who}?` : `Disable public call for this ${who}?`,
+    message: isOwner
+      ? (desired
+          ? 'All listings posted by this owner will show their owner number(s) to every site visitor (Call / WhatsApp / Navigate).'
+          : 'This owner\'s listings go back to following each property\'s own Public call toggle.')
+      : (desired
+          ? 'When logged in, this tenant will see the owner number(s) on all listings (Call / WhatsApp / Navigate).'
+          : 'This tenant will no longer see owner numbers, except on listings where Public call is on for everyone.'),
     okText: desired ? 'Turn on' : 'Turn off',
     variant: 'info'
   });
@@ -7332,10 +7338,10 @@ $(document).ready(function(){
 
 				${verifyBtn}
 
-				${row.accountType==='owner' ? `<label class="mini-toggle-wrap altcall-wrap" title="When ON, all of this owner's listings show their owner number(s) to site visitors"><span class="mini-toggle altcall-toggle">
-				  <input type="checkbox" ${row.publicCall?'checked':''} ${canAct('customers')?'':'disabled'} onchange="toggleUserPublicCall('${row._id}',this)">
+				<label class="mini-toggle-wrap altcall-wrap" title="${row.accountType==='owner' ? 'When ON, all of this owner\'s listings show their owner number(s) to every visitor' : 'When ON, this tenant sees owner numbers on all listings while logged in'}"><span class="mini-toggle altcall-toggle">
+				  <input type="checkbox" ${row.publicCall?'checked':''} ${canAct('customers')?'':'disabled'} onchange="toggleUserPublicCall('${row._id}',this,'${row.accountType==='owner'?'owner':'customer'}')">
 				  <span class="slider"></span>
-				</span><span class="altcall-label">Public call</span></label>` : ''}
+				</span><span class="altcall-label">${row.accountType==='owner' ? 'Owner public call' : 'Tenant public call'}</span></label>
 
 			  </div>
 			`;

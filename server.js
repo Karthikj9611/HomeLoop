@@ -85,10 +85,11 @@ const UserSchema = new mongoose.Schema({
   // until this is true — login/profile/browsing still work either way.
   isVerified:  { type: Boolean, default: false },
   verifiedAt:  { type: Date, default: null },
-  // Admin "Public call" switch for this account (Customers grid). When true, every
-  // listing this user owns exposes its owner number(s) publicly in GET /api/properties,
-  // exactly as if the per-listing Public call toggles were on (see that route).
-  publicCall:  { type: Boolean, default: false },
+  // Admin "Public call" switch (Customers grid). One flag, meaning depends on accountType:
+  //  • 'owner'    → every listing THIS owner posted shows its owner number(s) + Navigate link to
+  //                 everyone in GET /api/properties (same as turning on each listing's own toggles).
+  //  • 'customer' → THIS tenant, while logged in, sees owner number(s) + Navigate on EVERY listing.
+  publicCall:  { type: Boolean, default: false, index: true },
   remarks:   { type: [RemarkEntrySchema], default: [] },
   // Human-readable unique id, same pattern as Property.propertyId (e.g. USER-000001).
   // This is a *display* identifier, distinct from the Mongo _id. Session docs
@@ -1565,7 +1566,7 @@ app.post('/api/properties', listingLimiter, requireUser, requireOwner, requireVe
 });
 
 // ── GET /api/properties ──
-app.get('/api/properties', async (req, res) => {
+app.get('/api/properties', attachUserIfPresent, async (req, res) => {
   try {
     // Default limit bumped from 100 → 2000: the frontend calls this endpoint
     // with no query params at all (a single `fetch('/api/properties')` on
@@ -1592,7 +1593,7 @@ app.get('/api/properties', async (req, res) => {
     }
 
     // Internal/admin-only fields — never read by the public frontend
-    // NOTE: userId is fetched (needed for the per-user Public call lookup below) but
+    // NOTE: userId is fetched (needed for the per-owner Public call lookup below) but
     // deleted from every doc before the response is sent.
     const PUBLIC_SELECT =
       '-remarks -userReadableId -__v -bookingDetails ' +
@@ -1627,22 +1628,29 @@ app.get('/api/properties', async (req, res) => {
     );
     let docs = docArrays.flat();
 
-    // Per-user Public call: listings owned by an account with User.publicCall on behave
-    // as if both per-listing toggles (ownerPhoneCall / ownerDirectCall) were on. Applied
-    // to the in-memory response only — nothing is written to the listing docs. Runs
-    // before the navigateUrl / owner-number steps below, which key off those flags.
-    const _ownerIds = [...new Set(docs.map(d => d.userId).filter(Boolean).map(String))];
-    if (_ownerIds.length) {
-      const _pubUsers = new Set(
-        (await User.find({ _id: { $in: _ownerIds }, publicCall: true }).select('_id').lean())
-          .map(u => String(u._id))
-      );
-      if (_pubUsers.size) {
-        docs.forEach(d => {
-          if (d.userId && _pubUsers.has(String(d.userId))) { d.ownerPhoneCall = true; d.ownerDirectCall = true; }
-        });
-      }
+    // Admin "Public call" (User.publicCall) — applied in-memory to this response only; nothing is
+    // written to listing docs. Both rules set the same two per-listing flags (ownerPhoneCall /
+    // ownerDirectCall), and both run before the navigateUrl / owner-number steps below, which key off them.
+    //
+    // 1) Owner switch: listings posted by an owner account with publicCall on are public to EVERYONE.
+    //    (Direct query on the small set of switched-on owners — cheaper than an $in over every listing owner.)
+    const _pubOwners = new Set(
+      (await User.find({ publicCall: true, accountType: 'owner' }).select('_id').lean()).map(u => String(u._id))
+    );
+    if (_pubOwners.size) {
+      docs.forEach(d => {
+        if (d.userId && _pubOwners.has(String(d.userId))) { d.ownerPhoneCall = true; d.ownerDirectCall = true; }
+      });
     }
+
+    // 2) Tenant switch: if the logged-in viewer is a tenant account with publicCall on, EVERY listing
+    //    is public for THIS viewer only (the response is then private/uncached — see Cache-Control below).
+    let _viewerPublicCall = false;
+    if (req.userId) {
+      const _viewer = await User.findById(req.userId).select('publicCall accountType').lean();
+      _viewerPublicCall = !!(_viewer && _viewer.publicCall && (_viewer.accountType || 'customer') === 'customer');
+    }
+    if (_viewerPublicCall) docs.forEach(d => { d.ownerPhoneCall = true; d.ownerDirectCall = true; });
 
     // Backfill location.pincode from the free-text address for listings that
     // never got an explicit pincode saved (older/imported listings). Mirrors
@@ -1719,7 +1727,7 @@ app.get('/api/properties', async (req, res) => {
       if (doc.ownerDirectCall) doc.ownerAltPhone = alt;
       if (doc.ownerPhoneCall)  doc.ownerPhone = main;
       if (doc.owner) { delete doc.owner.altPhone; delete doc.owner.phone; }
-      delete doc.userId; // internal — only used above for the per-user Public call lookup
+      delete doc.userId; // internal — only used above for the per-owner Public call lookup
     });
 
     const mapped = docs.map(doc => ({
@@ -1733,7 +1741,12 @@ app.get('/api/properties', async (req, res) => {
       booked:       !!doc.booked,
     }));
 
-    res.set('Cache-Control', 'public, max-age=30'); // public listing data only, already scrubbed of PII — avoids a redundant DB hit on quick back/forward navigation
+    // Guest/normal responses: public listing data only, already scrubbed of PII — cached briefly to avoid
+    // a redundant DB hit on quick back/forward navigation. A response that includes owner numbers for an
+    // entitled tenant is private + uncached, and every response varies by session key so a shared cache
+    // can never hand one viewer's response to another.
+    res.vary('x-user-key');
+    res.set('Cache-Control', _viewerPublicCall ? 'private, no-store' : 'public, max-age=30');
     res.json({ properties: mapped, total: mapped.length });
   } catch (err) {
     console.error('GET /api/properties error:', err);

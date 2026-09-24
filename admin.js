@@ -659,20 +659,15 @@ module.exports = function registerAdminRoutes(app, deps) {
   });
 
   // ── PATCH /api/users/:id/publicCall (admin: per-user "Public call" switch) ──
-  // Body: { publicCall: true | false }. While ON, all of this user's listings expose
-  // their owner number(s) on the public site (resolved in GET /api/properties).
+  // Body: { publicCall: true | false }. Owner account → their listings show owner number(s) to
+  // everyone; tenant account → that tenant (when logged in) sees them on all listings.
+  // Both resolved in GET /api/properties.
   app.patch('/api/users/:id/publicCall', requireAdmin, requireModuleAction('customers'), async (req, res) => {
     try {
       const { id } = req.params;
       if (!mongoose.Types.ObjectId.isValid(id)) return res.status(400).json({ message: 'Invalid user id' });
       const value = (req.body || {}).publicCall;
       if (typeof value !== 'boolean') return res.status(400).json({ message: 'publicCall must be a boolean' });
-      // Owner accounts only — they're the only ones who can post listings. Turning it OFF is always allowed.
-      if (value) {
-        const target = await User.findById(id).select('accountType').lean();
-        if (!target) return res.status(404).json({ message: 'Customer not found' });
-        if (target.accountType !== 'owner') return res.status(400).json({ message: 'Public call is for owner accounts only' });
-      }
       const user = await User.findByIdAndUpdate(id, { publicCall: value }, { new: true }).lean();
       if (!user) return res.status(404).json({ message: 'Customer not found' });
       res.json({ message: 'Public call updated', _id: user._id, publicCall: !!user.publicCall });
