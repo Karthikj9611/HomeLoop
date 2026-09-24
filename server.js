@@ -18,7 +18,7 @@ const { sendEmailWithBrevo, otpEmailTemplate, passwordResetOtpEmailTemplate } = 
 if (!process.env.MONGODB_URI)   throw new Error('MONGODB_URI env var is required');
 if (!process.env.ALLOWED_ORIGIN) {
   if (process.env.NODE_ENV === 'production') throw new Error('ALLOWED_ORIGIN env var is required in production');
-  console.warn('⚠️  ALLOWED_ORIGIN not set — defaulting to * (development only)');
+  console.warn('⚠️  ALLOWED_ORIGIN not set — allowing localhost origins only (development only)');
 }
 
 if (!process.env.BREVO_API_KEY) {
@@ -34,14 +34,18 @@ app.use(compression()); // gzip every response — index.html and JSON API paylo
 app.use(helmet({ contentSecurityPolicy: false }));
 const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGIN || 'https://homeloop.in,https://www.homeloop.in')
   .split(',').map(s => s.trim());
-// When ALLOWED_ORIGIN isn't set (dev only — production throws above), actually
-// allow any origin, as the startup warning promises. Previously this fell back to
-// the production domains, so on localhost every POST (incl. admin login) was
-// rejected with a 500.
-const ALLOW_ANY_ORIGIN = !process.env.ALLOWED_ORIGIN;
+// When ALLOWED_ORIGIN isn't set, ALSO allow localhost / 127.0.0.1 origins (any
+// port) so local development works — previously the fallback was only the
+// production domains, so on localhost every POST (incl. admin login) was
+// rejected with a 500. Only localhost is opened up, never arbitrary websites,
+// so this stays safe even if the app is deployed without ALLOWED_ORIGIN and
+// without NODE_ENV=production. When ALLOWED_ORIGIN IS set, it is the only list.
+const LOCALHOST_ORIGIN_RE = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i;
+const ALLOW_LOCALHOST_DEV = !process.env.ALLOWED_ORIGIN;
 app.use(cors({
   origin: (origin, cb) => {
-    if (ALLOW_ANY_ORIGIN || !origin || ALLOWED_ORIGINS.includes(origin)) return cb(null, true);
+    if (!origin || ALLOWED_ORIGINS.includes(origin)) return cb(null, true);
+    if (ALLOW_LOCALHOST_DEV && LOCALHOST_ORIGIN_RE.test(origin)) return cb(null, true);
     cb(new Error('Not allowed by CORS'));
   },
   credentials: true,

@@ -4417,9 +4417,19 @@ if(!ADMIN_KEY){
         showLogin();
         return null;
       }
-      return r.json();
+      if(!r.ok){
+        // Server-side failure (5xx / rate limit) — the key is probably still
+        // fine, so keep it, but tell the admin why the panel may look empty.
+        alert('Could not verify your admin session (server returned ' + r.status + '). You are still signed in — please refresh in a moment.');
+        return null;
+      }
+      return r.json().catch(()=>null);
     })
-    .catch(()=>null)
+    .catch(()=>{
+      // Network failure / server down — same idea: keep the key, explain it.
+      alert('Could not reach the server. Please check that it is running, then refresh the page.');
+      return null;
+    })
     .then(()=>{
       if(!ADMIN_KEY) return;
       const stored = localStorage.getItem('kr_admin_name');
@@ -4446,6 +4456,64 @@ window.fetch = function(input, init){
     return res;
   });
 };
+
+/* ── TABLE / PANEL LOAD ERRORS ──
+   The DataTables here use errMode 'none' and used to pass an empty ajax
+   `error` callback, so a failed request (403 no access / 500 / server down)
+   left the table stuck on "Loading..." forever with no explanation. This puts
+   a real message in the table body instead, and restores the normal
+   "No ... yet" text the next time a load succeeds. */
+function tableLoadErrorInfo(xhr){
+  const status = xhr ? xhr.status : 0;
+  const serverMsg = xhr && xhr.responseJSON && xhr.responseJSON.message;
+  if(status === 403) return { icon:'fa-lock', text: serverMsg || "You don't have access to this feature." };
+  if(status === 401) return { icon:'fa-right-to-bracket', text: ADMIN_KEY ? 'Your session has expired. Please sign in again.' : 'Please sign in to view this.' };
+  if(!status)        return { icon:'fa-plug-circle-xmark', text:'Could not reach the server. Check that it is running, then refresh.' };
+  return { icon:'fa-triangle-exclamation', text:'Could not load data (server error ' + status + '). Please refresh in a moment.' };
+}
+function showTableLoadError(tableSel, xhr){
+  try{
+    // A jQuery request the server rejected as 401 while we hold a key = the
+    // session was revoked/expired mid-use — same handling as the fetch wrapper.
+    const info = tableLoadErrorInfo(xhr);
+    if(xhr && xhr.status === 401 && ADMIN_KEY){
+      localStorage.removeItem('kr_admin_key');
+      localStorage.removeItem('kr_admin_name');
+      ADMIN_KEY = '';
+      showLogin();
+    }
+    const dt = $(tableSel).DataTable();
+    const st = dt.settings()[0];
+    if(st._origEmptyTable === undefined){
+      st._origEmptyTable = st.oLanguage.sEmptyTable;
+      // A later successful load puts the normal empty-state text back.
+      $(tableSel).on('xhr.dt', function(){ st.oLanguage.sEmptyTable = st._origEmptyTable; });
+    }
+    st.oLanguage.sEmptyTable = '<div class="empty-state"><i class="fas ' + info.icon + '"></i>' + escapeHtml(info.text) + '</div>';
+    dt.clear().draw();
+  } catch(e){ console.error('showTableLoadError failed:', e); }
+}
+
+// One-line notice at the top of a panel (used by the Visits numbers, which
+// are plain fetch() calls rather than DataTables). Empty text removes it.
+function setPanelNotice(panelId, text){
+  const panel = document.getElementById(panelId);
+  if(!panel) return;
+  let el = panel.querySelector(':scope > .panel-notice');
+  if(!text){ if(el) el.remove(); return; }
+  if(!el){
+    el = document.createElement('div');
+    el.className = 'panel-notice';
+    el.style.cssText = 'margin:0 0 12px;padding:10px 14px;border-radius:8px;background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;font-size:0.9rem';
+    panel.insertBefore(el, panel.firstChild);
+  }
+  el.textContent = text;
+}
+function showVisitsLoadError(status, data){
+  setPanelNotice('panel-visits', status === 403
+    ? ((data && data.message) || "You don't have access to these numbers.") + ' (Needs the Visits or Visitor & Registration Stats permission.)'
+    : 'Could not load these numbers (server error ' + status + '). Please refresh in a moment.');
+}
 
 /* ── TAB SWITCHING ── */
 function switchTab(tab){
@@ -4513,6 +4581,27 @@ const MODULE_ICONS = {
 function adminInitial(email){ return (email || '?').trim().charAt(0).toUpperCase() || '?'; }
 let CURRENT_ADMIN = { email:'', isSuperAdmin:true, modules:{}, actions:{} };
 
+// The last-used tab is remembered in localStorage, which is shared by every
+// admin who signs in on this browser. So it must NOT be reopened blindly: a
+// sub-admin could land on a tab they have no access to. Captured once at page
+// load (before applyAdminAccessUI overwrites it while hiding tabs), and only
+// reopened after /api/admin/me tells us what this login may see.
+const _initialSavedTab = (function(){ try{ return localStorage.getItem('kr_admin_activeTab'); }catch(e){ return null; } })();
+let _savedTabRestored = false;
+function canViewTab(tab){
+  if(!document.getElementById('tab-' + tab) || !document.getElementById('panel-' + tab)) return false;
+  if(tab === 'admin-access') return !!CURRENT_ADMIN.isSuperAdmin;
+  const key = TAB_MODULE_MAP[tab];
+  return !!CURRENT_ADMIN.isSuperAdmin || !key || (CURRENT_ADMIN.modules || {})[key] !== false;
+}
+function restoreSavedTab(){
+  if(_savedTabRestored) return;
+  _savedTabRestored = true;
+  const t = _initialSavedTab;
+  // 'properties' is already the active tab in the static HTML.
+  if(t && t !== 'properties' && canViewTab(t)) switchTab(t);
+}
+
 // canAct(key): can this login perform mutating actions (add/edit/delete/
 // verify/etc) within a feature it can already see? Always true for the
 // super admin. blockIfViewOnly(key) is the guard called at the top of every
@@ -4551,7 +4640,11 @@ async function loadAdminMe(){
         try{ t.draw(false); } catch(e){}
       }
     });
-  } catch(e){}
+  } catch(e){} finally {
+    // Whether /me succeeded or not, now (and only now) reopen the last tab —
+    // after applyAdminAccessUI has hidden anything this login can't see.
+    restoreSavedTab();
+  }
 }
 
 function applyAdminAccessUI(){
@@ -5141,7 +5234,8 @@ async function loadTotalVisits(){
   try{
     const res = await fetch(`${BASE}/api/admin/total-visits`, { headers: authHeaders() });
     const data = await res.json().catch(()=>({}));
-    if(!res.ok) return;
+    if(!res.ok){ showVisitsLoadError(res.status, data); return; }
+    setPanelNotice('panel-visits', '');
     const n = typeof data.totalVisits === 'number' ? data.totalVisits : 0;
     document.getElementById('totalVisitsBigNum').innerText = n;
     document.getElementById('cat-count-visits-total').innerText = n;
@@ -5166,7 +5260,8 @@ async function loadTotalUsers(){
   try{
     const res = await fetch(`${BASE}/api/admin/total-users`, { headers: authHeaders() });
     const data = await res.json().catch(()=>({}));
-    if(!res.ok) return;
+    if(!res.ok){ showVisitsLoadError(res.status, data); return; }
+    setPanelNotice('panel-visits', '');
     const n = typeof data.totalUsers === 'number' ? data.totalUsers : 0;
     document.getElementById('totalUsersBigNum').innerText = n;
   } catch(err){ console.error('loadTotalUsers error:', err); }
@@ -5181,7 +5276,8 @@ async function loadDailyStat(type){
   try{
     const res = await fetch(`${BASE}/api/admin/daily-stats/${type}`, { headers: authHeaders() });
     const data = await res.json().catch(()=>({}));
-    if(!res.ok) return;
+    if(!res.ok){ showVisitsLoadError(res.status, data); return; }
+    setPanelNotice('panel-visits', '');
     const n = typeof data.today === 'number' ? data.today : 0;
     const bigNumEl = document.getElementById(meta.bigNumEl);
     if(bigNumEl) bigNumEl.innerText = n;
@@ -6259,7 +6355,7 @@ window.saveBookingDetails = async function(){
    checkbox with no API call. */
 const PROP_FLAG_LABELS = { promoted: 'promoted', verified: 'verified', booked: 'booked', ownerDirectCall: 'public call (alt number)', ownerPhoneCall: 'public call (owner number)' };
 window.togglePropFlag = async function(id, field, checkboxEl){
-  if(blockIfViewOnly('properties')) return;
+  if(blockIfViewOnly('properties')){ checkboxEl.checked = !checkboxEl.checked; return; }
   const desired = checkboxEl.checked;
   const label = PROP_FLAG_LABELS[field] || field;
   const ok = await showConfirmModal({
@@ -7422,7 +7518,7 @@ $(document).ready(function(){
     ajax:{
       url: BASE+'/api/users',
       beforeSend: function(xhr){ xhr.setRequestHeader('x-admin-key', ADMIN_KEY); },
-      error: function(){ },
+      error: function(xhr){ showTableLoadError('#bookingTable', xhr); },
       dataSrc: function(res){
         if(!Array.isArray(res)) return [];
         document.getElementById('tab-customers-count').innerText = res.length;
@@ -7611,7 +7707,7 @@ $(document).ready(function(){
     ajax:{
       url: BASE+'/api/admin/properties',
       beforeSend: function(xhr){ xhr.setRequestHeader('x-admin-key', ADMIN_KEY); },
-      error: function(){ },
+      error: function(xhr){ showTableLoadError('#propertyTable', xhr); },
       dataSrc: function(res){
         if(!Array.isArray(res)) return [];
         document.getElementById('tab-properties-count').innerText = res.length;
@@ -7670,7 +7766,7 @@ $(document).ready(function(){
           if(!row.ownerNumber) return renderOwnerPhone(row);
           return `<div class="altcall-cell">${renderOwnerPhone(row)}
             <label class="mini-toggle-wrap altcall-wrap" title="When ON, visitors on the site get a Call owner button that dials this number"><span class="mini-toggle altcall-toggle">
-              <input type="checkbox" ${row.ownerPhoneCall?'checked':''} onchange="togglePropFlag('${row._id}','ownerPhoneCall',this)">
+              <input type="checkbox" ${row.ownerPhoneCall?'checked':''} ${canAct('properties')?'':'disabled'} onchange="togglePropFlag('${row._id}','ownerPhoneCall',this)">
               <span class="slider"></span>
             </span><span class="altcall-label">Public call</span></label></div>`;
       }},
@@ -7680,7 +7776,7 @@ $(document).ready(function(){
           if(!d) return '—'; // no alt number on file → nothing to expose, so no toggle
           return `<div class="altcall-cell"><a href="tel:${escapeHtml(d)}" class="phone-link">${escapeHtml(d)}</a>
             <label class="mini-toggle-wrap altcall-wrap" title="When ON, visitors on the site get a Call owner button that dials this number"><span class="mini-toggle altcall-toggle">
-              <input type="checkbox" ${row.ownerDirectCall?'checked':''} onchange="togglePropFlag('${row._id}','ownerDirectCall',this)">
+              <input type="checkbox" ${row.ownerDirectCall?'checked':''} ${canAct('properties')?'':'disabled'} onchange="togglePropFlag('${row._id}','ownerDirectCall',this)">
               <span class="slider"></span>
             </span><span class="altcall-label">Public call</span></label></div>`;
       }},
@@ -8121,7 +8217,7 @@ $(document).ready(function(){
     ajax:{
       url: BASE+'/api/appointments',
       beforeSend: function(xhr){ xhr.setRequestHeader('x-admin-key', ADMIN_KEY); },
-      error: function(){ },
+      error: function(xhr){ showTableLoadError('#appointmentTable', xhr); },
       dataSrc: function(res){
         if(!Array.isArray(res)) return [];
         updateApptStats(res);
@@ -8335,7 +8431,7 @@ $(document).ready(function(){
     ajax:{
       url: BASE+'/api/honest-reviews/all',
       beforeSend: function(xhr){ xhr.setRequestHeader('x-admin-key', ADMIN_KEY); },
-      error: function(){ },
+      error: function(xhr){ showTableLoadError('#honestReviewsTable', xhr); },
       dataSrc: function(res){
         const reviews = (res && Array.isArray(res.reviews)) ? res.reviews : [];
         document.getElementById('tab-honest-reviews-count').innerText = reviews.length;
@@ -8418,7 +8514,7 @@ $(document).ready(function(){
     ajax:{
       url: BASE+'/api/admin/reviews',
       beforeSend: function(xhr){ xhr.setRequestHeader('x-admin-key', ADMIN_KEY); },
-      error: function(){ },
+      error: function(xhr){ showTableLoadError('#userReviewsTable', xhr); },
       dataSrc: function(res){
         const reviews = (res && Array.isArray(res.reviews)) ? res.reviews : [];
         document.getElementById('tab-user-reviews-count').innerText = reviews.length;
@@ -8484,7 +8580,7 @@ $(document).ready(function(){
     ajax:{
       url: BASE+'/api/admin/partners',
       beforeSend: function(xhr){ xhr.setRequestHeader('x-admin-key', ADMIN_KEY); },
-      error: function(){ },
+      error: function(xhr){ showTableLoadError('#partnersTable', xhr); },
       dataSrc: function(res){
         const partners = (res && Array.isArray(res.partners)) ? res.partners : [];
         document.getElementById('tab-partners-count').innerText = partners.length;
@@ -8566,7 +8662,7 @@ $(document).ready(function(){
       url: BASE+'/api/admin/referrals',
       data: function(d){ if(_referralStatusFilter) d.status = _referralStatusFilter; },
       beforeSend: function(xhr){ xhr.setRequestHeader('x-admin-key', ADMIN_KEY); },
-      error: function(xhr){ console.error('Referrals fetch failed:', xhr.status, xhr.responseText); },
+      error: function(xhr){ console.error('Referrals fetch failed:', xhr.status, xhr.responseText); showTableLoadError('#referralsTable', xhr); },
       dataSrc: function(res){
         const referrals = (res && Array.isArray(res.referrals)) ? res.referrals : [];
         document.getElementById('tab-referrals-count').innerText = referrals.length;
@@ -8619,10 +8715,8 @@ $(document).ready(function(){
   // Honest Reviews) was last selected — survives a refresh or reopening the
   // dashboard later. 'properties' is already active by default in the
   // static HTML, so only switch if something else was last picked.
-  const _savedTab = localStorage.getItem('kr_admin_activeTab');
-  if(_savedTab && _savedTab !== 'properties'){
-    switchTab(_savedTab);
-  }
+  // (Done by restoreSavedTab(), called from loadAdminMe() once the admin's
+  // permissions are known — see the note above _initialSavedTab.)
 
 });
 
