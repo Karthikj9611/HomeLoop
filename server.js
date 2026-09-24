@@ -2337,7 +2337,8 @@ app.get('/api/reviews', async (req, res) => {
     const skip  = (page - 1) * limit;
 
     const [reviews, total, avgResult, starBuckets] = await Promise.all([
-      Review.find({}).sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
+      // userKey is the reviewer's login session key — never send it to the public.
+      Review.find({}).select('-userKey').sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
       Review.countDocuments({}),
       Review.aggregate([{ $group: { _id: null, avg: { $avg: '$rating' } } }]),
       Review.aggregate([{ $group: { _id: '$rating', count: { $sum: 1 } } }])
@@ -3225,6 +3226,7 @@ app.get('/api/stats', async (req, res) => {
   notifyUser, visitCalendarMeta,
   HonestReview, Partner, PaymentSettings, PaymentRequest,
   SiteStat, DailyStat, todayStr, Referral,
+  Review, // star reviews (Owner/Tenant Reviews) — admin "Reviews" tab
   ImageAsset, // Booking Details modal's Agreement/Proof uploads reuse this store
 }));
 

@@ -21,6 +21,7 @@ module.exports = function registerAdminRoutes(app, deps) {
     notifyUser, visitCalendarMeta,
     HonestReview, Partner, PaymentSettings, PaymentRequest,
     SiteStat, DailyStat, todayStr, Referral,
+    Review,
     ImageAsset,
   } = deps;
 
@@ -128,6 +129,7 @@ module.exports = function registerAdminRoutes(app, deps) {
     properties:    'Properties',
     appointments:  'Appointments',
     reviews:       'Honest Reviews',
+    userReviews:   'Reviews',
     partners:      'Partners',
     referrals:     'Referrals',
     payments:      'Payments',
@@ -1570,6 +1572,56 @@ module.exports = function registerAdminRoutes(app, deps) {
     } catch (err) {
       console.error('POST /api/honest-reviews/bulk-delete error:', err.message);
       res.status(500).json({ error: 'Could not bulk delete honest reviews' });
+    }
+  });
+
+  // ── Star reviews (the Owner Reviews / Tenant Reviews section on the site; model: Review) ──
+  // Separate feature from Honest Reviews (video cards) above, with its own 'userReviews' module.
+  // GET /api/admin/reviews — every star review, newest first, plus the reviewer's contact so
+  // admin can tell same-named people apart. The reviewer's session key (userKey) is never sent.
+  app.get('/api/admin/reviews', requireAdmin, requireModule('userReviews'), async (req, res) => {
+    try {
+      const reviews = await Review.find({}).select('-userKey').sort({ createdAt: -1 }).lean();
+      const users = await User.find({ _id: { $in: reviews.map(r => r.userId).filter(Boolean) } })
+        .select('mobile email userId').lean();
+      const byId = Object.fromEntries(users.map(u => [String(u._id), u]));
+      reviews.forEach(r => {
+        const u = byId[String(r.userId)] || {};
+        r.contact = u.mobile || u.email || '';
+        r.userReadableId = u.userId || '';
+      });
+      res.json({ reviews });
+    } catch (err) {
+      console.error('GET /api/admin/reviews error:', err.message);
+      res.status(500).json({ error: 'Could not load reviews' });
+    }
+  });
+
+  // DELETE /api/admin/reviews/:id — the reviewer can post again afterwards (one review per user).
+  app.delete('/api/admin/reviews/:id', requireAdmin, requireModuleAction('userReviews'), async (req, res) => {
+    try {
+      if (!mongoose.Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ error: 'Invalid review id' });
+      const deleted = await Review.findByIdAndDelete(req.params.id);
+      if (!deleted) return res.status(404).json({ error: 'Review not found' });
+      res.json({ message: 'Review deleted' });
+    } catch (err) {
+      console.error('DELETE /api/admin/reviews/:id error:', err.message);
+      res.status(500).json({ error: 'Could not delete review' });
+    }
+  });
+
+  // POST /api/admin/reviews/bulk-delete — body: { ids: [...] }
+  app.post('/api/admin/reviews/bulk-delete', requireAdmin, requireModuleAction('userReviews'), async (req, res) => {
+    try {
+      const { ids } = req.body || {};
+      if (!Array.isArray(ids) || !ids.length) return res.status(400).json({ error: 'ids must be a non-empty array' });
+      const validIds = ids.filter(id => mongoose.Types.ObjectId.isValid(id));
+      if (!validIds.length) return res.status(400).json({ error: 'No valid review ids provided' });
+      const result = await Review.deleteMany({ _id: { $in: validIds } });
+      res.json({ message: `${result.deletedCount} review${result.deletedCount === 1 ? '' : 's'} deleted`, deletedCount: result.deletedCount });
+    } catch (err) {
+      console.error('POST /api/admin/reviews/bulk-delete error:', err.message);
+      res.status(500).json({ error: 'Could not bulk delete reviews' });
     }
   });
 

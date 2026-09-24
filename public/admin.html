@@ -2544,6 +2544,11 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
       <span class="tab-btn-label" data-mobile="Reviews">Honest Reviews</span>
       <span class="tab-count" id="tab-honest-reviews-count">—</span>
     </button>
+    <button class="tab-btn" id="tab-user-reviews" onclick="switchTab('user-reviews')">
+      <i class="fas fa-star"></i>
+      <span class="tab-btn-label" data-mobile="Ratings">Reviews</span>
+      <span class="tab-count" id="tab-user-reviews-count">—</span>
+    </button>
     <button class="tab-btn" id="tab-partners" onclick="switchTab('partners')">
       <i class="fas fa-handshake"></i>
       <span class="tab-btn-label" data-mobile="Partners">Partners</span>
@@ -3095,6 +3100,47 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
               <th>Status</th>
               <th>Active</th>
               <th>Order</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td colspan="7" class="empty-state"><i class="fas fa-circle-notch fa-spin"></i>Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ REVIEWS PANEL (star reviews shown as Owner / Tenant Reviews on the site) ══ -->
+  <div class="tab-panel" id="panel-user-reviews">
+    <div class="card">
+      <div class="table-wrapper">
+        <div class="bulk-toolbar" id="urBulkToolbar">
+          <div class="bulk-toolbar-left">
+            <button type="button" class="bulk-selected-count" id="urSelectedCount" style="display:none" onclick="clearUserReviewSelection()" title="Clear selection">
+              <i class="fas fa-check-circle bulk-selected-icon"></i> <span id="urSelectedNum" class="bulk-selected-num">0</span><span class="bulk-btn-label" data-mobile="Selected"> selected</span> <span class="bulk-selected-clear-x">X</span>
+            </button>
+            <button type="button" class="bulk-btn bulk-btn-danger" id="urDeleteSelectedBtn" style="display:none" onclick="deleteSelectedUserReviews()">
+              <i class="fas fa-trash"></i> <span class="bulk-btn-label" data-mobile="Delete">Delete (<span id="urDeleteCount">0</span>)</span>
+            </button>
+          </div>
+          <div class="bulk-toolbar-right">
+            <select id="urTypeFilter" onchange="filterUserReviews(this.value)" title="Filter by reviewer type" style="padding:8px 12px;border:1px solid var(--border,#e5e5e5);border-radius:10px;font:inherit;background:#fff;color:var(--ink)">
+              <option value="">All reviews</option>
+              <option value="Owner">Owner reviews</option>
+              <option value="Tenant">Tenant reviews</option>
+            </select>
+          </div>
+        </div>
+        <table id="userReviewsTable" class="display nowrap" style="width:100%">
+          <thead>
+            <tr>
+              <th><input type="checkbox" class="ur-select-all-checkbox" id="urSelectAllCheckbox" onchange="onUserReviewSelectAllChange(this)"></th>
+              <th>Reviewer</th>
+              <th>Type</th>
+              <th>Rating</th>
+              <th>Review</th>
+              <th>Posted</th>
               <th>Action</th>
             </tr>
           </thead>
@@ -3915,7 +3961,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
 
 <script>
 
-let dataTable, propTable, apptTable, honestReviewsTable, partnersTable, referralsTable;
+let dataTable, propTable, apptTable, honestReviewsTable, userReviewsTable, partnersTable, referralsTable;
 
 
 const BASE = 'https://www.homeloop.in';
@@ -4425,6 +4471,9 @@ function switchTab(tab){
   if(tab === 'honest-reviews' && honestReviewsTable){
     setTimeout(()=>{ honestReviewsTable.columns.adjust().draw(false); }, 50);
   }
+  if(tab === 'user-reviews' && userReviewsTable){
+    setTimeout(()=>{ userReviewsTable.columns.adjust().draw(false); }, 50);
+  }
   if(tab === 'partners' && partnersTable){
     setTimeout(()=>{ partnersTable.columns.adjust().draw(false); }, 50);
   }
@@ -4445,6 +4494,7 @@ const TAB_MODULE_MAP = {
   'properties': 'properties',
   'appointments': 'appointments',
   'honest-reviews': 'reviews',
+  'user-reviews': 'userReviews',
   'partners': 'partners',
   'referrals': 'referrals',
 };
@@ -4452,7 +4502,7 @@ const TAB_MODULE_MAP = {
 // icon used for that feature's own tab button in the main nav where one exists.
 const MODULE_ICONS = {
   visits: 'fa-globe', customers: 'fa-users', properties: 'fa-building',
-  appointments: 'fa-calendar-days', reviews: 'fa-video', partners: 'fa-handshake',
+  appointments: 'fa-calendar-days', reviews: 'fa-video', userReviews: 'fa-star', partners: 'fa-handshake',
   referrals: 'fa-share-nodes', payments: 'fa-credit-card',
   stats: 'fa-chart-line', notifications: 'fa-bell',
 };
@@ -4489,7 +4539,7 @@ async function loadAdminMe(){
     // (isSuperAdmin:true) before we knew the real permissions. Redraw any
     // table that's already been created so it re-renders with the answer
     // we just got, regardless of which one loaded first.
-    ['dataTable','propTable','apptTable','honestReviewsTable','partnersTable','referralsTable'].forEach(name => {
+    ['dataTable','propTable','apptTable','honestReviewsTable','userReviewsTable','partnersTable','referralsTable'].forEach(name => {
       const t = window[name];
       if(t && typeof t.draw === 'function'){
         try{ t.draw(false); } catch(e){}
@@ -4520,6 +4570,7 @@ function applyAdminAccessUI(){
       'partners':       '#panel-partners .btn-add-review',
     };
     const bulkDeleteBtnByPanel = {
+      'user-reviews': '#urDeleteSelectedBtn',
       'partners': '#partnerDeleteSelectedBtn',
     };
     Object.keys(TAB_MODULE_MAP).forEach(tab=>{
@@ -5211,6 +5262,103 @@ window.shiftVisitsMonth = function(delta){
 /* ── HONEST REVIEWS: SELECTION & BULK DELETE ── */
 const _selectedReviewIds = new Set();
 let _hrCache = {};
+
+/* ── REVIEWS TAB (star reviews: Owner / Tenant Reviews on the site) ── */
+const _selectedUrIds = new Set();
+
+function urStars(n){
+  n = Math.max(0, Math.min(5, Number(n) || 0));
+  return `<span style="color:#f5a623;letter-spacing:1px">${'★'.repeat(n)}</span><span style="color:#d9d9d9;letter-spacing:1px">${'★'.repeat(5-n)}</span> <span class="prop-sub">${n}/5</span>`;
+}
+function urTypeLabel(t){ return t === 'owner' ? 'Owner' : 'Tenant'; }
+
+window.filterUserReviews = function(v){
+  if(!userReviewsTable) return;
+  userReviewsTable.column(2).search(v ? '^' + v + '$' : '', true, false).draw();
+  syncUserReviewSelectionUI();
+};
+
+window.onUserReviewRowCheck = function(checkboxEl, id){
+  if(checkboxEl.checked) _selectedUrIds.add(id); else _selectedUrIds.delete(id);
+  updateUserReviewBulkToolbarUI();
+  syncUserReviewSelectionUI();
+};
+
+window.onUserReviewSelectAllChange = function(headerCheckboxEl){
+  const filteredRows = userReviewsTable.rows({search:'applied'}).data().toArray();
+  filteredRows.forEach(r => { if(headerCheckboxEl.checked) _selectedUrIds.add(r._id); else _selectedUrIds.delete(r._id); });
+  userReviewsTable.draw(false);
+  updateUserReviewBulkToolbarUI();
+  syncUserReviewSelectionUI();
+  setTimeout(syncUserReviewSelectionUI, 0);
+};
+
+function syncUserReviewSelectionUI(){
+  document.querySelectorAll('#userReviewsTable tbody .ur-row-check').forEach(cb=>{
+    cb.checked = _selectedUrIds.has(cb.getAttribute('data-id'));
+  });
+  if(!userReviewsTable) return;
+  const headerCb = document.getElementById('urSelectAllCheckbox');
+  if(!headerCb) return;
+  const rows = userReviewsTable.rows({search:'applied'}).data().toArray();
+  const sel = rows.filter(r => _selectedUrIds.has(r._id)).length;
+  headerCb.checked = rows.length > 0 && sel === rows.length;
+  headerCb.indeterminate = sel > 0 && sel < rows.length;
+}
+
+function updateUserReviewBulkToolbarUI(){
+  const n = _selectedUrIds.size;
+  document.getElementById('urSelectedCount').style.display = n ? 'inline-flex' : 'none';
+  document.getElementById('urSelectedNum').textContent = n;
+  const delBtn = document.getElementById('urDeleteSelectedBtn');
+  if(delBtn) delBtn.style.display = (n && canAct('userReviews')) ? 'inline-flex' : 'none';
+  const cnt = document.getElementById('urDeleteCount');
+  if(cnt) cnt.textContent = n;
+}
+
+window.clearUserReviewSelection = function(){
+  _selectedUrIds.clear();
+  userReviewsTable.draw(false);
+  updateUserReviewBulkToolbarUI();
+  syncUserReviewSelectionUI();
+  setTimeout(syncUserReviewSelectionUI, 0);
+};
+
+window.deleteSelectedUserReviews = async function(){
+  if(blockIfViewOnly('userReviews')) return;
+  const ids = Array.from(_selectedUrIds);
+  if(!ids.length) return;
+  const ok = await showConfirmModal({
+    title: `Delete ${ids.length} review${ids.length===1?'':'s'}?`,
+    message: 'These reviews will be removed from the site. Reviewers can post a new one afterwards. This cannot be undone.'
+  });
+  if(!ok) return;
+  try{
+    const res = await fetch(`${BASE}/api/admin/reviews/bulk-delete`, {
+      method:'POST',
+      headers: authHeaders({'Content-Type':'application/json'}),
+      body: JSON.stringify({ ids })
+    });
+    const data = await res.json().catch(()=>({}));
+    if(!res.ok){ alert(data.error || data.message || 'Bulk delete failed'); return; }
+    _selectedUrIds.clear();
+    userReviewsTable.ajax.reload(null, false);
+    updateUserReviewBulkToolbarUI();
+  } catch(err){ alert('Bulk delete failed. Please try again.'); }
+};
+
+window.deleteUserReview = async function(id){
+  if(blockIfViewOnly('userReviews')) return;
+  if(!await showConfirmModal({ title:'Delete this review?', message:'It will be removed from the site. The reviewer can post a new one afterwards.' })) return;
+  try{
+    const res = await fetch(`${BASE}/api/admin/reviews/${id}`, { method:'DELETE', headers: authHeaders() });
+    const data = await res.json().catch(()=>({}));
+    if(!res.ok){ alert(data.error || data.message || 'Delete failed'); return; }
+    _selectedUrIds.delete(id);
+    userReviewsTable.ajax.reload(null, false);
+    updateUserReviewBulkToolbarUI();
+  } catch(err){ alert('Delete failed. Please try again.'); }
+};
 
 window.onReviewRowCheck = function(checkboxEl, id){
   if(checkboxEl.checked) _selectedReviewIds.add(id);
@@ -8255,6 +8403,72 @@ $(document).ready(function(){
   });
   initColumnToggle('review');
   } catch(e){ console.error('Honest Reviews table failed to initialize:', e); }
+
+  /* ════════════════════════════════════
+     REVIEWS TABLE (star reviews — Owner / Tenant Reviews on the site)
+  ════════════════════════════════════ */
+  try{
+  userReviewsTable = $('#userReviewsTable').DataTable({
+    ajax:{
+      url: BASE+'/api/admin/reviews',
+      beforeSend: function(xhr){ xhr.setRequestHeader('x-admin-key', ADMIN_KEY); },
+      error: function(){ },
+      dataSrc: function(res){
+        const reviews = (res && Array.isArray(res.reviews)) ? res.reviews : [];
+        document.getElementById('tab-user-reviews-count').innerText = reviews.length;
+        return reviews;
+      }
+    },
+    columns:[
+      /* 0 – Select checkbox */
+      { data:null, orderable:false, className:'dt-body-center', render:(d,t,row)=>{
+          if(t!=='display') return '';
+          const checked = _selectedUrIds.has(row._id) ? 'checked' : '';
+          return `<input type="checkbox" class="ur-row-check" data-id="${row._id}" onchange="onUserReviewRowCheck(this,'${row._id}')" ${checked}>`;
+      }},
+      /* 1 – Reviewer (name + contact / user id) */
+      { data:null, render:(d,t,row)=>{
+          if(t!=='display') return (row.userName||'') + ' ' + (row.contact||'') + ' ' + (row.userReadableId||'');
+          const sub = [row.contact, row.userReadableId].filter(Boolean).map(escapeHtml).join(' · ');
+          return `<div class="prop-title">${escapeHtml(row.userName||'—')}</div>${sub ? `<div class="prop-sub">${sub}</div>` : ''}`;
+      }},
+      /* 2 – Type (Owner / Tenant, same wording as the site's two review groups) */
+      { data:'accountType', className:'dt-body-center', render:(d,t)=>{
+          const label = urTypeLabel(d);
+          if(t!=='display') return label;
+          return `<span class="status-badge ${d==='owner'?'status-acct-owner':'status-acct-customer'}">${label}</span>`;
+      }},
+      /* 3 – Rating */
+      { data:'rating', render:(d,t)=> t==='display' ? urStars(d) : (Number(d)||0) },
+      /* 4 – Review text (wraps instead of stretching the table) */
+      { data:'text', render:(d,t)=>{
+          if(t!=='display') return d||'';
+          return `<div style="white-space:normal;min-width:240px;max-width:460px;line-height:1.45">${escapeHtml(d||'')}</div>`;
+      }},
+      /* 5 – Posted */
+      { data:'createdAt', render:(d,t)=> t==='display' ? formatDateTime(d) : (d||'') },
+      /* 6 – Action */
+      { data:null, orderable:false, render:(d,t,row)=>{
+          if(t!=='display') return '';
+          if(!canAct('userReviews')) return '<span class="no-contact">—</span>';
+          return `<div style="display:inline-flex;gap:6px;flex-wrap:nowrap;justify-content:center">
+            <button class="btn-view" style="color:#c0392b" onclick="deleteUserReview('${row._id}')"><i class="fas fa-trash"></i><span class="btn-label"> Delete</span></button>
+          </div>`;
+      }}
+    ],
+    order:[[5,'desc']],
+    pageLength:10,
+    scrollX:true,
+    language:{
+      emptyTable:'<div class="empty-state"><i class="fas fa-star"></i>No reviews yet</div>',
+      zeroRecords:'<div class="empty-state"><i class="fas fa-magnifying-glass"></i>No matching reviews</div>',
+      lengthMenu:'Show _MENU_ entries',
+      info:'Showing _START_–_END_ of _TOTAL_ reviews',
+      paginate:{previous:'‹ Prev',next:'Next ›'}
+    },
+    drawCallback:function(){ syncUserReviewSelectionUI(); }
+  });
+  } catch(e){ console.error('Reviews table failed to initialize:', e); }
 
   /* ════════════════════════════════════
      PARTNERS TABLE
