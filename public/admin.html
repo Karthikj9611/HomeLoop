@@ -10028,40 +10028,43 @@ window.addEventListener('resize', function(){
    Groups mirror the columns:[...] layout in propTable's init. idx 0 (select)
    and the last column (Action) are always visible and not offered here. */
 const PROP_COL_GROUPS = [
-  { label:'Basic', cols:[
-    {idx:2, label:'Property'}, {idx:3, label:'Promoted'}, {idx:4, label:'Verified'}, {idx:5, label:'Booked'},
+  { label:'Property Details', cols:[
+    {idx:2, label:'Property'}, {idx:18, label:'Type'}, {idx:19, label:'Area'}, {idx:20, label:'Floor'},
+    {idx:21, label:'Furnishing'}, {idx:22, label:'Bathroom'}, {idx:23, label:'Car Parking'},
+    {idx:24, label:'Bike Parking'}, {idx:25, label:'Facing'}, {idx:26, label:'Age'},
+    {idx:41, label:'Description'}
+  ]},
+  { label:'Pricing', cols:[
+    {idx:12, label:'Price'}, {idx:13, label:'Deposit'}, {idx:14, label:'Maintenance'}, {idx:15, label:'Negotiable'}
+  ]},
+  { label:'Location', cols:[
+    {idx:16, label:'Location'}, {idx:17, label:'City'}, {idx:42, label:'Latitude'}, {idx:43, label:'Longitude'}
+  ]},
+  { label:'Owner / Agent Details', cols:[
     {idx:6, label:'Owner Name'}, {idx:7, label:'Owner Number'}, {idx:8, label:'Owner Alt Phone'},
-    {idx:9, label:'Owner Email'}, {idx:10, label:'Owner Contact Time'}, {idx:11, label:'Status'},
-    {idx:12, label:'Price'}, {idx:13, label:'Deposit'}, {idx:14, label:'Maintenance'}, {idx:15, label:'Negotiable'},
-    {idx:16, label:'Location'}, {idx:17, label:'City'}
+    {idx:9, label:'Owner Email'}, {idx:10, label:'Owner Contact Time'}, {idx:46, label:'User ID'}
   ]},
-  { label:'Details', cols:[
-    {idx:18, label:'Type'}, {idx:19, label:'Area'}, {idx:20, label:'Floor'}, {idx:21, label:'Furnishing'},
-    {idx:22, label:'Bathroom'}, {idx:23, label:'Car Parking'}, {idx:24, label:'Bike Parking'},
-    {idx:25, label:'Facing'}, {idx:26, label:'Age'}
+  { label:'Images & Videos', cols:[
+    {idx:38, label:'Photos'}, {idx:39, label:'Image URLs'}, {idx:40, label:'Video URL'}
   ]},
-  { label:'PG Details', cols:[
-    {idx:27, label:'PG Gender'}, {idx:28, label:'PG Room Type'}, {idx:29, label:'PG Meals'},
-    {idx:30, label:'PG Occupancy'}, {idx:31, label:'PG Notice'}
+  { label:'Amenities', cols:[
+    {idx:45, label:'Amenities'}
   ]},
-  // 'Short Stay Details' group intentionally left out of the Columns-toggle
-  // menu while SS_COLS_ENABLED is false (see the comment above SS_ONLY_COLS).
-  // Restore this group to bring the toggle back:
-  //   { label:'Short Stay Details', cols:[
-  //     {idx:32, label:'SS Room Type'}, {idx:33, label:'SS Available 24hrs'},
-  //     {idx:34, label:'SS Cancellation'}, {idx:35, label:'SS Couples Allowed'}
-  //   ]},
+  { label:'Listing Status', cols:[
+    {idx:11, label:'Status'}, {idx:3, label:'Promoted'}, {idx:44, label:'Promoted Priority'},
+    {idx:4, label:'Verified'}, {idx:5, label:'Booked'}, {idx:47, label:'Listed On'}, {idx:48, label:'Remarks'}
+  ]},
+  { label:'Traffic', cols:[
+    {idx:36, label:'Visits'}, {idx:37, label:'Views'}
+  ]},
+  // 'PG Details' group removed from the Columns-toggle menu. PG columns (27-31)
+  // still show/hide automatically with the PG category tab (PG_ONLY_COLS).
+  // 'Short Stay Details' group stays out of the menu while SS_COLS_ENABLED is
+  // false (see the comment above SS_ONLY_COLS).
   ...(SS_COLS_ENABLED ? [{ label:'Short Stay Details', cols:[
     {idx:32, label:'SS Room Type'}, {idx:33, label:'SS Available 24hrs'},
     {idx:34, label:'SS Cancellation'}, {idx:35, label:'SS Couples Allowed'}
-  ]}] : []),
-  { label:'Meta', cols:[
-    {idx:36, label:'Visits'}, {idx:37, label:'Views'}, {idx:38, label:'Photos'},
-    {idx:39, label:'Image URLs'}, {idx:40, label:'Video URL'}, {idx:41, label:'Description'},
-    {idx:42, label:'Latitude'}, {idx:43, label:'Longitude'}, {idx:44, label:'Promoted Priority'},
-    {idx:45, label:'Amenities'}, {idx:46, label:'User ID'},
-    {idx:47, label:'Listed On'}, {idx:48, label:'Remarks'}
-  ]}
+  ]}] : [])
 ];
 
 // Persist user's manual show/hide choices for the toggleable property
@@ -10175,7 +10178,7 @@ window.onPropColGroupToggle = function(inputEl){
 
 window.onPropColToggleChange = function(inputEl){
   const idx = parseInt(inputEl.getAttribute('data-col-idx'), 10);
-  if(propTable) propTable.column(idx).visible(inputEl.checked);
+  if(propTable){ propTable.column(idx).visible(inputEl.checked, false); propTable.columns.adjust(); updatePropStickyOffset(); }
   savePropColVisibility();
   // Keep this column's group "All" checkbox in sync (checked only when
   // every column in that group is now visible).
@@ -10231,34 +10234,16 @@ document.addEventListener('click', function(e){
   const menu = document.getElementById('propColToggleMenu');
   const btn = document.getElementById('propColToggleBtn');
   if(!wrap || !menu || !menu.classList.contains('open')) return;
+  if(!e.target.isConnected) return; // menu was re-rendered by this very click (Show all / Hide all)
   if(!wrap.contains(e.target) && !menu.contains(e.target)){
     menu.classList.remove('open');
-    if(btn) btn.classList.remove('active');
-    const backdrop = document.getElementById('colModalBackdrop');
-    if(backdrop) backdrop.classList.remove('open');
   }
 });
-// The dropdown is position:fixed now, so it won't track its button if the
-// page scrolls underneath it — close it, but only for scrolls happening
-// outside the dropdown itself (it has its own overflow-y:auto scrollbar,
-// and this listener runs in the capture phase to catch scroll on nested
-// scroll containers too, so without this check scrolling the dropdown's
-// own list would immediately close it).
-window.addEventListener('scroll', function(e){
-  document.querySelectorAll('.col-toggle-menu.open').forEach(menu => {
-    if(menu.contains(e.target)) return;
-    menu.classList.remove('open');
-    const btn = document.querySelector('[id$="ColToggleBtn"].active');
-    if(btn) btn.classList.remove('active');
-  });
-}, true);
-window.addEventListener('resize', function(){
-  document.querySelectorAll('.col-toggle-menu.open').forEach(menu => {
-    menu.classList.remove('open');
-    const btn = document.querySelector('[id$="ColToggleBtn"].active');
-    if(btn) btn.classList.remove('active');
-  });
-});
+// NOTE: the Columns menu is a centred modal (with a backdrop), so it no longer
+// closes on page scroll/resize. Those handlers used to close the menu but leave
+// the dark backdrop up, which made the page look stuck. Open/close state (menu,
+// backdrop, button highlight, page-scroll lock) is now kept in sync in one place:
+// see syncColModalState() below.
 
 /* ── COLUMN VISIBILITY TOGGLE (Customers / Appointments / Honest Reviews) ──
    Same pattern as the Properties column toggle above, generalized so the
@@ -10346,7 +10331,7 @@ window.onColToggleChange = function(key, inputEl){
   const cfg = COL_TOGGLE_CONFIGS[key];
   const table = cfg.getTable();
   const idx = parseInt(inputEl.getAttribute('data-col-idx'), 10);
-  if(table) table.column(idx).visible(inputEl.checked);
+  if(table){ table.column(idx).visible(inputEl.checked, false); table.columns.adjust(); }
   saveColVisibility(key);
 };
 
@@ -10386,13 +10371,33 @@ document.addEventListener('click', function(e){
     const menu = document.getElementById(cfg.menuId);
     const btn = document.getElementById(cfg.btnId);
     if(!wrap || !menu || !menu.classList.contains('open')) return;
+    if(!e.target.isConnected) return; // menu was re-rendered by this very click
     if(!wrap.contains(e.target) && !menu.contains(e.target)){
       menu.classList.remove('open');
-      if(btn) btn.classList.remove('active');
-      const backdrop = document.getElementById('colModalBackdrop');
-      if(backdrop) backdrop.classList.remove('open');
     }
   });
+});
+
+// Single source of truth for the Columns modal state: whenever any menu's
+// "open" class changes (by any code path), backdrop, button highlight and page
+// scroll-lock are updated to match, so they can never get out of step.
+function syncColModalState(){
+  const anyOpen = !!document.querySelector('.col-toggle-menu.open');
+  const backdrop = document.getElementById('colModalBackdrop');
+  if(backdrop) backdrop.classList.toggle('open', anyOpen);
+  document.querySelectorAll('.col-toggle-btn').forEach(btn=>{
+    const menu = btn.parentElement && btn.parentElement.querySelector('.col-toggle-menu');
+    btn.classList.toggle('active', !!(menu && menu.classList.contains('open')));
+  });
+  document.body.style.overflow = anyOpen ? 'hidden' : '';
+}
+(function(){
+  const obs = new MutationObserver(syncColModalState);
+  document.querySelectorAll('.col-toggle-menu').forEach(m=>obs.observe(m,{attributes:true,attributeFilter:['class']}));
+  syncColModalState();
+})();
+document.addEventListener('keydown', function(e){
+  if(e.key === 'Escape') closeAllColMenus();
 });
 
 function saveColVisibility(key){
