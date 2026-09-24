@@ -803,45 +803,76 @@ table.dataTable.no-footer{border-bottom:none!important}
 .hr-form-error.show{display:block}
 
 /* ── ADMIN ACCESS PANEL (sub-admin per-feature access) ──
-   Each feature gets ONE three-way control: Off / View / Edit
-   (replaces the old pair of View + Edit switches). */
-#panel-admin-access .card{overflow:visible}
+   Panel = searchable list of every sub-admin. Clicking one opens a modal
+   (built on the app's .add-modal shell) with a single Off / View / Edit
+   control per feature. */
 #panel-admin-access .card-header{padding:20px 20px 0}
+#panel-admin-access [hidden],#aaModal [hidden]{display:none!important}
 
-.aa-legend{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:18px}
-.aa-legend-item{
-  display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:var(--radius-sm);
-  background:var(--surface2);font-size:0.78rem;color:var(--ink2);line-height:1.45;
-}
-.aa-legend-item b{display:block;color:var(--ink);font-size:0.82rem;margin-bottom:1px}
 .aa-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;display:inline-block}
-.aa-legend-item .aa-dot{margin-top:4px}
 .aa-dot.off{background:var(--border2)}
 .aa-dot.view{background:var(--ink)}
 .aa-dot.edit{background:var(--gold2)}
-
-.aa-card{
-  border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);margin-bottom:16px;
-}
-.aa-card-head{
-  display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;
-  padding:18px 20px;border-bottom:1px solid var(--border);
-}
-.aa-identity{display:flex;align-items:center;gap:14px;min-width:0}
 .aa-avatar{
   width:44px;height:44px;border-radius:50%;background:var(--gold-light);color:var(--gold-dark);
   display:flex;align-items:center;justify-content:center;font-weight:800;font-size:1rem;flex-shrink:0;
 }
-.aa-email{font-weight:700;color:var(--ink);font-size:1rem;word-break:break-word}
-.aa-tally{display:flex;gap:14px;flex-wrap:wrap;margin-top:4px;font-size:0.78rem;color:var(--ink3)}
+.aa-email{font-weight:700;color:var(--ink);font-size:0.95rem;overflow-wrap:anywhere}
+.aa-tally{display:flex;gap:4px 14px;flex-wrap:wrap;font-size:0.78rem;color:var(--ink3)}
 .aa-tally span{display:inline-flex;align-items:center;gap:6px}
 .aa-tally .aa-dot{width:8px;height:8px}
 .aa-tally b{color:var(--ink);font-weight:700}
-.aa-all{display:flex;align-items:center;gap:10px;font-size:0.78rem;font-weight:600;color:var(--ink2)}
 
-.aa-grid{
-  display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:10px;padding:16px 20px 20px;
+/* ── admin list ── */
+.aa-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px;min-height:38px}
+.aa-count{font-size:0.8rem;font-weight:600;color:var(--ink2)}
+.aa-search{position:relative;display:flex;align-items:center}
+.aa-search i{position:absolute;left:14px;color:var(--ink3);font-size:0.78rem;pointer-events:none}
+.aa-search input{
+  border:1.5px solid var(--border);border-radius:99px;padding:8px 16px 8px 36px;font-family:inherit;
+  font-size:0.82rem;width:240px;max-width:100%;background:var(--surface2);color:var(--ink);outline:none;
+  transition:border-color 0.15s,background 0.15s;
 }
+.aa-search input:focus{border-color:var(--gold);background:var(--surface)}
+.aa-list{border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;background:var(--surface)}
+.aa-row{
+  display:flex;align-items:center;gap:14px;width:100%;padding:14px 18px;
+  background:var(--surface);border:none;border-bottom:1px solid var(--border);
+  text-align:left;cursor:pointer;font-family:inherit;color:inherit;transition:background 0.15s;
+}
+.aa-row:last-child{border-bottom:none}
+.aa-row:hover{background:var(--bg)}
+.aa-row:focus-visible{outline:none;box-shadow:inset 0 0 0 2px var(--gold2)}
+.aa-row.is-flash{animation:aaFlash 1.8s ease-out}
+@keyframes aaFlash{0%{background:var(--gold-light)}100%{background:var(--surface)}}
+.aa-row-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
+.aa-strip{display:flex;gap:4px;align-items:center;flex-shrink:0}
+.aa-bar{width:6px;height:20px;border-radius:3px;background:var(--border)}
+.aa-bar.view{background:var(--ink)}
+.aa-bar.edit{background:var(--gold2)}
+.aa-row-go{display:flex;align-items:center;gap:8px;font-size:0.8rem;font-weight:700;color:var(--ink2);flex-shrink:0}
+.aa-row-go i{font-size:0.7rem;color:var(--ink3);transition:transform 0.15s}
+.aa-row:hover .aa-row-go{color:var(--gold-dark)}
+.aa-row:hover .aa-row-go i{transform:translateX(2px);color:var(--gold-dark)}
+.aa-list-empty{padding:28px 18px;text-align:center;font-size:0.85rem;color:var(--ink3)}
+
+/* ── modal ── */
+.add-modal.aa-modal-box{
+  max-width:860px;padding:0;overflow:hidden;display:flex;flex-direction:column;background:var(--surface);outline:none;
+}
+.aa-modal-head{
+  display:flex;align-items:center;gap:14px;padding:22px 64px 18px 24px;
+  border-bottom:1px solid var(--border);flex-shrink:0;
+}
+.aa-modal-id{display:flex;flex-direction:column;gap:4px;min-width:0}
+.aa-modal-id .aa-email{font-size:1.05rem}
+.aa-modal-body{flex:1;min-height:0;overflow-y:auto;padding:18px 24px 22px}
+.aa-modal-tools{display:flex;align-items:center;justify-content:space-between;gap:12px 24px;flex-wrap:wrap;margin-bottom:16px}
+.aa-legend-inline{display:flex;gap:6px 18px;flex-wrap:wrap;font-size:0.78rem;color:var(--ink2)}
+.aa-legend-inline span{display:inline-flex;align-items:center;gap:7px}
+.aa-legend-inline b{color:var(--ink)}
+.aa-all{display:flex;align-items:center;gap:10px;font-size:0.78rem;font-weight:600;color:var(--ink2)}
+.aa-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:10px}
 .aa-item{
   display:flex;align-items:center;gap:12px;padding:10px 10px 10px 12px;
   border:1px solid var(--border);border-radius:12px;background:var(--surface);
@@ -872,42 +903,52 @@ table.dataTable.no-footer{border-bottom:none!important}
 .aa-seg input[value="edit"]:checked+span{background:var(--gold2);color:#fff}
 .aa-seg input:focus-visible+span{box-shadow:0 0 0 3px rgba(249,115,22,0.4)}
 
-/* Floating save bar — appears as soon as something changes, stays in view */
-.aa-savebar{
-  position:sticky;bottom:16px;z-index:5;margin:0 20px 16px;padding:8px 8px 8px 20px;
-  display:none;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
-  background:var(--ink);color:#fff;border-radius:99px;box-shadow:var(--shadow-lg);
+.aa-modal-foot{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+  padding:14px 24px;border-top:1px solid var(--border);background:var(--surface);flex-shrink:0;
 }
-.aa-savebar.is-visible{display:flex}
-.aa-savebar-msg{font-size:0.84rem;font-weight:600;display:flex;align-items:center;gap:8px}
-.aa-savebar.is-saved .aa-savebar-msg i{color:#34d399}
-.aa-savebar.is-saved .aa-savebar-actions{display:none}
-.aa-savebar-actions{display:flex;gap:8px}
+.aa-foot-msg{font-size:0.82rem;font-weight:600;color:var(--ink2);display:flex;align-items:center;gap:8px;min-height:20px}
+.aa-foot-msg.is-error{color:var(--red)}
+.aa-foot-actions{display:flex;gap:8px;margin-left:auto}
 .aa-btn{
-  border:none;border-radius:99px;padding:9px 18px;font-family:inherit;font-size:0.82rem;font-weight:700;
-  cursor:pointer;display:inline-flex;align-items:center;gap:7px;transition:filter 0.15s,background 0.15s;
+  border:none;border-radius:99px;padding:10px 20px;font-family:inherit;font-size:0.82rem;font-weight:700;
+  cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:7px;transition:filter 0.15s,background 0.15s,opacity 0.15s;
 }
-.aa-btn:focus-visible{outline:none;box-shadow:0 0 0 3px rgba(249,115,22,0.5)}
-.aa-btn-ghost{background:transparent;color:#fff;box-shadow:inset 0 0 0 1px rgba(255,255,255,0.28)}
-.aa-btn-ghost:hover{background:rgba(255,255,255,0.1)}
-.aa-btn-primary{background:var(--gold2);color:#fff}
-.aa-btn-primary:hover{filter:brightness(1.07)}
-.aa-btn:disabled{opacity:0.6;cursor:default}
+.aa-btn:focus-visible{outline:none;box-shadow:0 0 0 3px rgba(249,115,22,0.45)}
+.aa-btn-quiet{background:var(--surface2);color:var(--ink)}
+.aa-btn-quiet:hover{background:var(--bg-3)}
+.aa-btn-primary{background:var(--ink);color:#fff}
+.aa-btn-primary:hover:not(:disabled){filter:brightness(1.25)}
+.aa-btn:disabled{opacity:0.4;cursor:default}
 
+@media (max-width:900px){
+  .aa-strip{display:none}
+}
 @media (max-width:640px){
-  .aa-legend{grid-template-columns:1fr;gap:8px}
-  .aa-card-head{padding:14px}
-  .aa-all{width:100%;justify-content:space-between}
-  .aa-grid{grid-template-columns:1fr;padding:12px 14px 16px}
+  .aa-toolbar{flex-wrap:wrap}
+  .aa-search,.aa-search input{width:100%}
+  .aa-row{padding:12px 14px;gap:12px}
+  .aa-row-go span{display:none}
+  #aaModal.add-modal-overlay{align-items:flex-end;padding:0}
+  .add-modal.aa-modal-box{max-width:100%;max-height:94vh;border-radius:20px 20px 0 0}
+  .aa-modal-head{padding:16px 56px 14px 16px}
+  .aa-modal-body{padding:14px 16px 18px}
+  .aa-grid{grid-template-columns:1fr}
   .aa-item{flex-wrap:wrap;row-gap:10px}
   .aa-item-label{flex:1 1 calc(100% - 60px)}
-  .aa-item .aa-seg{flex:1 1 100%}
-  .aa-item .aa-seg label{flex:1}
-  .aa-item .aa-seg span{text-align:center;padding:8px 0}
-  .aa-savebar{margin:0 14px 12px;border-radius:18px;padding:10px 10px 10px 16px}
+  .aa-item .aa-seg,.aa-all .aa-seg{flex:1 1 100%}
+  .aa-item .aa-seg label,.aa-all .aa-seg label{flex:1}
+  .aa-item .aa-seg span,.aa-all .aa-seg span{text-align:center;padding:8px 0}
+  .aa-all{width:100%;flex-wrap:wrap}
+  #aaModalAll{flex:1 1 100%;display:flex}
+  #aaModalAll .aa-seg{flex:1 1 100%}
+  .aa-modal-foot{padding:12px 16px}
+  .aa-foot-actions{width:100%}
+  .aa-foot-actions .aa-btn{flex:1}
 }
 @media (prefers-reduced-motion:reduce){
-  .aa-item,.aa-item-icon,.aa-seg span,.aa-btn{transition:none}
+  .aa-row,.aa-row-go i,.aa-item,.aa-item-icon,.aa-seg span,.aa-btn{transition:none}
+  .aa-row.is-flash{animation:none}
 }
 
 /* ── TOTAL VISITS TAB ── */
@@ -2563,6 +2604,40 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
   </div>
 </div>
 
+<!-- Admin Access — per-admin permissions modal (opened from the Admin Access tab's admin list) -->
+<div class="add-modal-overlay" id="aaModal">
+  <div class="add-modal aa-modal-box" role="dialog" aria-modal="true" aria-labelledby="aaModalTitle" tabindex="-1">
+    <button class="modal-close" onclick="aaRequestClose()" aria-label="Close">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <div class="aa-modal-head">
+      <div class="aa-avatar" id="aaModalAvatar"></div>
+      <div class="aa-modal-id">
+        <h2 class="aa-email" id="aaModalTitle"></h2>
+        <div class="aa-tally" id="aaModalTally"></div>
+      </div>
+    </div>
+    <div class="aa-modal-body">
+      <div class="aa-modal-tools">
+        <div class="aa-legend-inline">
+          <span><i class="aa-dot off"></i><b>Off</b> hidden</span>
+          <span><i class="aa-dot view"></i><b>View</b> read-only</span>
+          <span><i class="aa-dot edit"></i><b>Edit</b> add, change, delete</span>
+        </div>
+        <div class="aa-all">Set everything to <span id="aaModalAll"></span></div>
+      </div>
+      <div class="aa-grid" id="aaModalGrid"></div>
+    </div>
+    <div class="aa-modal-foot">
+      <div class="aa-foot-msg" id="aaModalMsg" role="status" aria-live="polite"></div>
+      <div class="aa-foot-actions">
+        <button type="button" class="aa-btn aa-btn-quiet" onclick="aaRequestClose()">Cancel</button>
+        <button type="button" class="aa-btn aa-btn-primary" id="aaModalSave" onclick="aaSaveModal()" disabled>Save changes</button>
+      </div>
+    </div>
+  </div>
+</div>
+
   <!-- TAB BAR -->
   <div class="tab-bar">
     <button class="tab-btn" id="tab-visits" onclick="switchTab('visits')">
@@ -3280,7 +3355,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
       <div class="card-header">
         <div>
           <div class="card-title"><i class="fas fa-user-shield" style="color:var(--gold2);margin-right:8px"></i>Admin Access</div>
-          <div class="card-sub">Choose what each sub-admin can see and do. The primary admin always has full access.</div>
+          <div class="card-sub">Select an admin to choose what they can see and do. The primary admin always has full access.</div>
         </div>
       </div>
       <div style="padding:16px 20px 20px">
@@ -4760,27 +4835,74 @@ function applyAdminAccessUI(){
 // Access level per feature: 'off' (hidden), 'view' (can look, can't change),
 // 'edit' (can also add / change / delete). Maps onto the API's existing
 // modules[key] (can see) + actions[key] (can edit) flags — no backend change.
+//
+// The Admin Access tab lists every sub-admin the server returns (so newly
+// added ADMIN_EMAIL_N accounts appear automatically); clicking one opens the
+// #aaModal with that admin's per-feature controls.
 const AA_LEVELS = ['off','view','edit'];
 const AA_LABELS = { off:'Off', view:'View', edit:'Edit' };
-let ADMIN_ACCESS_BASELINE = {}; // last-saved levels per sub-admin email, for Discard / unsaved-change count
+// keys: module order · names: module labels · saved[email]: last-saved levels
+// open: email shown in the modal · trigger: row to refocus on close
+let ADMIN_ACCESS = { keys:[], names:{}, saved:{}, open:null, trigger:null, saving:false, confirming:false };
 
 function aaLevelOf(sub, key){
   const canSee = sub.modules[key] !== false;
   const canAct = sub.actions[key] !== false;
   return !canSee ? 'off' : (canAct ? 'edit' : 'view');
 }
+function aaCount(levels){
+  const c = { off:0, view:0, edit:0 };
+  Object.keys(levels).forEach(k => { c[levels[k]]++; });
+  return c;
+}
+function aaTallyHtml(c){
+  return '<span><i class="aa-dot edit"></i><b data-aa-n="edit">' + c.edit + '</b> can edit</span>' +
+         '<span><i class="aa-dot view"></i><b data-aa-n="view">' + c.view + '</b> view only</span>' +
+         '<span><i class="aa-dot off"></i><b data-aa-n="off">' + c.off + '</b> off</span>';
+}
 function aaSegHtml(group, label, current, onchange){
   return `<div class="aa-seg" role="radiogroup" aria-label="${label}">` +
     AA_LEVELS.map(l => `<label><input type="radio" name="${group}" value="${l}" ${l === current ? 'checked' : ''} onchange="${onchange}"><span>${AA_LABELS[l]}</span></label>`).join('') +
   `</div>`;
 }
-function aaLegendHtml(){
+
+/* ── admin list (the tab itself) ── */
+function aaRowInner(email){
+  const lv = ADMIN_ACCESS.saved[email];
   return `
-  <div class="aa-legend">
-    <div class="aa-legend-item"><i class="aa-dot off"></i><div><b>Off</b>Hidden. They won't see this section at all.</div></div>
-    <div class="aa-legend-item"><i class="aa-dot view"></i><div><b>View</b>They can look, but can't change anything.</div></div>
-    <div class="aa-legend-item"><i class="aa-dot edit"></i><div><b>Edit</b>They can also add, change and delete.</div></div>
-  </div>`;
+    <span class="aa-avatar">${escapeHtml(adminInitial(email))}</span>
+    <span class="aa-row-main">
+      <span class="aa-email">${escapeHtml(email)}</span>
+      <span class="aa-tally">${aaTallyHtml(aaCount(lv))}</span>
+    </span>
+    <span class="aa-strip" aria-hidden="true">${ADMIN_ACCESS.keys.map(k =>
+      `<i class="aa-bar ${lv[k]}" title="${escapeHtml(ADMIN_ACCESS.names[k])}: ${AA_LABELS[lv[k]]}"></i>`).join('')}</span>
+    <span class="aa-row-go"><span>Manage</span><i class="fas fa-chevron-right"></i></span>`;
+}
+function aaFindRow(email){
+  return [...document.querySelectorAll('#aaList .aa-row')].find(r => r.getAttribute('data-admin-email') === email);
+}
+function aaUpdateRow(email, flash){
+  const row = aaFindRow(email);
+  if(!row) return;
+  row.innerHTML = aaRowInner(email);
+  if(flash){
+    row.classList.remove('is-flash'); void row.offsetWidth; row.classList.add('is-flash');
+  }
+}
+function aaFilter(q){
+  const term = String(q || '').trim().toLowerCase();
+  let shown = 0;
+  document.querySelectorAll('#aaList .aa-row').forEach(row => {
+    const match = !term || row.getAttribute('data-admin-email').toLowerCase().includes(term);
+    row.hidden = !match;
+    if(match) shown++;
+  });
+  const empty = document.getElementById('aaListEmpty');
+  if(empty){
+    empty.hidden = shown > 0;
+    empty.textContent = 'No admin matches “' + String(q).trim() + '”.';
+  }
 }
 
 async function loadAdminAccessTab(){
@@ -4798,143 +4920,214 @@ async function loadAdminAccessTab(){
       list.innerHTML = '<div class="empty-state">No sub-admins configured — set ADMIN_EMAIL_2 / ADMIN_PASSWORD_2 (and so on) to add one.</div>';
       return;
     }
-    const moduleKeys = Object.keys(data.availableModules);
-    ADMIN_ACCESS_BASELINE = {};
-    list.innerHTML = aaLegendHtml() + data.subAdmins.map((sub, idx) => {
+    ADMIN_ACCESS.keys = Object.keys(data.availableModules);
+    ADMIN_ACCESS.names = data.availableModules;
+    ADMIN_ACCESS.saved = {};
+    data.subAdmins.forEach(sub => {
       const levels = {};
-      moduleKeys.forEach(k => { levels[k] = aaLevelOf(sub, k); });
-      ADMIN_ACCESS_BASELINE[sub.email] = levels;
-      return `
-      <div class="aa-card" data-admin-email="${escapeHtml(sub.email)}">
-        <div class="aa-card-head">
-          <div class="aa-identity">
-            <div class="aa-avatar">${escapeHtml(adminInitial(sub.email))}</div>
-            <div>
-              <div class="aa-email">${escapeHtml(sub.email)}</div>
-              <div class="aa-tally">
-                <span><i class="aa-dot edit"></i><b data-aa-n="edit">0</b> can edit</span>
-                <span><i class="aa-dot view"></i><b data-aa-n="view">0</b> view only</span>
-                <span><i class="aa-dot off"></i><b data-aa-n="off">0</b> off</span>
-              </div>
-            </div>
-          </div>
-          <div class="aa-all">
-            Set everything to
-            <span class="aa-all-seg">${aaSegHtml('aa-all-' + idx, 'Set every feature to', null, 'aaSetAll(this)')}</span>
-          </div>
-        </div>
-        <div class="aa-grid">
-          ${moduleKeys.map(key => `
-            <div class="aa-item" data-item-key="${key}" data-level="${levels[key]}">
-              <span class="aa-item-icon"><i class="fas ${MODULE_ICONS[key] || 'fa-toggle-on'}"></i></span>
-              <span class="aa-item-label">${escapeHtml(data.availableModules[key])}</span>
-              ${aaSegHtml('aa-' + idx + '-' + key, escapeHtml(data.availableModules[key]) + ' access', levels[key], 'aaOnLevel(this)')}
-            </div>`).join('')}
-        </div>
-        <div class="aa-savebar" data-aa-bar role="status" aria-live="polite">
-          <span class="aa-savebar-msg" data-aa-msg></span>
-          <span class="aa-savebar-actions">
-            <button type="button" class="aa-btn aa-btn-ghost" onclick="aaDiscard(this)">Discard</button>
-            <button type="button" class="aa-btn aa-btn-primary" data-aa-save onclick="saveAdminAccess(this)">Save changes</button>
-          </span>
-        </div>
+      ADMIN_ACCESS.keys.forEach(k => { levels[k] = aaLevelOf(sub, k); });
+      ADMIN_ACCESS.saved[sub.email] = levels;
+    });
+    const emails = data.subAdmins.map(s => s.email);
+    list.innerHTML = `
+      <div class="aa-toolbar">
+        <div class="aa-count">${emails.length} sub-admin${emails.length === 1 ? '' : 's'}</div>
+        <label class="aa-search" ${emails.length > 6 ? '' : 'hidden'}>
+          <i class="fas fa-magnifying-glass" aria-hidden="true"></i>
+          <input type="search" placeholder="Search admins" aria-label="Search sub-admins" oninput="aaFilter(this.value)">
+        </label>
+      </div>
+      <div class="aa-list" id="aaList">
+        ${emails.map(email => `
+          <button type="button" class="aa-row" data-admin-email="${escapeHtml(email)}" onclick="aaOpenModal(this)"
+            aria-label="Manage access for ${escapeHtml(email)}">${aaRowInner(email)}</button>`).join('')}
+        <div class="aa-list-empty" id="aaListEmpty" hidden></div>
       </div>`;
-    }).join('');
-    list.querySelectorAll('.aa-card').forEach(aaRefresh);
   } catch(e){
     list.innerHTML = '<div class="empty-state">Network error. Please try again.</div>';
   }
 }
 
-function aaCardOf(el){ return el.closest('.aa-card'); }
-function aaCardLevels(card){
+/* ── per-admin modal ── */
+function aaModalLevels(){
   const out = {};
-  card.querySelectorAll('.aa-item').forEach(item => {
+  document.querySelectorAll('#aaModalGrid .aa-item').forEach(item => {
     const checked = item.querySelector('input:checked');
     out[item.getAttribute('data-item-key')] = checked ? checked.value : 'off';
   });
   return out;
 }
+function aaChangedCount(){
+  const email = ADMIN_ACCESS.open;
+  if(!email) return 0;
+  const base = ADMIN_ACCESS.saved[email] || {};
+  const now = aaModalLevels();
+  return Object.keys(now).filter(k => now[k] !== base[k]).length;
+}
+function aaSetMsg(html, isError){
+  const el = document.getElementById('aaModalMsg');
+  el.classList.toggle('is-error', !!isError);
+  el.innerHTML = html;
+}
 
 // Re-syncs everything that depends on the current choices: row highlight,
-// the "N can edit / view only / off" tally, the "Set everything to" control
-// (blank when features are mixed), and the unsaved-changes bar.
-function aaRefresh(card){
-  const levels = aaCardLevels(card);
-  const values = Object.values(levels);
-  card.querySelectorAll('.aa-item').forEach(item => {
+// the tally, the "Set everything to" control (blank when features are mixed),
+// the unsaved-changes note and the Save button.
+function aaModalRefresh(){
+  const levels = aaModalLevels();
+  const values = Object.keys(levels).map(k => levels[k]);
+  document.querySelectorAll('#aaModalGrid .aa-item').forEach(item => {
     item.setAttribute('data-level', levels[item.getAttribute('data-item-key')]);
   });
+  const c = aaCount(levels);
   AA_LEVELS.forEach(l => {
-    const el = card.querySelector('[data-aa-n="'+l+'"]');
-    if(el) el.textContent = values.filter(v => v === l).length;
+    const el = document.querySelector('#aaModalTally [data-aa-n="'+l+'"]');
+    if(el) el.textContent = c[l];
   });
   const uniform = values.length && values.every(v => v === values[0]) ? values[0] : null;
-  card.querySelectorAll('.aa-all input').forEach(r => { r.checked = (r.value === uniform); });
+  document.querySelectorAll('#aaModalAll input').forEach(r => { r.checked = (r.value === uniform); });
 
-  const base = ADMIN_ACCESS_BASELINE[card.getAttribute('data-admin-email')] || {};
-  const changed = Object.keys(levels).filter(k => levels[k] !== base[k]).length;
-  const bar = card.querySelector('[data-aa-bar]');
-  const msg = card.querySelector('[data-aa-msg]');
-  clearTimeout(card._aaSavedTimer);
-  bar.classList.remove('is-saved');
-  if(changed){
-    msg.innerHTML = '<i class="fas fa-circle-exclamation" style="color:var(--gold2)"></i>' +
-      changed + ' unsaved change' + (changed === 1 ? '' : 's');
+  const changed = aaChangedCount();
+  aaSetMsg(changed
+    ? '<i class="fas fa-circle-exclamation" style="color:var(--gold2)"></i>' + changed + ' unsaved change' + (changed === 1 ? '' : 's')
+    : '', false);
+  document.getElementById('aaModalSave').disabled = !changed || ADMIN_ACCESS.saving;
+}
+
+function aaModalSetAll(input){
+  document.querySelectorAll('#aaModalGrid input[value="'+input.value+'"]').forEach(r => { r.checked = true; });
+  aaModalRefresh();
+}
+
+function aaOpenModal(btn){
+  const email = btn.getAttribute('data-admin-email');
+  const lv = ADMIN_ACCESS.saved[email];
+  if(!lv) return;
+  ADMIN_ACCESS.open = email;
+  ADMIN_ACCESS.trigger = btn;
+  document.getElementById('aaModalAvatar').textContent = adminInitial(email);
+  document.getElementById('aaModalTitle').textContent = email;
+  document.getElementById('aaModalTally').innerHTML = aaTallyHtml(aaCount(lv));
+  document.getElementById('aaModalAll').innerHTML = aaSegHtml('aa-all', 'Set every feature to', null, 'aaModalSetAll(this)');
+  document.getElementById('aaModalGrid').innerHTML = ADMIN_ACCESS.keys.map(key => `
+    <div class="aa-item" data-item-key="${key}" data-level="${lv[key]}">
+      <span class="aa-item-icon"><i class="fas ${MODULE_ICONS[key] || 'fa-toggle-on'}"></i></span>
+      <span class="aa-item-label">${escapeHtml(ADMIN_ACCESS.names[key])}</span>
+      ${aaSegHtml('aa-m-' + key, escapeHtml(ADMIN_ACCESS.names[key]) + ' access', lv[key], 'aaModalRefresh()')}
+    </div>`).join('');
+  aaModalRefresh();
+  const overlay = document.getElementById('aaModal');
+  overlay.classList.add('open');
+  overlay.querySelector('.aa-modal-body').scrollTop = 0;
+  document.body.style.overflow = 'hidden';
+  document.addEventListener('keydown', aaModalKeydown);
+  overlay.querySelector('.aa-modal-box').focus({ preventScroll:true });
+}
+
+function aaCloseModal(){
+  document.getElementById('aaModal').classList.remove('open');
+  document.body.style.overflow = '';
+  document.removeEventListener('keydown', aaModalKeydown);
+  const t = ADMIN_ACCESS.trigger;
+  ADMIN_ACCESS.open = null;
+  ADMIN_ACCESS.trigger = null;
+  if(t && document.body.contains(t)) t.focus({ preventScroll:true });
+}
+
+// Every way of leaving the modal (✕, Cancel, backdrop, Esc) goes through here,
+// so unsaved changes are never dropped silently.
+async function aaRequestClose(){
+  if(ADMIN_ACCESS.saving || ADMIN_ACCESS.confirming || !ADMIN_ACCESS.open) return;
+  if(aaChangedCount() > 0){
+    ADMIN_ACCESS.confirming = true;
+    let ok = false;
+    try {
+      ok = await showConfirmModal({
+        title:'Discard changes?',
+        message:'This admin has unsaved access changes. Closing now will lose them.',
+        okText:'Discard', cancelText:'Keep editing', variant:'info'
+      });
+    } finally { ADMIN_ACCESS.confirming = false; }
+    if(!ok) return;
   }
-  bar.classList.toggle('is-visible', changed > 0);
+  aaCloseModal();
 }
 
-function aaOnLevel(input){ aaRefresh(aaCardOf(input)); }
-
-function aaSetAll(input){
-  const card = aaCardOf(input);
-  card.querySelectorAll('.aa-item input[value="'+input.value+'"]').forEach(r => { r.checked = true; });
-  aaRefresh(card);
-}
-
-function aaDiscard(btn){
-  const card = aaCardOf(btn);
-  const base = ADMIN_ACCESS_BASELINE[card.getAttribute('data-admin-email')] || {};
-  card.querySelectorAll('.aa-item').forEach(item => {
-    const r = item.querySelector('input[value="'+(base[item.getAttribute('data-item-key')] || 'off')+'"]');
-    if(r) r.checked = true;
+function aaFocusables(){
+  const box = document.querySelector('#aaModal .aa-modal-box');
+  const radios = [...box.querySelectorAll('input[type=radio]')];
+  return [...box.querySelectorAll('button:not([disabled]), input[type=radio]')].filter(el => {
+    if(el.type !== 'radio') return true;
+    const group = radios.filter(r => r.name === el.name);
+    return el === (group.find(r => r.checked) || group[0]); // one tab stop per group
   });
-  aaRefresh(card);
 }
+function aaModalKeydown(e){
+  if(e.key === 'Escape'){
+    const c = document.getElementById('confirmOverlay');
+    if(c && getComputedStyle(c).display !== 'none') return; // the discard prompt handles its own Esc
+    e.preventDefault();
+    aaRequestClose();
+  } else if(e.key === 'Tab'){
+    const c = document.getElementById('confirmOverlay');
+    if(c && getComputedStyle(c).display !== 'none') return;
+    const list = aaFocusables();
+    if(!list.length) return;
+    const first = list[0], last = list[list.length - 1];
+    if(e.shiftKey && (document.activeElement === first || document.activeElement === document.querySelector('#aaModal .aa-modal-box'))){
+      e.preventDefault(); last.focus();
+    } else if(!e.shiftKey && document.activeElement === last){
+      e.preventDefault(); first.focus();
+    }
+  }
+}
+document.getElementById('aaModal').addEventListener('click', function(e){
+  if(e.target === this) aaRequestClose();
+});
 
-async function saveAdminAccess(btn){
-  const card = aaCardOf(btn);
-  if(!card) return;
-  const email = card.getAttribute('data-admin-email');
-  const levels = aaCardLevels(card);
+async function aaSaveModal(){
+  const email = ADMIN_ACCESS.open;
+  if(!email || ADMIN_ACCESS.saving) return;
+  const levels = aaModalLevels();
   const modules = {};
   const actions = {};
   Object.keys(levels).forEach(k => {
     modules[k] = levels[k] !== 'off';
     actions[k] = levels[k] === 'edit';
   });
+  const btn = document.getElementById('aaModalSave');
   const originalHtml = btn.innerHTML;
+  ADMIN_ACCESS.saving = true;
   btn.disabled = true;
   btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i>Saving…';
+  aaSetMsg('', false);
+  let saved = false;
   try {
     const res = await fetch(BASE + '/api/admin/sub-admins/' + encodeURIComponent(email) + '/modules', {
       method:'PUT',
       headers: Object.assign({'Content-Type':'application/json'}, authHeaders()),
       body: JSON.stringify({ modules, actions })
     });
-    const data = await res.json();
-    if(!res.ok){ alert(data.message || 'Could not update access.'); return; }
-    ADMIN_ACCESS_BASELINE[email] = levels;
-    const bar = card.querySelector('[data-aa-bar]');
-    card.querySelector('[data-aa-msg]').innerHTML = '<i class="fas fa-circle-check"></i>Access saved';
-    bar.classList.add('is-saved');
-    card._aaSavedTimer = setTimeout(() => bar.classList.remove('is-visible','is-saved'), 2200);
+    const data = await res.json().catch(() => ({}));
+    if(!res.ok){
+      aaSetMsg('<i class="fas fa-circle-exclamation"></i>' + escapeHtml(data.message || 'Could not update access.'), true);
+    } else {
+      saved = true;
+      ADMIN_ACCESS.saved[email] = levels;
+    }
   } catch(e){
-    alert('Network error. Please try again.');
+    aaSetMsg('<i class="fas fa-circle-exclamation"></i>Network error. Please try again.', true);
   } finally {
-    btn.disabled = false;
+    ADMIN_ACCESS.saving = false;
     btn.innerHTML = originalHtml;
+    btn.disabled = false;
+  }
+  if(saved){
+    aaCloseModal();
+    aaUpdateRow(email, true);
+    if(typeof _adminToast === 'function') _adminToast('Access saved');
+  } else {
+    btn.disabled = aaChangedCount() === 0;
   }
 }
 
