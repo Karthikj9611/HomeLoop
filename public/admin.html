@@ -4290,6 +4290,7 @@ function alignThreeRowsAsColumns(){
   [tabBar, catBar].forEach(function(bar){
     bar.style.display = 'grid';
     bar.style.gridTemplateColumns = template;
+    bar.style.gridAutoFlow = 'column'; // extra tabs continue in the same row, never wrap
     bar.style.columnGap = gapPx + 'px';
     bar.style.rowGap = gapPx + 'px';
     bar.style.justifyItems = 'start';
@@ -4777,6 +4778,7 @@ function applyAdminAccessUI(){
   // "Admin Access" tab: primary admin only.
   const accessTabBtn = document.getElementById('tab-admin-access');
   if(accessTabBtn) accessTabBtn.style.display = isSuper ? '' : 'none';
+  if(typeof alignThreeRowsAsColumns === 'function') setTimeout(alignThreeRowsAsColumns, 0);
 
   // View-only sub-admins (module visible, but actions[module] === false):
   // hide the header-level "Add" / "Delete selected" trigger buttons for
