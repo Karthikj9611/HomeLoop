@@ -9026,7 +9026,7 @@ function cardHTML(p, compact, extraLeftBadge) {
           <div class="prop-heart${liked?' liked':''}" onclick="event.stopPropagation();toggleShortlist('${p.id}',this)" aria-label="${liked?'Remove from':'Add to'} shortlist">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
           </div>
-          ${p.booked ? '' : `
+          ${(p.booked || isOwnerViewer()) ? '' : `
           <div class="prop-icon-badge prop-icon-call" onclick="event.stopPropagation();openCardCall('${p.id}')" aria-label="Call" title="${(p.ownerPhoneCall && p.ownerPhone) || (p.ownerDirectCall && p.ownerAltPhone) ? 'Call owner' : 'Call agent'}">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
           </div>
@@ -9165,7 +9165,7 @@ function shortlistCardHTML(p) {
           <div class="prop-heart${liked?' liked':''}" onclick="event.stopPropagation();toggleShortlist('${p.id}',this)" aria-label="${liked?'Remove from':'Add to'} shortlist">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
           </div>
-          ${p.booked ? '' : `
+          ${(p.booked || isOwnerViewer()) ? '' : `
           <div class="prop-icon-badge prop-icon-call" onclick="event.stopPropagation();openCardCall('${p.id}')" aria-label="Call" title="${(p.ownerPhoneCall && p.ownerPhone) || (p.ownerDirectCall && p.ownerAltPhone) ? 'Call owner' : 'Call agent'}">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
           </div>
@@ -9609,9 +9609,11 @@ function renderCompareTable() {
               <div class="prop-heart${liked?' liked':''}" onclick="event.stopPropagation();toggleShortlist('${p.id}',this)" aria-label="${liked?'Remove from':'Add to'} shortlist">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
               </div>
+          ${isOwnerViewer() ? '' : `
           <div class="prop-icon-badge prop-icon-call" onclick="event.stopPropagation();openCardCall('${p.id}')" aria-label="Call" title="${(p.ownerPhoneCall && p.ownerPhone) || (p.ownerDirectCall && p.ownerAltPhone) ? 'Call owner' : 'Call agent'}">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
           </div>
+          `}
             </div>
           </div>
         </div>
@@ -11264,20 +11266,22 @@ function openDetail(id) {
   document.getElementById('viewScheduleBtn').style.display = (HIDE_SAVE_SCHEDULE || viewerIsOwner) ? 'none' : '';
   // Collapse the first row only when nothing in it is visible (owner accounts keep Call there).
   actionsRow1.style.display = [...actionsRow1.children].every(c => getComputedStyle(c).display === 'none') ? 'none' : '';
-  // Booked (off-market) listings: no Call / WhatsApp (agent or owner) / Navigate.
-  // Hide the whole footer once nothing in it is left visible.
+  // No Call / WhatsApp (agent or owner numbers) for booked (off-market) listings
+  // or when the viewer is a logged-in owner account. Navigate is dropped for
+  // booked listings only.
   const footerEl = document.getElementById('viewActionsFooter');
-  if (p.booked) {
+  if (p.booked || viewerIsOwner) {
     callBtn.style.display = 'none';
     whatsappBtn.style.display = 'none';
-    ['viewActionsRow2', 'viewOwnerMainRow', 'viewOwnerAltRow', 'viewNavigateRow'].forEach(id => {
+    ['viewActionsRow2', 'viewOwnerMainRow', 'viewOwnerAltRow'].forEach(id => {
       document.getElementById(id).style.display = 'none';
     });
+    if (p.booked) document.getElementById('viewNavigateRow').style.display = 'none';
     actionsRow1.style.display = [...actionsRow1.children].every(c => getComputedStyle(c).display === 'none') ? 'none' : '';
-    footerEl.style.display = actionsRow1.style.display === 'none' ? 'none' : 'block';
-  } else {
-    footerEl.style.display = 'block';
   }
+  const _footerHasContent = ['viewActionsRow', 'viewActionsRow2', 'viewOwnerMainRow', 'viewOwnerAltRow', 'viewNavigateRow']
+    .some(id => document.getElementById(id).style.display !== 'none');
+  footerEl.style.display = _footerHasContent ? 'block' : 'none';
 
   // Read-only view of an existing property — "Clear form" only makes sense
   // for a listing actually being drafted, never here.
@@ -12487,6 +12491,12 @@ function availableDateInfo(available) {
   const cls = target < today ? 'prop-loc-avail-past' : 'prop-loc-avail-future';
   return { text: dateStr, cls };
 }
+// Logged-in owner accounts never see Call / WhatsApp anywhere on the site.
+function isOwnerViewer() {
+  const u = getLoggedInUser();
+  return !!u && u.accountType === 'owner';
+}
+
 function getLoggedInUser() {
   try { return JSON.parse(localStorage.getItem('homeloop_user')); } catch { return null; }
 }
