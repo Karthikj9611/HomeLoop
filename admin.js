@@ -24,7 +24,23 @@ module.exports = function registerAdminRoutes(app, deps) {
     Review,
     ImageAsset,
     Visitor,
+    PropertyView, PropertyViewer,
   } = deps;
+
+  // Actually drops a collection from MongoDB (removing its documents AND its
+  // indexes) rather than just emptying it with deleteMany/updateMany. Used by
+  // the Visits/Views "reset" actions below, which are meant to wipe the
+  // underlying dedup collections outright. Mongo throws "ns not found" (code
+  // 26 / NamespaceNotFound) if the collection doesn't exist yet — e.g. a
+  // fresh install, or resetting twice in a row — which is harmless here, so
+  // that specific error is swallowed; anything else is rethrown.
+  async function dropCollectionIfExists(Model) {
+    try {
+      await Model.collection.drop();
+    } catch (err) {
+      if (err.code !== 26 && err.codeName !== 'NamespaceNotFound') throw err;
+    }
+  }
 
   if (process.env.NODE_ENV === 'production' && (!process.env.ADMIN_EMAIL || !process.env.ADMIN_PASSWORD)) {
     throw new Error('ADMIN_EMAIL and ADMIN_PASSWORD env vars are required in production (hardcoded admin/admin login is dev-only)');
@@ -1193,10 +1209,21 @@ module.exports = function registerAdminRoutes(app, deps) {
   });
 
   // ── PATCH /api/properties/:id/views/reset (admin: reset one listing's view count to 0) ──
+  // Also deletes this listing's own rows from the PropertyView (fingerprint
+  // dedup) and PropertyViewer (named "viewed by" list) collections, so a
+  // visitor who already viewed it before the reset can register a fresh view
+  // afterwards instead of staying invisible to a counter that now reads 0.
+  // These are shared collections (every listing's rows live in them), so only
+  // this property's own rows are deleted — the collections themselves aren't
+  // dropped here (see reset-all below for that).
   app.patch('/api/properties/:id/views/reset', requireAdmin, requireModuleAction('properties'), async (req, res) => {
     try {
       const prop = await updateListingById(req.params.id, { views: 0 }, { new: true });
       if (!prop) return res.status(404).json({ message: 'Property not found' });
+      await Promise.all([
+        PropertyView.deleteMany({ propertyId: req.params.id }),
+        PropertyViewer.deleteMany({ propertyId: req.params.id }),
+      ]);
       res.json({ message: 'Views reset', views: prop.views });
     } catch (err) {
       console.error('PATCH /api/properties/:id/views/reset error:', err);
@@ -1205,10 +1232,14 @@ module.exports = function registerAdminRoutes(app, deps) {
   });
 
   // ── POST /api/properties/views/reset-all (admin: reset every listing's view count to 0) ──
+  // Every listing's `views` field is zeroed, and the PropertyView / PropertyViewer
+  // dedup collections are dropped outright (not just emptied) so every
+  // visitor's/user's view history across every listing is wiped clean.
   app.post('/api/properties/views/reset-all', requireAdmin, requireModuleAction('properties'), async (req, res) => {
     try {
       const results = await Promise.all(LISTING_MODEL_LIST.map(M => M.updateMany({}, { $set: { views: 0 } })));
       const modifiedCount = results.reduce((sum, r) => sum + (r.modifiedCount || 0), 0);
+      await Promise.all([dropCollectionIfExists(PropertyView), dropCollectionIfExists(PropertyViewer)]);
       res.json({ message: 'All views reset', modifiedCount });
     } catch (err) {
       console.error('POST /api/properties/views/reset-all error:', err);
@@ -1962,19 +1993,17 @@ module.exports = function registerAdminRoutes(app, deps) {
   });
 
   // POST /api/admin/total-visits/reset — reset the all-time counter to 0.
-  // Also wipes the Visitor dedup collection (Visits tab only — deliberately
+  // Deletes the SiteStat counter doc outright (GET /api/admin/total-visits
+  // already falls back to 0 when no doc exists, so this is safe) and drops
+  // the Visitor dedup collection entirely (Visits tab only — deliberately
   // NOT done for property views, which keep their own dedup untouched), so a
   // device/browser that was already counted before the reset can be counted
   // again afterwards instead of staying invisible to a counter that now reads 0.
   app.post('/api/admin/total-visits/reset', requireAdmin, requireAnyModuleAction('stats', 'visits'), async (req, res) => {
     try {
-      const doc = await SiteStat.findOneAndUpdate(
-        { key: 'totalVisits' },
-        { $set: { value: 0 } },
-        { upsert: true, new: true }
-      );
-      await Visitor.deleteMany({});
-      res.json({ message: 'Total visits reset', totalVisits: doc.value });
+      await SiteStat.deleteOne({ key: 'totalVisits' });
+      await dropCollectionIfExists(Visitor);
+      res.json({ message: 'Total visits reset', totalVisits: 0 });
     } catch (err) {
       console.error('POST /api/admin/total-visits/reset error:', err.message);
       res.status(500).json({ message: 'Error resetting total visits' });
@@ -2076,15 +2105,29 @@ module.exports = function registerAdminRoutes(app, deps) {
     }
   });
 
-  // POST /api/admin/daily-stats/:type/clear-all — reset every day's count to 0, keep the rows.
-  // For type 'visit' only, also wipes the Visitor dedup collection (same reasoning
-  // as total-visits/reset above) — 'registration' has no dedup collection to wipe,
-  // and 'propertyView' deliberately keeps its dedup (PropertyView) untouched.
+  // POST /api/admin/daily-stats/:type/clear-all — reset every day's count for
+  // this type. For 'visit' and 'propertyView' this now deletes the DailyStat
+  // rows for that type outright (rather than zeroing `count` and keeping the
+  // rows) and drops that type's dedup collection(s) too:
+  //   - 'visit'          → drops the Visitor collection (same reasoning as
+  //                        total-visits/reset above).
+  //   - 'propertyView'   → drops the PropertyView and PropertyViewer collections.
+  //   - 'registration'   → has no dedup collection, and its rows are kept (at
+  //                        count 0) rather than deleted, since this endpoint
+  //                        is only meant to wipe visit/view tracking data.
   app.post('/api/admin/daily-stats/:type/clear-all', requireAdmin, requireDailyStatModuleAction, async (req, res) => {
     try {
       if (!checkDailyStatType(req, res)) return;
-      await DailyStat.updateMany({ type: req.params.type }, { $set: { count: 0 } });
-      if (req.params.type === 'visit') await Visitor.deleteMany({});
+      const { type } = req.params;
+      if (type === 'visit') {
+        await DailyStat.deleteMany({ type });
+        await dropCollectionIfExists(Visitor);
+      } else if (type === 'propertyView') {
+        await DailyStat.deleteMany({ type });
+        await Promise.all([dropCollectionIfExists(PropertyView), dropCollectionIfExists(PropertyViewer)]);
+      } else {
+        await DailyStat.updateMany({ type }, { $set: { count: 0 } });
+      }
       res.json({ message: 'All counts cleared' });
     } catch (err) {
       console.error('POST /api/admin/daily-stats/:type/clear-all error:', err.message);

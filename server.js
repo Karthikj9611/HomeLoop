@@ -3354,7 +3354,8 @@ app.get('/api/stats', async (req, res) => {
   SiteStat, DailyStat, todayStr, Referral,
   Review, // star reviews (Owner/Tenant Reviews) — admin "Reviews" tab
   ImageAsset, // Booking Details modal's Agreement/Proof uploads reuse this store
-  Visitor, // visitor-dedup collection — Visits tab's resets wipe this too (see admin.js)
+  Visitor, // visitor-dedup collection — Visits tab's resets drop this collection (see admin.js)
+  PropertyView, PropertyViewer, // view-dedup collections — Properties tab's view resets drop these (see admin.js)
 }));
 
 // 404 for any API route that didn't match above.
