@@ -2704,6 +2704,9 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
             <button type="button" class="bulk-selected-count" id="custSelectedCount" style="display:none" onclick="clearCustSelection()" title="Clear selection">
               <i class="fas fa-check-circle bulk-selected-icon"></i> <span id="custSelectedNum" class="bulk-selected-num">0</span><span class="bulk-btn-label" data-mobile="Selected"> selected</span> <span class="bulk-selected-clear-x">X</span>
             </button>
+            <button type="button" class="bulk-btn bulk-btn-danger" id="custDeleteSelectedBtn" style="display:none" onclick="deleteSelectedCustomers()">
+              <i class="fas fa-trash"></i> <span class="bulk-btn-label" data-mobile="Delete">Delete (<span id="custDeleteCount">0</span>)</span>
+            </button>
           </div>
           <div class="bulk-toolbar-right">
             <div class="col-toggle-wrap" id="custColToggleWrap">
@@ -2814,6 +2817,9 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
         <span id="addPropertyDivider" style="width:1px;align-self:stretch;background:var(--border,#ddd);margin:2px 4px;flex-shrink:0"></span>
         <button type="button" class="bulk-selected-count" id="bulkSelectedCount" style="display:none" onclick="clearPropSelection()" title="Clear selection">
           <i class="fas fa-check-circle bulk-selected-icon"></i> <span id="bulkSelectedNum" class="bulk-selected-num">0</span><span class="bulk-btn-label" data-mobile="Selected"> selected</span> <span class="bulk-selected-clear-x">X</span>
+        </button>
+        <button type="button" class="bulk-btn bulk-btn-danger" id="bulkDeleteSelectedBtn" style="display:none" onclick="deleteSelectedProperties()">
+          <i class="fas fa-trash"></i> <span class="bulk-btn-label" data-mobile="Delete">Delete (<span id="bulkDeleteCount">0</span>)</span>
         </button>
       </div>
       <div class="bulk-toolbar-right">
@@ -2989,6 +2995,9 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
             </button>
             <button type="button" class="bulk-selected-count" id="apptSelectedCount" style="display:none" onclick="clearApptSelection()" title="Clear selection">
               <i class="fas fa-check-circle bulk-selected-icon"></i> <span id="apptSelectedNum" class="bulk-selected-num">0</span><span class="bulk-btn-label" data-mobile="Selected"> selected</span> <span class="bulk-selected-clear-x">X</span>
+            </button>
+            <button type="button" class="bulk-btn bulk-btn-danger" id="apptDeleteSelectedBtn" style="display:none" onclick="deleteSelectedAppointments()">
+              <i class="fas fa-trash"></i> <span class="bulk-btn-label" data-mobile="Delete">Delete (<span id="apptDeleteCount">0</span>)</span>
             </button>
           </div>
           <div class="bulk-toolbar-right">
@@ -3198,6 +3207,9 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
             <button type="button" class="bulk-selected-count" id="reviewSelectedCount" style="display:none" onclick="clearReviewSelection()" title="Clear selection">
               <i class="fas fa-check-circle bulk-selected-icon"></i> <span id="reviewSelectedNum" class="bulk-selected-num">0</span><span class="bulk-btn-label" data-mobile="Selected"> selected</span> <span class="bulk-selected-clear-x">X</span>
             </button>
+            <button type="button" class="bulk-btn bulk-btn-danger" id="reviewDeleteSelectedBtn" style="display:none" onclick="deleteSelectedReviews()">
+              <i class="fas fa-trash"></i> <span class="bulk-btn-label" data-mobile="Delete">Delete (<span id="reviewDeleteCount">0</span>)</span>
+            </button>
           </div>
           <div class="bulk-toolbar-right">
             <button class="btn-add-review" onclick="openHonestReviewModal()" title="Add review">
@@ -3338,10 +3350,11 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
               <th>Linked User</th>
               <th>Status</th>
               <th>Submitted</th>
+              <th>Action</th>
             </tr>
           </thead>
           <tbody>
-            <tr><td colspan="7" class="empty-state"><i class="fas fa-circle-notch fa-spin"></i>Loading…</td></tr>
+            <tr><td colspan="8" class="empty-state"><i class="fas fa-circle-notch fa-spin"></i>Loading…</td></tr>
           </tbody>
         </table>
       </div>
@@ -4795,6 +4808,10 @@ function applyAdminAccessUI(){
     const bulkDeleteBtnByPanel = {
       'user-reviews': '#urDeleteSelectedBtn',
       'partners': '#partnerDeleteSelectedBtn',
+      'customers': '#custDeleteSelectedBtn',
+      'properties': '#bulkDeleteSelectedBtn',
+      'appointments': '#apptDeleteSelectedBtn',
+      'honest-reviews': '#reviewDeleteSelectedBtn',
     };
     Object.keys(TAB_MODULE_MAP).forEach(tab=>{
       const moduleKey = TAB_MODULE_MAP[tab];
@@ -6109,6 +6126,19 @@ window.setReferralStatus = async function(id, status, selectEl){
   } finally {
     if(selectEl) selectEl.disabled = false;
   }
+};
+
+window.deleteReferral = async function(id){
+  if(blockIfViewOnly('referrals')) return;
+  if(!await showConfirmModal({ title:'Delete this referral?', message:'This referral entry will be permanently removed.' })) return;
+  try{
+    const res = await fetch(`${BASE}/api/admin/referrals/${id}`, { method:'DELETE', headers: authHeaders() });
+    const data = await res.json().catch(()=>({}));
+    if(!res.ok){ alert(data.message || 'Delete failed'); return; }
+    referralsTable.ajax.reload(null, false);
+    const total = referralsTable.data().count();
+    document.getElementById('tab-referrals-count').innerText = total;
+  } catch(err){ alert('Delete failed. Please try again.'); }
 };
 
 /* ── PARTNERS: ADD / EDIT MODAL ── */
@@ -7835,6 +7865,10 @@ $(document).ready(function(){
 
 				${verifyBtn}
 
+				<button class="btn-view" style="color:#c0392b" onclick="deleteBooking('${row.mobile || row._id}')" title="Delete this customer">
+				  <i class="fas fa-trash"></i><span class="btn-label"> Delete</span>
+				</button>
+
 				<label class="mini-toggle-wrap altcall-wrap" title="${row.accountType==='owner' ? 'When ON, all of this owner\'s listings show their owner number(s) to every visitor' : 'When ON, this tenant sees owner numbers on all listings while logged in'}"><span class="mini-toggle altcall-toggle">
 				  <input type="checkbox" ${row.publicCall?'checked':''} ${canAct('customers')?'':'disabled'} onchange="toggleUserPublicCall('${row._id}',this,'${row.accountType==='owner'?'owner':'customer'}')">
 				  <span class="slider"></span>
@@ -8246,6 +8280,9 @@ $(document).ready(function(){
           const directionsBtn = (dirUrl && !viewOnly)
             ? `<button class="btn-view" style="background:#34A853;border-color:#34A853;color:#fff" title="Get driving directions from your current location to this property" onclick="window.open('${dirUrl.replace(/'/g, "\\'")}', '_blank', 'noopener')"><i class="fas fa-route"></i><span class="btn-label"> Directions${dirDistLabel ? ' · ' : ''}</span><span class="btn-dist">${dirDistLabel}</span></button>`
             : disabledBtn('fas fa-route', 'Directions', viewOnly ? 'View-only access — ask the primary admin to enable actions' : 'No address or coordinates on file for this listing');
+          const deleteBtn = viewOnly
+            ? disabledBtn('fas fa-trash', 'Delete', 'View-only access — ask the primary admin to enable actions')
+            : `<button class="btn-view" style="color:#c0392b" title="Delete this listing" onclick="deleteProperty('${row._id}')"><i class="fas fa-trash"></i><span class="btn-label"> Delete</span></button>`;
           return `<div style="display:inline-flex;gap:6px;flex-wrap:nowrap;justify-content:center">
             <button class="btn-view" onclick="openAdminPropModal('${row._id}')"><i class="fas fa-eye"></i><span class="btn-label"> View</span></button>
             ${navigateBtn}
@@ -8255,6 +8292,7 @@ $(document).ready(function(){
             ${igShareBtn}
             ${checkAvailBtn}
             ${bookingBtn}
+            ${deleteBtn}
           </div>`;
       }}
     ],
@@ -8551,6 +8589,7 @@ $(document).ready(function(){
           _apptCache[row._id] = row;
           return `<div style="display:inline-flex;gap:6px;flex-wrap:nowrap;justify-content:center">
             <button class="btn-view" onclick="openApptModal('${row._id}')"><i class="fas fa-eye"></i><span class="btn-label"> View</span></button>
+            <button class="btn-view" style="color:#c0392b" title="Delete this appointment" onclick="deleteAppointment('${row._id}')"><i class="fas fa-trash"></i><span class="btn-label"> Delete</span></button>
           </div>`;
       }}
     ],
@@ -8735,6 +8774,7 @@ $(document).ready(function(){
           if(t!=='display') return '';
           return `<div style="display:inline-flex;gap:6px;flex-wrap:nowrap;justify-content:center">
             <button class="btn-view" onclick="openHonestReviewModal('${row._id}')"><i class="fas fa-pen"></i><span class="btn-label"> Edit</span></button>
+            <button class="btn-view" style="color:#c0392b" title="Delete this review" onclick="deleteHonestReview('${row._id}')"><i class="fas fa-trash"></i><span class="btn-label"> Delete</span></button>
           </div>`;
       }}
     ],
@@ -8943,6 +8983,13 @@ $(document).ready(function(){
           const dt = new Date(d);
           if(t!=='display') return dt.getTime();
           return dt.toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' }) + ' · ' + dt.toLocaleTimeString('en-US', { hour:'2-digit', minute:'2-digit' });
+      }},
+      /* 7 – Action */
+      { data:null, orderable:false, render:(d,t,row)=>{
+          if(t!=='display') return '';
+          return `<div style="display:inline-flex;gap:6px;flex-wrap:nowrap;justify-content:center">
+            <button class="btn-view" style="color:#c0392b" title="Delete this referral" onclick="deleteReferral('${row._id}')"><i class="fas fa-trash"></i><span class="btn-label"> Delete</span></button>
+          </div>`;
       }}
     ],
     order:[[6,'desc']],
