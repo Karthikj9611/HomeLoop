@@ -7951,6 +7951,7 @@ function formatViews(n) {
    this feature existed also have no name to show, for the same reason. */
 let _viewersReqToken = 0; // guards against a slow, stale request overwriting a newer one if the modal is reopened quickly for a different listing
 function openViewersModal(propId) {
+  if (requireLoginForContact('Please log in to see who viewed this property')) return;
   const overlay = document.getElementById('viewersModal');
   const body = document.getElementById('viewersModalBody');
   overlay.classList.add('open');
@@ -8902,6 +8903,7 @@ function preloadLightboxNeighbors() {
 }
 
 function openLightbox(propId, idx) {
+  if (requireLoginForContact('Please log in to view property photos')) return;
   const p = PROPERTIES.find(x => x.id === propId) || BOOKED_PROPERTIES.find(x => x.id === propId);
   if (!p || !p.media?.images || !p.media.images.length) return;
   closeAllFd();        // the image's own onclick stops propagation (see below),
@@ -9393,6 +9395,7 @@ function shortlistCardHTML(p) {
    SHORTLIST
 ═══════════════════════════════════════════════ */
 function toggleShortlist(id, el) {
+  if (requireLoginForContact('Please log in to save properties')) return;
   id = String(id);
   if (shortlisted.has(id)) {
     shortlisted.delete(id);
@@ -9470,6 +9473,7 @@ function removeShortlist(id) {
    COMPARE
 ═══════════════════════════════════════════════ */
 function toggleCompare(id, el) {
+  if (requireLoginForContact('Please log in to compare properties')) return;
   const prop = PROPERTIES.find(x => x.id === id);
   if (!prop) return;
 
@@ -11665,6 +11669,7 @@ function closeDetail() {
 }
 
 function toggleShortlistFromModal(id) {
+  if (requireLoginForContact('Please log in to save properties')) return;
   id = String(id);
   const el = {classList:{contains:()=>shortlisted.has(id),add:()=>{},remove:()=>{}}};
   if (shortlisted.has(id)) {
