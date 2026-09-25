@@ -2077,7 +2077,6 @@ footer i{color:var(--gold)}
   #propFilterBadge{order:5}
   #propClearFiltersBtn{order:6}
   #bulkSelectedCount{order:7}
-  #resetAllViewsBtn{order:10}
 
   /* Category sub-tab bar — single horizontal row, swipeable */
   .cat-tab-bar{
@@ -2836,9 +2835,6 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
         <button class="bulk-btn" id="recalcDistanceBtn" onclick="recalculateUserLocation()" title="Re-fetch your current location and recalculate the distance shown on every Directions button">
           <i class="fas fa-location-crosshairs"></i> <span class="bulk-btn-label" data-mobile="Recalc">Recalculate Distance</span>
         </button>
-        <button class="bulk-btn bulk-btn-outline-danger" id="resetAllViewsBtn" disabled title="Resetting all views is disabled" style="opacity:.4;cursor:not-allowed;pointer-events:none">
-          <i class="fas fa-rotate-left"></i> <span class="bulk-btn-label" data-mobile="Reset">Reset All Views</span>
-        </button>
       </div>
     </div>
     <div class="card">
@@ -3116,6 +3112,9 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
       <button class="cat-tab-btn" data-cat="users" onclick="switchVisitsCategory('users')">
         <i class="fas fa-user-plus"></i><span class="cat-tab-btn-label" data-mobile="Users">Users Registered</span><span class="cat-count" id="cat-count-visits-users">—</span>
       </button>
+      <button class="cat-tab-btn" data-cat="property-views" onclick="switchVisitsCategory('property-views')">
+        <i class="fas fa-eye"></i><span class="cat-tab-btn-label" data-mobile="Views">Property Views</span><span class="cat-count" id="cat-count-visits-propviews">—</span>
+      </button>
     </div>
 
     <div class="visits-subpanel active" id="visits-sub-visits">
@@ -3190,6 +3189,32 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
             <div class="stat-card-big-actions">
               <button class="bulk-btn bulk-btn-outline-danger" onclick="resetDailyStat('registration')">
                 <i class="fas fa-eraser"></i> Reset Count
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Today's property views (global, across every listing) — same shape as
+         the "Today's site visits" card above, backed by the same DailyStat
+         collection (type: 'propertyView'). Independent of the per-listing
+         "Views" column and its reset buttons on the Properties tab: this
+         counts new (deduped) listing views for the day, not any one
+         property's running total. -->
+    <div class="visits-subpanel" id="visits-sub-property-views">
+      <div style="display:flex;flex-wrap:wrap;gap:16px">
+        <div class="card" style="flex:1;min-width:0">
+          <div class="stat-card-big compact">
+            <div class="stat-card-big-icon"><i class="fas fa-eye"></i></div>
+            <div class="stat-card-big-num" id="todayPropertyViewsBigNum">—</div>
+            <div class="stat-card-big-label">Today's property views</div>
+            <div class="stat-card-big-actions">
+              <button class="bulk-btn bulk-btn-outline-danger" onclick="resetDailyStat('propertyView')">
+                <i class="fas fa-eraser"></i> Reset Count
+              </button>
+              <button class="bulk-btn bulk-btn-outline-danger" id="resetAllViewsBtn" onclick="resetAllViews()" title="Reset every listing's view count to 0">
+                <i class="fas fa-rotate-left"></i> Reset All Views
               </button>
             </div>
           </div>
@@ -5159,6 +5184,7 @@ let _activeVisitsCategory = 'visits';
 function refreshActiveVisitsCategory(){
   if(_activeVisitsCategory === 'visits'){ loadTotalVisits(); loadDailyStat('visit'); }
   else if(_activeVisitsCategory === 'users'){ loadDailyStat('registration'); loadTotalUsers(); }
+  else if(_activeVisitsCategory === 'property-views'){ loadDailyStat('propertyView'); }
 }
 
 window.switchVisitsCategory = function(cat){
@@ -5509,7 +5535,7 @@ async function loadTotalVisits(){
 
 window.resetTotalVisits = async function(){
   if(blockIfViewOnly('stats', 'visits')) return;
-  const ok = await showConfirmModal({ title:'Reset total visits?', message:'The all-time visit counter will be set back to 0. This cannot be undone.', okText:'Reset' });
+  const ok = await showConfirmModal({ title:'Reset total visits?', message:'The all-time visit counter will be set back to 0, and every visitor will be forgotten — so a device that already counted before will count again next time it visits. This cannot be undone.', okText:'Reset' });
   if(!ok) return;
   try{
     const res = await fetch(`${BASE}/api/admin/total-visits/reset`, { method:'POST', headers: authHeaders() });
@@ -5533,7 +5559,8 @@ async function loadTotalUsers(){
 
 /* ── DAILY VISITS / USERS REGISTERED (today's count, big-stat-card style) ── */
 const DAILY_STAT_LABELS = { visit:{ countEl:'cat-count-visits-daily', bigNumEl:'dailyVisitsBigNum', label:'Daily Visits' },
-                             registration:{ countEl:'cat-count-visits-users', bigNumEl:'registeredUsersBigNum', label:'Users Registered' } };
+                             registration:{ countEl:'cat-count-visits-users', bigNumEl:'registeredUsersBigNum', label:'Users Registered' },
+                             propertyView:{ countEl:'cat-count-visits-propviews', bigNumEl:'todayPropertyViewsBigNum', label:'Property Views' } };
 
 async function loadDailyStat(type){
   const meta = DAILY_STAT_LABELS[type];
@@ -5550,10 +5577,18 @@ async function loadDailyStat(type){
   } catch(err){ console.error(`loadDailyStat(${type}) error:`, err); }
 }
 
+// Which permission(s) gate resetting each daily-stat type — mirrors
+// DAILY_STAT_TYPE_MODULES on the server. 'propertyView' lives on the Visits
+// tab (its own "Property Views" category) so it rides the same 'stats'/'visits'
+// permission as the other two, not 'properties'.
+const DAILY_STAT_TYPE_MODULES = { visit:['stats','visits'], registration:['stats','visits'], propertyView:['stats','visits'] };
 window.resetDailyStat = async function(type){
-  if(blockIfViewOnly('stats', 'visits')) return;
+  if(blockIfViewOnly(...(DAILY_STAT_TYPE_MODULES[type] || []))) return;
   const meta = DAILY_STAT_LABELS[type];
-  const ok = await showConfirmModal({ title:`Reset ${meta.label}?`, message:'Every day\'s count — today and every past month — will be set back to 0. This cannot be undone.', okText:'Reset all' });
+  const message = type === 'visit'
+    ? 'Every day\'s count — today and every past month — will be set back to 0, and every visitor will be forgotten, so a device that already counted before will count again next time it visits. This cannot be undone.'
+    : 'Every day\'s count — today and every past month — will be set back to 0. This cannot be undone.';
+  const ok = await showConfirmModal({ title:`Reset ${meta.label}?`, message, okText:'Reset all' });
   if(!ok) return;
   try{
     const res = await fetch(`${BASE}/api/admin/daily-stats/${type}/clear-all`, { method:'POST', headers: authHeaders() });
@@ -8706,6 +8741,7 @@ $(document).ready(function(){
   ════════════════════════════════════ */
   loadDailyStat('visit');
   loadDailyStat('registration');
+  loadDailyStat('propertyView');
   loadTotalUsers();
   loadVisitsMonth(currentMonthStr());
 

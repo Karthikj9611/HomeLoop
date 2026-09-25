@@ -23,6 +23,7 @@ module.exports = function registerAdminRoutes(app, deps) {
     SiteStat, DailyStat, todayStr, Referral,
     Review,
     ImageAsset,
+    Visitor,
   } = deps;
 
   if (process.env.NODE_ENV === 'production' && (!process.env.ADMIN_EMAIL || !process.env.ADMIN_PASSWORD)) {
@@ -1961,6 +1962,10 @@ module.exports = function registerAdminRoutes(app, deps) {
   });
 
   // POST /api/admin/total-visits/reset — reset the all-time counter to 0.
+  // Also wipes the Visitor dedup collection (Visits tab only — deliberately
+  // NOT done for property views, which keep their own dedup untouched), so a
+  // device/browser that was already counted before the reset can be counted
+  // again afterwards instead of staying invisible to a counter that now reads 0.
   app.post('/api/admin/total-visits/reset', requireAdmin, requireAnyModuleAction('stats', 'visits'), async (req, res) => {
     try {
       const doc = await SiteStat.findOneAndUpdate(
@@ -1968,6 +1973,7 @@ module.exports = function registerAdminRoutes(app, deps) {
         { $set: { value: 0 } },
         { upsert: true, new: true }
       );
+      await Visitor.deleteMany({});
       res.json({ message: 'Total visits reset', totalVisits: doc.value });
     } catch (err) {
       console.error('POST /api/admin/total-visits/reset error:', err.message);
@@ -1987,9 +1993,26 @@ module.exports = function registerAdminRoutes(app, deps) {
     }
   });
 
-  // ── ADMIN: Daily Visits / Users Registered tabs ──
-  // :type is 'visit' (Daily Visits tab) or 'registration' (Users Registered tab).
-  const DAILY_STAT_TYPES = ['visit', 'registration'];
+  // ── ADMIN: Daily Visits / Users Registered / Property Views tabs ──
+  // :type is 'visit', 'registration', or 'propertyView' — all three are
+  // categories under the Visits tab ("Visits" / "Users Registered" / "Property Views").
+  const DAILY_STAT_TYPES = ['visit', 'registration', 'propertyView'];
+
+  // Which module(s) a sub-admin needs, per stat type, to see/act on these
+  // generic daily-stats routes. All three ride on the Visits tab's
+  // 'stats'/'visits' permissions — 'propertyView' backs the Visits tab's
+  // own "Property Views" category, alongside "Visits" and "Users Registered".
+  const DAILY_STAT_TYPE_MODULES = {
+    visit:        ['stats', 'visits'],
+    registration: ['stats', 'visits'],
+    propertyView: ['stats', 'visits'],
+  };
+  function requireDailyStatModule(req, res, next) {
+    return requireAnyModule(...(DAILY_STAT_TYPE_MODULES[req.params.type] || []))(req, res, next);
+  }
+  function requireDailyStatModuleAction(req, res, next) {
+    return requireAnyModuleAction(...(DAILY_STAT_TYPE_MODULES[req.params.type] || []))(req, res, next);
+  }
 
   function checkDailyStatType(req, res) {
     if (!DAILY_STAT_TYPES.includes(req.params.type)) {
@@ -2004,7 +2027,7 @@ module.exports = function registerAdminRoutes(app, deps) {
   // "Daily visits — monthly view" table) — `total`, `today`, and `todayDate`
   // always reflect the FULL history regardless of the month filter, so the
   // big-number cards stay correct even while browsing a past month.
-  app.get('/api/admin/daily-stats/:type', requireAdmin, requireAnyModule('stats', 'visits'), async (req, res) => {
+  app.get('/api/admin/daily-stats/:type', requireAdmin, requireDailyStatModule, async (req, res) => {
     try {
       if (!checkDailyStatType(req, res)) return;
       const allDays = await DailyStat.find({ type: req.params.type }).sort({ date: -1 }).lean();
@@ -2025,7 +2048,7 @@ module.exports = function registerAdminRoutes(app, deps) {
   });
 
   // PATCH /api/admin/daily-stats/:type/:date/clear — reset one day's count to 0, keep the row.
-  app.patch('/api/admin/daily-stats/:type/:date/clear', requireAdmin, requireAnyModuleAction('stats', 'visits'), async (req, res) => {
+  app.patch('/api/admin/daily-stats/:type/:date/clear', requireAdmin, requireDailyStatModuleAction, async (req, res) => {
     try {
       if (!checkDailyStatType(req, res)) return;
       const date = req.params.date === 'today' ? todayStr() : req.params.date;
@@ -2042,7 +2065,7 @@ module.exports = function registerAdminRoutes(app, deps) {
   });
 
   // DELETE /api/admin/daily-stats/:type/:date — remove that day's row entirely.
-  app.delete('/api/admin/daily-stats/:type/:date', requireAdmin, requireAnyModuleAction('stats', 'visits'), async (req, res) => {
+  app.delete('/api/admin/daily-stats/:type/:date', requireAdmin, requireDailyStatModuleAction, async (req, res) => {
     try {
       if (!checkDailyStatType(req, res)) return;
       await DailyStat.deleteOne({ type: req.params.type, date: req.params.date });
@@ -2054,10 +2077,14 @@ module.exports = function registerAdminRoutes(app, deps) {
   });
 
   // POST /api/admin/daily-stats/:type/clear-all — reset every day's count to 0, keep the rows.
-  app.post('/api/admin/daily-stats/:type/clear-all', requireAdmin, requireAnyModuleAction('stats', 'visits'), async (req, res) => {
+  // For type 'visit' only, also wipes the Visitor dedup collection (same reasoning
+  // as total-visits/reset above) — 'registration' has no dedup collection to wipe,
+  // and 'propertyView' deliberately keeps its dedup (PropertyView) untouched.
+  app.post('/api/admin/daily-stats/:type/clear-all', requireAdmin, requireDailyStatModuleAction, async (req, res) => {
     try {
       if (!checkDailyStatType(req, res)) return;
       await DailyStat.updateMany({ type: req.params.type }, { $set: { count: 0 } });
+      if (req.params.type === 'visit') await Visitor.deleteMany({});
       res.json({ message: 'All counts cleared' });
     } catch (err) {
       console.error('POST /api/admin/daily-stats/:type/clear-all error:', err.message);
@@ -2066,7 +2093,7 @@ module.exports = function registerAdminRoutes(app, deps) {
   });
 
   // POST /api/admin/daily-stats/:type/delete-all — remove every tracked day for this type.
-  app.post('/api/admin/daily-stats/:type/delete-all', requireAdmin, requireAnyModuleAction('stats', 'visits'), async (req, res) => {
+  app.post('/api/admin/daily-stats/:type/delete-all', requireAdmin, requireDailyStatModuleAction, async (req, res) => {
     try {
       if (!checkDailyStatType(req, res)) return;
       await DailyStat.deleteMany({ type: req.params.type });

@@ -1800,6 +1800,11 @@ app.post('/api/properties/:id/view', viewLimiter, attachUserIfPresent, async (re
     }
     if (!updated) return res.status(404).json({ message: 'Property not found' });
 
+    // Same dedup as the per-listing `views` counter above — only a genuinely
+    // new view bumps today's total, so this lines up with the "Views" column
+    // and its reset buttons rather than counting repeat page loads.
+    if (isNewView) await bumpDailyStat('propertyView');
+
     // Record/refresh this as a *named* view for the "viewed by" list — only
     // possible when the visitor is logged in (guests have no identity to
     // attach). Upserted on (propertyId, userId) so repeat views by the same
@@ -3215,7 +3220,10 @@ function visitorFingerprint(req) {
 // (VisitRequest docs / User accounts).
 const DailyStatSchema = new mongoose.Schema({
   date:  { type: String, required: true }, // 'YYYY-MM-DD'
-  type:  { type: String, required: true, enum: ['visit', 'registration'] },
+  // 'propertyView' backs the Visits tab's "Property Views" category —
+  // bumped once per new (deduped) listing view, same dedup as the `views`
+  // field on the property doc itself (see POST /api/properties/:id/view).
+  type:  { type: String, required: true, enum: ['visit', 'registration', 'propertyView'] },
   count: { type: Number, default: 0 },
 });
 DailyStatSchema.index({ date: 1, type: 1 }, { unique: true });
@@ -3346,6 +3354,7 @@ app.get('/api/stats', async (req, res) => {
   SiteStat, DailyStat, todayStr, Referral,
   Review, // star reviews (Owner/Tenant Reviews) — admin "Reviews" tab
   ImageAsset, // Booking Details modal's Agreement/Proof uploads reuse this store
+  Visitor, // visitor-dedup collection — Visits tab's resets wipe this too (see admin.js)
 }));
 
 // 404 for any API route that didn't match above.
