@@ -7921,13 +7921,22 @@ function getViews(p) {
 }
 function incrementViews(p) {
   const key = String(p.id);
-  if (viewedSeen.has(key)) return getViews(p); // already counted for this browser — reopening or refreshing shouldn't bump it again
-  viewedSeen.add(key);
-  saveViewedSeen();
-  // Optimistically bump the in-memory count so the card/detail view updates
-  // immediately, then confirm with the server (source of truth). If the
-  // request fails, the next fetchProperties() reload will self-correct.
-  p.views = getViews(p) + 1;
+  const alreadyCountedThisBrowser = viewedSeen.has(key);
+  if (!alreadyCountedThisBrowser) {
+    viewedSeen.add(key);
+    saveViewedSeen();
+    // Optimistically bump the in-memory count so the card/detail view updates
+    // immediately for what looks, from this browser, like a first-ever open
+    // of this listing. Corrected by the server response below either way.
+    p.views = getViews(p) + 1;
+  }
+  // Always ask the server, regardless of the local check above — it's the
+  // sole source of truth for dedup (see PropertyView in server.js). The
+  // `viewedSeen` set is only a same-browser optimistic-UI nicety, not a
+  // permanent gate on the request itself: if it skipped the fetch entirely
+  // once a listing was marked "seen", an admin's "Reset Views" could never
+  // actually un-stick this browser, since the one request that could
+  // re-register the view after the reset would never go out.
   fetch(`/api/properties/${p.id}/view`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
