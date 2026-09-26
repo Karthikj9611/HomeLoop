@@ -1990,7 +1990,12 @@ app.get('/property/:id', async (req, res, next) => {
 
   try {
     const { id } = req.params;
-    if (mongoose.Types.ObjectId.isValid(id)) {
+    // Rich per-listing OG/Twitter preview injection is disabled — WhatsApp
+    // share links should render as plain text + link, not a preview card.
+    // The block below (title/description/OG/Twitter tag swap) is kept but
+    // never runs; `html` stays as the untouched generic index.html shell,
+    // so no crawler-visible listing image/title/description goes out here.
+    if (false && mongoose.Types.ObjectId.isValid(id)) {
       // Same public-visibility rule as GET /api/properties: only verified,
       // non-booked listings are eligible for a rich preview.
       const results = await Promise.all(
