@@ -13323,7 +13323,14 @@ async function submitAuth() {
     });
     const data = await res.json();
     if (!res.ok) {
-      showToast(data.message || 'Something went wrong', 'error');
+      // The "already logged in on another device" case is the one people
+      // actually get stuck on and can't self-resolve, so it gets a support
+      // number appended — other login/signup errors are left as-is.
+      let msg = data.message || 'Something went wrong';
+      if (/already logged in/i.test(msg)) {
+        msg += ' For queries, call 9035205230.';
+      }
+      showToast(msg, 'error');
       return;
     }
     finishAuthSuccess(data);
@@ -17317,7 +17324,11 @@ function showToast(msg, type) {
   t.classList.add('show');
   backdrop.classList.add('show');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => { t.classList.remove('show'); backdrop.classList.remove('show'); }, 2400);
+  // Longer messages (e.g. the "already logged in" + support-number error)
+  // need more than the default 2.4s to actually read, so scale the dismiss
+  // delay with message length instead of a single fixed duration.
+  const duration = Math.min(6000, Math.max(2400, msg.length * 60));
+  toastTimer = setTimeout(() => { t.classList.remove('show'); backdrop.classList.remove('show'); }, duration);
 }
 
 /* ═══════════════════════════════════════════════
