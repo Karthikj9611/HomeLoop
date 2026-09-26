@@ -2139,6 +2139,16 @@ app.post('/api/visits', visitLimiter, requireUser, requireVerified, async (req, 
       },
     });
 
+    // Also raise the admin-facing bell notification (separate from the
+    // notifyUser call above) — this is what feeds the Appointments tab's
+    // "new appointment" alert for admins/sub-admins.
+    notifyAdmin({
+      type:    'appointment_booked',
+      title:   'New appointment requested',
+      message: `${String(visitorName).trim()} requested a visit for ${(property.owner && property.owner.propertyName) || 'a property'} on ${visitDate} at ${visitTime}`,
+      meta:    { mongoId: String(visit._id), visitId: visit.visitId, propertyCode: property.propertyId || '', userId: req.userId || null },
+    }); // fire-and-forget; notifyAdmin swallows its own errors, doesn't block the response
+
     res.status(201).json({
       message: 'Visit request saved',
       visit,
@@ -2562,6 +2572,13 @@ app.post('/api/reviews', reviewLimiter, async (req, res) => {
       text
     });
 
+    notifyAdmin({
+      type:    'review_posted',
+      title:   'New review posted',
+      message: `${user.name || 'A user'} left a ${rating}★ review`,
+      meta:    { mongoId: String(review._id), userId: String(user._id) },
+    }); // fire-and-forget; notifyAdmin swallows its own errors, doesn't block the response
+
     res.status(201).json({ review });
   } catch (err) {
     console.error('POST /api/reviews error:', err.message);
@@ -2676,6 +2693,13 @@ app.post('/api/honest-reviews/submit', honestReviewLimiter, requireUser, require
       userName: user.name || ''
     });
 
+    notifyAdmin({
+      type:    'honest_review_submitted',
+      title:   'New honest review submitted',
+      message: `${user.name || 'A user'} submitted a video testimonial: "${title.slice(0, 60)}"`,
+      meta:    { mongoId: String(review._id), userId: String(user._id) },
+    }); // fire-and-forget; notifyAdmin swallows its own errors, doesn't block the response
+
     res.status(201).json({ review, message: 'Thanks! Your video has been submitted for review and will go live once approved.' });
   } catch (err) {
     console.error('POST /api/honest-reviews/submit error:', err.message);
@@ -2757,6 +2781,13 @@ app.post('/api/referrals', referralLimiter, attachUserIfPresent, async (req, res
       tenantName:     String(tenantName).trim(),
       tenantPhone:    normalizedTenantPhone,
     });
+
+    notifyAdmin({
+      type:    'referral_submitted',
+      title:   'New referral submitted',
+      message: `${referral.referrerName} referred ${referral.tenantName}`,
+      meta:    { mongoId: String(referral._id), userId: req.userId || null },
+    }); // fire-and-forget; notifyAdmin swallows its own errors, doesn't block the response
 
     res.status(201).json({ message: 'Thanks! We\'ll reach out to your referral shortly.', referral });
   } catch (err) {

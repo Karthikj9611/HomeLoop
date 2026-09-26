@@ -4352,7 +4352,9 @@ function doLogout(){
 /* ── ADMIN NOTIFICATIONS (bell icon) ──
    Polls GET /api/admin/notifications every 30s and whenever the panel is
    opened. Notifications are raised server-side (see admin.js's notifyAdmin)
-   for two events for now: a user registering, and a property being listed. */
+   for: a user registering, a property being listed, a new appointment
+   (visit request), a new star review, a new honest-review (video
+   testimonial) submission, a new referral, and a new partner being added. */
 let notifPollTimer = null;
 let notifPanelOpen = false;
 
@@ -4408,8 +4410,35 @@ function notifActionHtml(n){
       </button>
     </div>`;
   }
+  // Simple "jump to the tab that shows this" actions — these five don't have
+  // an inline verify/approve step like the two above, they just take the
+  // admin straight to the grid where the new row lives.
+  const NOTIF_JUMP_TABS = {
+    appointment_booked:       { tab: 'appointments',    icon: 'fa-calendar-days', label: 'View appointment' },
+    review_posted:            { tab: 'user-reviews',    icon: 'fa-star',          label: 'View review' },
+    honest_review_submitted:  { tab: 'honest-reviews',  icon: 'fa-video',         label: 'View submission' },
+    referral_submitted:       { tab: 'referrals',       icon: 'fa-share-nodes',   label: 'View referral' },
+    partner_added:            { tab: 'partners',        icon: 'fa-handshake',     label: 'View partner' },
+  };
+  const jump = NOTIF_JUMP_TABS[n.type];
+  if(jump){
+    return `<div class="notif-item-action">
+      <button class="notif-action-btn" onclick="event.stopPropagation();goToNotifTab('${jump.tab}', '${n._id}')">
+        <i class="fas ${jump.icon}"></i> ${jump.label}
+      </button>
+    </div>`;
+  }
   return '';
 }
+
+// Marks the notification read and takes the admin straight to the tab that
+// shows the new row (appointments/reviews/referrals/partners/honest reviews)
+// — used by the NOTIF_JUMP_TABS actions in notifActionHtml() above.
+window.goToNotifTab = function(tab, notifId){
+  markNotifReadLocally(notifId);
+  closeNotifModal();
+  switchTab(tab);
+};
 
 // Marks a notification read straight in the DOM + a fire-and-forget PATCH,
 // instead of calling fetchNotifications() (which would re-render the whole

@@ -454,10 +454,13 @@ module.exports = function registerAdminRoutes(app, deps) {
   // ────────────────────────────────────────────────────────────────────────────
   // ── ADMIN NOTIFICATIONS ──
   // In-app notifications *for the admin* (as opposed to notifyUser, which
-  // notifies a customer/owner). For now raised on two events: a new user
-  // registering, and a new property being listed. Call notifyAdmin(...) from
+  // notifies a customer/owner). Raised on: a new user registering, a new
+  // property being listed, a new appointment (visit request), a new star
+  // review, a new honest-review (video testimonial) submission, a new
+  // referral, and a new partner being added. Call notifyAdmin(...) from
   // wherever those happen in server.js (see the returned helper at the bottom
-  // of this file). Read by admin.html's bell icon via the routes below.
+  // of this file) or right here in admin.js for the partner case. Read by
+  // admin.html's bell icon via the routes below.
   // ────────────────────────────────────────────────────────────────────────────
   const AdminNotificationSchema = new mongoose.Schema({
     type:    { type: String, required: true }, // e.g. 'user_registered', 'property_listed'
@@ -1738,6 +1741,12 @@ module.exports = function registerAdminRoutes(app, deps) {
         order: Number(order) || 0,
         active: active !== false
       });
+      notifyAdmin({
+        type:    'partner_added',
+        title:   'New partner added',
+        message: `${partner.name} (${partner.role}) added to Our Partners`,
+        meta:    { mongoId: String(partner._id) },
+      }); // fire-and-forget; notifyAdmin swallows its own errors, doesn't block the response
       res.status(201).json({ partner });
     } catch (err) {
       console.error('POST /api/partners error:', err.message);
