@@ -7943,7 +7943,23 @@ function incrementViews(p) {
     body: JSON.stringify({ deviceSig: buildDeviceSignature() }),
   })
     .then(res => res.ok ? res.json() : null)
-    .then(data => { if (data && typeof data.views === 'number') p.views = data.views; })
+    .then(data => {
+      if (data && typeof data.views === 'number' && data.views !== p.views) {
+        // The server's count can differ from the optimistic guess above —
+        // e.g. this browser's localStorage said "not seen" but the server's
+        // own dedup (PropertyView) still remembered this device, so no real
+        // increment happened; or the reverse, after an admin reset cleared
+        // server-side dedup but this browser's local flag was untouched.
+        // Without re-rendering here, that correction only ever became
+        // visible on the *next* open of some card (whatever next called
+        // renderCards()) — so the very first open always looked like nothing
+        // happened, and only the second open "caught up" and looked like it
+        // worked. Re-render immediately so the corrected number shows up
+        // right away, not one open later.
+        p.views = data.views;
+        renderCards();
+      }
+    })
     .catch(() => { /* view count will reconcile on next full reload */ });
   return p.views;
 }
@@ -8912,7 +8928,6 @@ function preloadLightboxNeighbors() {
 }
 
 function openLightbox(propId, idx) {
-  if (requireLoginForContact('Please log in to view property photos')) return;
   const p = PROPERTIES.find(x => x.id === propId) || BOOKED_PROPERTIES.find(x => x.id === propId);
   if (!p || !p.media?.images || !p.media.images.length) return;
   closeAllFd();        // the image's own onclick stops propagation (see below),
@@ -11344,7 +11359,6 @@ let propertyViewMode = false;
 let editingPropertyId = null;
 
 function openDetail(id) {
-  if (requireLoginForContact('Please log in to view property details')) return;
   const p = PROPERTIES.find(x => x.id === id) || BOOKED_PROPERTIES.find(x => x.id === id);
   if (!p) return;
   closeAllFd();        // clicks that reach here (card body, or an image/icon
