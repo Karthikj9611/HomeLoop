@@ -9915,7 +9915,7 @@ function shareCompareViaWhatsApp() {
   const props = ids.map(id => PROPERTIES.find(p => p.id === id)).filter(Boolean);
   const compareUrl = `${window.location.origin}${window.location.pathname}?compare=${ids.join(',')}`;
   const names = props.map(p => p.propertyId).join(', ');
-  const msg = `Check out this comparison of ${props.length} properties on HomeLoop — ${names}\n\n${compareUrl}`;
+  const msg = `Comparing ${props.length} properties on HomeLoop: ${names} — ${compareUrl}`;
   const url = 'https://wa.me/?text=' + encodeURIComponent(msg);
   window.open(url, '_blank', 'noopener');
 }
@@ -12355,7 +12355,7 @@ function openOwnerWhatsApp(propId, which) {
   }
   const phone = raw.length === 10 ? '91' + raw : raw;
   const propertyUrl = `${window.location.origin}/property/${p.id}`;
-  const msg = `Hi, I'm interested in "${p.propertyId}" (${p.location?.area}) listed on HomeLoop. Is it still available?\n\nView listing: ${propertyUrl}`;
+  const msg = `Interested in "${p.propertyId}" (${p.location?.area}) on HomeLoop. Still available? ${propertyUrl}`;
   window.open('https://wa.me/' + phone + '?text=' + encodeURIComponent(msg), '_blank', 'noopener');
 }
 
@@ -12373,7 +12373,7 @@ function openWhatsApp(propId) {
   }
   const phone = rawPhone.length === 10 ? '91' + rawPhone : rawPhone;
   const propertyUrl = `${window.location.origin}/property/${p.id}`;
-  const msg = `Hi, I'm interested in "${p.propertyId}" (${p.location?.area}) listed on HomeLoop. Is it still available?\n\nView listing: ${propertyUrl}`;
+  const msg = `Interested in "${p.propertyId}" (${p.location?.area}) on HomeLoop. Still available? ${propertyUrl}`;
   const url = 'https://wa.me/' + phone + '?text=' + encodeURIComponent(msg);
   window.open(url, '_blank', 'noopener');
 }
@@ -13913,16 +13913,8 @@ function shareMyListingViaWhatsApp(id) {
   const isShortStay = status === 'Short Stay';
   const rent = p.price?.rent != null ? fmtRupee(p.price.rent) : null;
   const propertyUrl = `${window.location.origin}/property/${p.id}`;
-  const lines = [
-    `Check out my property "${p.propertyId}" on HomeLoop:`,
-    `📍 ${p.location?.area || '—'}`,
-  ];
-  // "/month" was wrong for a Sell listing's one-time price, and technically
-  // wrong for Short Stay's per-day rate too — same fix as buildDetailTable().
-  if (rent) lines.push(`💰 ${rent}${isSell ? '' : isShortStay ? '/day' : '/month'}`);
-  lines.push(`🏷️ ${status}`);
-  lines.push('', `View details: ${propertyUrl}`);
-  const msg = lines.join('\n');
+  const priceBit = rent ? `${rent}${isSell ? '' : isShortStay ? '/day' : '/month'}, ` : '';
+  const msg = `"${p.propertyId}" — ${p.location?.area || '—'}, ${priceBit}${status} on HomeLoop: ${propertyUrl}`;
   const url = 'https://wa.me/?text=' + encodeURIComponent(msg);
   window.open(url, '_blank', 'noopener');
 }
