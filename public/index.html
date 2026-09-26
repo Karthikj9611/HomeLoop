@@ -9194,6 +9194,7 @@ function preloadLightboxNeighbors() {
 }
 
 function openLightbox(propId, idx) {
+  if (requireLoginForContact('Please log in to view property photos')) return;
   const p = PROPERTIES.find(x => x.id === propId) || BOOKED_PROPERTIES.find(x => x.id === propId);
   if (!p || !p.media?.images || !p.media.images.length) return;
   closeAllFd();        // the image's own onclick stops propagation (see below),
@@ -11625,6 +11626,7 @@ let propertyViewMode = false;
 let editingPropertyId = null;
 
 function openDetail(id) {
+  if (requireLoginForContact('Please log in to view property details')) return;
   const p = PROPERTIES.find(x => x.id === id) || BOOKED_PROPERTIES.find(x => x.id === id);
   if (!p) return;
   closeAllFd();        // clicks that reach here (card body, or an image/icon

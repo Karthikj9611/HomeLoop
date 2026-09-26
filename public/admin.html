@@ -10103,6 +10103,9 @@ let _propCategoryState = localStorage.getItem('kr_admin_propCategory') || 'Rent'
 
 // PG-only and Short-Stay-only column indices in #propertyTable (see the
 // numbered comments in the propTable columns:[...] definition above).
+// Shown only while that category's own tab is active (see
+// applyPropCategoryColumnVisibility below) — otherwise they'd sit in the
+// All/Promoted/Booked grids full of "—" for every non-PG/non-Short-Stay row.
 const PG_ONLY_COLS = [27, 28, 29, 30, 31]; // PG Gender, Room Type, Meals, Occupancy, Notice
 const SS_ONLY_COLS = [32, 33, 34, 35];     // SS Room Type, Available 24hrs, Cancellation, Couples Allowed
 
@@ -10543,12 +10546,15 @@ function initColumnToggle(key){
 
 function applyPropCategoryColumnVisibility(cat){
   if(!propTable) return;
-  // Rent/Lease: neither PG nor Short Stay fields apply.
+  // Rent/Lease/Sell: neither PG nor Short Stay fields apply.
   // PG: hide Short-Stay-only fields, show PG fields.
   // Short Stay: hide PG-only fields, show Short-Stay fields.
-  // all/Promoted/Booked: mixed listing types, so show everything.
-  const showPG = (cat === 'all' || cat === 'Promoted' || cat === 'Booked' || cat === 'PG');
-  const showSS = SS_COLS_ENABLED && (cat === 'all' || cat === 'Promoted' || cat === 'Booked' || cat === 'Short Stay');
+  // all/Promoted/Booked: mixed listing types — most rows aren't PG/Short
+  // Stay, so those columns used to show anyway and sat there full of "—"
+  // for every non-PG row (cluttering the grid). Now PG/Short-Stay columns
+  // only appear on their own category tab.
+  const showPG = (cat === 'PG');
+  const showSS = SS_COLS_ENABLED && (cat === 'Short Stay');
   PG_ONLY_COLS.forEach(i => propTable.column(i).visible(showPG, false));
   SS_ONLY_COLS.forEach(i => propTable.column(i).visible(showSS, false));
   propTable.columns.adjust();
