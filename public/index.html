@@ -9493,7 +9493,6 @@ function cardHTML(p, compact, extraLeftBadge) {
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
           </div>
           `}
-          ${p.promoted ? '<div class="prop-icon-badge prop-icon-promoted" title="Promoted"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l2.9 6.26 6.9.8-5.1 4.7 1.4 6.84L12 17.3l-6.1 3.3 1.4-6.84-5.1-4.7 6.9-.8z"/></svg></div>' : ''}
         </div>
       </div>
     </div>
@@ -9632,7 +9631,6 @@ function shortlistCardHTML(p) {
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
           </div>
           `}
-          ${p.promoted ? '<div class="prop-icon-badge prop-icon-promoted" title="Promoted"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l2.9 6.26 6.9.8-5.1 4.7 1.4 6.84L12 17.3l-6.1 3.3 1.4-6.84-5.1-4.7 6.9-.8z"/></svg></div>' : ''}
         </div>
       </div>
     </div>
@@ -12307,12 +12305,24 @@ function openPropertyNavigate(propId) {
 }
 
 /* Property-card call icon: dials the owner's number that admin made public (main first, then alternate);
-   listings with no public number keep the old behaviour and call the agent. */
+   listings with no public number keep the old behaviour and call the agent.
+   Unlike openCall()/openOwnerCall() (used elsewhere, e.g. the property detail
+   modal), this card entry point dials straight away — no login gate — so a
+   visitor can always reach someone directly from the card. */
 function openCardCall(propId) {
   const p = PROPERTIES.find(x => x.id === propId) || BOOKED_PROPERTIES.find(x => x.id === propId);
-  if (p && p.ownerPhoneCall && p.ownerPhone) return openOwnerCall(propId, 'main');
-  if (p && p.ownerDirectCall && p.ownerAltPhone) return openOwnerCall(propId, 'alt');
-  return openCall(propId);
+  if (!p) return;
+  const rawPhone = String(
+    (p.ownerPhoneCall && p.ownerPhone) ||
+    (p.ownerDirectCall && p.ownerAltPhone) ||
+    p.owner?.agentPhone || ''
+  ).replace(/\D/g, '');
+  if (!rawPhone) {
+    showToast('No phone number added for this listing', 'warning');
+    return;
+  }
+  const phone = rawPhone.length === 10 ? '+91' + rawPhone : ('+' + rawPhone);
+  window.location.href = 'tel:' + phone;
 }
 
 /* Calls the owner's main ('main') or alternate ('alt') number — only reachable when admin enabled Public call (numbers are absent otherwise). */

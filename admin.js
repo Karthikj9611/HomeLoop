@@ -25,6 +25,7 @@ module.exports = function registerAdminRoutes(app, deps) {
     ImageAsset,
     Visitor,
     PropertyView, PropertyViewer,
+    UserSession, // force-logout action on the Customers grid (single-device login unlock)
   } = deps;
 
   // Empties a dedup collection completely (every document gone) without
@@ -739,6 +740,23 @@ module.exports = function registerAdminRoutes(app, deps) {
     } catch (err) {
       console.error('PATCH /api/users/:id/publicCall error:', err);
       res.status(500).json({ message: 'Error updating public call' });
+    }
+  });
+
+  // ── DELETE /api/users/:id/session (admin: force logout) ──
+  // Clears every active UserSession row for this user, so a customer locked
+  // out by the single-device login check (server.js's hasActiveUserSession)
+  // can log in again elsewhere without waiting out the 7-day session TTL.
+  // Harmless to call on a user with no active session (just deletes 0 rows).
+  app.delete('/api/users/:id/session', requireAdmin, requireModuleAction('customers'), async (req, res) => {
+    try {
+      const { id } = req.params;
+      if (!mongoose.Types.ObjectId.isValid(id)) return res.status(400).json({ message: 'Invalid user id' });
+      const { deletedCount } = await UserSession.deleteMany({ userObjectId: id });
+      res.json({ message: deletedCount ? 'User logged out on all devices' : 'User had no active session', deletedCount });
+    } catch (err) {
+      console.error('DELETE /api/users/:id/session error:', err);
+      res.status(500).json({ message: 'Error clearing user session' });
     }
   });
 

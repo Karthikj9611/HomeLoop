@@ -5472,6 +5472,33 @@ window.toggleUserVerified = async function(id, nextVerified){
   }
 };
 
+/* ── FORCE LOGOUT ──
+   Site enforces single-device login (server.js rejects a second concurrent
+   login with 409 until the first device's session is gone). If a customer's
+   old device is lost/uninstalled/wiped without logging out, their session
+   otherwise just sits there for its full TTL and locks them out everywhere
+   else — this clears it immediately so they can log in again right away. */
+window.forceLogoutUser = async function(id){
+  if(blockIfViewOnly('customers')) return;
+  const ok = await showConfirmModal({
+    title: 'Force logout this customer?',
+    message: 'Clears their active session so they can log in on a new device immediately, instead of waiting for it to expire on its own. Does nothing if they aren\'t currently logged in anywhere.',
+    okText: 'Log out',
+    variant: 'info'
+  });
+  if(!ok) return;
+  const res = await fetch(`${BASE}/api/users/${id}/session`, {
+    method:'DELETE',
+    headers: authHeaders()
+  });
+  const data = await res.json().catch(()=>({}));
+  if(res.ok){
+    alert(data.message || 'Done');
+  } else {
+    alert(data.message || 'Error clearing session');
+  }
+};
+
 /* ── PUBLIC CALL (per user) ──
    Owner account ON = all of that owner's listings show owner number(s) to everyone.
    Tenant account ON = that tenant, when logged in, sees owner number(s) on every listing. */
@@ -7931,6 +7958,10 @@ $(document).ready(function(){
 
 				<button class="btn-view" style="color:#c0392b" onclick="deleteBooking('${row.mobile || row._id}')" title="Delete this customer">
 				  <i class="fas fa-trash"></i><span class="btn-label"> Delete</span>
+				</button>
+
+				<button class="btn-view" onclick="forceLogoutUser('${row._id}')" title="Clear their active session so they can log in on another device right away">
+				  <i class="fas fa-right-from-bracket"></i><span class="btn-label"> Force logout</span>
 				</button>
 
 				<label class="mini-toggle-wrap altcall-wrap" title="${row.accountType==='owner' ? 'When ON, all of this owner\'s listings show their owner number(s) to every visitor' : 'When ON, this tenant sees owner numbers on all listings while logged in'}"><span class="mini-toggle altcall-toggle">

@@ -219,6 +219,15 @@ async function issueUserSession(user) {
   return key;
 }
 
+// True if this user already has a live (unexpired) session on some device —
+// used to block a second concurrent login rather than silently evicting the
+// first one. Signup never needs this (a brand-new account can't have a prior
+// session); only /api/user/login checks it.
+async function hasActiveUserSession(userObjectId) {
+  const existing = await UserSession.findOne({ userObjectId, expiresAt: { $gt: new Date() } }).lean();
+  return !!existing;
+}
+
 async function getUserIdFromSession(key) {
   if (!key) return null;
   const session = await UserSession.findOne({ key, expiresAt: { $gt: new Date() } }).lean();
@@ -487,6 +496,13 @@ app.post('/api/user/login', userAuthLimiter, async (req, res) => {
     const user = await User.findOne(query);
     // Passwordless login: the number/email just has to exist in the DB.
     if (!user) return res.status(401).json({ message: 'No account found. Please sign up.' });
+
+    // Single-device login: refuse a second concurrent login instead of
+    // silently signing the first device out. The first device stays logged
+    // in until it explicitly logs out (or its session expires/TTLs out).
+    if (await hasActiveUserSession(user._id)) {
+      return res.status(409).json({ message: 'This account is already logged in on another device. Please log out there first.' });
+    }
 
     const userKey = await issueUserSession(user);
     return res.json({
@@ -3419,6 +3435,7 @@ app.get('/api/stats', async (req, res) => {
   ImageAsset, // Booking Details modal's Agreement/Proof uploads reuse this store
   Visitor, // visitor-dedup collection — Visits tab's resets drop this collection (see admin.js)
   PropertyView, PropertyViewer, // view-dedup collections — Properties tab's view resets drop these (see admin.js)
+  UserSession, // Customers grid "Force logout" action (single-device login unlock)
 }));
 
 // 404 for any API route that didn't match above.
