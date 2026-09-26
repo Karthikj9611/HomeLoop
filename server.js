@@ -1775,11 +1775,24 @@ app.post('/api/properties/:id/view', viewLimiter, attachUserIfPresent, async (re
       return res.status(400).json({ message: 'Invalid property id' });
     }
 
-    const fingerprint = visitorFingerprint(req);
+    // Prefer the logged-in account's own identity as the dedup key over the
+    // device fingerprint. Without this, the *same* logged-in person viewing
+    // from a second browser/device/incognito window still counts as a brand
+    // new "view" here (new fingerprint) while PropertyViewer below (which
+    // dedups per userId) only ever records them once — so the "Viewed by"
+    // modal ends up showing that person once by name AND once more folded
+    // into "guest viewers", which is wrong: they were never a guest. Keying
+    // this on the user id instead keeps one person = one view, matching
+    // PropertyViewer 1:1, so every view for a logged-in visitor surfaces
+    // under their real name with nothing left over. Logged-out visitors
+    // (no req.userId) still fall back to the device fingerprint, since
+    // that's the only signal available for them.
+    const fingerprint = req.userId ? `user:${req.userId}` : visitorFingerprint(req);
 
     // Try to claim this (propertyId, fingerprint) pair. The unique index
-    // rejects a repeat with E11000 — that's how we know this device has
-    // already been counted for this listing, incognito or not.
+    // rejects a repeat with E11000 — that's how we know this
+    // person/device has already been counted for this listing, incognito
+    // or not.
     let isNewView = true;
     try {
       await PropertyView.create({ propertyId: req.params.id, fingerprint });
@@ -1848,9 +1861,13 @@ app.post('/api/properties/:id/view', viewLimiter, attachUserIfPresent, async (re
 // Returns the named list of logged-in users who've viewed this listing (most
 // recent first). Guest/anonymous views are not represented here (see
 // PropertyViewer above) — only the overall count on the property document
-// includes those. Behind requireUser, same as every other listing-browsing
-// route on this site (login is required site-wide to browse in the first
-// place, so this doesn't add a new gate beyond that).
+// includes those. Behind requireUser so only a logged-in visitor can open
+// the "Viewed by" list itself (browsing listings does NOT require login —
+// see the dismissible auth prompt in index.html's INIT block — this route
+// is a separate, deliberate gate on the viewer list, not a pre-existing one).
+// With the per-user view dedup above, a "guest" entry here now means a
+// genuinely logged-out view (or one recorded before this feature existed),
+// never a logged-in visitor split across devices.
 app.get('/api/properties/:id/viewers', requireUser, async (req, res) => {
   try {
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
