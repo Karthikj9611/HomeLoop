@@ -1775,24 +1775,31 @@ app.post('/api/properties/:id/view', viewLimiter, attachUserIfPresent, async (re
       return res.status(400).json({ message: 'Invalid property id' });
     }
 
-    // Prefer the logged-in account's own identity as the dedup key over the
-    // device fingerprint. Without this, the *same* logged-in person viewing
-    // from a second browser/device/incognito window still counts as a brand
-    // new "view" here (new fingerprint) while PropertyViewer below (which
-    // dedups per userId) only ever records them once — so the "Viewed by"
-    // modal ends up showing that person once by name AND once more folded
-    // into "guest viewers", which is wrong: they were never a guest. Keying
-    // this on the user id instead keeps one person = one view, matching
-    // PropertyViewer 1:1, so every view for a logged-in visitor surfaces
-    // under their real name with nothing left over. Logged-out visitors
-    // (no req.userId) still fall back to the device fingerprint, since
-    // that's the only signal available for them.
-    const fingerprint = req.userId ? `user:${req.userId}` : visitorFingerprint(req);
+    // Only logged-in customers count as a "view" here. A logged-out visitor
+    // opening a listing still sees it (browsing itself isn't gated), but
+    // nothing is written to PropertyView/PropertyViewer and the counter
+    // doesn't move for them — so there is no such thing as a "guest view"
+    // going forward, and the "Viewed by" modal's total will always be
+    // exactly the sum of real, named people. Any "guest viewer" row still
+    // shown there belongs to views recorded before this change.
+    if (!req.userId) {
+      let current = null;
+      for (const M of LISTING_MODEL_LIST) {
+        current = await M.findById(req.params.id).select('views').lean();
+        if (current) break;
+      }
+      return res.json({ views: current ? (current.views || 0) : 0 });
+    }
+
+    // Dedup key is the account itself, not the device — so the same person
+    // opening this listing from a second browser/device/incognito window
+    // still counts as just the one view already on file for them, matching
+    // PropertyViewer's one-row-per-user list below exactly.
+    const fingerprint = `user:${req.userId}`;
 
     // Try to claim this (propertyId, fingerprint) pair. The unique index
-    // rejects a repeat with E11000 — that's how we know this
-    // person/device has already been counted for this listing, incognito
-    // or not.
+    // rejects a repeat with E11000 — that's how we know this person has
+    // already been counted for this listing, on any device.
     let isNewView = true;
     try {
       await PropertyView.create({ propertyId: req.params.id, fingerprint });
@@ -1818,36 +1825,38 @@ app.post('/api/properties/:id/view', viewLimiter, attachUserIfPresent, async (re
     // and its reset buttons rather than counting repeat page loads.
     if (isNewView) await bumpDailyStat('propertyView');
 
-    // Record/refresh this as a *named* view for the "viewed by" list — only
-    // possible when the visitor is logged in (guests have no identity to
-    // attach). Upserted on (propertyId, userId) so repeat views by the same
-    // user don't pile up duplicate rows — each user appears once, with their
-    // name/photo and lastViewedAt kept current. Best-effort: a failure here
-    // must never break the (already-recorded) numeric view count above.
-    if (req.userId) {
-      try {
-        const viewer = await User.findById(req.userId).select('name profilePhoto').lean();
-        if (viewer) {
-          const doUpsert = () => PropertyViewer.findOneAndUpdate(
-            { propertyId: req.params.id, userId: req.userId },
-            {
-              $set: { userName: viewer.name || '', userPhoto: viewer.profilePhoto || '', lastViewedAt: new Date() },
-              $setOnInsert: { firstViewedAt: new Date() },
+    // Record/refresh this as a named view for the "viewed by" list. Upserted
+    // on (propertyId, userId) so repeat views by the same user don't pile up
+    // duplicate rows — each user appears once, with their name/photo and
+    // lastViewedAt kept current. Best-effort: a failure here must never
+    // break the (already-recorded) numeric view count above.
+    try {
+      const viewer = await User.findById(req.userId).select('name profilePhoto accountType').lean();
+      if (viewer) {
+        const doUpsert = () => PropertyViewer.findOneAndUpdate(
+          { propertyId: req.params.id, userId: req.userId },
+          {
+            $set: {
+              userName: viewer.name || '',
+              userPhoto: viewer.profilePhoto || '',
+              userAccountType: viewer.accountType === 'owner' ? 'owner' : 'customer',
+              lastViewedAt: new Date(),
             },
-            { upsert: true }
-          );
-          try {
-            await doUpsert();
-          } catch (e) {
-            // Two requests from the same user racing each other can both try to
-            // insert; the unique index rejects the loser with E11000. The row
-            // now exists, so just retry once as a plain update — never a 2nd row.
-            if (e && e.code === 11000) await doUpsert(); else throw e;
-          }
+            $setOnInsert: { firstViewedAt: new Date() },
+          },
+          { upsert: true }
+        );
+        try {
+          await doUpsert();
+        } catch (e) {
+          // Two requests from the same user racing each other can both try to
+          // insert; the unique index rejects the loser with E11000. The row
+          // now exists, so just retry once as a plain update — never a 2nd row.
+          if (e && e.code === 11000) await doUpsert(); else throw e;
         }
-      } catch (viewerErr) {
-        console.error('PropertyViewer upsert error:', viewerErr.message);
       }
+    } catch (viewerErr) {
+      console.error('PropertyViewer upsert error:', viewerErr.message);
     }
 
     res.json({ views: updated.views });
@@ -1865,9 +1874,9 @@ app.post('/api/properties/:id/view', viewLimiter, attachUserIfPresent, async (re
 // the "Viewed by" list itself (browsing listings does NOT require login —
 // see the dismissible auth prompt in index.html's INIT block — this route
 // is a separate, deliberate gate on the viewer list, not a pre-existing one).
-// With the per-user view dedup above, a "guest" entry here now means a
-// genuinely logged-out view (or one recorded before this feature existed),
-// never a logged-in visitor split across devices.
+// With logged-out visitors no longer counted in POST /view above, a "guest"
+// entry here only ever means a view recorded before that change shipped —
+// there is no path to a new one from this point on.
 app.get('/api/properties/:id/viewers', requireUser, async (req, res) => {
   try {
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
@@ -1876,7 +1885,7 @@ app.get('/api/properties/:id/viewers', requireUser, async (req, res) => {
     const rawViewers = await PropertyViewer.find({ propertyId: req.params.id })
       .sort({ lastViewedAt: -1 })
       .limit(1000)
-      .select('userId userName userPhoto firstViewedAt lastViewedAt')
+      .select('userId userName userPhoto userAccountType firstViewedAt lastViewedAt')
       .lean();
 
     // Safety net: one entry per user account, no matter what's in the DB.
@@ -1899,6 +1908,10 @@ app.get('/api/properties/:id/viewers', requireUser, async (req, res) => {
         userId:       String(v.userId),
         name:         v.userName || 'HomeLoop user',
         photo:        v.userPhoto || '',
+        // Rows saved before this field existed have no value stored — the
+        // schema default ('customer') only applies to new documents, not
+        // retroactively, so fall back to it here too.
+        accountType:  v.userAccountType === 'owner' ? 'owner' : 'customer',
         firstViewed:  v.firstViewedAt,
         lastViewed:   v.lastViewedAt,
       })),
@@ -3186,11 +3199,13 @@ const PropertyView = mongoose.model('PropertyView', PropertyViewSchema);
 const PropertyViewerSchema = new mongoose.Schema({
   propertyId:    { type: String, required: true, index: true },
   userId:        { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  // Snapshot of the name/photo at last view, refreshed every time this user
-  // is seen again — so a later profile change is reflected next visit
-  // rather than the modal showing a name/photo the user no longer has.
+  // Snapshot of the name/photo/role at last view, refreshed every time this
+  // user is seen again — so a later profile change (or an account type
+  // switch) is reflected next visit rather than the modal showing stale info.
   userName:      { type: String, default: '' },
   userPhoto:     { type: String, default: '' },
+  // Lets the "Viewed by" modal badge each viewer as tenant or owner.
+  userAccountType: { type: String, enum: ['customer', 'owner'], default: 'customer' },
   firstViewedAt: { type: Date, default: Date.now },
   lastViewedAt:  { type: Date, default: Date.now },
 });

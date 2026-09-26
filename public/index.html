@@ -2229,16 +2229,18 @@ main.tab-explore .empty-state{display:none !important}
   display:flex;align-items:center;justify-content:center;
   color:#fff;font-size:14px;font-weight:700;
 }
-.viewer-rank-badge{
-  position:absolute;bottom:-3px;right:-3px;
-  width:17px;height:17px;border-radius:50%;
+/* Tenant vs owner indicator — bottom-left of the avatar, on every row
+   regardless of recency (the rank-medal badge that used to sit here has
+   been removed so this is the only badge in that corner). */
+.viewer-role-badge{
+  position:absolute;bottom:-3px;left:-3px;
+  width:16px;height:16px;border-radius:50%;
   display:flex;align-items:center;justify-content:center;
-  font-size:9.5px;border:2px solid var(--bg);
-  box-shadow:0 1px 3px rgba(0,0,0,.2);
+  border:2px solid var(--bg);box-shadow:0 1px 3px rgba(0,0,0,.2);
 }
-.viewer-rank-badge.rank-1{background:linear-gradient(150deg,#ffd76a,#f5a623)}
-.viewer-rank-badge.rank-2{background:linear-gradient(150deg,#e2e8f0,#a0aec0)}
-.viewer-rank-badge.rank-3{background:linear-gradient(150deg,#e3a273,#c17a45)}
+.viewer-role-badge svg{width:9px;height:9px;stroke:#fff;fill:none;stroke-width:2.4}
+.viewer-role-badge.role-owner{background:linear-gradient(150deg,#ffd76a,#f5a623)}
+.viewer-role-badge.role-customer{background:linear-gradient(150deg,#7fc7ff,#2f7fd6)}
 .viewer-live-dot{
   position:absolute;top:-1px;right:-1px;width:11px;height:11px;border-radius:50%;
   background:#2ecc71;border:2px solid var(--bg);
@@ -2251,6 +2253,24 @@ main.tab-explore .empty-state{display:none !important}
 }
 .viewer-info{min-width:0;flex:1}
 .viewer-name{font-size:13.5px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* No-avatar row layout (current "Viewed by" list): role icon sits inline
+   before the name instead of overlapping a photo. The row itself keeps its
+   original flex layout (icon+name left, time pill right), so removing the
+   avatar just frees up the space rather than changing how it's spread. */
+.viewer-row-noavatar .viewer-name{
+  display:inline-flex;align-items:center;gap:6px;
+}
+.viewer-role-badge-inline{
+  display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;
+  width:20px;height:20px;border-radius:50%;
+}
+.viewer-role-badge-inline svg{width:11px;height:11px;stroke:#fff;fill:none;stroke-width:2.4}
+.viewer-role-badge-inline.role-owner{background:linear-gradient(150deg,#ffd76a,#f5a623)}
+.viewer-role-badge-inline.role-customer{background:linear-gradient(150deg,#7fc7ff,#2f7fd6)}
+.viewer-live-dot-inline{
+  display:inline-block;width:8px;height:8px;border-radius:50%;
+  background:#2ecc71;box-shadow:0 0 0 rgba(46,204,113,.5);animation:viewerLivePulse 1.8s infinite;
+}
 .viewer-meta{font-size:11.5px;color:var(--text-3);margin-top:1px}
 .viewer-time-pill{
   flex-shrink:0;font-size:10.5px;font-weight:600;color:var(--brand);
@@ -8214,30 +8234,41 @@ function renderViewersModal(data) {
     return;
   }
 
-  const rankBadge = (i) => i < 3
-    ? `<span class="viewer-rank-badge rank-${i+1}">${['🥇','🥈','🥉'][i]}</span>`
-    : '';
+  const roleBadge = (accountType) => accountType === 'owner'
+    ? '<span class="viewer-role-badge-inline role-owner" title="Property owner"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-8 9 8"/><path d="M9 21v-8h6v8"/></svg></span>'
+    : '<span class="viewer-role-badge-inline role-customer" title="Tenant"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg></span>';
+
+  // Absolute "DD-MM-YYYY" + "h:mm AM/PM" for the viewer list (this list wants
+  // an exact timestamp rather than the relative "9 mins ago" used elsewhere).
+  function viewerDateTime(dateStr) {
+    const d = parseFlexibleDate(dateStr);
+    if (isNaN(d)) return '';
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const yyyy = d.getFullYear();
+    let hours = d.getHours();
+    const minutes = String(d.getMinutes()).padStart(2, '0');
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12; if (hours === 0) hours = 12;
+    return `${dd}-${mm}-${yyyy} - ${hours}:${minutes} ${ampm}`;
+  }
 
   const rows = viewers.map((v, i) => {
     const name = v.name || 'HomeLoop user';
-    const initials = initialsFor(name);
-    const avatar = v.photo
-      ? `<img class="viewer-avatar" src="${safeUrl(v.photo)}" alt="">`
-      : `<span class="viewer-avatar viewer-avatar-fallback" style="background:${viewerAvatarGradient(name)}">${initials}</span>`;
-    // First row = most recent viewer — flag it with a small live dot instead
-    // of a rank medal (recency and popularity are different signals).
-    const badge = i === 0
-      ? '<span class="viewer-live-dot" title="Most recent"></span>'
-      : rankBadge(i);
-    return `<div class="viewer-row" style="animation-delay:${Math.min(i, 8) * 0.045}s">
-      <div class="viewer-avatar-wrap">
-        ${avatar}
-        ${badge}
-      </div>
+    // No avatar/photo shown here anymore — just the role badge inline with
+    // the name, plus a live dot for the single most recent viewer. The date
+    // and time sit in their own pill flush to the right, so the row spreads
+    // across the modal's full width instead of bunching everything on the left.
+    const liveDot = i === 0
+      ? '<span class="viewer-live-dot-inline" title="Most recent"></span>'
+      : '';
+    return `<div class="viewer-row viewer-row-noavatar" style="animation-delay:${Math.min(i, 8) * 0.045}s">
       <div class="viewer-info">
-        <div class="viewer-name">${esc(name)}</div>
+        <div class="viewer-name">
+          ${roleBadge(v.accountType)}${esc(name)}${liveDot}
+        </div>
       </div>
-      <span class="viewer-time-pill">${esc(notifTimeAgo(v.lastViewed).toLowerCase())}</span>
+      <span class="viewer-time-pill">${esc(viewerDateTime(v.lastViewed))}</span>
     </div>`;
   }).join('');
 
