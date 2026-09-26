@@ -1886,14 +1886,13 @@ app.post('/api/properties/:id/view', viewLimiter, attachUserIfPresent, async (re
 // Returns the named list of logged-in users who've viewed this listing (most
 // recent first). Guest/anonymous views are not represented here (see
 // PropertyViewer above) — only the overall count on the property document
-// includes those. Behind requireUser so only a logged-in visitor can open
-// the "Viewed by" list itself (browsing listings does NOT require login —
-// see the dismissible auth prompt in index.html's INIT block — this route
-// is a separate, deliberate gate on the viewer list, not a pre-existing one).
+// includes those. Open to guests as well as logged-in visitors — browsing
+// listings and the "Viewed by" list are both login-free (see the dismissible
+// auth prompt in index.html's INIT block).
 // With logged-out visitors no longer counted in POST /view above, a "guest"
 // entry here only ever means a view recorded before that change shipped —
 // there is no path to a new one from this point on.
-app.get('/api/properties/:id/viewers', requireUser, async (req, res) => {
+app.get('/api/properties/:id/viewers', async (req, res) => {
   try {
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
       return res.status(400).json({ message: 'Invalid property id' });

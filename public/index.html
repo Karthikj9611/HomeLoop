@@ -8168,7 +8168,6 @@ function viewerSkeletonRows(count) {
     </div>`).join('');
 }
 function openViewersModal(propId) {
-  if (requireLoginForContact('Please log in to see who viewed this property')) return;
   const overlay = document.getElementById('viewersModal');
   const body = document.getElementById('viewersModalBody');
   const heroNumber = document.getElementById('viewersHeroNumber');
