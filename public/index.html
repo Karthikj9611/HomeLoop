@@ -147,6 +147,10 @@ ul{list-style:none}
    .prop-heart rule so this always wins regardless of stylesheet order. */
 [id$="BookedGrid"] .prop-heart,
 #recentlyViewedStrip .prop-heart{display:none}
+/* View count isn't useful once a listing is off-market/booked, so the eye
+   icon (and its unread-style count bubble) is hidden here too — scoped the
+   same way as the heart rule above, Booked grids only. */
+[id$="BookedGrid"] .prop-views-float{display:none}
 /* ─── Scrollbar ────────────────────────────────── */
 ::-webkit-scrollbar{width:4px;height:4px}
 ::-webkit-scrollbar-track{background:transparent}
