@@ -6919,7 +6919,7 @@ window.shareListingToOwner = async function(id){
   if(!row.verified){ alert("This listing isn't verified yet — verify it first, then share."); return; }
 
   const link = `${BASE}/property/${id}`;
-  const msg = `Hi ${row.ownerName || 'there'}, your property "${row.title || 'listing'}"${row.loc ? ' in ' + row.loc : ''} has been verified and is now live on HomeLoop!\n\nView it here: ${link}`;
+  const msg = `"${row.title || 'listing'}"${row.loc ? ' (' + row.loc + ')' : ''} is live on HomeLoop: ${link}`;
   const text = encodeURIComponent(msg);
 
   const ownerNum = waDigits(row.ownerNumber);
@@ -7111,13 +7111,14 @@ window.sendShareLinksToNumber = function(){
     const ownerName = row.ownerName || '—';
     const ownerNum  = row.ownerNumber || '—';
     const ownerAlt  = row.ownerAltPhone ? ` (Alt: ${row.ownerAltPhone})` : '';
-    const { rent, deposit, config, toilet, carParking, bikeParking } = shareLinksPropDetails(row);
+    const { rent, config } = shareLinksPropDetails(row);
+    const link = row._id ? `${BASE}/property/${row._id}` : '';
     return [
-      `${i + 1}. ${name} — ${loc}`,
-      `Rent ${rent} | Deposit ${deposit} | ${config} | Toilet: ${toilet} | Car: ${carParking} | Bike: ${bikeParking}`,
-      `Owner: ${ownerName}, ${ownerNum}${ownerAlt}`,
-      `Directions: ${dirUrl}`
-    ].join('\n');
+      `${i + 1}. ${name} — ${loc}, ${rent}, ${config}`,
+      `Owner: ${ownerName} ${ownerNum}${ownerAlt}`,
+      link,
+      `${dirUrl}`
+    ].filter(Boolean).join('\n');
   });
   const msg = `Sharing ${ids.length} propert${ids.length===1?'y':'ies'}:\n\n${lines.join('\n*******************************\n')}`;
   openWhatsAppTabs([num], encodeURIComponent(msg));
@@ -7153,7 +7154,7 @@ function buildAvailabilityCheckMessage(row){
   const furnish = row.furnishing || '—';
   const locStr = [row.loc, row.city].filter(Boolean).join(', ') || 'your listed location';
   const link = row._id ? `${BASE}/property/${row._id}` : '';
-  return `Hi, this is Prashanth Gowda from HomeLoop. I'm just checking in on your property "${row.title || 'listing'}" (Property ID: ${row.propertyId || '—'}), a ${config} at ${locStr}, listed for ${rent} (Deposit: ${deposit}, Furnishing: ${furnish}) on HomeLoop.${link ? `\n\nView it here: ${link}` : ''}\n\nIs it still available? Please let us know at your convenience.`;
+  return `Is "${row.title || 'listing'}" (${row.propertyId || '—'}, ${rent}) still available? — HomeLoop${link ? ` ${link}` : ''}`;
 }
 
 window.checkAvailabilityForRow = function(id){
