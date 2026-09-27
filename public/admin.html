@@ -448,6 +448,29 @@ table.dataTable.no-footer{border-bottom:none!important}
 #propertyTable tbody tr.prop-row-selected td:first-child{
   box-shadow:inset 3px 0 0 var(--gold);
 }
+/* Same full-row selected highlight, applied to every other admin grid that
+   has a row checkbox (Customers/Appointments/Reviews/User Reviews/Partners)
+   so a ticked row reads the same way everywhere in admin, not just on the
+   Properties table. */
+#bookingTable tbody tr.cust-row-selected td,
+#bookingTable tbody tr.cust-row-selected:hover td,
+#appointmentTable tbody tr.appt-row-selected td,
+#appointmentTable tbody tr.appt-row-selected:hover td,
+#honestReviewsTable tbody tr.review-row-selected td,
+#honestReviewsTable tbody tr.review-row-selected:hover td,
+#userReviewsTable tbody tr.ur-row-selected td,
+#userReviewsTable tbody tr.ur-row-selected:hover td,
+#partnersTable tbody tr.partner-row-selected td,
+#partnersTable tbody tr.partner-row-selected:hover td{
+  background:rgba(234,88,12,0.28)!important;
+}
+#bookingTable tbody tr.cust-row-selected td:first-child,
+#appointmentTable tbody tr.appt-row-selected td:first-child,
+#honestReviewsTable tbody tr.review-row-selected td:first-child,
+#userReviewsTable tbody tr.ur-row-selected td:first-child,
+#partnersTable tbody tr.partner-row-selected td:first-child{
+  box-shadow:inset 3px 0 0 var(--gold);
+}
 /* Action column: left-align the button group instead of centering it, so
    a row with fewer buttons (e.g. no Booking button when the listing isn't
    booked) doesn't visually shift — every row's Check button now starts at
@@ -5867,6 +5890,8 @@ window.filterUserReviews = function(v){
 
 window.onUserReviewRowCheck = function(checkboxEl, id){
   if(checkboxEl.checked) _selectedUrIds.add(id); else _selectedUrIds.delete(id);
+  const tr = checkboxEl.closest('tr');
+  if(tr) tr.classList.toggle('ur-row-selected', checkboxEl.checked);
   updateUserReviewBulkToolbarUI();
   syncUserReviewSelectionUI();
 };
@@ -5882,7 +5907,10 @@ window.onUserReviewSelectAllChange = function(headerCheckboxEl){
 
 function syncUserReviewSelectionUI(){
   document.querySelectorAll('#userReviewsTable tbody .ur-row-check').forEach(cb=>{
-    cb.checked = _selectedUrIds.has(cb.getAttribute('data-id'));
+    const isSelected = _selectedUrIds.has(cb.getAttribute('data-id'));
+    cb.checked = isSelected;
+    const tr = cb.closest('tr');
+    if(tr) tr.classList.toggle('ur-row-selected', isSelected);
   });
   if(!userReviewsTable) return;
   const headerCb = document.getElementById('urSelectAllCheckbox');
@@ -5950,6 +5978,8 @@ window.deleteUserReview = async function(id){
 window.onReviewRowCheck = function(checkboxEl, id){
   if(checkboxEl.checked) _selectedReviewIds.add(id);
   else _selectedReviewIds.delete(id);
+  const tr = checkboxEl.closest('tr');
+  if(tr) tr.classList.toggle('review-row-selected', checkboxEl.checked);
   updateReviewBulkToolbarUI();
   syncReviewSelectionUI();
 };
@@ -5969,7 +5999,10 @@ window.onReviewSelectAllChange = function(headerCheckboxEl){
 
 function syncVisibleReviewCheckboxes(){
   document.querySelectorAll('#honestReviewsTable tbody .review-row-check').forEach(cb=>{
-    cb.checked = _selectedReviewIds.has(cb.getAttribute('data-id'));
+    const isSelected = _selectedReviewIds.has(cb.getAttribute('data-id'));
+    cb.checked = isSelected;
+    const tr = cb.closest('tr');
+    if(tr) tr.classList.toggle('review-row-selected', isSelected);
   });
 }
 
@@ -6192,6 +6225,8 @@ const _selectedPartnerIds = new Set();
 window.onPartnerRowCheck = function(checkboxEl, id){
   if(checkboxEl.checked) _selectedPartnerIds.add(id);
   else _selectedPartnerIds.delete(id);
+  const tr = checkboxEl.closest('tr');
+  if(tr) tr.classList.toggle('partner-row-selected', checkboxEl.checked);
   updatePartnerBulkToolbarUI();
   syncPartnerSelectionUI();
 };
@@ -6211,7 +6246,10 @@ window.onPartnerSelectAllChange = function(headerCheckboxEl){
 
 function syncVisiblePartnerCheckboxes(){
   document.querySelectorAll('#partnersTable tbody .partner-row-check').forEach(cb=>{
-    cb.checked = _selectedPartnerIds.has(cb.getAttribute('data-id'));
+    const isSelected = _selectedPartnerIds.has(cb.getAttribute('data-id'));
+    cb.checked = isSelected;
+    const tr = cb.closest('tr');
+    if(tr) tr.classList.toggle('partner-row-selected', isSelected);
   });
 }
 
@@ -7612,6 +7650,8 @@ window.deleteAllProperties = async function(){
 window.onCustRowCheck = function(checkboxEl, id){
   if(checkboxEl.checked) _selectedCustIds.add(id);
   else _selectedCustIds.delete(id);
+  const tr = checkboxEl.closest('tr');
+  if(tr) tr.classList.toggle('cust-row-selected', checkboxEl.checked);
   updateCustBulkToolbarUI();
   syncCustSelectionUI();
 };
@@ -7633,7 +7673,10 @@ window.onCustSelectAllChange = function(headerCheckboxEl){
 
 function syncVisibleCustRowCheckboxes(){
   document.querySelectorAll('#bookingTable tbody .cust-row-check').forEach(cb=>{
-    cb.checked = _selectedCustIds.has(cb.getAttribute('data-id'));
+    const isSelected = _selectedCustIds.has(cb.getAttribute('data-id'));
+    cb.checked = isSelected;
+    const tr = cb.closest('tr');
+    if(tr) tr.classList.toggle('cust-row-selected', isSelected);
   });
 }
 
@@ -7716,6 +7759,8 @@ window.deleteSelectedCustomers = async function(){
 window.onApptRowCheck = function(checkboxEl, id){
   if(checkboxEl.checked) _selectedApptIds.add(id);
   else _selectedApptIds.delete(id);
+  const tr = checkboxEl.closest('tr');
+  if(tr) tr.classList.toggle('appt-row-selected', checkboxEl.checked);
   updateApptBulkToolbarUI();
   syncApptSelectionUI();
 };
@@ -7735,7 +7780,10 @@ window.onApptSelectAllChange = function(headerCheckboxEl){
 
 function syncVisibleApptRowCheckboxes(){
   document.querySelectorAll('#appointmentTable tbody .appt-row-check').forEach(cb=>{
-    cb.checked = _selectedApptIds.has(cb.getAttribute('data-id'));
+    const isSelected = _selectedApptIds.has(cb.getAttribute('data-id'));
+    cb.checked = isSelected;
+    const tr = cb.closest('tr');
+    if(tr) tr.classList.toggle('appt-row-selected', isSelected);
   });
 }
 
