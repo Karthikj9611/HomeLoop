@@ -1796,27 +1796,15 @@ app.post('/api/properties/:id/view', viewLimiter, attachUserIfPresent, async (re
       return res.status(400).json({ message: 'Invalid property id' });
     }
 
-    // Only logged-in customers count as a "view" here. A logged-out visitor
-    // opening a listing still sees it (browsing itself isn't gated), but
-    // nothing is written to PropertyView/PropertyViewer and the counter
-    // doesn't move for them — so there is no such thing as a "guest view"
-    // going forward, and the "Viewed by" modal's total will always be
-    // exactly the sum of real, named people. Any "guest viewer" row still
-    // shown there belongs to views recorded before this change.
-    if (!req.userId) {
-      let current = null;
-      for (const M of LISTING_MODEL_LIST) {
-        current = await M.findById(req.params.id).select('views').lean();
-        if (current) break;
-      }
-      return res.json({ views: current ? (current.views || 0) : 0 });
-    }
-
-    // Dedup key is the account itself, not the device — so the same person
+    // Guests count too: a logged-out visitor is deduped by device fingerprint
+    // (visitorFingerprint(req) — same device-signature/IP+UA fallback used by
+    // /api/stats/visit), so re-opening the same listing from the same device
+    // doesn't re-inflate the count, but a genuinely new guest visit does. A
+    // logged-in user is instead deduped by their account, so the same person
     // opening this listing from a second browser/device/incognito window
     // still counts as just the one view already on file for them, matching
     // PropertyViewer's one-row-per-user list below exactly.
-    const fingerprint = `user:${req.userId}`;
+    const fingerprint = req.userId ? `user:${req.userId}` : visitorFingerprint(req);
 
     // Try to claim this (propertyId, fingerprint) pair. The unique index
     // rejects a repeat with E11000 — that's how we know this person has
@@ -1846,38 +1834,41 @@ app.post('/api/properties/:id/view', viewLimiter, attachUserIfPresent, async (re
     // and its reset buttons rather than counting repeat page loads.
     if (isNewView) await bumpDailyStat('propertyView');
 
-    // Record/refresh this as a named view for the "viewed by" list. Upserted
-    // on (propertyId, userId) so repeat views by the same user don't pile up
+    // Record/refresh this as a named view for the "viewed by" list — only for
+    // logged-in users, since a guest has no identity to attach. Upserted on
+    // (propertyId, userId) so repeat views by the same user don't pile up
     // duplicate rows — each user appears once, with their name/photo and
     // lastViewedAt kept current. Best-effort: a failure here must never
     // break the (already-recorded) numeric view count above.
-    try {
-      const viewer = await User.findById(req.userId).select('name profilePhoto accountType').lean();
-      if (viewer) {
-        const doUpsert = () => PropertyViewer.findOneAndUpdate(
-          { propertyId: req.params.id, userId: req.userId },
-          {
-            $set: {
-              userName: viewer.name || '',
-              userPhoto: viewer.profilePhoto || '',
-              userAccountType: viewer.accountType === 'owner' ? 'owner' : 'customer',
-              lastViewedAt: new Date(),
+    if (req.userId) {
+      try {
+        const viewer = await User.findById(req.userId).select('name profilePhoto accountType').lean();
+        if (viewer) {
+          const doUpsert = () => PropertyViewer.findOneAndUpdate(
+            { propertyId: req.params.id, userId: req.userId },
+            {
+              $set: {
+                userName: viewer.name || '',
+                userPhoto: viewer.profilePhoto || '',
+                userAccountType: viewer.accountType === 'owner' ? 'owner' : 'customer',
+                lastViewedAt: new Date(),
+              },
+              $setOnInsert: { firstViewedAt: new Date() },
             },
-            $setOnInsert: { firstViewedAt: new Date() },
-          },
-          { upsert: true }
-        );
-        try {
-          await doUpsert();
-        } catch (e) {
-          // Two requests from the same user racing each other can both try to
-          // insert; the unique index rejects the loser with E11000. The row
-          // now exists, so just retry once as a plain update — never a 2nd row.
-          if (e && e.code === 11000) await doUpsert(); else throw e;
+            { upsert: true }
+          );
+          try {
+            await doUpsert();
+          } catch (e) {
+            // Two requests from the same user racing each other can both try to
+            // insert; the unique index rejects the loser with E11000. The row
+            // now exists, so just retry once as a plain update — never a 2nd row.
+            if (e && e.code === 11000) await doUpsert(); else throw e;
+          }
         }
+      } catch (viewerErr) {
+        console.error('PropertyViewer upsert error:', viewerErr.message);
       }
-    } catch (viewerErr) {
-      console.error('PropertyViewer upsert error:', viewerErr.message);
     }
 
     res.json({ views: updated.views });
