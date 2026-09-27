@@ -634,6 +634,7 @@ module.exports = function registerAdminRoutes(app, deps) {
         isVerified:    !!u.isVerified,
         verifiedAt:    u.verifiedAt || null,
         publicCall:    !!u.publicCall,
+        subscriptionAt: u.subscriptionAt || null,
         listingsCount: propMap[String(u._id)]  || 0,
         visitsCount:   visitMap[String(u._id)] || 0,
         createdAt:     u.createdAt,
@@ -721,6 +722,37 @@ module.exports = function registerAdminRoutes(app, deps) {
     } catch (err) {
       console.error('PATCH /api/users/:id/verify error:', err);
       res.status(500).json({ message: 'Error updating verification status' });
+    }
+  });
+
+  // ── PATCH /api/users/:id/subscription (admin: set/update a customer's subscription date & time) ──
+  // Body: { subscriptionAt: <ISO datetime string> } — pass null/omit to clear it.
+  // Purely a manual record captured from the Customers grid's "Subscription"
+  // button (see openSubscriptionModal() in admin.html) — nothing else in the
+  // app reads or enforces this automatically yet.
+  app.patch('/api/users/:id/subscription', requireAdmin, requireModuleAction('customers'), async (req, res) => {
+    try {
+      const { id } = req.params;
+      if (!mongoose.Types.ObjectId.isValid(id)) return res.status(400).json({ message: 'Invalid user id' });
+      const { subscriptionAt } = req.body || {};
+      let dateVal = null;
+      if (subscriptionAt) {
+        dateVal = new Date(subscriptionAt);
+        if (isNaN(dateVal.getTime())) return res.status(400).json({ message: 'Invalid date/time' });
+      }
+      const user = await User.findByIdAndUpdate(
+        id,
+        { subscriptionAt: dateVal },
+        { new: true }
+      ).lean();
+      if (!user) return res.status(404).json({ message: 'Customer not found' });
+      res.json({
+        message: dateVal ? 'Subscription updated' : 'Subscription cleared',
+        _id: user._id, subscriptionAt: user.subscriptionAt || null,
+      });
+    } catch (err) {
+      console.error('PATCH /api/users/:id/subscription error:', err);
+      res.status(500).json({ message: 'Error updating subscription' });
     }
   });
 

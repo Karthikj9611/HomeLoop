@@ -1049,6 +1049,23 @@ footer i{color:var(--gold)}
 .btn-view:hover{background:var(--green);color:#fff;box-shadow:0 4px 12px rgba(26,122,94,0.3)}
 .btn-view i{font-size:0.72rem}
 
+/* ── CUSTOMER ROW ACTION COLORS (View / Subscription / Delete / Force logout) ──
+   Each action gets its own color so they're distinguishable at a glance,
+   instead of all sharing .btn-view's default green. */
+.btn-view.btn-action-view{background:#eff6ff;color:#2563eb;border-color:rgba(37,99,235,0.25)}
+.btn-view.btn-action-view:hover{background:#2563eb;color:#fff;box-shadow:0 4px 12px rgba(37,99,235,0.3)}
+
+.btn-view.btn-action-sub{background:#f3f0fd;color:#6c4fd6;border-color:rgba(108,79,214,0.25)}
+.btn-view.btn-action-sub:hover{background:#6c4fd6;color:#fff;box-shadow:0 4px 12px rgba(108,79,214,0.3)}
+.btn-view.btn-action-sub.is-set{background:var(--green-light);color:var(--green);border-color:rgba(5,150,105,0.25)}
+.btn-view.btn-action-sub.is-set:hover{background:var(--green);color:#fff;box-shadow:0 4px 12px rgba(5,150,105,0.3)}
+
+.btn-view.btn-action-delete{background:var(--red-light);color:var(--red);border-color:rgba(220,38,38,0.25)}
+.btn-view.btn-action-delete:hover{background:var(--red);color:#fff;box-shadow:0 4px 12px rgba(220,38,38,0.3)}
+
+.btn-view.btn-action-logout{background:var(--gold-light);color:var(--gold-dark);border-color:rgba(184,144,60,0.3)}
+.btn-view.btn-action-logout:hover{background:var(--gold);color:#fff;box-shadow:0 4px 12px rgba(184,144,60,0.3)}
+
 /* ── EDIT BUTTON ── */
 .btn-edit{
   display:inline-flex;align-items:center;gap:6px;
@@ -2534,6 +2551,28 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
       <button class="confirm-cancel-btn" onclick="closeShareLinksModal()" style="flex:1">Cancel</button>
       <button class="confirm-ok-btn success" onclick="sendShareLinksToNumber()" style="flex:2">
         <i class="fab fa-whatsapp"></i> Send (<span id="shareLinksSendCount">0</span>)
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SUBSCRIPTION MODAL — capture/update a customer's subscription date & time ══ -->
+<div class="add-modal-overlay" id="subscriptionModal" role="dialog" aria-modal="true" aria-label="Set subscription date and time">
+  <div class="add-modal" id="subscriptionModalBox" style="max-width:380px">
+    <div class="compare-modal-header">
+      <span class="compare-modal-title">Subscription</span>
+      <button class="modal-close" onclick="closeSubscriptionModal()" aria-label="Close">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="subscriptionDateTimeInput">Subscription date &amp; time</label>
+      <input class="form-input" type="datetime-local" id="subscriptionDateTimeInput" />
+    </div>
+    <div class="share-links-footer">
+      <button class="confirm-cancel-btn" onclick="closeSubscriptionModal()" style="flex:1">Cancel</button>
+      <button class="confirm-ok-btn success" onclick="saveSubscription()" style="flex:1">
+        <i class="fas fa-check"></i> Save
       </button>
     </div>
   </div>
@@ -5476,6 +5515,55 @@ window.toggleUserVerified = async function(id, nextVerified){
   }
 };
 
+/* ── SUBSCRIPTION DATE & TIME ──
+   Lets the admin capture/update a customer's subscription date & time from
+   the Customers grid's "Subscription" button. Prefills the datetime-local
+   input with whatever's already on file (via _customerCache), so reopening
+   the modal shows the existing value rather than a blank field. */
+let _subscriptionTargetId = null;
+window.openSubscriptionModal = function(key){
+  if(blockIfViewOnly('customers')) return;
+  const c = _customerCache[key];
+  if(!c){ alert('Customer details not loaded yet — please retry.'); return; }
+  _subscriptionTargetId = c._id;
+  const input = document.getElementById('subscriptionDateTimeInput');
+  if(c.subscriptionAt){
+    const d = new Date(c.subscriptionAt);
+    // datetime-local wants "YYYY-MM-DDTHH:mm" in LOCAL time — build it from
+    // the date's own local fields rather than toISOString() (which is UTC
+    // and would shift the displayed time).
+    const pad = n => String(n).padStart(2,'0');
+    input.value = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  } else {
+    input.value = '';
+  }
+  document.getElementById('subscriptionModal').classList.add('open');
+  lockBodyScroll();
+};
+window.closeSubscriptionModal = function(){
+  document.getElementById('subscriptionModal').classList.remove('open');
+  unlockBodyScroll();
+  _subscriptionTargetId = null;
+};
+window.saveSubscription = async function(){
+  if(blockIfViewOnly('customers')) return;
+  if(!_subscriptionTargetId) return;
+  const raw = document.getElementById('subscriptionDateTimeInput').value;
+  if(!raw){ showAlertModal('Pick a date and time first.', { variant:'error', title:'Date & time needed' }); return; }
+  const res = await fetch(`${BASE}/api/users/${_subscriptionTargetId}/subscription`, {
+    method:'PATCH',
+    headers:{ ...authHeaders(), 'Content-Type':'application/json' },
+    body: JSON.stringify({ subscriptionAt: new Date(raw).toISOString() })
+  });
+  const data = await res.json().catch(()=>({}));
+  if(res.ok){
+    closeSubscriptionModal();
+    dataTable.ajax.reload(null,false);
+  } else {
+    alert(data.message || 'Error updating subscription');
+  }
+};
+
 /* ── FORCE LOGOUT ──
    Site enforces single-device login (server.js rejects a second concurrent
    login with 409 until the first device's session is gone). If a customer's
@@ -7238,6 +7326,10 @@ document.getElementById('shareLinksModal').addEventListener('click', function(e)
   if (e.target === this) closeShareLinksModal();
 });
 
+document.getElementById('subscriptionModal').addEventListener('click', function(e){
+  if (e.target === this) closeSubscriptionModal();
+});
+
 document.getElementById('checkAvailabilityModal').addEventListener('click', function(e){
   if (e.target === this) closeCheckAvailabilityModal();
 });
@@ -7948,15 +8040,19 @@ $(document).ready(function(){
 
 				${verifiedBadge(isVerified, row._id)}
 
-				<button class="btn-view" onclick="openCustomerModal('${row.mobile || row._id}')">
+				<button class="btn-view btn-action-view" onclick="openCustomerModal('${row.mobile || row._id}')">
 				  <i class="fas fa-eye"></i><span class="btn-label"> View</span>
 				</button>
 
-				<button class="btn-view" style="color:#c0392b" onclick="deleteBooking('${row.mobile || row._id}')" title="Delete this customer">
+				<button class="btn-view btn-action-sub${row.subscriptionAt ? ' is-set' : ''}" onclick="openSubscriptionModal('${row.mobile || row._id}')" title="${row.subscriptionAt ? 'Subscribed: ' + plainDateTime(row.subscriptionAt) : 'Set subscription date & time'}">
+				  <i class="fas fa-calendar-check"></i><span class="btn-label"> Subscription</span>
+				</button>
+
+				<button class="btn-view btn-action-delete" onclick="deleteBooking('${row.mobile || row._id}')" title="Delete this customer">
 				  <i class="fas fa-trash"></i><span class="btn-label"> Delete</span>
 				</button>
 
-				<button class="btn-view" onclick="forceLogoutUser('${row._id}')" title="Clear their active session so they can log in on another device right away">
+				<button class="btn-view btn-action-logout" onclick="forceLogoutUser('${row._id}')" title="Clear their active session so they can log in on another device right away">
 				  <i class="fas fa-right-from-bracket"></i><span class="btn-label"> Force logout</span>
 				</button>
 

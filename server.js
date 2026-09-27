@@ -99,6 +99,11 @@ const UserSchema = new mongoose.Schema({
   //                 everyone in GET /api/properties (same as turning on each listing's own toggles).
   //  • 'customer' → THIS tenant, while logged in, sees owner number(s) + Navigate on EVERY listing.
   publicCall:  { type: Boolean, default: false, index: true },
+  // Admin-set subscription date & time for this customer (Customers grid's
+  // "Subscription" button). null until an admin sets one — purely a record
+  // an admin captures/updates manually; nothing reads or enforces it
+  // automatically elsewhere yet.
+  subscriptionAt: { type: Date, default: null },
   remarks:   { type: [RemarkEntrySchema], default: [] },
   // Human-readable unique id, same pattern as Property.propertyId (e.g. USER-000001).
   // This is a *display* identifier, distinct from the Mongo _id. Session docs
