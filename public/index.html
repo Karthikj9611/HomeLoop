@@ -16177,7 +16177,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const _dlPathMatch = window.location.pathname.match(/^\/property\/([a-fA-F0-9]{24})$/);
     const _dlParam = _dlPathMatch ? _dlPathMatch[1] : new URLSearchParams(window.location.search).get('property');
     if (_dlParam) {
-      const _dlProp = PROPERTIES.find(x => String(x.id) === _dlParam);
+      const _dlProp = PROPERTIES.find(x => String(x.id) === _dlParam) || BOOKED_PROPERTIES.find(x => String(x.id) === _dlParam);
       if (_dlProp) openDetail(_dlProp.id);
     }
 
