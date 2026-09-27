@@ -8471,13 +8471,13 @@ $(document).ready(function(){
             ? disabledBtn('fas fa-trash', 'Delete', 'View-only access — ask the primary admin to enable actions')
             : `<button class="btn-view" style="color:#c0392b" title="Delete this listing" onclick="deleteProperty('${row._id}')"><i class="fas fa-trash"></i><span class="btn-label"> Delete</span></button>`;
           return `<div style="display:inline-flex;gap:6px;flex-wrap:nowrap;justify-content:center">
+            ${checkAvailBtn}
             <button class="btn-view" onclick="openAdminPropModal('${row._id}')"><i class="fas fa-eye"></i><span class="btn-label"> View</span></button>
             ${navigateBtn}
             ${directionsBtn}
             ${shareBtn}
             ${fbShareBtn}
             ${igShareBtn}
-            ${checkAvailBtn}
             ${bookingBtn}
             ${deleteBtn}
           </div>`;
