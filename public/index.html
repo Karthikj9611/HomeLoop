@@ -12427,7 +12427,7 @@ function openOwnerWhatsApp(propId, which) {
   }
   const phone = raw.length === 10 ? '91' + raw : raw;
   const propertyUrl = `${window.location.origin}/property/${p.id}`;
-  const msg = `Interested in "${p.propertyId}" (${p.location?.area}) on HomeLoop. Still available? ${propertyUrl}`;
+  const msg = `Interested in ${p.propertyId}. Still available? ${propertyUrl}`;
   window.open('https://wa.me/' + phone + '?text=' + encodeURIComponent(msg), '_blank', 'noopener');
 }
 
@@ -12445,7 +12445,7 @@ function openWhatsApp(propId) {
   }
   const phone = rawPhone.length === 10 ? '91' + rawPhone : rawPhone;
   const propertyUrl = `${window.location.origin}/property/${p.id}`;
-  const msg = `Interested in "${p.propertyId}" (${p.location?.area}) on HomeLoop. Still available? ${propertyUrl}`;
+  const msg = `Interested in ${p.propertyId}. Still available? ${propertyUrl}`;
   const url = 'https://wa.me/' + phone + '?text=' + encodeURIComponent(msg);
   window.open(url, '_blank', 'noopener');
 }
@@ -13986,7 +13986,7 @@ function shareMyListingViaWhatsApp(id) {
   const rent = p.price?.rent != null ? fmtRupee(p.price.rent) : null;
   const propertyUrl = `${window.location.origin}/property/${p.id}`;
   const priceBit = rent ? `${rent}${isSell ? '' : isShortStay ? '/day' : '/month'}, ` : '';
-  const msg = `"${p.propertyId}" — ${p.location?.area || '—'}, ${priceBit}${status} on HomeLoop: ${propertyUrl}`;
+  const msg = `${p.propertyId}, ${status} on HomeLoop: ${propertyUrl}`;
   const url = 'https://wa.me/?text=' + encodeURIComponent(msg);
   window.open(url, '_blank', 'noopener');
 }

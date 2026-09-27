@@ -6919,7 +6919,7 @@ window.shareListingToOwner = async function(id){
   if(!row.verified){ alert("This listing isn't verified yet — verify it first, then share."); return; }
 
   const link = `${BASE}/property/${id}`;
-  const msg = `"${row.title || 'listing'}"${row.loc ? ' (' + row.loc + ')' : ''} is live on HomeLoop: ${link}`;
+  const msg = `Your property is live on HomeLoop: ${link}`;
   const text = encodeURIComponent(msg);
 
   const ownerNum = waDigits(row.ownerNumber);
@@ -7154,7 +7154,7 @@ function buildAvailabilityCheckMessage(row){
   const furnish = row.furnishing || '—';
   const locStr = [row.loc, row.city].filter(Boolean).join(', ') || 'your listed location';
   const link = row._id ? `${BASE}/property/${row._id}` : '';
-  return `Is "${row.title || 'listing'}" (${row.propertyId || '—'}, ${rent}) still available? — HomeLoop${link ? ` ${link}` : ''}`;
+  return `Is ${row.propertyId || 'listing'}, still available? ${link}`;
 }
 
 window.checkAvailabilityForRow = function(id){
