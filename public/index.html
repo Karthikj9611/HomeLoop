@@ -3984,12 +3984,22 @@ main.tab-explore .empty-state{display:none !important}
 .hours-modal-btn{
   display:flex;align-items:center;justify-content:center;gap:8px;
   padding:12px 16px;border-radius:10px;font-size:13.5px;font-weight:700;
-  text-decoration:none;cursor:pointer;border:none;transition:opacity .15s,background .15s;
+  text-decoration:none;cursor:pointer;border:none;
+  transition:transform .15s ease,box-shadow .2s ease,opacity .15s;
   font-family:inherit;
 }
-.hours-modal-btn:hover{opacity:.92}
-.hours-modal-btn-wa{background:#25d366;color:#fff}
-.hours-modal-btn-secondary{background:var(--bg-2);color:var(--text);border:1.5px solid var(--border)}
+.hours-modal-btn:hover{transform:translateY(-1px)}
+.hours-modal-btn:active{transform:translateY(0)}
+.hours-modal-btn-wa{
+  background:linear-gradient(135deg,#2be573,#1da851);color:#fff;
+  box-shadow:0 6px 16px -6px rgba(29,168,81,.55);
+}
+.hours-modal-btn-wa:hover{box-shadow:0 10px 22px -6px rgba(29,168,81,.65)}
+.hours-modal-btn-secondary{
+  background:linear-gradient(135deg,var(--brand),var(--brand-hover));color:#fff;border:none;
+  box-shadow:0 6px 16px -6px rgba(224,58,82,.45);
+}
+.hours-modal-btn-secondary:hover{box-shadow:0 10px 22px -6px rgba(224,58,82,.55)}
 
 .form-submit:hover{background:var(--brand-hover)}
 
@@ -7791,8 +7801,8 @@ main.tab-explore .empty-state{display:none !important}
   </div>
 </div>
 
-<!-- ─── After-Hours Notice Modal — auto-shown once per browser session
-     when a visitor lands on the site outside office hours (10:00 AM –
+<!-- ─── After-Hours Notice Modal — shown on every page load/refresh
+     when a visitor lands on the site outside office hours (9:00 AM –
      7:00 PM IST) or on a day the office is closed (Mon/Thu). Logic lives
      in checkOfficeHoursModal(), called on page load. ─────────────── -->
 <div class="add-modal-overlay" id="officeHoursModal" role="dialog" aria-modal="true" aria-label="Office Hours Notice">
@@ -7800,9 +7810,9 @@ main.tab-explore .empty-state{display:none !important}
     <div class="hours-modal-icon">
       <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
     </div>
-    <div class="hours-modal-title" id="hoursModalTitle">We're Currently Closed</div>
+    <div class="hours-modal-title" id="hoursModalTitle">Outside Our Office Hours</div>
     <div class="hours-modal-sub" id="hoursModalSub">
-      Our office hours are <strong>10:00 AM – 7:00 PM</strong>. We're not available to take calls or office visits right now — but feel free to keep browsing, and we'll get back to any messages first thing when we reopen.
+      Our office hours are <strong>10AM to 7PM</strong>. We're unavailable right now, but feel free to keep browsing — we'll get back to you as soon as we're online.
     </div>
     <div class="hours-modal-actions">
       <a href="https://wa.me/919035205230" target="_blank" rel="noopener" class="hours-modal-btn hours-modal-btn-wa">
@@ -12967,7 +12977,7 @@ async function confirmClearAddModalDraft() {
 // login prompt, closable via the X, a backdrop click, or Escape like any other modal.
 // Dismissing it (without logging in) snoozes it for AUTH_SKIP_MS: it comes back
 // on its own once that time is up, still logged out, via the timer below.
-const AUTH_SKIP_MS = 5 * 60 * 1000; // "skip for a few minutes"
+const AUTH_SKIP_MS = 60 * 60 * 1000; // "skip for an hour"
 let _authSkipTimer = null;
 function scheduleAuthPrompt(delayMs) {
   clearTimeout(_authSkipTimer);
@@ -15433,7 +15443,7 @@ function closeOfficeModal() {
 /* ═══════════════════════════════════════════════
    AFTER-HOURS NOTICE MODAL
    Shown on every page load/refresh when a visitor lands on the site
-   outside office hours (9:00 AM – 7:00 PM IST) or on a day the office
+   outside office hours (10AM to 7PM IST) or on a day the office
    is closed (Monday & Thursday). Uses Asia/Kolkata explicitly so the
    check is correct no matter where the visitor's device thinks it is.
    Intentionally NOT gated by sessionStorage — it should reappear on
@@ -15449,18 +15459,18 @@ function checkOfficeHoursModal() {
   const weekday = get('weekday'); // "Mon","Tue","Wed","Thu",...
 
   const closedDayName = weekday === 'Mon' ? 'Monday' : weekday === 'Thu' ? 'Thursday' : null;
-  const isOutsideHours = hour < 9 || hour >= 19;
+  const isOutsideHours = hour < 7 || hour >= 19;
 
   if (!closedDayName && !isOutsideHours) return; // office is open right now
 
   const titleEl = document.getElementById('hoursModalTitle');
   const subEl = document.getElementById('hoursModalSub');
   if (closedDayName) {
-    titleEl.textContent = "We're Closed Today";
-    subEl.innerHTML = `Our office is closed today (<strong>${closedDayName}</strong>). Our regular hours are <strong>10:00 AM – 7:00 PM</strong> on all other days — feel free to keep browsing, and we'll get back to any messages once we're back.`;
+    titleEl.textContent = "We're Away Today";
+    subEl.innerHTML = `We're closed today (<strong>${closedDayName}</strong>). Our hours are <strong>10AM to 7PM</strong> otherwise — feel free to keep browsing, and we'll get back to you as soon as we're online.`;
   } else {
-    titleEl.textContent = "We're Currently Closed";
-    subEl.innerHTML = `Our office hours are <strong>10:00 AM – 7:00 PM</strong>. We're not available to take calls or office visits right now — but feel free to keep browsing, and we'll get back to any messages first thing when we reopen.`;
+    titleEl.textContent = "Outside Our Office Hours";
+    subEl.innerHTML = `Our office hours are <strong>10AM to 7PM</strong>. We're unavailable right now, but feel free to keep browsing — we'll get back to you as soon as we're online.`;
   }
 
   openOfficeHoursModal();
