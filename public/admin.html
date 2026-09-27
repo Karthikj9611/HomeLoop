@@ -432,6 +432,44 @@ table.dataTable.no-footer{border-bottom:none!important}
   background:#fdfaf6;
 }
 
+/* Fully highlight a selected row (checkbox ticked) — covers every cell,
+   including the col-sticky-1/2 cells above which otherwise carry their
+   own background and would stay unhighlighted, and wins over the
+   plain-hover background too so a selected row still reads as selected
+   while the cursor is over it. */
+#propertyTable tbody tr.prop-row-selected td,
+#propertyTable tbody tr.prop-row-selected:hover td,
+#propertyTable tbody tr.prop-row-selected td.col-sticky-1,
+#propertyTable tbody tr.prop-row-selected td.col-sticky-2,
+#propertyTable tbody tr.prop-row-selected:hover td.col-sticky-1,
+#propertyTable tbody tr.prop-row-selected:hover td.col-sticky-2{
+  background:rgba(234,88,12,0.28)!important;
+}
+#propertyTable tbody tr.prop-row-selected td:first-child{
+  box-shadow:inset 3px 0 0 var(--gold);
+}
+/* Action column: left-align the button group instead of centering it, so
+   a row with fewer buttons (e.g. no Booking button when the listing isn't
+   booked) doesn't visually shift — every row's Check button now starts at
+   the same left edge of the cell regardless of how many buttons follow. */
+#propertyTable tbody td.action-cell-left{
+  text-align:left!important;
+}
+/* Action-column buttons across every admin grid (Properties/Customers/
+   Appointments/Reviews/Partners/Referrals — Check/Share/View/Navigate/
+   Directions/Facebook/Instagram/Delete/Booking/etc.): icon-only on desktop
+   too now, not just mobile — same technique as the max-width:768px rule
+   below, just not gated behind that media query. */
+.btn-view .btn-label,
+.btn-booking-details .btn-label{display:none}
+.btn-view,
+.btn-booking-details{
+  padding:8px 10px;min-width:34px;justify-content:center;
+}
+.btn-view i,
+.btn-booking-details i{font-size:0.85rem}
+.btn-dist{font-size:0.68rem;margin-left:3px}
+
 
 /* ── COLUMN VISIBILITY TOGGLE (Properties table) ── */
 .col-toggle-wrap{position:relative;display:inline-block}
@@ -7386,6 +7424,8 @@ window.resetAllViews = async function(){
 window.onPropRowCheck = function(checkboxEl, id){
   if(checkboxEl.checked) _selectedPropIds.add(id);
   else _selectedPropIds.delete(id);
+  const tr = checkboxEl.closest('tr');
+  if(tr) tr.classList.toggle('prop-row-selected', checkboxEl.checked);
   updateBulkToolbarUI();
   syncPropSelectionUI();
 };
@@ -7414,9 +7454,16 @@ window.onPropSelectAllChange = function(headerCheckboxEl){
 // Directly sets every row checkbox currently in the DOM to match
 // _selectedPropIds — independent of whether DataTables has finished
 // re-rendering via draw(), so selection is always reflected instantly.
+// Also keeps each row's full-row highlight (.prop-row-selected) in sync,
+// since draw()/redraw (select-all, filtering, pagination) rebuilds the
+// <tr> elements and would otherwise leave a selected row unhighlighted
+// until the next individual checkbox click.
 function syncVisibleRowCheckboxes(){
   document.querySelectorAll('#propertyTable tbody .prop-row-check').forEach(cb=>{
-    cb.checked = _selectedPropIds.has(cb.getAttribute('data-id'));
+    const isSelected = _selectedPropIds.has(cb.getAttribute('data-id'));
+    cb.checked = isSelected;
+    const tr = cb.closest('tr');
+    if(tr) tr.classList.toggle('prop-row-selected', isSelected);
   });
 }
 
@@ -8426,7 +8473,7 @@ $(document).ready(function(){
          branch returns the plain distance number computeDistanceKm() already
          powers the Directions button and ≤km filter with; display is
          untouched. Rows with no computable distance sort to the end.) */
-      { data:null, orderable:true, render:(d,t,row)=>{
+      { data:null, orderable:true, className:'action-cell-left', render:(d,t,row)=>{
           if(t === 'sort' || t === 'type'){
             const km = computeDistanceKm(row);
             return km === null ? Number.MAX_SAFE_INTEGER : km;
@@ -8470,16 +8517,16 @@ $(document).ready(function(){
           const deleteBtn = viewOnly
             ? disabledBtn('fas fa-trash', 'Delete', 'View-only access — ask the primary admin to enable actions')
             : `<button class="btn-view" style="color:#c0392b" title="Delete this listing" onclick="deleteProperty('${row._id}')"><i class="fas fa-trash"></i><span class="btn-label"> Delete</span></button>`;
-          return `<div style="display:inline-flex;gap:6px;flex-wrap:nowrap;justify-content:center">
+          return `<div style="display:inline-flex;gap:6px;flex-wrap:nowrap;justify-content:flex-start">
             ${checkAvailBtn}
+            ${shareBtn}
             <button class="btn-view" onclick="openAdminPropModal('${row._id}')"><i class="fas fa-eye"></i><span class="btn-label"> View</span></button>
             ${navigateBtn}
             ${directionsBtn}
-            ${shareBtn}
             ${fbShareBtn}
             ${igShareBtn}
-            ${bookingBtn}
             ${deleteBtn}
+            ${bookingBtn}
           </div>`;
       }}
     ],
