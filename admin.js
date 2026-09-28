@@ -598,27 +598,63 @@ module.exports = function registerAdminRoutes(app, deps) {
       const users = await User.find({}).sort({ createdAt: -1 }).lean();
       const userIds = users.map(u => u._id);
 
-      const [propAggByModel, visitAgg] = await Promise.all([
-        Promise.all(LISTING_MODEL_LIST.map(M => M.aggregate([
-          { $match: { userId: { $in: userIds } } },
-          { $group: { _id: '$userId', count: { $sum: 1 } } }
-        ]))),
-        VisitRequest.aggregate([
+      // Same 10-digit normalisation the rest of the app uses for mobiles.
+      const normMobile = (raw) => {
+        let d = String(raw || '').replace(/\D/g, '');
+        if (d.length > 10 && d.startsWith('0')) d = d.slice(1);
+        if (d.length > 10 && d.startsWith('91')) d = d.slice(d.length - 10);
+        return d;
+      };
+      // mobile -> [user _id strings], so a listing/visit that was never linked to an
+      // account (added by an admin, or made before signup) is still credited to the
+      // customer whose mobile number matches — same rule as getUserOwnershipFilter().
+      const mobileToUsers = {};
+      users.forEach(u => {
+        const m = normMobile(u.mobile);
+        if (m) (mobileToUsers[m] = mobileToUsers[m] || []).push(String(u._id));
+      });
+      const mobiles = Object.keys(mobileToUsers);
+
+      const [listingsByModel, visitDocs, viewerAgg] = await Promise.all([
+        Promise.all(LISTING_MODEL_LIST.map(M => M.find({ $or: [
+          { userId: { $in: userIds } },
+          { 'owner.phone': { $in: mobiles } },
+          { 'owner.altPhone': { $in: mobiles } }
+        ] }).select('userId owner.phone owner.altPhone views').lean())),
+        VisitRequest.find({ $or: [
+          { userId: { $in: userIds } },
+          { visitorPhone: { $in: mobiles } }
+        ] }).select('userId visitorPhone').lean(),
+        PropertyViewer.aggregate([
           { $match: { userId: { $in: userIds } } },
           { $group: { _id: '$userId', count: { $sum: 1 } } }
         ])
       ]);
 
-      // Sum counts per user across the four collections (a user's listings can
-      // be split between rent/lease/pg/hourlyStay).
-      const propMap = {};
-      for (const agg of propAggByModel) {
-        for (const x of agg) {
-          const key = String(x._id);
-          propMap[key] = (propMap[key] || 0) + x.count;
+      const propMap = {};   // listings owned per customer (across rent/lease/pg/hourlyStay)
+      const viewsMap = {};  // total views received on those listings
+      for (const docs of listingsByModel) {
+        for (const d of docs) {
+          const owners = new Set();
+          if (d.userId) owners.add(String(d.userId));
+          const o = d.owner || {};
+          [o.phone, o.altPhone].forEach(ph => {
+            (mobileToUsers[normMobile(ph)] || []).forEach(id => owners.add(id));
+          });
+          owners.forEach(id => {
+            propMap[id]  = (propMap[id]  || 0) + 1;
+            viewsMap[id] = (viewsMap[id] || 0) + (d.views || 0);
+          });
         }
       }
-      const visitMap = Object.fromEntries(visitAgg.map(x => [String(x._id), x.count]));
+      const visitMap = {};  // visit requests per customer (by account or by phone)
+      for (const v of visitDocs) {
+        const owners = new Set();
+        if (v.userId) owners.add(String(v.userId));
+        (mobileToUsers[normMobile(v.visitorPhone)] || []).forEach(id => owners.add(id));
+        owners.forEach(id => { visitMap[id] = (visitMap[id] || 0) + 1; });
+      }
+      const viewedMap = Object.fromEntries(viewerAgg.map(x => [String(x._id), x.count]));
 
       const rows = users.map(u => ({
         _id:           u._id,
@@ -637,6 +673,8 @@ module.exports = function registerAdminRoutes(app, deps) {
         subscriptionAt: u.subscriptionAt || null,
         listingsCount: propMap[String(u._id)]  || 0,
         visitsCount:   visitMap[String(u._id)] || 0,
+        viewsCount:    viewsMap[String(u._id)] || 0,   // total views on this customer's listings
+        propertiesViewed: viewedMap[String(u._id)] || 0, // distinct listings this customer has opened
         createdAt:     u.createdAt,
       }));
 

@@ -2828,6 +2828,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
               <th>Email</th>
               <th>Listings</th>
               <th>Visits</th>
+              <th>Views</th>
               <th>Registered</th>
               <th>Remarks</th>
               <th>Action</th>
@@ -2842,6 +2843,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
               <th><input type="text" class="col-filter-input" data-filter-key="email" placeholder="Search…" oninput="onCustColumnFilter('email', this.value, this)"></th>
               <th><input type="text" class="col-filter-input" data-filter-key="listings" placeholder="e.g. 3" oninput="onCustColumnFilter('listings', this.value, this)"></th>
               <th><input type="text" class="col-filter-input" data-filter-key="visits" placeholder="e.g. 0" oninput="onCustColumnFilter('visits', this.value, this)"></th>
+              <th><input type="text" class="col-filter-input" data-filter-key="views" placeholder="e.g. 0" oninput="onCustColumnFilter('views', this.value, this)"></th>
               <th><div class="col-date-range">
                 <select class="date-preset-select" onchange="applyDatePreset(this,'onCustRegisteredRangeFilter')">
                   <option value="">Presets</option>
@@ -2858,7 +2860,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
             </tr>
           </thead>
           <tbody>
-            <tr><td colspan="12" class="empty-state"><i class="fas fa-circle-notch fa-spin"></i>Loading…</td></tr>
+            <tr><td colspan="13" class="empty-state"><i class="fas fa-circle-notch fa-spin"></i>Loading…</td></tr>
           </tbody>
         </table>
       </div>
@@ -5436,7 +5438,7 @@ function reconcileDateRange(container, filterObj, startKey, endKey){
   }
 }
 
-const _custColumnFilters = { name:'', userId:'', mobile:'', email:'', accountType:'', listings:'', visits:'', registeredStart:'', registeredEnd:'', remarks:'' };
+const _custColumnFilters = { name:'', userId:'', mobile:'', email:'', accountType:'', listings:'', visits:'', views:'', registeredStart:'', registeredEnd:'', remarks:'' };
 const CUST_FILTER_STORAGE_KEY = 'rip_admin_custFilters';
 loadFilterState(CUST_FILTER_STORAGE_KEY, _custColumnFilters);
 
@@ -5479,6 +5481,7 @@ $.fn.dataTable.ext.search.push(function(settings, data, dataIndex){
   if(cf.accountType && (row.accountType||'customer') !== cf.accountType) return false;
   if(cf.listings && !contains(row.listingsCount ?? 0, cf.listings)) return false;
   if(cf.visits && !contains(row.visitsCount ?? 0, cf.visits)) return false;
+  if(cf.views && !contains((row.viewsCount ?? 0) + (row.propertiesViewed ?? 0), cf.views)) return false;
   if(cf.registeredStart || cf.registeredEnd){
     if(!row.createdAt) return false;
     const created = new Date(row.createdAt);
@@ -8109,18 +8112,25 @@ $(document).ready(function(){
       { data:'listingsCount', className:'dt-body-center', render:(d)=> String(d ?? 0) },
       /* 8 – Visit Requests (count) */
       { data:'visitsCount', className:'dt-body-center', render:(d)=> String(d ?? 0) },
-      /* 9 – Registered */
+      /* 9 – Views (total views on their listings + listings they have viewed) */
+      { data:null, className:'dt-body-center', render:(d,t,row)=>{
+          const total = (row.viewsCount ?? 0) + (row.propertiesViewed ?? 0);
+          if(t!=='display') return total;
+          const tip = (row.viewsCount ?? 0) + ' views on their listings + ' + (row.propertiesViewed ?? 0) + ' listings viewed by them';
+          return '<span title="'+tip+'">'+total+'</span>';
+      }},
+      /* 10 – Registered */
       { data:'createdAt', render:(d,t)=>{
           if(t==='display') return formatDateTime(d);
           if(t==='export') return plainDateTime(d);
           return d||'—';
       }},
-      /* 10 – Remarks */
+      /* 11 – Remarks */
       { data:'remarks', orderable:false, render:(d,t,row)=>{
           if(t==='display') return remarkCellHtml(row.mobile||row._id, d, 'customer');
           return d||'';
       }},
-      /* 11 – Action */
+      /* 12 – Action */
       { 
 		  data:null, 
 		  orderable:false, 
@@ -8161,7 +8171,7 @@ $(document).ready(function(){
 		  }
 		}
     ],
-    order:[[9,'desc']],
+    order:[[10,'desc']],
     orderCellsTop:true,
     pageLength:10,
     scrollX:true,
@@ -8179,7 +8189,7 @@ $(document).ready(function(){
         title: function(){ return 'Customer_Leads_' + new Date().toLocaleDateString('en-GB') + (_selectedCustIds.size ? '_Selected' : ''); },
         exportOptions:{
           rows: custExportRowSelector,
-          columns: function(idx){ return idx!==0 && idx!==10 && idx!==11 && dataTable.column(idx).visible(); },
+          columns: function(idx){ return idx!==0 && idx!==11 && idx!==12 && dataTable.column(idx).visible(); },
           orthogonal:'export', stripHtml:true,
           format:{ body:function(data){ return typeof data === "string" ? data.replace(/<[^>]*>/g,"").trim() : data; } }
         }
@@ -8189,7 +8199,7 @@ $(document).ready(function(){
         title: function(){ return 'Customer_Leads_' + new Date().toLocaleDateString('en-GB') + (_selectedCustIds.size ? '_Selected' : ''); },
         exportOptions:{
           rows: custExportRowSelector,
-          columns: function(idx){ return idx!==0 && idx!==10 && idx!==11 && dataTable.column(idx).visible(); },
+          columns: function(idx){ return idx!==0 && idx!==11 && idx!==12 && dataTable.column(idx).visible(); },
           orthogonal:'export', stripHtml:true,
           format:{ body:function(data){ return typeof data === "string" ? data.replace(/<[^>]*>/g,"").trim() : data; } }
         }
@@ -8216,10 +8226,10 @@ $(document).ready(function(){
         exportOptions:{
           rows: custExportRowSelector,
           columns: function(idx){
-            // Checkbox(0) has no printable value; Remarks(10) and Action(11)
+            // Checkbox(0) has no printable value; Remarks(11) and Action(12)
             // are never printed to PDF; everything else follows whatever
             // the Columns toggle currently shows.
-            return idx!==0 && idx!==10 && idx!==11 && dataTable.column(idx).visible();
+            return idx!==0 && idx!==11 && idx!==12 && dataTable.column(idx).visible();
           }
         },
         customize:function(doc){
@@ -10591,7 +10601,7 @@ const COL_TOGGLE_CONFIGS = {
     cols: [
       {idx:3, label:'Type'}, {idx:4, label:'User ID'}, {idx:5, label:'Phone'},
       {idx:6, label:'Email'}, {idx:7, label:'Property Listings'}, {idx:8, label:'Visit Requests'},
-      {idx:9, label:'Registered'}, {idx:10, label:'Remarks'}
+      {idx:9, label:'Views'}, {idx:10, label:'Registered'}, {idx:11, label:'Remarks'}
     ],
     menuId:'custColToggleMenu', btnId:'custColToggleBtn', wrapId:'custColToggleWrap',
     storageKey:'rip_admin_custColVisibility'
@@ -10626,7 +10636,7 @@ const COL_TOGGLE_CONFIGS = {
 // (which shifts whenever a column is hidden) back to the original index.
 function custExportColumnIndices(){
   const idxs=[];
-  for(let i=0;i<=11;i++){ if(i!==0 && i!==10 && i!==11 && dataTable.column(i).visible()) idxs.push(i); }
+  for(let i=0;i<=12;i++){ if(i!==0 && i!==11 && i!==12 && dataTable.column(i).visible()) idxs.push(i); }
   return idxs;
 }
 function apptExportColumnIndices(){
@@ -11139,6 +11149,14 @@ function openCustomerModal(id){
     {
       label:'Visit Requests',
       value:String(c.visitsCount ?? 0)
+    },
+    {
+      label:'Total Views on Listings',
+      value:String(c.viewsCount ?? 0)
+    },
+    {
+      label:'Properties Viewed',
+      value:String(c.propertiesViewed ?? 0)
     },
     {
       label:'Remarks',
