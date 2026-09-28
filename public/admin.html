@@ -2567,6 +2567,25 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
   </div>
 </div>
 
+<!-- ══ SHARE PROPERTY TO TENANT (WhatsApp) ══ -->
+<div id="shareTenantOverlay" style="display:none;position:fixed;inset:0;z-index:100000;align-items:center;justify-content:center;background:rgba(15,17,21,.55);padding:16px">
+  <div class="confirm-card" style="max-width:460px;width:100%;text-align:left">
+    <div class="confirm-icon info" style="margin:0 auto 10px"><i class="fas fa-paper-plane"></i></div>
+    <div class="confirm-title" style="text-align:center">Share property with tenant</div>
+    <div class="confirm-msg" style="text-align:center;margin-bottom:14px">Enter the tenant's WhatsApp number. A short HomeLoop message with the property view link(s) is sent on WhatsApp.</div>
+    <div id="shareTenantNote" style="display:none;font-size:12px;color:#0369a1;background:#e0f2fe;border-radius:8px;padding:6px 10px;margin-bottom:10px"></div>
+    <label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px">Tenant mobile number</label>
+    <input type="tel" id="shareTenantPhone" inputmode="numeric" maxlength="15" placeholder="10-digit mobile number" style="width:100%;padding:10px 12px;border:1px solid #d5d9e0;border-radius:10px;font-size:14px;margin-bottom:6px">
+    <div id="shareTenantErr" style="color:#c0392b;font-size:12px;min-height:16px;margin-bottom:6px"></div>
+    <label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px">Message (you can edit it)</label>
+    <textarea id="shareTenantMsg" rows="3" style="width:100%;padding:10px 12px;border:1px solid #d5d9e0;border-radius:10px;font-size:13px;font-family:inherit;resize:vertical;margin-bottom:14px"></textarea>
+    <div class="confirm-actions" style="flex-wrap:wrap">
+      <button class="confirm-ok-btn success" id="shareTenantSendBtn" style="flex:1 1 100%"><i class="fab fa-whatsapp"></i> Send on WhatsApp</button>
+      <button class="confirm-cancel-btn" id="shareTenantCancelBtn" style="flex:1 1 100%">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <!-- ══ COMPARE MODAL (multiselect → Compare Selected → this) ══ -->
 <div class="add-modal-overlay" id="adminCompareModal" role="dialog" aria-modal="true" aria-label="Compare properties">
   <div class="add-modal compare-modal-box" id="adminCompareModalBox">
@@ -2908,6 +2927,9 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
         </button>
         <button class="bulk-btn" id="bulkCompareBtn" style="display:none;background:var(--brand);color:#fff;border-color:var(--brand)" onclick="openAdminCompareModal()" title="Compare the selected properties and share the link with a customer">
           <i class="fas fa-code-compare"></i> <span class="bulk-btn-label" data-mobile="Compare">Compare - </span><span id="bulkCompareCount">0</span>
+        </button>
+        <button class="bulk-btn" id="bulkShareTenantBtn" style="display:none;background:#0ea5e9;color:#fff;border-color:#0ea5e9" onclick="shareSelectedToTenant()" title="Send the view links of all selected properties to a tenant on WhatsApp">
+          <i class="fas fa-paper-plane"></i> <span class="bulk-btn-label" data-mobile="Tenant">Share to Tenant - </span><span id="bulkShareTenantCount">0</span>
         </button>
         <button class="bulk-btn" id="bulkShareLinksBtn" style="display:none;background:#25D366;color:#fff;border-color:#25D366" onclick="shareSelectedLinksToNumber()" title="Share links for all selected properties to a WhatsApp number you enter">
           <i class="fab fa-whatsapp"></i> <span class="bulk-btn-label" data-mobile="Share">Share Links - </span><span id="bulkShareLinksCount">0</span>
@@ -7110,6 +7132,93 @@ window.shareListingToOwner = async function(id){
   openWhatsAppTabs(numbers, text);
 };
 
+/* ── SHARE PROPERTY LINK TO A TENANT (WhatsApp) ──
+   Admin types the tenant's number and sends just the property view link
+   through WhatsApp. Gated on row.verified because the link
+   only opens for live listings. */
+function buildTenantShareMessage(links){
+  if(links.length === 1){
+    return 'Hello, greetings from HomeLoop! Here is a verified property for you. View details & photos: ' + links[0];
+  }
+  return 'Hello, greetings from HomeLoop! Here are ' + links.length + ' verified properties for you. View details & photos:\n\n'
+    + links.map((l, i) => (i + 1) + '. ' + l).join('\n');
+}
+
+// Opens the tenant-share popup for one or many listings (only verified
+// ones are included, since the link opens only for live listings).
+function openTenantShareModal(ids){
+  const rows = ids.map(id => _adminPropCache[id]).filter(Boolean);
+  if(!rows.length){ alert('Listing details not loaded yet — please retry.'); return; }
+  const verifiedRows = rows.filter(r => r.verified);
+  if(!verifiedRows.length){
+    alert(rows.length === 1
+      ? "This listing isn't verified yet — verify it first, then share."
+      : "None of the selected listings are verified yet — verify them first, then share.");
+    return;
+  }
+  const skipped = rows.length - verifiedRows.length;
+  const links = verifiedRows.map(r => `${BASE}/property/${r._id}`);
+
+  const overlay = document.getElementById('shareTenantOverlay');
+  const phoneEl = document.getElementById('shareTenantPhone');
+  const msgEl   = document.getElementById('shareTenantMsg');
+  const errEl   = document.getElementById('shareTenantErr');
+  const noteEl  = document.getElementById('shareTenantNote');
+  const sendBtn = document.getElementById('shareTenantSendBtn');
+  const cancelBtn = document.getElementById('shareTenantCancelBtn');
+
+  phoneEl.value = '';
+  errEl.textContent = '';
+  noteEl.textContent = (verifiedRows.length > 1 ? verifiedRows.length + ' property links included. ' : '')
+    + (skipped ? skipped + ' unverified listing' + (skipped > 1 ? 's were' : ' was') + ' left out.' : '');
+  noteEl.style.display = noteEl.textContent ? 'block' : 'none';
+  msgEl.value = buildTenantShareMessage(links);
+  msgEl.rows = Math.min(14, Math.max(3, links.length + 4));
+
+  function close(){
+    overlay.style.display = 'none';
+    sendBtn.removeEventListener('click', onSend);
+    cancelBtn.removeEventListener('click', close);
+    overlay.removeEventListener('click', onOverlay);
+    document.removeEventListener('keydown', onKey);
+  }
+  function onOverlay(e){ if(e.target === overlay) close(); }
+  function onKey(e){ if(e.key === 'Escape') close(); }
+  function onSend(){
+    const digits = String(phoneEl.value || '').replace(/\D/g, '');
+    const num = waDigits(digits);
+    if(!/^\d{10,15}$/.test(digits) || num.length < 12){
+      errEl.textContent = 'Enter a valid 10-digit mobile number.';
+      phoneEl.focus();
+      return;
+    }
+    const text = encodeURIComponent(msgEl.value.trim() || buildTenantShareMessage(links));
+    window.open(`https://wa.me/${num}?text=${text}`, '_blank');
+    close();
+  }
+
+  sendBtn.addEventListener('click', onSend);
+  cancelBtn.addEventListener('click', close);
+  overlay.addEventListener('click', onOverlay);
+  document.addEventListener('keydown', onKey);
+  overlay.style.display = 'flex';
+  phoneEl.focus();
+}
+
+// Row "Tenant" button — one listing.
+window.shareListingToTenant = function(id){
+  if(blockIfViewOnly('properties')) return;
+  openTenantShareModal([id]);
+};
+
+// Toolbar "Share to Tenant" button — every selected listing in one message.
+window.shareSelectedToTenant = function(){
+  if(blockIfViewOnly('properties')) return;
+  const ids = Array.from(_selectedPropIds);
+  if(!ids.length){ alert('Select at least one property first.'); return; }
+  openTenantShareModal(ids);
+};
+
 /* ── SHARE VERIFIED LISTING TO FACEBOOK / INSTAGRAM (company account) ──
    Manual-assist versions — there's no server-side Meta Graph API app/Page
    token wired up yet, so neither of these can auto-post as the Page.
@@ -7556,6 +7665,12 @@ function updateBulkToolbarUI(){
   // Share Links — unlike Compare, has no ADMIN_COMPARE_MAX ceiling; any
   // number of selected properties (10+, unlimited) can be bundled into one
   // WhatsApp message sent to a number the admin types in.
+  const shareTenantBtn = document.getElementById('bulkShareTenantBtn');
+  const shareTenantCountEl = document.getElementById('bulkShareTenantCount');
+  if (shareTenantBtn){
+    shareTenantBtn.style.display = n >= 1 ? 'inline-flex' : 'none';
+    if (shareTenantCountEl) shareTenantCountEl.textContent = n;
+  }
   const shareLinksBtn = document.getElementById('bulkShareLinksBtn');
   const shareLinksCountEl = document.getElementById('bulkShareLinksCount');
   if (shareLinksBtn){
@@ -8554,6 +8669,9 @@ $(document).ready(function(){
           const shareBtn = (row.verified && !viewOnly)
             ? `<button class="btn-view" style="background:#25D366;border-color:#25D366;color:#fff" title="Share the live link with the owner (and alt number) via WhatsApp" onclick="shareListingToOwner('${row._id}')"><i class="fab fa-whatsapp"></i><span class="btn-label"> Share</span></button>`
             : disabledBtn('fab fa-whatsapp', 'Share', viewOnly ? 'View-only access — ask the primary admin to enable actions' : 'Verify this listing first to enable sharing');
+          const tenantShareBtn = (row.verified && !viewOnly)
+            ? `<button class="btn-view" style="background:#0ea5e9;border-color:#0ea5e9;color:#fff" title="Send this property's view link to a tenant on WhatsApp" onclick="shareListingToTenant('${row._id}')"><i class="fas fa-paper-plane"></i><span class="btn-label"> Tenant</span></button>`
+            : disabledBtn('fas fa-paper-plane', 'Tenant', viewOnly ? 'View-only access — ask the primary admin to enable actions' : 'Verify this listing first to enable sharing');
           const fbShareBtn = (row.verified && !viewOnly)
             ? `<button class="btn-view" style="background:#1877F2;border-color:#1877F2;color:#fff" title="Share this listing to HomeLoop's Facebook Page" onclick="shareListingToFacebook('${row._id}')"><i class="fab fa-facebook"></i><span class="btn-label"> Facebook</span></button>`
             : disabledBtn('fab fa-facebook', 'Facebook', viewOnly ? 'View-only access — ask the primary admin to enable actions' : 'Verify this listing first to enable sharing');
@@ -8578,6 +8696,7 @@ $(document).ready(function(){
           return `<div style="display:inline-flex;gap:6px;flex-wrap:nowrap;justify-content:flex-start">
             ${checkAvailBtn}
             ${shareBtn}
+            ${tenantShareBtn}
             <button class="btn-view" onclick="openAdminPropModal('${row._id}')"><i class="fas fa-eye"></i><span class="btn-label"> View</span></button>
             ${navigateBtn}
             ${directionsBtn}
