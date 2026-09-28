@@ -2412,7 +2412,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
   padding-bottom:12px;border-bottom:1px solid var(--border);font-weight:700;font-size:0.85rem;
   margin-bottom:4px;
 }
-.notif-panel-actions{display:flex;gap:6px}
+.notif-panel-actions{display:flex;gap:6px;margin-right:44px} /* keep clear of the absolute-positioned close (X) button */
 .notif-panel-actions button{
   background:none;border:none;color:var(--ink2);cursor:pointer;padding:5px 7px;
   border-radius:8px;font-size:0.78rem;
@@ -2434,6 +2434,14 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
 .notif-item-msg{font-size:0.78rem;color:var(--ink2);margin-top:2px}
 .notif-item-time{font-size:0.7rem;color:var(--ink2);margin-top:4px;opacity:0.8}
 .notif-item-action{margin-top:8px}
+.notif-item-tools{display:flex;gap:2px;flex:none;align-self:flex-start;margin:-3px -6px 0 0}
+.notif-tool-btn{
+  background:none;border:none;color:var(--ink2);cursor:pointer;width:28px;height:28px;
+  border-radius:8px;font-size:0.78rem;display:inline-flex;align-items:center;justify-content:center;
+}
+.notif-tool-btn:hover{background:var(--red-light);color:var(--ink)}
+.notif-tool-btn.notif-del-btn:hover{color:var(--red)}
+.notif-item.read .notif-mark-btn{display:none}
 .notif-action-btn{
   display:inline-flex;align-items:center;gap:6px;
   background:var(--green-light,#dcf5e6);color:var(--green,#1e9e57);
@@ -4539,6 +4547,10 @@ function renderNotifPanel(notifications){
         <div class="notif-item-time">${timeAgo(n.createdAt)}</div>
         ${notifActionHtml(n)}
       </div>
+      <div class="notif-item-tools">
+        <button class="notif-tool-btn notif-mark-btn" title="Mark as read" onclick="event.stopPropagation();markOneNotifRead('${n._id}')"><i class="fas fa-check"></i></button>
+        <button class="notif-tool-btn notif-del-btn" title="Delete" onclick="event.stopPropagation();deleteOneNotif('${n._id}')"><i class="fas fa-trash"></i></button>
+      </div>
     </div>
   `).join('');
 }
@@ -4613,6 +4625,37 @@ function markNotifReadLocally(notifId){
     }
   }
 }
+
+// Per-notification "mark as read" (check icon).
+window.markOneNotifRead = function(id){
+  if(blockIfViewOnly('notifications')) return;
+  markNotifReadLocally(id);
+};
+
+// Per-notification delete (trash icon) — removes it from the DB and the list.
+window.deleteOneNotif = async function(id){
+  if(blockIfViewOnly('notifications')) return;
+  try {
+    const res = await fetch(BASE + '/api/admin/notifications/' + id, { method:'DELETE', headers: authHeaders() });
+    if(!res.ok) return;
+    const item = document.querySelector('.notif-item[data-id="' + id + '"]');
+    if(item){
+      if(item.classList.contains('unread')){
+        const badge = document.getElementById('notifBadge');
+        const current = parseInt(badge.textContent, 10);
+        if(!isNaN(current)){
+          const next = Math.max(0, current - 1);
+          if(next > 0){ badge.textContent = next; } else { badge.style.display = 'none'; }
+        }
+      }
+      item.remove();
+    }
+    if(notifSeenIds) notifSeenIds.delete(String(id));
+    const list = document.getElementById('notifPanelList');
+    if(list && !list.querySelector('.notif-item')) list.innerHTML = '<div class="notif-empty">No notifications yet.</div>';
+    fetchNotifications();
+  } catch(e){}
+};
 
 // Verifies straight from the notification — same PATCH /api/users/:id/verify
 // endpoint (and confirm-modal UX) as the Customers grid's own Verify action.
