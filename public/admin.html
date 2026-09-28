@@ -2556,8 +2556,12 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
 <div id="sharePickOverlay">
   <div class="confirm-card">
     <div class="confirm-icon info"><i class="fas fa-share-nodes"></i></div>
-    <div class="confirm-title">Share with which number?</div>
-    <div class="confirm-msg" id="sharePickMsg" style="margin-bottom:22px"></div>
+    <div class="confirm-title" id="sharePickTitle">Share with which number?</div>
+    <div class="confirm-msg" id="sharePickMsg" style="margin-bottom:14px"></div>
+    <div id="sharePickTextWrap" style="display:none;text-align:left;margin-bottom:16px">
+      <label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px">Message that will be sent (you can edit it)</label>
+      <textarea id="sharePickText" rows="4" style="width:100%;padding:10px 12px;border:1px solid #d5d9e0;border-radius:10px;font-size:13px;font-family:inherit;resize:vertical"></textarea>
+    </div>
     <div class="confirm-actions" style="flex-wrap:wrap">
       <button class="confirm-ok-btn success" id="sharePickOwnerBtn" style="flex:1 1 100%">Owner number</button>
       <button class="confirm-ok-btn success" id="sharePickAltBtn" style="flex:1 1 100%">Alternate number</button>
@@ -2627,6 +2631,10 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
       <input type="tel" id="shareLinksNumberInput" inputmode="numeric" placeholder="10-digit mobile, or with country code" oninput="this.value=this.value.replace(/[^0-9+]/g,'')" maxlength="15"/>
     </div>
     <div class="share-links-list" id="shareLinksList"></div>
+    <div style="margin:12px 0">
+      <label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px">Message that will be sent (you can edit it)</label>
+      <textarea id="shareLinksMsgText" rows="8" style="width:100%;padding:10px 12px;border:1px solid #d5d9e0;border-radius:10px;font-size:13px;font-family:inherit;resize:vertical"></textarea>
+    </div>
     <div class="share-links-footer">
       <button class="confirm-cancel-btn" onclick="closeShareLinksModal()" style="flex:1">Cancel</button>
       <button class="confirm-ok-btn success" onclick="sendShareLinksToNumber()" style="flex:2">
@@ -7038,7 +7046,7 @@ window.setPromotedPriority = async function(id, inputEl){
    tabs open, instead of always blasting both numbers. Only offers a
    choice when both numbers actually exist on the listing — falls back
    silently to whichever single number is present. */
-function showShareNumberPicker({ ownerLabel, altLabel } = {}){
+function showShareNumberPicker({ ownerLabel, altLabel, title, message, text } = {}){
   return new Promise(resolve=>{
     const overlay   = document.getElementById('sharePickOverlay');
     const msgEl     = document.getElementById('sharePickMsg');
@@ -7047,9 +7055,22 @@ function showShareNumberPicker({ ownerLabel, altLabel } = {}){
     const bothBtn   = document.getElementById('sharePickBothBtn');
     const cancelBtn = document.getElementById('sharePickCancelBtn');
 
-    msgEl.textContent = 'Choose who should get the live listing link.';
-    ownerBtn.textContent = `Owner number (${ownerLabel})`;
-    altBtn.textContent = `Alternate number (${altLabel})`;
+    const titleEl = document.getElementById('sharePickTitle');
+    if(titleEl) titleEl.textContent = title || 'Share with which number?';
+    msgEl.textContent = message || 'Choose who should get the live listing link.';
+    // Numbers only — no "Owner"/"Alternate" wording on the buttons.
+    ownerBtn.textContent = ownerLabel || '';
+    altBtn.textContent = altLabel || '';
+    bothBtn.textContent = (ownerLabel && altLabel) ? `${ownerLabel}  +  ${altLabel}` : '';
+    // Editable message preview (shown whenever the caller passes one).
+    const textWrap = document.getElementById('sharePickTextWrap');
+    const textEl   = document.getElementById('sharePickText');
+    textWrap.style.display = (text != null) ? 'block' : 'none';
+    textEl.value = text != null ? text : '';
+    // Only offer numbers that actually exist on the listing.
+    ownerBtn.style.display = ownerLabel ? '' : 'none';
+    altBtn.style.display   = altLabel   ? '' : 'none';
+    bothBtn.style.display  = (ownerLabel && altLabel) ? '' : 'none';
 
     function cleanup(result){
       overlay.style.display = 'none';
@@ -7061,12 +7082,14 @@ function showShareNumberPicker({ ownerLabel, altLabel } = {}){
       document.removeEventListener('keydown', onKeydown);
       resolve(result);
     }
-    function onOwner(){ cleanup('owner'); }
-    function onAlt(){ cleanup('alt'); }
-    function onBoth(){ cleanup('both'); }
+    // Resolves { choice, text } — text is the (possibly edited) message.
+    function pick(choice){ cleanup({ choice, text: textEl.value }); }
+    function onOwner(){ pick('owner'); }
+    function onAlt(){ pick('alt'); }
+    function onBoth(){ pick('both'); }
     function onCancel(){ cleanup(null); }
     function onOverlayClick(e){ if(e.target === overlay) cleanup(null); }
-    function onKeydown(e){ if(e.key === 'Escape') cleanup(null); }
+    function onKeydown(e){ if(e.key === 'Escape' && document.activeElement !== textEl) cleanup(null); }
 
     ownerBtn.addEventListener('click', onOwner);
     altBtn.addEventListener('click', onAlt);
@@ -7120,16 +7143,18 @@ window.shareListingToOwner = async function(id){
 
   if(!ownerNum && !altNum){ alert('No owner phone number on file for this listing.'); return; }
 
-  // Only one number on file — nothing to choose between, share straight away.
-  if(!ownerNum || !altNum){
-    openWhatsAppTabs([ownerNum || altNum], text);
-    return;
-  }
-
-  const choice = await showShareNumberPicker({ ownerLabel: row.ownerNumber, altLabel: row.ownerAltPhone });
-  if(!choice) return; // cancelled
+  // Always confirm which number(s) to send to before anything opens.
+  const picked = await showShareNumberPicker({
+    ownerLabel: ownerNum ? row.ownerNumber : '',
+    altLabel:   altNum   ? row.ownerAltPhone : '',
+    title: 'Confirm number to share',
+    message: 'Choose which number should get this message. Nothing is sent until you tap a number.',
+    text: msg
+  });
+  if(!picked) return; // cancelled
+  const choice = picked.choice;
   const numbers = choice === 'owner' ? [ownerNum] : choice === 'alt' ? [altNum] : [ownerNum, altNum];
-  openWhatsAppTabs(numbers, text);
+  openWhatsAppTabs(numbers, encodeURIComponent(picked.text.trim() || msg));
 };
 
 /* ── SHARE PROPERTY LINK TO A TENANT (WhatsApp) ──
@@ -7337,6 +7362,8 @@ function renderShareLinksModal(ids){
   const listEl = document.getElementById('shareLinksList');
   const sendCountEl = document.getElementById('shareLinksSendCount');
   sendCountEl.textContent = ids.length;
+  const msgBox = document.getElementById('shareLinksMsgText');
+  if(msgBox) msgBox.value = ids.length ? buildShareLinksMessage(ids) : '';
 
   if(!ids.length){
     listEl.innerHTML = `<div class="share-links-empty">No properties selected.</div>`;
@@ -7374,15 +7401,7 @@ function renderShareLinksModal(ids){
   }).join('');
 }
 
-window.sendShareLinksToNumber = function(){
-  if(blockIfViewOnly('properties')) return;
-  const ids = Array.from(_selectedPropIds);
-  if(!ids.length){ alert('Select at least one property first.'); return; }
-
-  const raw = document.getElementById('shareLinksNumberInput').value;
-  const num = waDigits(raw);
-  if(!num){ showAlertModal('Enter a valid WhatsApp number.', { variant:'error', title:'Number needed' }); return; }
-
+function buildShareLinksMessage(ids){
   const lines = ids.map((id, i) => {
     const row = _adminPropCache[id] || {};
     const name = row.title || row.propertyId || 'Property';
@@ -7400,7 +7419,20 @@ window.sendShareLinksToNumber = function(){
       `${dirUrl}`
     ].filter(Boolean).join('\n');
   });
-  const msg = `Sharing ${ids.length} propert${ids.length===1?'y':'ies'}:\n\n${lines.join('\n*******************************\n')}`;
+  return `Sharing ${ids.length} propert${ids.length===1?'y':'ies'}:\n\n${lines.join('\n*******************************\n')}`;
+}
+
+window.sendShareLinksToNumber = function(){
+  if(blockIfViewOnly('properties')) return;
+  const ids = Array.from(_selectedPropIds);
+  if(!ids.length){ alert('Select at least one property first.'); return; }
+
+  const raw = document.getElementById('shareLinksNumberInput').value;
+  const num = waDigits(raw);
+  if(!num){ showAlertModal('Enter a valid WhatsApp number.', { variant:'error', title:'Number needed' }); return; }
+
+  const editedEl = document.getElementById('shareLinksMsgText');
+  const msg = (editedEl && editedEl.value.trim()) ? editedEl.value.trim() : buildShareLinksMessage(ids);
   openWhatsAppTabs([num], encodeURIComponent(msg));
   closeShareLinksModal();
 };
@@ -7437,14 +7469,27 @@ function buildAvailabilityCheckMessage(row){
   return `Is ${row.propertyId || 'listing'}, still available? ${link}`;
 }
 
-window.checkAvailabilityForRow = function(id){
+window.checkAvailabilityForRow = async function(id){
   if(blockIfViewOnly('properties')) return;
   const row = _adminPropCache[id];
   if(!row){ alert('Listing details not loaded yet — please retry.'); return; }
-  const num = waDigits(row.ownerAltPhone);
-  if(!num){ alert('No owner alternate number on file for this listing.'); return; }
-  const msg = buildAvailabilityCheckMessage(row);
-  window.open(`https://wa.me/${num}?text=${encodeURIComponent(msg)}`, '_blank');
+  const ownerNum = waDigits(row.ownerNumber);
+  const altNum   = waDigits(row.ownerAltPhone);
+  if(!ownerNum && !altNum){ alert('No owner phone number on file for this listing.'); return; }
+
+  // Always confirm which number(s) to ask before anything opens.
+  const defaultMsg = buildAvailabilityCheckMessage(row);
+  const picked = await showShareNumberPicker({
+    ownerLabel: ownerNum ? row.ownerNumber : '',
+    altLabel:   altNum   ? row.ownerAltPhone : '',
+    title: 'Confirm number to check with',
+    message: 'Choose which number should get this message. Nothing is sent until you tap a number.',
+    text: defaultMsg
+  });
+  if(!picked) return; // cancelled
+  const choice = picked.choice;
+  const numbers = choice === 'owner' ? [ownerNum] : choice === 'alt' ? [altNum] : [ownerNum, altNum];
+  openWhatsAppTabs(numbers, encodeURIComponent(picked.text.trim() || defaultMsg));
 };
 
 let _checkAvailPairs = [];
@@ -7459,8 +7504,10 @@ window.checkAvailabilityWithOwners = function(){
     if(!row) return null;
     const num = waDigits(row.ownerAltPhone);
     const msg = buildAvailabilityCheckMessage(row);
+    const locStr = [row.loc, row.city].filter(Boolean).join(', ') || 'your listed location';
     return {
       id,
+      msg,
       title: row.title || row.propertyId || 'Property',
       propertyId: row.propertyId || '',
       loc: locStr,
@@ -7497,15 +7544,22 @@ function renderCheckAvailabilityModal(){
     return `<div class="share-link-card checkavail-card" id="checkAvailCard-${i}">
       <div class="share-link-card-name">${escapeHtml(p.title)}${p.propertyId ? ` (${escapeHtml(p.propertyId)})` : ''}</div>
       <div class="share-link-card-loc">📍 ${escapeHtml(p.loc)} · Alt: ${escapeHtml(p.num)}</div>
-      <a class="checkavail-send-btn" href="${p.href}" target="_blank" rel="noopener noreferrer" onclick="markCheckAvailSent(${i})">
+      <textarea id="checkAvailMsg-${i}" rows="2" style="width:100%;padding:8px 10px;border:1px solid #d5d9e0;border-radius:8px;font-size:12px;font-family:inherit;resize:vertical;margin:6px 0">${escapeHtml(p.msg || '')}</textarea>
+      <a class="checkavail-send-btn" href="${p.href}" target="_blank" rel="noopener noreferrer" onclick="markCheckAvailSent(${i}, this)">
         <i class="fab fa-whatsapp"></i> Send
       </a>
     </div>`;
   }).join('');
 }
 
-window.markCheckAvailSent = function(i){
+window.markCheckAvailSent = function(i, linkEl){
   if(blockIfViewOnly('properties')) return;
+  // Use whatever is in the (editable) message box at the moment of the click.
+  const box = document.getElementById(`checkAvailMsg-${i}`);
+  const p = _checkAvailPairs[i];
+  if(linkEl && box && p && p.num){
+    linkEl.href = `https://wa.me/${p.num}?text=${encodeURIComponent(box.value.trim() || p.msg || '')}`;
+  }
   const card = document.getElementById(`checkAvailCard-${i}`);
   if(card) card.classList.add('sent');
 };
@@ -8678,9 +8732,9 @@ $(document).ready(function(){
           const igShareBtn = (row.verified && !viewOnly)
             ? `<button class="btn-view" style="background:linear-gradient(45deg,#405DE6,#5851DB,#833AB4,#C13584,#E1306C,#FD1D1D);border-color:#C13584;color:#fff" title="Share this listing to HomeLoop's Instagram" onclick="shareListingToInstagram('${row._id}')"><i class="fab fa-instagram"></i><span class="btn-label"> Instagram</span></button>`
             : disabledBtn('fab fa-instagram', 'Instagram', viewOnly ? 'View-only access — ask the primary admin to enable actions' : 'Verify this listing first to enable sharing');
-          const checkAvailBtn = (row.ownerAltPhone && !viewOnly)
+          const checkAvailBtn = ((row.ownerNumber || row.ownerAltPhone) && !viewOnly)
             ? `<button class="btn-view" style="background:#25D366;border-color:#25D366;color:#fff" title="Ask the owner (alt number) via WhatsApp whether this listing is still available" onclick="checkAvailabilityForRow('${row._id}')"><i class="fas fa-circle-question"></i><span class="btn-label"> Check</span></button>`
-            : disabledBtn('fas fa-circle-question', 'Check', viewOnly ? 'View-only access — ask the primary admin to enable actions' : 'No owner alternate number on file for this listing');
+            : disabledBtn('fas fa-circle-question', 'Check', viewOnly ? 'View-only access — ask the primary admin to enable actions' : 'No owner phone number on file for this listing');
           const mapsUrl = propertyMapsUrl(row);
           const navigateBtn = (mapsUrl && !viewOnly)
             ? `<button class="btn-view" style="background:#4285F4;border-color:#4285F4;color:#fff" title="Open this property's location in Google Maps" onclick="window.open('${mapsUrl.replace(/'/g, "\\'")}', '_blank', 'noopener')"><i class="fas fa-location-arrow"></i><span class="btn-label"> Navigate</span></button>`
