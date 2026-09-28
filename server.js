@@ -1373,8 +1373,7 @@ const BASE_REQUIRED_FIELDS = [
   ['owner.email',       'Owner email'],
   ['owner.contactTime', 'Preferred contact time'],
   ['owner.address',     'Owner address'],
-  ['media.desc',        'Description'],
-];
+];  // NOTE: media.desc (Description) is intentionally NOT required
 
 // Extra fields required only for the listing types whose form section
 // actually shows them.

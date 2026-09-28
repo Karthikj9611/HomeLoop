@@ -4648,15 +4648,22 @@ main.tab-explore .empty-state{display:none !important}
 (function () {
   // Locally cached listing data (shortlist / recently viewed) — wiped whenever there is no session,
   // so nothing from a previous login is left behind for the next guest on this device.
-  var PRIVATE_KEYS = ['homeloop_shortlisted_properties', 'homeloop_shortlisted_properties_data',
-                      'homeloop_recently_viewed', 'homeloop_recently_viewed_data'];
+  var SHORTLIST_KEYS = ['homeloop_shortlisted_properties', 'homeloop_shortlisted_properties_data'];
+  var PRIVATE_KEYS = SHORTLIST_KEYS.concat(['homeloop_recently_viewed', 'homeloop_recently_viewed_data']);
+  // Full wipe — used on logout / expired session so nothing is left behind on a shared device.
   window.hlClearPrivateData = function () {
     try { PRIVATE_KEYS.forEach(function (k) { localStorage.removeItem(k); }); } catch (e) {}
   };
   var _sess = null;
   try { _sess = JSON.parse(localStorage.getItem('homeloop_user')); } catch (e) {}
   if (!_sess) {                       // same test as getLoggedInUser()
-    window.hlClearPrivateData();
+    // Guests can now shortlist without logging in, so the shortlist must survive a page
+    // refresh. Only the recently-viewed cache is dropped on a guest page load.
+    try {
+      PRIVATE_KEYS.forEach(function (k) {
+        if (SHORTLIST_KEYS.indexOf(k) === -1) localStorage.removeItem(k);
+      });
+    } catch (e) {}
   }
   var _fetch = window.fetch.bind(window);
   var AUTH_FREE = /^\/api\/(user\/(login|signup|password)|upload-images|stats\/visit)/;
@@ -9751,7 +9758,6 @@ function shortlistCardHTML(p) {
    SHORTLIST
 ═══════════════════════════════════════════════ */
 function toggleShortlist(id, el) {
-  if (requireLoginForContact('Please log in to save properties')) return;
   id = String(id);
   if (shortlisted.has(id)) {
     shortlisted.delete(id);
@@ -9829,7 +9835,6 @@ function removeShortlist(id) {
    COMPARE
 ═══════════════════════════════════════════════ */
 function toggleCompare(id, el) {
-  if (requireLoginForContact('Please log in to compare properties')) return;
   const prop = PROPERTIES.find(x => x.id === id);
   if (!prop) return;
 
@@ -11992,9 +11997,12 @@ function buildDetailTable(p) {
     kv('Additional amenities', amenities.extra),
   ]);
 
-  section('📝 Description', 'sec-media-amenities', [
-    kv('Description', media.desc),
-  ]);
+  // Description is hidden in the property view. Set HIDE_DESCRIPTION_IN_VIEW to false to show it again.
+  if (!HIDE_DESCRIPTION_IN_VIEW) {
+    section('📝 Description', 'sec-media-amenities', [
+      kv('Description', media.desc),
+    ]);
+  }
 
   if (!rowsHtml.length) return '<div class="profile-list-empty" style="padding:14px 0">No details added yet.</div>';
   return '<div class="detail-table-card"><table class="detail-table"><tbody>' + rowsHtml.join('') + '</tbody></table></div>';
@@ -12024,7 +12032,6 @@ function closeDetail() {
 }
 
 function toggleShortlistFromModal(id) {
-  if (requireLoginForContact('Please log in to save properties')) return;
   id = String(id);
   const el = {classList:{contains:()=>shortlisted.has(id),add:()=>{},remove:()=>{}}};
   if (shortlisted.has(id)) {
@@ -12331,12 +12338,14 @@ async function submitBookingRequest() {
 }
 
 /* ═══════════════════════════════════════════════
-   CALL CONTACT — login required (see requireLoginForContact())
+   CALL / WHATSAPP CONTACT — open to guests (no login needed)
+   Call, WhatsApp, Shortlist and Compare are all open to guests.
+   requireLoginForContact() is currently unused — kept as a ready-made
+   helper in case a login gate is needed again.
 ═══════════════════════════════════════════════ */
-// Shared gate for every Call/WhatsApp entry point (card icon, quick-action
-// buttons, and the property view modal's Call/WhatsApp buttons, including the
-// admin-enabled owner-number variants). Shows the login/signup modal and
-// returns true (blocked) when logged out, so the caller can bail out first.
+// Login gate helper (currently unused). Shows the
+// login/signup modal and returns true (blocked) when logged out, so the
+// caller can bail out first.
 function requireLoginForContact(message) {
   if (getLoggedInUser()) return false;
   showToast(message || 'Please log in to contact the owner', 'warning');
@@ -12344,7 +12353,6 @@ function requireLoginForContact(message) {
   return true;
 }
 function openCall(propId) {
-  if (requireLoginForContact()) return;
   const p = PROPERTIES.find(x => x.id === propId);
   if (!p) return;
   const rawPhone = (p.owner?.agentPhone || '').replace(/\D/g, '');
@@ -12358,6 +12366,8 @@ function openCall(propId) {
 
 /* Shortlist + Schedule visit in the property view are hidden by default. Set to false to show them again (they're only hidden, not removed). */
 const HIDE_SAVE_SCHEDULE = true;
+/* Description row in the property view is hidden by default (it's still saved with the listing, just not shown). Set to false to show it again. */
+const HIDE_DESCRIPTION_IN_VIEW = true;
 
 /* Opens Google Maps directions to the property — only listings with a public owner number carry navigateUrl. */
 function openPropertyNavigate(propId) {
@@ -12372,9 +12382,8 @@ function openPropertyNavigate(propId) {
 
 /* Property-card call icon: dials the owner's number that admin made public (main first, then alternate);
    listings with no public number keep the old behaviour and call the agent.
-   Unlike openCall()/openOwnerCall() (used elsewhere, e.g. the property detail
-   modal), this card entry point dials straight away — no login gate — so a
-   visitor can always reach someone directly from the card. */
+   Like every other Call/WhatsApp entry point, this dials straight away — no
+   login gate — so a visitor can always reach someone directly. */
 function openCardCall(propId) {
   const p = PROPERTIES.find(x => x.id === propId) || BOOKED_PROPERTIES.find(x => x.id === propId);
   if (!p) return;
@@ -12393,7 +12402,6 @@ function openCardCall(propId) {
 
 /* Calls the owner's main ('main') or alternate ('alt') number — only reachable when admin enabled Public call (numbers are absent otherwise). */
 function openOwnerCall(propId, which) {
-  if (requireLoginForContact()) return;
   const p = PROPERTIES.find(x => x.id === propId) || BOOKED_PROPERTIES.find(x => x.id === propId);
   if (!p) return;
   const rawPhone = String((which === 'main' ? (p.ownerPhoneCall && p.ownerPhone) : (p.ownerDirectCall && p.ownerAltPhone)) || '').replace(/\D/g, '');
@@ -12407,7 +12415,6 @@ function openOwnerCall(propId, which) {
 
 /* WhatsApp on the owner's main ('main') or alternate ('alt') number — only when admin enabled Public call for it. */
 function openOwnerWhatsApp(propId, which) {
-  if (requireLoginForContact()) return;
   const p = PROPERTIES.find(x => x.id === propId) || BOOKED_PROPERTIES.find(x => x.id === propId);
   if (!p) return;
   const raw = String((which === 'main' ? (p.ownerPhoneCall && p.ownerPhone) : (p.ownerDirectCall && p.ownerAltPhone)) || '').replace(/\D/g, '');
@@ -12425,7 +12432,6 @@ function openOwnerWhatsApp(propId, which) {
    WHATSAPP CONTACT
 ═══════════════════════════════════════════════ */
 function openWhatsApp(propId) {
-  if (requireLoginForContact()) return;
   const p = PROPERTIES.find(x => x.id === propId);
   if (!p) return;
   const rawPhone = (p.owner?.agentPhone || '').replace(/\D/g, '');
@@ -16919,7 +16925,7 @@ function fCaptureLocation() {
 const OPTIONAL_FIELD_IDS = new Set([
   'f-latitude', 'f-longitude', 'f-latLngDisplay',
   'f-imgFileInput', 'f-imgCameraInput',
-  'f-amenities-extra',
+  'f-amenities-extra', 'f-desc',   // description is optional
   'f-ownerAltPhone', 'f-videoUrl', 'f-age', 'f-area',
   'f-maintenance', 'f-leaseMaintenance',
   'f-sellPossessionDate', 'f-sellReraId', 'f-pricePerSqft',
