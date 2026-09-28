@@ -665,21 +665,9 @@ self.addEventListener('notificationclick', event => {
   // DELETE /api/admin/notifications/:id — remove a single notification.
   app.delete('/api/admin/notifications/:id', requireAdmin, requireModuleAction('notifications'), async (req, res) => {
     try {
+      if (!mongoose.Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ message: 'Invalid notification id' });
       const notification = await AdminNotification.findByIdAndDelete(req.params.id);
       if (!notification) return res.status(404).json({ message: 'Notification not found' });
-      res.json({ message: 'Notification deleted' });
-    } catch (err) {
-      console.error('DELETE /api/admin/notifications/:id error:', err.message);
-      res.status(500).json({ message: 'Error deleting notification' });
-    }
-  });
-
-  // DELETE /api/admin/notifications/:id — remove one notification.
-  app.delete('/api/admin/notifications/:id', requireAdmin, requireModuleAction('notifications'), async (req, res) => {
-    try {
-      if (!mongoose.Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ message: 'Invalid notification id' });
-      const deleted = await AdminNotification.findByIdAndDelete(req.params.id).lean();
-      if (!deleted) return res.status(404).json({ message: 'Notification not found' });
       res.json({ message: 'Notification deleted' });
     } catch (err) {
       console.error('DELETE /api/admin/notifications/:id error:', err.message);

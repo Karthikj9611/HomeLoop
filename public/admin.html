@@ -2406,54 +2406,90 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
    a small bell dropdown. .notif-panel-header/-actions/-list and .notif-item*
    below are unchanged from the old dropdown version and still apply as-is. */
 .add-modal.notif-modal-box{max-width:560px}
-.notif-modal-box .notif-panel-list{max-height:62vh}
+.notif-modal-box .notif-panel-list{max-height:62vh;padding:2px 2px 4px;scrollbar-width:thin}
 .notif-panel-header{
-  display:flex;align-items:center;justify-content:space-between;
-  padding-bottom:12px;border-bottom:1px solid var(--border);font-weight:700;font-size:0.85rem;
-  margin-bottom:4px;
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  padding-bottom:14px;border-bottom:1px solid var(--border);
+  font-weight:800;font-size:1.02rem;margin-bottom:12px;
 }
+.notif-panel-header > span{display:inline-flex;align-items:center;gap:8px}
+.notif-count-pill{
+  background:var(--red);color:#fff;border-radius:99px;font-size:0.68rem;font-weight:700;
+  padding:2px 8px;line-height:1.4;
+}
+.notif-count-pill:empty{display:none}
 .notif-panel-actions{display:flex;gap:6px;margin-right:44px} /* keep clear of the absolute-positioned close (X) button */
 .notif-panel-actions button{
-  background:none;border:none;color:var(--ink2);cursor:pointer;padding:5px 7px;
-  border-radius:8px;font-size:0.78rem;
+  display:inline-flex;align-items:center;gap:6px;
+  background:var(--surface2,#f4f4f7);border:1px solid var(--border);color:var(--ink2);
+  cursor:pointer;padding:6px 11px;border-radius:99px;font-size:0.73rem;font-weight:600;
+  font-family:inherit;transition:all 0.15s;
 }
 .notif-panel-actions button:hover{background:var(--red-light);color:var(--ink)}
+@media(max-width:480px){.notif-panel-actions .lbl{display:none}.notif-panel-actions button{padding:7px 10px}}
 .notif-panel-list{max-height:380px;overflow-y:auto}
-.notif-empty{padding:24px 14px;text-align:center;color:var(--ink2);font-size:0.83rem}
+.notif-empty{padding:38px 14px;text-align:center;color:var(--ink2);font-size:0.85rem}
+.notif-empty i{display:block;font-size:1.6rem;margin-bottom:10px;opacity:0.35}
 .notif-item{
-  display:flex;gap:10px;padding:11px 14px;border-bottom:1px solid var(--border);
-  cursor:pointer;transition:background 0.15s;
+  position:relative;display:flex;gap:12px;align-items:flex-start;
+  padding:12px 8px 12px 14px;margin:0 0 8px;
+  border:1px solid var(--border);border-radius:14px;background:var(--surface,#fff);
+  cursor:pointer;transition:box-shadow 0.15s,transform 0.15s,background 0.15s;
 }
-.notif-item:last-child{border-bottom:none}
-.notif-item:hover{background:var(--surface2,#f7f7f9)}
-.notif-item.unread{background:rgba(224,68,68,0.05)}
-.notif-item-dot{width:8px;height:8px;border-radius:50%;background:var(--red);margin-top:5px;flex:none}
-.notif-item.read .notif-item-dot{background:transparent}
+.notif-item:last-child{margin-bottom:0}
+.notif-item:hover{box-shadow:0 6px 18px rgba(20,20,40,0.08);transform:translateY(-1px)}
+.notif-item.unread{
+  background:linear-gradient(rgba(224,68,68,0.05),rgba(224,68,68,0.05)),var(--surface,#fff);
+  border-color:rgba(224,68,68,0.22);
+}
+.notif-item.read{opacity:0.85}
+.notif-ico-wrap{position:relative;flex:none}
+.notif-ico{
+  width:38px;height:38px;border-radius:12px;background:var(--nb,rgba(120,120,140,0.12));
+  color:var(--nc,var(--ink2));display:flex;align-items:center;justify-content:center;font-size:0.9rem;
+}
+.notif-item-dot{
+  position:absolute;top:-3px;right:-3px;width:11px;height:11px;border-radius:50%;
+  background:var(--red);border:2px solid var(--surface,#fff);
+}
+.notif-item.read .notif-item-dot{display:none}
 .notif-item-body{flex:1;min-width:0}
-.notif-item-title{font-size:0.82rem;font-weight:700;color:var(--ink)}
-.notif-item-msg{font-size:0.78rem;color:var(--ink2);margin-top:2px}
-.notif-item-time{font-size:0.7rem;color:var(--ink2);margin-top:4px;opacity:0.8}
-.notif-item-action{margin-top:8px}
-.notif-item-tools{display:flex;gap:2px;flex:none;align-self:flex-start;margin:-3px -6px 0 0}
+.notif-item-title{font-size:0.86rem;font-weight:700;color:var(--ink)}
+.notif-item.read .notif-item-title{font-weight:600}
+.notif-item-msg{font-size:0.78rem;color:var(--ink2);margin-top:2px;line-height:1.35}
+.notif-item-time{display:flex;align-items:center;gap:5px;font-size:0.7rem;color:var(--ink2);margin-top:6px;opacity:0.8}
+.notif-item-time i{font-size:0.62rem}
+.notif-item-actions{display:flex;align-items:stretch;gap:8px;margin-top:12px}
+.notif-item-action,.notif-item-tools{display:contents} /* all buttons become direct children of the row */
+/* every button takes an equal share of the row */
+.notif-item-actions > *,
+.notif-item-actions .notif-action-btn,
+.notif-item-actions .notif-tool-btn{flex:1 1 0;min-width:0;justify-content:center;white-space:nowrap}
+.notif-item-actions .notif-action-done{margin:0;flex:1 1 0;min-width:0;justify-content:center}
 .notif-tool-btn{
-  background:none;border:none;color:var(--ink2);cursor:pointer;width:28px;height:28px;
-  border-radius:8px;font-size:0.78rem;display:inline-flex;align-items:center;justify-content:center;
+  display:inline-flex;align-items:center;gap:6px;
+  background:var(--surface2,#f4f4f7);color:var(--ink2);border:1px solid var(--border);border-radius:99px;
+  padding:7px 10px;font-size:0.76rem;font-weight:700;cursor:pointer;font-family:inherit;
+  transition:all 0.15s;
 }
-.notif-tool-btn:hover{background:var(--red-light);color:var(--ink)}
-.notif-tool-btn.notif-del-btn:hover{color:var(--red)}
+.notif-tool-btn:hover{background:var(--red-light);color:var(--ink);transform:translateY(-1px)}
+.notif-tool-btn.notif-del-btn:hover{background:var(--red);border-color:var(--red);color:#fff}
 .notif-item.read .notif-mark-btn{display:none}
 .notif-action-btn{
   display:inline-flex;align-items:center;gap:6px;
-  background:var(--green-light,#dcf5e6);color:var(--green,#1e9e57);
-  border:1px solid rgba(30,158,87,0.25);border-radius:99px;
-  padding:5px 12px;font-size:0.75rem;font-weight:700;cursor:pointer;
-  transition:all 0.15s;font-family:inherit;
+  background:var(--green);color:#fff;border:none;border-radius:99px;
+  padding:7px 14px;font-size:0.76rem;font-weight:700;cursor:pointer;
+  transition:all 0.15s;font-family:inherit;box-shadow:0 2px 8px rgba(5,150,105,0.25);
 }
-.notif-action-btn:hover{background:var(--green,#1e9e57);color:#fff}
-.notif-action-btn:disabled{opacity:0.6;cursor:default}
+.notif-action-btn:hover{filter:brightness(0.92);transform:translateY(-1px)}
+.notif-action-btn:disabled{opacity:0.6;cursor:default;transform:none}
 .notif-action-done{
   display:inline-flex;align-items:center;gap:6px;margin-top:8px;
   color:var(--green,#1e9e57);font-size:0.75rem;font-weight:700;
+}
+@media(max-width:480px){
+  .notif-item{padding:11px;gap:10px}
+  .notif-item-icon{width:36px;height:36px;font-size:0.9rem}
 }
 
 /* ── CONFIRM MODAL ── */
@@ -2731,10 +2767,10 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
       <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
     </button>
     <div class="notif-panel-header">
-      <span>Notifications</span>
+      <span>Notifications <span class="notif-count-pill" id="notifHeaderCount"></span></span>
       <div class="notif-panel-actions">
-        <button onclick="markAllNotificationsRead()" title="Mark all as read"><i class="fas fa-check-double"></i></button>
-        <button onclick="clearAllNotifications()" title="Clear all"><i class="fas fa-trash"></i></button>
+        <button onclick="markAllNotificationsRead()" title="Mark all as read"><i class="fas fa-check-double"></i><span class="lbl">Mark all read</span></button>
+        <button onclick="clearAllNotifications()" title="Clear all"><i class="fas fa-trash"></i><span class="lbl">Clear all</span></button>
       </div>
     </div>
     <div class="notif-panel-list" id="notifPanelList">
@@ -4532,27 +4568,48 @@ function timeAgo(dateStr){
   return days + 'd ago';
 }
 
+const NOTIF_EMPTY_HTML = '<div class="notif-empty"><i class="fas fa-bell-slash"></i>No notifications yet.</div>';
+const NOTIF_ICONS = {
+  user_registered:         { i:'fa-user-plus',     c:'#3b82f6', b:'rgba(59,130,246,0.13)' },
+  property_listed:         { i:'fa-building',      c:'#16a34a', b:'rgba(22,163,74,0.13)' },
+  appointment_booked:      { i:'fa-calendar-days', c:'#8b5cf6', b:'rgba(139,92,246,0.13)' },
+  review_posted:           { i:'fa-star',          c:'#d97706', b:'rgba(217,119,6,0.14)' },
+  honest_review_submitted: { i:'fa-video',         c:'#ec4899', b:'rgba(236,72,153,0.13)' },
+  referral_submitted:      { i:'fa-share-nodes',   c:'#0d9488', b:'rgba(13,148,136,0.13)' },
+  partner_added:           { i:'fa-handshake',     c:'#ea580c', b:'rgba(234,88,12,0.13)' },
+};
+
 function renderNotifPanel(notifications){
   const list = document.getElementById('notifPanelList');
+  const pill = document.getElementById('notifHeaderCount');
+  const unread = (notifications || []).filter(n => !n.read).length;
+  if(pill) pill.textContent = unread ? (unread > 99 ? '99+' : unread + ' new') : '';
   if(!notifications || !notifications.length){
-    list.innerHTML = '<div class="notif-empty">No notifications yet.</div>';
+    list.innerHTML = NOTIF_EMPTY_HTML;
     return;
   }
-  list.innerHTML = notifications.map(n => `
+  list.innerHTML = notifications.map(n => {
+    const ic = NOTIF_ICONS[n.type] || { i:'fa-bell', c:'#64748b', b:'rgba(100,116,139,0.13)' };
+    return `
     <div class="notif-item ${n.read ? 'read' : 'unread'}" data-id="${n._id}" onclick="onNotifItemClick('${n._id}', ${!!n.read})">
-      <div class="notif-item-dot"></div>
+      <div class="notif-ico-wrap">
+        <div class="notif-ico" style="--nc:${ic.c};--nb:${ic.b}"><i class="fas ${ic.i}"></i></div>
+        <div class="notif-item-dot"></div>
+      </div>
       <div class="notif-item-body">
         <div class="notif-item-title">${escapeHtmlNotif(n.title)}</div>
         ${n.message ? `<div class="notif-item-msg">${escapeHtmlNotif(n.message)}</div>` : ''}
-        <div class="notif-item-time">${timeAgo(n.createdAt)}</div>
-        ${notifActionHtml(n)}
+        <div class="notif-item-time"><i class="far fa-clock"></i>${timeAgo(n.createdAt)}</div>
+        <div class="notif-item-actions">
+          ${notifActionHtml(n)}
+          <div class="notif-item-tools">
+            <button class="notif-tool-btn notif-mark-btn" title="Mark as read" onclick="event.stopPropagation();markOneNotifRead('${n._id}')"><i class="fas fa-check"></i> Mark read</button>
+            <button class="notif-tool-btn notif-del-btn" title="Delete" onclick="event.stopPropagation();deleteOneNotif('${n._id}')"><i class="fas fa-trash"></i> Delete</button>
+          </div>
+        </div>
       </div>
-      <div class="notif-item-tools">
-        <button class="notif-tool-btn notif-mark-btn" title="Mark as read" onclick="event.stopPropagation();markOneNotifRead('${n._id}')"><i class="fas fa-check"></i></button>
-        <button class="notif-tool-btn notif-del-btn" title="Delete" onclick="event.stopPropagation();deleteOneNotif('${n._id}')"><i class="fas fa-trash"></i></button>
-      </div>
-    </div>
-  `).join('');
+    </div>`;
+  }).join('');
 }
 
 // Type-specific inline action button — lets the admin verify the user/property
@@ -4652,7 +4709,7 @@ window.deleteOneNotif = async function(id){
     }
     if(notifSeenIds) notifSeenIds.delete(String(id));
     const list = document.getElementById('notifPanelList');
-    if(list && !list.querySelector('.notif-item')) list.innerHTML = '<div class="notif-empty">No notifications yet.</div>';
+    if(list && !list.querySelector('.notif-item')) list.innerHTML = NOTIF_EMPTY_HTML;
     fetchNotifications();
   } catch(e){}
 };
