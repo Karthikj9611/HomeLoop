@@ -4684,14 +4684,27 @@ function markNotifReadLocally(notifId){
 }
 
 // Per-notification "mark as read" (check icon).
-window.markOneNotifRead = function(id){
+window.markOneNotifRead = async function(id){
   if(blockIfViewOnly('notifications')) return;
+  const ok = await showConfirmModal({
+    title: 'Mark as read?',
+    message: 'This notification will be marked as read.',
+    okText: 'Mark read',
+    variant: 'info'
+  });
+  if(!ok) return;
   markNotifReadLocally(id);
 };
 
 // Per-notification delete (trash icon) — removes it from the DB and the list.
 window.deleteOneNotif = async function(id){
   if(blockIfViewOnly('notifications')) return;
+  const ok = await showConfirmModal({
+    title: 'Delete this notification?',
+    message: 'Only this notification is removed. Users, listings and other records are not affected.',
+    okText: 'Delete'
+  });
+  if(!ok) return;
   try {
     const res = await fetch(BASE + '/api/admin/notifications/' + id, { method:'DELETE', headers: authHeaders() });
     if(!res.ok) return;
@@ -4937,6 +4950,13 @@ async function onNotifItemClick(id, alreadyRead){
 
 async function markAllNotificationsRead(){
   if(blockIfViewOnly('notifications')) return;
+  const ok = await showConfirmModal({
+    title: 'Mark all as read?',
+    message: 'Every notification will be marked as read.',
+    okText: 'Mark all read',
+    variant: 'info'
+  });
+  if(!ok) return;
   try {
     await fetch(BASE + '/api/admin/notifications/mark-all-read', { method:'POST', headers: authHeaders() });
     fetchNotifications();
@@ -5633,6 +5653,13 @@ async function aaSaveModal(){
     modules[k] = levels[k] !== 'off';
     actions[k] = levels[k] === 'edit';
   });
+  const okAccess = await showConfirmModal({
+    title: 'Save access changes?',
+    message: 'This changes what ' + email + ' can view and do in the admin panel.',
+    okText: 'Save access',
+    variant: 'info'
+  });
+  if(!okAccess) return;
   const btn = document.getElementById('aaModalSave');
   const originalHtml = btn.innerHTML;
   ADMIN_ACCESS.saving = true;
@@ -5974,6 +6001,13 @@ window.saveSubscription = async function(){
   if(!_subscriptionTargetId) return;
   const raw = document.getElementById('subscriptionDateTimeInput').value;
   if(!raw){ showAlertModal('Pick a date and time first.', { variant:'error', title:'Date & time needed' }); return; }
+  const okSub = await showConfirmModal({
+    title: 'Save subscription date?',
+    message: 'This customer\'s subscription date & time will be updated.',
+    okText: 'Save',
+    variant: 'info'
+  });
+  if(!okSub) return;
   const res = await fetch(`${BASE}/api/users/${_subscriptionTargetId}/subscription`, {
     method:'PATCH',
     headers:{ ...authHeaders(), 'Content-Type':'application/json' },
@@ -6496,6 +6530,14 @@ window.deleteHonestReview = async function(id){
 
 window.toggleReviewActive = async function(id, checkboxEl){
   const desired = checkboxEl.checked;
+  if(blockIfViewOnly('reviews')){ checkboxEl.checked = !desired; return; }
+  const ok = await showConfirmModal({
+    title: desired ? 'Show this review on the site?' : 'Hide this review from the site?',
+    message: desired ? 'This review will be set to Active and shown publicly.' : 'This review will be set to Inactive and hidden from the public site.',
+    okText: desired ? 'Turn on' : 'Turn off',
+    variant: 'info'
+  });
+  if(!ok){ checkboxEl.checked = !desired; return; }
   checkboxEl.disabled = true;
   try{
     const res = await fetch(`${BASE}/api/honest-reviews/${id}`, {
@@ -6515,6 +6557,14 @@ window.toggleReviewActive = async function(id, checkboxEl){
 
 window.setReviewStatus = async function(id, status){
   if(blockIfViewOnly('reviews')) return;
+  const approving = status === 'approved';
+  const ok = await showConfirmModal({
+    title: approving ? 'Approve this review?' : 'Reject this review?',
+    message: approving ? 'The review will be approved and can go live on the site.' : 'The review will be marked as rejected.',
+    okText: approving ? 'Approve' : 'Reject',
+    variant: approving ? 'success' : 'danger'
+  });
+  if(!ok) return;
   try{
     const res = await fetch(`${BASE}/api/honest-reviews/${id}`, {
       method:'PUT',
@@ -6578,6 +6628,13 @@ window.saveHonestReview = async function(){
   }
 
   const payload = { videoUrl, thumbUrl, title, caption, meta, verifiedLabel, order, status, active };
+  const okHr = await showConfirmModal({
+    title: id ? 'Save changes to this review?' : 'Add this review?',
+    message: id ? 'The review will be updated.' : 'A new review will be added.',
+    okText: id ? 'Save' : 'Add',
+    variant: 'info'
+  });
+  if(!okHr) return;
   const saveBtn = document.getElementById('hrFormSaveBtn');
   saveBtn.disabled = true;
   try{
@@ -6718,6 +6775,14 @@ window.deletePartner = async function(id){
 
 window.togglePartnerActive = async function(id, checkboxEl){
   const desired = checkboxEl.checked;
+  if(blockIfViewOnly('partners')){ checkboxEl.checked = !desired; return; }
+  const ok = await showConfirmModal({
+    title: desired ? 'Show this partner on the site?' : 'Hide this partner from the site?',
+    message: desired ? 'This partner will be set to Active.' : 'This partner will be set to Inactive and hidden.',
+    okText: desired ? 'Turn on' : 'Turn off',
+    variant: 'info'
+  });
+  if(!ok){ checkboxEl.checked = !desired; return; }
   checkboxEl.disabled = true;
   try{
     const res = await fetch(`${BASE}/api/partners/${id}`, {
@@ -6750,6 +6815,16 @@ window.onReferralStatusFilterChange = function(value){
 window.setReferralStatus = async function(id, status, selectEl){
   if(blockIfViewOnly('referrals')) return;
   const prevValue = selectEl ? selectEl.getAttribute('data-prev') : null;
+  const okStatus = await showConfirmModal({
+    title: 'Change status to ' + status + '?',
+    message: 'This referral\'s status will be updated to "' + status + '".',
+    okText: 'Change',
+    variant: status === 'Rejected' ? 'danger' : 'info'
+  });
+  if(!okStatus){
+    if(selectEl && prevValue) selectEl.value = prevValue;
+    return;
+  }
   if(selectEl) selectEl.disabled = true;
   try{
     const res = await fetch(`${BASE}/api/admin/referrals/${id}/status`, {
@@ -6957,6 +7032,13 @@ window.savePartner = async function(){
   }
 
   const payload = { name, role, phone, email, location, avatarText, photoUrl, order, active };
+  const okPartner = await showConfirmModal({
+    title: id ? 'Save changes to this partner?' : 'Add this partner?',
+    message: id ? 'The partner will be updated.' : 'A new partner will be added.',
+    okText: id ? 'Save' : 'Add',
+    variant: 'info'
+  });
+  if(!okPartner) return;
   const saveBtn = document.getElementById('partnerFormSaveBtn');
   saveBtn.disabled = true;
   try{
@@ -7245,6 +7327,13 @@ window.saveBookingDetails = async function(){
     proofImages: bdProofImages,
   };
 
+  const okBd = await showConfirmModal({
+    title: 'Save booking details?',
+    message: 'The booking details for this property will be updated.',
+    okText: 'Save',
+    variant: 'info'
+  });
+  if(!okBd) return;
   const saveBtn = document.getElementById('bdFormSaveBtn');
   saveBtn.disabled = true;
   try{
@@ -7357,6 +7446,15 @@ window.setPromotedPriority = async function(id, inputEl){
     inputEl.focus();
     return;
   }
+  const prevPos = inputEl.dataset.prev !== undefined ? inputEl.dataset.prev : inputEl.defaultValue;
+  if(String(prevPos) === String(value)) return; // unchanged — nothing to save
+  const okPos = await showConfirmModal({
+    title: 'Set promoted position to ' + value + '?',
+    message: value === 0 ? 'This listing will be reset to unranked.' : 'This listing will move to position ' + value + ' among promoted listings.',
+    okText: 'Set position',
+    variant: 'info'
+  });
+  if(!okPos){ inputEl.value = prevPos; return; }
   inputEl.disabled = true;
   try{
     const res = await fetch(`${BASE}/api/properties/${id}/promoted-priority`, {
@@ -7371,6 +7469,7 @@ window.setPromotedPriority = async function(id, inputEl){
     }
     const confirmedVal = data.promotedPriority != null ? data.promotedPriority : value;
     inputEl.value = confirmedVal;
+    inputEl.dataset.prev = String(confirmedVal);
     if(_adminPropCache[id] && _adminPropCache[id].full) _adminPropCache[id].full.promotedPriority = confirmedVal;
     propTable.rows().every(function(){
       const rd = this.data();
@@ -8487,6 +8586,16 @@ async function saveRemark(cell, id, type){
   const input  = cell.querySelector('.remark-input');
   const newVal = input.value.trim();
   if(!newVal) return;
+  if(cell.dataset.confirming === '1') return; // Enter + click can both fire; only one popup
+  cell.dataset.confirming = '1';
+  const okRemark = await showConfirmModal({
+    title: 'Save this remark?',
+    message: 'The remark will be added to this record.',
+    okText: 'Save remark',
+    variant: 'info'
+  });
+  cell.dataset.confirming = '';
+  if(!okRemark) return;
 
   cell.classList.add('remark-saving');
   try {
@@ -11477,12 +11586,20 @@ function renderApptStatusSelect(row){
   const opts = ['pending','confirmed','cancelled','completed']
     .map(s=>`<option value="${s}" ${row.status===s?'selected':''}>${s.charAt(0).toUpperCase()+s.slice(1)}</option>`)
     .join('');
-  return `<select class="appt-status-select" data-id="${row._id}" onchange="updateApptStatus(this)">${opts}</select>`;
+  return `<select class="appt-status-select" data-id="${row._id}" data-prev="${row.status}" onchange="updateApptStatus(this)">${opts}</select>`;
 }
 
 window.updateApptStatus = async function(sel){
   const id     = sel.dataset.id;
   const status = sel.value;
+  if(blockIfViewOnly('appointments')){ sel.value = sel.dataset.prev || sel.value; return; }
+  const okAppt = await showConfirmModal({
+    title: 'Change status to ' + status + '?',
+    message: 'This appointment\'s status will be updated to "' + status + '".',
+    okText: 'Change',
+    variant: status === 'cancelled' ? 'danger' : 'info'
+  });
+  if(!okAppt){ sel.value = sel.dataset.prev || sel.value; return; }
   try {
     const res  = await fetch(`${BASE}/api/appointments/${id}`, {
       method:'PATCH',
@@ -13330,8 +13447,15 @@ async function adminSubmitListing() {
     } : {},
   };
 
-  const submitBtn = document.getElementById('listingSubmitBtn');
   const isNew = !editingPropertyId;
+  const okListing = await showConfirmModal({
+    title: isNew ? 'Add this property?' : 'Save changes to this listing?',
+    message: isNew ? 'A new property listing will be created.' : 'The listing will be updated with your changes.',
+    okText: isNew ? 'Add property' : 'Save changes',
+    variant: 'info'
+  });
+  if(!okListing) return;
+  const submitBtn = document.getElementById('listingSubmitBtn');
   if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Saving…'; }
 
   fetch(isNew ? '/api/admin/properties' : '/api/admin/properties/' + editingPropertyId, {
