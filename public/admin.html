@@ -4524,6 +4524,13 @@ window.addEventListener('resize', function(){
 setTimeout(alignThreeRowsAsColumns, 400); // catch late webfont reflow
 
 async function doLogout(){
+  const okOut = await showConfirmModal({
+    title: 'Sign out?',
+    message: 'You will be signed out of the admin panel, and phone alerts on this device will be turned off.',
+    okText: 'Sign out',
+    variant: 'info'
+  });
+  if(!okOut) return;
   // Stop phone/desktop alerts for this browser before the session key is
   // dropped, so a signed-out device doesn't keep receiving admin pushes.
   try {
