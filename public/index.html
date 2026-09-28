@@ -7785,15 +7785,7 @@ main.tab-explore .empty-state{display:none !important}
     <circle cx="12" cy="12" r="10"/>
     <polyline points="12 6 12 12 16 14"/>
   </svg>
-  Business Hours: 10AM – 7PM
-</div>
-
-<div class="about-office-meta">
-  <svg viewBox="0 0 24 24" aria-hidden="true">
-    <circle cx="12" cy="12" r="10"/>
-    <polyline points="8 12 11 15 16 9"/>
-  </svg>
-  Closed On: Monday &amp; Thursday
+  Business Hours: 10AM – 7PM (Open all days)
 </div>
         </div>
       </div>
@@ -7812,7 +7804,7 @@ main.tab-explore .empty-state{display:none !important}
     </div>
     <div class="hours-modal-title" id="hoursModalTitle">Outside Our Office Hours</div>
     <div class="hours-modal-sub" id="hoursModalSub">
-      Our office hours are <strong>10AM to 7PM</strong>. We're unavailable right now, but feel free to keep browsing — we'll get back to you as soon as we're online.
+      Our office hours are <strong>10AM to 7PM</strong>, every day. We're unavailable right now, but feel free to keep browsing — we'll get back to you as soon as we're online.
     </div>
     <div class="hours-modal-actions">
       <a href="https://wa.me/919035205230" target="_blank" rel="noopener" class="hours-modal-btn hours-modal-btn-wa">
@@ -15441,8 +15433,7 @@ function closeOfficeModal() {
 /* ═══════════════════════════════════════════════
    AFTER-HOURS NOTICE MODAL
    Shown on every page load/refresh when a visitor lands on the site
-   outside office hours (10AM to 7PM IST) or on a day the office
-   is closed (Monday & Thursday). Uses Asia/Kolkata explicitly so the
+   between 7PM and 7AM IST. Office hours are 10AM to 7PM; the office is open every day. Uses Asia/Kolkata explicitly so the
    check is correct no matter where the visitor's device thinks it is.
    Intentionally NOT gated by sessionStorage — it should reappear on
    every refresh during the closed window.
@@ -15456,20 +15447,14 @@ function checkOfficeHoursModal() {
   if (hour === 24) hour = 0; // some engines report IST midnight as "24"
   const weekday = get('weekday'); // "Mon","Tue","Wed","Thu",...
 
-  const closedDayName = weekday === 'Mon' ? 'Monday' : weekday === 'Thu' ? 'Thursday' : null;
+  // Open every day; closed only between 7PM and 7AM IST.
   const isOutsideHours = hour < 7 || hour >= 19;
-
-  if (!closedDayName && !isOutsideHours) return; // office is open right now
+  if (!isOutsideHours) return; // office is open right now
 
   const titleEl = document.getElementById('hoursModalTitle');
   const subEl = document.getElementById('hoursModalSub');
-  if (closedDayName) {
-    titleEl.textContent = "We're Away Today";
-    subEl.innerHTML = `We're closed today (<strong>${closedDayName}</strong>). Our hours are <strong>10AM to 7PM</strong> otherwise — feel free to keep browsing, and we'll get back to you as soon as we're online.`;
-  } else {
-    titleEl.textContent = "Outside Our Office Hours";
-    subEl.innerHTML = `Our office hours are <strong>10AM to 7PM</strong>. We're unavailable right now, but feel free to keep browsing — we'll get back to you as soon as we're online.`;
-  }
+  titleEl.textContent = "Outside Our Office Hours";
+  subEl.innerHTML = `Our office hours are <strong>10AM to 7PM</strong>, every day. We're unavailable right now, but feel free to keep browsing — we'll get back to you as soon as we're online.`;
 
   openOfficeHoursModal();
 }
