@@ -2706,7 +2706,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
       <div class="header-badge"><i class="fas fa-circle-dot"></i> Live &nbsp;·&nbsp; <span id="adminNameBadge">—</span></div>
       <div class="notif-bell-wrap" id="notifBellWrap">
-        <button class="notif-bell-btn" id="notifPushBtn" onclick="togglePush()" title="Phone/desktop alerts: off" style="margin-right:6px;display:none"><i class="fas fa-tower-broadcast"></i></button>
+        <button class="notif-bell-btn" id="notifPushBtn" onclick="togglePush()" title="Phone/desktop alerts: off" style="margin-right:6px"><i class="fas fa-tower-broadcast"></i></button>
         <button class="notif-bell-btn notif-sound-btn" id="notifSoundBtn" onclick="toggleNotifSound()" title="Notification sound: on" style="margin-right:6px"><i class="fas fa-volume-high"></i></button>
         <button class="notif-bell-btn" id="notifBellBtn" onclick="openNotifModal()" title="Notifications" aria-haspopup="dialog" aria-expanded="false">
           <i class="fas fa-bell"></i>
@@ -4479,7 +4479,25 @@ window.addEventListener('resize', function(){
 });
 setTimeout(alignThreeRowsAsColumns, 400); // catch late webfont reflow
 
-function doLogout(){
+async function doLogout(){
+  // Stop phone/desktop alerts for this browser before the session key is
+  // dropped, so a signed-out device doesn't keep receiving admin pushes.
+  try {
+    if('serviceWorker' in navigator){
+      const reg = await navigator.serviceWorker.getRegistration('/admin-sw.js');
+      const sub = reg && await reg.pushManager.getSubscription();
+      if(sub){
+        await Promise.race([
+          fetch(BASE + '/api/admin/push/unsubscribe', {
+            method:'POST', headers:{ ...authHeaders(), 'Content-Type':'application/json' },
+            body: JSON.stringify({ endpoint: sub.endpoint })
+          }),
+          new Promise(r => setTimeout(r, 2000))
+        ]);
+        await sub.unsubscribe();
+      }
+    }
+  } catch(e){}
   localStorage.removeItem('kr_admin_key');
   localStorage.removeItem('kr_admin_name');
   ADMIN_KEY = '';
@@ -4863,22 +4881,42 @@ async function pushSaveSub(sub){
   });
   return res.ok;
 }
+// Returns a plain-language reason push can't work here, or '' if it can.
+function pushUnsupportedReason(){
+  if(!window.isSecureContext) return 'Push needs a secure (https) page.';
+  if(!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)){
+    const ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    return ios
+      ? 'On iPhone/iPad, alerts only work from the Home Screen app. Tap Share \u2192 Add to Home Screen, then open the admin page from that icon and tap this button again.'
+      : 'This browser does not support push notifications. Try Chrome.';
+  }
+  return '';
+}
 async function initPush(){
   if(pushInited) return;
   pushInited = true;
-  if(!('serviceWorker' in navigator) || !('PushManager' in window) || !window.isSecureContext) return;
+  setPushBtn(false);                      // button is always shown
+  if(pushUnsupportedReason()) return;     // togglePush explains why on tap
   try {
-    const kr = await fetch(BASE + '/api/admin/push/public-key', { headers: authHeaders() });
-    if(!kr.ok) return; // push not configured on the server
     const reg = await navigator.serviceWorker.register('/admin-sw.js');
     await navigator.serviceWorker.ready;
     const sub = await reg.pushManager.getSubscription();
-    if(sub && Notification.permission === 'granted'){ await pushSaveSub(sub); setPushBtn(true); }
-    else setPushBtn(false);
-  } catch(e){ /* leave the button hidden */ }
+    if(sub && Notification.permission === 'granted'){
+      const kr = await fetch(BASE + '/api/admin/push/public-key', { headers: authHeaders() });
+      if(kr.ok){ await pushSaveSub(sub); setPushBtn(true); }
+    }
+  } catch(e){}
 }
 window.togglePush = async function(){
+  const why = pushUnsupportedReason();
+  if(why){ showAlertModal(why, { variant:'error', title:'Alerts unavailable' }); return; }
   try {
+    const kr = await fetch(BASE + '/api/admin/push/public-key', { headers: authHeaders() });
+    if(!kr.ok){
+      showAlertModal('Push is not set up on the server yet. Add VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY to the server environment, install web-push, and redeploy.', { variant:'error', title:'Server not configured' });
+      return;
+    }
+    const { key } = await kr.json();
     const reg = await navigator.serviceWorker.register('/admin-sw.js');
     await navigator.serviceWorker.ready;
     const existing = await reg.pushManager.getSubscription();
@@ -4896,8 +4934,6 @@ window.togglePush = async function(){
       showAlertModal('Notifications are blocked. Allow them for this site in your browser settings, then try again.', { variant:'error', title:'Permission needed' });
       return;
     }
-    const kr = await fetch(BASE + '/api/admin/push/public-key', { headers: authHeaders() });
-    const { key } = await kr.json();
     const sub = await reg.pushManager.subscribe({ userVisibleOnly:true, applicationServerKey: urlB64ToUint8Array(key) });
     if(await pushSaveSub(sub)) setPushBtn(true);
     else showAlertModal('Could not save the subscription on the server.', { variant:'error', title:'Push failed' });
