@@ -7372,7 +7372,7 @@ main.tab-explore .empty-state{display:none !important}
 
       <div class="charges-warning">
         <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-        <span><strong>₹2,000 to start</strong> — includes a personalised shortlist, agent-guided visits &amp; owner negotiation help; pay the rest only after your deal closes.</span>
+        <span><strong>₹2,000 to start</strong> — you filter, we show only those properties (4–6 a day, 10 AM–7 PM) with guided visits, negotiation &amp; agreement help; pay the rest after your deal closes.</span>
       </div>
 
       <div class="svc-price-note charges-refer-note"><strong>Refer friends &amp; earn ₹1,000</strong> — on both plans, when your referred tenant takes a plan or rents through us.</div>
@@ -7498,7 +7498,7 @@ main.tab-explore .empty-state{display:none !important}
 
         <div class="charges-warning">
           <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-          <span><strong>₹2,000 to start</strong> — includes a matched shortlist, agent-guided visits &amp; owner negotiation help; pay the rest only after your deal closes.</span>
+          <span><strong>₹2,000 to start</strong> — you filter, we show only those properties (4–6 a day, 10 AM–7 PM) with guided visits, negotiation &amp; agreement help; pay the rest after your deal closes.</span>
         </div>
 
         <div class="svc-price-note charges-refer-note"><strong>Refer friends &amp; earn ₹1,000</strong> — on both plans, when your referred tenant takes a plan or rents through us.</div>
@@ -7803,12 +7803,14 @@ main.tab-explore .empty-state{display:none !important}
   </div>
 </div>
 
-<!-- ─── After-Hours Notice Modal — shown on every page load/refresh
-     when a visitor lands on the site outside office hours (9:00 AM –
+<!-- ─── After-Hours Notice Modal — shown when a visitor lands on the site outside office hours (9:00 AM –
      7:00 PM IST) or on a day the office is closed (Mon/Thu). Logic lives
      in checkOfficeHoursModal(), called on page load. ─────────────── -->
 <div class="add-modal-overlay" id="officeHoursModal" role="dialog" aria-modal="true" aria-label="Office Hours Notice">
   <div class="add-modal hours-modal" id="officeHoursModalBox">
+    <button type="button" class="modal-close" onclick="dismissOfficeHoursModal()" aria-label="Close">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
     <div class="hours-modal-icon">
       <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
     </div>
@@ -15448,13 +15450,18 @@ function closeOfficeModal() {
 
 /* ═══════════════════════════════════════════════
    AFTER-HOURS NOTICE MODAL
-   Shown on every page load/refresh when a visitor lands on the site
-   between 7PM and 7AM IST. Office hours are 10AM to 7PM; the office is open every day. Uses Asia/Kolkata explicitly so the
-   check is correct no matter where the visitor's device thinks it is.
-   Intentionally NOT gated by sessionStorage — it should reappear on
-   every refresh during the closed window.
+   Shown when a visitor lands on the site between 7PM and 7AM IST. Office
+   hours are 10AM to 7PM; the office is open every day. Uses Asia/Kolkata
+   explicitly so the check is correct no matter where the visitor's device
+   thinks it is.
+   Once the visitor clicks the X (close) button it is remembered in
+   sessionStorage, so refreshing the page does not bring it back. A brand-new
+   visit (new tab/session) shows it again. Closing it any other way
+   (Continue Browsing, backdrop click, Escape) does not remember anything.
 ═══════════════════════════════════════════════ */
+const OFFICE_HOURS_DISMISSED_KEY = 'homeloop_office_hours_dismissed';
 function checkOfficeHoursModal() {
+  try { if (sessionStorage.getItem(OFFICE_HOURS_DISMISSED_KEY)) return; } catch (e) { /* storage unavailable — just show it */ }
   const parts = new Intl.DateTimeFormat('en-US', {
     timeZone: 'Asia/Kolkata', hour: 'numeric', hour12: false, weekday: 'short'
   }).formatToParts(new Date());
@@ -15479,8 +15486,19 @@ function openOfficeHoursModal() {
   lockBodyScroll();
 }
 function closeOfficeHoursModal() {
-  document.getElementById('officeHoursModal').classList.remove('open');
+  // The global Escape handler calls this on every Escape press, even when this
+  // modal isn't showing — so only act if it's actually open.
+  const modal = document.getElementById('officeHoursModal');
+  if (!modal.classList.contains('open')) return;
+  modal.classList.remove('open');
   unlockBodyScroll();
+}
+// Only the X (close) button calls this: it closes the modal AND remembers the
+// dismissal for this tab session, so a refresh doesn't bring it back. Other ways
+// of closing it (Continue Browsing, backdrop click, Escape) just close it.
+function dismissOfficeHoursModal() {
+  try { sessionStorage.setItem(OFFICE_HOURS_DISMISSED_KEY, '1'); } catch (e) { /* ignore */ }
+  closeOfficeHoursModal();
 }
 
 function partnerInitials(name) {
