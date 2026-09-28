@@ -747,7 +747,7 @@ main.tab-explore .empty-state{display:none !important}
   width:100%;
   aspect-ratio:4/3;
   overflow:hidden;
-  background:var(--bg-3);
+  background:linear-gradient(135deg,#ebe5e7,#ddd5d8); /* visible placeholder while the photo loads (was near-white) */
   flex-shrink:0;
   border-radius:0;
   container-type:inline-size;
@@ -911,7 +911,6 @@ main.tab-explore .empty-state{display:none !important}
   padding:0 10px;border-radius:99px;box-sizing:border-box;
   letter-spacing:.03em;text-transform:uppercase;
   flex-shrink:0;
-  backdrop-filter:blur(6px);
 }
 .prop-badge-type-letter{
   width:26px;height:26px;border-radius:50%;
@@ -919,7 +918,6 @@ main.tab-explore .empty-state{display:none !important}
   font-size:12px;font-weight:800;
   box-sizing:border-box;
   flex-shrink:0;
-  backdrop-filter:blur(6px);
 }
 .prop-badge-type-letter.wide{
   width:auto;min-width:26px;padding:0 8px;border-radius:13px;
@@ -937,7 +935,7 @@ main.tab-explore .empty-state{display:none !important}
 .prop-card.prop-card-promoted .badge-sell{background:linear-gradient(135deg,#ffd166,#f4a300);color:#4a2418;box-shadow:0 2px 6px rgba(210,150,40,.35)}
 .prop-heart{
   width:30px;height:30px;border-radius:50%;
-  background:rgba(255,255,255,.94);backdrop-filter:blur(8px);
+  background:rgba(255,255,255,.94);
   border:1px solid rgba(255,255,255,.6);
   box-shadow:0 2px 8px rgba(20,16,17,.16);
   display:flex;align-items:center;justify-content:center;
@@ -980,7 +978,7 @@ main.tab-explore .empty-state{display:none !important}
    dot to match how .prop-qa-count/.prop-views-badge already look elsewhere. */
 .prop-icon-badge.prop-views-float{
   position:relative;cursor:pointer;
-  background:rgba(255,255,255,.92);backdrop-filter:blur(6px);
+  background:rgba(255,255,255,.92);
   box-shadow:0 2px 6px rgba(20,16,17,.12);
 }
 .prop-icon-badge.prop-views-float svg{width:13px;height:13px;stroke:var(--text-2);fill:none;stroke-width:1.9}
@@ -994,7 +992,7 @@ main.tab-explore .empty-state{display:none !important}
    dimmed when disabled (same states the old bottom-row 3D button had). */
 .prop-icon-badge.prop-compare-float{
   cursor:pointer;
-  background:rgba(255,255,255,.92);backdrop-filter:blur(6px);
+  background:rgba(255,255,255,.92);
   box-shadow:0 2px 6px rgba(20,16,17,.12);
   transition:background .12s,transform .12s;
 }
@@ -9146,12 +9144,15 @@ function observeCardImgs(root) {
           img.src = img.dataset.src;
           img.removeAttribute('data-src');
         });
+        // The first (visible) photo only has native loading='lazy', whose look-ahead is
+        // browser-defined and too short for fast scrolling — force it to fetch now.
+        entry.target.querySelectorAll('img.img-slide[loading=lazy]').forEach(img => { img.loading = 'eager'; });
         _cardImgObserver.unobserve(entry.target);
       });
-    }, { rootMargin: '800px 0px' });
+    }, { rootMargin: '2000px 0px' });
   }
   (root || document).querySelectorAll('.img-slides').forEach(el => {
-    if (el.querySelector('.img-slide[data-src]')) _cardImgObserver.observe(el);
+    if (el.querySelector('.img-slide[data-src], img.img-slide[loading=lazy]')) _cardImgObserver.observe(el);
   });
 }
 
