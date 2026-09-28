@@ -12991,6 +12991,10 @@ function openAuthModal() {
   backToSignupForm();
 }
 function closeAuthModal() {
+  // The global Escape handler calls this on every Escape press, even when the
+  // login modal isn't showing. Without this guard, that would record a false
+  // "skipped" timestamp (hiding the prompt for an hour) and reset the form.
+  if (!document.getElementById('authModal').classList.contains('open')) return;
   document.getElementById('authModal').classList.remove('open');
   unlockBodyScroll();
   backToSignupForm();
