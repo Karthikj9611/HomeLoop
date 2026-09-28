@@ -480,8 +480,148 @@ module.exports = function registerAdminRoutes(app, deps) {
       await AdminNotification.create({ type, title, message, meta });
     } catch (err) {
       console.error('notifyAdmin error:', err.message);
+      return;
+    }
+    sendAdminPush({ type, title, message }); // fire-and-forget phone/desktop push
+  }
+
+  // ── ADMIN WEB PUSH (system notifications, even with the page closed) ──
+  // Needs: `npm i web-push`, and env VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY
+  // (generate once with `npx web-push generate-vapid-keys`), optional
+  // VAPID_SUBJECT (e.g. mailto:you@example.com). If any of these is missing,
+  // push is simply disabled — the in-page bell/sound keep working.
+  // Browsers only allow push on HTTPS (or localhost).
+  let webpush = null;
+  try {
+    if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
+      webpush = require('web-push');
+      webpush.setVapidDetails(
+        process.env.VAPID_SUBJECT || ('mailto:' + (process.env.ADMIN_EMAIL || 'admin@example.com')),
+        process.env.VAPID_PUBLIC_KEY,
+        process.env.VAPID_PRIVATE_KEY
+      );
+    }
+  } catch (err) {
+    console.error('web-push unavailable (run `npm i web-push`):', err.message);
+    webpush = null;
+  }
+
+  const AdminPushSubSchema = new mongoose.Schema({
+    endpoint:   { type: String, required: true, unique: true },
+    keys:       { p256dh: String, auth: String },
+    adminEmail: { type: String, default: '' },
+    pageUrl:    { type: String, default: '/' },   // admin page to open when tapped
+    createdAt:  { type: Date, default: Date.now },
+  });
+  const AdminPushSub = mongoose.model('AdminPushSub', AdminPushSubSchema);
+
+  async function sendAdminPush({ type, title, message }) {
+    if (!webpush) return;
+    try {
+      const subs = await AdminPushSub.find({}).lean();
+      if (!subs.length) return;
+      const permCache = {};
+      await Promise.all(subs.map(async sub => {
+        try {
+          // Sub-admins without the Notifications module shouldn't get alerts.
+          if (!(sub.adminEmail in permCache)) {
+            permCache[sub.adminEmail] = (await getModulePermissions(sub.adminEmail || SUPER_ADMIN_EMAIL)).notifications !== false;
+          }
+          if (!permCache[sub.adminEmail]) return;
+          const payload = JSON.stringify({
+            title: String(title || 'Notification').slice(0, 80),
+            body:  String(message || '').slice(0, 160),
+            type,
+            url:   sub.pageUrl || '/',
+          });
+          await webpush.sendNotification({ endpoint: sub.endpoint, keys: sub.keys }, payload, { TTL: 60 * 60 });
+        } catch (err) {
+          // 404/410 = the browser dropped this subscription; clean it up.
+          if (err && (err.statusCode === 404 || err.statusCode === 410)) {
+            await AdminPushSub.deleteOne({ endpoint: sub.endpoint }).catch(() => {});
+          } else {
+            console.error('admin push send error:', err && (err.statusCode || err.message));
+          }
+        }
+      }));
+    } catch (err) {
+      console.error('sendAdminPush error:', err.message);
     }
   }
+
+  // Service worker — served from the site root so its scope covers the admin
+  // page. It shows the system notification and focuses/opens the admin page on tap.
+  app.get('/admin-sw.js', (req, res) => {
+    res.set({ 'Content-Type': 'application/javascript; charset=utf-8', 'Cache-Control': 'no-cache', 'Service-Worker-Allowed': '/' });
+    res.send(`
+self.addEventListener('install', () => self.skipWaiting());
+self.addEventListener('activate', e => e.waitUntil(self.clients.claim()));
+self.addEventListener('push', event => {
+  let d = {};
+  try { d = event.data ? event.data.json() : {}; } catch (e) {}
+  event.waitUntil((async () => {
+    const wins = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    // Admin page already open and in view: it chimes + refreshes itself, skip the duplicate.
+    if (wins.some(c => c.visibilityState === 'visible' && c.focused)) return;
+    await self.registration.showNotification(d.title || 'New notification', {
+      body: d.body || '',
+      tag: d.type || 'admin',
+      renotify: true,
+      icon: '/favicon.ico',
+      data: { url: d.url || '/' },
+    });
+  })());
+});
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+  const url = (event.notification.data && event.notification.data.url) || '/';
+  event.waitUntil((async () => {
+    const wins = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    for (const c of wins) { if ('focus' in c) { await c.focus(); return; } }
+    if (self.clients.openWindow) await self.clients.openWindow(url);
+  })());
+});
+`);
+  });
+
+  // GET /api/admin/push/public-key — lets admin.html know push is configured.
+  app.get('/api/admin/push/public-key', requireAdmin, (req, res) => {
+    if (!webpush) return res.status(503).json({ message: 'Push is not configured on the server' });
+    res.json({ key: process.env.VAPID_PUBLIC_KEY });
+  });
+
+  // POST /api/admin/push/subscribe — store this browser's push subscription.
+  app.post('/api/admin/push/subscribe', requireAdmin, async (req, res) => {
+    try {
+      if (!webpush) return res.status(503).json({ message: 'Push is not configured on the server' });
+      const { subscription, pageUrl } = req.body || {};
+      if (!subscription || !subscription.endpoint || !subscription.keys || !subscription.keys.p256dh || !subscription.keys.auth) {
+        return res.status(400).json({ message: 'Invalid subscription' });
+      }
+      await AdminPushSub.findOneAndUpdate(
+        { endpoint: subscription.endpoint },
+        { endpoint: subscription.endpoint, keys: { p256dh: subscription.keys.p256dh, auth: subscription.keys.auth },
+          adminEmail: req.adminEmail, pageUrl: String(pageUrl || '/').slice(0, 300) },
+        { upsert: true, new: true, setDefaultsOnInsert: true }
+      );
+      res.json({ message: 'Push enabled' });
+    } catch (err) {
+      console.error('POST /api/admin/push/subscribe error:', err.message);
+      res.status(500).json({ message: 'Error enabling push' });
+    }
+  });
+
+  // POST /api/admin/push/unsubscribe — remove this browser's subscription.
+  app.post('/api/admin/push/unsubscribe', requireAdmin, async (req, res) => {
+    try {
+      const { endpoint } = req.body || {};
+      if (endpoint) await AdminPushSub.deleteOne({ endpoint });
+      res.json({ message: 'Push disabled' });
+    } catch (err) {
+      console.error('POST /api/admin/push/unsubscribe error:', err.message);
+      res.status(500).json({ message: 'Error disabling push' });
+    }
+  });
 
   // GET /api/admin/notifications — newest first, capped at 200, plus unread count.
   app.get('/api/admin/notifications', requireAdmin, requireModule('notifications'), async (req, res) => {
@@ -827,6 +967,77 @@ module.exports = function registerAdminRoutes(app, deps) {
     } catch (err) {
       console.error('DELETE /api/users/:id/session error:', err);
       res.status(500).json({ message: 'Error clearing user session' });
+    }
+  });
+
+  // ── DELETE /api/users/:id/views (admin: reset one tenant's / owner's views) ──
+  // Wipes every view record tied to this account, in both directions:
+  //   1) Views they MADE  — their PropertyViewer rows ("viewed by" list) and their
+  //      PropertyView dedup rows (fingerprint `user:<id>`). Each PropertyView row
+  //      deleted was worth exactly +1 on that listing's `views` counter, so that
+  //      is decremented back (floored at 0). Older views recorded under a device
+  //      fingerprint can't be traced to a user, so they stay counted.
+  //   2) Views they RECEIVED — for an owner, every listing they own (userId, or
+  //      owner.phone/altPhone matching their mobile, same rule as the Customers
+  //      grid) gets views = 0 and all PropertyView / PropertyViewer rows for those
+  //      listings are deleted, so visitors can register fresh views afterwards.
+  // Only rows belonging to this user / their listings are touched; DailyStat
+  // (historical per-day totals) is left alone. Safe to call on an account with no views.
+  app.delete('/api/users/:id/views', requireAdmin, requireModuleAction('customers'), async (req, res) => {
+    try {
+      const { id } = req.params;
+      if (!mongoose.Types.ObjectId.isValid(id)) return res.status(400).json({ message: 'Invalid user id' });
+      const user = await User.findById(id).select('mobile').lean();
+      if (!user) return res.status(404).json({ message: 'Customer not found' });
+
+      // Listings this account owns (across rent/lease/pg/hourlyStay).
+      let mobile = String(user.mobile || '').replace(/\D/g, '');
+      if (mobile.length > 10 && mobile.startsWith('0')) mobile = mobile.slice(1);
+      if (mobile.length > 10 && mobile.startsWith('91')) mobile = mobile.slice(mobile.length - 10);
+      const ownerOr = [{ userId: id }];
+      if (mobile) ownerOr.push({ 'owner.phone': mobile }, { 'owner.altPhone': mobile });
+      const owned = (await Promise.all(
+        LISTING_MODEL_LIST.map(M => M.find({ $or: ownerOr }).select('_id').lean())
+      )).flat();
+      const ownedIds = owned.map(d => String(d._id));
+      const ownedSet = new Set(ownedIds);
+
+      // 1) Views they made.
+      const madeRows = await PropertyView.find({ fingerprint: `user:${id}` }).select('propertyId').lean();
+      const decIds = madeRows
+        .map(r => r.propertyId)
+        .filter(pid => !ownedSet.has(String(pid)) && mongoose.Types.ObjectId.isValid(pid));
+      if (decIds.length) {
+        await Promise.all(LISTING_MODEL_LIST.map(M =>
+          M.updateMany({ _id: { $in: decIds }, views: { $gt: 0 } }, { $inc: { views: -1 } })
+        ));
+      }
+      const [madeView, madeViewer] = await Promise.all([
+        PropertyView.deleteMany({ fingerprint: `user:${id}` }),
+        PropertyViewer.deleteMany({ userId: id }),
+      ]);
+
+      // 2) Views they received on their own listings.
+      let receivedView = { deletedCount: 0 }, receivedViewer = { deletedCount: 0 };
+      if (ownedIds.length) {
+        await Promise.all(LISTING_MODEL_LIST.map(M =>
+          M.updateMany({ _id: { $in: ownedIds } }, { $set: { views: 0 } })
+        ));
+        [receivedView, receivedViewer] = await Promise.all([
+          PropertyView.deleteMany({ propertyId: { $in: ownedIds } }),
+          PropertyViewer.deleteMany({ propertyId: { $in: ownedIds } }),
+        ]);
+      }
+
+      res.json({
+        message: 'Views reset',
+        listingsReset: ownedIds.length,
+        viewedByThemCleared: madeViewer.deletedCount || 0,
+        viewsOnTheirListingsCleared: (receivedView.deletedCount || 0) + (receivedViewer.deletedCount || 0),
+      });
+    } catch (err) {
+      console.error('DELETE /api/users/:id/views error:', err);
+      res.status(500).json({ message: 'Error resetting views' });
     }
   });
 

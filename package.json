@@ -30,7 +30,8 @@
     "nodemailer": "^9.0.5",
     "razorpay": "^2.9.8",
     "sharp": "^0.35.3",
-    "uuid": "^14.0.2"
+    "uuid": "^14.0.2",
+    "web-push": "^3.6.7"
   },
   "repository": {
     "type": "git",
@@ -40,6 +41,5 @@
     "url": "https://github.com/Karthikj9611/HomeLoop/issues"
   },
   "homepage": "https://github.com/Karthikj9611/HomeLoop#readme",
-  "devDependencies": {},
   "description": ""
 }

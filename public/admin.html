@@ -1126,6 +1126,9 @@ footer i{color:var(--gold)}
 
 .btn-view.btn-action-logout{background:var(--gold-light);color:var(--gold-dark);border-color:rgba(184,144,60,0.3)}
 .btn-view.btn-action-logout:hover{background:var(--gold);color:#fff;box-shadow:0 4px 12px rgba(184,144,60,0.3)}
+.btn-view.btn-action-resetviews{background:rgba(220,38,38,0.08);color:var(--red);border-color:rgba(220,38,38,0.25)}
+.btn-view.btn-action-resetviews:hover{background:var(--red);color:#fff}
+.btn-view.btn-action-resetviews:disabled{opacity:0.45;cursor:not-allowed}
 
 /* ── EDIT BUTTON ── */
 .btn-edit{
@@ -2703,6 +2706,8 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
       <div class="header-badge"><i class="fas fa-circle-dot"></i> Live &nbsp;·&nbsp; <span id="adminNameBadge">—</span></div>
       <div class="notif-bell-wrap" id="notifBellWrap">
+        <button class="notif-bell-btn" id="notifPushBtn" onclick="togglePush()" title="Phone/desktop alerts: off" style="margin-right:6px;display:none"><i class="fas fa-tower-broadcast"></i></button>
+        <button class="notif-bell-btn notif-sound-btn" id="notifSoundBtn" onclick="toggleNotifSound()" title="Notification sound: on" style="margin-right:6px"><i class="fas fa-volume-high"></i></button>
         <button class="notif-bell-btn" id="notifBellBtn" onclick="openNotifModal()" title="Notifications" aria-haspopup="dialog" aria-expanded="false">
           <i class="fas fa-bell"></i>
           <span class="notif-badge" id="notifBadge" style="display:none">0</span>
@@ -4482,7 +4487,7 @@ function doLogout(){
 }
 
 /* ── ADMIN NOTIFICATIONS (bell icon) ──
-   Polls GET /api/admin/notifications every 30s and whenever the panel is
+   Polls GET /api/admin/notifications every 5s and whenever the panel is
    opened. Notifications are raised server-side (see admin.js's notifyAdmin)
    for: a user registering, a property being listed, a new appointment
    (visit request), a new star review, a new honest-review (video
@@ -4655,12 +4660,127 @@ function escapeHtmlNotif(str){
     .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
 
+/* ── NOTIFICATION SOUND ──
+   Two-tone chime via Web Audio (no audio file needed). Plays when a poll finds
+   an unread notification we haven't seen yet. The first poll after load only
+   seeds the seen-set, so existing unread items don't chime on every refresh.
+   Browsers block audio until the page has had a click/keypress, so the
+   AudioContext is unlocked on the first user gesture. Mute state is remembered. */
+let notifAudioCtx = null;
+let notifSeenIds = null;      // null until first poll seeds it
+let notifLastUnread = 0;
+let notifSoundOn = localStorage.getItem('kr_notif_sound') !== 'off';
+
+function unlockNotifAudio(){
+  try {
+    if(!notifAudioCtx){
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if(!AC) return;
+      notifAudioCtx = new AC();
+    }
+    if(notifAudioCtx.state === 'suspended') notifAudioCtx.resume();
+  } catch(e){}
+}
+['click','keydown','touchstart'].forEach(ev => document.addEventListener(ev, unlockNotifAudio, { passive:true }));
+
+// Browser hasn't allowed audio yet (no click since page load): make the
+// speaker button pulse red so it's obvious one click is needed.
+function flagSoundBlocked(){
+  const b = document.getElementById('notifSoundBtn');
+  if(!b) return;
+  b.style.borderColor = 'var(--red)'; b.style.color = 'var(--red)';
+  b.title = 'Click anywhere on the page to enable notification sound';
+  setTimeout(() => { b.style.borderColor = ''; b.style.color = ''; updateNotifSoundBtn(); }, 4000);
+}
+
+function playNotifSound(){
+  if(!notifSoundOn) return;
+  if(!notifAudioCtx){ flagSoundBlocked(); return; }
+  const go = () => {
+    try {
+      const t0 = notifAudioCtx.currentTime;
+      [[880, 0], [1318.5, 0.14]].forEach(([freq, delay]) => {
+        const osc = notifAudioCtx.createOscillator();
+        const gain = notifAudioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = freq;
+        gain.gain.setValueAtTime(0.0001, t0 + delay);
+        gain.gain.exponentialRampToValueAtTime(0.4, t0 + delay + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, t0 + delay + 0.35);
+        osc.connect(gain).connect(notifAudioCtx.destination);
+        osc.start(t0 + delay);
+        osc.stop(t0 + delay + 0.4);
+      });
+    } catch(e){}
+  };
+  if(notifAudioCtx.state === 'running') go();
+  else notifAudioCtx.resume().then(() => {
+    if(notifAudioCtx.state === 'running') go(); else flagSoundBlocked();
+  }).catch(flagSoundBlocked);
+}
+
+// Which grid a new notification affects — reloaded in place (page kept, no
+// flicker) so the new row/count shows up without a manual refresh.
+function refreshGridsForNotifTypes(types){
+  const map = {
+    user_registered:         () => dataTable,
+    property_listed:         () => propTable,
+    appointment_booked:      () => apptTable,
+    review_posted:           () => userReviewsTable,
+    honest_review_submitted: () => honestReviewsTable,
+    referral_submitted:      () => referralsTable,
+    partner_added:           () => partnersTable,
+  };
+  const done = new Set();
+  types.forEach(t => {
+    const get = map[t];
+    const tbl = get && get();
+    if(tbl && !done.has(tbl)){
+      done.add(tbl);
+      try { tbl.ajax.reload(null, false); } catch(e){}
+    }
+  });
+}
+
+function detectNewNotifications(data){
+  const list = data.notifications || [];
+  const unread = list.filter(n => !n.read);
+  const unreadCount = data.unreadCount || 0;
+  if(notifSeenIds === null){
+    notifSeenIds = new Set(unread.map(n => String(n._id)));
+  } else {
+    const fresh = unread.filter(n => !notifSeenIds.has(String(n._id)));
+    unread.forEach(n => notifSeenIds.add(String(n._id)));
+    const hasNew = fresh.length > 0 || (!unread.length && unreadCount > notifLastUnread);
+    if(hasNew){
+      playNotifSound();
+      refreshGridsForNotifTypes(fresh.map(n => n.type));
+    }
+  }
+  notifLastUnread = unreadCount;
+}
+
+window.toggleNotifSound = function(){
+  notifSoundOn = !notifSoundOn;
+  localStorage.setItem('kr_notif_sound', notifSoundOn ? 'on' : 'off');
+  updateNotifSoundBtn();
+  if(notifSoundOn) unlockNotifAudio();
+};
+function updateNotifSoundBtn(){
+  const b = document.getElementById('notifSoundBtn');
+  if(!b) return;
+  b.title = 'Notification sound: ' + (notifSoundOn ? 'on' : 'off');
+  b.innerHTML = '<i class="fas ' + (notifSoundOn ? 'fa-volume-high' : 'fa-volume-xmark') + '"></i>';
+}
+updateNotifSoundBtn();
+
 async function fetchNotifications(){
   if(!ADMIN_KEY) return;
   try {
     const res = await fetch(BASE + '/api/admin/notifications', { headers: authHeaders() });
     if(!res.ok) return;
     const data = await res.json();
+    detectNewNotifications(data);
     const badge = document.getElementById('notifBadge');
     if(data.unreadCount > 0){
       badge.style.display = 'flex';
@@ -4714,10 +4834,84 @@ async function clearAllNotifications(){
   } catch(e){}
 }
 
+document.addEventListener('visibilitychange', () => { if(!document.hidden) fetchNotifications(); });
+
+/* ── WEB PUSH (alerts in the phone/desktop notification shade) ──
+   Registers /admin-sw.js, asks permission, and sends the browser's push
+   subscription to the server. The server then pushes every new admin
+   notification, even when this page is closed. Button stays hidden if the
+   server has no VAPID keys or the browser doesn't support push. */
+let pushInited = false;
+function urlB64ToUint8Array(b64){
+  const pad = '='.repeat((4 - b64.length % 4) % 4);
+  const raw = atob((b64 + pad).replace(/-/g,'+').replace(/_/g,'/'));
+  return Uint8Array.from([...raw].map(c => c.charCodeAt(0)));
+}
+function setPushBtn(on){
+  const b = document.getElementById('notifPushBtn');
+  if(!b) return;
+  b.style.display = '';
+  b.title = 'Phone/desktop alerts: ' + (on ? 'on (click to turn off)' : 'off (click to turn on)');
+  b.style.color = on ? 'var(--green,#1e9e57)' : '';
+  b.style.borderColor = on ? 'var(--green,#1e9e57)' : '';
+}
+async function pushSaveSub(sub){
+  const res = await fetch(BASE + '/api/admin/push/subscribe', {
+    method:'POST',
+    headers:{ ...authHeaders(), 'Content-Type':'application/json' },
+    body: JSON.stringify({ subscription: sub.toJSON(), pageUrl: location.origin + location.pathname })
+  });
+  return res.ok;
+}
+async function initPush(){
+  if(pushInited) return;
+  pushInited = true;
+  if(!('serviceWorker' in navigator) || !('PushManager' in window) || !window.isSecureContext) return;
+  try {
+    const kr = await fetch(BASE + '/api/admin/push/public-key', { headers: authHeaders() });
+    if(!kr.ok) return; // push not configured on the server
+    const reg = await navigator.serviceWorker.register('/admin-sw.js');
+    await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.getSubscription();
+    if(sub && Notification.permission === 'granted'){ await pushSaveSub(sub); setPushBtn(true); }
+    else setPushBtn(false);
+  } catch(e){ /* leave the button hidden */ }
+}
+window.togglePush = async function(){
+  try {
+    const reg = await navigator.serviceWorker.register('/admin-sw.js');
+    await navigator.serviceWorker.ready;
+    const existing = await reg.pushManager.getSubscription();
+    if(existing){
+      await fetch(BASE + '/api/admin/push/unsubscribe', {
+        method:'POST', headers:{ ...authHeaders(), 'Content-Type':'application/json' },
+        body: JSON.stringify({ endpoint: existing.endpoint })
+      });
+      await existing.unsubscribe();
+      setPushBtn(false);
+      return;
+    }
+    const perm = await Notification.requestPermission();
+    if(perm !== 'granted'){
+      showAlertModal('Notifications are blocked. Allow them for this site in your browser settings, then try again.', { variant:'error', title:'Permission needed' });
+      return;
+    }
+    const kr = await fetch(BASE + '/api/admin/push/public-key', { headers: authHeaders() });
+    const { key } = await kr.json();
+    const sub = await reg.pushManager.subscribe({ userVisibleOnly:true, applicationServerKey: urlB64ToUint8Array(key) });
+    if(await pushSaveSub(sub)) setPushBtn(true);
+    else showAlertModal('Could not save the subscription on the server.', { variant:'error', title:'Push failed' });
+  } catch(e){
+    showAlertModal('Could not enable alerts: ' + (e && e.message ? e.message : e), { variant:'error', title:'Push failed' });
+  }
+};
+
 function startNotifPolling(){
+  initPush();
+  notifSeenIds = null;
   fetchNotifications();
   if(notifPollTimer) clearInterval(notifPollTimer);
-  notifPollTimer = setInterval(fetchNotifications, 30000);
+  notifPollTimer = setInterval(fetchNotifications, 5000);
 }
 
 if(!ADMIN_KEY){
@@ -5682,6 +5876,28 @@ window.forceLogoutUser = async function(id){
     alert(data.message || 'Done');
   } else {
     alert(data.message || 'Error clearing session');
+  }
+};
+
+/* ── RESET VIEWS (per customer) ──
+   Clears this tenant's/owner's view history: listings they've opened AND views
+   received on their own listings (view counters + dedup/"viewed by" rows in the DB). */
+window.resetUserViews = async function(id){
+  if(blockIfViewOnly('customers')) return;
+  const ok = await showConfirmModal({
+    title: 'Reset this customer\'s views?',
+    message: 'Deletes every view record for this account: listings they have viewed (counts on those listings go down by one each) and all views on listings they own (set back to 0). This cannot be undone.',
+    okText: 'Reset views'
+  });
+  if(!ok) return;
+  try{
+    const res = await fetch(`${BASE}/api/users/${id}/views`, { method:'DELETE', headers: authHeaders() });
+    const data = await res.json().catch(()=>({}));
+    if(!res.ok){ alert(data.message || 'Failed to reset views'); return; }
+    alert('Views reset.');
+    dataTable.ajax.reload(null,false);
+  }catch(e){
+    alert('Failed to reset views. Please try again.');
   }
 };
 
@@ -8328,6 +8544,10 @@ $(document).ready(function(){
 
 				<button class="btn-view btn-action-logout" onclick="forceLogoutUser('${row._id}')" title="Clear their active session so they can log in on another device right away">
 				  <i class="fas fa-right-from-bracket"></i><span class="btn-label"> Force logout</span>
+				</button>
+
+				<button class="btn-view btn-action-resetviews" onclick="resetUserViews('${row._id}')" title="Delete this customer's viewed-property records and the views on their own listings" ${canAct('customers')?'':'disabled'}>
+				  <i class="fas fa-rotate-left"></i><span class="btn-label"> Reset views</span>
 				</button>
 
 				<label class="mini-toggle-wrap altcall-wrap" title="${row.accountType==='owner' ? 'When ON, all of this owner\'s listings show their owner number(s) to every visitor' : 'When ON, this tenant sees owner numbers on all listings while logged in'}"><span class="mini-toggle altcall-toggle">
