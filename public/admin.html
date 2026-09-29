@@ -8095,6 +8095,7 @@ document.getElementById('checkAvailabilityModal').addEventListener('click', func
 
 /* ── PROPERTY VIEWS: INDIVIDUAL & RESET-ALL ── */
 window.resetPropertyViews = async function(id, btnEl){
+  return; // per-listing views reset is disabled
   if(blockIfViewOnly('properties')) return;
   const ok = await showConfirmModal({ title:'Reset views?', message:"This listing's view count will be set back to 0. This cannot be undone.", okText:'Reset' });
   if(!ok) return;
@@ -9145,7 +9146,7 @@ $(document).ready(function(){
           if(t!=='display') return d==null?0:d;
           const count = d==null?'0':escapeHtml(String(d));
           return `<span class="views-cell"><span class="views-cell-count">${count}</span>
-            <button class="btn-reset-views" title="Reset this listing's views to 0" onclick="resetPropertyViews('${row._id}', this)"><i class="fas fa-rotate-left"></i></button></span>`;
+            <button class="btn-reset-views" title="Reset views is disabled" disabled aria-disabled="true"><i class="fas fa-rotate-left"></i></button></span>`;
       }},
       /* 37 – Photos (count) */
       { data:null, orderable:false, visible:false, className:'dt-body-center', render:(d,t,row)=>{
