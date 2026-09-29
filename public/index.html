@@ -8187,7 +8187,11 @@ function incrementViews(p) {
   // re-register the view after the reset would never go out.
   fetch(`/api/properties/${p.id}/view`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    // x-user-key (when logged in) lets the server attribute this view to the
+    // account instead of just the device — see attachUserIfPresent/req.userId
+    // in POST /api/properties/:id/view (server.js). Guests send an empty key,
+    // same as any other guest-safe authenticated route.
+    headers: userAuthHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify({ deviceSig: buildDeviceSignature() }),
   })
     .then(res => res.ok ? res.json() : null)
@@ -13476,6 +13480,20 @@ async function submitAuth() {
         msg += ' For queries, call 9035205230.';
       }
       showToast(msg, 'error');
+      // Trying to log in with a contact that has no account: instead of
+      // leaving them stuck on the Log in tab, take them straight to Sign up
+      // — carrying over what they typed into the matching field (mobile vs
+      // email) so they don't have to retype it.
+      if (isLogin && /no account found/i.test(msg)) {
+        const contactTyped = body.contact;
+        switchAuthTab('signup');
+        if (isValidIndianMobile(contactTyped)) {
+          document.getElementById('auth-mobile').value = contactTyped;
+        } else {
+          document.getElementById('auth-email').value = contactTyped;
+        }
+        saveSignupDraft();
+      }
       return;
     }
     finishAuthSuccess(data);
