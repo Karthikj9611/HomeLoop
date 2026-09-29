@@ -534,7 +534,7 @@ module.exports = function registerAdminRoutes(app, deps) {
             type,
             url:   sub.pageUrl || '/',
           });
-          await webpush.sendNotification({ endpoint: sub.endpoint, keys: sub.keys }, payload, { TTL: 60 * 60 });
+          await webpush.sendNotification({ endpoint: sub.endpoint, keys: sub.keys }, payload, { TTL: 60 * 60, urgency: 'high' }); // 'high' = deliver right away, even when the phone is idle / in battery saver
         } catch (err) {
           // 404/410 = the browser dropped this subscription; clean it up.
           if (err && (err.statusCode === 404 || err.statusCode === 410)) {
@@ -1039,6 +1039,49 @@ self.addEventListener('notificationclick', event => {
     } catch (err) {
       console.error('DELETE /api/users/:id/views error:', err);
       res.status(500).json({ message: 'Error resetting views' });
+    }
+  });
+
+  // -- GET /api/users/:id/viewed-properties (admin: which listings this customer has opened) --
+  // Feeds the "Properties viewed" section of the Customers grid's View modal. Reads the
+  // customer's PropertyViewer rows (one per logged-in user per listing, newest first) and
+  // looks each listing up so the modal can show its readable Property ID (e.g. AAA123).
+  // Guest views and views recorded before the "viewed by" feature shipped have no user
+  // attached, so they cannot appear here. A listing that has since been deleted is still
+  // returned (with removed:true) so the list lines up with the count in the grid.
+  app.get('/api/users/:id/viewed-properties', requireAdmin, requireModule('customers'), async (req, res) => {
+    try {
+      const { id } = req.params;
+      if (!mongoose.Types.ObjectId.isValid(id)) return res.status(400).json({ message: 'Invalid user id' });
+      const rows = await PropertyViewer.find({ userId: id })
+        .sort({ lastViewedAt: -1 }).limit(500)
+        .select('propertyId firstViewedAt lastViewedAt').lean();
+      const ids = rows.map(r => r.propertyId).filter(pid => mongoose.Types.ObjectId.isValid(pid));
+      const found = {};
+      if (ids.length) {
+        const docs = (await Promise.all(LISTING_MODEL_LIST.map(M =>
+          M.find({ _id: { $in: ids } })
+            .select('propertyId basic.status location.area location.city property.type property.bhk').lean()
+        ))).flat();
+        docs.forEach(d => { found[String(d._id)] = d; });
+      }
+      res.json(rows.map(r => {
+        const d = found[String(r.propertyId)];
+        return {
+          _id:           String(r.propertyId),
+          propertyId:    d ? (d.propertyId || '') : '',
+          removed:       !d,
+          status:        d && d.basic ? (d.basic.status || '') : '',
+          type:          d && d.property ? [d.property.bhk, d.property.type].filter(Boolean).join(' ') : '',
+          area:          d && d.location ? (d.location.area || '') : '',
+          city:          d && d.location ? (d.location.city || '') : '',
+          firstViewedAt: r.firstViewedAt,
+          lastViewedAt:  r.lastViewedAt,
+        };
+      }));
+    } catch (err) {
+      console.error('GET /api/users/:id/viewed-properties error:', err);
+      res.status(500).json({ message: 'Error fetching viewed properties' });
     }
   });
 
