@@ -3306,7 +3306,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
             <div class="stat-card-big-num" id="totalVisitsBigNum">—</div>
             <div class="stat-card-big-label">All-time website visits</div>
             <div class="stat-card-big-actions">
-              <button class="bulk-btn bulk-btn-outline-danger" onclick="resetTotalVisits()">
+              <button class="bulk-btn bulk-btn-outline-danger visits-reset-btn" onclick="resetTotalVisits()">
                 <i class="fas fa-eraser"></i> Reset Count
               </button>
             </div>
@@ -3318,7 +3318,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
             <div class="stat-card-big-num" id="dailyVisitsBigNum">—</div>
             <div class="stat-card-big-label">Today's site visits</div>
             <div class="stat-card-big-actions">
-              <button class="bulk-btn bulk-btn-outline-danger" onclick="resetDailyStat('visit')">
+              <button class="bulk-btn bulk-btn-outline-danger visits-reset-btn" onclick="resetDailyStat('visit')">
                 <i class="fas fa-eraser"></i> Reset Count
               </button>
             </div>
@@ -3340,7 +3340,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
             </div>
             <div style="display:flex;align-items:center;gap:12px">
               <div style="font-weight:700;color:var(--ink3);font-size:0.84rem">Total this month: <span id="visitsMonthTotal">—</span></div>
-              <button class="bulk-btn bulk-btn-outline-danger" onclick="resetDailyStat('visit')" title="Reset every day's visit count, across all months">
+              <button class="bulk-btn bulk-btn-outline-danger visits-reset-btn" onclick="resetDailyStat('visit')" title="Reset every day's visit count, across all months">
                 <i class="fas fa-eraser"></i> Reset All
               </button>
             </div>
@@ -3368,7 +3368,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
             <div class="stat-card-big-num" id="registeredUsersBigNum">—</div>
             <div class="stat-card-big-label">Today's registrations</div>
             <div class="stat-card-big-actions">
-              <button class="bulk-btn bulk-btn-outline-danger" onclick="resetDailyStat('registration')">
+              <button class="bulk-btn bulk-btn-outline-danger visits-reset-btn" onclick="resetDailyStat('registration')">
                 <i class="fas fa-eraser"></i> Reset Count
               </button>
             </div>
@@ -3391,10 +3391,10 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
             <div class="stat-card-big-num" id="todayPropertyViewsBigNum">—</div>
             <div class="stat-card-big-label">Today's property views</div>
             <div class="stat-card-big-actions">
-              <button class="bulk-btn bulk-btn-outline-danger" onclick="resetDailyStat('propertyView')">
+              <button class="bulk-btn bulk-btn-outline-danger visits-reset-btn" onclick="resetDailyStat('propertyView')">
                 <i class="fas fa-eraser"></i> Reset Count
               </button>
-              <button class="bulk-btn bulk-btn-outline-danger" id="resetAllViewsBtn" onclick="resetAllViews()" title="Reset every listing's view count to 0">
+              <button class="bulk-btn bulk-btn-outline-danger visits-reset-btn" id="resetAllViewsBtn" onclick="resetAllViews()" title="Reset every listing's view count to 0">
                 <i class="fas fa-rotate-left"></i> Reset All Views
               </button>
             </div>
@@ -6059,7 +6059,10 @@ window.forceLogoutUser = async function(id){
 /* ── RESET VIEWS (per customer) ──
    Clears this tenant's/owner's view history: listings they've opened AND views
    received on their own listings (view counters + dedup/"viewed by" rows in the DB). */
+/* The customer-row "Reset views" button is disabled (greyed out, not clickable) by default. Set to false to enable it again. */
+window.DISABLE_RESET_VIEWS_BTN = true;
 window.resetUserViews = async function(id){
+  if(window.DISABLE_RESET_VIEWS_BTN) return;
   if(blockIfViewOnly('customers')) return;
   const ok = await showConfirmModal({
     title: 'Reset this customer\'s views?',
@@ -6168,7 +6171,17 @@ async function loadTotalVisits(){
   } catch(err){ console.error('loadTotalVisits error:', err); }
 }
 
+/* Visits tab: every "Reset Count" / "Reset All" / "Reset All Views" button is disabled (greyed out, not clickable)
+   for everyone, super admin included. Set to false to enable them again. */
+window.DISABLE_VISITS_RESET_BTNS = true;
+(function(){
+  function apply(){ document.querySelectorAll('.visits-reset-btn').forEach(function(b){ b.disabled = !!window.DISABLE_VISITS_RESET_BTNS; }); }
+  apply();
+  document.addEventListener('DOMContentLoaded', apply);
+})();
+
 window.resetTotalVisits = async function(){
+  if(window.DISABLE_VISITS_RESET_BTNS) return;
   if(blockIfViewOnly('stats', 'visits')) return;
   const ok = await showConfirmModal({ title:'Reset total visits?', message:'The all-time visit counter will be set back to 0, and every visitor will be forgotten — so a device that already counted before will count again next time it visits. This cannot be undone.', okText:'Reset' });
   if(!ok) return;
@@ -6218,6 +6231,7 @@ async function loadDailyStat(type){
 // permission as the other two, not 'properties'.
 const DAILY_STAT_TYPE_MODULES = { visit:['stats','visits'], registration:['stats','visits'], propertyView:['stats','visits'] };
 window.resetDailyStat = async function(type){
+  if(window.DISABLE_VISITS_RESET_BTNS) return;
   if(blockIfViewOnly(...(DAILY_STAT_TYPE_MODULES[type] || []))) return;
   const meta = DAILY_STAT_LABELS[type];
   const message = type === 'visit'
@@ -8058,6 +8072,7 @@ window.resetPropertyViews = async function(id, btnEl){
 };
 
 window.resetAllViews = async function(){
+  if(window.DISABLE_VISITS_RESET_BTNS) return;
   if(blockIfViewOnly('properties')) return;
   const allRows = propTable.rows().data().toArray();
   if(!allRows.length){ alert('There are no properties to reset.'); return; }
@@ -8798,7 +8813,7 @@ $(document).ready(function(){
 				  <i class="fas fa-right-from-bracket"></i><span class="btn-label"> Force logout</span>
 				</button>
 
-				<button class="btn-view btn-action-resetviews" onclick="resetUserViews('${row._id}')" title="Delete this customer's viewed-property records and the views on their own listings" ${canAct('customers')?'':'disabled'}>
+				<button class="btn-view btn-action-resetviews" onclick="resetUserViews('${row._id}')" title="Delete this customer's viewed-property records and the views on their own listings" ${(window.DISABLE_RESET_VIEWS_BTN || !canAct('customers'))?'disabled':''}>
 				  <i class="fas fa-rotate-left"></i><span class="btn-label"> Reset views</span>
 				</button>
 
