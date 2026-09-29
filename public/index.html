@@ -11780,7 +11780,7 @@ function openDetailReal(id) {
   const _callLabelEl = document.getElementById('viewCallBtnLabel');
   if (_callLabelEl) {
     const _agentDigits = String(p.owner?.agentPhone || '').replace(/\D/g, '').slice(-10);
-    _callLabelEl.textContent = (_agentDigits === '9035205230') ? 'Agent' : 'Owner';
+    _callLabelEl.textContent = (_agentDigits === '9035205230') ? 'Rental Coordinator' : 'Owner';
   }
   // Direct owner call — the server only sends ownerAltPhone when admin turned it on.
   // Each number has its own admin "Public call" toggle; the server only sends a number when its toggle is on.
