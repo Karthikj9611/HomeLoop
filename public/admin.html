@@ -3063,7 +3063,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
       <button class="cat-tab-btn" data-cat="Booked" onclick="switchPropCategory('Booked')">
         <i class="fas fa-lock"></i><span class="cat-tab-btn-label" data-mobile="Booked">Booked</span><span class="cat-count" id="cat-count-Booked">—</span>
       </button>
-      <button class="cat-tab-btn" data-cat="PG" onclick="switchPropCategory('PG')">
+      <button class="cat-tab-btn" data-cat="PG" onclick="switchPropCategory('PG')" style="display:none">
         <i class="fas fa-bed"></i><span class="cat-tab-btn-label" data-mobile="PG">PG</span><span class="cat-count" id="cat-count-PG">—</span>
       </button>
       <button class="cat-tab-btn" data-cat="Short Stay" onclick="switchPropCategory('Short Stay')" style="display:none">
@@ -11166,6 +11166,7 @@ function propCategoryOf(status){
 // clicking a different tab changes it. Falls back to 'Rent' the very first
 // time, matching the tab that's marked active in the static HTML.
 let _propCategoryState = localStorage.getItem('kr_admin_propCategory') || 'Rent';
+if(_propCategoryState === 'PG') _propCategoryState = 'Rent'; // PG tab is hidden - don't reopen on it from a saved choice
 
 // PG-only and Short-Stay-only column indices in #propertyTable (see the
 // numbered comments in the propTable columns:[...] definition above).
