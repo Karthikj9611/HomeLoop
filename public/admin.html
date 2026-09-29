@@ -1040,8 +1040,11 @@ table.dataTable.no-footer{border-bottom:none!important}
 .cust-viewed-sub{flex:1;min-width:120px;font-size:0.8rem;color:var(--ink2)}
 .cust-viewed-when{font-size:0.74rem;color:var(--ink3);white-space:nowrap}
 .cust-viewed-empty{font-size:0.82rem;color:var(--ink3);padding:4px 2px}
-.views-eye-btn{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;margin-left:6px;border:1px solid rgba(37,99,235,0.25);border-radius:8px;background:#eff6ff;color:#2563eb;cursor:pointer;font-size:0.78rem;vertical-align:middle;transition:all .15s}
-.views-eye-btn:hover{background:#2563eb;color:#fff;box-shadow:0 4px 12px rgba(37,99,235,0.3)}
+.views-badge{display:inline-flex;align-items:center;gap:7px;padding:5px 13px;border-radius:999px;border:1px solid rgba(37,99,235,.25);background:#eff6ff;color:#2563eb;font:inherit;font-size:.82rem;font-weight:700;line-height:1;cursor:pointer;transition:all .15s}
+.views-badge i{font-size:.8rem}
+.views-badge:hover{background:#2563eb;color:#fff;border-color:#2563eb;box-shadow:0 4px 12px rgba(37,99,235,.3);transform:translateY(-1px)}
+.views-badge.static{background:#f1f5f9;color:#64748b;border-color:#e2e8f0;cursor:default}
+.views-badge.static:hover{background:#f1f5f9;color:#64748b;border-color:#e2e8f0;box-shadow:none;transform:none}
 /* ── Properties viewed modal (modern) ── */
 #viewedPropsModal .prop-modal{max-width:520px;display:flex;flex-direction:column;overflow:hidden;height:min(92vh,760px)}
 #viewedPropsModal .prop-modal-close-row{position:absolute;top:12px;right:12px;padding:0;background:transparent}
@@ -8812,10 +8815,9 @@ $(document).ready(function(){
           if(t!=='display') return total;
           const tip = (row.viewsCount ?? 0) + ' views on their listings + ' + (row.propertiesViewed ?? 0) + ' listings viewed by them';
           const key = String(row.mobile || row._id).replace(/'/g,"\\'");
-          const eye = (row.propertiesViewed ?? 0) > 0
-            ? ' <button type="button" class="views-eye-btn" title="View properties viewed" onclick="openViewedPropsModal(\''+key+'\')"><i class="fas fa-eye"></i></button>'
-            : '';
-          return '<span title="'+tip+'">'+total+'</span>'+eye;
+          if((row.propertiesViewed ?? 0) > 0)
+            return '<button type="button" class="views-badge" title="'+tip+' — click to see which properties" onclick="openViewedPropsModal(\''+key+'\')"><i class="fas fa-eye"></i><span>'+total+'</span></button>';
+          return '<span class="views-badge static" title="'+tip+'"><i class="fas fa-eye"></i><span>'+total+'</span></span>';
       }},
       /* 10 – Registered */
       { data:'createdAt', render:(d,t)=>{
