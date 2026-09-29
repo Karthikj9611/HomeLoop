@@ -1001,6 +1001,7 @@ function buildListingSchema() {
     // Email fields are a snapshot at save-time so the record still reads
     // fine even if that User doc later changes or is deleted.
     bookingDetails: {
+      propertyId:  { type: String, default: '' }, // human-readable Property.propertyId code picked in the modal's Property ID dropdown
       ownerId:     { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
       ownerName:   { type: String, default: '' },
       ownerPhone:  { type: String, default: '' },

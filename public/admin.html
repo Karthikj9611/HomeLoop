@@ -1255,6 +1255,17 @@ footer i{color:var(--gold)}
   border-color:var(--red)!important;
   background:var(--red-light)!important;
 }
+/* searchable dropdown (Booking Details) */
+.bd-combo{position:relative}
+.bd-combo-input{cursor:pointer;padding-right:36px!important;
+  background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%23555' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 14px center!important}
+.bd-combo-list{display:none;position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:50;max-height:230px;overflow-y:auto;
+  background:#fff;border:1.5px solid var(--border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,0.14);padding:4px}
+.bd-combo.open .bd-combo-list{display:block}
+.bd-combo-item{padding:9px 12px;border-radius:8px;font-size:0.85rem;color:var(--ink);cursor:pointer}
+.bd-combo-item:hover,.bd-combo-item.active{background:var(--gold-light,#f3ecdc)}
+.bd-combo-item.selected{font-weight:700}
+.bd-combo-empty{padding:10px 12px;font-size:0.82rem;color:var(--ink3)}
 .bd-field-msg{color:var(--red);font-size:0.72rem;margin-top:4px;display:none}
 .bd-field-msg.show{display:block}
 .hr-form-row.bd-invalid{
@@ -7163,23 +7174,117 @@ async function _bdGetUsers(){
   return _bdUsersCache;
 }
 
+let _bdPropsCache = null; // [{_id, propertyId, label}] - every listing's Property ID
+
+async function _bdGetProps(){
+  if(_bdPropsCache) return _bdPropsCache;
+  try{
+    const res = await fetch(BASE + '/api/admin/property-ids', { headers: authHeaders() });
+    const data = await res.json().catch(()=>[]);
+    _bdPropsCache = Array.isArray(data) ? data : [];
+  } catch(e){
+    _bdPropsCache = [];
+  }
+  return _bdPropsCache;
+}
+
+function _bdPopulatePropSelect(selectEl, props, selectedCode){
+  let found = false;
+  let opts = props.map(p => {
+    const sel = selectedCode && p.propertyId === selectedCode;
+    if(sel) found = true;
+    return `<option value="${_adminModalEsc(p.propertyId)}" ${sel?'selected':''}>${_adminModalEsc(p.label || p.propertyId)}</option>`;
+  }).join('');
+  // Saved code no longer in the list (listing deleted) - keep it visible.
+  if(selectedCode && !found) opts = `<option value="${_adminModalEsc(selectedCode)}" selected>${_adminModalEsc(selectedCode)}</option>` + opts;
+  selectEl.innerHTML = selectEl.options[0].outerHTML + opts;
+}
+
+// Tenant dropdown: customers only (owner-type accounts are excluded), but a
+// previously saved tenant always stays in the list.
 function _bdPopulateSelect(selectEl, users, selectedId){
-  const opts = users.map(u => {
+  const list = users.filter(u => u.accountType !== 'owner' || String(u._id) === String(selectedId||''));
+  const opts = list.map(u => {
     const label = [u.name || '(no name)', u.mobile].filter(Boolean).join(' — ');
     return `<option value="${u._id}" ${String(u._id)===String(selectedId||'')?'selected':''}>${_adminModalEsc(label)}</option>`;
   }).join('');
   selectEl.innerHTML = selectEl.options[0].outerHTML + opts;
 }
 
-// Fired when either dropdown changes — copies that user's details into the
-// Name/Phone/Email fields below it (still editable afterwards).
-window._bdFillFromUser = function(which, userId){
-  const user = (_bdUsersCache || []).find(u => String(u._id) === String(userId));
-  const prefix = which === 'owner' ? 'bdFormOwner' : 'bdFormTenant';
-  document.getElementById(prefix+'Name').value  = user ? (user.name   || '') : '';
-  document.getElementById(prefix+'Phone').value = user ? (user.mobile || '') : '';
-  document.getElementById(prefix+'Email').value = user ? (user.email  || '') : '';
-};
+/* Searchable dropdown: keeps the real <select> (hidden) as the source of truth
+   so validation / payload code is unchanged, and layers a type-to-filter box
+   on top. Call _bdComboRefresh(select) after re-populating the <select>. */
+function _bdMakeSearchable(select){
+  if(select._bdInput) return;
+  const wrap = document.createElement('div');
+  wrap.className = 'bd-combo';
+  const input = document.createElement('input');
+  input.type = 'text'; input.className = 'bd-combo-input'; input.autocomplete = 'off';
+  const list = document.createElement('div');
+  list.className = 'bd-combo-list';
+  wrap.appendChild(input); wrap.appendChild(list);
+  select.parentNode.insertBefore(wrap, select);
+  select.style.display = 'none';
+  select._bdInput = input; select._bdWrap = wrap;
+
+  let active = -1;
+  const items = () => Array.from(list.querySelectorAll('.bd-combo-item'));
+  const setActive = (i) => {
+    const it = items(); if(!it.length) return;
+    active = (i + it.length) % it.length;
+    it.forEach((el, k) => el.classList.toggle('active', k === active));
+    it[active].scrollIntoView({block:'nearest'});
+  };
+  const render = (q) => {
+    q = (q || '').trim().toLowerCase();
+    const opts = Array.from(select.options).slice(1)
+      .filter(o => !q || o.textContent.toLowerCase().includes(q));
+    list.innerHTML = opts.length
+      ? opts.map(o => `<div class="bd-combo-item${o.value===select.value?' selected':''}" data-v="${_adminModalEsc(o.value)}">${_adminModalEsc(o.textContent)}</div>`).join('')
+      : '<div class="bd-combo-empty">No matches</div>';
+    active = -1;
+  };
+  const open  = () => { wrap.classList.add('open'); render(''); input.select(); };
+  const close = () => { wrap.classList.remove('open'); _bdComboRefresh(select); };
+  const pick  = (v) => {
+    select.value = v;
+    select.dispatchEvent(new Event('change', {bubbles:true}));
+    close(); input.blur();
+  };
+
+  input.addEventListener('focus', open);
+  input.addEventListener('click', () => { if(!wrap.classList.contains('open')) open(); });
+  input.addEventListener('input', () => { wrap.classList.add('open'); render(input.value); });
+  input.addEventListener('keydown', (e) => {
+    if(e.key === 'ArrowDown'){ e.preventDefault(); setActive(active + 1); }
+    else if(e.key === 'ArrowUp'){ e.preventDefault(); setActive(active - 1); }
+    else if(e.key === 'Enter'){
+      e.preventDefault();
+      const it = items(); const t = it[active >= 0 ? active : 0];
+      if(t) pick(t.dataset.v);
+    }
+    else if(e.key === 'Escape'){ e.stopPropagation(); close(); input.blur(); }
+  });
+  // mousedown (not click) so it fires before the input's blur closes the list
+  list.addEventListener('mousedown', (e) => {
+    const it = e.target.closest('.bd-combo-item');
+    if(!it) return;
+    e.preventDefault();
+    pick(it.dataset.v);
+  });
+  input.addEventListener('blur', () => close());
+
+  // mirror the select's red "invalid" state onto the visible input
+  new MutationObserver(() => input.classList.toggle('bd-invalid', select.classList.contains('bd-invalid')))
+    .observe(select, {attributes:true, attributeFilter:['class']});
+}
+
+function _bdComboRefresh(select){
+  _bdMakeSearchable(select);
+  const opt = select.options[select.selectedIndex];
+  select._bdInput.value = (opt && opt.value) ? opt.textContent : '';
+  select._bdInput.placeholder = select.options[0] ? select.options[0].textContent : '';
+}
 
 window.openBookingDetailsModal = async function(id){
   const errEl = document.getElementById('bdFormError');
@@ -7192,21 +7297,15 @@ window.openBookingDetailsModal = async function(id){
 
   document.getElementById('bdFormBookedOn').value   = bd.bookedOn || '';
   document.getElementById('bdFormDescription').value = bd.description || '';
-  document.getElementById('bdFormOwnerName').value  = bd.ownerName  || row.ownerName   || '';
-  document.getElementById('bdFormOwnerPhone').value = bd.ownerPhone || row.ownerNumber || '';
-  document.getElementById('bdFormOwnerEmail').value = bd.ownerEmail || row.ownerEmail  || '';
-  document.getElementById('bdFormTenantName').value  = bd.tenantName  || '';
-  document.getElementById('bdFormTenantPhone').value = bd.tenantPhone || '';
-  document.getElementById('bdFormTenantEmail').value = bd.tenantEmail || '';
 
   bdAgreementImages = Array.isArray(bd.agreementImages) ? bd.agreementImages.slice() : [];
-  bdProofImages     = Array.isArray(bd.proofImages)     ? bd.proofImages.slice()     : [];
   _bdRenderImages('agreement');
-  _bdRenderImages('proof');
 
-  const users = await _bdGetUsers();
-  _bdPopulateSelect(document.getElementById('bdFormOwnerSelect'),  users, bd.ownerId);
+  const [users, props] = await Promise.all([_bdGetUsers(), _bdGetProps()]);
+  _bdPopulatePropSelect(document.getElementById('bdFormPropertySelect'), props, bd.propertyId || row.propertyId || '');
   _bdPopulateSelect(document.getElementById('bdFormTenantSelect'), users, bd.tenantId);
+  _bdComboRefresh(document.getElementById('bdFormPropertySelect'));
+  _bdComboRefresh(document.getElementById('bdFormTenantSelect'));
 
   document.getElementById('bookingDetailsModal').classList.add('open');
   document.body.style.overflow = 'hidden';
@@ -7319,14 +7418,8 @@ window.closeBookingDetailsModal = closeBookingDetailsModal;
 const _BD_FIELDS = [
   { input:'bdFormBookedOn',    err:'bdErrBookedOn',    test:v => !!v },
   { input:'bdFormDescription', err:'bdErrDescription', test:v => v.trim().length > 0 },
-  { input:'bdFormOwnerSelect', err:'bdErrOwnerSelect', test:v => !!v },
-  { input:'bdFormOwnerName',   err:'bdErrOwnerName',   test:v => v.trim().length > 0 },
-  { input:'bdFormOwnerPhone',  err:'bdErrOwnerPhone',  test:v => /^\d{10}$/.test(v.trim()) },
-  { input:'bdFormOwnerEmail',  err:'bdErrOwnerEmail',  test:v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim()) },
+  { input:'bdFormPropertySelect', err:'bdErrPropertySelect', test:v => !!v },
   { input:'bdFormTenantSelect',err:'bdErrTenantSelect',test:v => !!v },
-  { input:'bdFormTenantName',  err:'bdErrTenantName',  test:v => v.trim().length > 0 },
-  { input:'bdFormTenantPhone', err:'bdErrTenantPhone', test:v => /^\d{10}$/.test(v.trim()) },
-  { input:'bdFormTenantEmail', err:'bdErrTenantEmail', test:v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim()) },
 ];
 
 function _bdClearErrors(){
@@ -7334,7 +7427,7 @@ function _bdClearErrors(){
     document.getElementById(f.input).classList.remove('bd-invalid');
     document.getElementById(f.err).classList.remove('show');
   });
-  ['agreement','proof'].forEach(kind => {
+  ['agreement'].forEach(kind => {
     const cfg = _bdImgConfig(kind);
     document.getElementById(cfg.group).classList.remove('bd-invalid');
     document.getElementById(cfg.err).classList.remove('show');
@@ -7359,7 +7452,7 @@ function _bdValidate(){
     }
   });
   // Agreement/Proof uploads are optional — no length check here.
-  if(firstInvalid) firstInvalid.scrollIntoView({behavior:'smooth', block:'center'});
+  if(firstInvalid) (firstInvalid._bdInput || firstInvalid).scrollIntoView({behavior:'smooth', block:'center'});
   return allValid;
 }
 
@@ -7393,16 +7486,9 @@ window.saveBookingDetails = async function(){
   const payload = {
     bookedOn:    document.getElementById('bdFormBookedOn').value.trim(),
     description: document.getElementById('bdFormDescription').value.trim(),
-    ownerId:     document.getElementById('bdFormOwnerSelect').value || null,
-    ownerName:   document.getElementById('bdFormOwnerName').value.trim(),
-    ownerPhone:  document.getElementById('bdFormOwnerPhone').value.trim(),
-    ownerEmail:  document.getElementById('bdFormOwnerEmail').value.trim(),
+    propertyId:  document.getElementById('bdFormPropertySelect').value || '',
     tenantId:    document.getElementById('bdFormTenantSelect').value || null,
-    tenantName:  document.getElementById('bdFormTenantName').value.trim(),
-    tenantPhone: document.getElementById('bdFormTenantPhone').value.trim(),
-    tenantEmail: document.getElementById('bdFormTenantEmail').value.trim(),
     agreementImages: bdAgreementImages,
-    proofImages: bdProofImages,
   };
 
   const okBd = await showConfirmModal({
@@ -9256,7 +9342,7 @@ $(document).ready(function(){
           }
           _adminPropCache[row._id] = row;
           const bd = row.bookingDetails || {};
-          const bdHasDetails = !!(bd.bookedOn || bd.description || bd.ownerId || bd.tenantId);
+          const bdHasDetails = !!(bd.bookedOn || bd.description || bd.propertyId || bd.tenantId);
           // Sub-admin has view-only access to Properties: every action button
           // below except "View" renders in its own disabled state, same as
           // when the underlying prerequisite (verified/owner phone/address)
@@ -14244,6 +14330,30 @@ markRequiredLabels();
 
       <input type="hidden" id="bdFormPropId">
 
+      <div class="bd-section">
+        <div class="bd-section-title"><i class="fas fa-building"></i> Property</div>
+
+        <div class="hr-form-row">
+          <label>Property ID<span class="bd-req">*</span></label>
+          <select id="bdFormPropertySelect">
+            <option value="">— Select property ID —</option>
+          </select>
+          <div class="bd-field-msg" id="bdErrPropertySelect">Please select the property ID.</div>
+        </div>
+      </div>
+
+      <div class="bd-section">
+        <div class="bd-section-title"><i class="fas fa-user"></i> Tenant / User</div>
+
+        <div class="hr-form-row">
+          <label>Tenant<span class="bd-req">*</span></label>
+          <select id="bdFormTenantSelect">
+            <option value="">— Select tenant —</option>
+          </select>
+          <div class="bd-field-msg" id="bdErrTenantSelect">Please select the tenant.</div>
+        </div>
+      </div>
+
       <div class="hr-form-row">
         <label>Booked On<span class="bd-req">*</span></label>
         <div class="bd-date-wrap">
@@ -14260,95 +14370,21 @@ markRequiredLabels();
       </div>
 
       <div class="bd-section">
-        <div class="bd-section-title"><i class="fas fa-user-tie"></i> Owner</div>
-
-        <div class="hr-form-row">
-          <label>Select from Users<span class="bd-req">*</span></label>
-          <select id="bdFormOwnerSelect" onchange="_bdFillFromUser('owner', this.value)">
-            <option value="">— Select owner —</option>
-          </select>
-          <div class="bd-field-msg" id="bdErrOwnerSelect">Please select the owner.</div>
-        </div>
-        <div class="hr-form-grid">
-          <div class="hr-form-row">
-            <label>Name<span class="bd-req">*</span></label>
-            <input type="text" id="bdFormOwnerName" placeholder="Owner name">
-            <div class="bd-field-msg" id="bdErrOwnerName">Owner name is required.</div>
-          </div>
-          <div class="hr-form-row">
-            <label>Phone<span class="bd-req">*</span></label>
-            <input type="text" id="bdFormOwnerPhone" placeholder="Owner phone">
-            <div class="bd-field-msg" id="bdErrOwnerPhone">Enter a valid 10-digit phone number.</div>
-          </div>
-        </div>
-        <div class="hr-form-row">
-          <label>Email<span class="bd-req">*</span></label>
-          <input type="text" id="bdFormOwnerEmail" placeholder="Owner email">
-          <div class="bd-field-msg" id="bdErrOwnerEmail">Enter a valid email address.</div>
-        </div>
-      </div>
-
-      <div class="bd-section">
-        <div class="bd-section-title"><i class="fas fa-user"></i> Tenant / User</div>
-
-        <div class="hr-form-row">
-          <label>Select from Users<span class="bd-req">*</span></label>
-          <select id="bdFormTenantSelect" onchange="_bdFillFromUser('tenant', this.value)">
-            <option value="">— Select tenant —</option>
-          </select>
-          <div class="bd-field-msg" id="bdErrTenantSelect">Please select the tenant.</div>
-        </div>
-        <div class="hr-form-grid">
-          <div class="hr-form-row">
-            <label>Name<span class="bd-req">*</span></label>
-            <input type="text" id="bdFormTenantName" placeholder="Tenant name">
-            <div class="bd-field-msg" id="bdErrTenantName">Tenant name is required.</div>
-          </div>
-          <div class="hr-form-row">
-            <label>Phone<span class="bd-req">*</span></label>
-            <input type="text" id="bdFormTenantPhone" placeholder="Tenant phone">
-            <div class="bd-field-msg" id="bdErrTenantPhone">Enter a valid 10-digit phone number.</div>
-          </div>
-        </div>
-        <div class="hr-form-row">
-          <label>Email<span class="bd-req">*</span></label>
-          <input type="text" id="bdFormTenantEmail" placeholder="Tenant email">
-          <div class="bd-field-msg" id="bdErrTenantEmail">Enter a valid email address.</div>
-        </div>
-      </div>
-
-      <div class="bd-section">
-        <div class="bd-section-title"><i class="fas fa-file-contract"></i> Agreement &amp; Proof</div>
+        <div class="bd-section-title"><i class="fas fa-file-contract"></i> Agreement</div>
 
         <div class="hr-form-row" id="bdAgreementFormGroup">
           <label>Agreement (image or PDF, optional)</label>
           <div class="img-row">
             <div class="img-btns">
               <button type="button" class="img-btn-sec" onclick="document.getElementById('bdAgreementFileInput').click()">📁 Upload</button>
-              <button type="button" class="img-btn-sec" onclick="document.getElementById('bdAgreementCameraInput').click()">📷 Camera</button>
             </div>
             <input type="file" id="bdAgreementFileInput" accept="image/*,application/pdf,.pdf" multiple style="display:none" onchange="bdAddImagesFromFiles(this,'agreement')"/>
-            <input type="file" id="bdAgreementCameraInput" accept="image/*" capture="environment" style="display:none" onchange="bdAddImagesFromFiles(this,'agreement')"/>
           </div>
           <div class="img-thumb-grid" id="bdAgreementGrid"></div>
           <div class="img-hint" id="bdAgreementHint">No agreement files added yet.</div>
           <div class="bd-field-msg" id="bdErrAgreement">Please add at least one agreement file.</div>
         </div>
 
-        <div class="hr-form-row" id="bdProofFormGroup">
-          <label>Proof Images (optional)</label>
-          <div class="img-row">
-            <div class="img-btns">
-              <button type="button" class="img-btn-sec" onclick="document.getElementById('bdProofFileInput').click()">📁 Upload</button>
-              <button type="button" class="img-btn-sec" onclick="document.getElementById('bdProofCameraInput').click()">📷 Camera</button>
-            </div>
-            <input type="file" id="bdProofFileInput" accept="image/*" multiple style="display:none" onchange="bdAddImagesFromFiles(this,'proof')"/>
-            <input type="file" id="bdProofCameraInput" accept="image/*" capture="environment" style="display:none" onchange="bdAddImagesFromFiles(this,'proof')"/>
-          </div>
-          <div class="img-thumb-grid" id="bdProofGrid"></div>
-          <div class="img-hint" id="bdProofHint">No proof images added yet.</div>
-          <div class="bd-field-msg" id="bdErrProof">Please add at least one proof image.</div>
-        </div>
       </div>
 
       <div class="hr-modal-actions">

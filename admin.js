@@ -1396,6 +1396,30 @@ self.addEventListener('notificationclick', event => {
   // everything is flattened to match what the modal's MODAL_FIELD_GROUPS expects.
   // Kept separate from the public GET /api/properties so that endpoint's
   // nested shape stays untouched for whatever already consumes it.
+  // GET /api/admin/property-ids - every listing's human-readable Property ID
+  // (all three listing collections), for the Booking Details dropdown.
+  app.get('/api/admin/property-ids', requireAdmin, requireModule('properties'), async (req, res) => {
+    try {
+      const arrays = await Promise.all(LISTING_MODEL_LIST.map(M =>
+        M.find({ propertyId: { $exists: true, $ne: '' } })
+          .select('propertyId owner.phone owner.altPhone createdAt').lean()
+      ));
+      const list = arrays.flat()
+        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+        .map(d => {
+          const o = d.owner || {};
+          // 9035205230 in the owner number is a placeholder - don't show it
+          const ownerNum = String(o.phone || '').replace(/\D/g, '').slice(-10) === '9035205230' ? '' : o.phone;
+          const label = [d.propertyId, ownerNum, o.altPhone].filter(Boolean).join(' - ');
+          return { _id: String(d._id), propertyId: d.propertyId, label };
+        });
+      res.json(list);
+    } catch (err) {
+      console.error('GET /api/admin/property-ids error:', err);
+      res.status(500).json({ message: 'Error loading property IDs' });
+    }
+  });
+
   app.get('/api/admin/properties', requireAdmin, requireModule('properties'), async (req, res) => {
     try {
       const docArrays = await Promise.all(LISTING_MODEL_LIST.map(M => M.find({}).populate('userId', 'profilePhoto').lean()));
@@ -1737,36 +1761,31 @@ self.addEventListener('notificationclick', event => {
     try {
       const body = req.body || {};
       const asId = (v) => (v && mongoose.Types.ObjectId.isValid(v)) ? v : null;
-      const ownerId  = asId(body.ownerId);
       const tenantId = asId(body.tenantId);
       const bookingDetails = {
-        ownerId,
-        ownerName:   (body.ownerName   || '').toString().trim(),
-        ownerPhone:  (body.ownerPhone  || '').toString().trim(),
-        ownerEmail:  (body.ownerEmail  || '').toString().trim(),
+        propertyId:  (body.propertyId  || '').toString().trim(),
         tenantId,
-        tenantName:  (body.tenantName  || '').toString().trim(),
-        tenantPhone: (body.tenantPhone || '').toString().trim(),
-        tenantEmail: (body.tenantEmail || '').toString().trim(),
+        tenantName: '', tenantPhone: '', tenantEmail: '', // snapshot filled from the User doc below
         bookedOn:    (body.bookedOn    || '').toString().trim(), // 'YYYY-MM-DD'
         description: (body.description || '').toString().trim(),
         // URLs returned by /api/upload-images, same as property media.images
         agreementImages: Array.isArray(body.agreementImages) ? body.agreementImages.filter(u => typeof u === 'string' && u.trim()) : [],
-        proofImages:     Array.isArray(body.proofImages)     ? body.proofImages.filter(u => typeof u === 'string' && u.trim())     : [],
       };
 
-      // Owner/tenant/booked-on/description are required — mirrors the admin.html
+      // Property ID/tenant/booked-on/description are required — mirrors the admin.html
       // modal's own validation, enforced again here since the API can be called
       // directly. Agreement/proof uploads are optional (attach-when-you-have-them).
-      const phoneOk = (v) => /^\d{10}$/.test(v);
-      const emailOk = (v) => /^[^\s@"'<>\\]+@[^\s@"'<>\\]+\.[^\s@"'<>\\]+$/.test(v);
-      if (
-        !bookingDetails.bookedOn || !ownerId || !tenantId || !bookingDetails.description ||
-        !bookingDetails.ownerName  || !phoneOk(bookingDetails.ownerPhone)  || !emailOk(bookingDetails.ownerEmail) ||
-        !bookingDetails.tenantName || !phoneOk(bookingDetails.tenantPhone) || !emailOk(bookingDetails.tenantEmail)
-      ) {
-        return res.status(400).json({ message: 'Please fill in owner, tenant, booked-on date, and booking description.' });
+      if (!bookingDetails.bookedOn || !bookingDetails.propertyId || !tenantId || !bookingDetails.description) {
+        return res.status(400).json({ message: 'Please fill in property ID, tenant, booked-on date, and booking description.' });
       }
+
+      // Tenant is picked by id only; snapshot name/phone/email server-side so
+      // the record still reads fine if the User is later edited or deleted.
+      const tenant = await User.findById(tenantId).select('name mobile email').lean();
+      if (!tenant) return res.status(400).json({ message: 'Selected tenant no longer exists.' });
+      bookingDetails.tenantName  = tenant.name   || '';
+      bookingDetails.tenantPhone = tenant.mobile || '';
+      bookingDetails.tenantEmail = tenant.email  || '';
 
       const prop = await updateListingById(req.params.id, { bookingDetails }, { new: true });
       if (!prop) return res.status(404).json({ message: 'Property not found' });
