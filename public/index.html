@@ -9280,11 +9280,23 @@ function preloadLightboxNeighbors() {
   preloadLightboxImage(lightboxImgs[(lightboxIdx - 1 + total) % total]);
 }
 
+// Public entry point — gated. A logged-out visitor gets the login/sign-up
+// prompt FIRST, before the zoom actually opens; the zoom itself only opens
+// once that's resolved — either they log in/sign up (page reloads under a
+// known account, so the view counts against their name) or they dismiss the
+// prompt and continue as a guest (handled by closeAuthModal() below, which
+// runs whatever was stashed in pendingBrowseAction).
 function openLightbox(propId, idx) {
+  if (!getLoggedInUser()) {
+    pendingBrowseAction = () => openLightboxReal(propId, idx);
+    openAuthModal();
+    return;
+  }
+  openLightboxReal(propId, idx);
+}
+function openLightboxReal(propId, idx) {
   const p = PROPERTIES.find(x => x.id === propId) || BOOKED_PROPERTIES.find(x => x.id === propId);
   if (!p || !p.media?.images || !p.media.images.length) return;
-  maybePromptAuth();   // guests can still zoom the photo — just a dismissable
-                        // login/sign-up nudge on top, not a gate
   closeAllFd();        // the image's own onclick stops propagation (see below),
                         // so the document-level outside-click listener that
                         // normally closes open filter dropdowns never fires —
@@ -11709,11 +11721,20 @@ let propertyViewMode = false;
 // means the form is in its normal "create a new listing" mode.
 let editingPropertyId = null;
 
+// Public entry point — gated. A logged-out visitor gets the login/sign-up
+// prompt FIRST, before the property view actually opens; see openLightbox()
+// above for how the guest-continues / logs-in paths are resolved.
 function openDetail(id) {
+  if (!getLoggedInUser()) {
+    pendingBrowseAction = () => openDetailReal(id);
+    openAuthModal();
+    return;
+  }
+  openDetailReal(id);
+}
+function openDetailReal(id) {
   const p = PROPERTIES.find(x => x.id === id) || BOOKED_PROPERTIES.find(x => x.id === id);
   if (!p) return;
-  maybePromptAuth();   // guests can still view the full detail — just a
-                        // dismissable login/sign-up nudge on top, not a gate
   closeAllFd();        // clicks that reach here (card body, or an image/icon
                         // whose own onclick stopped propagation) may never
                         // reach the document-level listener that normally
@@ -13016,21 +13037,18 @@ function openAuthModal() {
   backToSignupForm();
 }
 
-// Soft nudge used by browsing actions (zooming a photo, opening a property's
-// full detail view) that should still work for guests — this only pops the
-// login/sign-up prompt on top of whatever's already open; it never blocks
-// the action itself, and the person can dismiss it (X, backdrop, Escape)
-// same as always. Unlike the global welcome prompt, this ignores the skip
-// snooze on purpose — every zoom/detail view while logged out should ask,
-// not just the first one each 15 minutes.
-function maybePromptAuth() {
-  if (getLoggedInUser()) return;
-  openAuthModal();
-}
+// Holds the guest's originally-requested action (open a photo zoom / a
+// property's full detail view) while the login/sign-up prompt is up in
+// front of it. Set by openLightbox()/openDetail() when the visitor isn't
+// logged in; run once (then cleared) from closeAuthModal() if they dismiss
+// the prompt instead of logging in — that's what lets them continue as a
+// guest. Left null the rest of the time, e.g. for the automatic welcome
+// prompt or the profile-icon login, which have nothing to resume.
+let pendingBrowseAction = null;
 function closeAuthModal() {
   // The global Escape handler calls this on every Escape press, even when the
   // login modal isn't showing. Without this guard, that would record a false
-  // "skipped" timestamp (hiding the prompt for an hour) and reset the form.
+  // "skipped" timestamp (hiding the prompt for 15 minutes) and reset the form.
   if (!document.getElementById('authModal').classList.contains('open')) return;
   document.getElementById('authModal').classList.remove('open');
   unlockBodyScroll();
@@ -13038,6 +13056,16 @@ function closeAuthModal() {
   if (!getLoggedInUser()) {
     localStorage.setItem('homeloop_auth_skip_until', String(Date.now() + AUTH_SKIP_MS));
     scheduleAuthPrompt(AUTH_SKIP_MS);
+    // Dismissed instead of logging in — continue as a guest into whatever
+    // they originally clicked (a photo zoom or a property's detail view),
+    // if this close was gating one. Run once, then clear it.
+    if (pendingBrowseAction) {
+      const action = pendingBrowseAction;
+      pendingBrowseAction = null;
+      action();
+    }
+  } else {
+    pendingBrowseAction = null;
   }
 }
 
