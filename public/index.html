@@ -2947,6 +2947,10 @@ main.tab-explore .empty-state{display:none !important}
    share .add-modal-overlay's z-index:350); bump it above that so it always
    renders on top instead of behind the view modal it was opened from. */
 #scheduleModal{z-index:360}
+/* The login/sign-up prompt can now pop up over a property's photo zoom
+   (.lightbox-overlay, z-index:400) or its full detail view, so it needs to
+   sit above both instead of its shared .add-modal-overlay z-index:350. */
+#authModal{z-index:410}
 .add-modal{
   background:var(--bg);border-radius:var(--radius-xl);
   width:100%;max-width:520px;max-height:92vh;
@@ -9279,6 +9283,8 @@ function preloadLightboxNeighbors() {
 function openLightbox(propId, idx) {
   const p = PROPERTIES.find(x => x.id === propId) || BOOKED_PROPERTIES.find(x => x.id === propId);
   if (!p || !p.media?.images || !p.media.images.length) return;
+  maybePromptAuth();   // guests can still zoom the photo — just a dismissable
+                        // login/sign-up nudge on top, not a gate
   closeAllFd();        // the image's own onclick stops propagation (see below),
                         // so the document-level outside-click listener that
                         // normally closes open filter dropdowns never fires —
@@ -11706,6 +11712,8 @@ let editingPropertyId = null;
 function openDetail(id) {
   const p = PROPERTIES.find(x => x.id === id) || BOOKED_PROPERTIES.find(x => x.id === id);
   if (!p) return;
+  maybePromptAuth();   // guests can still view the full detail — just a
+                        // dismissable login/sign-up nudge on top, not a gate
   closeAllFd();        // clicks that reach here (card body, or an image/icon
                         // whose own onclick stopped propagation) may never
                         // reach the document-level listener that normally
@@ -13006,6 +13014,18 @@ function openAuthModal() {
   document.getElementById('authModal').classList.add('open');
   lockBodyScroll();
   backToSignupForm();
+}
+
+// Soft nudge used by browsing actions (zooming a photo, opening a property's
+// full detail view) that should still work for guests — this only pops the
+// login/sign-up prompt on top of whatever's already open; it never blocks
+// the action itself, and the person can dismiss it (X, backdrop, Escape)
+// same as always. Unlike the global welcome prompt, this ignores the skip
+// snooze on purpose — every zoom/detail view while logged out should ask,
+// not just the first one each 15 minutes.
+function maybePromptAuth() {
+  if (getLoggedInUser()) return;
+  openAuthModal();
 }
 function closeAuthModal() {
   // The global Escape handler calls this on every Escape press, even when the
