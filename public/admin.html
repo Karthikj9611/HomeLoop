@@ -8828,8 +8828,8 @@ $(document).ready(function(){
           if(t!=='display') return total;
           const tip = (row.viewsCount ?? 0) + ' views on their listings + ' + (row.propertiesViewed ?? 0) + ' listings viewed by them';
           const key = String(row.mobile || row._id).replace(/'/g,"\\'");
-          if(total > 0)
-            return '<button type="button" class="views-badge" title="'+tip+' — click to see details" onclick="openViewedPropsModal(\''+key+'\')"><i class="fas fa-eye"></i><span>'+total+'</span></button>';
+          if((row.propertiesViewed ?? 0) > 0)
+            return '<button type="button" class="views-badge" title="'+tip+' — click to see which properties" onclick="openViewedPropsModal(\''+key+'\')"><i class="fas fa-eye"></i><span>'+total+'</span></button>';
           return '<span class="views-badge static" title="'+tip+'"><i class="fas fa-eye"></i><span>'+total+'</span></span>';
       }},
       /* 10 – Registered */
@@ -12033,8 +12033,7 @@ function _pvErrHtml(e){
   return '<div class="vp-empty"><i class="fas fa-triangle-exclamation"></i>Could not load the list.<br><small>' + _adminModalEsc(e && e.message ? e.message : 'Please try again.') + '</small></div>';
 }
 
-/* Customers grid → Views eye badge: what this customer viewed + who viewed their listings. */
-let _cvData = null, _cvTab = 'viewed';
+/* Eye icon in the Customers grid's Views column: opens a modal listing every property this customer viewed. */
 async function openViewedPropsModal(key){
   const c = _customerCache[key];
   if(!c) return;
@@ -12045,56 +12044,51 @@ async function openViewedPropsModal(key){
   document.getElementById('viewedPropsModalAvatar').textContent = initials;
   document.getElementById('viewedPropsModalName').textContent = fullName;
   document.getElementById('viewedPropsModalSub').textContent = c.email || c.mobile || '';
-  const total = Number(c.viewsCount || 0) + Number(c.propertiesViewed || 0);
-  document.getElementById('viewedPropsModalCount').innerHTML = '<i class="fas fa-eye"></i> ' + total + (total === 1 ? ' view' : ' views');
-  document.getElementById('viewedPropsModalTabs').innerHTML = '';
+  const countEl = document.getElementById('viewedPropsModalCount');
+  const setCount = n => { countEl.innerHTML = '<i class="fas fa-eye"></i> ' + n + (n === 1 ? ' property viewed' : ' properties viewed'); };
+  setCount(Number(c.propertiesViewed || 0));
   box.innerHTML = '<div class="vp-empty"><i class="fas fa-circle-notch fa-spin"></i>Loading…</div>';
   modal.classList.add('open');
   document.body.style.overflow = 'hidden';
-  _cvData = null;
+  const ago = d => {
+    const m = Math.floor((Date.now() - d.getTime()) / 60000);
+    if(m < 1) return 'Just now';
+    if(m < 60) return m + ' min ago';
+    const h = Math.floor(m / 60);
+    if(h < 24) return h + ' hr ago';
+    const dd = Math.floor(h / 24);
+    return dd < 30 ? dd + ' day' + (dd > 1 ? 's' : '') + ' ago' : fmtDateDMY(d);
+  };
   try{
-    const [viewed, lv] = await Promise.all([
-      _pvFetchJson('/api/users/' + encodeURIComponent(c._id) + '/viewed-properties'),
-      _pvFetchJson('/api/users/' + encodeURIComponent(c._id) + '/listing-viewers'),
-    ]);
+    const res = await fetch(BASE + '/api/users/' + encodeURIComponent(c._id) + '/viewed-properties', { headers: authHeaders() });
     if(!modal.classList.contains('open')) return;
-    _cvData = { viewed, tenants: lv.tenants, owners: lv.owners, guests: lv.guests };
-    _cvTab = viewed.length ? 'viewed' : lv.tenants.length ? 'tenants' : lv.owners.length ? 'owners' : lv.guests.length ? 'guests' : 'viewed';
-    renderCustomerViews();
+    if(!res.ok) throw new Error('bad status');
+    const list = await res.json();
+    setCount(list.length);
+    if(!list.length){
+      box.innerHTML = '<div class="vp-empty"><i class="fas fa-house-circle-xmark"></i>No properties viewed yet.</div>';
+      return;
+    }
+    box.innerHTML = '<div class="vp-list">' + list.map((v, i) => {
+      const idTxt = v.removed ? 'Listing removed' : (v.propertyId || v._id);
+      const st = String(v.status || '');
+      const badge = v.removed ? '<span class="vp-badge gone">Removed</span>'
+        : st ? '<span class="vp-badge' + (/sale/i.test(st) ? ' sale' : '') + '">' + _adminModalEsc(st) + '</span>' : '';
+      const loc = [v.area, v.city].filter(Boolean).join(', ');
+      const d = v.lastViewedAt ? new Date(v.lastViewedAt) : null;
+      return '<div class="vp-card' + (v.removed ? ' removed' : '') + '" style="animation-delay:' + Math.min(i, 8) * 40 + 'ms">' +
+        '<div class="vp-ico"><i class="fas fa-building"></i></div>' +
+        '<div class="vp-main">' +
+          '<div class="vp-top"><span class="vp-pid">' + _adminModalEsc(idTxt) + '</span>' + badge + '</div>' +
+          (v.type ? '<div class="vp-type">' + _adminModalEsc(v.type) + '</div>' : '') +
+          (loc ? '<div class="vp-loc"><i class="fas fa-location-dot"></i>' + _adminModalEsc(loc) + '</div>' : '') +
+        '</div>' +
+        (d ? '<div class="vp-time"><b>' + _adminModalEsc(ago(d)) + '</b>' + _adminModalEsc(fmtDateDMY(d) + ' ' + fmtTimeHM(d)) + '</div>' : '') +
+      '</div>';
+    }).join('') + '</div>';
   }catch(e){
-    box.innerHTML = _pvErrHtml(e);
+    box.innerHTML = '<div class="vp-empty"><i class="fas fa-triangle-exclamation"></i>Could not load the list. Please try again.</div>';
   }
-}
-function setCustomerViewsTab(t){ _cvTab = t; renderCustomerViews(); }
-function renderCustomerViews(){
-  const d = _cvData; if(!d) return;
-  document.getElementById('viewedPropsModalTabs').innerHTML = _pvTabsHtml([
-    ['viewed','Viewed by them','fa-eye', d.viewed.length],
-    ['tenants','Tenants','fa-user', d.tenants.length],
-    ['owners','Owners','fa-user-tie', d.owners.length],
-    ['guests','Guests','fa-user-secret', d.guests.length],
-  ], _cvTab, 'setCustomerViewsTab');
-  const box = document.getElementById('viewedPropsModalBox');
-  if(_cvTab !== 'viewed'){ box.innerHTML = _pvListHtml(_cvTab, d[_cvTab], true); return; }
-  if(!d.viewed.length){
-    box.innerHTML = '<div class="vp-empty"><i class="fas fa-house-circle-xmark"></i>This customer has not viewed any properties.</div>';
-    return;
-  }
-  box.innerHTML = '<div class="vp-list">' + d.viewed.map((v, i) => {
-    const idTxt = v.removed ? 'Listing removed' : (v.propertyId || v._id);
-    const st = String(v.status || '');
-    const badge = v.removed ? '<span class="vp-badge gone">Removed</span>'
-      : st ? '<span class="vp-badge' + (/sale/i.test(st) ? ' sale' : '') + '">' + _adminModalEsc(st) + '</span>' : '';
-    const loc = [v.area, v.city].filter(Boolean).join(', ');
-    return '<div class="vp-card' + (v.removed ? ' removed' : '') + '" style="animation-delay:' + Math.min(i, 8) * 40 + 'ms">' +
-      '<div class="vp-ico"><i class="fas fa-building"></i></div>' +
-      '<div class="vp-main">' +
-        '<div class="vp-top"><span class="vp-pid">' + _adminModalEsc(idTxt) + '</span>' + badge + '</div>' +
-        (v.type ? '<div class="vp-type">' + _adminModalEsc(v.type) + '</div>' : '') +
-        (loc ? '<div class="vp-loc"><i class="fas fa-location-dot"></i>' + _adminModalEsc(loc) + '</div>' : '') +
-      '</div>' + _pvTimeHtml(v.lastViewedAt) +
-    '</div>';
-  }).join('') + '</div>';
 }
 
 /* Properties grid → Views eye badge: who opened this listing — tenants, owners, guests. */
@@ -13888,7 +13882,6 @@ markRequiredLabels();
         </div>
         <div class="vp-count" id="viewedPropsModalCount"><i class="fas fa-eye"></i> Properties viewed</div>
       </div>
-      <div class="pv-tabs" id="viewedPropsModalTabs"></div>
       <div id="viewedPropsModalBox"></div>
     </div>
   </div>
