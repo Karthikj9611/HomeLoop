@@ -3526,47 +3526,23 @@ main.tab-explore .empty-state{display:none !important}
 .refer-copy-btn:hover{background:#fbdde2}
 
 /* ─── Charges Safety Alert — styled to match #chargesModal ─── */
-#chargesAlertModal{z-index:355}
-#chargesAlertModal .add-modal{
-  padding:0;border-radius:20px;max-width:400px;overflow-y:auto;overflow-x:hidden;
-  box-shadow:0 30px 70px -18px rgba(224,58,82,.32),0 0 0 1px rgba(0,0,0,.04);
-  animation:chargesModalIn .28s cubic-bezier(.2,.8,.2,1);
-}
-#chargesAlertModal .add-modal-header{
-  margin:0;padding:18px 48px 16px 18px;align-items:flex-start;
-  background:linear-gradient(135deg,var(--brand) 0%,var(--brand-hover) 100%);
-  position:relative;overflow:hidden;
-}
-#chargesAlertModal .add-modal-header::after{
-  content:'';position:absolute;top:-40px;right:-30px;width:110px;height:110px;
-  background:rgba(255,255,255,.08);border-radius:50%;pointer-events:none;
-}
-#chargesAlertModal .charges-hero-row{display:flex;align-items:center;gap:11px;position:relative;z-index:1}
-#chargesAlertModal .charges-hero-icon{
-  width:34px;height:34px;border-radius:10px;flex-shrink:0;background:rgba(255,255,255,.2);
-  display:flex;align-items:center;justify-content:center;
-}
-#chargesAlertModal .charges-hero-icon svg{width:16px;height:16px;stroke:#fff;fill:none;stroke-width:1.8}
-#chargesAlertModal .add-modal-title{color:#fff;font-size:16px;font-weight:800;letter-spacing:-.01em;line-height:1.25}
-#chargesAlertModal .charges-hero-subtitle{color:rgba(255,255,255,.85);font-size:11.5px;margin-top:3px;font-weight:500;line-height:1.4}
-#chargesAlertModal .modal-close{
-  position:absolute;top:14px;right:14px;z-index:2;width:28px;height:28px;
-  background:rgba(255,255,255,.22);box-shadow:none;
-}
-#chargesAlertModal .modal-close:hover{background:rgba(255,255,255,.36);transform:scale(1.06)}
-#chargesAlertModal .modal-close svg{stroke:#fff;width:14px;height:14px}
-.cal-body{padding:16px 18px 18px;display:flex;flex-direction:column;gap:10px}
-.cal-rule{display:flex;gap:11px;align-items:flex-start;background:var(--bg-2);border:1px solid var(--border-2);border-radius:14px;padding:12px 14px;font-size:12.5px;line-height:1.55;color:var(--text-2)}
-.cal-rule b{color:var(--text)}
-.cal-rule-icon{flex-shrink:0;width:28px;height:28px;border-radius:9px;background:var(--brand-light);display:flex;align-items:center;justify-content:center}
-.cal-rule-icon svg{width:14px;height:14px;stroke:var(--brand);fill:none;stroke-width:2}
-.cal-rule.cal-rule-warn{background:var(--brand-light);border-color:rgba(224,58,82,.14)}
-.cal-rule.cal-rule-warn b{color:var(--brand)}
-.cal-rule a{color:var(--brand);font-weight:700}
-#chargesAlertModal .form-submit{border-radius:12px;padding:12px;font-size:13.5px;letter-spacing:.01em;font-weight:700;background:var(--brand)}
-#chargesAlertModal .form-submit:hover{background:var(--brand-hover)}
-.cal-actions{display:flex;flex-direction:column;gap:6px;margin-top:2px}
-.cal-cancel{background:none;border:none;color:var(--text-2);font-size:12px;font-weight:700;cursor:pointer;padding:4px}
+.pn-label{font-size:10.5px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--text-3);margin-bottom:6px}
+.pn-list{list-style:none;margin:0 0 16px;padding:0;counter-reset:pn}
+.pn-item{display:flex;gap:13px;align-items:flex-start;padding:13px 0;border-bottom:1px solid var(--border);counter-increment:pn}
+.pn-item:last-child{border-bottom:none}
+.pn-item::before{content:counter(pn);flex-shrink:0;width:24px;height:24px;border-radius:50%;background:var(--bg-3);color:var(--text);font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;margin-top:1px}
+.pn-item-title{font-size:13.5px;font-weight:700;color:var(--text);line-height:1.35}
+.pn-item-text{font-size:12.5px;color:var(--text-2);line-height:1.6;margin-top:3px}
+.pn-item-text b{color:var(--text);font-weight:700}
+.pn-alert{display:flex;gap:12px;align-items:flex-start;background:var(--brand-light);border:1px solid rgba(224,58,82,.18);border-left:4px solid var(--brand);border-radius:12px;padding:14px 15px;margin-bottom:18px}
+.pn-alert svg{width:20px;height:20px;flex-shrink:0;stroke:var(--brand);fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;margin-top:1px}
+.pn-alert-title{font-size:13.5px;font-weight:800;color:var(--brand);line-height:1.35}
+.pn-alert-text{font-size:12.5px;color:var(--text-2);line-height:1.6;margin-top:4px}
+.pn-alert-text b{color:var(--text);font-weight:700}
+.pn-alert-text a{color:var(--brand);font-weight:700;text-decoration:underline;text-underline-offset:2px}
+#chargesModal #chargesTabs{margin-bottom:12px}
+#chargesModal #chargesNoticePanel{padding-bottom:4px}
+#chargesModal #chargesNoticePanel .pn-list{margin-bottom:14px}
 
 /* ─── Our Charges Modal ─────────────────────── */
 .charges-hero{
@@ -7328,36 +7304,6 @@ main.tab-explore .empty-state{display:none !important}
   </div>
 </div>
 
-<!-- ─── Charges Safety Alert (shown before Our Charges) ─── -->
-<div class="add-modal-overlay" id="chargesAlertModal" role="alertdialog" aria-modal="true" aria-label="Important payment notice">
-  <div class="add-modal">
-    <div class="add-modal-header">
-      <div class="charges-hero-row">
-        <div class="charges-hero-icon">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
-        </div>
-        <div>
-          <div class="add-modal-title">Important — Please Read</div>
-          <div class="charges-hero-subtitle">Stay safe. Pay only in the right way.</div>
-        </div>
-      </div>
-      <button class="modal-close" onclick="closeChargesAlert()" aria-label="Close">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-      </button>
-    </div>
-    <div class="cal-body">
-      <div class="cal-rule"><span class="cal-rule-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span><div>Pay <b>Direct Plan / Managed Plan charges</b> only <b>after meeting us in person</b>.</div></div>
-      <div class="cal-rule"><span class="cal-rule-icon"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg></span><div><b>Managed Plan:</b> pay <b>token advance / advance</b> only when the <b>owner, tenant and our Coordinator</b> are all together.</div></div>
-      <div class="cal-rule"><span class="cal-rule-icon"><svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg></span><div><b>Direct Plan:</b> be cautious when paying the owner directly — verify the owner and property before you pay anything.</div></div>
-      <div class="cal-rule cal-rule-warn"><span class="cal-rule-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="4.9" y1="4.9" x2="19.1" y2="19.1"/></svg></span><div>If you choose the <b>Direct Plan</b> and the <b>owner, maintenance person, caretaker or security</b> asks for <b>brokerage, don't pay them a rupee</b> — <a href="javascript:void(0)" onclick="closeChargesAlert(); openHelpModal();">report it to us</a> and we'll blacklist the property.</div></div>
-      <div class="cal-actions">
-        <button class="form-submit" onclick="proceedToCharges()">I understand — show charges</button>
-        <button class="cal-cancel" onclick="closeChargesAlert()">Cancel</button>
-      </div>
-    </div>
-  </div>
-</div>
-
 <!-- ─── Our Charges Modal ────────────────────── -->
 <div class="add-modal-overlay" id="chargesModal" role="dialog" aria-modal="true" aria-label="Our Charges">
   <div class="add-modal" id="chargesModalBox">
@@ -7377,6 +7323,54 @@ main.tab-explore .empty-state{display:none !important}
     </div>
 
     <div class="charges-body">
+    <div class="charges-audience-tabs" id="chargesTabs" role="tablist">
+      <button type="button" class="charges-audience-tab active" id="chargesTabBtn-tenant" role="tab" onclick="switchChargesAudience('tenant')">
+        <svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7"/><path d="M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9"/></svg>
+        Tenants
+      </button>
+      <button type="button" class="charges-audience-tab" id="chargesTabBtn-owner" role="tab" onclick="switchChargesAudience('owner')">
+        <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7"/><path d="M4 10v10h16V10"/></svg>
+        Owners
+      </button>
+      <button type="button" class="charges-audience-tab" id="chargesTabBtn-notice" role="tab" onclick="switchChargesAudience('notice')">
+        <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>
+        Notice
+      </button>
+    </div>
+
+    <!-- Payment Safety Notice (tab) -->
+    <div id="chargesNoticePanel" style="display:none">
+      <div class="pn-label">Payment guidelines</div>
+      <ol class="pn-list">
+        <li class="pn-item">
+          <div>
+            <div class="pn-item-title">Service charges</div>
+            <div class="pn-item-text"><b>Direct Plan</b> and <b>Managed Plan</b> charges are payable only <b>after you have met our team in person</b>.</div>
+          </div>
+        </li>
+        <li class="pn-item">
+          <div>
+            <div class="pn-item-title">Managed Plan advance</div>
+            <div class="pn-item-text">Pay the <b>token advance or advance amount</b> only when the <b>owner, the tenant and our Coordinator</b> are all present together.</div>
+          </div>
+        </li>
+        <li class="pn-item">
+          <div>
+            <div class="pn-item-title">Direct Plan payments</div>
+            <div class="pn-item-text">Verify the <b>owner and the property</b> before making any payment directly to the owner.</div>
+          </div>
+        </li>
+      </ol>
+      <div class="pn-alert" role="note">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="4.9" y1="4.9" x2="19.1" y2="19.1"/></svg>
+        <div>
+          <div class="pn-alert-title">Do not pay brokerage to owners or property staff</div>
+          <div class="pn-alert-text">If you choose the <b>Direct Plan</b> and the owner, maintenance person, caretaker or security asks for brokerage, <b>do not make any payment</b>. Please <a href="javascript:void(0)" onclick="closeChargesModal(); openHelpModal();">report it to us</a> and we will blacklist the property.</div>
+        </div>
+      </div>
+      <button class="charges-contact-link" onclick="closeChargesModal(); openHelpModal();">Got a question? Contact us</button>
+    </div>
+
     <!-- ═══ Tenant / default view ═══ -->
     <div id="chargesTenantView">
 
@@ -7494,17 +7488,6 @@ main.tab-explore .empty-state{display:none !important}
 
     <!-- ═══ Guest view — nobody logged in, show both, simplified via tabs ═══ -->
     <div id="chargesGuestView" style="display:none">
-      <div class="charges-audience-tabs" role="tablist">
-        <button type="button" class="charges-audience-tab active" id="chargesTabBtn-tenant" onclick="switchChargesAudience('tenant')">
-          <svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7"/><path d="M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9"/></svg>
-          Tenants
-        </button>
-        <button type="button" class="charges-audience-tab" id="chargesTabBtn-owner" onclick="switchChargesAudience('owner')">
-          <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7"/><path d="M4 10v10h16V10"/></svg>
-          Owners
-        </button>
-      </div>
-
       <div class="charges-audience-panel active" id="chargesTabPanel-tenant">
 
         <!-- ─ Option 1: contact-only (pay a flat fee, get owner details) ─ -->
@@ -15266,26 +15249,16 @@ Find verified Rentals, PGs, Leases, Short Stays, and more—all in one place.`;
    HELP & SUPPORT MODAL
 ═══════════════════════════════════════════════ */
 function openChargesModal() {
-  // Always show the safety alert first; charges open after the user acknowledges it.
-  document.getElementById('chargesAlertModal').classList.add('open');
-  lockBodyScroll();
-}
-function closeChargesAlert() {
-  const m = document.getElementById('chargesAlertModal');
-  if (m.classList.contains('open')) { m.classList.remove('open'); unlockBodyScroll(); }
-}
-function proceedToCharges() {
-  closeChargesAlert();
   showChargesModal();
 }
 function showChargesModal() {
   const user = getLoggedInUser();
   const isOwner = !!user && user.accountType === 'owner';
   const isTenant = !!user && user.accountType !== 'owner';
-  document.getElementById('chargesTenantView').style.display = isTenant ? '' : 'none';
-  document.getElementById('chargesOwnerView').style.display = isOwner ? '' : 'none';
-  document.getElementById('chargesGuestView').style.display = user ? 'none' : '';
-  if (!user) switchChargesAudience('tenant'); // always reset guest tab to Tenants on open
+  // Tab bar: guests see Tenants + Owners; signed-in users see only their own audience. Notice is always available.
+  document.getElementById('chargesTabBtn-tenant').style.display = (!user || isTenant) ? '' : 'none';
+  document.getElementById('chargesTabBtn-owner').style.display  = (!user || isOwner)  ? '' : 'none';
+  switchChargesAudience(isOwner ? 'owner' : 'tenant');
   document.getElementById('chargesModal').classList.add('open');
   lockBodyScroll();
 }
@@ -15294,10 +15267,21 @@ function closeChargesModal() {
   unlockBodyScroll();
 }
 function switchChargesAudience(which) {
-  ['tenant', 'owner'].forEach(k => {
+  const user = getLoggedInUser();
+  const isOwner = !!user && user.accountType === 'owner';
+  const isTenant = !!user && user.accountType !== 'owner';
+  ['tenant', 'owner', 'notice'].forEach(k => {
     document.getElementById('chargesTabBtn-' + k).classList.toggle('active', k === which);
+  });
+  ['tenant', 'owner'].forEach(k => {
     document.getElementById('chargesTabPanel-' + k).classList.toggle('active', k === which);
   });
+  document.getElementById('chargesTenantView').style.display = (isTenant && which === 'tenant') ? '' : 'none';
+  document.getElementById('chargesOwnerView').style.display  = (isOwner  && which === 'owner')  ? '' : 'none';
+  document.getElementById('chargesGuestView').style.display  = (!user && which !== 'notice')    ? '' : 'none';
+  document.getElementById('chargesNoticePanel').style.display = which === 'notice' ? '' : 'none';
+  const box = document.getElementById('chargesModalBox');
+  if (box) box.scrollTop = 0;
 }
 
 function openHelpModal() {
@@ -17640,7 +17624,6 @@ document.addEventListener('keydown', e => {
     closeAuthModal();
     closeNotifModal();
     closeReferModal();
-    closeChargesAlert();
     closeHelpModal();
     closeAboutModal();
     closeOfficeModal();
@@ -17687,9 +17670,6 @@ document.getElementById('profileModal').addEventListener('click', function(e) {
 });
 document.getElementById('notifModal').addEventListener('click', function(e) {
   if (e.target === this) closeNotifModal();
-});
-document.getElementById('chargesAlertModal').addEventListener('click', function(e) {
-  if (e.target === this) closeChargesAlert();
 });
 document.getElementById('chargesModal').addEventListener('click', function(e) {
   if (e.target === this) closeChargesModal();
