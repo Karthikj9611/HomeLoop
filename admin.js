@@ -1085,6 +1085,125 @@ self.addEventListener('notificationclick', event => {
     }
   });
 
+  // -- Shared by the two "who viewed" admin modals (Properties grid + Customers grid) --
+  // Given listing docs ({_id, propertyId}), returns everyone who opened any of them, split into
+  // registered TENANTS, registered OWNERS and anonymous GUESTS.
+  //  * Registered viewers come from PropertyViewer rows (named, one per user per listing) PLUS
+  //    PropertyView rows whose fingerprint is `user:<id>` (logged-in views recorded before the
+  //    named list existed), merged per user and resolved against User for name / contact / type.
+  //  * Guests are PropertyView rows with a device-hash fingerprint. No identity exists behind
+  //    them, so each is a timestamp plus a short device reference only.
+  //  * withProps adds the readable Property IDs each viewer/guest opened (Customers modal);
+  //    excludeUserId hides the listing owner's own views of their own listings.
+  async function collectViewers(listings, { withProps = false, excludeUserId = '' } = {}) {
+    const idToPid = {};
+    listings.forEach(l => { idToPid[String(l._id)] = l.propertyId || ''; });
+    const ids = Object.keys(idToPid);
+    if (!ids.length) return { tenants: [], owners: [], guests: [] };
+
+    const [viewerRows, viewRows] = await Promise.all([
+      PropertyViewer.find({ propertyId: { $in: ids } }).sort({ lastViewedAt: -1 }).limit(3000)
+        .select('userId propertyId userAccountType firstViewedAt lastViewedAt').lean(),
+      PropertyView.find({ propertyId: { $in: ids } }).sort({ createdAt: -1 }).limit(5000)
+        .select('propertyId fingerprint createdAt').lean(),
+    ]);
+
+    const byUser = new Map();
+    const touch = (uid, pid, first, last, snap) => {
+      if (excludeUserId && uid === String(excludeUserId)) return;
+      let e = byUser.get(uid);
+      if (!e) {
+        e = { firstViewedAt: first, lastViewedAt: last, snapType: snap || '', props: new Set() };
+        byUser.set(uid, e);
+      } else {
+        if (new Date(first) < new Date(e.firstViewedAt)) e.firstViewedAt = first;
+        if (new Date(last)  > new Date(e.lastViewedAt))  e.lastViewedAt  = last;
+        if (!e.snapType && snap) e.snapType = snap;
+      }
+      e.props.add(idToPid[pid] || '');
+    };
+    viewerRows.forEach(v => touch(String(v.userId), String(v.propertyId), v.firstViewedAt, v.lastViewedAt, v.userAccountType));
+    const guests = [];
+    viewRows.forEach(v => {
+      const fp = String(v.fingerprint || '');
+      if (fp.startsWith('user:')) touch(fp.slice(5), String(v.propertyId), v.createdAt, v.createdAt, '');
+      else {
+        const g = { viewedAt: v.createdAt, ref: fp.slice(0, 6).toUpperCase() };
+        if (withProps) g.prop = idToPid[String(v.propertyId)] || '';
+        guests.push(g);
+      }
+    });
+
+    const userIds = [...byUser.keys()].filter(u => mongoose.Types.ObjectId.isValid(u));
+    const users = userIds.length
+      ? await User.find({ _id: { $in: userIds } })
+          .select('userId name firstName lastName email mobile accountType').lean()
+      : [];
+    const userMap = Object.fromEntries(users.map(u => [String(u._id), u]));
+
+    const tenants = [], owners = [];
+    byUser.forEach((meta, uid) => {
+      const u = userMap[uid];
+      const accountType = (u ? u.accountType : meta.snapType) === 'owner' ? 'owner' : 'customer';
+      const row = {
+        _id:           uid,
+        userId:        u ? (u.userId || '') : '',
+        name:          u ? ((`${u.firstName || ''} ${u.lastName || ''}`).trim() || u.name || '') : '',
+        email:         u ? (u.email  || '') : '',
+        mobile:        u ? (u.mobile || '') : '',
+        removed:       !u,
+        firstViewedAt: meta.firstViewedAt,
+        lastViewedAt:  meta.lastViewedAt,
+      };
+      if (withProps) row.props = [...meta.props].filter(Boolean).sort();
+      (accountType === 'owner' ? owners : tenants).push(row);
+    });
+    const byLast = (a, b) => new Date(b.lastViewedAt || 0) - new Date(a.lastViewedAt || 0);
+    tenants.sort(byLast); owners.sort(byLast);
+    return { tenants, owners, guests };
+  }
+
+  // -- GET /api/properties/:id/viewers-admin (admin: who viewed one listing) --
+  // Feeds the eye-badge modal in the Properties grid's Views column.
+  app.get('/api/properties/:id/viewers-admin', requireAdmin, requireModule('properties'), async (req, res) => {
+    try {
+      const { id } = req.params;
+      if (!mongoose.Types.ObjectId.isValid(id)) return res.status(400).json({ message: 'Invalid property id' });
+      const found = await findListingById(id, { lean: true });
+      const doc = found && found.doc;
+      const data = await collectViewers([{ _id: id, propertyId: doc ? doc.propertyId : '' }]);
+      res.json({ propertyId: doc ? (doc.propertyId || '') : '', totalViews: doc ? (doc.views || 0) : 0, ...data });
+    } catch (err) {
+      console.error('GET /api/properties/:id/viewers-admin error:', err);
+      res.status(500).json({ message: 'Error fetching viewers' });
+    }
+  });
+
+  // -- GET /api/users/:id/listing-viewers (admin: who viewed THIS customer's listings) --
+  // Feeds the Customers grid's eye-badge modal. "Their listings" uses the same ownership rule as
+  // the grid's counts: listing.userId matches, or owner.phone / owner.altPhone equals their mobile.
+  app.get('/api/users/:id/listing-viewers', requireAdmin, requireModule('customers'), async (req, res) => {
+    try {
+      const { id } = req.params;
+      if (!mongoose.Types.ObjectId.isValid(id)) return res.status(400).json({ message: 'Invalid user id' });
+      const user = await User.findById(id).select('mobile').lean();
+      if (!user) return res.status(404).json({ message: 'User not found' });
+      let m = String(user.mobile || '').replace(/\D/g, '');
+      if (m.length > 10 && m.startsWith('0')) m = m.slice(1);
+      if (m.length > 10 && m.startsWith('91')) m = m.slice(m.length - 10);
+      const or = [{ userId: id }];
+      if (m) { or.push({ 'owner.phone': m }, { 'owner.altPhone': m }); }
+      const listings = (await Promise.all(LISTING_MODEL_LIST.map(M =>
+        M.find({ $or: or }).select('propertyId views').lean()
+      ))).flat();
+      const data = await collectViewers(listings, { withProps: true, excludeUserId: id });
+      res.json({ listings: listings.length, ...data });
+    } catch (err) {
+      console.error('GET /api/users/:id/listing-viewers error:', err);
+      res.status(500).json({ message: 'Error fetching listing viewers' });
+    }
+  });
+
   app.patch('/api/users/mobile/:mobile/remarks', requireAdmin, requireModuleAction('customers'), async (req, res) => {
     try {
       const { remarks } = req.body || {};
