@@ -12992,9 +12992,9 @@ async function confirmClearAddModalDraft() {
 ═══════════════════════════════════════════════ */
 // Browsing works without an account — this modal is just a dismissable welcome/
 // login prompt, closable via the X, a backdrop click, or Escape like any other modal.
-// Dismissing it (without logging in) snoozes it for AUTH_SKIP_MS: it comes back
-// on its own once that time is up, still logged out, via the timer below.
-const AUTH_SKIP_MS = 60 * 60 * 1000; // "skip for an hour"
+// Dismissing it (without logging in) snoozes it for AUTH_SKIP_MS (15 minutes):
+// it comes back on its own once that time is up, still logged out, via the timer below.
+const AUTH_SKIP_MS = 15 * 60 * 1000; // "skip for 15 minutes"
 let _authSkipTimer = null;
 function scheduleAuthPrompt(delayMs) {
   clearTimeout(_authSkipTimer);
