@@ -417,7 +417,6 @@ app.post('/api/user/signup', userAuthLimiter, async (req, res) => {
     const { firstName, lastName, email, mobile, accountType, profilePic } = req.body || {};
 
     if (!firstName || !String(firstName).trim()) return res.status(400).json({ message: 'First name is required' });
-    if (!lastName  || !String(lastName).trim())  return res.status(400).json({ message: 'Last name is required' });
     if (!email     || !String(email).trim())     return res.status(400).json({ message: 'Email is required' });
     if (!/^[^\s@"'<>\\]+@[^\s@"'<>\\]+\.[^\s@"'<>\\]+$/.test(String(email).trim())) return res.status(400).json({ message: 'Please enter a valid email address' });
     if (!mobile    || !String(mobile).trim())    return res.status(400).json({ message: 'Mobile number is required' });
@@ -450,10 +449,11 @@ app.post('/api/user/signup', userAuthLimiter, async (req, res) => {
       : '';
 
     const userId = await nextSequenceId('USER');
-    const name = `${String(firstName).trim()} ${String(lastName).trim()}`.trim();
+    const cleanLastName = lastName ? String(lastName).trim() : '';
+    const name = `${String(firstName).trim()} ${cleanLastName}`.trim();
     const user = await User.create({
       firstName: String(firstName).trim(),
-      lastName:  String(lastName).trim(),
+      lastName:  cleanLastName,
       name,
       email:     cleanEmail,
       mobile:    cleanMobile,

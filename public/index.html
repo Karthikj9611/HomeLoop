@@ -3125,24 +3125,6 @@ main.tab-explore .empty-state{display:none !important}
 #authModal .auth-tab{padding:10px 0;font-size:13.5px;font-weight:650;letter-spacing:-.005em;border-radius:9px;transition:box-shadow .15s,color .15s}
 #authModal .auth-tab.active{box-shadow:0 2px 8px rgba(20,15,16,.10)}
 
-/* "I am a" reads as a real form field, not another page toggle: bordered
-   container + a visible divider between the two choices, rather than the
-   flat filled pill used for Log in/Sign up above. */
-#authModal #authSignupTypeField > .form-label{margin-bottom:9px}
-#authModal #authTypeTabsRow{
-  margin-bottom:20px!important;
-  background:var(--bg);border:1.5px solid var(--border);border-radius:13px;padding:3px;gap:0;
-  position:relative;
-}
-#authModal #authTypeTabsRow .auth-tab{
-  padding:13px 8px;font-size:13.5px;font-weight:600;color:var(--text-2);
-}
-#authModal #authTypeTabsRow .auth-tab:first-child{border-right:1px solid var(--border)}
-#authModal #authTypeTabsRow .auth-tab.active{
-  color:var(--brand);background:var(--brand-light);box-shadow:none;
-  border-right-color:transparent;
-}
-
 #authModal .form-label{font-size:12px;font-weight:700;color:var(--text-2);letter-spacing:.01em;margin-bottom:7px}
 #authModal .form-group{margin-bottom:16px}
 #authModal .form-row{gap:14px}
@@ -6768,7 +6750,7 @@ main.tab-explore .empty-state{display:none !important}
           <input class="form-input" type="text" id="auth-firstname" oninput="saveSignupDraft()" />
         </div>
         <div class="form-group">
-          <label class="form-label">Last name <span style="color:var(--brand)">*</span></label>
+          <label class="form-label">Last name</label>
           <input class="form-input" type="text" id="auth-lastname" oninput="saveSignupDraft()" />
         </div>
       </div>
@@ -13449,7 +13431,7 @@ async function submitAuth() {
     const email            = document.getElementById('auth-email').value.trim();
     const mobile            = document.getElementById('auth-mobile').value.trim();
 
-    if (!firstName || !lastName) { showToast('Please enter your first and last name', 'warning'); return; }
+    if (!firstName) { showToast('Please enter your first name', 'warning'); return; }
     if (!email)  { showToast('Please enter your email', 'warning'); return; }
     if (!mobile) { showToast('Please enter your mobile number', 'warning'); return; }
     if (!isValidIndianMobile(mobile)) { showToast('Enter a valid 10-digit mobile number starting with 6, 7, 8 or 9', 'warning'); return; }
