@@ -1500,13 +1500,13 @@ main.tab-explore .empty-state{display:none !important}
 .wish-modal-close{
   position:absolute;top:-14px;right:-14px;
   width:34px;height:34px;border-radius:50%;
-  background:#fff;color:var(--text,#141011);
-  border:none;box-shadow:0 4px 14px rgba(0,0,0,.25);
+  background:var(--brand);border:none;
+  box-shadow:0 4px 14px rgba(0,0,0,.25);
   display:flex;align-items:center;justify-content:center;
-  cursor:pointer;font-size:16px;line-height:1;
-  transition:transform .12s;
+  cursor:pointer;transition:background .15s,transform .15s;
 }
-.wish-modal-close:hover{transform:scale(1.08)}
+.wish-modal-close svg{width:16px;height:16px;stroke:#fff;fill:none;stroke-width:2.6}
+.wish-modal-close:hover{background:var(--brand-hover);transform:scale(1.08)}
 @media (max-width:480px){
   .wish-modal-card{max-width:100%}
   .wish-modal-close{top:-12px;right:0}
@@ -11774,13 +11774,13 @@ function openDetailReal(id) {
   document.getElementById('viewScheduleBtn').onclick = () => openScheduleModal(p.id);
   document.getElementById('viewCallBtn').onclick = () => openCall(p.id);
   document.getElementById('viewWhatsappBtn').onclick = () => openWhatsApp(p.id);
-  // Call button label: "Agent" when this listing's contact number is the fixed
+  // Call button label: "Coordinator" when this listing's contact number is the fixed
   // in-house agent line (9035205230), "Owner" for any other number (i.e. the
   // owner entered their own number in the agentPhone field).
   const _callLabelEl = document.getElementById('viewCallBtnLabel');
   if (_callLabelEl) {
     const _agentDigits = String(p.owner?.agentPhone || '').replace(/\D/g, '').slice(-10);
-    _callLabelEl.textContent = (_agentDigits === '9035205230') ? 'Rental Coordinator' : 'Owner';
+    _callLabelEl.textContent = (_agentDigits === '9035205230') ? 'Coordinator' : 'Owner';
   }
   // Direct owner call — the server only sends ownerAltPhone when admin turned it on.
   // Each number has its own admin "Public call" toggle; the server only sends a number when its toggle is on.
@@ -11791,11 +11791,11 @@ function openDetailReal(id) {
   document.getElementById('viewOwnerPhoneWaBtn').onclick = () => openOwnerWhatsApp(p.id, 'main');
   document.getElementById('viewOwnerCallBtn').onclick    = () => openOwnerCall(p.id, 'alt');
   document.getElementById('viewOwnerCallWaBtn').onclick  = () => openOwnerWhatsApp(p.id, 'alt');
-  // Same Agent/Owner logic as the main Call button, applied per public-call
+  // Same Coordinator/Owner logic as the main Call button, applied per public-call
   // number: a number that matches the fixed in-house agent line (9035205230)
-  // is labelled "Agent", any other number (the owner's own) is "Owner".
-  const _mainRole = (String(p.ownerPhone || '').replace(/\D/g, '').slice(-10) === '9035205230') ? 'Agent' : 'Owner';
-  const _altRole  = (String(p.ownerAltPhone || '').replace(/\D/g, '').slice(-10) === '9035205230') ? 'Agent' : 'Owner';
+  // is labelled "Coordinator", any other number (the owner's own) is "Owner".
+  const _mainRole = (String(p.ownerPhone || '').replace(/\D/g, '').slice(-10) === '9035205230') ? 'Coordinator' : 'Owner';
+  const _altRole  = (String(p.ownerAltPhone || '').replace(/\D/g, '').slice(-10) === '9035205230') ? 'Coordinator' : 'Owner';
   document.getElementById('viewOwnerPhoneLabel').textContent = _mainRole;
   document.getElementById('viewOwnerCallLabel').textContent  = _altRole;
   document.getElementById('viewOwnerPhoneWaLabel').textContent = _mainRole;
@@ -17741,7 +17741,9 @@ document.addEventListener('keydown',function(e){
      no other code needs to change. -->
 <div class="wish-modal-overlay" id="wishModalOverlay" role="dialog" aria-modal="true" aria-label="Greeting">
   <div class="wish-modal-card">
-    <button class="wish-modal-close" id="wishModalClose" aria-label="Close">&#x2715;</button>
+    <button class="wish-modal-close" id="wishModalClose" aria-label="Close">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
     <img id="wishModalImg" src="" alt="">
   </div>
 </div>
