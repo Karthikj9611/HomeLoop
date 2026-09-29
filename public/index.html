@@ -13740,6 +13740,8 @@ function openEditRestrictedModal(context, propertyLabel) {
   const messages = {
     profile: 'To keep accounts accurate, profile details can\'t be edited directly. Reach out to our support team and they\'ll update it for you.',
     listing: `To keep verified listings accurate, ${propertyLabel ? `<strong>${esc(propertyLabel)}</strong>` : 'this listing'} can't be edited directly. Reach out to our support team and they'll make the change for you.`,
+    clone: `To keep listings accurate, ${propertyLabel ? `<strong>${esc(propertyLabel)}</strong>` : 'this listing'} can't be duplicated directly. Reach out to our support team and they'll set up the new listing for you.`,
+    booking: `To keep listings accurate, the booked status for ${propertyLabel ? `<strong>${esc(propertyLabel)}</strong>` : 'this listing'} can't be changed directly. Reach out to our support team and they'll update it for you.`,
   };
   document.getElementById('editRestrictedMessage').innerHTML = messages[context] || messages.profile;
   document.getElementById('editRestrictedModal').classList.add('open');
@@ -13951,13 +13953,13 @@ function renderMyListings() {
         </div>
       </div>
       <div class="profile-mini-actions">
-        <button class="profile-mini-icon-btn" title="Duplicate — start a new listing pre-filled with these details" onclick="event.stopPropagation();openCloneListingFull('${p.id}')">
+        <button class="profile-mini-icon-btn" title="Duplicate — start a new listing pre-filled with these details" onclick="event.stopPropagation();openEditRestrictedModal('clone', '${esc(p.propertyId||'')}')">
           <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
         </button>
         <button class="profile-mini-icon-btn" title="Edit" onclick="event.stopPropagation();openEditRestrictedModal('listing', '${esc(p.propertyId||'')}')">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
         </button>
-        <button class="profile-mini-icon-btn${p.booked ? ' booked-active' : ''}" title="${p.booked ? 'Mark as available' : 'Mark as booked'}" onclick="event.stopPropagation();toggleMyListingBooked('${p.id}', this)">
+        <button class="profile-mini-icon-btn${p.booked ? ' booked-active' : ''}" title="${p.booked ? 'Mark as available' : 'Mark as booked'}" onclick="event.stopPropagation();openEditRestrictedModal('booking', '${esc(p.propertyId||'')}')">
           <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
         </button>
         <button class="profile-mini-icon-btn profile-mini-icon-whatsapp" title="Share on WhatsApp" onclick="event.stopPropagation();shareMyListingViaWhatsApp('${p.id}')">
