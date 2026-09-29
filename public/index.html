@@ -6763,15 +6763,13 @@ main.tab-explore .empty-state{display:none !important}
       </div>
       -->
       <div id="authSignupNameField" style="display:none">
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">First name <span style="color:var(--brand)">*</span></label>
-            <input class="form-input" type="text" id="auth-firstname" oninput="saveSignupDraft()" />
-          </div>
-          <div class="form-group">
-            <label class="form-label">Last name <span style="color:var(--brand)">*</span></label>
-            <input class="form-input" type="text" id="auth-lastname" oninput="saveSignupDraft()" />
-          </div>
+        <div class="form-group">
+          <label class="form-label">First name <span style="color:var(--brand)">*</span></label>
+          <input class="form-input" type="text" id="auth-firstname" oninput="saveSignupDraft()" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Last name <span style="color:var(--brand)">*</span></label>
+          <input class="form-input" type="text" id="auth-lastname" oninput="saveSignupDraft()" />
         </div>
       </div>
       <div id="authLoginContactField">
@@ -6781,15 +6779,13 @@ main.tab-explore .empty-state{display:none !important}
         </div>
       </div>
       <div id="authSignupContactFields" style="display:none">
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">Email <span style="color:var(--brand)">*</span></label>
-            <input class="form-input" type="email" id="auth-email" oninput="saveSignupDraft()" />
-          </div>
-          <div class="form-group">
-            <label class="form-label">Mobile number <span style="color:var(--brand)">*</span></label>
-            <input class="form-input" type="tel" id="auth-mobile" inputmode="numeric" maxlength="10" oninput="sanitizeMobileInput(this); saveSignupDraft()" />
-          </div>
+        <div class="form-group">
+          <label class="form-label">Email <span style="color:var(--brand)">*</span></label>
+          <input class="form-input" type="email" id="auth-email" oninput="saveSignupDraft()" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Mobile number <span style="color:var(--brand)">*</span></label>
+          <input class="form-input" type="tel" id="auth-mobile" inputmode="numeric" maxlength="10" oninput="sanitizeMobileInput(this); saveSignupDraft()" />
         </div>
       </div>
 
