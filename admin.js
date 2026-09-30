@@ -935,6 +935,54 @@ self.addEventListener('notificationclick', event => {
     }
   });
 
+  // ── PATCH /api/users/:id (admin: edit a customer's profile) ──
+  // Body: { firstName, lastName, email, mobile, accountType }. Powers the Customers
+  // grid's "Edit" button (openCustomerEditModal() in admin.html). Mobile is stored as
+  // the plain 10-digit number, same as signup; email is optional (removed when blank).
+  // Mobile and email must stay unique across customers -> 409 if another account has them.
+  app.patch('/api/users/:id', requireAdmin, requireModuleAction('customers'), async (req, res) => {
+    try {
+      const { id } = req.params;
+      if (!mongoose.Types.ObjectId.isValid(id)) return res.status(400).json({ message: 'Invalid user id' });
+      const b = req.body || {};
+      const firstName = String(b.firstName || '').trim();
+      const lastName  = String(b.lastName  || '').trim();
+      const email     = String(b.email     || '').trim().toLowerCase();
+      let mobile = String(b.mobile || '').replace(/\D/g, '');
+      if (mobile.length > 10 && mobile.startsWith('0'))  mobile = mobile.slice(1);
+      if (mobile.length > 10 && mobile.startsWith('91')) mobile = mobile.slice(-10);
+      const accountType = b.accountType === 'owner' ? 'owner' : 'customer';
+
+      if (!firstName) return res.status(400).json({ message: 'First name is required.' });
+      if (!/^\d{10}$/.test(mobile)) return res.status(400).json({ message: 'Enter a valid 10-digit mobile number.' });
+      if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ message: 'Enter a valid email address.' });
+
+      const clash = await User.findOne({
+        _id: { $ne: id },
+        $or: [{ mobile }, ...(email ? [{ email }] : [])]
+      }).select('mobile email').lean();
+      if (clash) {
+        return res.status(409).json({ message: clash.mobile === mobile
+          ? 'Another customer already uses this mobile number.'
+          : 'Another customer already uses this email address.' });
+      }
+
+      const update = { $set: { firstName, lastName, name: `${firstName} ${lastName}`.trim(), mobile, accountType } };
+      if (email) update.$set.email = email; else update.$unset = { email: 1 };
+      const user = await User.findByIdAndUpdate(id, update, { new: true }).lean();
+      if (!user) return res.status(404).json({ message: 'Customer not found' });
+      res.json({
+        message: 'Customer updated',
+        _id: user._id, firstName: user.firstName, lastName: user.lastName, name: user.name,
+        email: user.email || '', mobile: user.mobile, accountType: user.accountType,
+      });
+    } catch (err) {
+      if (err && err.code === 11000) return res.status(409).json({ message: 'Mobile or email is already in use by another customer.' });
+      console.error('PATCH /api/users/:id error:', err);
+      res.status(500).json({ message: 'Error updating customer' });
+    }
+  });
+
   // ── PATCH /api/users/:id/publicCall (admin: per-user "Public call" switch) ──
   // Body: { publicCall: true | false }. Owner account → their listings show owner number(s) to
   // everyone; tenant account → that tenant (when logged in) sees them on all listings.

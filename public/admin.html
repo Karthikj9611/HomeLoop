@@ -605,7 +605,7 @@ table.dataTable.no-footer{border-bottom:none!important}
 .no-contact{font-size:0.78rem;color:var(--ink3);font-style:italic}
 
 /* ── DATE CELL ── */
-.date-cell{display:flex;flex-direction:column;align-items:center;gap:3px}
+.date-cell{display:flex;flex-direction:row;align-items:center;justify-content:center;gap:8px;white-space:nowrap}
 .date-main{font-size:0.82rem;font-weight:600;color:var(--ink)}
 .date-time{
   display:inline-block;font-size:0.7rem;color:var(--gold-dark);
@@ -695,6 +695,14 @@ table.dataTable.no-footer{border-bottom:none!important}
   font-size:0.75rem;color:var(--ink3);
   font-style:italic;padding:4px 2px;
 }
+/* No remarks yet: placeholder and "Add Remark" share one straight row
+   (the slide-down input still opens on its own full-width line below). */
+/* wide enough that the placeholder and the button never wrap onto two lines */
+.remark-cell.remark-cell-empty{min-width:340px;max-width:none}
+.remark-subgrid-empty{flex-direction:row;flex-wrap:wrap;align-items:center;column-gap:10px;row-gap:0}
+.remark-subgrid-empty .remark-empty{padding:4px 0;white-space:nowrap}
+.remark-subgrid-empty .remark-add-btn{margin-top:0;flex-shrink:0}
+.remark-subgrid-empty .remark-input-panel{flex:0 0 100%}
 
 /* ── Add trigger button (always visible) ── */
 .remark-add-btn{
@@ -1302,6 +1310,19 @@ footer i{color:var(--gold)}
   }
   #bookingDetailsModal .hr-modal-actions button{flex:1;padding:12px 16px;font-size:.86rem}
 }
+
+/* Action-column buttons: wrapper is layout-neutral; the Columns menu hides one by adding body.pact-hide-<key> */
+.pact{display:contents}
+body.pact-hide-check #propertyTable .pact-check{display:none!important}
+body.pact-hide-share #propertyTable .pact-share{display:none!important}
+body.pact-hide-tenant #propertyTable .pact-tenant{display:none!important}
+body.pact-hide-view #propertyTable .pact-view{display:none!important}
+body.pact-hide-navigate #propertyTable .pact-navigate{display:none!important}
+body.pact-hide-directions #propertyTable .pact-directions{display:none!important}
+body.pact-hide-facebook #propertyTable .pact-facebook{display:none!important}
+body.pact-hide-instagram #propertyTable .pact-instagram{display:none!important}
+body.pact-hide-delete #propertyTable .pact-delete{display:none!important}
+body.pact-hide-booking #propertyTable .pact-booking{display:none!important}
 
 /* ── MODERN DATE FIELD (Booked On) ── */
 .bd-date-wrap{position:relative}
@@ -2811,6 +2832,50 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
   </div>
 </div>
 
+<!-- EDIT CUSTOMER MODAL - opened by the Customers grid's "Edit" button -->
+<div class="add-modal-overlay" id="customerEditModal" role="dialog" aria-modal="true" aria-label="Edit customer">
+  <div class="add-modal" id="customerEditModalBox" style="max-width:420px">
+    <div class="compare-modal-header">
+      <span class="compare-modal-title">Edit Customer</span>
+      <button class="modal-close" onclick="closeCustomerEditModal()" aria-label="Close">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label" for="ceFirstName">First name *</label>
+        <input class="form-input" type="text" id="ceFirstName" autocomplete="off" />
+      </div>
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label" for="ceLastName">Last name</label>
+        <input class="form-input" type="text" id="ceLastName" autocomplete="off" />
+      </div>
+    </div>
+    <div class="form-group" style="margin-top:14px">
+      <label class="form-label" for="ceMobile">Mobile number *</label>
+      <input class="form-input" type="tel" id="ceMobile" inputmode="numeric" maxlength="10" autocomplete="off" />
+      <div style="font-size:11.5px;color:#888;margin-top:5px;line-height:1.5">Listings and visits are matched to a customer by mobile number, so changing it changes what shows as theirs.</div>
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="ceEmail">Email</label>
+      <input class="form-input" type="email" id="ceEmail" autocomplete="off" />
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="ceAccountType">Account type</label>
+      <select class="form-input" id="ceAccountType">
+        <option value="customer">Tenant / Customer</option>
+        <option value="owner">Owner</option>
+      </select>
+    </div>
+    <div class="share-links-footer">
+      <button class="confirm-cancel-btn" onclick="closeCustomerEditModal()" style="flex:1">Cancel</button>
+      <button class="confirm-ok-btn success" id="ceSaveBtn" onclick="saveCustomerEdit()" style="flex:1">
+        <i class="fas fa-check"></i> Save
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- ══ CHECK AVAILABILITY MODAL — one WhatsApp "Send" link per owner ══
      Browsers only ever trust the FIRST window.open() in a click as a real
      user gesture and silently block any more opened in a loop — so instead
@@ -3568,6 +3633,12 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
               <option value="Owner">Owner reviews</option>
               <option value="Tenant">Tenant reviews</option>
             </select>
+            <div class="col-toggle-wrap" id="userReviewColToggleWrap">
+              <button type="button" class="col-toggle-btn" id="userReviewColToggleBtn" onclick="toggleColMenu('userReview')">
+                <i class="fas fa-table-columns"></i> <span class="bulk-btn-label" data-mobile="Columns">Columns</span>
+              </button>
+              <div class="col-toggle-menu" id="userReviewColToggleMenu"></div>
+            </div>
           </div>
         </div>
         <table id="userReviewsTable" class="display nowrap" style="width:100%">
@@ -3607,6 +3678,12 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
             <button class="btn-add-review" onclick="openPartnerModal()" title="Add partner">
               <i class="fas fa-plus"></i> <span class="bulk-btn-label" data-mobile="Add">Add Partner</span>
             </button>
+            <div class="col-toggle-wrap" id="partnerColToggleWrap">
+              <button type="button" class="col-toggle-btn" id="partnerColToggleBtn" onclick="toggleColMenu('partner')">
+                <i class="fas fa-table-columns"></i> <span class="bulk-btn-label" data-mobile="Columns">Columns</span>
+              </button>
+              <div class="col-toggle-menu" id="partnerColToggleMenu"></div>
+            </div>
           </div>
         </div>
         <table id="partnersTable" class="display nowrap" style="width:100%">
@@ -3642,6 +3719,12 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
               <option value="Rewarded">Rewarded</option>
               <option value="Rejected">Rejected</option>
             </select>
+            <div class="col-toggle-wrap" id="referralColToggleWrap">
+              <button type="button" class="col-toggle-btn" id="referralColToggleBtn" onclick="toggleColMenu('referral')">
+                <i class="fas fa-table-columns"></i> <span class="bulk-btn-label" data-mobile="Columns">Columns</span>
+              </button>
+              <div class="col-toggle-menu" id="referralColToggleMenu"></div>
+            </div>
           </div>
         </div>
         <table id="referralsTable" class="display nowrap" style="width:100%">
@@ -6124,6 +6207,62 @@ window.saveSubscription = async function(){
     dataTable.ajax.reload(null,false);
   } else {
     alert(data.message || 'Error updating subscription');
+  }
+};
+
+/* EDIT CUSTOMER
+   Prefills from _customerCache, saves via PATCH /api/users/:id, then reloads the grid. */
+let _customerEditTargetId = null;
+window.openCustomerEditModal = function(key){
+  if(blockIfViewOnly('customers')) return;
+  const c = _customerCache[key];
+  if(!c){ alert('Customer details not loaded yet - please retry.'); return; }
+  _customerEditTargetId = c._id;
+  let first = c.firstName || '', last = c.lastName || '';
+  if(!first && !last && c.name){ const parts = String(c.name).trim().split(/\s+/); first = parts.shift() || ''; last = parts.join(' '); }
+  document.getElementById('ceFirstName').value = first;
+  document.getElementById('ceLastName').value = last;
+  document.getElementById('ceMobile').value = String(c.mobile || '').replace(/\D/g,'').slice(-10);
+  document.getElementById('ceEmail').value = c.email || '';
+  document.getElementById('ceAccountType').value = c.accountType === 'owner' ? 'owner' : 'customer';
+  document.getElementById('customerEditModal').classList.add('open');
+  lockBodyScroll();
+};
+window.closeCustomerEditModal = function(){
+  document.getElementById('customerEditModal').classList.remove('open');
+  unlockBodyScroll();
+  _customerEditTargetId = null;
+};
+window.saveCustomerEdit = async function(){
+  if(blockIfViewOnly('customers')) return;
+  if(!_customerEditTargetId) return;
+  const firstName = document.getElementById('ceFirstName').value.trim();
+  const lastName  = document.getElementById('ceLastName').value.trim();
+  const mobile    = document.getElementById('ceMobile').value.replace(/\D/g,'');
+  const email     = document.getElementById('ceEmail').value.trim();
+  const accountType = document.getElementById('ceAccountType').value;
+  if(!firstName){ showAlertModal('Enter the first name.', { variant:'error', title:'First name needed' }); return; }
+  if(!/^\d{10}$/.test(mobile)){ showAlertModal('Enter a valid 10-digit mobile number.', { variant:'error', title:'Mobile number' }); return; }
+  if(email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ showAlertModal('Enter a valid email address, or leave it blank.', { variant:'error', title:'Email' }); return; }
+  const btn = document.getElementById('ceSaveBtn');
+  btn.disabled = true;
+  try{
+    const res = await fetch(`${BASE}/api/users/${_customerEditTargetId}`, {
+      method:'PATCH',
+      headers:{ ...authHeaders(), 'Content-Type':'application/json' },
+      body: JSON.stringify({ firstName, lastName, mobile, email, accountType })
+    });
+    const data = await res.json().catch(()=>({}));
+    if(res.ok){
+      closeCustomerEditModal();
+      dataTable.ajax.reload(null,false);
+    } else {
+      showAlertModal(data.message || 'Error updating customer', { variant:'error', title:'Could not save' });
+    }
+  } catch(e){
+    showAlertModal('Network error - please try again.', { variant:'error', title:'Could not save' });
+  } finally {
+    btn.disabled = false;
   }
 };
 
@@ -8719,8 +8858,8 @@ function remarkCellHtml(id, remark, type){
   }
 
   return `
-    <div class="remark-cell" data-id="${id}" data-type="${type}">
-      <div class="remark-subgrid">
+    <div class="remark-cell${entries.length ? '' : ' remark-cell-empty'}" data-id="${id}" data-type="${type}">
+      <div class="remark-subgrid${entries.length ? '' : ' remark-subgrid-empty'}">
         ${cardsHtml}
 
         <!-- Plus trigger button -->
@@ -8972,32 +9111,36 @@ $(document).ready(function(){
 			return `
 			  <div style="display:inline-flex;gap:6px;flex-wrap:nowrap;justify-content:center;align-items:center;white-space:nowrap">
 
-				${verifiedBadge(isVerified, row._id)}
+				<span class="pact pact-verified">${verifiedBadge(isVerified, row._id)}</span>
 
-				<button class="btn-view btn-action-view" onclick="openCustomerModal('${row.mobile || row._id}')">
+				<span class="pact pact-view"><button class="btn-view btn-action-view" onclick="openCustomerModal('${row.mobile || row._id}')">
 				  <i class="fas fa-eye"></i><span class="btn-label"> View</span>
-				</button>
+				</button></span>
 
-				<button class="btn-view btn-action-sub${row.subscriptionAt ? ' is-set' : ''}" onclick="openSubscriptionModal('${row.mobile || row._id}')" title="${row.subscriptionAt ? 'Subscribed: ' + plainDateTime(row.subscriptionAt) : 'Set subscription date & time'}">
+				<span class="pact pact-edit"><button class="btn-view btn-action-edit" onclick="openCustomerEditModal('${row.mobile || row._id}')" title="Edit this customer's details">
+				  <i class="fas fa-pen"></i><span class="btn-label"> Edit</span>
+				</button></span>
+
+				<span class="pact pact-subscription"><button class="btn-view btn-action-sub${row.subscriptionAt ? ' is-set' : ''}" onclick="openSubscriptionModal('${row.mobile || row._id}')" title="${row.subscriptionAt ? 'Subscribed: ' + plainDateTime(row.subscriptionAt) : 'Set subscription date & time'}">
 				  <i class="fas fa-calendar-check"></i><span class="btn-label"> Subscription</span>
-				</button>
+				</button></span>
 
-				<button class="btn-view btn-action-delete" onclick="deleteBooking('${row.mobile || row._id}')" title="Delete this customer">
+				<span class="pact pact-delete"><button class="btn-view btn-action-delete" onclick="deleteBooking('${row.mobile || row._id}')" title="Delete this customer">
 				  <i class="fas fa-trash"></i><span class="btn-label"> Delete</span>
-				</button>
+				</button></span>
 
-				<button class="btn-view btn-action-logout" onclick="forceLogoutUser('${row._id}')" title="Clear their active session so they can log in on another device right away">
+				<span class="pact pact-logout"><button class="btn-view btn-action-logout" onclick="forceLogoutUser('${row._id}')" title="Clear their active session so they can log in on another device right away">
 				  <i class="fas fa-right-from-bracket"></i><span class="btn-label"> Force logout</span>
-				</button>
+				</button></span>
 
-				<button class="btn-view btn-action-resetviews" onclick="resetUserViews('${row._id}')" title="Delete this customer's viewed-property records and the views on their own listings" ${(window.DISABLE_RESET_VIEWS_BTN || !canAct('customers'))?'disabled':''}>
+				<span class="pact pact-resetviews"><button class="btn-view btn-action-resetviews" onclick="resetUserViews('${row._id}')" title="Delete this customer's viewed-property records and the views on their own listings" ${(window.DISABLE_RESET_VIEWS_BTN || !canAct('customers'))?'disabled':''}>
 				  <i class="fas fa-rotate-left"></i><span class="btn-label"> Reset views</span>
-				</button>
+				</button></span>
 
-				<label class="mini-toggle-wrap altcall-wrap" title="${row.accountType==='owner' ? 'When ON, all of this owner\'s listings show their owner number(s) to every visitor' : 'When ON, this tenant sees owner numbers on all listings while logged in'}"><span class="mini-toggle altcall-toggle">
+				<span class="pact pact-publiccall"><label class="mini-toggle-wrap altcall-wrap" title="${row.accountType==='owner' ? 'When ON, all of this owner\'s listings show their owner number(s) to every visitor' : 'When ON, this tenant sees owner numbers on all listings while logged in'}"><span class="mini-toggle altcall-toggle">
 				  <input type="checkbox" ${row.publicCall?'checked':''} ${canAct('customers')?'':'disabled'} onchange="toggleUserPublicCall('${row._id}',this,'${row.accountType==='owner'?'owner':'customer'}')">
 				  <span class="slider"></span>
-				</span><span class="altcall-label">${row.accountType==='owner' ? 'Owner public call' : 'Tenant public call'}</span></label>
+				</span><span class="altcall-label">${row.accountType==='owner' ? 'Owner public call' : 'Tenant public call'}</span></label></span>
 
 			  </div>
 			`;
@@ -9413,16 +9556,16 @@ $(document).ready(function(){
             ? disabledBtn('fas fa-trash', 'Delete', 'View-only access — ask the primary admin to enable actions')
             : `<button class="btn-view" style="color:#c0392b" title="Delete this listing" onclick="deleteProperty('${row._id}')"><i class="fas fa-trash"></i><span class="btn-label"> Delete</span></button>`;
           return `<div style="display:inline-flex;gap:6px;flex-wrap:nowrap;justify-content:flex-start">
-            ${checkAvailBtn}
-            ${shareBtn}
-            ${tenantShareBtn}
-            <button class="btn-view" onclick="openAdminPropModal('${row._id}')"><i class="fas fa-eye"></i><span class="btn-label"> View</span></button>
-            ${navigateBtn}
-            ${directionsBtn}
-            ${fbShareBtn}
-            ${igShareBtn}
-            ${deleteBtn}
-            ${bookingBtn}
+            <span class="pact pact-check">${checkAvailBtn}</span>
+            <span class="pact pact-share">${shareBtn}</span>
+            <span class="pact pact-tenant">${tenantShareBtn}</span>
+            <span class="pact pact-view"><button class="btn-view" onclick="openAdminPropModal('${row._id}')"><i class="fas fa-eye"></i><span class="btn-label"> View</span></button></span>
+            <span class="pact pact-navigate">${navigateBtn}</span>
+            <span class="pact pact-directions">${directionsBtn}</span>
+            <span class="pact pact-facebook">${fbShareBtn}</span>
+            <span class="pact pact-instagram">${igShareBtn}</span>
+            <span class="pact pact-delete">${deleteBtn}</span>
+            <span class="pact pact-booking">${bookingBtn}</span>
           </div>`;
       }}
     ],
@@ -9718,8 +9861,8 @@ $(document).ready(function(){
       { data:null, orderable:false, render:(d,t,row)=>{
           _apptCache[row._id] = row;
           return `<div style="display:inline-flex;gap:6px;flex-wrap:nowrap;justify-content:center">
-            <button class="btn-view" onclick="openApptModal('${row._id}')"><i class="fas fa-eye"></i><span class="btn-label"> View</span></button>
-            <button class="btn-view" style="color:#c0392b" title="Delete this appointment" onclick="deleteAppointment('${row._id}')"><i class="fas fa-trash"></i><span class="btn-label"> Delete</span></button>
+            <span class="pact pact-view"><button class="btn-view" onclick="openApptModal('${row._id}')"><i class="fas fa-eye"></i><span class="btn-label"> View</span></button></span>
+            <span class="pact pact-delete"><button class="btn-view" style="color:#c0392b" title="Delete this appointment" onclick="deleteAppointment('${row._id}')"><i class="fas fa-trash"></i><span class="btn-label"> Delete</span></button></span>
           </div>`;
       }}
     ],
@@ -9904,8 +10047,8 @@ $(document).ready(function(){
       { data:null, orderable:false, render:(d,t,row)=>{
           if(t!=='display') return '';
           return `<div style="display:inline-flex;gap:6px;flex-wrap:nowrap;justify-content:center">
-            <button class="btn-view" onclick="openHonestReviewModal('${row._id}')"><i class="fas fa-pen"></i><span class="btn-label"> Edit</span></button>
-            <button class="btn-view" style="color:#c0392b" title="Delete this review" onclick="deleteHonestReview('${row._id}')"><i class="fas fa-trash"></i><span class="btn-label"> Delete</span></button>
+            <span class="pact pact-edit"><button class="btn-view" onclick="openHonestReviewModal('${row._id}')"><i class="fas fa-pen"></i><span class="btn-label"> Edit</span></button></span>
+            <span class="pact pact-delete"><button class="btn-view" style="color:#c0392b" title="Delete this review" onclick="deleteHonestReview('${row._id}')"><i class="fas fa-trash"></i><span class="btn-label"> Delete</span></button></span>
           </div>`;
       }}
     ],
@@ -9972,7 +10115,7 @@ $(document).ready(function(){
           if(t!=='display') return '';
           if(!canAct('userReviews')) return '<span class="no-contact">—</span>';
           return `<div style="display:inline-flex;gap:6px;flex-wrap:nowrap;justify-content:center">
-            <button class="btn-view" style="color:#c0392b" onclick="deleteUserReview('${row._id}')"><i class="fas fa-trash"></i><span class="btn-label"> Delete</span></button>
+            <span class="pact pact-delete"><button class="btn-view" style="color:#c0392b" onclick="deleteUserReview('${row._id}')"><i class="fas fa-trash"></i><span class="btn-label"> Delete</span></button></span>
           </div>`;
       }}
     ],
@@ -9988,6 +10131,7 @@ $(document).ready(function(){
     },
     drawCallback:function(){ syncUserReviewSelectionUI(); }
   });
+  initColumnToggle('userReview');
   } catch(e){ console.error('Reviews table failed to initialize:', e); }
 
   /* ════════════════════════════════════
@@ -10052,8 +10196,8 @@ $(document).ready(function(){
       { data:null, orderable:false, render:(d,t,row)=>{
           if(t!=='display') return '';
           return `<div style="display:inline-flex;gap:6px;flex-wrap:nowrap;justify-content:center">
-            <button class="btn-view" onclick="openPartnerModal('${row._id}')"><i class="fas fa-pen"></i><span class="btn-label"> Edit</span></button>
-            <button class="btn-view" onclick="deletePartner('${row._id}')"><i class="fas fa-trash"></i><span class="btn-label"> Delete</span></button>
+            <span class="pact pact-edit"><button class="btn-view" onclick="openPartnerModal('${row._id}')"><i class="fas fa-pen"></i><span class="btn-label"> Edit</span></button></span>
+            <span class="pact pact-delete"><button class="btn-view" onclick="deletePartner('${row._id}')"><i class="fas fa-trash"></i><span class="btn-label"> Delete</span></button></span>
           </div>`;
       }}
     ],
@@ -10069,6 +10213,7 @@ $(document).ready(function(){
     },
     drawCallback:function(){}
   });
+  initColumnToggle('partner');
   } catch(e){ console.error('Partners table failed to initialize:', e); }
 
   /* ════════════════════════════════════
@@ -10119,7 +10264,7 @@ $(document).ready(function(){
       { data:null, orderable:false, render:(d,t,row)=>{
           if(t!=='display') return '';
           return `<div style="display:inline-flex;gap:6px;flex-wrap:nowrap;justify-content:center">
-            <button class="btn-view" style="color:#c0392b" title="Delete this referral" onclick="deleteReferral('${row._id}')"><i class="fas fa-trash"></i><span class="btn-label"> Delete</span></button>
+            <span class="pact pact-delete"><button class="btn-view" style="color:#c0392b" title="Delete this referral" onclick="deleteReferral('${row._id}')"><i class="fas fa-trash"></i><span class="btn-label"> Delete</span></button></span>
           </div>`;
       }}
     ],
@@ -10134,6 +10279,7 @@ $(document).ready(function(){
       paginate:{previous:'‹ Prev',next:'Next ›'}
     }
   });
+  initColumnToggle('referral');
   } catch(e){ console.error('Referrals table failed to initialize:', e); }
 
   // Restore whichever main tab (Visits/Customers/Properties/Appointments/
@@ -11316,6 +11462,46 @@ function loadPropColVisibility(){
   }catch(e){}
 }
 
+/* ── ACTION BUTTONS show/hide (Columns menu -> "Actions") ── */
+const PROP_ACTION_BTNS = [
+  {key:'check',      label:'Check availability'},
+  {key:'share',      label:'Share (WhatsApp)'},
+  {key:'tenant',     label:'Tenant share'},
+  {key:'view',       label:'View'},
+  {key:'navigate',   label:'Navigate'},
+  {key:'directions', label:'Directions'},
+  {key:'facebook',   label:'Facebook'},
+  {key:'instagram',  label:'Instagram'},
+  {key:'delete',     label:'Delete'},
+  {key:'booking',    label:'Booking'}
+];
+const PROP_ACTION_VIS_KEY = 'rip_admin_propActionVisibility_v1';
+let _propActionVis = {};
+try{ _propActionVis = JSON.parse(localStorage.getItem(PROP_ACTION_VIS_KEY) || '{}') || {}; }catch(e){ _propActionVis = {}; }
+function isPropActionVisible(key){ return _propActionVis[key] !== false; }
+function applyPropActionVisibility(){
+  PROP_ACTION_BTNS.forEach(a => document.body.classList.toggle('pact-hide-' + a.key, !isPropActionVisible(a.key)));
+  if(typeof propTable !== 'undefined' && propTable){ propTable.columns.adjust(); if(typeof updatePropStickyOffset === 'function') updatePropStickyOffset(); }
+}
+function savePropActionVisibility(){
+  try{ localStorage.setItem(PROP_ACTION_VIS_KEY, JSON.stringify(_propActionVis)); }catch(e){}
+}
+applyPropActionVisibility();
+
+window.onPropActionToggle = function(inputEl){
+  _propActionVis[inputEl.getAttribute('data-act')] = inputEl.checked;
+  savePropActionVisibility();
+  applyPropActionVisibility();
+  const allCb = document.querySelector('#propColToggleMenu input[data-act-all]');
+  if(allCb) allCb.checked = PROP_ACTION_BTNS.every(a => isPropActionVisible(a.key));
+};
+window.onPropActionGroupToggle = function(inputEl){
+  PROP_ACTION_BTNS.forEach(a => { _propActionVis[a.key] = inputEl.checked; });
+  savePropActionVisibility();
+  applyPropActionVisibility();
+  buildPropColumnToggle();
+};
+
 function buildPropColumnToggle(){
   const menu = document.getElementById('propColToggleMenu');
   if(!menu || !propTable) return;
@@ -11333,6 +11519,16 @@ function buildPropColumnToggle(){
         <span>${c.label}</span>
       </label>`;
     });
+  });
+  html += `<div class="col-toggle-group-label">
+      <span>Actions</span>
+      <label><input type="checkbox" data-act-all="1" ${PROP_ACTION_BTNS.every(a=>isPropActionVisible(a.key))?'checked':''} onchange="onPropActionGroupToggle(this)"> All</label>
+    </div>`;
+  PROP_ACTION_BTNS.forEach(a=>{
+    html += `<label class="col-toggle-item">
+      <input type="checkbox" data-act="${a.key}" ${isPropActionVisible(a.key)?'checked':''} onchange="onPropActionToggle(this)">
+      <span>${a.label}</span>
+    </label>`;
   });
   html += `<div class="col-toggle-footer">
     <button type="button" onclick="setAllPropColumns(true)">Show all</button>
@@ -11373,6 +11569,10 @@ window.onPropColToggleChange = function(inputEl){
 
 window.setAllPropColumns = function(show){
   if(!propTable) return;
+  // Show all / Hide all also apply to every Action-column button.
+  PROP_ACTION_BTNS.forEach(a => { _propActionVis[a.key] = !!show; });
+  savePropActionVisibility();
+  applyPropActionVisibility();
   PROP_COL_GROUPS.forEach(group=>{
     group.cols.forEach(c=>{ propTable.column(c.idx).visible(show, false); });
   });
@@ -11443,7 +11643,18 @@ const COL_TOGGLE_CONFIGS = {
       {idx:9, label:'Views'}, {idx:10, label:'Registered'}, {idx:11, label:'Remarks'}
     ],
     menuId:'custColToggleMenu', btnId:'custColToggleBtn', wrapId:'custColToggleWrap',
-    storageKey:'rip_admin_custColVisibility'
+    storageKey:'rip_admin_custColVisibility',
+    tableSel:'#bookingTable', actionStorageKey:'rip_admin_custActionVisibility_v1',
+    actions:[
+      {key:'verified',     label:'Verified badge'},
+      {key:'view',         label:'View'},
+      {key:'edit',         label:'Edit'},
+      {key:'subscription', label:'Subscription'},
+      {key:'delete',       label:'Delete'},
+      {key:'logout',       label:'Force logout'},
+      {key:'resetviews',   label:'Reset views'},
+      {key:'publiccall',   label:'Public call toggle'}
+    ]
   },
   appt: {
     getTable: ()=>apptTable,
@@ -11456,7 +11667,9 @@ const COL_TOGGLE_CONFIGS = {
       {idx:16, label:'Booked On'}, {idx:17, label:'Remarks'}
     ],
     menuId:'apptColToggleMenu', btnId:'apptColToggleBtn', wrapId:'apptColToggleWrap',
-    storageKey:'rip_admin_apptColVisibility'
+    storageKey:'rip_admin_apptColVisibility',
+    tableSel:'#appointmentTable', actionStorageKey:'rip_admin_apptActionVisibility_v1',
+    actions:[ {key:'view', label:'View'}, {key:'delete', label:'Delete'} ]
   },
   review: {
     getTable: ()=>honestReviewsTable,
@@ -11464,8 +11677,84 @@ const COL_TOGGLE_CONFIGS = {
       {idx:2, label:'Meta'}, {idx:3, label:'Status'}, {idx:4, label:'Active'}, {idx:5, label:'Order'}
     ],
     menuId:'reviewColToggleMenu', btnId:'reviewColToggleBtn', wrapId:'reviewColToggleWrap',
-    storageKey:'rip_admin_reviewColVisibility'
+    storageKey:'rip_admin_reviewColVisibility',
+    tableSel:'#honestReviewsTable', actionStorageKey:'rip_admin_reviewActionVisibility_v1',
+    actions:[ {key:'edit', label:'Edit'}, {key:'delete', label:'Delete'} ]
+  },
+  userReview: {
+    getTable: ()=>userReviewsTable,
+    cols: [
+      {idx:1, label:'Reviewer'}, {idx:2, label:'Type'}, {idx:3, label:'Rating'},
+      {idx:4, label:'Review'}, {idx:5, label:'Posted'}
+    ],
+    menuId:'userReviewColToggleMenu', btnId:'userReviewColToggleBtn', wrapId:'userReviewColToggleWrap',
+    storageKey:'rip_admin_userReviewColVisibility',
+    tableSel:'#userReviewsTable', actionStorageKey:'rip_admin_userReviewActionVisibility_v1',
+    actions:[ {key:'delete', label:'Delete'} ]
+  },
+  partner: {
+    getTable: ()=>partnersTable,
+    cols: [
+      {idx:1, label:'Partner'}, {idx:2, label:'Contact'}, {idx:3, label:'Location'},
+      {idx:4, label:'Active'}, {idx:5, label:'Order'}
+    ],
+    menuId:'partnerColToggleMenu', btnId:'partnerColToggleBtn', wrapId:'partnerColToggleWrap',
+    storageKey:'rip_admin_partnerColVisibility',
+    tableSel:'#partnersTable', actionStorageKey:'rip_admin_partnerActionVisibility_v1',
+    actions:[ {key:'edit', label:'Edit'}, {key:'delete', label:'Delete'} ]
+  },
+  referral: {
+    getTable: ()=>referralsTable,
+    cols: [
+      {idx:1, label:'Referrer'}, {idx:2, label:'Referrer Phone'}, {idx:3, label:'Tenant'},
+      {idx:4, label:'Tenant Phone'}, {idx:5, label:'Linked User'}, {idx:6, label:'Status'},
+      {idx:7, label:'Submitted'}
+    ],
+    menuId:'referralColToggleMenu', btnId:'referralColToggleBtn', wrapId:'referralColToggleWrap',
+    storageKey:'rip_admin_referralColVisibility',
+    tableSel:'#referralsTable', actionStorageKey:'rip_admin_referralActionVisibility_v1',
+    actions:[ {key:'delete', label:'Delete'} ]
   }
+};
+
+/* ACTION BUTTONS show/hide for Customers / Visits / Reviews.
+   Each button is wrapped in <span class="pact pact-KEY"> (layout-neutral).
+   Hiding = body class pact-hide-<tab>-<key>; the CSS rules are generated here
+   from the configs above so they can't drift out of sync. */
+const _colActionVis = {};
+(function(){
+  let css = '';
+  Object.keys(COL_TOGGLE_CONFIGS).forEach(tab=>{
+    const cfg = COL_TOGGLE_CONFIGS[tab];
+    if(!cfg.actions) return;
+    try{ _colActionVis[tab] = JSON.parse(localStorage.getItem(cfg.actionStorageKey) || '{}') || {}; }catch(e){ _colActionVis[tab] = {}; }
+    cfg.actions.forEach(a=>{ css += `body.pact-hide-${tab}-${a.key} ${cfg.tableSel} .pact-${a.key}{display:none!important}\n`; });
+  });
+  const st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
+})();
+function isColActionVisible(tab, key){ return (_colActionVis[tab] || {})[key] !== false; }
+function applyColActionVisibility(tab){
+  const cfg = COL_TOGGLE_CONFIGS[tab]; if(!cfg || !cfg.actions) return;
+  cfg.actions.forEach(a=> document.body.classList.toggle('pact-hide-'+tab+'-'+a.key, !isColActionVisible(tab, a.key)));
+  const t = cfg.getTable(); if(t) t.columns.adjust();
+}
+Object.keys(COL_TOGGLE_CONFIGS).forEach(applyColActionVisibility);
+function saveColActionVisibility(tab){
+  try{ localStorage.setItem(COL_TOGGLE_CONFIGS[tab].actionStorageKey, JSON.stringify(_colActionVis[tab] || {})); }catch(e){}
+}
+window.onColActionToggle = function(tab, inputEl){
+  (_colActionVis[tab] = _colActionVis[tab] || {})[inputEl.getAttribute('data-act')] = inputEl.checked;
+  saveColActionVisibility(tab);
+  applyColActionVisibility(tab);
+  const allCb = document.querySelector('#'+COL_TOGGLE_CONFIGS[tab].menuId+' input[data-act-all]');
+  if(allCb) allCb.checked = COL_TOGGLE_CONFIGS[tab].actions.every(a=>isColActionVisible(tab,a.key));
+};
+window.onColActionGroupToggle = function(tab, inputEl){
+  _colActionVis[tab] = _colActionVis[tab] || {};
+  COL_TOGGLE_CONFIGS[tab].actions.forEach(a=>{ _colActionVis[tab][a.key] = inputEl.checked; });
+  saveColActionVisibility(tab);
+  applyColActionVisibility(tab);
+  buildColumnToggle(tab);
 };
 
 // Which master column indices the Customer/Appointment PDF exports should
@@ -11497,6 +11786,18 @@ function buildColumnToggle(key){
       <span>${c.label}</span>
     </label>`;
   });
+  if(cfg.actions){
+    html += `<div class="col-toggle-group-label">
+      <span>Actions</span>
+      <label><input type="checkbox" data-act-all="1" ${cfg.actions.every(a=>isColActionVisible(key,a.key))?'checked':''} onchange="onColActionGroupToggle('${key}',this)"> All</label>
+    </div>`;
+    cfg.actions.forEach(a=>{
+      html += `<label class="col-toggle-item">
+        <input type="checkbox" data-act="${a.key}" ${isColActionVisible(key,a.key)?'checked':''} onchange="onColActionToggle('${key}',this)">
+        <span>${a.label}</span>
+      </label>`;
+    });
+  }
   html += `<div class="col-toggle-footer">
     <button type="button" onclick="setAllColumns('${key}',true)">Show all</button>
     <button type="button" onclick="setAllColumns('${key}',false)">Hide all</button>
@@ -11521,6 +11822,13 @@ window.setAllColumns = function(key, show){
   const cfg = COL_TOGGLE_CONFIGS[key];
   const table = cfg.getTable();
   if(!table) return;
+  // Show all / Hide all also apply to every Action-column button.
+  if(cfg.actions){
+    _colActionVis[key] = _colActionVis[key] || {};
+    cfg.actions.forEach(a => { _colActionVis[key][a.key] = !!show; });
+    saveColActionVisibility(key);
+    applyColActionVisibility(key);
+  }
   cfg.cols.forEach(c=>{ table.column(c.idx).visible(show, false); });
   table.columns.adjust();
   buildColumnToggle(key);
