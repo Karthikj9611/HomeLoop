@@ -2926,8 +2926,12 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
       </button>
     </div>
     <div class="form-group">
-      <label class="form-label" for="subscriptionDateTimeInput">Subscription date &amp; time</label>
-      <input class="form-input" type="datetime-local" id="subscriptionDateTimeInput" />
+      <label class="form-label" for="subscriptionFromInput">Subscription from</label>
+      <input class="form-input" type="datetime-local" id="subscriptionFromInput" />
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="subscriptionToInput">Subscription to</label>
+      <input class="form-input" type="datetime-local" id="subscriptionToInput" />
     </div>
     <div class="share-links-footer">
       <button class="confirm-cancel-btn" onclick="closeSubscriptionModal()" style="flex:1">Cancel</button>
@@ -6548,17 +6552,17 @@ window.openSubscriptionModal = function(key){
   const c = _customerCache[key];
   if(!c){ alert('Customer details not loaded yet — please retry.'); return; }
   _subscriptionTargetId = c._id;
-  const input = document.getElementById('subscriptionDateTimeInput');
-  if(c.subscriptionAt){
-    const d = new Date(c.subscriptionAt);
-    // datetime-local wants "YYYY-MM-DDTHH:mm" in LOCAL time — build it from
-    // the date's own local fields rather than toISOString() (which is UTC
-    // and would shift the displayed time).
-    const pad = n => String(n).padStart(2,'0');
-    input.value = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-  } else {
-    input.value = '';
-  }
+  // datetime-local wants "YYYY-MM-DDTHH:mm" in LOCAL time — build it from
+  // the date's own local fields rather than toISOString() (which is UTC
+  // and would shift the displayed time).
+  const pad = n => String(n).padStart(2,'0');
+  const toLocalInput = v => {
+    if(!v) return '';
+    const d = new Date(v);
+    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  };
+  document.getElementById('subscriptionFromInput').value = toLocalInput(c.subscriptionFrom || c.subscriptionAt);
+  document.getElementById('subscriptionToInput').value   = toLocalInput(c.subscriptionTo);
   document.getElementById('subscriptionModal').classList.add('open');
   lockBodyScroll();
 };
@@ -6570,11 +6574,13 @@ window.closeSubscriptionModal = function(){
 window.saveSubscription = async function(){
   if(blockIfViewOnly('customers')) return;
   if(!_subscriptionTargetId) return;
-  const raw = document.getElementById('subscriptionDateTimeInput').value;
-  if(!raw){ showAlertModal('Pick a date and time first.', { variant:'error', title:'Date & time needed' }); return; }
+  const rawFrom = document.getElementById('subscriptionFromInput').value;
+  const rawTo   = document.getElementById('subscriptionToInput').value;
+  if(!rawFrom || !rawTo){ showAlertModal('Pick both From and To date & time.', { variant:'error', title:'Dates needed' }); return; }
+  if(new Date(rawTo) < new Date(rawFrom)){ showAlertModal('"To" must be after "From".', { variant:'error', title:'Invalid range' }); return; }
   const okSub = await showConfirmModal({
-    title: 'Save subscription date?',
-    message: 'This customer\'s subscription date & time will be updated.',
+    title: 'Save subscription period?',
+    message: 'This customer\'s subscription From – To dates will be updated.',
     okText: 'Save',
     variant: 'info'
   });
@@ -6582,7 +6588,7 @@ window.saveSubscription = async function(){
   const res = await fetch(`${BASE}/api/users/${_subscriptionTargetId}/subscription`, {
     method:'PATCH',
     headers:{ ...authHeaders(), 'Content-Type':'application/json' },
-    body: JSON.stringify({ subscriptionAt: new Date(raw).toISOString() })
+    body: JSON.stringify({ subscriptionFrom: new Date(rawFrom).toISOString(), subscriptionTo: new Date(rawTo).toISOString() })
   });
   const data = await res.json().catch(()=>({}));
   if(res.ok){
@@ -9544,7 +9550,7 @@ $(document).ready(function(){
 				  <i class="fas fa-pen"></i><span class="btn-label"> Edit</span>
 				</button></span>
 
-				<span class="pact pact-subscription"><button class="btn-view btn-action-sub${row.subscriptionAt ? ' is-set' : ''}" onclick="openSubscriptionModal('${row.mobile || row._id}')" title="${row.subscriptionAt ? 'Subscribed: ' + plainDateTime(row.subscriptionAt) : 'Set subscription date & time'}">
+				<span class="pact pact-subscription"><button class="btn-view btn-action-sub${(row.subscriptionFrom || row.subscriptionAt) ? ' is-set' : ''}" onclick="openSubscriptionModal('${row.mobile || row._id}')" title="${(row.subscriptionFrom || row.subscriptionAt) ? 'Subscribed: ' + plainDateTime(row.subscriptionFrom || row.subscriptionAt) + (row.subscriptionTo ? ' → ' + plainDateTime(row.subscriptionTo) : '') : 'Set subscription From – To'}">
 				  <i class="fas fa-calendar-check"></i><span class="btn-label"> Subscription</span>
 				</button></span>
 

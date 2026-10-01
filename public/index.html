@@ -7632,6 +7632,31 @@ main.tab-explore .empty-state{display:none !important}
   </div>
 </div>
 
+<!-- ─── Plan expired modal — shown once per expiry when the admin-set subscription
+     period (User.subscriptionTo) has ended; Public call is switched off server-side. ─── -->
+<div class="add-modal-overlay" id="planExpiredModal" role="dialog" aria-modal="true" aria-label="Your plan has expired">
+  <div class="add-modal" id="planExpiredModalBox" style="max-width:400px">
+    <div class="add-modal-header">
+      <div class="add-modal-title">Your plan has expired</div>
+      <button class="modal-close" onclick="closePlanExpiredModal()" aria-label="Close">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <p style="font-size:13.5px;color:var(--text-2);line-height:1.6;margin-bottom:8px">Your subscription ended on <strong id="planExpiredDate"></strong>. Direct owner calling is now switched off for your account.</p>
+    <p style="font-size:13.5px;color:var(--text-2);line-height:1.6;margin-bottom:18px">Contact us to renew your plan and get it back.</p>
+    <div class="help-quick-strip">
+      <a class="help-quick-btn" href="tel:9035205230">
+        <svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.8 19.8 0 0 1 1.61 3.4 2 2 0 0 1 3.59 1.22h3a2 2 0 0 1 2 1.72 12.8 12.8 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 8.78a16 16 0 0 0 6.29 6.29l1.14-1.14a2 2 0 0 1 2.11-.45 12.8 12.8 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+        Call Us
+      </a>
+      <a class="help-quick-btn help-quick-wa" href="https://wa.me/919035205230" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+        WhatsApp
+      </a>
+    </div>
+  </div>
+</div>
+
 <div class="add-modal-overlay" id="helpModal" role="dialog" aria-modal="true" aria-label="Help and support">
   <div class="add-modal" id="helpModalBox" style="max-width:480px">
     <div class="add-modal-header">
@@ -13198,7 +13223,27 @@ async function refreshVerificationStatus() {
     fresh.isVerified = !!data.isVerified;
     fresh.accountType = data.accountType || fresh.accountType;
     localStorage.setItem('homeloop_user', JSON.stringify(fresh));
+    checkPlanExpired(data);
   } catch (err) { /* best-effort */ }
+}
+// Plan-expired popup. Shown once per expiry (keyed by the subscriptionTo value, so a
+// renewed-then-expired-again plan shows it again). Public call itself is switched off
+// server-side by the expiry sweep; this is only the notice.
+function checkPlanExpired(data) {
+  if (!data || !data.subscriptionExpired || !data.subscriptionTo) return;
+  const key = 'hl_planExpiredSeen_' + data.subscriptionTo;
+  try { if (localStorage.getItem(key)) return; } catch (e) {}
+  const el = document.getElementById('planExpiredDate');
+  if (el) el.textContent = new Date(data.subscriptionTo).toLocaleString('en-IN', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' });
+  document.getElementById('planExpiredModal').dataset.seenKey = key;
+  document.getElementById('planExpiredModal').classList.add('open');
+  lockBodyScroll();
+}
+function closePlanExpiredModal() {
+  const m = document.getElementById('planExpiredModal');
+  if (m.dataset.seenKey) { try { localStorage.setItem(m.dataset.seenKey, '1'); } catch (e) {} }
+  m.classList.remove('open');
+  unlockBodyScroll();
 }
 // Call at the top of any "open the submit form" function, right after the
 // existing getLoggedInUser() login check. Shows the pending-verification
@@ -17680,6 +17725,9 @@ document.getElementById('editRestrictedModal').addEventListener('click', functio
 document.getElementById('pendingVerificationModal').addEventListener('click', function(e) {
   if (e.target === this) closePendingVerificationModal();
 });
+document.getElementById('planExpiredModal').addEventListener('click', function(e) {
+  if (e.target === this) closePlanExpiredModal();
+});
 document.getElementById('aboutModal').addEventListener('click', function(e) {
   if (e.target === this) closeAboutModal();
 });
@@ -17715,6 +17763,7 @@ renderShortlistPanel();
 renderRecentlyViewed();
 updateNavAuth();
 refreshVerificationStatus(); // silent — keeps cached isVerified from going stale between logins
+setInterval(refreshVerificationStatus, 60 * 1000); // also lets the plan-expired popup appear without a reload
 loadHonestReviews();
 markRequiredLabels();
 document.getElementById('addModal').addEventListener('input', function(e){

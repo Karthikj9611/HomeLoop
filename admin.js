@@ -889,6 +889,8 @@ self.addEventListener('notificationclick', event => {
         verifiedAt:    u.verifiedAt || null,
         publicCall:    !!u.publicCall,
         subscriptionAt: u.subscriptionAt || null,
+        subscriptionFrom: u.subscriptionFrom || u.subscriptionAt || null,
+        subscriptionTo:   u.subscriptionTo || null,
         listingsCount: propMap[String(u._id)]  || 0,
         visitsCount:   visitMap[String(u._id)] || 0,
         viewsCount:    viewsMap[String(u._id)] || 0,   // total views on this customer's listings
@@ -990,27 +992,61 @@ self.addEventListener('notificationclick', event => {
     try {
       const { id } = req.params;
       if (!mongoose.Types.ObjectId.isValid(id)) return res.status(400).json({ message: 'Invalid user id' });
-      const { subscriptionAt } = req.body || {};
-      let dateVal = null;
-      if (subscriptionAt) {
-        dateVal = new Date(subscriptionAt);
-        if (isNaN(dateVal.getTime())) return res.status(400).json({ message: 'Invalid date/time' });
-      }
+      // Accepts { subscriptionFrom, subscriptionTo } (legacy { subscriptionAt } = from).
+      const body = req.body || {};
+      const parse = (v) => {
+        if (!v) return null;
+        const d = new Date(v);
+        return isNaN(d.getTime()) ? undefined : d;
+      };
+      const fromVal = parse(body.subscriptionFrom !== undefined ? body.subscriptionFrom : body.subscriptionAt);
+      const toVal   = parse(body.subscriptionTo);
+      if (fromVal === undefined || toVal === undefined) return res.status(400).json({ message: 'Invalid date/time' });
+      if (toVal && !fromVal) return res.status(400).json({ message: 'From date is required' });
+      if (fromVal && toVal && toVal < fromVal) return res.status(400).json({ message: 'To date must be after From date' });
       const user = await User.findByIdAndUpdate(
         id,
-        { subscriptionAt: dateVal },
+        { subscriptionAt: fromVal, subscriptionFrom: fromVal, subscriptionTo: toVal, subscriptionExpiryHandled: false },
         { new: true }
       ).lean();
       if (!user) return res.status(404).json({ message: 'Customer not found' });
       res.json({
-        message: dateVal ? 'Subscription updated' : 'Subscription cleared',
+        message: fromVal ? 'Subscription updated' : 'Subscription cleared',
         _id: user._id, subscriptionAt: user.subscriptionAt || null,
+        subscriptionFrom: user.subscriptionFrom || null, subscriptionTo: user.subscriptionTo || null,
       });
     } catch (err) {
       console.error('PATCH /api/users/:id/subscription error:', err);
       res.status(500).json({ message: 'Error updating subscription' });
     }
   });
+
+  // ── SUBSCRIPTION EXPIRY SWEEP ──
+  // When a customer's subscriptionTo has passed: turn their Public call OFF and force-logout
+  // (delete every UserSession). Runs at startup and every minute. Each period is handled
+  // once (subscriptionExpiryHandled), so a user who logs back in afterwards — or an admin
+  // who re-enables Public call by hand — is not kicked again until a new period is saved.
+  async function expireSubscriptions() {
+    try {
+      const due = await User.find({
+        subscriptionTo: { $ne: null, $lte: new Date() },
+        subscriptionExpiryHandled: { $ne: true },
+      }).select('_id').lean();
+      for (const { _id } of due) {
+        // Atomic claim so overlapping runs / multiple instances act only once per user.
+        const claimed = await User.findOneAndUpdate(
+          { _id, subscriptionExpiryHandled: { $ne: true }, subscriptionTo: { $lte: new Date() } },
+          { publicCall: false, subscriptionExpiryHandled: true }
+        ).select('_id').lean();
+        if (!claimed) continue;
+        await UserSession.deleteMany({ userObjectId: _id });
+      }
+    } catch (err) {
+      console.error('expireSubscriptions error:', err.message);
+    }
+  }
+  expireSubscriptions();
+  setInterval(expireSubscriptions, 60 * 1000).unref();
 
   // ── PATCH /api/users/:id (admin: edit a customer's profile) ──
   // Body: { firstName, lastName, email, mobile, accountType }. Powers the Customers

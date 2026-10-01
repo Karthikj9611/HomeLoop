@@ -104,6 +104,14 @@ const UserSchema = new mongoose.Schema({
   // an admin captures/updates manually; nothing reads or enforces it
   // automatically elsewhere yet.
   subscriptionAt: { type: Date, default: null },
+  // Subscription period (From – To) captured by the same button. subscriptionAt
+  // is kept in sync with subscriptionFrom for backward compatibility.
+  subscriptionFrom: { type: Date, default: null },
+  subscriptionTo:   { type: Date, default: null },
+  // true once the expiry sweep (admin.js) has switched this user's Public call off and
+  // (no logout) for the current subscriptionTo. Reset to false whenever an admin saves
+  // a new subscription period, so each period expires exactly once.
+  subscriptionExpiryHandled: { type: Boolean, default: false },
   remarks:   { type: [RemarkEntrySchema], default: [] },
   // Human-readable unique id, same pattern as Property.propertyId (e.g. USER-000001).
   // This is a *display* identifier, distinct from the Mongo _id. Session docs
@@ -549,6 +557,8 @@ app.get('/api/user/me', requireUser, async (req, res) => {
       profilePhoto: user.profilePhoto || '',
       accountType: user.accountType || 'customer',
       isVerified: !!user.isVerified,
+      subscriptionTo: user.subscriptionTo || null,
+      subscriptionExpired: !!(user.subscriptionTo && new Date(user.subscriptionTo) <= new Date()),
       createdAt: user.createdAt,
     });
   } catch (err) {
