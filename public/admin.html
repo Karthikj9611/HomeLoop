@@ -69,7 +69,13 @@
 
 body{
   font-family:'Inter',sans-serif;
-  background:var(--bg);color:var(--ink);
+  background-color:#f6f3ee;
+  background-image:
+    radial-gradient(900px 500px at 8% -5%,rgba(249,115,22,0.10),transparent 60%),
+    radial-gradient(800px 500px at 100% 0%,rgba(99,102,241,0.07),transparent 60%),
+    linear-gradient(180deg,#f8f5f0 0%,#f1eee8 100%);
+  background-attachment:fixed;background-repeat:no-repeat;
+  color:var(--ink);
   min-height:100vh;padding:24px clamp(12px,3vw,32px) 40px;
 }
 
@@ -3156,6 +3162,15 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
 
   <!-- ══ CUSTOMERS PANEL ══ -->
   <div class="tab-panel" id="panel-customers">
+    <!-- Account-type sub-tabs: Tenants / Owners -->
+    <div class="cat-tab-bar" id="custTypeTabs">
+      <button class="cat-tab-btn" data-type="customer" onclick="switchCustType('customer')">
+        <i class="fas fa-user"></i><span class="cat-tab-btn-label" data-mobile="Tenants">Tenants</span><span class="cat-count" id="cust-type-count-customer">—</span>
+      </button>
+      <button class="cat-tab-btn" data-type="owner" onclick="switchCustType('owner')">
+        <i class="fas fa-house-user"></i><span class="cat-tab-btn-label" data-mobile="Owners">Owners</span><span class="cat-count" id="cust-type-count-owner">—</span>
+      </button>
+    </div>
     <div class="card">
       <div class="table-wrapper">
         <div class="bulk-toolbar bulk-toolbar-spaced" id="custBulkToolbar">
@@ -3203,7 +3218,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
               <th></th>
               <th></th>
               <th><input type="text" class="col-filter-input" data-filter-key="name" placeholder="Search…" oninput="onCustColumnFilter('name', this.value, this)"></th>
-              <th><select class="col-filter-select" data-filter-key="accountType" onchange="onCustColumnFilter('accountType', this.value, this)"><option value="">All</option><option value="customer">Customer</option><option value="owner">Owner</option></select></th>
+              <th></th>
               <th><input type="text" class="col-filter-input" data-filter-key="userId" placeholder="Search…" oninput="onCustColumnFilter('userId', this.value, this)"></th>
               <th><input type="text" class="col-filter-input" data-filter-key="mobile" placeholder="Search…" oninput="onCustColumnFilter('mobile', this.value, this)"></th>
               <th><input type="text" class="col-filter-input" data-filter-key="email" placeholder="Search…" oninput="onCustColumnFilter('email', this.value, this)"></th>
@@ -6354,6 +6369,33 @@ function reconcileDateRange(container, filterObj, startKey, endKey){
 const _custColumnFilters = { name:'', userId:'', mobile:'', email:'', accountType:'', listings:'', visits:'', views:'', registeredStart:'', registeredEnd:'', remarks:'' };
 const CUST_FILTER_STORAGE_KEY = 'rip_admin_custFilters';
 loadFilterState(CUST_FILTER_STORAGE_KEY, _custColumnFilters);
+_custColumnFilters.accountType = ''; // type is now chosen via the Tenants / Owners sub-tabs
+
+let _custTypeTab = 'customer';
+try{ const t = localStorage.getItem('kr_admin_custType'); if(t === 'customer' || t === 'owner') _custTypeTab = t; }catch(e){}
+
+window.switchCustType = function(type){
+  _custTypeTab = type;
+  try{ localStorage.setItem('kr_admin_custType', type); }catch(e){}
+  document.querySelectorAll('#custTypeTabs .cat-tab-btn').forEach(btn=>{
+    btn.classList.toggle('active', btn.getAttribute('data-type') === type);
+  });
+  if(dataTable) dataTable.draw();
+};
+
+function updateCustTypeCounts(data){
+  const c = {customer:0, owner:0};
+  data.forEach(r=>{ c[(r.accountType === 'owner') ? 'owner' : 'customer']++; });
+  Object.keys(c).forEach(k=>{
+    const el = document.getElementById('cust-type-count-'+k);
+    if(el) el.innerText = c[k];
+  });
+  document.querySelectorAll('#custTypeTabs .cat-tab-btn').forEach(btn=>{
+    btn.classList.toggle('active', btn.getAttribute('data-type') === _custTypeTab);
+  });
+}
+
+document.querySelectorAll('#custTypeTabs .cat-tab-btn').forEach(function(btn){ btn.classList.toggle('active', btn.getAttribute('data-type') === _custTypeTab); });
 
 window.clearCustFilters = function(){
   clearFiltersGeneric('bookingTable_wrapper', _custColumnFilters, dataTable, CUST_FILTER_STORAGE_KEY, 'custFilterBadge', 'custFilterCount', 'custClearFiltersBtn');
@@ -6385,6 +6427,7 @@ $.fn.dataTable.ext.search.push(function(settings, data, dataIndex){
   const row = dataTable ? dataTable.row(dataIndex).data() : null;
   if(!row) return true;
   const cf = _custColumnFilters;
+  if((row.accountType||'customer') !== _custTypeTab) return false;
   const contains = (val, needle) => String(val||'').toLowerCase().includes(needle.toLowerCase());
   const fullName = row.name || ((row.firstName||'')+' '+(row.lastName||'')).trim();
   if(cf.name && !contains(fullName, cf.name)) return false;
@@ -9388,6 +9431,7 @@ $(document).ready(function(){
       dataSrc: function(res){
         if(!Array.isArray(res)) return [];
         document.getElementById('tab-customers-count').innerText = res.length;
+        updateCustTypeCounts(res);
         return res;
       }
     },
@@ -9487,16 +9531,16 @@ $(document).ready(function(){
     ],
     order:[[10,'desc']],
     orderCellsTop:true,
-    pageLength:10,
+    pageLength:-1,
     scrollX:true,
     language:{
       emptyTable:'<div class="empty-state"><i class="fas fa-inbox"></i>No customers yet</div>',
       zeroRecords:'<div class="empty-state"><i class="fas fa-magnifying-glass"></i>No matching records</div>',
       lengthMenu:'Show _MENU_ entries',
-      info:'Showing _START_–_END_ of _TOTAL_ leads',
+      info:'Showing all _TOTAL_ customers',
       paginate:{previous:'‹ Prev',next:'Next ›'}
     },
-    dom:'<"top-controls"B>rt<"bottom-controls"ip>',
+    dom:'<"top-controls"B>rt<"bottom-controls"i>',
     buttons:[
       /*{
         extend:'csv', text:'<i class="fas fa-file-csv"></i> <span class="bulk-btn-label" data-mobile="CSV">CSV</span>',
@@ -9570,6 +9614,10 @@ $(document).ready(function(){
     ],
     drawCallback:function(){
       try{ syncCustSelectionUI(); }catch(e){ /* table not fully initialized yet */ }
+      try{
+        var _api = this.api(), _n = 1;
+        _api.column(1, {order:'applied', search:'applied'}).nodes().each(function(cell){ cell.innerHTML = String(_n++); });
+      }catch(e){}
     }
   });
   // Merge the auto-created PDF button into our bulk-select toolbar so PDF
