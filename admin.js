@@ -94,13 +94,29 @@ module.exports = function registerAdminRoutes(app, deps) {
 
   const ADMIN_NAME     = 'Admin';
 
-  // Sessions used to expire after 4 hours, which logged admins out mid-work
-  // even though the tab was still open. The admin panel is meant to behave
-  // like "stay signed in until you explicitly log out", so this is now a
-  // long-lived TTL (180 days) — effectively indefinite for normal use, while
-  // still giving Mongo's TTL index a backstop to clean up truly abandoned
-  // sessions instead of keeping them forever.
-  const SESSION_TTL_MS = 180 * 24 * 60 * 60 * 1000;
+  // ── DAILY 7 AM LOGIN ──
+  // Every admin has to sign in again each day at 7:00 AM. A session is only
+  // valid if it was created AFTER the most recent 7:00 AM, so everyone —
+  // including sessions that were already open before this rule — is logged
+  // out the moment 7:00 AM passes. Time zone is India (IST, UTC+5:30, no DST);
+  // override with ADMIN_SESSION_RESET_HOUR / ADMIN_SESSION_TZ_OFFSET_MIN in .env.
+  const SESSION_RESET_HOUR    = Number(process.env.ADMIN_SESSION_RESET_HOUR) || 7;
+  const SESSION_TZ_OFFSET_MIN = process.env.ADMIN_SESSION_TZ_OFFSET_MIN !== undefined && process.env.ADMIN_SESSION_TZ_OFFSET_MIN !== ''
+    ? Number(process.env.ADMIN_SESSION_TZ_OFFSET_MIN) : 330;
+  const LEGACY_SESSION_TTL_MS = 180 * 24 * 60 * 60 * 1000; // old sessions had no createdAt; they were issued with this TTL
+
+  // The most recent 7:00 AM (local) at or before `now`, as a UTC Date.
+  function lastResetBefore(now) {
+    const off = SESSION_TZ_OFFSET_MIN * 60000;
+    const local = new Date(now.getTime() + off);
+    const r = new Date(Date.UTC(local.getUTCFullYear(), local.getUTCMonth(), local.getUTCDate(), SESSION_RESET_HOUR));
+    if (r.getTime() > local.getTime()) r.setUTCDate(r.getUTCDate() - 1);
+    return new Date(r.getTime() - off);
+  }
+  // The next 7:00 AM (local) after `now` — when a session issued now ends.
+  function nextReset(now) {
+    return new Date(lastResetBefore(now).getTime() + 24 * 60 * 60 * 1000);
+  }
 
   const AdminSessionSchema = new mongoose.Schema({
     key:       { type: String, required: true, unique: true, index: true },
@@ -108,28 +124,35 @@ module.exports = function registerAdminRoutes(app, deps) {
     // can tell the primary admin (ADMIN_EMAIL) apart from the numbered
     // sub-admins (ADMIN_EMAIL_2, _3, ...) and enforce per-feature access below.
     email:     { type: String, default: '' },
-    expiresAt: { type: Date, required: true, expires: 0 }, // TTL index: Mongo auto-deletes once expiresAt passes
+    createdAt: { type: Date, default: Date.now },
+    expiresAt: { type: Date, required: true, expires: 0 }, // TTL index: Mongo auto-deletes once expiresAt passes (= next 7 AM)
   });
 
   const AdminSession = mongoose.model('AdminSession', AdminSessionSchema);
 
   async function issueAdminSession(email) {
     const key = crypto.randomBytes(32).toString('hex');
-    await AdminSession.create({ key, email: email || '', expiresAt: new Date(Date.now() + SESSION_TTL_MS) });
+    await AdminSession.create({ key, email: email || '', createdAt: new Date(), expiresAt: nextReset(new Date()) });
     return key;
   }
 
   async function isValidAdminSession(key) {
-    if (!key) return false;
-    const session = await AdminSession.findOne({ key, expiresAt: { $gt: new Date() } }).lean();
-    return !!session;
+    return !!(await getAdminSession(key));
   }
 
   // Returns the session doc (with email) for a key, or null. Used by
-  // requireAdmin to attach req.adminEmail / req.isSuperAdmin.
+  // requireAdmin to attach req.adminEmail / req.isSuperAdmin. A session that
+  // was created before the most recent 7:00 AM is treated as expired.
   async function getAdminSession(key) {
     if (!key) return null;
-    return AdminSession.findOne({ key, expiresAt: { $gt: new Date() } }).lean();
+    const now = new Date();
+    const session = await AdminSession.findOne({ key, expiresAt: { $gt: now } }).lean();
+    if (!session) return null;
+    const issuedAt = session.createdAt
+      ? new Date(session.createdAt).getTime()
+      : new Date(session.expiresAt).getTime() - LEGACY_SESSION_TTL_MS;
+    if (issuedAt < lastResetBefore(now).getTime()) return null;
+    return session;
   }
 
   // ────────────────────────────────────────────────────────────────────────────
