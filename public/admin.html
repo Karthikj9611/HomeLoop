@@ -957,6 +957,21 @@ table.dataTable.no-footer{border-bottom:none!important}
 .aa-item[data-level="edit"] .aa-item-icon{background:var(--gold-light);color:var(--gold-dark)}
 .aa-item-label{flex:1;min-width:0;font-size:0.87rem;font-weight:600;color:var(--ink);line-height:1.3}
 .aa-item[data-level="off"] .aa-item-label{color:var(--ink3);font-weight:500}
+/* Per-button switches (Properties / Customers action column) */
+.aa-item{flex-wrap:wrap}
+.aa-btns{flex:1 1 100%;border-top:1px dashed var(--border);padding-top:8px}
+.aa-item[data-level="off"] .aa-btns{display:none}
+.aa-btns summary{cursor:pointer;display:flex;align-items:center;gap:8px;font-size:0.78rem;font-weight:600;color:var(--ink2);list-style:none}
+.aa-btns summary::-webkit-details-marker{display:none}
+.aa-btns summary:focus-visible{outline:2px solid rgba(249,115,22,0.6);outline-offset:2px;border-radius:6px}
+.aa-btns-count{margin-left:auto;font-weight:500;color:var(--ink3)}
+.aa-btns-grid{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.aa-chip{position:relative;cursor:pointer;display:block}
+.aa-chip input{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:pointer}
+.aa-chip span{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:99px;font-size:0.76rem;font-weight:600;border:1px solid var(--border);background:var(--surface2);color:var(--ink3);text-decoration:line-through}
+.aa-chip input:checked+span{background:var(--ink);color:#fff;border-color:var(--ink);text-decoration:none}
+.aa-chip input:checked+span::before{content:"\2713"}
+.aa-chip input:focus-visible+span{box-shadow:0 0 0 3px rgba(249,115,22,0.4)}
 
 /* Three-way segmented control (real radio buttons, so arrow keys work) */
 .aa-seg{display:inline-flex;padding:3px;border-radius:99px;background:var(--surface2);flex-shrink:0}
@@ -4486,8 +4501,8 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
 let dataTable, propTable, apptTable, honestReviewsTable, userReviewsTable, partnersTable, referralsTable;
 
 
-const BASE = 'https://www.homeloop.in';
-//const BASE = 'http://localhost:5000';
+//const BASE = 'https://www.homeloop.in';
+const BASE = 'http://localhost:5000';
 
 
 /* ── ADMIN KEY – set after login ──
@@ -5439,7 +5454,7 @@ const MODULE_ICONS = {
   stats: 'fa-chart-line', notifications: 'fa-bell',
 };
 function adminInitial(email){ return (email || '?').trim().charAt(0).toUpperCase() || '?'; }
-let CURRENT_ADMIN = { email:'', isSuperAdmin:true, modules:{}, actions:{} };
+let CURRENT_ADMIN = { email:'', isSuperAdmin:true, modules:{}, actions:{}, buttons:{} };
 
 // The last-used tab is remembered in localStorage, which is shared by every
 // admin who signs in on this browser. So it must NOT be reopened blindly: a
@@ -5480,6 +5495,45 @@ function blockIfViewOnly(...moduleKeys){
   return true;
 }
 
+// ── PER-BUTTON ACCESS (set by the super admin in Admin Access -> Action buttons) ──
+// canBtn(module,key): is this Action-column button allowed for this login?
+// Hidden buttons are removed with one generated stylesheet (so it works no matter
+// when the table renders vs when /api/admin/me answers); the matching API routes
+// are also blocked server-side (requireButton in admin.js).
+const BTN_TABLE_SEL = { properties:'#propertyTable', customers:'#bookingTable' };
+const COL_ACT_MODULE = { cust:'customers' };
+function canBtn(moduleKey, key){
+  return !!CURRENT_ADMIN.isSuperAdmin || (((CURRENT_ADMIN.buttons || {})[moduleKey] || {})[key] !== false);
+}
+function applyButtonAccess(){
+  let css = '';
+  if(!CURRENT_ADMIN.isSuperAdmin){
+    // View-only sub-admins: HIDE every button that changes/sends something
+    // (instead of rendering it greyed-out). Only View (and the Verified status
+    // badge on Customers) stay visible.
+    const VIEW_ONLY_HIDE = {
+      properties: ['check','share','tenant','navigate','directions','facebook','instagram','delete','booking'],
+      customers:  ['edit','subscription','delete','logout','resetviews','publiccall'],
+    };
+    Object.keys(VIEW_ONLY_HIDE).forEach(mod => {
+      if(canAct(mod)) return;
+      VIEW_ONLY_HIDE[mod].forEach(key => { css += BTN_TABLE_SEL[mod] + ' .pact-' + key + '{display:none!important}\n'; });
+    });
+    const b = CURRENT_ADMIN.buttons || {};
+    Object.keys(b).forEach(mod => {
+      const sel = BTN_TABLE_SEL[mod]; if(!sel) return;
+      Object.keys(b[mod] || {}).forEach(key => {
+        if(b[mod][key] === false) css += sel + ' .pact-' + key + '{display:none!important}\n';
+      });
+    });
+  }
+  let st = document.getElementById('btnAccessStyle');
+  if(!st){ st = document.createElement('style'); st.id = 'btnAccessStyle'; document.head.appendChild(st); }
+  st.textContent = css;
+  try{ if(typeof propTable !== 'undefined' && propTable) propTable.columns.adjust(); }catch(e){}
+  try{ if(typeof dataTable !== 'undefined' && dataTable) dataTable.columns.adjust(); }catch(e){}
+}
+
 async function loadAdminMe(){
   try {
     const res = await fetch(BASE + '/api/admin/me', { headers: authHeaders() });
@@ -5508,6 +5562,7 @@ async function loadAdminMe(){
 }
 
 function applyAdminAccessUI(){
+  applyButtonAccess();
   const isSuper = !!CURRENT_ADMIN.isSuperAdmin;
   const modules = CURRENT_ADMIN.modules || {};
   const actions = CURRENT_ADMIN.actions || {};
@@ -5587,7 +5642,39 @@ const AA_LEVELS = ['off','view','edit'];
 const AA_LABELS = { off:'Off', view:'View', edit:'Edit' };
 // keys: module order · names: module labels · saved[email]: last-saved levels
 // open: email shown in the modal · trigger: row to refocus on close
-let ADMIN_ACCESS = { keys:[], names:{}, saved:{}, open:null, trigger:null, saving:false, confirming:false };
+let ADMIN_ACCESS = { keys:[], names:{}, saved:{}, open:null, trigger:null, saving:false, confirming:false,
+  btnCatalog:{}, savedBtns:{} }; // btnCatalog: {module:{key:label}} · savedBtns[email]: {module:{key:bool}}
+
+// Normalises a server `buttons` map to a full {module:{key:bool}} (default true).
+function aaCloneBtns(src){
+  const out = {};
+  Object.keys(ADMIN_ACCESS.btnCatalog).forEach(mod => {
+    out[mod] = {};
+    Object.keys(ADMIN_ACCESS.btnCatalog[mod]).forEach(k => {
+      out[mod][k] = !(src && src[mod] && src[mod][k] === false);
+    });
+  });
+  return out;
+}
+function aaBtnsHtml(mod, state){
+  const cat = ADMIN_ACCESS.btnCatalog[mod] || {};
+  const keys = Object.keys(cat);
+  const shown = keys.filter(k => state[k] !== false).length;
+  return `<details class="aa-btns" data-btn-mod="${mod}" ${shown < keys.length ? 'open' : ''}>
+    <summary><i class="fas fa-sliders" aria-hidden="true"></i>Action buttons<span class="aa-btns-count">${shown} of ${keys.length} shown</span></summary>
+    <div class="aa-btns-grid">${keys.map(k => `
+      <label class="aa-chip"><input type="checkbox" data-btn-key="${k}" ${state[k] !== false ? 'checked' : ''} onchange="aaModalRefresh()"><span>${escapeHtml(cat[k])}</span></label>`).join('')}
+    </div></details>`;
+}
+function aaModalButtons(){
+  const out = {};
+  document.querySelectorAll('#aaModalGrid .aa-btns').forEach(d => {
+    const mod = d.getAttribute('data-btn-mod');
+    out[mod] = {};
+    d.querySelectorAll('input[data-btn-key]').forEach(cb => { out[mod][cb.getAttribute('data-btn-key')] = cb.checked; });
+  });
+  return out;
+}
 
 function aaLevelOf(sub, key){
   const canSee = sub.modules[key] !== false;
@@ -5668,11 +5755,14 @@ async function loadAdminAccessTab(){
     }
     ADMIN_ACCESS.keys = Object.keys(data.availableModules);
     ADMIN_ACCESS.names = data.availableModules;
+    ADMIN_ACCESS.btnCatalog = data.availableButtons || {};
     ADMIN_ACCESS.saved = {};
+    ADMIN_ACCESS.savedBtns = {};
     data.subAdmins.forEach(sub => {
       const levels = {};
       ADMIN_ACCESS.keys.forEach(k => { levels[k] = aaLevelOf(sub, k); });
       ADMIN_ACCESS.saved[sub.email] = levels;
+      ADMIN_ACCESS.savedBtns[sub.email] = aaCloneBtns(sub.buttons);
     });
     const emails = data.subAdmins.map(s => s.email);
     list.innerHTML = `
@@ -5698,7 +5788,7 @@ async function loadAdminAccessTab(){
 function aaModalLevels(){
   const out = {};
   document.querySelectorAll('#aaModalGrid .aa-item').forEach(item => {
-    const checked = item.querySelector('input:checked');
+    const checked = item.querySelector('input[type=radio]:checked');
     out[item.getAttribute('data-item-key')] = checked ? checked.value : 'off';
   });
   return out;
@@ -5708,7 +5798,15 @@ function aaChangedCount(){
   if(!email) return 0;
   const base = ADMIN_ACCESS.saved[email] || {};
   const now = aaModalLevels();
-  return Object.keys(now).filter(k => now[k] !== base[k]).length;
+  let n = Object.keys(now).filter(k => now[k] !== base[k]).length;
+  const baseB = ADMIN_ACCESS.savedBtns[email] || {};
+  const nowB = aaModalButtons();
+  Object.keys(nowB).forEach(mod => {
+    Object.keys(nowB[mod]).forEach(k => {
+      if(nowB[mod][k] !== !!((baseB[mod] || {})[k] !== false)) n++;
+    });
+  });
+  return n;
 }
 function aaSetMsg(html, isError){
   const el = document.getElementById('aaModalMsg');
@@ -5724,6 +5822,11 @@ function aaModalRefresh(){
   const values = Object.keys(levels).map(k => levels[k]);
   document.querySelectorAll('#aaModalGrid .aa-item').forEach(item => {
     item.setAttribute('data-level', levels[item.getAttribute('data-item-key')]);
+  });
+  document.querySelectorAll('#aaModalGrid .aa-btns').forEach(d => {
+    const boxes = d.querySelectorAll('input[data-btn-key]');
+    const on = [...boxes].filter(b => b.checked).length;
+    d.querySelector('.aa-btns-count').textContent = on + ' of ' + boxes.length + ' shown';
   });
   const c = aaCount(levels);
   AA_LEVELS.forEach(l => {
@@ -5760,6 +5863,7 @@ function aaOpenModal(btn){
       <span class="aa-item-icon"><i class="fas ${MODULE_ICONS[key] || 'fa-toggle-on'}"></i></span>
       <span class="aa-item-label">${escapeHtml(ADMIN_ACCESS.names[key])}</span>
       ${aaSegHtml('aa-m-' + key, escapeHtml(ADMIN_ACCESS.names[key]) + ' access', lv[key], 'aaModalRefresh()')}
+      ${ADMIN_ACCESS.btnCatalog[key] ? aaBtnsHtml(key, (ADMIN_ACCESS.savedBtns[email] || {})[key] || {}) : ''}
     </div>`).join('');
   aaModalRefresh();
   const overlay = document.getElementById('aaModal');
@@ -5802,7 +5906,7 @@ async function aaRequestClose(){
 function aaFocusables(){
   const box = document.querySelector('#aaModal .aa-modal-box');
   const radios = [...box.querySelectorAll('input[type=radio]')];
-  return [...box.querySelectorAll('button:not([disabled]), input[type=radio]')].filter(el => {
+  return [...box.querySelectorAll('button:not([disabled]), summary, input[type=checkbox], input[type=radio]')].filter(el => {
     if(el.type !== 'radio') return true;
     const group = radios.filter(r => r.name === el.name);
     return el === (group.find(r => r.checked) || group[0]); // one tab stop per group
@@ -5835,6 +5939,7 @@ async function aaSaveModal(){
   const email = ADMIN_ACCESS.open;
   if(!email || ADMIN_ACCESS.saving) return;
   const levels = aaModalLevels();
+  const btns = aaModalButtons();
   const modules = {};
   const actions = {};
   Object.keys(levels).forEach(k => {
@@ -5859,7 +5964,7 @@ async function aaSaveModal(){
     const res = await fetch(BASE + '/api/admin/sub-admins/' + encodeURIComponent(email) + '/modules', {
       method:'PUT',
       headers: Object.assign({'Content-Type':'application/json'}, authHeaders()),
-      body: JSON.stringify({ modules, actions })
+      body: JSON.stringify({ modules, actions, buttons: btns })
     });
     const data = await res.json().catch(() => ({}));
     if(!res.ok){
@@ -5867,6 +5972,7 @@ async function aaSaveModal(){
     } else {
       saved = true;
       ADMIN_ACCESS.saved[email] = levels;
+      ADMIN_ACCESS.savedBtns[email] = btns;
     }
   } catch(e){
     aaSetMsg('<i class="fas fa-circle-exclamation"></i>Network error. Please try again.', true);
@@ -11524,7 +11630,7 @@ function buildPropColumnToggle(){
       <span>Actions</span>
       <label><input type="checkbox" data-act-all="1" ${PROP_ACTION_BTNS.every(a=>isPropActionVisible(a.key))?'checked':''} onchange="onPropActionGroupToggle(this)"> All</label>
     </div>`;
-  PROP_ACTION_BTNS.forEach(a=>{
+  PROP_ACTION_BTNS.filter(a=>canBtn('properties', a.key)).forEach(a=>{
     html += `<label class="col-toggle-item">
       <input type="checkbox" data-act="${a.key}" ${isPropActionVisible(a.key)?'checked':''} onchange="onPropActionToggle(this)">
       <span>${a.label}</span>
@@ -11791,7 +11897,7 @@ function buildColumnToggle(key){
       <span>Actions</span>
       <label><input type="checkbox" data-act-all="1" ${cfg.actions.every(a=>isColActionVisible(key,a.key))?'checked':''} onchange="onColActionGroupToggle('${key}',this)"> All</label>
     </div>`;
-    cfg.actions.forEach(a=>{
+    cfg.actions.filter(a=>canBtn(COL_ACT_MODULE[key], a.key)).forEach(a=>{
       html += `<label class="col-toggle-item">
         <input type="checkbox" data-act="${a.key}" ${isColActionVisible(key,a.key)?'checked':''} onchange="onColActionToggle('${key}',this)">
         <span>${a.label}</span>

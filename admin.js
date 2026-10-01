@@ -158,6 +158,23 @@ module.exports = function registerAdminRoutes(app, deps) {
     notifications: 'Admin Notifications',
   };
 
+  // Per-button layer (finest level). Only the Action-column buttons of these
+  // two tables are controllable. Keys MUST match the `pact-<key>` class on the
+  // button's wrapper span in admin.html (and PROP_ACTION_BTNS / the customer
+  // COL_TOGGLE_CONFIGS actions there). Default is allowed; super admin can
+  // switch individual buttons off per sub-admin from the Admin Access modal.
+  const ADMIN_BUTTONS = {
+    properties: {
+      check: 'Check availability', share: 'Share (WhatsApp)', tenant: 'Tenant share',
+      view: 'View', navigate: 'Navigate', directions: 'Directions',
+      facebook: 'Facebook', instagram: 'Instagram', delete: 'Delete', booking: 'Booking',
+    },
+    customers: {
+      verified: 'Verified badge', view: 'View', edit: 'Edit', subscription: 'Subscription',
+      delete: 'Delete', logout: 'Force logout', resetviews: 'Reset views', publiccall: 'Public call toggle',
+    },
+  };
+
   const AdminPermissionSchema = new mongoose.Schema({
     email:   { type: String, required: true, unique: true, lowercase: true, trim: true, index: true },
     // Explicit false = blocked for this sub-admin; missing/true = allowed
@@ -171,6 +188,9 @@ module.exports = function registerAdminRoutes(app, deps) {
     // data, but every button that changes something is hidden/blocked.
     modules: { type: Map, of: Boolean, default: {} },
     actions: { type: Map, of: Boolean, default: {} },
+    // { <module>: { <buttonKey>: false } } — explicit false hides the button
+    // and blocks its API route for this sub-admin. Missing/true = allowed.
+    buttons: { type: mongoose.Schema.Types.Mixed }, // no default on purpose: a {} default can collide with dotted $set paths on upsert
   });
   const AdminPermission = mongoose.model('AdminPermission', AdminPermissionSchema);
 
@@ -209,6 +229,47 @@ module.exports = function registerAdminRoutes(app, deps) {
       }
     }
     return full;
+  }
+
+  // Full { module: { buttonKey: boolean } } map for an email. Raw saved flags
+  // (default true) — not ANDed with module/action levels, so the Admin Access
+  // modal can restore each switch's own state. Super admin: everything true.
+  async function getButtonPermissions(email) {
+    const full = {};
+    for (const [mod, btns] of Object.entries(ADMIN_BUTTONS)) {
+      full[mod] = {};
+      for (const key of Object.keys(btns)) full[mod][key] = true;
+    }
+    if (email === SUPER_ADMIN_EMAIL) return full;
+    const perm = await AdminPermission.findOne({ email }).lean();
+    const saved = (perm && perm.buttons) || {};
+    for (const mod of Object.keys(full)) {
+      for (const key of Object.keys(full[mod])) {
+        if (saved[mod] && saved[mod][key] === false) full[mod][key] = false;
+      }
+    }
+    return full;
+  }
+
+  // Route-level gate for one specific button — chain AFTER requireModuleAction,
+  // e.g. app.delete('/api/users/mobile/:mobile', requireAdmin,
+  //   requireModuleAction('customers'), requireButton('customers','delete'), ...).
+  // Keeps a hidden button's API route closed even if called by hand.
+  function requireButton(moduleKey, buttonKey) {
+    return async (req, res, next) => {
+      try {
+        if (req.isSuperAdmin) return next();
+        const perm = await AdminPermission.findOne({ email: req.adminEmail }).lean();
+        const blocked = perm && perm.buttons && perm.buttons[moduleKey] && perm.buttons[moduleKey][buttonKey] === false;
+        if (blocked) {
+          return res.status(403).json({ message: 'The primary admin has disabled this action for your account.' });
+        }
+        next();
+      } catch (err) {
+        console.error('requireButton error:', err);
+        res.status(500).json({ message: 'Server error. Please try again.' });
+      }
+    };
   }
 
   // Route-level gate for a single feature — apply right after requireAdmin,
@@ -368,11 +429,12 @@ module.exports = function registerAdminRoutes(app, deps) {
   // which tabs/buttons to show for a sub-admin account.
   app.get('/api/admin/me', requireAdmin, async (req, res) => {
     try {
-      const [modules, actions] = await Promise.all([
+      const [modules, actions, buttons] = await Promise.all([
         getModulePermissions(req.adminEmail),
         getActionPermissions(req.adminEmail),
+        getButtonPermissions(req.adminEmail),
       ]);
-      res.json({ email: req.adminEmail, isSuperAdmin: req.isSuperAdmin, modules, actions });
+      res.json({ email: req.adminEmail, isSuperAdmin: req.isSuperAdmin, modules, actions, buttons });
     } catch (err) {
       console.error('GET /api/admin/me error:', err.message);
       res.status(500).json({ message: 'Error fetching admin profile' });
@@ -394,9 +456,10 @@ module.exports = function registerAdminRoutes(app, deps) {
     try {
       const subAccounts = ADMIN_ACCOUNTS.filter(a => a.email !== SUPER_ADMIN_EMAIL);
       const subAdmins = await Promise.all(subAccounts.map(async a => {
-        const [modules, perm] = await Promise.all([
+        const [modules, perm, buttons] = await Promise.all([
           getModulePermissions(a.email),
           AdminPermission.findOne({ email: a.email }).lean(),
+          getButtonPermissions(a.email),
         ]);
         // Reported here as the raw per-key action flag (default true), not
         // ANDed with module visibility like getActionPermissions() does for
@@ -406,9 +469,9 @@ module.exports = function registerAdminRoutes(app, deps) {
         for (const key of Object.keys(ADMIN_MODULES)) {
           actions[key] = !perm || !perm.actions || perm.actions[key] !== false;
         }
-        return { email: a.email, modules, actions };
+        return { email: a.email, modules, actions, buttons };
       }));
-      res.json({ subAdmins, availableModules: ADMIN_MODULES });
+      res.json({ subAdmins, availableModules: ADMIN_MODULES, availableButtons: ADMIN_BUTTONS });
     } catch (err) {
       console.error('GET /api/admin/sub-admins error:', err.message);
       res.status(500).json({ message: 'Error fetching sub-admins' });
@@ -427,25 +490,38 @@ module.exports = function registerAdminRoutes(app, deps) {
       if (targetEmail === SUPER_ADMIN_EMAIL) {
         return res.status(400).json({ message: 'The primary admin always has full access.' });
       }
-      const { modules, actions } = req.body || {};
-      if ((!modules || typeof modules !== 'object') && (!actions || typeof actions !== 'object')) {
-        return res.status(400).json({ message: 'modules and/or actions object is required' });
+      const { modules, actions, buttons } = req.body || {};
+      if ((!modules || typeof modules !== 'object') && (!actions || typeof actions !== 'object') && (!buttons || typeof buttons !== 'object')) {
+        return res.status(400).json({ message: 'modules, actions and/or buttons object is required' });
       }
       const update = {};
       for (const key of Object.keys(ADMIN_MODULES)) {
         if (modules && key in modules) update[`modules.${key}`] = !!modules[key];
         if (actions && key in actions) update[`actions.${key}`] = !!actions[key];
       }
+      if (buttons && typeof buttons === 'object') {
+        for (const [mod, btns] of Object.entries(ADMIN_BUTTONS)) {
+          const sent = buttons[mod];
+          if (!sent || typeof sent !== 'object') continue;
+          for (const key of Object.keys(btns)) {
+            if (key in sent) update[`buttons.${mod}.${key}`] = !!sent[key];
+          }
+        }
+      }
+      if (!Object.keys(update).length) {
+        return res.status(400).json({ message: 'Nothing valid to update' });
+      }
       await AdminPermission.findOneAndUpdate(
         { email: targetEmail },
         { $set: update },
         { upsert: true }
       );
-      const [fullModules, fullActions] = await Promise.all([
+      const [fullModules, fullActions, fullButtons] = await Promise.all([
         getModulePermissions(targetEmail),
         getActionPermissions(targetEmail),
+        getButtonPermissions(targetEmail),
       ]);
-      res.json({ message: 'Access updated', email: targetEmail, modules: fullModules, actions: fullActions });
+      res.json({ message: 'Access updated', email: targetEmail, modules: fullModules, actions: fullActions, buttons: fullButtons });
     } catch (err) {
       console.error('PUT /api/admin/sub-admins/:email/modules error:', err.message);
       res.status(500).json({ message: 'Error updating sub-admin access' });
@@ -835,7 +911,7 @@ self.addEventListener('notificationclick', event => {
     return User.findOne({ $or: [{ mobile: decoded }, { email: decoded }] });
   }
 
-  app.delete('/api/users/mobile/:mobile', requireAdmin, requireModuleAction('customers'), async (req, res) => {
+  app.delete('/api/users/mobile/:mobile', requireAdmin, requireModuleAction('customers'), requireButton('customers', 'delete'), async (req, res) => {
     try {
       const user = await findUserByMobileOrId(req.params.mobile);
       if (!user) return res.status(404).json({ message: 'Customer not found' });
@@ -848,7 +924,7 @@ self.addEventListener('notificationclick', event => {
   });
 
   // ── POST /api/users/bulk-delete (admin: delete many customers at once) ──
-  app.post('/api/users/bulk-delete', requireAdmin, requireModuleAction('customers'), async (req, res) => {
+  app.post('/api/users/bulk-delete', requireAdmin, requireModuleAction('customers'), requireButton('customers', 'delete'), async (req, res) => {
     try {
       const { mobiles } = req.body || {};
       if (!Array.isArray(mobiles) || !mobiles.length) {
@@ -871,7 +947,7 @@ self.addEventListener('notificationclick', event => {
   // request/proof — see requireVerified in server.js) are blocked with a 403.
   // Body: { verified: true | false }. Defaults to true (the common case —
   // clicking "Verify" on a freshly signed-up user).
-  app.patch('/api/users/:id/verify', requireAdmin, requireModuleAction('customers'), async (req, res) => {
+  app.patch('/api/users/:id/verify', requireAdmin, requireModuleAction('customers'), requireButton('customers', 'verified'), async (req, res) => {
     try {
       const { id } = req.params;
       if (!mongoose.Types.ObjectId.isValid(id)) return res.status(400).json({ message: 'Invalid user id' });
@@ -909,7 +985,7 @@ self.addEventListener('notificationclick', event => {
   // Purely a manual record captured from the Customers grid's "Subscription"
   // button (see openSubscriptionModal() in admin.html) — nothing else in the
   // app reads or enforces this automatically yet.
-  app.patch('/api/users/:id/subscription', requireAdmin, requireModuleAction('customers'), async (req, res) => {
+  app.patch('/api/users/:id/subscription', requireAdmin, requireModuleAction('customers'), requireButton('customers', 'subscription'), async (req, res) => {
     try {
       const { id } = req.params;
       if (!mongoose.Types.ObjectId.isValid(id)) return res.status(400).json({ message: 'Invalid user id' });
@@ -940,7 +1016,7 @@ self.addEventListener('notificationclick', event => {
   // grid's "Edit" button (openCustomerEditModal() in admin.html). Mobile is stored as
   // the plain 10-digit number, same as signup; email is optional (removed when blank).
   // Mobile and email must stay unique across customers -> 409 if another account has them.
-  app.patch('/api/users/:id', requireAdmin, requireModuleAction('customers'), async (req, res) => {
+  app.patch('/api/users/:id', requireAdmin, requireModuleAction('customers'), requireButton('customers', 'edit'), async (req, res) => {
     try {
       const { id } = req.params;
       if (!mongoose.Types.ObjectId.isValid(id)) return res.status(400).json({ message: 'Invalid user id' });
@@ -987,7 +1063,7 @@ self.addEventListener('notificationclick', event => {
   // Body: { publicCall: true | false }. Owner account → their listings show owner number(s) to
   // everyone; tenant account → that tenant (when logged in) sees them on all listings.
   // Both resolved in GET /api/properties.
-  app.patch('/api/users/:id/publicCall', requireAdmin, requireModuleAction('customers'), async (req, res) => {
+  app.patch('/api/users/:id/publicCall', requireAdmin, requireModuleAction('customers'), requireButton('customers', 'publiccall'), async (req, res) => {
     try {
       const { id } = req.params;
       if (!mongoose.Types.ObjectId.isValid(id)) return res.status(400).json({ message: 'Invalid user id' });
@@ -1007,7 +1083,7 @@ self.addEventListener('notificationclick', event => {
   // out by the single-device login check (server.js's hasActiveUserSession)
   // can log in again elsewhere without waiting out the 7-day session TTL.
   // Harmless to call on a user with no active session (just deletes 0 rows).
-  app.delete('/api/users/:id/session', requireAdmin, requireModuleAction('customers'), async (req, res) => {
+  app.delete('/api/users/:id/session', requireAdmin, requireModuleAction('customers'), requireButton('customers', 'logout'), async (req, res) => {
     try {
       const { id } = req.params;
       if (!mongoose.Types.ObjectId.isValid(id)) return res.status(400).json({ message: 'Invalid user id' });
@@ -1032,7 +1108,7 @@ self.addEventListener('notificationclick', event => {
   //      listings are deleted, so visitors can register fresh views afterwards.
   // Only rows belonging to this user / their listings are touched; DailyStat
   // (historical per-day totals) is left alone. Safe to call on an account with no views.
-  app.delete('/api/users/:id/views', requireAdmin, requireModuleAction('customers'), async (req, res) => {
+  app.delete('/api/users/:id/views', requireAdmin, requireModuleAction('customers'), requireButton('customers', 'resetviews'), async (req, res) => {
     try {
       const { id } = req.params;
       if (!mongoose.Types.ObjectId.isValid(id)) return res.status(400).json({ message: 'Invalid user id' });
@@ -1789,7 +1865,7 @@ self.addEventListener('notificationclick', event => {
   });
 
   // ── DELETE /api/properties/:id (example admin-protected route) ──
-  app.delete('/api/properties/:id', requireAdmin, requireModuleAction('properties'), async (req, res) => {
+  app.delete('/api/properties/:id', requireAdmin, requireModuleAction('properties'), requireButton('properties', 'delete'), async (req, res) => {
     try {
       const deleted = await deleteListingById(req.params.id);
       if (!deleted) return res.status(404).json({ message: 'Property not found' });
@@ -1805,7 +1881,7 @@ self.addEventListener('notificationclick', event => {
   // button shown only on rows in the admin Booked tab. ownerId/tenantId are
   // optional — the admin may free-type details for someone not in the Users
   // list — but when present they should be valid User _ids.
-  app.patch('/api/properties/:id/booking-details', requireAdmin, requireModuleAction('properties'), async (req, res) => {
+  app.patch('/api/properties/:id/booking-details', requireAdmin, requireModuleAction('properties'), requireButton('properties', 'booking'), async (req, res) => {
     try {
       const body = req.body || {};
       const asId = (v) => (v && mongoose.Types.ObjectId.isValid(v)) ? v : null;
@@ -1866,7 +1942,7 @@ self.addEventListener('notificationclick', event => {
       cb(ok ? null : new Error('Only image files are allowed'), ok);
     },
   });
-  app.post('/api/upload-booking-images', requireAdmin, requireModuleAction('properties'), bookingUploadLimiter, uploadBookingImages.array('images'), async (req, res) => {
+  app.post('/api/upload-booking-images', requireAdmin, requireModuleAction('properties'), requireButton('properties', 'booking'), bookingUploadLimiter, uploadBookingImages.array('images'), async (req, res) => {
     try {
       const files = req.files || [];
       if (!files.length) return res.status(400).json({ message: 'No images uploaded' });
@@ -1903,7 +1979,7 @@ self.addEventListener('notificationclick', event => {
       cb(ok ? null : new Error('Only image or PDF files are allowed'), ok);
     },
   });
-  app.post('/api/upload-documents', requireAdmin, requireModuleAction('properties'), bookingUploadLimiter, uploadBookingDocs.array('documents'), async (req, res) => {
+  app.post('/api/upload-documents', requireAdmin, requireModuleAction('properties'), requireButton('properties', 'booking'), bookingUploadLimiter, uploadBookingDocs.array('documents'), async (req, res) => {
     try {
       const files = req.files || [];
       if (!files.length) return res.status(400).json({ message: 'No files uploaded' });
@@ -1942,7 +2018,7 @@ self.addEventListener('notificationclick', event => {
   });
 
   // ── POST /api/properties/bulk-delete (admin: delete many properties at once) ──
-  app.post('/api/properties/bulk-delete', requireAdmin, requireModuleAction('properties'), async (req, res) => {
+  app.post('/api/properties/bulk-delete', requireAdmin, requireModuleAction('properties'), requireButton('properties', 'delete'), async (req, res) => {
     try {
       const { ids } = req.body || {};
       if (!Array.isArray(ids) || !ids.length) {
