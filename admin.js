@@ -165,6 +165,7 @@ module.exports = function registerAdminRoutes(app, deps) {
   // switch individual buttons off per sub-admin from the Admin Access modal.
   const ADMIN_BUTTONS = {
     properties: {
+      publiccall: 'Public call toggle',
       check: 'Check availability', share: 'Share (WhatsApp)', tenant: 'Tenant share',
       view: 'View', navigate: 'Navigate', directions: 'Directions',
       facebook: 'Facebook', instagram: 'Instagram', delete: 'Delete', booking: 'Booking',
@@ -1782,7 +1783,7 @@ self.addEventListener('notificationclick', event => {
   // ownerDirectCall → let index visitors call owner.altPhone; ownerPhoneCall → owner.phone.
   // Each is only allowed while that number is actually on file.
   [['ownerDirectCall', 'altPhone', 'alternate'], ['ownerPhoneCall', 'phone', 'owner']].forEach(([flag, numField, label]) => {
-    app.patch('/api/properties/:id/' + flag, requireAdmin, requireModuleAction('properties'), async (req, res) => {
+    app.patch('/api/properties/:id/' + flag, requireAdmin, requireModuleAction('properties'), requireButton('properties', 'publiccall'), async (req, res) => {
       try {
         const value = (req.body || {})[flag];
         if (typeof value !== 'boolean') {
@@ -1803,6 +1804,43 @@ self.addEventListener('notificationclick', event => {
         res.status(500).json({ message: 'Error updating public call' });
       }
     });
+  });
+
+  // ── PATCH /api/properties/:id/publicCall (admin: ONE "Public call" toggle per listing) ──
+  // Sets ownerPhoneCall and ownerDirectCall together in a single update, so the
+  // two flags can never end up out of sync. ON enables each flag whose number is
+  // on file (needs at least one); OFF clears both.
+  app.patch('/api/properties/:id/publicCall', requireAdmin, requireModuleAction('properties'), requireButton('properties', 'publiccall'), async (req, res) => {
+    try {
+      const value = (req.body || {}).publicCall;
+      if (typeof value !== 'boolean') {
+        return res.status(400).json({ message: 'publicCall must be a boolean' });
+      }
+      const update = { ownerPhoneCall: false, ownerDirectCall: false };
+      if (value) {
+        const found = await findListingById(req.params.id, { lean: true });
+        if (!found.doc) return res.status(404).json({ message: 'Property not found' });
+        const owner = found.doc.owner || {};
+        const hasMain = !!String(owner.phone || '').trim();
+        const hasAlt  = !!String(owner.altPhone || '').trim();
+        if (!hasMain && !hasAlt) {
+          return res.status(400).json({ message: 'Add an owner number first' });
+        }
+        update.ownerPhoneCall  = hasMain;
+        update.ownerDirectCall = hasAlt;
+      }
+      const prop = await updateListingById(req.params.id, update, { new: true });
+      if (!prop) return res.status(404).json({ message: 'Property not found' });
+      res.json({
+        message: 'Public call updated',
+        publicCall: !!(prop.ownerPhoneCall || prop.ownerDirectCall),
+        ownerPhoneCall: !!prop.ownerPhoneCall,
+        ownerDirectCall: !!prop.ownerDirectCall,
+      });
+    } catch (err) {
+      console.error('PATCH /api/properties/:id/publicCall error:', err);
+      res.status(500).json({ message: 'Error updating public call' });
+    }
   });
 
   // ── PATCH /api/properties/:id/booked (admin: toggle booked flag) ──

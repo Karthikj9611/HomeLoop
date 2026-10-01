@@ -1418,6 +1418,7 @@ footer i{color:var(--gold)}
 
 /* Action-column buttons: wrapper is layout-neutral; the Columns menu hides one by adding body.pact-hide-<key> */
 .pact{display:contents}
+body.pact-hide-publiccall #propertyTable .pact-publiccall{display:none!important}
 body.pact-hide-check #propertyTable .pact-check{display:none!important}
 body.pact-hide-share #propertyTable .pact-share{display:none!important}
 body.pact-hide-tenant #propertyTable .pact-tenant{display:none!important}
@@ -5639,7 +5640,7 @@ function applyButtonAccess(){
     // (instead of rendering it greyed-out). Only View (and the Verified status
     // badge on Customers) stay visible.
     const VIEW_ONLY_HIDE = {
-      properties: ['check','share','tenant','navigate','directions','facebook','instagram','delete','booking'],
+      properties: ['publiccall','check','share','tenant','navigate','directions','facebook','instagram','delete','booking'],
       customers:  ['edit','subscription','delete','logout','resetviews','publiccall'],
     };
     Object.keys(VIEW_ONLY_HIDE).forEach(mod => {
@@ -5787,6 +5788,7 @@ function aaCloneBtns(src){
 // Falls back gracefully for any key added to ADMIN_BUTTONS later.
 const AA_BTN_META = {
   properties: {
+    publiccall:{i:'fa-phone-volume',d:'Let site visitors call the owner number(s) on a listing'},
     check:{i:'fa-calendar-check',d:'Check if a property is still available'},
     share:{i:'fa-brands fa-whatsapp',d:'Share property details on WhatsApp'},
     tenant:{i:'fa-user-group',d:'Share the tenant version of a listing'},
@@ -8137,6 +8139,45 @@ window.togglePropFlag = async function(id, field, checkboxEl){
   }
 };
 
+/* ── PUBLIC CALL (one toggle per property) ──
+   Drives both underlying flags together: ownerPhoneCall (owner number) and
+   ownerDirectCall (alt number). Only flags whose number exists are sent. */
+window.togglePropPublicCall = async function(id, checkboxEl){
+  if(blockIfViewOnly('properties')){ checkboxEl.checked = !checkboxEl.checked; return; }
+  const desired = checkboxEl.checked;
+  const row = _adminPropCache[id] || {};
+  if(!row.ownerNumber && !row.ownerAltPhone){ checkboxEl.checked = false; return; }
+  const ok = await showConfirmModal({
+    title: `${desired ? 'Turn on' : 'Turn off'} public call?`,
+    message: `This will set "public call" to ${desired ? 'ON' : 'OFF'} for this property.`,
+    okText: desired ? 'Turn on' : 'Turn off',
+    variant: 'info'
+  });
+  if(!ok){ checkboxEl.checked = !desired; return; }
+  checkboxEl.disabled = true;
+  try{
+    const res = await fetch(`${BASE}/api/properties/${id}/publicCall`, {
+      method: 'PATCH',
+      headers: authHeaders({'Content-Type':'application/json'}),
+      body: JSON.stringify({ publicCall: desired })
+    });
+    const data = await res.json().catch(()=>({}));
+    if(!res.ok){ checkboxEl.checked = !desired; alert(data.message || 'Failed to update public call'); return; }
+    checkboxEl.checked = !!data.publicCall;
+    if(_adminPropCache[id]){ _adminPropCache[id].ownerPhoneCall = !!data.ownerPhoneCall; _adminPropCache[id].ownerDirectCall = !!data.ownerDirectCall; }
+    propTable.rows().every(function(){
+      const rd = this.data();
+      if(rd && rd._id === id){ rd.ownerPhoneCall = !!data.ownerPhoneCall; rd.ownerDirectCall = !!data.ownerDirectCall; }
+    });
+    propTable.draw(false);
+  }catch(err){
+    checkboxEl.checked = !desired;
+    alert('Network error updating public call');
+  }finally{
+    checkboxEl.disabled = false;
+  }
+};
+
 /* ── PROMOTED POSITION ──
    Lets the admin type exactly where a listing should land among Promoted
    listings — 1 for first place, 10 for tenth, 20 for twentieth, and so on.
@@ -9695,25 +9736,16 @@ $(document).ready(function(){
           const name  = escapeHtml(row.ownerName||'—');
           return `<div style="display:flex;gap:8px;align-items:center"><div class="prop-title">${name}</div></div>`;
       }},
-      /* 6 – Owner Number (+ toggle: lets index visitors call this number) */
+      /* 6 – Owner Number (public call toggle now lives in the Action column) */
       { data:null, render:(d,t,row)=>{
           if(t!=='display') return row.ownerNumber||'—';
-          if(!row.ownerNumber) return renderOwnerPhone(row);
-          return `<div class="altcall-cell">${renderOwnerPhone(row)}
-            <label class="mini-toggle-wrap altcall-wrap" title="When ON, visitors on the site get a Call owner button that dials this number"><span class="mini-toggle altcall-toggle">
-              <input type="checkbox" ${row.ownerPhoneCall?'checked':''} ${canAct('properties')?'':'disabled'} onchange="togglePropFlag('${row._id}','ownerPhoneCall',this)">
-              <span class="slider"></span>
-            </span><span class="altcall-label">Public call</span></label></div>`;
+          return renderOwnerPhone(row);
       }},
-      /* 7 – Owner Alt Phone (+ toggle: lets index visitors call this number) */
+      /* 7 – Owner Alt Phone (public call toggle now lives in the Action column) */
       { data:'ownerAltPhone', render:(d,t,row)=>{
           if(t!=='display') return d||'';
-          if(!d) return '—'; // no alt number on file → nothing to expose, so no toggle
-          return `<div class="altcall-cell"><a href="tel:${escapeHtml(d)}" class="phone-link">${escapeHtml(d)}</a>
-            <label class="mini-toggle-wrap altcall-wrap" title="When ON, visitors on the site get a Call owner button that dials this number"><span class="mini-toggle altcall-toggle">
-              <input type="checkbox" ${row.ownerDirectCall?'checked':''} ${canAct('properties')?'':'disabled'} onchange="togglePropFlag('${row._id}','ownerDirectCall',this)">
-              <span class="slider"></span>
-            </span><span class="altcall-label">Public call</span></label></div>`;
+          if(!d) return '—';
+          return `<a href="tel:${escapeHtml(d)}" class="phone-link">${escapeHtml(d)}</a>`;
       }},
       /* 8 – Owner Email */
       { data:'ownerEmail', render:(d,t)=>{
@@ -9941,7 +9973,13 @@ $(document).ready(function(){
           const deleteBtn = viewOnly
             ? disabledBtn('fas fa-trash', 'Delete', 'View-only access — ask the primary admin to enable actions')
             : `<button class="btn-view" style="color:#c0392b" title="Delete this listing" onclick="deleteProperty('${row._id}')"><i class="fas fa-trash"></i><span class="btn-label"> Delete</span></button>`;
-          return `<div style="display:inline-flex;gap:6px;flex-wrap:nowrap;justify-content:flex-start">
+          const hasAnyOwnerNo = !!(row.ownerNumber || row.ownerAltPhone);
+          const publicCallToggle = `<label class="mini-toggle-wrap altcall-wrap" title="${hasAnyOwnerNo ? 'When ON, visitors on the site get a Call owner button that dials the owner number(s) on this listing' : 'No owner phone number on file for this listing'}" style="${hasAnyOwnerNo?'':'opacity:.4;cursor:not-allowed'}"><span class="mini-toggle altcall-toggle">
+              <input type="checkbox" ${(row.ownerPhoneCall||row.ownerDirectCall)?'checked':''} ${(!viewOnly && hasAnyOwnerNo)?'':'disabled'} onchange="togglePropPublicCall('${row._id}',this)">
+              <span class="slider"></span>
+            </span><span class="altcall-label">Public call</span></label>`;
+          return `<div style="display:inline-flex;gap:6px;flex-wrap:nowrap;justify-content:flex-start;align-items:center">
+            <span class="pact pact-publiccall">${publicCallToggle}</span>
             <span class="pact pact-check">${checkAvailBtn}</span>
             <span class="pact pact-share">${shareBtn}</span>
             <span class="pact pact-tenant">${tenantShareBtn}</span>
@@ -10140,6 +10178,7 @@ $(document).ready(function(){
   $topControls.find('.dt-buttons').prependTo('#propGridHeaderLeft');
   $topControls.remove();
   loadPropColVisibility();
+  applyPropActionVisibility();
   document.querySelectorAll('#propCatTabs .cat-tab-btn').forEach(btn=>{
     btn.classList.toggle('active', btn.getAttribute('data-cat') === _propCategoryState);
   });
@@ -11850,6 +11889,7 @@ function loadPropColVisibility(){
 
 /* ── ACTION BUTTONS show/hide (Columns menu -> "Actions") ── */
 const PROP_ACTION_BTNS = [
+  {key:'publiccall', label:'Public call toggle'},
   {key:'check',      label:'Check availability'},
   {key:'share',      label:'Share (WhatsApp)'},
   {key:'tenant',     label:'Tenant share'},
@@ -11867,7 +11907,16 @@ try{ _propActionVis = JSON.parse(localStorage.getItem(PROP_ACTION_VIS_KEY) || '{
 function isPropActionVisible(key){ return _propActionVis[key] !== false; }
 function applyPropActionVisibility(){
   PROP_ACTION_BTNS.forEach(a => document.body.classList.toggle('pact-hide-' + a.key, !isPropActionVisible(a.key)));
-  if(typeof propTable !== 'undefined' && propTable){ propTable.columns.adjust(); if(typeof updatePropStickyOffset === 'function') updatePropStickyOffset(); }
+  if(typeof propTable !== 'undefined' && propTable){
+    // No action ticked -> hide the whole Action column (last column).
+    let allowed = PROP_ACTION_BTNS;
+    try{ allowed = PROP_ACTION_BTNS.filter(a => canBtn('properties', a.key)); }catch(e){}
+    if(allowed.length){
+      const anyOn = allowed.some(a => isPropActionVisible(a.key));
+      const last = propTable.settings()[0].aoColumns.length - 1;
+      if(propTable.column(last).visible() !== anyOn) propTable.column(last).visible(anyOn, false);
+    }
+    propTable.columns.adjust(); if(typeof updatePropStickyOffset === 'function') updatePropStickyOffset(); }
 }
 function savePropActionVisibility(){
   try{ localStorage.setItem(PROP_ACTION_VIS_KEY, JSON.stringify(_propActionVis)); }catch(e){}
@@ -12122,7 +12171,19 @@ function isColActionVisible(tab, key){ return (_colActionVis[tab] || {})[key] !=
 function applyColActionVisibility(tab){
   const cfg = COL_TOGGLE_CONFIGS[tab]; if(!cfg || !cfg.actions) return;
   cfg.actions.forEach(a=> document.body.classList.toggle('pact-hide-'+tab+'-'+a.key, !isColActionVisible(tab, a.key)));
-  const t = cfg.getTable(); if(t) t.columns.adjust();
+  const t = cfg.getTable();
+  if(t){
+    // No action ticked in the Columns menu -> hide the whole Action column
+    // (it is always the last column). Only counts buttons this login may use.
+    let allowed = cfg.actions;
+    try{ allowed = cfg.actions.filter(a=>canBtn(COL_ACT_MODULE[tab], a.key)); }catch(e){}
+    if(allowed.length){
+      const anyOn = allowed.some(a=>isColActionVisible(tab, a.key));
+      const last = t.settings()[0].aoColumns.length - 1;
+      if(t.column(last).visible() !== anyOn) t.column(last).visible(anyOn, false);
+    }
+    t.columns.adjust();
+  }
 }
 Object.keys(COL_TOGGLE_CONFIGS).forEach(applyColActionVisibility);
 function saveColActionVisibility(tab){
@@ -12302,6 +12363,7 @@ function loadColVisibility(key){
 
 function initColumnToggle(key){
   loadColVisibility(key);
+  applyColActionVisibility(key);
   buildColumnToggle(key);
 }
 
