@@ -1199,6 +1199,39 @@ table.dataTable.no-footer{border-bottom:none!important}
 .vp-props b{color:var(--gold-dark);font-weight:700}
 .pv-note{margin-top:10px;font-size:.74rem;color:var(--ink3);text-align:center}
 @keyframes vpIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+/* ── Viewed-properties modal (Customers → Views eye): minimal timeline look. Scoped to #viewedPropsModal so the shared .vp-* rules used by the "who viewed this property" modal stay untouched. ── */
+#viewedPropsModal{backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+@media(min-width:521px){#viewedPropsModal .prop-modal{max-width:440px;height:min(84vh,620px);border-radius:28px;box-shadow:0 30px 80px -20px rgba(15,23,42,.45),0 0 0 1px rgba(15,23,42,.05)}}
+#viewedPropsModal .prop-modal-close-btn{width:34px;height:34px;border-radius:50%;background:rgba(15,23,42,.06);border:0;color:var(--ink2);transition:background .15s,transform .15s}
+#viewedPropsModal .prop-modal-close-btn:hover{background:rgba(15,23,42,.12);transform:rotate(90deg)}
+#viewedPropsModal .prop-modal-body{padding:0 1.3rem 1rem}
+#viewedPropsModal .vp-hero{flex-wrap:nowrap;gap:14px;margin:0 -1.3rem 6px;padding:24px 60px 18px 1.3rem;border-bottom:0;background:radial-gradient(120% 160% at 0% 0%,var(--gold-light),transparent 62%)}
+#viewedPropsModal .vp-avatar{flex-basis:50px;width:50px;height:50px;font-size:1.05rem;letter-spacing:.02em;box-shadow:0 8px 20px -6px rgba(234,88,12,.55),0 0 0 3px #fff}
+#viewedPropsModal .vp-name{font-size:1.12rem;letter-spacing:-.01em}
+#viewedPropsModal .vp-sub{font-size:.76rem}
+#viewedPropsModal .vp-count{flex-direction:column;align-items:flex-end;gap:0;padding:0;background:none;border:0;border-radius:0;color:var(--ink);line-height:1}
+#viewedPropsModal .vp-count b{font-size:1.9rem;font-weight:800;letter-spacing:-.03em;background:linear-gradient(135deg,var(--gold2),var(--gold-dark));-webkit-background-clip:text;background-clip:text;color:transparent}
+#viewedPropsModal .vp-count span{font-size:.62rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--ink3);margin-top:4px}
+.vx-list{flex:1;min-height:0;overflow-y:auto;padding:6px 2px 14px;-webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 10px,#000 calc(100% - 22px),transparent);mask-image:linear-gradient(to bottom,transparent 0,#000 10px,#000 calc(100% - 22px),transparent);scrollbar-width:thin}
+.vx-day{font-size:.64rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--ink3);margin:14px 0 6px 2px}
+.vx-day:first-child{margin-top:4px}
+.vx-group{position:relative;margin-left:5px;padding-left:20px;border-left:2px solid var(--border)}
+.vx-row{position:relative;display:flex;align-items:center;gap:10px;padding:11px 12px;margin:2px 0;border-radius:14px;transition:background .15s,transform .15s;animation:vpIn .3s ease both;cursor:default}
+.vx-row:hover{background:var(--surface2);transform:translateX(2px)}
+.vx-row::before{content:"";position:absolute;left:-27px;top:50%;width:10px;height:10px;margin-top:-5px;border-radius:50%;background:var(--vx,#10b981);box-shadow:0 0 0 3px #fff,0 0 0 4px color-mix(in srgb,var(--vx,#10b981) 35%,transparent)}
+.vx-row.sale{--vx:#3b82f6}
+.vx-row.gone{--vx:#cbd5e1;opacity:.6}
+.vx-main{flex:1;min-width:0}
+.vx-pid{font-weight:800;font-size:.95rem;color:var(--ink);letter-spacing:.02em;display:flex;align-items:center;gap:8px}
+.vx-tag{font-size:.6rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:2px 7px;border-radius:6px;background:#ecfdf5;color:#059669}
+.vx-row.sale .vx-tag{background:#eff6ff;color:#2563eb}
+.vx-row.gone .vx-tag{background:#f1f5f9;color:#64748b}
+.vx-meta{font-size:.78rem;color:var(--ink3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vx-ago{flex:0 0 auto;font-size:.76rem;font-weight:600;color:var(--ink3);font-variant-numeric:tabular-nums}
+.vx-skel{height:56px;border-radius:14px;margin:8px 0;background:linear-gradient(90deg,var(--surface2) 25%,var(--border) 37%,var(--surface2) 63%);background-size:400% 100%;animation:vxShim 1.3s ease infinite}
+@keyframes vxShim{0%{background-position:100% 50%}100%{background-position:0 50%}}
+#viewedPropsModal .vp-empty{margin:auto;padding:28px 10px}
 @media(max-width:520px){.vp-card{flex-wrap:wrap}.vp-time{text-align:left;width:100%;padding-left:58px}}
 
 /* ── DATATABLES CONTROLS ── */
@@ -1296,6 +1329,8 @@ footer i{color:var(--gold)}
 
 .btn-view.btn-action-logout{background:var(--gold-light);color:var(--gold-dark);border-color:rgba(184,144,60,0.3)}
 .btn-view.btn-action-logout:hover{background:var(--gold);color:#fff;box-shadow:0 4px 12px rgba(184,144,60,0.3)}
+.btn-view.btn-action-block{background:rgba(220,38,38,0.08);color:var(--red);border-color:rgba(220,38,38,0.25)}
+.btn-view.btn-action-block:hover,.btn-view.btn-action-block.is-blocked{background:var(--red);color:#fff;box-shadow:0 4px 12px rgba(220,38,38,0.3)}
 .btn-view.btn-action-resetviews{background:rgba(220,38,38,0.08);color:var(--red);border-color:rgba(220,38,38,0.25)}
 .btn-view.btn-action-resetviews:hover{background:var(--red);color:#fff}
 .btn-view.btn-action-resetviews:disabled{opacity:0.45;cursor:not-allowed}
@@ -5645,7 +5680,7 @@ function applyButtonAccess(){
     // badge on Customers) stay visible.
     const VIEW_ONLY_HIDE = {
       properties: ['publiccall','check','share','tenant','navigate','directions','facebook','instagram','delete','booking'],
-      customers:  ['edit','subscription','delete','logout','resetviews','publiccall'],
+      customers:  ['edit','subscription','delete','logout','block','resetviews','publiccall'],
     };
     Object.keys(VIEW_ONLY_HIDE).forEach(mod => {
       if(canAct(mod)) return;
@@ -5811,6 +5846,7 @@ const AA_BTN_META = {
     subscription:{i:'fa-crown',d:'Set or change their subscription',danger:1},
     delete:{i:'fa-trash-can',d:'Permanently remove a customer',danger:1},
     logout:{i:'fa-right-from-bracket',d:'Clear their session so they can log in elsewhere',danger:1},
+    block:{i:'fa-ban',d:'Block a customer from logging in',danger:1},
     resetviews:{i:'fa-eraser',d:'Delete viewed-property records and listing views',danger:1},
     publiccall:{i:'fa-phone-volume',d:'Toggle owner numbers visible to everyone',danger:1}
   }
@@ -6679,6 +6715,38 @@ window.forceLogoutUser = async function(id){
     alert(data.message || 'Done');
   } else {
     alert(data.message || 'Error clearing session');
+  }
+};
+
+/* ── BLOCK / UNBLOCK ──
+   Blocking deletes all of the customer's sessions (logged out everywhere) and makes
+   POST /api/user/login answer 403 "Your account has been blocked". Unblocking lets them in again. */
+window.toggleBlockUser = async function(id, blocked){
+  if(blockIfViewOnly('customers')) return;
+  const ok = await showConfirmModal({
+    title: blocked ? 'Block this customer?' : 'Unblock this customer?',
+    message: blocked
+      ? 'They will be logged out on all devices right away and will see "Your account has been blocked" whenever they try to log in.'
+      : 'They will be able to log in again.',
+    okText: blocked ? 'Block' : 'Unblock',
+    variant: blocked ? 'danger' : 'info'
+  });
+  if(!ok) return;
+  try{
+    const res = await fetch(`${BASE}/api/users/${id}/block`, {
+      method:'PATCH',
+      headers:{ ...authHeaders(), 'Content-Type':'application/json' },
+      body: JSON.stringify({ blocked })
+    });
+    const data = await res.json().catch(()=>({}));
+    if(!res.ok){ alert(data.message || 'Error updating block status'); return; }
+    dataTable.rows().every(function(){
+      const rd = this.data();
+      if(rd && rd._id === id){ rd.isBlocked = !!data.isBlocked; this.invalidate(); }
+    });
+    dataTable.draw(false);
+  }catch(e){
+    alert('Network error updating block status');
   }
 };
 
@@ -9562,6 +9630,10 @@ $(document).ready(function(){
 				  <i class="fas fa-right-from-bracket"></i><span class="btn-label"> Force logout</span>
 				</button></span>
 
+				<span class="pact pact-block"><button class="btn-view btn-action-block${row.isBlocked ? ' is-blocked' : ''}" onclick="toggleBlockUser('${row._id}', ${row.isBlocked ? 'false' : 'true'})" title="${row.isBlocked ? 'Blocked — click to unblock' : 'Block this customer from logging in'}">
+				  <i class="fas ${row.isBlocked ? 'fa-lock-open' : 'fa-ban'}"></i><span class="btn-label"> ${row.isBlocked ? 'Unblock' : 'Block'}</span>
+				</button></span>
+
 				<span class="pact pact-resetviews"><button class="btn-view btn-action-resetviews" onclick="resetUserViews('${row._id}')" title="Delete this customer's viewed-property records and the views on their own listings" ${(window.DISABLE_RESET_VIEWS_BTN || !canAct('customers'))?'disabled':''}>
 				  <i class="fas fa-rotate-left"></i><span class="btn-label"> Reset views</span>
 				</button></span>
@@ -12093,6 +12165,7 @@ const COL_TOGGLE_CONFIGS = {
       {key:'subscription', label:'Subscription'},
       {key:'delete',       label:'Delete'},
       {key:'logout',       label:'Force logout'},
+      {key:'block',        label:'Block / Unblock'},
       {key:'resetviews',   label:'Reset views'},
       {key:'publiccall',   label:'Public call toggle'}
     ]
@@ -12924,9 +12997,9 @@ async function openViewedPropsModal(key){
   document.getElementById('viewedPropsModalName').textContent = fullName;
   document.getElementById('viewedPropsModalSub').textContent = c.email || c.mobile || '';
   const countEl = document.getElementById('viewedPropsModalCount');
-  const setCount = n => { countEl.innerHTML = '<i class="fas fa-eye"></i> ' + n + (n === 1 ? ' property viewed' : ' properties viewed'); };
+  const setCount = n => { countEl.innerHTML = '<b>' + n + '</b><span>viewed</span>'; };
   setCount(Number(c.propertiesViewed || 0));
-  box.innerHTML = '<div class="vp-empty"><i class="fas fa-circle-notch fa-spin"></i>Loading…</div>';
+  box.innerHTML = '<div class="vx-list"><div class="vx-skel"></div><div class="vx-skel"></div><div class="vx-skel"></div></div>';
   modal.classList.add('open');
   document.body.style.overflow = 'hidden';
   const ago = d => {
@@ -12948,23 +13021,38 @@ async function openViewedPropsModal(key){
       box.innerHTML = '<div class="vp-empty"><i class="fas fa-house-circle-xmark"></i>No properties viewed yet.</div>';
       return;
     }
-    box.innerHTML = '<div class="vp-list">' + list.map((v, i) => {
-      const idTxt = v.removed ? 'Listing removed' : (v.propertyId || v._id);
-      const st = String(v.status || '');
-      const badge = v.removed ? '<span class="vp-badge gone">Removed</span>'
-        : st ? '<span class="vp-badge' + (/sale/i.test(st) ? ' sale' : '') + '">' + _adminModalEsc(st) + '</span>' : '';
-      const loc = [v.area, v.city].filter(Boolean).join(', ');
+    // Minimal timeline: grouped by day, one line of meta, relative time only (full stamp on hover).
+    const dayKey = d => d ? d.toDateString() : 'x';
+    const dayLabel = d => {
+      if(!d) return 'Earlier';
+      const t = new Date(); t.setHours(0,0,0,0);
+      const diff = Math.round((t - new Date(d.getFullYear(), d.getMonth(), d.getDate())) / 86400000);
+      return diff <= 0 ? 'Today' : diff === 1 ? 'Yesterday' : fmtDateDMY(d);
+    };
+    const groups = [];
+    list.forEach(v => {
       const d = v.lastViewedAt ? new Date(v.lastViewedAt) : null;
-      return '<div class="vp-card' + (v.removed ? ' removed' : '') + '" style="animation-delay:' + Math.min(i, 8) * 40 + 'ms">' +
-        '<div class="vp-ico"><i class="fas fa-building"></i></div>' +
-        '<div class="vp-main">' +
-          '<div class="vp-top"><span class="vp-pid">' + _adminModalEsc(idTxt) + '</span>' + badge + '</div>' +
-          (v.type ? '<div class="vp-type">' + _adminModalEsc(v.type) + '</div>' : '') +
-          (loc ? '<div class="vp-loc"><i class="fas fa-location-dot"></i>' + _adminModalEsc(loc) + '</div>' : '') +
-        '</div>' +
-        (d ? '<div class="vp-time"><b>' + _adminModalEsc(ago(d)) + '</b>' + _adminModalEsc(fmtDateDMY(d) + ' ' + fmtTimeHM(d)) + '</div>' : '') +
-      '</div>';
-    }).join('') + '</div>';
+      const k = dayKey(d);
+      let g = groups[groups.length - 1];
+      if(!g || g.k !== k){ g = { k, d, items: [] }; groups.push(g); }
+      g.items.push({ v, d });
+    });
+    let n = 0;
+    box.innerHTML = '<div class="vx-list">' + groups.map(g =>
+      '<div class="vx-day">' + _adminModalEsc(dayLabel(g.d)) + '</div><div class="vx-group">' +
+      g.items.map(({ v, d }) => {
+        const idTxt = v.removed ? 'Listing removed' : (v.propertyId || v._id);
+        const st = String(v.status || '').replace(/^for\s+/i, '');
+        const cls = v.removed ? ' gone' : /sale/i.test(st) ? ' sale' : '';
+        const tag = v.removed ? 'Removed' : st;
+        const meta = [v.type, [v.area, v.city].filter(Boolean)[0]].filter(Boolean).join(' · ');
+        return '<div class="vx-row' + cls + '"' + (d ? ' title="' + _adminModalEsc(fmtDateDMY(d) + ' ' + fmtTimeHM(d)) + '"' : '') + ' style="animation-delay:' + Math.min(n++, 10) * 35 + 'ms">' +
+          '<div class="vx-main"><div class="vx-pid">' + _adminModalEsc(idTxt) + (tag ? '<span class="vx-tag">' + _adminModalEsc(tag) + '</span>' : '') + '</div>' +
+          (meta ? '<div class="vx-meta">' + _adminModalEsc(meta) + '</div>' : '') + '</div>' +
+          (d ? '<span class="vx-ago">' + _adminModalEsc(ago(d)) + '</span>' : '') +
+        '</div>';
+      }).join('') + '</div>'
+    ).join('') + '</div>';
   }catch(e){
     box.innerHTML = '<div class="vp-empty"><i class="fas fa-triangle-exclamation"></i>Could not load the list. Please try again.</div>';
   }
@@ -14759,7 +14847,7 @@ markRequiredLabels();
           <div class="vp-name" id="viewedPropsModalName"></div>
           <div class="vp-sub" id="viewedPropsModalSub"></div>
         </div>
-        <div class="vp-count" id="viewedPropsModalCount"><i class="fas fa-eye"></i> Properties viewed</div>
+        <div class="vp-count" id="viewedPropsModalCount"><b>0</b><span>viewed</span></div>
       </div>
       <div id="viewedPropsModalBox"></div>
     </div>

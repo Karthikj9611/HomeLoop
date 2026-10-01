@@ -6809,7 +6809,7 @@ main.tab-explore .empty-state{display:none !important}
       <div id="authLoginContactField">
         <div class="form-group">
           <label class="form-label">Phone or email</label>
-          <input class="form-input" type="text" id="auth-contact" />
+          <input class="form-input" type="text" id="auth-contact" inputmode="text" autocomplete="username" oninput="sanitizeContactInput(this)" />
         </div>
       </div>
       <div id="authSignupContactFields" style="display:none">
@@ -13601,6 +13601,7 @@ async function submitAuth() {
   if (isLogin) {
     const contact = document.getElementById('auth-contact').value.trim();
     if (!contact) { showToast('Please enter your mobile number', 'warning'); return; }
+    if (!contact.includes('@') && !isValidIndianMobile(contact)) { showToast('Enter a valid 10-digit mobile number starting with 6, 7, 8 or 9', 'warning'); return; }
     body = { contact };
   } else {
     if (!selectedAccountType) {
@@ -17638,6 +17639,13 @@ function sanitizeMobileInput(el) {
     digits = digits.slice(1);
   }
   el.value = digits.slice(0, 10);
+}
+
+// Login "Phone or email" field: if the person is typing an email (any letter or @)
+// leave it alone; otherwise treat it as a phone number — digits only, max 10.
+function sanitizeContactInput(el) {
+  if (/[a-z@]/i.test(el.value)) return;
+  sanitizeMobileInput(el);
 }
 
 // Lets the person pick a number straight from their phone's contacts

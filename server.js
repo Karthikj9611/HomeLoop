@@ -112,6 +112,9 @@ const UserSchema = new mongoose.Schema({
   // (no logout) for the current subscriptionTo. Reset to false whenever an admin saves
   // a new subscription period, so each period expires exactly once.
   subscriptionExpiryHandled: { type: Boolean, default: false },
+  // Admin "Block" (Customers grid): blocked accounts are logged out everywhere and refused at login.
+  isBlocked: { type: Boolean, default: false, index: true },
+  blockedAt: { type: Date, default: null },
   remarks:   { type: [RemarkEntrySchema], default: [] },
   // Human-readable unique id, same pattern as Property.propertyId (e.g. USER-000001).
   // This is a *display* identifier, distinct from the Mongo _id. Session docs
@@ -509,6 +512,11 @@ app.post('/api/user/login', userAuthLimiter, async (req, res) => {
     const user = await User.findOne(query);
     // Passwordless login: the number/email just has to exist in the DB.
     if (!user) return res.status(401).json({ message: 'No account found. Please sign up.' });
+
+    // Blocked by admin — checked before the single-device check so they always see this message.
+    if (user.isBlocked) {
+      return res.status(403).json({ message: 'Your account has been blocked. Please contact support.', code: 'ACCOUNT_BLOCKED' });
+    }
 
     // Single-device login: refuse a second concurrent login instead of
     // silently signing the first device out. The first device stays logged

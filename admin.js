@@ -172,7 +172,7 @@ module.exports = function registerAdminRoutes(app, deps) {
     },
     customers: {
       verified: 'Verified badge', view: 'View', edit: 'Edit', subscription: 'Subscription',
-      delete: 'Delete', logout: 'Force logout', resetviews: 'Reset views', publiccall: 'Public call toggle',
+      delete: 'Delete', logout: 'Force logout', resetviews: 'Reset views', publiccall: 'Public call toggle', block: 'Block / Unblock',
     },
   };
 
@@ -888,6 +888,7 @@ self.addEventListener('notificationclick', event => {
         isVerified:    !!u.isVerified,
         verifiedAt:    u.verifiedAt || null,
         publicCall:    !!u.publicCall,
+        isBlocked:     !!u.isBlocked,
         subscriptionAt: u.subscriptionAt || null,
         subscriptionFrom: u.subscriptionFrom || u.subscriptionAt || null,
         subscriptionTo:   u.subscriptionTo || null,
@@ -1022,10 +1023,11 @@ self.addEventListener('notificationclick', event => {
   });
 
   // ── SUBSCRIPTION EXPIRY SWEEP ──
-  // When a customer's subscriptionTo has passed: turn their Public call OFF and force-logout
-  // (delete every UserSession). Runs at startup and every minute. Each period is handled
+  // When a customer's subscriptionTo has passed: turn their Public call OFF. They stay logged in
+  // (no session is touched) — GET /api/properties reads User.publicCall on every request, so
+  // owner numbers disappear on their next load/refresh. Runs at startup and every minute. Each period is handled
   // once (subscriptionExpiryHandled), so a user who logs back in afterwards — or an admin
-  // who re-enables Public call by hand — is not kicked again until a new period is saved.
+  // who re-enables Public call by hand — is not switched off again until a new period is saved.
   async function expireSubscriptions() {
     try {
       const due = await User.find({
@@ -1034,12 +1036,10 @@ self.addEventListener('notificationclick', event => {
       }).select('_id').lean();
       for (const { _id } of due) {
         // Atomic claim so overlapping runs / multiple instances act only once per user.
-        const claimed = await User.findOneAndUpdate(
+        await User.findOneAndUpdate(
           { _id, subscriptionExpiryHandled: { $ne: true }, subscriptionTo: { $lte: new Date() } },
           { publicCall: false, subscriptionExpiryHandled: true }
-        ).select('_id').lean();
-        if (!claimed) continue;
-        await UserSession.deleteMany({ userObjectId: _id });
+        );
       }
     } catch (err) {
       console.error('expireSubscriptions error:', err.message);
@@ -1129,6 +1129,27 @@ self.addEventListener('notificationclick', event => {
     } catch (err) {
       console.error('DELETE /api/users/:id/session error:', err);
       res.status(500).json({ message: 'Error clearing user session' });
+    }
+  });
+
+  // ── PATCH /api/users/:id/block (admin: block / unblock a customer) ──
+  // Body: { blocked: true | false }. Blocking also deletes every session so they are logged out
+  // right away; POST /api/user/login then refuses them with "Your account has been blocked".
+  app.patch('/api/users/:id/block', requireAdmin, requireModuleAction('customers'), requireButton('customers', 'block'), async (req, res) => {
+    try {
+      const { id } = req.params;
+      if (!mongoose.Types.ObjectId.isValid(id)) return res.status(400).json({ message: 'Invalid user id' });
+      const blocked = (req.body || {}).blocked;
+      if (typeof blocked !== 'boolean') return res.status(400).json({ message: 'blocked must be a boolean' });
+      const user = await User.findByIdAndUpdate(
+        id, { isBlocked: blocked, blockedAt: blocked ? new Date() : null }, { new: true }
+      ).lean();
+      if (!user) return res.status(404).json({ message: 'Customer not found' });
+      if (blocked) await UserSession.deleteMany({ userObjectId: id });
+      res.json({ message: blocked ? 'Customer blocked and logged out' : 'Customer unblocked', _id: user._id, isBlocked: !!user.isBlocked });
+    } catch (err) {
+      console.error('PATCH /api/users/:id/block error:', err);
+      res.status(500).json({ message: 'Error updating block status' });
     }
   });
 
