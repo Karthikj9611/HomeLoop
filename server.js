@@ -428,6 +428,9 @@ app.post('/api/user/signup', userAuthLimiter, async (req, res) => {
     const { firstName, lastName, email, mobile, accountType, profilePic } = req.body || {};
 
     if (!firstName || !String(firstName).trim()) return res.status(400).json({ message: 'First name is required' });
+    // Names: English letters only (no spaces/digits/specials); first name 3–30 letters, last name optional (max 30).
+    if (!/^[A-Za-z]{3,30}$/.test(String(firstName).trim())) return res.status(400).json({ message: 'Please enter a valid first name' });
+    if (lastName && String(lastName).trim() && !/^[A-Za-z]{1,30}$/.test(String(lastName).trim())) return res.status(400).json({ message: 'Please enter a valid last name' });
     if (!email     || !String(email).trim())     return res.status(400).json({ message: 'Email is required' });
     if (!/^[^\s@"'<>\\]+@[^\s@"'<>\\]+\.[^\s@"'<>\\]+$/.test(String(email).trim())) return res.status(400).json({ message: 'Please enter a valid email address' });
     if (!mobile    || !String(mobile).trim())    return res.status(400).json({ message: 'Mobile number is required' });

@@ -6798,11 +6798,11 @@ main.tab-explore .empty-state{display:none !important}
         <div class="form-row">
           <div class="form-group">
             <label class="form-label">First name <span style="color:var(--brand)">*</span></label>
-            <input class="form-input" type="text" id="auth-firstname" oninput="saveSignupDraft()" />
+            <input class="form-input" type="text" id="auth-firstname" maxlength="30" autocomplete="given-name" oninput="sanitizeNameInput(this); saveSignupDraft()" />
           </div>
           <div class="form-group">
             <label class="form-label">Last name</label>
-            <input class="form-input" type="text" id="auth-lastname" oninput="saveSignupDraft()" />
+            <input class="form-input" type="text" id="auth-lastname" maxlength="30" autocomplete="family-name" oninput="sanitizeNameInput(this); saveSignupDraft()" />
           </div>
         </div>
       </div>
@@ -13616,6 +13616,8 @@ async function submitAuth() {
     const mobile            = document.getElementById('auth-mobile').value.trim();
 
     if (!firstName) { showToast('Please enter your first name', 'warning'); return; }
+    if (!isValidName(firstName, 3)) { showToast('Please enter a valid first name', 'warning'); return; }
+    if (lastName && !isValidName(lastName)) { showToast('Please enter a valid last name', 'warning'); return; }
     if (!email)  { showToast('Please enter your email', 'warning'); return; }
     if (!mobile) { showToast('Please enter your mobile number', 'warning'); return; }
     if (!isValidIndianMobile(mobile)) { showToast('Enter a valid 10-digit mobile number starting with 6, 7, 8 or 9', 'warning'); return; }
@@ -17640,6 +17642,12 @@ function sanitizeMobileInput(el) {
   }
   el.value = digits.slice(0, 10);
 }
+
+/* ── Name validation: English letters A–Z / a–z only — no spaces, digits or special characters. First name needs at least 3 letters. ── */
+function sanitizeNameInput(el) {
+  el.value = el.value.replace(/[^A-Za-z]/g, '').slice(0, 30);
+}
+function isValidName(v, min) { return new RegExp('^[A-Za-z]{' + (min || 1) + ',30}$').test((v || '').trim()); }
 
 // Login "Phone or email" field: if the person is typing an email (any letter or @)
 // leave it alone; otherwise treat it as a phone number — digits only, max 10.
