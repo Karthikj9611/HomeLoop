@@ -13,6 +13,43 @@ const bcrypt     = require('bcryptjs');
 const multer     = require('multer');
 const sharp      = require('sharp');
 const { sendEmailWithBrevo, otpEmailTemplate, passwordResetOtpEmailTemplate } = require('./mail');
+const dns = require('dns').promises;
+
+// ── Email checks used by signup ──
+// 1) Strict format  2) the domain actually exists and can receive mail (MX, or A/AAAA as the
+// RFC 5321 fallback). This proves the DOMAIN is real, not that the mailbox exists — only the
+// email OTP (/api/user/signup/send-otp → verify-otp) proves that. DNS hiccups fail OPEN
+// (never block a real user because DNS timed out); only "no such domain / no mail records" is rejected.
+const EMAIL_FORMAT_RE = /^[A-Za-z0-9._%+\-]+@[A-Za-z0-9\-]+(?:\.[A-Za-z0-9\-]+)*\.[A-Za-z]{2,}$/;
+const _mxCache = new Map(); // domain -> { ok, at }
+const MX_CACHE_MS = 60 * 60 * 1000;
+function _dnsWithTimeout(p, ms = 3000) {
+  return Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(Object.assign(new Error('dns timeout'), { code: 'ETIMEOUT' })), ms))]);
+}
+async function emailDomainCanReceiveMail(email) {
+  const domain = String(email).split('@')[1].toLowerCase();
+  const hit = _mxCache.get(domain);
+  if (hit && Date.now() - hit.at < MX_CACHE_MS) return hit.ok;
+  const noRecord = (e) => e && (e.code === 'ENOTFOUND' || e.code === 'ENODATA');
+  let ok;
+  try {
+    const mx = await _dnsWithTimeout(dns.resolveMx(domain));
+    ok = mx.length > 0 && !(mx.length === 1 && !mx[0].exchange); // "null MX" = domain accepts no mail
+  } catch (e) {
+    if (noRecord(e)) {
+      try {
+        const [a, aaaa] = await Promise.allSettled([_dnsWithTimeout(dns.resolve4(domain)), _dnsWithTimeout(dns.resolve6(domain))]);
+        const found = (r) => r.status === 'fulfilled' && r.value.length > 0;
+        const failedHard = [a, aaaa].some(r => r.status === 'rejected' && !noRecord(r.reason));
+        ok = found(a) || found(aaaa) || failedHard;
+      } catch (_) { ok = true; }
+    } else {
+      return true; // timeout / SERVFAIL / resolver down → don't block, don't cache
+    }
+  }
+  _mxCache.set(domain, { ok, at: Date.now() });
+  return ok;
+}
 
 // ── Env checks ──
 if (!process.env.MONGODB_URI)   throw new Error('MONGODB_URI env var is required');
@@ -355,7 +392,8 @@ app.post('/api/user/signup/send-otp', otpLimiter, async (req, res) => {
     const { email } = req.body || {};
     if (!email || !String(email).trim()) return res.status(400).json({ message: 'Email is required' });
     const cleanEmail = String(email).toLowerCase().trim();
-    if (!/^[^\s@"'<>\\]+@[^\s@"'<>\\]+\.[^\s@"'<>\\]+$/.test(cleanEmail)) return res.status(400).json({ message: 'Please enter a valid email address' });
+    if (!EMAIL_FORMAT_RE.test(cleanEmail)) return res.status(400).json({ message: 'Please enter a valid email address' });
+    if (!(await emailDomainCanReceiveMail(cleanEmail))) return res.status(400).json({ message: 'Email domain not found. Please check your email address.' });
 
     const existingUser = await User.findOne({ email: cleanEmail });
     if (existingUser) return res.status(409).json({ message: 'Account already exists for this email. Please log in.' });
@@ -432,7 +470,8 @@ app.post('/api/user/signup', userAuthLimiter, async (req, res) => {
     if (!/^[A-Za-z]{3,30}$/.test(String(firstName).trim())) return res.status(400).json({ message: 'Please enter a valid first name' });
     if (lastName && String(lastName).trim() && !/^[A-Za-z]{1,30}$/.test(String(lastName).trim())) return res.status(400).json({ message: 'Please enter a valid last name' });
     if (!email     || !String(email).trim())     return res.status(400).json({ message: 'Email is required' });
-    if (!/^[^\s@"'<>\\]+@[^\s@"'<>\\]+\.[^\s@"'<>\\]+$/.test(String(email).trim())) return res.status(400).json({ message: 'Please enter a valid email address' });
+    if (!EMAIL_FORMAT_RE.test(String(email).trim())) return res.status(400).json({ message: 'Please enter a valid email address' });
+    if (!(await emailDomainCanReceiveMail(String(email).trim()))) return res.status(400).json({ message: 'Email domain not found. Please check your email address.' });
     if (!mobile    || !String(mobile).trim())    return res.status(400).json({ message: 'Mobile number is required' });
     if (!/^[\d+\-\s]{7,15}$/.test(String(mobile).trim())) return res.status(400).json({ message: 'Please enter a valid mobile number' });
 

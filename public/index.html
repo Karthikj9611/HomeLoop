@@ -13619,6 +13619,7 @@ async function submitAuth() {
     if (!isValidName(firstName, 3)) { showToast('Please enter a valid first name', 'warning'); return; }
     if (lastName && !isValidName(lastName)) { showToast('Please enter a valid last name', 'warning'); return; }
     if (!email)  { showToast('Please enter your email', 'warning'); return; }
+    if (!/^[A-Za-z0-9._%+\-]+@[A-Za-z0-9\-]+(?:\.[A-Za-z0-9\-]+)*\.[A-Za-z]{2,}$/.test(email)) { showToast('Please enter a valid email address', 'warning'); return; }
     if (!mobile) { showToast('Please enter your mobile number', 'warning'); return; }
     if (!isValidIndianMobile(mobile)) { showToast('Enter a valid 10-digit mobile number starting with 6, 7, 8 or 9', 'warning'); return; }
     body = { firstName, lastName, email, mobile, accountType: selectedAccountType, profilePic: authProfilePicUrl || null };
