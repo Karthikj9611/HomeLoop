@@ -973,6 +973,90 @@ table.dataTable.no-footer{border-bottom:none!important}
 .aa-chip input:checked+span::before{content:"\2713"}
 .aa-chip input:focus-visible+span{box-shadow:0 0 0 3px rgba(249,115,22,0.4)}
 
+/* ── Action buttons: trigger row inside each permission card + its own popup ── */
+.aa-btns-store{display:none}
+.aa-btns-trigger{
+  width:100%;display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:12px;cursor:pointer;
+  border:1px solid var(--border);background:var(--surface);font-family:inherit;text-align:left;color:var(--ink);
+  transition:border-color .15s,background .15s,box-shadow .15s;
+}
+.aa-btns-trigger:hover{border-color:var(--gold2);background:#fff;box-shadow:0 2px 10px rgba(249,115,22,.12)}
+.aa-btns-trigger:focus-visible{outline:none;box-shadow:0 0 0 3px rgba(249,115,22,.4)}
+.aa-btns-trigger>i:first-child{width:28px;height:28px;border-radius:8px;background:var(--gold-light);color:var(--gold-dark);display:flex;align-items:center;justify-content:center;font-size:.76rem;flex-shrink:0}
+.aa-btns-label{font-size:.82rem;font-weight:700}
+.aa-btns-count{margin-left:auto;font-size:.76rem;font-weight:600;color:var(--ink3);white-space:nowrap}
+.aa-btns-meter{width:44px;height:5px;border-radius:99px;background:var(--bg-3);overflow:hidden;flex-shrink:0}
+.aa-btns-meter i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--gold2),var(--gold));transition:width .25s}
+.aa-btns-go{font-size:.68rem;color:var(--ink3);transition:transform .15s,color .15s}
+.aa-btns-trigger:hover .aa-btns-go{transform:translateX(2px);color:var(--gold-dark)}
+
+#aaBtnModal{z-index:960;background:rgba(15,17,23,.55);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}
+.add-modal.aa-bm-box{
+  max-width:620px;padding:0;overflow:hidden;display:flex;flex-direction:column;background:var(--surface);outline:none;
+  border-radius:22px;box-shadow:0 30px 80px rgba(15,17,23,.35);
+}
+#aaBtnModal.open .aa-bm-box{animation:aaBmIn .22s cubic-bezier(.2,.8,.2,1)}
+@keyframes aaBmIn{from{opacity:0;transform:translateY(14px) scale(.97)}to{opacity:1;transform:none}}
+.aa-bm-head{display:flex;align-items:center;gap:14px;padding:22px 24px 16px;
+  background:linear-gradient(180deg,#fff6ee 0%,var(--surface) 100%);flex-shrink:0}
+.aa-bm-icon{width:46px;height:46px;border-radius:14px;font-size:1.05rem;background:var(--gold-light);color:var(--gold-dark);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:inset 0 0 0 1px rgba(249,115,22,.25)}
+.aa-bm-id{min-width:0;flex:1}
+.aa-bm-id h3{font-size:1.08rem;font-weight:800;letter-spacing:-.01em;line-height:1.2}
+.aa-bm-id p{font-size:.8rem;color:var(--ink3);margin-top:3px;line-height:1.35}
+.aa-bm-x{width:34px;height:34px;border-radius:50%;border:none;background:var(--surface2);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .15s}
+.aa-bm-x:hover{background:var(--bg-3)}
+.aa-bm-x:focus-visible{outline:none;box-shadow:0 0 0 3px rgba(249,115,22,.45)}
+.aa-bm-x svg{width:15px;height:15px;stroke:var(--ink);fill:none;stroke-width:2.6}
+.aa-bm-bar{display:flex;align-items:center;justify-content:space-between;gap:12px 18px;flex-wrap:wrap;padding:4px 24px 14px;flex-shrink:0}
+.aa-bm-progress{display:flex;align-items:center;gap:10px;font-size:.8rem;font-weight:700;color:var(--ink)}
+.aa-bm-progress small{font-weight:500;color:var(--ink3);font-size:.78rem}
+.aa-bm-meter{width:96px;height:6px;border-radius:99px;background:var(--bg-3);overflow:hidden}
+.aa-bm-meter i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--gold2),var(--gold));transition:width .25s}
+.aa-bm-bulk{display:inline-flex;padding:3px;border-radius:99px;background:var(--surface2)}
+.aa-bm-bulk button{border:none;background:transparent;font-family:inherit;font-size:.76rem;font-weight:600;color:var(--ink3);padding:6px 14px;border-radius:99px;cursor:pointer;transition:background .15s,color .15s}
+.aa-bm-bulk button:hover{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(15,17,23,.14)}
+.aa-bm-bulk button:focus-visible{outline:none;box-shadow:0 0 0 3px rgba(249,115,22,.4)}
+.aa-bm-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:2px 24px 20px;overflow-y:auto;min-height:0;flex:1}
+.aa-bm-card{
+  display:flex;align-items:center;gap:12px;padding:12px;border-radius:14px;cursor:pointer;text-align:left;font-family:inherit;color:var(--ink);
+  border:1.5px solid var(--border);background:var(--surface);transition:border-color .15s,background .15s,box-shadow .15s,transform .1s;
+}
+.aa-bm-card:hover{border-color:var(--border2);box-shadow:0 2px 10px rgba(15,17,23,.06)}
+.aa-bm-card:active{transform:scale(.985)}
+.aa-bm-card:focus-visible{outline:none;box-shadow:0 0 0 3px rgba(249,115,22,.4)}
+.aa-bm-card[aria-checked="true"]{border-color:rgba(249,115,22,.55);background:#fffaf6}
+.aa-bm-card[aria-checked="false"] .aa-bm-ico{background:var(--surface2);color:var(--ink3)}
+.aa-bm-card[aria-checked="false"] .aa-bm-name{color:var(--ink3)}
+.aa-bm-card[aria-checked="false"] .aa-bm-tag{opacity:.55}
+.aa-bm-ico{width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:.88rem;flex-shrink:0;background:var(--gold-light);color:var(--gold-dark);transition:background .15s,color .15s}
+.aa-bm-card.is-danger[aria-checked="true"]{border-color:rgba(220,38,38,.4);background:#fffafa}
+.aa-bm-card.is-danger[aria-checked="true"] .aa-bm-ico{background:var(--red-light);color:var(--red)}
+.aa-bm-txt{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.aa-bm-name{font-size:.85rem;font-weight:700;line-height:1.25;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.aa-bm-tag{font-size:.62rem;font-weight:700;padding:2px 7px;border-radius:99px;background:var(--red-light);color:var(--red)}
+.aa-bm-desc{font-size:.72rem;color:var(--ink3);line-height:1.35}
+.aa-bm-sw{position:relative;width:38px;height:22px;border-radius:99px;background:var(--border2);flex-shrink:0;transition:background .2s}
+.aa-bm-sw::after{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(15,17,23,.3);transition:transform .2s cubic-bezier(.2,.8,.2,1)}
+.aa-bm-card[aria-checked="true"] .aa-bm-sw{background:var(--gold2)}
+.aa-bm-card[aria-checked="true"] .aa-bm-sw::after{transform:translateX(16px)}
+.aa-bm-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 24px;border-top:1px solid var(--border);flex-shrink:0}
+.aa-bm-note{font-size:.76rem;color:var(--ink3);display:flex;align-items:center;gap:7px}
+@media (max-width:640px){
+  #aaBtnModal.add-modal-overlay{align-items:flex-end;padding:0}
+  .add-modal.aa-bm-box{max-width:100%;max-height:92vh;border-radius:22px 22px 0 0}
+  .aa-bm-head{padding:18px 16px 12px}
+  .aa-bm-bar{padding:2px 16px 12px}
+  .aa-bm-grid{grid-template-columns:1fr;padding:2px 16px 16px}
+  .aa-bm-foot{padding:12px 16px}
+  .aa-bm-note{display:none}
+  .aa-bm-foot .aa-btn{width:100%}
+}
+@media (prefers-reduced-motion:reduce){
+  #aaBtnModal.open .aa-bm-box{animation:none}
+  .aa-bm-card,.aa-bm-sw,.aa-bm-sw::after,.aa-btns-meter i,.aa-bm-meter i,.aa-btns-trigger,.aa-btns-go{transition:none}
+}
+
 /* Three-way segmented control (real radio buttons, so arrow keys work) */
 .aa-seg{display:inline-flex;padding:3px;border-radius:99px;background:var(--surface2);flex-shrink:0}
 .aa-seg label{position:relative;cursor:pointer;display:block}
@@ -2987,6 +3071,34 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
         <button type="button" class="aa-btn aa-btn-quiet" onclick="aaRequestClose()">Cancel</button>
         <button type="button" class="aa-btn aa-btn-primary" id="aaModalSave" onclick="aaSaveModal()" disabled>Save changes</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- Admin Access — "Action buttons" popup (opened from the Properties / Customers cards inside #aaModal) -->
+<div class="add-modal-overlay" id="aaBtnModal">
+  <div class="add-modal aa-bm-box" role="dialog" aria-modal="true" aria-labelledby="aaBtnModalTitle" tabindex="-1">
+    <div class="aa-bm-head">
+      <span class="aa-bm-icon" id="aaBtnModalIcon"><i class="fas fa-sliders"></i></span>
+      <div class="aa-bm-id">
+        <h3 id="aaBtnModalTitle"></h3>
+        <p id="aaBtnModalSub"></p>
+      </div>
+      <button type="button" class="aa-bm-x" onclick="aaCloseBtnModal()" aria-label="Close action buttons">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="aa-bm-bar">
+      <div class="aa-bm-progress"><span id="aaBtnModalCount"></span><div class="aa-bm-meter"><i id="aaBtnModalMeter"></i></div></div>
+      <div class="aa-bm-bulk" role="group" aria-label="Bulk">
+        <button type="button" onclick="aaBtnSetAll(true)">Show all</button>
+        <button type="button" onclick="aaBtnSetAll(false)">Hide all</button>
+      </div>
+    </div>
+    <div class="aa-bm-grid" id="aaBtnModalGrid"></div>
+    <div class="aa-bm-foot">
+      <span class="aa-bm-note"><i class="fas fa-circle-info"></i>Applied when you press <b>Save changes</b></span>
+      <button type="button" class="aa-btn aa-btn-primary" onclick="aaCloseBtnModal()">Done</button>
     </div>
   </div>
 </div>
@@ -5656,16 +5768,115 @@ function aaCloneBtns(src){
   });
   return out;
 }
+// Icon + one-line description + "sensitive" flag for every controllable button.
+// Falls back gracefully for any key added to ADMIN_BUTTONS later.
+const AA_BTN_META = {
+  properties: {
+    check:{i:'fa-calendar-check',d:'Check if a property is still available'},
+    share:{i:'fa-brands fa-whatsapp',d:'Share property details on WhatsApp'},
+    tenant:{i:'fa-user-group',d:'Share the tenant version of a listing'},
+    view:{i:'fa-eye',d:'Open the full property details'},
+    navigate:{i:'fa-location-arrow',d:'Open the location in maps'},
+    directions:{i:'fa-route',d:'Get directions to the property'},
+    facebook:{i:'fa-brands fa-facebook-f',d:'Share the listing on Facebook'},
+    instagram:{i:'fa-brands fa-instagram',d:'Share the listing on Instagram'},
+    delete:{i:'fa-trash-can',d:'Permanently remove a property',danger:1},
+    booking:{i:'fa-calendar-days',d:'Edit booking details, images and documents',danger:1}
+  },
+  customers: {
+    verified:{i:'fa-circle-check',d:'Show the verified status badge'},
+    view:{i:'fa-eye',d:'Open the customer profile'},
+    edit:{i:'fa-pen',d:"Edit this customer's details",danger:1},
+    subscription:{i:'fa-crown',d:'Set or change their subscription',danger:1},
+    delete:{i:'fa-trash-can',d:'Permanently remove a customer',danger:1},
+    logout:{i:'fa-right-from-bracket',d:'Clear their session so they can log in elsewhere',danger:1},
+    resetviews:{i:'fa-eraser',d:'Delete viewed-property records and listing views',danger:1},
+    publiccall:{i:'fa-phone-volume',d:'Toggle owner numbers visible to everyone',danger:1}
+  }
+};
 function aaBtnsHtml(mod, state){
   const cat = ADMIN_ACCESS.btnCatalog[mod] || {};
   const keys = Object.keys(cat);
   const shown = keys.filter(k => state[k] !== false).length;
-  return `<details class="aa-btns" data-btn-mod="${mod}" ${shown < keys.length ? 'open' : ''}>
-    <summary><i class="fas fa-sliders" aria-hidden="true"></i>Action buttons<span class="aa-btns-count">${shown} of ${keys.length} shown</span></summary>
-    <div class="aa-btns-grid">${keys.map(k => `
-      <label class="aa-chip"><input type="checkbox" data-btn-key="${k}" ${state[k] !== false ? 'checked' : ''} onchange="aaModalRefresh()"><span>${escapeHtml(cat[k])}</span></label>`).join('')}
-    </div></details>`;
+  // The checkboxes stay in the DOM (hidden) as the single source of truth, so
+  // aaModalButtons() / aaChangedCount() / save keep working unchanged. The popup
+  // just reads and writes them.
+  return `<div class="aa-btns" data-btn-mod="${mod}">
+    <button type="button" class="aa-btns-trigger" onclick="aaOpenBtnModal('${mod}', this)" aria-haspopup="dialog">
+      <i class="fas fa-sliders" aria-hidden="true"></i>
+      <span class="aa-btns-label">Action buttons</span>
+      <span class="aa-btns-count">${shown} of ${keys.length} shown</span>
+      <span class="aa-btns-meter" aria-hidden="true"><i style="width:${keys.length ? Math.round(shown / keys.length * 100) : 0}%"></i></span>
+      <i class="fas fa-chevron-right aa-btns-go" aria-hidden="true"></i>
+    </button>
+    <div class="aa-btns-store" hidden>${keys.map(k => `<input type="checkbox" data-btn-key="${k}" ${state[k] !== false ? 'checked' : ''}>`).join('')}</div>
+  </div>`;
 }
+
+/* ── "Action buttons" popup ── */
+let AA_BTN_OPEN = { mod:null, trigger:null };
+function aaBtnStoreBoxes(mod){
+  return [...document.querySelectorAll('#aaModalGrid .aa-btns[data-btn-mod="'+mod+'"] input[data-btn-key]')];
+}
+function aaBtnModalSync(){
+  const mod = AA_BTN_OPEN.mod; if(!mod) return;
+  const boxes = aaBtnStoreBoxes(mod);
+  const on = boxes.filter(b => b.checked).length;
+  document.getElementById('aaBtnModalCount').innerHTML = on + ' of ' + boxes.length + ' shown';
+  document.getElementById('aaBtnModalMeter').style.width = (boxes.length ? on / boxes.length * 100 : 0) + '%';
+  document.querySelectorAll('#aaBtnModalGrid .aa-bm-card').forEach(card => {
+    const b = boxes.find(x => x.getAttribute('data-btn-key') === card.getAttribute('data-key'));
+    card.setAttribute('aria-checked', b && b.checked ? 'true' : 'false');
+  });
+}
+function aaOpenBtnModal(mod, trigger){
+  const cat = ADMIN_ACCESS.btnCatalog[mod] || {};
+  const meta = AA_BTN_META[mod] || {};
+  AA_BTN_OPEN = { mod, trigger: trigger || null };
+  const modName = ADMIN_ACCESS.names[mod] || mod;
+  const icon = MODULE_ICONS[mod] || 'fa-sliders';
+  document.getElementById('aaBtnModalIcon').innerHTML = '<i class="fas ' + icon + '"></i>';
+  document.getElementById('aaBtnModalTitle').textContent = modName + ' · Action buttons';
+  document.getElementById('aaBtnModalSub').textContent = 'Choose which buttons appear in the Action column of the ' + modName + ' table for this admin.';
+  document.getElementById('aaBtnModalGrid').innerHTML = Object.keys(cat).map(k => {
+    const m = meta[k] || {};
+    return `<button type="button" class="aa-bm-card${m.danger ? ' is-danger' : ''}" role="switch" aria-checked="true" data-key="${k}" onclick="aaBtnToggle('${k}')">
+      <span class="aa-bm-ico"><i class="fas ${m.i || 'fa-hand-pointer'}"></i></span>
+      <span class="aa-bm-txt">
+        <span class="aa-bm-name">${escapeHtml(cat[k])}${m.danger ? '<span class="aa-bm-tag">Changes data</span>' : ''}</span>
+        ${m.d ? '<span class="aa-bm-desc">' + escapeHtml(m.d) + '</span>' : ''}
+      </span>
+      <span class="aa-bm-sw" aria-hidden="true"></span>
+    </button>`;
+  }).join('');
+  aaBtnModalSync();
+  const ov = document.getElementById('aaBtnModal');
+  ov.classList.add('open');
+  ov.querySelector('.aa-bm-grid').scrollTop = 0;
+  ov.querySelector('.aa-bm-box').focus({ preventScroll:true });
+}
+function aaBtnToggle(key){
+  const b = aaBtnStoreBoxes(AA_BTN_OPEN.mod).find(x => x.getAttribute('data-btn-key') === key);
+  if(!b) return;
+  b.checked = !b.checked;
+  aaBtnModalSync();
+  aaModalRefresh();
+}
+function aaBtnSetAll(on){
+  aaBtnStoreBoxes(AA_BTN_OPEN.mod).forEach(b => { b.checked = !!on; });
+  aaBtnModalSync();
+  aaModalRefresh();
+}
+function aaBtnModalIsOpen(){ return document.getElementById('aaBtnModal').classList.contains('open'); }
+function aaCloseBtnModal(){
+  document.getElementById('aaBtnModal').classList.remove('open');
+  const t = AA_BTN_OPEN.trigger;
+  AA_BTN_OPEN = { mod:null, trigger:null };
+  if(t && document.body.contains(t)) t.focus({ preventScroll:true });
+}
+document.getElementById('aaBtnModal').addEventListener('click', function(e){
+  if(e.target === this) aaCloseBtnModal();
+});
 function aaModalButtons(){
   const out = {};
   document.querySelectorAll('#aaModalGrid .aa-btns').forEach(d => {
@@ -5827,6 +6038,8 @@ function aaModalRefresh(){
     const boxes = d.querySelectorAll('input[data-btn-key]');
     const on = [...boxes].filter(b => b.checked).length;
     d.querySelector('.aa-btns-count').textContent = on + ' of ' + boxes.length + ' shown';
+    const mi = d.querySelector('.aa-btns-meter i');
+    if(mi) mi.style.width = (boxes.length ? Math.round(on / boxes.length * 100) : 0) + '%';
   });
   const c = aaCount(levels);
   AA_LEVELS.forEach(l => {
@@ -5858,7 +6071,11 @@ function aaOpenModal(btn){
   document.getElementById('aaModalTitle').textContent = email;
   document.getElementById('aaModalTally').innerHTML = aaTallyHtml(aaCount(lv));
   document.getElementById('aaModalAll').innerHTML = aaSegHtml('aa-all', 'Set every feature to', null, 'aaModalSetAll(this)');
-  document.getElementById('aaModalGrid').innerHTML = ADMIN_ACCESS.keys.map(key => `
+  // Customers + Properties (the two cards with an Action buttons row) sit together
+  // in the first row; everything else follows in its normal order.
+  const aaFirst = ['customers', 'properties'];
+  const aaOrder = aaFirst.filter(k => ADMIN_ACCESS.keys.includes(k)).concat(ADMIN_ACCESS.keys.filter(k => !aaFirst.includes(k)));
+  document.getElementById('aaModalGrid').innerHTML = aaOrder.map(key => `
     <div class="aa-item" data-item-key="${key}" data-level="${lv[key]}">
       <span class="aa-item-icon"><i class="fas ${MODULE_ICONS[key] || 'fa-toggle-on'}"></i></span>
       <span class="aa-item-label">${escapeHtml(ADMIN_ACCESS.names[key])}</span>
@@ -5875,6 +6092,8 @@ function aaOpenModal(btn){
 }
 
 function aaCloseModal(){
+  document.getElementById('aaBtnModal').classList.remove('open');
+  AA_BTN_OPEN = { mod:null, trigger:null };
   document.getElementById('aaModal').classList.remove('open');
   document.body.style.overflow = '';
   document.removeEventListener('keydown', aaModalKeydown);
@@ -5906,13 +6125,26 @@ async function aaRequestClose(){
 function aaFocusables(){
   const box = document.querySelector('#aaModal .aa-modal-box');
   const radios = [...box.querySelectorAll('input[type=radio]')];
-  return [...box.querySelectorAll('button:not([disabled]), summary, input[type=checkbox], input[type=radio]')].filter(el => {
+  return [...box.querySelectorAll('button:not([disabled]), input[type=checkbox], input[type=radio]')].filter(el => {
+    if(el.closest('.aa-btns-store')) return false;
     if(el.type !== 'radio') return true;
     const group = radios.filter(r => r.name === el.name);
     return el === (group.find(r => r.checked) || group[0]); // one tab stop per group
   });
 }
 function aaModalKeydown(e){
+  if(aaBtnModalIsOpen()){
+    if(e.key === 'Escape'){ e.preventDefault(); aaCloseBtnModal(); }
+    else if(e.key === 'Tab'){
+      const box = document.querySelector('#aaBtnModal .aa-bm-box');
+      const list = [...box.querySelectorAll('button:not([disabled])')];
+      if(!list.length) return;
+      const first = list[0], last = list[list.length - 1];
+      if(e.shiftKey && (document.activeElement === first || document.activeElement === box)){ e.preventDefault(); last.focus(); }
+      else if(!e.shiftKey && document.activeElement === last){ e.preventDefault(); first.focus(); }
+    }
+    return;
+  }
   if(e.key === 'Escape'){
     const c = document.getElementById('confirmOverlay');
     if(c && getComputedStyle(c).display !== 'none') return; // the discard prompt handles its own Esc
