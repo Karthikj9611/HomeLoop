@@ -3311,6 +3311,9 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
       <button class="cat-tab-btn" data-cat="Booked" onclick="switchPropCategory('Booked')">
         <i class="fas fa-lock"></i><span class="cat-tab-btn-label" data-mobile="Booked">Booked</span><span class="cat-count" id="cat-count-Booked">—</span>
       </button>
+      <button class="cat-tab-btn" data-cat="Blocked" onclick="switchPropCategory('Blocked')">
+        <i class="fas fa-ban"></i><span class="cat-tab-btn-label" data-mobile="Blocked">Blocked</span><span class="cat-count" id="cat-count-Blocked">—</span>
+      </button>
       <button class="cat-tab-btn" data-cat="PG" onclick="switchPropCategory('PG')" style="display:none">
         <i class="fas fa-bed"></i><span class="cat-tab-btn-label" data-mobile="PG">PG</span><span class="cat-count" id="cat-count-PG">—</span>
       </button>
@@ -8281,6 +8284,7 @@ window.togglePropBlock = async function(id, blocked){
       const rd = this.data();
       if(rd && rd._id === id){ rd.blocked = !!data.blocked; this.invalidate(); }
     });
+    updatePropCategoryCounts(propTable.rows().data().toArray());
     propTable.draw(false);
   }catch(err){
     alert('Network error updating block status');
@@ -12514,17 +12518,19 @@ function switchPropCategory(cat){
 }
 
 function updatePropCategoryCounts(data){
-  const counts = {all:0, Promoted:0, Booked:0, Rent:0, Lease:0, Sell:0, PG:0, 'Short Stay':0};
+  const counts = {all:0, Promoted:0, Booked:0, Blocked:0, Rent:0, Lease:0, Sell:0, PG:0, 'Short Stay':0};
   data.forEach(r=>{
-    counts.all++; // All now includes booked properties too, unlike Promoted/Rent/Lease/Sell/PG/Short Stay
-    if(!r.booked){
+    counts.all++; // All includes booked and blocked properties too, unlike Promoted/Rent/Lease/Sell/PG/Short Stay
+    if(r.blocked){
+      counts.Blocked++; // blocked wins over everything else: it only counts under All and Blocked
+    } else if(!r.booked){
       counts[propCategoryOf(r.status)]++; // once booked, no longer counted under its Rent/Lease/Sell/PG/Short Stay tab
       if(r.promoted) counts.Promoted++; // once booked, no longer counted under Promoted either
     } else {
       counts.Booked++;
     }
   });
-  ['all','Promoted','Booked','Rent','Lease','Sell','PG','Short Stay'].forEach(cat=>{
+  ['all','Promoted','Booked','Blocked','Rent','Lease','Sell','PG','Short Stay'].forEach(cat=>{
     const el = document.getElementById('cat-count-'+cat.replace(/\s+/g,'-'));
     if(el) el.innerText = counts[cat];
   });
@@ -12534,7 +12540,11 @@ $.fn.dataTable.ext.search.push(function(settings, data, dataIndex){
   if(settings.nTable.id !== 'propertyTable') return true;
   const row = propTable ? propTable.row(dataIndex).data() : null;
   if(!row) return true;
-  if(_propCategoryState === 'Booked'){
+  if(_propCategoryState === 'Blocked'){
+    if(!row.blocked) return false;
+  } else if(row.blocked && _propCategoryState !== 'all'){
+    return false; // blocked properties only show under All and Blocked
+  } else if(_propCategoryState === 'Booked'){
     if(!row.booked) return false;
   } else if(row.booked && _propCategoryState !== 'all'){
     return false; // once booked, hidden from Promoted/Rent/Lease/PG/Short Stay — All and Booked still show it
