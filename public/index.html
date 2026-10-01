@@ -9624,7 +9624,7 @@ function cardHTML(p, compact, extraLeftBadge) {
           <div class="prop-heart${liked?' liked':''}" onclick="event.stopPropagation();toggleShortlist('${p.id}',this)" aria-label="${liked?'Remove from':'Add to'} shortlist">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
           </div>
-          ${(p.booked || isOwnerViewer()) ? '' : `
+          ${p.booked ? '' : `
           <div class="prop-icon-badge prop-icon-call" onclick="event.stopPropagation();openCardCall('${p.id}')" aria-label="Call" title="${(p.ownerPhoneCall && p.ownerPhone) || (p.ownerDirectCall && p.ownerAltPhone) ? 'Call owner' : 'Call agent'}">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
           </div>
@@ -9762,7 +9762,7 @@ function shortlistCardHTML(p) {
           <div class="prop-heart${liked?' liked':''}" onclick="event.stopPropagation();toggleShortlist('${p.id}',this)" aria-label="${liked?'Remove from':'Add to'} shortlist">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
           </div>
-          ${(p.booked || isOwnerViewer()) ? '' : `
+          ${p.booked ? '' : `
           <div class="prop-icon-badge prop-icon-call" onclick="event.stopPropagation();openCardCall('${p.id}')" aria-label="Call" title="${(p.ownerPhoneCall && p.ownerPhone) || (p.ownerDirectCall && p.ownerAltPhone) ? 'Call owner' : 'Call agent'}">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
           </div>
@@ -10206,11 +10206,9 @@ function renderCompareTable() {
               <div class="prop-heart${liked?' liked':''}" onclick="event.stopPropagation();toggleShortlist('${p.id}',this)" aria-label="${liked?'Remove from':'Add to'} shortlist">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
               </div>
-          ${isOwnerViewer() ? '' : `
           <div class="prop-icon-badge prop-icon-call" onclick="event.stopPropagation();openCardCall('${p.id}')" aria-label="Call" title="${(p.ownerPhoneCall && p.ownerPhone) || (p.ownerDirectCall && p.ownerAltPhone) ? 'Call owner' : 'Call agent'}">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
           </div>
-          `}
             </div>
           </div>
         </div>
@@ -11830,13 +11828,14 @@ function openDetailReal(id) {
   const _callLabelEl = document.getElementById('viewCallBtnLabel');
   if (_callLabelEl) {
     const _agentDigits = String(p.owner?.agentPhone || '').replace(/\D/g, '').slice(-10);
-    _callLabelEl.textContent = (_agentDigits === '9035205230') ? 'Coordinator' : 'Owner';
+    _callLabelEl.textContent = (isOwnerViewer() || _agentDigits === '9035205230') ? 'Coordinator' : 'Owner';
   }
   // Direct owner call — the server only sends ownerAltPhone when admin turned it on.
   // Each number has its own admin "Public call" toggle; the server only sends a number when its toggle is on.
   const _mainOn = !!(p.ownerPhoneCall && p.ownerPhone), _altOn = !!(p.ownerDirectCall && p.ownerAltPhone);
-  document.getElementById('viewOwnerMainRow').style.display = _mainOn ? '' : 'none';
-  document.getElementById('viewOwnerAltRow').style.display  = _altOn  ? '' : 'none';
+  // Owner accounts never get the owner-number rows — all their calls go to the Coordinator.
+  document.getElementById('viewOwnerMainRow').style.display = (_mainOn && !isOwnerViewer()) ? '' : 'none';
+  document.getElementById('viewOwnerAltRow').style.display  = (_altOn  && !isOwnerViewer()) ? '' : 'none';
   document.getElementById('viewOwnerPhoneBtn').onclick   = () => openOwnerCall(p.id, 'main');
   document.getElementById('viewOwnerPhoneWaBtn').onclick = () => openOwnerWhatsApp(p.id, 'main');
   document.getElementById('viewOwnerCallBtn').onclick    = () => openOwnerCall(p.id, 'alt');
@@ -11864,47 +11863,40 @@ function openDetailReal(id) {
   // the property view — those actions are for prospective tenants only.
   const viewerIsOwner = (() => { const u = getLoggedInUser(); return !!u && u.accountType === 'owner'; })();
   document.getElementById('viewScheduleBtn').style.display = viewerIsOwner ? 'none' : '';
-  document.getElementById('viewWhatsappBtn').style.display = viewerIsOwner ? 'none' : '';
+  document.getElementById('viewWhatsappBtn').style.display = '';
   const visitBadge = document.getElementById('modal-visit-count');
   visitBadge.dataset.propId = String(p.id);
   if ((p.visitCount || 0) > 0) { visitBadge.textContent = p.visitCount; visitBadge.style.display = ''; }
   else { visitBadge.style.display = 'none'; }
   document.getElementById('viewActionsRow').style.display = '';
-  // Owners only see Shortlist + Call (no Schedule visit / WhatsApp), so pull
-  // Call up into the first row next to Shortlist — 50/50 split — instead of
-  // leaving it alone on its own full-width row underneath.
   const actionsRow1 = document.getElementById('viewActionsRow');
   const actionsRow2 = document.getElementById('viewActionsRow2');
   const callBtn = document.getElementById('viewCallBtn');
   const whatsappBtn = document.getElementById('viewWhatsappBtn');
-  if (viewerIsOwner) {
-    actionsRow1.appendChild(callBtn);
-    actionsRow2.style.display = 'none';
-  } else {
-    actionsRow2.insertBefore(callBtn, whatsappBtn);
-    actionsRow2.style.display = '';
-  }
-  // When a public owner number is enabled, the agent Call/WhatsApp buttons aren't needed.
-  const _hideAgent = _mainOn || _altOn;
+  // Owner accounts get the same Call + WhatsApp row as everyone else (both go to the Coordinator).
+  actionsRow2.insertBefore(callBtn, whatsappBtn);
+  actionsRow2.style.display = '';
+  // When a public owner number is enabled, the agent Call/WhatsApp buttons aren't needed
+  // (not for owner accounts — they never see the owner-number rows).
+  const _hideAgent = !viewerIsOwner && (_mainOn || _altOn);
   callBtn.style.display = _hideAgent ? 'none' : '';
-  whatsappBtn.style.display = (viewerIsOwner || _hideAgent) ? 'none' : '';
+  whatsappBtn.style.display = _hideAgent ? 'none' : '';
   if (_hideAgent) actionsRow2.style.display = 'none';
   // Shortlist + Schedule visit are hidden by default (flag below) — buttons stay in the markup.
   saveBtn.style.display = HIDE_SAVE_SCHEDULE ? 'none' : '';
   document.getElementById('viewScheduleBtn').style.display = (HIDE_SAVE_SCHEDULE || viewerIsOwner) ? 'none' : '';
-  // Collapse the first row only when nothing in it is visible (owner accounts keep Call there).
+  // Collapse the first row only when nothing in it is visible.
   actionsRow1.style.display = [...actionsRow1.children].every(c => getComputedStyle(c).display === 'none') ? 'none' : '';
-  // No Call / WhatsApp (agent or owner numbers) for booked (off-market) listings
-  // or when the viewer is a logged-in owner account. Navigate is dropped for
-  // booked listings only.
+  // No Call / WhatsApp (agent or owner numbers) and no Navigate for booked
+  // (off-market) listings. Owner accounts still get Call + WhatsApp (Coordinator).
   const footerEl = document.getElementById('viewActionsFooter');
-  if (p.booked || viewerIsOwner) {
+  if (p.booked) {
     callBtn.style.display = 'none';
     whatsappBtn.style.display = 'none';
     ['viewActionsRow2', 'viewOwnerMainRow', 'viewOwnerAltRow'].forEach(id => {
       document.getElementById(id).style.display = 'none';
     });
-    if (p.booked) document.getElementById('viewNavigateRow').style.display = 'none';
+    document.getElementById('viewNavigateRow').style.display = 'none';
     actionsRow1.style.display = [...actionsRow1.children].every(c => getComputedStyle(c).display === 'none') ? 'none' : '';
   }
   const _footerHasContent = ['viewActionsRow', 'viewActionsRow2', 'viewOwnerMainRow', 'viewOwnerAltRow', 'viewNavigateRow']
@@ -12448,7 +12440,7 @@ function requireLoginForContact(message) {
 function openCall(propId) {
   const p = PROPERTIES.find(x => x.id === propId);
   if (!p) return;
-  const rawPhone = (p.owner?.agentPhone || '').replace(/\D/g, '');
+  const rawPhone = (isOwnerViewer() ? COORDINATOR_PHONE : (p.owner?.agentPhone || '')).replace(/\D/g, '');
   if (!rawPhone) {
     showToast('No agent phone number added for this listing', 'warning');
     return;
@@ -12481,9 +12473,10 @@ function openCardCall(propId) {
   const p = PROPERTIES.find(x => x.id === propId) || BOOKED_PROPERTIES.find(x => x.id === propId);
   if (!p) return;
   const rawPhone = String(
-    (p.ownerPhoneCall && p.ownerPhone) ||
-    (p.ownerDirectCall && p.ownerAltPhone) ||
-    p.owner?.agentPhone || ''
+    isOwnerViewer() ? COORDINATOR_PHONE : (
+      (p.ownerPhoneCall && p.ownerPhone) ||
+      (p.ownerDirectCall && p.ownerAltPhone) ||
+      p.owner?.agentPhone || '')
   ).replace(/\D/g, '');
   if (!rawPhone) {
     showToast('No phone number added for this listing', 'warning');
@@ -12527,7 +12520,7 @@ function openOwnerWhatsApp(propId, which) {
 function openWhatsApp(propId) {
   const p = PROPERTIES.find(x => x.id === propId);
   if (!p) return;
-  const rawPhone = (p.owner?.agentPhone || '').replace(/\D/g, '');
+  const rawPhone = (isOwnerViewer() ? COORDINATOR_PHONE : (p.owner?.agentPhone || '')).replace(/\D/g, '');
   if (!rawPhone) {
     showToast('No agent phone number added for this listing', 'warning');
     return;
@@ -13186,7 +13179,9 @@ function availableDateInfo(available) {
   const cls = target < today ? 'prop-loc-avail-past' : 'prop-loc-avail-future';
   return { text: dateStr, cls };
 }
-// Logged-in owner accounts never see Call / WhatsApp anywhere on the site.
+// Logged-in owner accounts: every Call / WhatsApp on every listing goes to the
+// in-house Coordinator line (never to the listing's own agent/owner numbers).
+const COORDINATOR_PHONE = '9035205230';
 function isOwnerViewer() {
   const u = getLoggedInUser();
   return !!u && u.accountType === 'owner';
