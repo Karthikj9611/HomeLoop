@@ -179,6 +179,23 @@ body{
 #visitsCatTabs{width:100%}
 #visitsCatTabs .cat-tab-btn{flex:1;justify-content:center}
 
+/* ── EQUAL-WIDTH BUTTON-STYLE TABS (main tab bar + every category sub-tab bar) ──
+   Every tab is a bordered button with the SAME width. alignThreeRowsAsColumns()
+   (JS) measures the widest label and sets --tab-w on each bar: never narrower
+   than that (so no label is ever cut off), and stretched to fill the bar when
+   there is spare room. If they still don't fit, the bar scrolls sideways.
+   Phones keep their own swipeable layout (the max-width media block further
+   down sets flex:0 0 auto after this rule). */
+.tab-bar,.cat-tab-bar{display:flex;flex-wrap:nowrap;gap:6px;width:100%;overflow-x:auto}
+.tab-btn,.cat-tab-btn{
+  flex:0 0 var(--tab-w, auto);justify-content:center;
+  border:1px solid #fed7aa;background:var(--gold-light);color:var(--gold-dark);
+}
+.tab-btn:hover,.cat-tab-btn:hover{background:#ffe6d0;color:var(--gold-dark);border-color:var(--gold2)}
+.tab-btn.active,.cat-tab-btn.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+/* count pills: white on the orange buttons so they stand out */
+.tab-btn:not(.active) .tab-count,.cat-tab-btn:not(.active) .cat-count{background:#fff;color:var(--gold-dark)}
+
 /* ── BULK DELETE TOOLBAR ──
    Boxed pill container matching .tab-bar exactly (row 1), left-aligned
    instead of a full-width bar, so row 3 lines up with rows 1 & 2. */
@@ -4831,56 +4848,35 @@ async function doLogin(){
 // row 1, item 2 under item 2, and so on (e.g. Visits/All, Customers/Promoted).
 // Row 3 (the PDF/Reset/Delete/Columns toolbar) stays on its own normal layout.
 function alignThreeRowsAsColumns(){
-  var tabBar = document.querySelector('.tab-bar');
-  var catBar = document.getElementById('propCatTabs');
-  if(!tabBar || !catBar) return;
-
-  function visibleChildren(bar){
-    var result = [];
-    Array.from(bar.children).forEach(function(el){
-      var disp = getComputedStyle(el).display;
-      if(disp === 'contents'){
-        result = result.concat(visibleChildren(el));
-      } else if(disp !== 'none'){
-        result.push(el);
-      }
-    });
-    return result;
-  }
-
-  // Measure natural widths first (temporarily back to plain flex sizing).
-  [tabBar, catBar].forEach(function(bar){
-    bar.style.display = 'flex';
-    bar.style.gridTemplateColumns = '';
-    bar.style.width = 'fit-content';
+  var bars = [document.querySelector('.tab-bar'), document.getElementById('propCatTabs')].filter(Boolean);
+  if(!bars.length) return;
+  // clear any old inline sizing from earlier versions of this function
+  bars.forEach(function(bar){
+    ['display','gridTemplateColumns','gridAutoFlow','columnGap','rowGap','justifyItems','width'].forEach(function(k){ bar.style[k] = ''; });
   });
-
-  var rows = [visibleChildren(tabBar), visibleChildren(catBar)];
-  var maxCols = Math.max.apply(null, rows.map(function(r){ return r.length; }));
-  if(maxCols === 0) return;
-
-  var colWidths = [];
-  for(var i = 0; i < maxCols; i++){
-    var w = 0;
-    rows.forEach(function(r){
-      if(r[i]) w = Math.max(w, Math.ceil(r[i].getBoundingClientRect().width));
-    });
-    colWidths.push(w);
+  // phones keep their own swipeable layout
+  if(window.innerWidth <= 768){
+    bars.forEach(function(bar){ bar.style.removeProperty('--tab-w'); });
+    return;
   }
-
-  var gapPx = 6;
-  var template = colWidths.map(function(w){ return w + 'px'; }).join(' ');
-  var totalWidth = colWidths.reduce(function(a,b){ return a+b; }, 0)
-    + gapPx * (colWidths.length - 1) + 12; // +12 for the bar's own 6px padding on each side
-
-  [tabBar, catBar].forEach(function(bar){
-    bar.style.display = 'grid';
-    bar.style.gridTemplateColumns = template;
-    bar.style.gridAutoFlow = 'column'; // extra tabs continue in the same row, never wrap
-    bar.style.columnGap = gapPx + 'px';
-    bar.style.rowGap = gapPx + 'px';
-    bar.style.justifyItems = 'start';
-    bar.style.width = totalWidth + 'px';
+  function visibleBtns(bar){
+    return Array.from(bar.children).filter(function(el){
+      return /(^|\s)(tab-btn|cat-tab-btn)(\s|$)/.test(el.className) && getComputedStyle(el).display !== 'none';
+    });
+  }
+  // 1) measure natural widths, 2) the widest label sets the minimum for every tab
+  bars.forEach(function(bar){ bar.style.setProperty('--tab-w', 'auto'); });
+  var widest = 0;
+  bars.forEach(function(bar){
+    visibleBtns(bar).forEach(function(b){ widest = Math.max(widest, Math.ceil(b.getBoundingClientRect().width)); });
+  });
+  // 3) per bar: equal share of the full width if that's wider than the minimum
+  var gap = 6, pad = 12 + 2; // bar padding (6px each side) + 1px border each side
+  bars.forEach(function(bar){
+    var n = visibleBtns(bar).length;
+    if(!n){ return; }
+    var share = Math.floor((bar.clientWidth - 12 - gap * (n - 1)) / n);
+    bar.style.setProperty('--tab-w', Math.max(widest, share) + 'px');
   });
 }
 window.addEventListener('load', function(){ setTimeout(alignThreeRowsAsColumns, 60); });
