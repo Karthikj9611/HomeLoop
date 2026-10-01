@@ -4660,17 +4660,9 @@ main.tab-explore .empty-state{display:none !important}
   window.hlClearPrivateData = function () {
     try { PRIVATE_KEYS.forEach(function (k) { localStorage.removeItem(k); }); } catch (e) {}
   };
-  var _sess = null;
-  try { _sess = JSON.parse(localStorage.getItem('homeloop_user')); } catch (e) {}
-  if (!_sess) {                       // same test as getLoggedInUser()
-    // Guests can now shortlist without logging in, so the shortlist must survive a page
-    // refresh. Only the recently-viewed cache is dropped on a guest page load.
-    try {
-      PRIVATE_KEYS.forEach(function (k) {
-        if (SHORTLIST_KEYS.indexOf(k) === -1) localStorage.removeItem(k);
-      });
-    } catch (e) {}
-  }
+  // Shortlist AND recently-viewed both survive a page refresh (guests included).
+  // They are only wiped by hlClearPrivateData() — i.e. on logout or when the
+  // server rejects an expired session — never on a plain page load.
   var _fetch = window.fetch.bind(window);
   var AUTH_FREE = /^\/api\/(user\/(login|signup|password)|upload-images|stats\/visit)/;
   window.fetch = function (input, init) {
@@ -11858,6 +11850,13 @@ function openDetailReal(id) {
   document.getElementById('viewOwnerCallLabel').textContent  = _altRole;
   document.getElementById('viewOwnerPhoneWaLabel').textContent = _mainRole;
   document.getElementById('viewOwnerCallWaLabel').textContent  = _altRole;
+  // Order: Coordinator row first, then Owner row. Re-set every time the popup opens
+  // (the DOM is reused between listings); when both rows have the same role the
+  // original order (owner number, then alt number) is kept.
+  const _mainRowEl = document.getElementById('viewOwnerMainRow');
+  const _altRowEl  = document.getElementById('viewOwnerAltRow');
+  if (_altRole === 'Coordinator' && _mainRole === 'Owner') _mainRowEl.parentNode.insertBefore(_altRowEl, _mainRowEl);
+  else _mainRowEl.parentNode.insertBefore(_mainRowEl, _altRowEl);
   // Navigate button: only for listings with a public owner number (server sends navigateUrl only then).
   document.getElementById('viewNavigateRow').style.display = ((_mainOn || _altOn) && p.navigateUrl) ? '' : 'none';
   document.getElementById('viewNavigateBtn').onclick = () => openPropertyNavigate(p.id);
