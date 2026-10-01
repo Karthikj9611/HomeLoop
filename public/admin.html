@@ -1463,6 +1463,7 @@ body.pact-hide-directions #propertyTable .pact-directions{display:none!important
 body.pact-hide-facebook #propertyTable .pact-facebook{display:none!important}
 body.pact-hide-instagram #propertyTable .pact-instagram{display:none!important}
 body.pact-hide-delete #propertyTable .pact-delete{display:none!important}
+body.pact-hide-block #propertyTable .pact-block{display:none!important}
 body.pact-hide-booking #propertyTable .pact-booking{display:none!important}
 
 /* ── MODERN DATE FIELD (Booked On) ── */
@@ -5679,7 +5680,7 @@ function applyButtonAccess(){
     // (instead of rendering it greyed-out). Only View (and the Verified status
     // badge on Customers) stay visible.
     const VIEW_ONLY_HIDE = {
-      properties: ['publiccall','check','share','tenant','navigate','directions','facebook','instagram','delete','booking'],
+      properties: ['publiccall','block','check','share','tenant','navigate','directions','facebook','instagram','delete','booking'],
       customers:  ['edit','subscription','delete','logout','block','resetviews','publiccall'],
     };
     Object.keys(VIEW_ONLY_HIDE).forEach(mod => {
@@ -5828,6 +5829,7 @@ function aaCloneBtns(src){
 const AA_BTN_META = {
   properties: {
     publiccall:{i:'fa-phone-volume',d:'Let site visitors call the owner number(s) on a listing'},
+    block:{i:'fa-ban',d:'Block a property and remove it from the platform',danger:1},
     check:{i:'fa-calendar-check',d:'Check if a property is still available'},
     share:{i:'fa-brands fa-whatsapp',d:'Share property details on WhatsApp'},
     tenant:{i:'fa-user-group',d:'Share the tenant version of a listing'},
@@ -8252,6 +8254,39 @@ window.togglePropPublicCall = async function(id, checkboxEl){
   }
 };
 
+/* ── BLOCK / UNBLOCK PROPERTY ──
+   Blocked = removed from the public platform immediately (listings, shared link, visits, bookings).
+   Nothing is deleted; Unblock restores it. */
+window.togglePropBlock = async function(id, blocked){
+  if(blockIfViewOnly('properties')) return;
+  const ok = await showConfirmModal({
+    title: blocked ? 'Block this property?' : 'Unblock this property?',
+    message: blocked
+      ? 'It will be removed from the platform immediately — hidden from listings and its shared link, and no new visits or bookings can be made. Nothing is deleted; you can unblock it any time.'
+      : 'It will appear on the platform again (if it is verified and not booked).',
+    okText: blocked ? 'Block' : 'Unblock',
+    variant: blocked ? 'danger' : 'info'
+  });
+  if(!ok) return;
+  try{
+    const res = await fetch(`${BASE}/api/properties/${id}/block`, {
+      method: 'PATCH',
+      headers: authHeaders({'Content-Type':'application/json'}),
+      body: JSON.stringify({ blocked })
+    });
+    const data = await res.json().catch(()=>({}));
+    if(!res.ok){ alert(data.message || 'Failed to update block status'); return; }
+    if(_adminPropCache[id]) _adminPropCache[id].blocked = !!data.blocked;
+    propTable.rows().every(function(){
+      const rd = this.data();
+      if(rd && rd._id === id){ rd.blocked = !!data.blocked; this.invalidate(); }
+    });
+    propTable.draw(false);
+  }catch(err){
+    alert('Network error updating block status');
+  }
+};
+
 /* ── PROMOTED POSITION ──
    Lets the admin type exactly where a listing should land among Promoted
    listings — 1 for first place, 10 for tenth, 20 for twentieth, and so on.
@@ -10048,6 +10083,9 @@ $(document).ready(function(){
           const directionsBtn = (dirUrl && !viewOnly)
             ? `<button class="btn-view" style="background:#34A853;border-color:#34A853;color:#fff" title="Get driving directions from your current location to this property" onclick="window.open('${dirUrl.replace(/'/g, "\\'")}', '_blank', 'noopener')"><i class="fas fa-route"></i><span class="btn-label"> Directions${dirDistLabel ? ' · ' : ''}</span><span class="btn-dist">${dirDistLabel}</span></button>`
             : disabledBtn('fas fa-route', 'Directions', viewOnly ? 'View-only access — ask the primary admin to enable actions' : 'No address or coordinates on file for this listing');
+          const blockBtn = viewOnly
+            ? disabledBtn('fas fa-ban', 'Block', 'View-only access -- ask the primary admin to enable actions')
+            : `<button class="btn-view btn-action-block${row.blocked ? ' is-blocked' : ''}" title="${row.blocked ? 'Blocked and hidden from the platform -- click to unblock' : 'Block this property and remove it from the platform'}" onclick="togglePropBlock('${row._id}', ${row.blocked ? 'false' : 'true'})"><i class="fas ${row.blocked ? 'fa-lock-open' : 'fa-ban'}"></i><span class="btn-label"> ${row.blocked ? 'Unblock' : 'Block'}</span></button>`;
           const deleteBtn = viewOnly
             ? disabledBtn('fas fa-trash', 'Delete', 'View-only access — ask the primary admin to enable actions')
             : `<button class="btn-view" style="color:#c0392b" title="Delete this listing" onclick="deleteProperty('${row._id}')"><i class="fas fa-trash"></i><span class="btn-label"> Delete</span></button>`;
@@ -10066,6 +10104,7 @@ $(document).ready(function(){
             <span class="pact pact-directions">${directionsBtn}</span>
             <span class="pact pact-facebook">${fbShareBtn}</span>
             <span class="pact pact-instagram">${igShareBtn}</span>
+            <span class="pact pact-block">${blockBtn}</span>
             <span class="pact pact-delete">${deleteBtn}</span>
             <span class="pact pact-booking">${bookingBtn}</span>
           </div>`;
@@ -11968,6 +12007,7 @@ function loadPropColVisibility(){
 /* ── ACTION BUTTONS show/hide (Columns menu -> "Actions") ── */
 const PROP_ACTION_BTNS = [
   {key:'publiccall', label:'Public call toggle'},
+  {key:'block',      label:'Block / Unblock'},
   {key:'check',      label:'Check availability'},
   {key:'share',      label:'Share (WhatsApp)'},
   {key:'tenant',     label:'Tenant share'},

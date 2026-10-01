@@ -1053,6 +1053,8 @@ function buildListingSchema() {
     promoted:         { type: Boolean, default: false },
     promotedPriority: { type: Number,  default: 0 }, // 0 = not manually ranked yet; sorts to the back of the promoted queue (see rankOf below) until an admin assigns 1, 2, 3...
     booked:           { type: Boolean, default: false }, // once true, listing is hidden from the public site regardless of verified status
+    blocked:          { type: Boolean, default: false }, // admin "Block" (Properties grid): removed from the whole public platform immediately; reversible
+    blockedAt:        { type: Date, default: null },
     ownerDirectCall:  { type: Boolean, default: false }, // admin "Public call" toggle on the alt number: when true, GET /api/properties exposes owner.altPhone (as ownerAltPhone)
     ownerPhoneCall:   { type: Boolean, default: false }, // admin "Public call" toggle on the main owner number: when true, GET /api/properties exposes owner.phone (as ownerPhone)
     // Captured from the admin Booked-tab "Booking Details" modal — who the
@@ -1667,8 +1669,8 @@ app.get('/api/properties', attachUserIfPresent, async (req, res) => {
     // ?booked=true flips this to fetch the booked ones instead, so the frontend
     // can show a separate "Booked" section per type without ever mixing the two.
     const filter = booked === 'true'
-      ? { verified: true, booked: true }
-      : { verified: true, booked: { $ne: true } }; // a listing only appears to the public once admin has verified it, and disappears again once marked booked
+      ? { verified: true, booked: true, blocked: { $ne: true } }
+      : { verified: true, booked: { $ne: true }, blocked: { $ne: true } }; // a listing only appears to the public once admin has verified it, and disappears again once marked booked
     if (status && typeof status === 'string') filter['basic.status'] = status;
     if (q && typeof q === 'string') {
       const re = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
@@ -2054,7 +2056,7 @@ app.get('/property/:id', async (req, res, next) => {
       // Same public-visibility rule as GET /api/properties: only verified,
       // non-booked listings are eligible for a rich preview.
       const results = await Promise.all(
-        LISTING_MODEL_LIST.map(M => M.findOne({ _id: id, verified: true, booked: { $ne: true } }).lean())
+        LISTING_MODEL_LIST.map(M => M.findOne({ _id: id, verified: true, booked: { $ne: true }, blocked: { $ne: true } }).lean())
       );
       const doc = results.find(Boolean);
 
@@ -2156,7 +2158,7 @@ app.post('/api/visits', visitLimiter, requireUser, requireVerified, async (req, 
     }
 
     const { doc: property, model: propertyModel, type: propertyType } = await findListingById(propertyId, { lean: true });
-    if (!property) return res.status(404).json({ message: 'Property not found' });
+    if (!property || property.blocked) return res.status(404).json({ message: 'Property not found' });
 
     // Block a second visit request from the same user for the same property on the
     // same date — regardless of the time slot chosen. A previously cancelled request
@@ -2266,7 +2268,7 @@ app.post('/api/bookings', bookingLimiter, requireUser, requireVerified, async (r
     const guestsNum = parseInt(guests, 10) || 1;
 
     const { doc: property, model: propertyModel, type: propertyType } = await findListingById(propertyId, { lean: true });
-    if (!property) return res.status(404).json({ message: 'Property not found' });
+    if (!property || property.blocked) return res.status(404).json({ message: 'Property not found' });
     if (propertyType !== 'HourlyStay') {
       return res.status(400).json({ message: 'Direct booking is only available for Short Stay listings.' });
     }

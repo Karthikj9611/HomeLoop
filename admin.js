@@ -165,7 +165,7 @@ module.exports = function registerAdminRoutes(app, deps) {
   // switch individual buttons off per sub-admin from the Admin Access modal.
   const ADMIN_BUTTONS = {
     properties: {
-      publiccall: 'Public call toggle',
+      publiccall: 'Public call toggle', block: 'Block / Unblock',
       check: 'Check availability', share: 'Share (WhatsApp)', tenant: 'Tenant share',
       view: 'View', navigate: 'Navigate', directions: 'Directions',
       facebook: 'Facebook', instagram: 'Instagram', delete: 'Delete', booking: 'Booking',
@@ -963,16 +963,16 @@ self.addEventListener('notificationclick', event => {
       ).lean();
       if (!user) return res.status(404).json({ message: 'Customer not found' });
 
-      // Let the user know either way — approved or rejected/revoked — so
-      // they're not left wondering why their submit routes are still locked.
-      await notifyUser(user._id, {
-        type: 'account_verification',
-        title: verified ? 'Account verified' : 'Account verification rejected',
-        message: verified
-          ? 'Your account has been verified by our team. You can now post listings, book visits, and more.'
-          : 'Your account verification was not approved. Please contact support if you have questions.',
-        meta: { status: verified ? 'approved' : 'rejected' },
-      });
+      // Notify only when the account is VERIFIED. Unverifying (revoking) is silent —
+      // the customer/owner gets no notification for it.
+      if (verified) {
+        await notifyUser(user._id, {
+          type: 'account_verification',
+          title: 'Account verified',
+          message: 'Your account has been verified by our team. You can now post listings, book visits, and more.',
+          meta: { status: 'approved' },
+        });
+      }
 
       res.json({
         message: verified ? 'Customer verified' : 'Customer verification revoked',
@@ -1645,6 +1645,7 @@ self.addEventListener('notificationclick', event => {
             promoted:         !!doc.promoted,
             promotedPriority: doc.promotedPriority != null ? doc.promotedPriority : null,
             booked:           !!doc.booked,
+            blocked:          !!doc.blocked,
             ownerDirectCall:  !!doc.ownerDirectCall,
             ownerPhoneCall:   !!doc.ownerPhoneCall,
             views:            doc.views != null ? doc.views : 0,
@@ -1665,6 +1666,7 @@ self.addEventListener('notificationclick', event => {
           verified:     !!doc.verified,
           promoted:     !!doc.promoted,
           booked:       !!doc.booked,
+          blocked:      !!doc.blocked,
           ownerDirectCall: !!doc.ownerDirectCall,
           ownerPhoneCall:  !!doc.ownerPhoneCall,
           bookingDetails: doc.bookingDetails || null,
@@ -1916,6 +1918,23 @@ self.addEventListener('notificationclick', event => {
     } catch (err) {
       console.error('PATCH /api/properties/:id/booked error:', err);
       res.status(500).json({ message: 'Error updating booked status' });
+    }
+  });
+
+  // ── PATCH /api/properties/:id/block (admin: block / unblock a property) ──
+  // Body: { blocked: true | false }. A blocked property disappears from the public platform at
+  // once — GET /api/properties, the shared-link page, visit requests and bookings all exclude it.
+  // Nothing is deleted; unblocking brings it back exactly as it was (still needs verified:true).
+  app.patch('/api/properties/:id/block', requireAdmin, requireModuleAction('properties'), requireButton('properties', 'block'), async (req, res) => {
+    try {
+      const { blocked } = req.body || {};
+      if (typeof blocked !== 'boolean') return res.status(400).json({ message: 'blocked must be a boolean' });
+      const prop = await updateListingById(req.params.id, { blocked, blockedAt: blocked ? new Date() : null }, { new: true });
+      if (!prop) return res.status(404).json({ message: 'Property not found' });
+      res.json({ message: blocked ? 'Property blocked and removed from the platform' : 'Property unblocked', blocked: !!prop.blocked });
+    } catch (err) {
+      console.error('PATCH /api/properties/:id/block error:', err);
+      res.status(500).json({ message: 'Error updating block status' });
     }
   });
 
