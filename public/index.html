@@ -13166,7 +13166,10 @@ async function confirmClearAddModalDraft() {
 // login prompt, closable via the X, a backdrop click, or Escape like any other modal.
 // Dismissing it (without logging in) snoozes it for AUTH_SKIP_MS (15 minutes):
 // it comes back on its own once that time is up, still logged out, via the timer below.
-const AUTH_SKIP_MS = 15 * 60 * 1000; // "skip for 15 minutes"
+const AUTH_SKIP_MS = 15 * 60 * 1000; // legacy (unused) — skip is now permanent
+// Once the visitor skips the login prompt we never auto-ask again (no timer, no
+// per-property gating). Login still opens on demand (profile icon, booking, etc.).
+function hasSkippedAuth() { try { return localStorage.getItem('homeloop_auth_skipped') === '1'; } catch (e) { return false; } }
 let _authSkipTimer = null;
 function scheduleAuthPrompt(delayMs) {
   clearTimeout(_authSkipTimer);
@@ -13197,8 +13200,8 @@ function closeAuthModal() {
   unlockBodyScroll();
   backToSignupForm();
   if (!getLoggedInUser()) {
-    localStorage.setItem('homeloop_auth_skip_until', String(Date.now() + AUTH_SKIP_MS));
-    scheduleAuthPrompt(AUTH_SKIP_MS);
+    try { localStorage.setItem('homeloop_auth_skipped', '1'); } catch (e) { /* ignore */ }
+    clearTimeout(_authSkipTimer);
     // Dismissed instead of logging in — continue as a guest into whatever
     // they originally clicked (a photo zoom or a property's detail view),
     // if this close was gating one. Run once, then clear it.
@@ -16419,7 +16422,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
   syncFdBar();
   updateAllOnlySections(); // hide UrbanAware / Reviews / Premium on initial load (default tab is Rent)
-  setTimeout(checkOfficeHoursModal, 700); // slight delay so it doesn't flash in before the page has settled
+  // DISABLED for now: after-hours modal. Uncomment to re-enable.
+  // setTimeout(checkOfficeHoursModal, 700);
 
   // restoreFilterStateBeforeBuild() only reads localStorage — it doesn't
   // need the /api/properties response, it was just nested inside
@@ -17869,11 +17873,8 @@ document.getElementById('reviewModal').addEventListener('click', function(e) {
 // Dismissing it only skips it for AUTH_SKIP_MS (see closeAuthModal()); it then
 // reopens on its own if the visitor still hasn't logged in.
 // It also opens the same way on demand from the Profile icon via handleMenuAuthClick().
-if (!getLoggedInUser()) {
-  const skipUntil = parseInt(localStorage.getItem('homeloop_auth_skip_until'), 10) || 0;
-  const remaining = skipUntil - Date.now();
-  if (remaining > 0) scheduleAuthPrompt(remaining);
-  else openAuthModal();
+if (!getLoggedInUser() && !hasSkippedAuth()) {
+  openAuthModal();
 }
 buildFilterOptions();
 syncFdBar();
