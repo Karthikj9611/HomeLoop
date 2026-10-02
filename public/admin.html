@@ -648,15 +648,20 @@ table.dataTable.no-footer{border-bottom:none!important}
    REMARKS — subgrid card design
    ══════════════════════════════════════ */
 .remark-cell{
-  min-width:220px;max-width:280px;
+  min-width:380px;max-width:440px;
   text-align:left!important;
   padding:2px 0!important;
 }
 
-/* Card container holding all remark cards + add row */
+/* Remarks dropdown + "Add Remark" button always share ONE row; the slide-down
+   input opens on its own full-width line underneath. */
 .remark-subgrid{
-  display:flex;flex-direction:column;gap:5px;
+  display:flex;flex-direction:row;flex-wrap:wrap;align-items:center;
+  column-gap:10px;row-gap:0;
 }
+.remark-subgrid .remark-dd{flex:1 1 0;width:auto;min-width:0}
+.remark-subgrid .remark-add-btn{margin-top:0;flex-shrink:0}
+.remark-subgrid .remark-input-panel{flex:0 0 100%}
 
 /* Each individual remark card */
 .remark-card{
@@ -710,6 +715,40 @@ table.dataTable.no-footer{border-bottom:none!important}
 }
 .remark-card:hover .remark-card-del{opacity:1}
 .remark-card-del:hover{background:var(--red-light);color:var(--red)}
+
+/* Remarks dropdown trigger — same pill look as the Reason select */
+.remark-dd{
+  display:flex;align-items:center;gap:8px;
+  width:100%;min-width:200px;padding:7px 12px;
+  border:1.5px solid var(--gold);border-radius:99px;background:var(--surface);
+  font-family:'Inter',sans-serif;font-size:0.78rem;font-weight:600;color:var(--ink);
+  cursor:pointer;text-align:left;outline:none;
+  transition:border-color 0.18s,box-shadow 0.18s;
+}
+.remark-dd:hover,.remark-dd:focus{box-shadow:0 0 0 3px rgba(184,144,60,0.12)}
+.remark-dd-text{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.remark-dd-count{
+  display:inline-flex;align-items:center;justify-content:center;
+  min-width:18px;height:18px;padding:0 6px;border-radius:99px;
+  background:var(--gold-light);color:var(--gold-dark);font-size:0.65rem;font-weight:800;flex-shrink:0;
+}
+.remark-dd-chev{font-size:0.62rem;color:var(--ink3);flex-shrink:0}
+
+/* Floating list of all remarks (newest first) */
+.remark-menu{
+  display:none;position:fixed;z-index:9000;
+  max-width:340px;max-height:260px;overflow-y:auto;
+  background:var(--surface);border:1px solid var(--border);border-radius:12px;
+  box-shadow:0 12px 32px rgba(12,13,16,0.18);padding:6px;
+}
+.remark-menu-item{
+  display:grid;grid-template-columns:20px 1fr auto;align-items:start;gap:6px;
+  padding:7px 8px;border-radius:8px;
+}
+.remark-menu-item + .remark-menu-item{border-top:1px solid var(--border)}
+.remark-menu-item:hover{background:var(--surface2)}
+.remark-menu-item.is-latest{background:var(--gold-light)}
+.remark-menu-item .remark-card-del{opacity:0.7}
 
 /* Empty placeholder */
 .remark-empty{
@@ -815,8 +854,17 @@ table.dataTable.no-footer{border-bottom:none!important}
   padding:6px 10px;outline:none;background:var(--surface);
   transition:border-color 0.18s,box-shadow 0.18s;
 }
-.reason-select.has-reason{color:var(--ink);font-weight:600;border-color:var(--gold)}
-.reason-select:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(184,144,60,0.12)}
+.reason-select option{color:var(--ink);font-weight:500}
+.reason-select.has-reason{
+  color:var(--ink);font-weight:600;
+  border-color:var(--rc,var(--gold));
+  background-color:#fff;
+  background-color:color-mix(in srgb, var(--rc,#b8903c) 10%, #fff);
+  background-image:radial-gradient(circle, var(--rc,#b8903c) 0 4px, transparent 4.5px);
+  background-repeat:no-repeat;background-position:11px center;background-size:10px 10px;
+  padding-left:28px;
+}
+.reason-select:focus{border-color:var(--rc,var(--gold));box-shadow:0 0 0 3px rgba(184,144,60,0.12);box-shadow:0 0 0 3px color-mix(in srgb, var(--rc,#b8903c) 20%, transparent)}
 .reason-select:disabled{opacity:0.5}
 
 /* ── PROPERTY TABLE ── */
@@ -9484,13 +9532,29 @@ const REASON_PRESETS = {
   owner:    ['Not reachable', 'Verification pending', 'Duplicate account', 'Wants to delist', 'Rent expectation high', 'Agent / broker', 'Callback', 'Not answered', 'Switched off', 'Shifted through us'],
   property: ['Already rented', 'Wrong details', 'Photos missing', 'Price too high', 'Duplicate listing', 'Fake listing', 'Location mismatch', 'Under renovation', 'Callback', 'Not answered', 'Switched off', 'Shifted through us']
 };
+// Indicator colour per reason (shown on the dropdown's border, tint and dot).
+const REASON_COLORS = {
+  // shared follow-up / outcome reasons
+  'Callback':'#2563eb', 'Not answered':'#ca8a04', 'Switched off':'#64748b', 'Shifted through us':'#16a34a',
+  // customers
+  'Not interested':'#dc2626', 'Found elsewhere':'#ea580c', 'Spam / fake':'#7c3aed', 'Not serviceable location':'#b45309',
+  // owners
+  'Not reachable':'#ca8a04', 'Verification pending':'#0891b2', 'Duplicate account':'#64748b',
+  'Wants to delist':'#dc2626', 'Rent expectation high':'#ea580c', 'Agent / broker':'#7c3aed',
+  // properties
+  'Already rented':'#16a34a', 'Wrong details':'#ea580c', 'Photos missing':'#ca8a04', 'Price too high':'#d97706',
+  'Duplicate listing':'#64748b', 'Fake listing':'#be123c', 'Location mismatch':'#b45309', 'Under renovation':'#0891b2'
+};
+function reasonColor(r){ return r ? (REASON_COLORS[r] || '#64748b') : ''; }
 function reasonCellHtml(id, value, type, accountType){
   const list = REASON_PRESETS[(type === 'customer' && accountType === 'owner') ? 'owner' : type] || [];
   const cur = value || '';
+  const optHtml = (o, sel) => `<option value="${escapeHtml(o)}" style="color:${reasonColor(o)};font-weight:600"${sel?' selected':''}>${escapeHtml(o)}</option>`;
   const opts = ['<option value="">Select reason…</option>']
-    .concat(list.map(o=>`<option value="${escapeHtml(o)}"${o===cur?' selected':''}>${escapeHtml(o)}</option>`));
-  if(cur && list.indexOf(cur) < 0) opts.push(`<option value="${escapeHtml(cur)}" selected>${escapeHtml(cur)}</option>`);
-  return `<select class="reason-select${cur?' has-reason':''}" data-id="${escapeHtml(String(id))}" data-type="${type}" data-prev="${escapeHtml(cur)}" onchange="saveReason(this)">${opts.join('')}</select>`;
+    .concat(list.map(o => optHtml(o, o === cur)));
+  if(cur && list.indexOf(cur) < 0) opts.push(optHtml(cur, true));
+  const rc = reasonColor(cur);
+  return `<select class="reason-select${cur?' has-reason':''}" ${rc ? `style="--rc:${rc}"` : ''} data-id="${escapeHtml(String(id))}" data-type="${type}" data-prev="${escapeHtml(cur)}" onchange="saveReason(this)">${opts.join('')}</select>`;
 }
 window.saveReason = async function(sel){
   const type = sel.dataset.type, id = sel.dataset.id, prev = sel.dataset.prev || '';
@@ -9510,6 +9574,7 @@ window.saveReason = async function(sel){
     if(!res.ok) throw new Error('Save failed');
     sel.dataset.prev = val;
     sel.classList.toggle('has-reason', !!val);
+    if(val) sel.style.setProperty('--rc', reasonColor(val)); else sel.style.removeProperty('--rc');
     const tbl = type === 'customer' ? dataTable : propTable;
     if(tbl){ const row = tbl.row(sel.closest('tr')).data(); if(row) row.reason = val; }
     if(type === 'customer' && tbl){
@@ -9537,31 +9602,23 @@ function remarkCellHtml(id, remark, type){
     entries = [{ text: remark.trim(), date: '' }];
   }
 
-  /* Remark cards */
+  /* Remarks as a dropdown (like Reason): the trigger shows the LATEST remark;
+     opening it lists every remark, newest first, each with its own delete. */
   let cardsHtml = '';
   if(entries.length){
-    cardsHtml = entries.map((e, i) => {
-      const dateStr = e.date
-        ? `<div class="remark-item-date"><i class="far fa-clock"></i>${fmtDateDMY(new Date(e.date))}</div>`
-        : '';
-      return `
-        <div class="remark-card">
-          <div class="remark-sl">${i+1}</div>
-          <div class="remark-card-body">
-            <div class="remark-item-text">${escapeHtml(e.text)}</div>
-            ${dateStr}
-          </div>
-          <button class="remark-card-del" title="Delete remark" onclick="deleteRemark(this,'${id}','${type}',${e.origIdx ?? i})">
-            <i class="fas fa-times"></i>
-          </button>
-        </div>`;
-    }).join('');
+    const latest = entries[entries.length - 1];
+    cardsHtml = `
+      <button type="button" class="remark-dd" onclick="openRemarkMenu(this)" aria-haspopup="listbox" title="Click to see all remarks">
+        <span class="remark-dd-text">${escapeHtml(latest.text)}</span>
+        ${entries.length > 1 ? `<span class="remark-dd-count">${entries.length}</span>` : ''}
+        <i class="fas fa-chevron-down remark-dd-chev"></i>
+      </button>`;
   } else {
     cardsHtml = `<div class="remark-empty"><i class="fas fa-comment-slash" style="margin-right:4px;opacity:0.4"></i>No remarks yet</div>`;
   }
 
   return `
-    <div class="remark-cell${entries.length ? '' : ' remark-cell-empty'}" data-id="${id}" data-type="${type}">
+    <div class="remark-cell${entries.length ? '' : ' remark-cell-empty'}" data-id="${id}" data-type="${type}" data-remarks="${encodeURIComponent(JSON.stringify(entries.map((e, i) => ({ text: e.text, date: e.date || '', idx: (e.origIdx ?? i) }))))}">
       <div class="remark-subgrid${entries.length ? '' : ' remark-subgrid-empty'}">
         ${cardsHtml}
 
@@ -9590,6 +9647,69 @@ function remarkCellHtml(id, remark, type){
     </div>
   `;
 }
+
+/* ── Remarks dropdown (floating list so the table's scroll area can't clip it) ── */
+let _remarkMenuEl = null, _remarkMenuCell = null;
+function closeRemarkMenu(){
+  if(_remarkMenuEl) _remarkMenuEl.style.display = 'none';
+  _remarkMenuCell = null;
+}
+window.openRemarkMenu = function(btn){
+  const cell = btn.closest('.remark-cell');
+  if(!cell) return;
+  if(!_remarkMenuEl){
+    _remarkMenuEl = document.createElement('div');
+    _remarkMenuEl.className = 'remark-menu';
+    _remarkMenuEl.setAttribute('role', 'listbox');
+    document.body.appendChild(_remarkMenuEl);
+    document.addEventListener('mousedown', function(e){
+      if(!_remarkMenuEl || _remarkMenuEl.style.display !== 'block') return;
+      if(_remarkMenuEl.contains(e.target) || e.target.closest('.remark-dd')) return;
+      closeRemarkMenu();
+    });
+    document.addEventListener('keydown', function(e){ if(e.key === 'Escape') closeRemarkMenu(); });
+    window.addEventListener('resize', closeRemarkMenu);
+    window.addEventListener('scroll', function(e){
+      if(_remarkMenuEl && _remarkMenuEl.contains(e.target)) return;   // scrolling inside the list is fine
+      closeRemarkMenu();
+    }, true);
+  }
+  if(_remarkMenuEl.style.display === 'block' && _remarkMenuCell === cell){ closeRemarkMenu(); return; }
+
+  let list = [];
+  try{ list = JSON.parse(decodeURIComponent(cell.dataset.remarks || '[]')); }catch(e){ list = []; }
+  const id = cell.dataset.id, type = cell.dataset.type;
+  let html = '';
+  for(let i = list.length - 1; i >= 0; i--){       // newest first
+    const r = list[i];
+    const dateStr = r.date ? `<div class="remark-item-date"><i class="far fa-clock"></i>${fmtDateDMY(new Date(r.date))}</div>` : '';
+    html += `
+      <div class="remark-menu-item${i === list.length - 1 ? ' is-latest' : ''}" role="option">
+        <div class="remark-sl">${i + 1}</div>
+        <div class="remark-card-body">
+          <div class="remark-item-text">${escapeHtml(r.text)}</div>
+          ${dateStr}
+        </div>
+        <button class="remark-card-del" title="Delete remark" onclick="deleteRemark(this,'${id}','${type}',${r.idx})">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>`;
+  }
+  _remarkMenuEl.innerHTML = html;
+  _remarkMenuCell = cell;
+
+  const rect = btn.getBoundingClientRect();
+  const m = _remarkMenuEl;
+  m.style.display = 'block';
+  m.style.minWidth = Math.max(rect.width, 260) + 'px';
+  m.style.left = Math.max(8, Math.min(rect.left, window.innerWidth - m.offsetWidth - 8)) + 'px';
+  const below = window.innerHeight - rect.bottom;
+  if(below < Math.min(m.offsetHeight, 240) + 12 && rect.top > below){
+    m.style.top = Math.max(8, rect.top - m.offsetHeight - 4) + 'px';
+  } else {
+    m.style.top = (rect.bottom + 4) + 'px';
+  }
+};
 
 /* Toggle the slide-down input panel */
 window.toggleRemarkInput = function(btn){
@@ -9661,9 +9781,10 @@ async function saveRemark(cell, id, type){
 window.deleteRemark = async function(btn, id, type, idx){
   const remarkModule = type === 'customer' ? 'customers' : type === 'appointment' ? 'appointments' : 'properties';
   if(blockIfViewOnly(remarkModule)) return;
+  const cell = btn.closest('.remark-cell') || _remarkMenuCell;
+  closeRemarkMenu();
   if(!await showConfirmModal({ title:'Delete remark?', message:'This remark will be removed permanently.' })) return;
-  const cell = btn.closest('.remark-cell');
-  cell.classList.add('remark-saving');
+  if(cell) cell.classList.add('remark-saving');
   try {
     const url = type === 'customer'
       ? `${BASE}/api/users/mobile/${id}/remarks/${idx}`
@@ -9678,7 +9799,7 @@ window.deleteRemark = async function(btn, id, type, idx){
   } catch(e){
     alert('Could not delete remark. Please try again.');
   }
-  cell.classList.remove('remark-saving');
+  if(cell) cell.classList.remove('remark-saving');
 };
 
 $(document).on('click', '.remark-save-btn', function(){
