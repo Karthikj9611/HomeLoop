@@ -8915,10 +8915,13 @@ function setEmptyStateContent() {
   }
 }
 
+let _renderToken = 0; // bumped on every renderCards(); cancels any in-flight chunked render
 function renderCards() {
+  _renderToken++;
   saveFilterState(); // keep localStorage in sync with live filter/tab state on every render
   const empty = document.getElementById('emptyState');
-  const list = getFiltered();
+  const _fsNow = getFilterState();
+  const list = getFiltered(PROPERTIES, _fsNow);
   document.getElementById('resultCount').textContent = list.length;
 
   const SECTIONS = ['promoted', 'rent', 'lease', 'pg', 'shortstay', 'sell'];
@@ -8930,7 +8933,7 @@ function renderCards() {
     });
     setEmptyStateContent();
     empty.classList.add('show');
-    renderBookedSections(); // booked matches (if any) must still follow the filters
+    renderBookedSections(_fsNow); // booked matches (if any) must still follow the filters
     return;
   }
   empty.classList.remove('show');
@@ -9016,7 +9019,25 @@ function renderCards() {
     document.getElementById(key + 'Count').textContent = items.length;
 
     if (noPagination) {
-      grid.innerHTML = items.map(p => cardHTML(p, key !== 'promoted')).join('');
+      // Long lists: paint the first screenful immediately, stream the rest in
+      // small chunks over the next frames so filtering feels instant.
+      const FIRST = 24, CHUNK = 40;
+      if (items.length <= FIRST + 8) {
+        grid.innerHTML = items.map(p => cardHTML(p, key !== 'promoted')).join('');
+        return;
+      }
+      grid.innerHTML = items.slice(0, FIRST).map(p => cardHTML(p, key !== 'promoted')).join('');
+      const tok = _renderToken;
+      let i = FIRST;
+      const step = () => {
+        if (tok !== _renderToken) return; // a newer render superseded this one
+        grid.insertAdjacentHTML('beforeend', items.slice(i, i + CHUNK).map(p => cardHTML(p, key !== 'promoted')).join(''));
+        observeCardImgs(grid);
+        i += CHUNK;
+        if (i < items.length) requestAnimationFrame(step);
+        else syncChipRowFade();
+      };
+      requestAnimationFrame(step);
       return;
     }
 
@@ -9039,7 +9060,7 @@ function renderCards() {
   // variable, keeping the two visually identical at any screen size.
   syncScrollCardWidth();
 
-  renderBookedSections();
+  renderBookedSections(_fsNow);
   observeCardImgs();
 }
 
@@ -9051,11 +9072,11 @@ function renderCards() {
 // same as Rent/Lease/PG each showing only their own type's booked listings.
 // Respects search/filter state (same getFiltered pipeline as available
 // listings), and only one bucket is ever populated at a time, matching whichever tab is active.
-function renderBookedSections() {
+function renderBookedSections(fsIn) {
   const groups = { promoted: [], rent: [], lease: [], pg: [], sell: [] };
   // Booked listings go through the same search + filter pipeline as available
   // ones (getFiltered), so applied filters narrow the Booked bucket too.
-  const booked = getFiltered(BOOKED_PROPERTIES);
+  const booked = getFiltered(BOOKED_PROPERTIES, fsIn);
   if (currentTab === 'Promoted') {
     groups.promoted = booked.filter(p => p.promoted);
   } else if (currentTab === 'Rent') {
@@ -11035,12 +11056,22 @@ function closeAllFd() {
   openFd = null;
 }
 
+/* Coalesced filter re-render. Several quick clicks (or keystrokes) collapse into
+   ONE render, and it runs after the next paint so the pill/badge highlight shows
+   instantly instead of waiting on the grid rebuild. delay>0 = debounce (typing). */
+let _fdRenderTimer = null;
+function renderFiltersSoon(delay) {
+  clearTimeout(_fdRenderTimer);
+  const run = () => { renderCards(); renderRecentlyViewed(); };
+  if (delay > 0) { _fdRenderTimer = setTimeout(run, delay); return; }
+  requestAnimationFrame(() => { _fdRenderTimer = setTimeout(run, 0); });
+}
+
 /* Toggle a pill option and update its dropdown badge */
 function toggleOpt(el, group) {
   el.classList.toggle('sel');
   if (group) refreshFdBtn(group);
-  renderCards();
-  renderRecentlyViewed(); // keep the Recently Viewed strip in sync with the same filters
+  renderFiltersSoon(); // keep cards + Recently Viewed strip in sync with the same filters
 }
 
 /* Refresh a button's badge based on selected opts + range state */
@@ -11097,8 +11128,7 @@ function fdSearchOpts(containerId, query) {
 function applyFd(id) {
   refreshFdBtn(id);
   closeAllFd();
-  renderCards();
-  renderRecentlyViewed(); // keep the Recently Viewed strip in sync with the same filters
+  renderFiltersSoon();
 }
 
 /* Clear a single dropdown */
@@ -11113,8 +11143,7 @@ function clearFd(id) {
     pop.querySelectorAll('.fp-opt.fd-hidden').forEach(o => o.classList.remove('fd-hidden'));
   }
   refreshFdBtn(id);
-  renderCards();
-  renderRecentlyViewed(); // keep the Recently Viewed strip in sync with the same filters
+  renderFiltersSoon();
 }
 
 /* Clear all filters */
@@ -11131,8 +11160,7 @@ function clearFilters() {
     refreshFdRangeBtn(id, true);
   });
   closeAllFd();
-  renderCards();
-  renderRecentlyViewed(); // keep the Recently Viewed strip in sync with the same filters
+  renderFiltersSoon();
 }
 
 /* ── Unified min/max range filters: Price, Deposit, Maintenance ──
@@ -11168,7 +11196,7 @@ function refreshFdRangeBtn(id, skipRender) {
     badge.style.display = hasAny ? '' : 'none';
   }
   refreshTotalBadge();
-  if (!skipRender) { renderCards(); renderRecentlyViewed(); }
+  if (!skipRender) renderFiltersSoon(150); // typing in Min/Max: debounce instead of re-rendering per keystroke
 }
 
 /* Apply = close popover and rerender (values are already live via oninput,
@@ -11176,8 +11204,7 @@ function refreshFdRangeBtn(id, skipRender) {
 function applyFdRange(id) {
   refreshFdRangeBtn(id, true);
   closeAllFd();
-  renderCards();
-  renderRecentlyViewed(); // keep the Recently Viewed strip in sync with the same filters
+  renderFiltersSoon();
 }
 
 /* Clear a single range filter's Min/Max inputs */
@@ -11187,8 +11214,7 @@ function clearFdRange(id) {
   if (minEl) minEl.value = '';
   if (maxEl) maxEl.value = '';
   refreshFdRangeBtn(id, true);
-  renderCards();
-  renderRecentlyViewed(); // keep the Recently Viewed strip in sync with the same filters
+  renderFiltersSoon();
 }
 
 function fmtRupee(n) {
@@ -11357,14 +11383,29 @@ function saveFilterState() {
   // Once the initial restore has run (_initialFilterRestoreDone), it's
   // safe to keep localStorage mirroring the live state on every render.
   if (!_initialFilterRestoreDone) return;
+  // Deferred + coalesced: the write used to run synchronously inside every
+  // render. The storage key is captured now so a login/logout in between can't
+  // write this state into another account's slot.
+  _pendingSaveKey = filterStateKey();
+  clearTimeout(_saveFsTimer);
+  _saveFsTimer = setTimeout(flushFilterStateSave, 300);
+}
+let _saveFsTimer = null, _pendingSaveKey = null;
+function flushFilterStateSave() {
+  clearTimeout(_saveFsTimer);
+  if (!_pendingSaveKey) return;
+  const key = _pendingSaveKey;
+  _pendingSaveKey = null;
   try {
-    localStorage.setItem(filterStateKey(), JSON.stringify({
+    localStorage.setItem(key, JSON.stringify({
       tab: currentTab,
       search: searchQuery,
       sel: getFilterState()
     }));
   } catch (e) { /* storage unavailable/full — fail silently */ }
 }
+window.addEventListener('pagehide', flushFilterStateSave);
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flushFilterStateSave(); });
 
 function restoreFilterStateBeforeBuild() {
   let saved;
@@ -11521,8 +11562,8 @@ const SHORT_STAY_ENABLED = false;
 // card rendering are all untouched.
 const PG_ENABLED = false;
 
-function getFiltered(source = PROPERTIES) {
-  const fs = getFilterState();
+function getFiltered(source = PROPERTIES, fsIn) {
+  const fs = fsIn || getFilterState(); // callers rendering twice pass it in to avoid re-reading the DOM
   const hasFilters = Object.keys(fs).some(k => {
     const v = fs[k];
     return Array.isArray(v) ? v.length > 0 : v !== null && v !== undefined;
@@ -11742,8 +11783,13 @@ function applyFilters(){ closeAllFd(); renderCards(); }
    the MongoDB _id (not the QWR001-style code — that's p.propertyId), and
    createdAt is more direct anyway. */
 function propertyListedAt(p) {
-  const t = new Date(p.createdAt).getTime();
-  return isNaN(t) ? 0 : t;
+  // Memoised: sorting calls this O(n log n) times per render.
+  if (p._laSrc !== p.createdAt || p._la === undefined) {
+    const t = new Date(p.createdAt).getTime();
+    p._la = isNaN(t) ? 0 : t;
+    p._laSrc = p.createdAt;
+  }
+  return p._la;
 }
 
 function getPropertyPincode(p) {
