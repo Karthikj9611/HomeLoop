@@ -9222,10 +9222,13 @@ function buildVideoSlideHtml(p) {
 // the photo is genuinely worth a closer look before the user commits to
 // opening the full listing.
 function handleCardImgClick(el, id, idx) {
-  if (el.closest('.recently-viewed-strip') || el.closest('[id$="BookedGrid"]')) {
-    openDetail(id);
+  // Inside the property view modal itself, a photo tap zooms (lightbox).
+  // Everywhere else (cards in any grid/strip), a photo tap opens the property view first.
+  // No login prompt here: the visitor already passed (or skipped) it to open the property view.
+  if (el.closest('#detailGallerySlot')) {
+    openLightboxReal(id, idx);
   } else {
-    openLightbox(id, idx);
+    openDetail(id);
   }
 }
 // Same property can legitimately be rendered into more than one place at
@@ -12106,7 +12109,7 @@ function buildDetailTable(p) {
     kv('Bathrooms', property.bathrooms),
     !isPG && !isShortStay ? kv('Toilet type', property.toiletType) : null,
     kv('Furnishing', property.furnish),
-    !isPG && !isSell ? kv('Available from', property.available ? formatDateDisplay(property.available) : property.available) : null,
+    // 'Available from' hidden in the property view for now.
   ]);
 
   if (isSell) {
@@ -12166,7 +12169,7 @@ function buildDetailTable(p) {
       kv('Toilet type', pg.toiletType),
       kv('Room furnishing', pg.furnish),
       kv('Food type', pg.food),
-      kv('Available from', pg.available ? formatDateDisplay(pg.available) : pg.available),
+      // 'Available from' hidden in the property view for now.
       kv('Visitor policy', pg.visitors),
       kv('Gate closing time', pg.gateTime),
     ]);
