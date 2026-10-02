@@ -707,7 +707,7 @@ table.dataTable.no-footer{border-bottom:none!important}
   width:20px;height:20px;border-radius:50%;
   border:none;background:transparent;cursor:pointer;
   color:var(--ink3);font-size:0.65rem;
-  opacity:0;transition:opacity 0.15s,background 0.15s,color 0.15s;
+  opacity:0.6;transition:opacity 0.15s,background 0.15s,color 0.15s;
   flex-shrink:0;margin-top:1px;
 }
 .remark-card:hover .remark-card-del{opacity:1}
@@ -805,6 +805,16 @@ table.dataTable.no-footer{border-bottom:none!important}
 }
 .remark-cancel-small:hover{background:var(--red-light);color:var(--red)}
 .remark-saving{opacity:0.5;pointer-events:none}
+.reason-select{
+  min-width:150px;cursor:pointer;
+  font-family:'Inter',sans-serif;font-size:0.78rem;color:var(--ink3);
+  border:1.5px solid var(--border);border-radius:99px;
+  padding:6px 10px;outline:none;background:var(--surface);
+  transition:border-color 0.18s,box-shadow 0.18s;
+}
+.reason-select.has-reason{color:var(--ink);font-weight:600;border-color:var(--gold)}
+.reason-select:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(184,144,60,0.12)}
+.reason-select:disabled{opacity:0.5}
 
 /* ── PROPERTY TABLE ── */
 .prop-title{font-weight:600;font-size:0.88rem;color:var(--ink);max-width:202px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -3228,6 +3238,15 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
       <button class="cat-tab-btn" data-type="owner" onclick="switchCustType('owner')">
         <i class="fas fa-house-user"></i><span class="cat-tab-btn-label" data-mobile="Owners">Owners</span><span class="cat-count" id="cust-type-count-owner">—</span>
       </button>
+      <button class="cat-tab-btn" data-type="leads" onclick="switchCustType('leads')">
+        <i class="fas fa-bullseye"></i><span class="cat-tab-btn-label" data-mobile="Lost Leads">Lost Leads</span><span class="cat-count" id="cust-type-count-leads">—</span>
+      </button>
+      <button class="cat-tab-btn" data-type="rented" onclick="switchCustType('rented')">
+        <i class="fas fa-handshake"></i><span class="cat-tab-btn-label" data-mobile="Rented Through Us">Rented Through Us</span><span class="cat-count" id="cust-type-count-rented">—</span>
+      </button>
+      <button class="cat-tab-btn" data-type="all" onclick="switchCustType('all')">
+        <i class="fas fa-users"></i><span class="cat-tab-btn-label" data-mobile="All">All Customers</span><span class="cat-count" id="cust-type-count-all">—</span>
+      </button>
     </div>
     <div class="card">
       <div class="table-wrapper">
@@ -3269,6 +3288,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
               <th>Visits</th>
               <th>Views</th>
               <th>Registered</th>
+              <th>Reason</th>
               <th>Remarks</th>
               <th>Action</th>
             </tr>
@@ -3294,12 +3314,13 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
                 <input type="date" data-filter-key="registeredStart" title="From" onchange="onCustRegisteredRangeFilter('start', this.value, this)">
                 <input type="date" data-filter-key="registeredEnd" title="To" onchange="onCustRegisteredRangeFilter('end', this.value, this)">
               </div></th>
+              <th><select class="col-filter-select" data-filter-key="reason" onchange="onCustColumnFilter('reason', this.value, this)"><option value="">All</option><option value="Not interested">Not interested</option><option value="Found elsewhere">Found elsewhere</option><option value="Spam / fake">Spam / fake</option><option value="Not serviceable location">Not serviceable location</option><option value="Not reachable">Not reachable</option><option value="Verification pending">Verification pending</option><option value="Duplicate account">Duplicate account</option><option value="Wants to delist">Wants to delist</option><option value="Rent expectation high">Rent expectation high</option><option value="Agent / broker">Agent / broker</option><option value="Callback">Callback</option><option value="Not answered">Not answered</option><option value="Switched off">Switched off</option><option value="Shifted through us">Shifted through us</option></select></th>
               <th><input type="text" class="col-filter-input" data-filter-key="remarks" placeholder="Search…" oninput="onCustColumnFilter('remarks', this.value, this)"></th>
               <th></th>
             </tr>
           </thead>
           <tbody>
-            <tr><td colspan="13" class="empty-state"><i class="fas fa-circle-notch fa-spin"></i>Loading…</td></tr>
+            <tr><td colspan="14" class="empty-state"><i class="fas fa-circle-notch fa-spin"></i>Loading…</td></tr>
           </tbody>
         </table>
       </div>
@@ -3450,6 +3471,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
               <th>Amenities</th>
               <th>User ID</th>
               <th>Listed On</th>
+              <th>Reason</th>
               <th>Remarks</th>
               <th title="Click to sort nearest→farthest (distance from your office location, or your device location if none is set)">Action</th>
             </tr>
@@ -3512,12 +3534,13 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
                 <input type="date" data-filter-key="listedOnStart" title="From" onchange="onPropListedOnRangeFilter('start', this.value, this)">
                 <input type="date" data-filter-key="listedOnEnd" title="To" onchange="onPropListedOnRangeFilter('end', this.value, this)">
               </div></th>
+              <th><select class="col-filter-select" data-filter-key="reason" onchange="onPropColumnFilter('reason', this.value, this)"><option value="">All</option><option value="Already rented">Already rented</option><option value="Wrong details">Wrong details</option><option value="Photos missing">Photos missing</option><option value="Price too high">Price too high</option><option value="Duplicate listing">Duplicate listing</option><option value="Fake listing">Fake listing</option><option value="Location mismatch">Location mismatch</option><option value="Under renovation">Under renovation</option><option value="Callback">Callback</option><option value="Not answered">Not answered</option><option value="Switched off">Switched off</option><option value="Shifted through us">Shifted through us</option></select></th>
               <th><input type="text" class="col-filter-input" data-filter-key="remarks" placeholder="Search…" oninput="onPropColumnFilter('remarks', this.value, this)"></th>
               <th><input type="number" min="0" step="0.1" class="col-filter-input" data-filter-key="maxDistanceKm" placeholder="≤ km" title="Show only listings within this many km of your current location (needs location access, used by the Directions button)" oninput="onPropColumnFilter('maxDistanceKm', this.value, this)"></th>
             </tr>
           </thead>
           <tbody>
-            <tr><td colspan="51" class="empty-state"><i class="fas fa-circle-notch fa-spin"></i>Loading…</td></tr>
+            <tr><td colspan="52" class="empty-state"><i class="fas fa-circle-notch fa-spin"></i>Loading…</td></tr>
           </tbody>
         </table>
       </div>
@@ -6409,13 +6432,22 @@ function reconcileDateRange(container, filterObj, startKey, endKey){
   }
 }
 
-const _custColumnFilters = { name:'', userId:'', mobile:'', email:'', accountType:'', listings:'', visits:'', views:'', registeredStart:'', registeredEnd:'', remarks:'' };
+const _custColumnFilters = { name:'', userId:'', mobile:'', email:'', accountType:'', listings:'', visits:'', views:'', registeredStart:'', registeredEnd:'', remarks:'', reason:'' };
 const CUST_FILTER_STORAGE_KEY = 'rip_admin_custFilters';
 loadFilterState(CUST_FILTER_STORAGE_KEY, _custColumnFilters);
 _custColumnFilters.accountType = ''; // type is now chosen via the Tenants / Owners sub-tabs
 
 let _custTypeTab = 'customer';
-try{ const t = localStorage.getItem('kr_admin_custType'); if(t === 'customer' || t === 'owner') _custTypeTab = t; }catch(e){}
+try{ const t = localStorage.getItem('kr_admin_custType'); if(t === 'customer' || t === 'owner' || t === 'leads' || t === 'rented' || t === 'all') _custTypeTab = t; }catch(e){}
+
+// Records whose saved Reason is one of these are shown ONLY in the Leads tab
+// (they are removed from Tenants / Owners). Edit this list to change the rule.
+const LEAD_REASONS = ['Not interested', 'Found elsewhere', 'Spam / fake', 'Not serviceable location'];
+function isLeadRow(r){ return LEAD_REASONS.indexOf((r && r.reason) || '') >= 0; }
+
+// Records with one of these reasons are shown ONLY in the "Rented Through Us" tab.
+const RENTED_REASONS = ['Shifted through us'];
+function isRentedRow(r){ return RENTED_REASONS.indexOf((r && r.reason) || '') >= 0; }
 
 window.switchCustType = function(type){
   _custTypeTab = type;
@@ -6427,8 +6459,12 @@ window.switchCustType = function(type){
 };
 
 function updateCustTypeCounts(data){
-  const c = {customer:0, owner:0};
-  data.forEach(r=>{ c[(r.accountType === 'owner') ? 'owner' : 'customer']++; });
+  const c = {customer:0, owner:0, leads:0, rented:0, all:data.length};
+  data.forEach(r=>{
+    if(isLeadRow(r)) c.leads++;
+    else if(isRentedRow(r)) c.rented++;
+    else c[(r.accountType === 'owner') ? 'owner' : 'customer']++;
+  });
   Object.keys(c).forEach(k=>{
     const el = document.getElementById('cust-type-count-'+k);
     if(el) el.innerText = c[k];
@@ -6470,7 +6506,16 @@ $.fn.dataTable.ext.search.push(function(settings, data, dataIndex){
   const row = dataTable ? dataTable.row(dataIndex).data() : null;
   if(!row) return true;
   const cf = _custColumnFilters;
-  if((row.accountType||'customer') !== _custTypeTab) return false;
+  if(_custTypeTab === 'leads'){
+    if(!isLeadRow(row)) return false;
+  } else if(_custTypeTab === 'rented'){
+    if(!isRentedRow(row)) return false;
+  } else if(_custTypeTab === 'all'){
+    /* All Customers: every record (tenants, owners, lost leads, rented) */
+  } else {
+    if(isLeadRow(row) || isRentedRow(row)) return false;
+    if((row.accountType||'customer') !== _custTypeTab) return false;
+  }
   const contains = (val, needle) => String(val||'').toLowerCase().includes(needle.toLowerCase());
   const fullName = row.name || ((row.firstName||'')+' '+(row.lastName||'')).trim();
   if(cf.name && !contains(fullName, cf.name)) return false;
@@ -6494,6 +6539,7 @@ $.fn.dataTable.ext.search.push(function(settings, data, dataIndex){
     }
   }
   if(cf.remarks && !contains(flattenRemarks(row.remarks||[]), cf.remarks)) return false;
+  if(cf.reason && (row.reason||'') !== cf.reason) return false;
   return true;
 });
 
@@ -9351,15 +9397,60 @@ window.deleteSelectedAppointments = async function(){
   }
 };
 
+/* ── REASON (dropdown, saved to DB) ── */
+const REASON_PRESETS = {
+  customer: ['Not interested', 'Found elsewhere', 'Spam / fake', 'Not serviceable location', 'Callback', 'Not answered', 'Switched off', 'Shifted through us'],
+  owner:    ['Not reachable', 'Verification pending', 'Duplicate account', 'Wants to delist', 'Rent expectation high', 'Agent / broker', 'Callback', 'Not answered', 'Switched off', 'Shifted through us'],
+  property: ['Already rented', 'Wrong details', 'Photos missing', 'Price too high', 'Duplicate listing', 'Fake listing', 'Location mismatch', 'Under renovation', 'Callback', 'Not answered', 'Switched off', 'Shifted through us']
+};
+function reasonCellHtml(id, value, type, accountType){
+  const list = REASON_PRESETS[(type === 'customer' && accountType === 'owner') ? 'owner' : type] || [];
+  const cur = value || '';
+  const opts = ['<option value="">Select reason…</option>']
+    .concat(list.map(o=>`<option value="${escapeHtml(o)}"${o===cur?' selected':''}>${escapeHtml(o)}</option>`));
+  if(cur && list.indexOf(cur) < 0) opts.push(`<option value="${escapeHtml(cur)}" selected>${escapeHtml(cur)}</option>`);
+  return `<select class="reason-select${cur?' has-reason':''}" data-id="${escapeHtml(String(id))}" data-type="${type}" data-prev="${escapeHtml(cur)}" onchange="saveReason(this)">${opts.join('')}</select>`;
+}
+window.saveReason = async function(sel){
+  const type = sel.dataset.type, id = sel.dataset.id, prev = sel.dataset.prev || '';
+  const val = sel.value;
+  const mod = type === 'customer' ? 'customers' : 'properties';
+  if(blockIfViewOnly(mod)){ sel.value = prev; return; }
+  sel.disabled = true;
+  try {
+    const url = type === 'customer'
+      ? `${BASE}/api/users/mobile/${id}/reason`
+      : `${BASE}/api/properties/${id}/reason`;
+    const res = await fetch(url, {
+      method: 'PATCH',
+      headers: authHeaders({'Content-Type':'application/json'}),
+      body: JSON.stringify({ reason: val })
+    });
+    if(!res.ok) throw new Error('Save failed');
+    sel.dataset.prev = val;
+    sel.classList.toggle('has-reason', !!val);
+    const tbl = type === 'customer' ? dataTable : propTable;
+    if(tbl){ const row = tbl.row(sel.closest('tr')).data(); if(row) row.reason = val; }
+    if(type === 'customer' && tbl){
+      updateCustTypeCounts(tbl.rows().data().toArray());
+      tbl.draw(false);   // re-apply tab filter so the row moves to / from Leads
+    }
+  } catch(e){
+    sel.value = prev;
+    alert('Could not save reason. Please try again.');
+  }
+  sel.disabled = false;
+};
+
 /* ── REMARKS ── */
 function remarkCellHtml(id, remark, type){
 
   let entries = [];
   if(Array.isArray(remark) && remark.length){
     entries = remark
-      .map(r => typeof r === 'string'
-        ? { text: r.trim(), date: '' }
-        : { text: ((r && r.remark) || '').trim(), date: (r && (r.date || r.createdAt || r.timestamp)) || '' })
+      .map((r, origIdx) => typeof r === 'string'
+        ? { text: r.trim(), date: '', origIdx }
+        : { text: ((r && r.remark) || '').trim(), date: (r && (r.date || r.createdAt || r.timestamp)) || '', origIdx })
       .filter(e => e.text);
   } else if(typeof remark === 'string' && remark.trim()){
     entries = [{ text: remark.trim(), date: '' }];
@@ -9379,7 +9470,7 @@ function remarkCellHtml(id, remark, type){
             <div class="remark-item-text">${escapeHtml(e.text)}</div>
             ${dateStr}
           </div>
-          <button class="remark-card-del" title="Delete remark" onclick="deleteRemark(this,'${id}','${type}',${i})">
+          <button class="remark-card-del" title="Delete remark" onclick="deleteRemark(this,'${id}','${type}',${e.origIdx ?? i})">
             <i class="fas fa-times"></i>
           </button>
         </div>`;
@@ -9625,12 +9716,17 @@ $(document).ready(function(){
           if(t==='export') return plainDateTime(d);
           return d||'—';
       }},
-      /* 11 – Remarks */
+      /* 11 – Reason */
+      { data:'reason', orderable:false, render:(d,t,row)=>{
+          if(t==='display') return reasonCellHtml(row.mobile||row._id, d, 'customer', row.accountType);
+          return d||'';
+      }},
+      /* 12 – Remarks */
       { data:'remarks', orderable:false, render:(d,t,row)=>{
           if(t==='display') return remarkCellHtml(row.mobile||row._id, d, 'customer');
           return d||'';
       }},
-      /* 12 – Action */
+      /* 13 – Action */
       { 
 		  data:null, 
 		  orderable:false, 
@@ -9701,7 +9797,7 @@ $(document).ready(function(){
         title: function(){ return 'Customer_Leads_' + new Date().toLocaleDateString('en-GB') + (_selectedCustIds.size ? '_Selected' : ''); },
         exportOptions:{
           rows: custExportRowSelector,
-          columns: function(idx){ return idx!==0 && idx!==11 && idx!==12 && dataTable.column(idx).visible(); },
+          columns: function(idx){ return idx!==0 && idx!==12 && idx!==13 && dataTable.column(idx).visible(); },
           orthogonal:'export', stripHtml:true,
           format:{ body:function(data){ return typeof data === "string" ? data.replace(/<[^>]*>/g,"").trim() : data; } }
         }
@@ -9711,7 +9807,7 @@ $(document).ready(function(){
         title: function(){ return 'Customer_Leads_' + new Date().toLocaleDateString('en-GB') + (_selectedCustIds.size ? '_Selected' : ''); },
         exportOptions:{
           rows: custExportRowSelector,
-          columns: function(idx){ return idx!==0 && idx!==11 && idx!==12 && dataTable.column(idx).visible(); },
+          columns: function(idx){ return idx!==0 && idx!==12 && idx!==13 && dataTable.column(idx).visible(); },
           orthogonal:'export', stripHtml:true,
           format:{ body:function(data){ return typeof data === "string" ? data.replace(/<[^>]*>/g,"").trim() : data; } }
         }
@@ -9738,10 +9834,10 @@ $(document).ready(function(){
         exportOptions:{
           rows: custExportRowSelector,
           columns: function(idx){
-            // Checkbox(0) has no printable value; Remarks(11) and Action(12)
+            // Checkbox(0) has no printable value; Remarks(12) and Action(13)
             // are never printed to PDF; everything else follows whatever
             // the Columns toggle currently shows.
-            return idx!==0 && idx!==11 && idx!==12 && dataTable.column(idx).visible();
+            return idx!==0 && idx!==12 && idx!==13 && dataTable.column(idx).visible();
           }
         },
         customize:function(doc){
@@ -10029,13 +10125,18 @@ $(document).ready(function(){
           if(t==='export') return plainDateTime(d);
           return d||'—';
       }},
-      /* 48 – Remarks */
+      /* 48 – Reason */
+      { data:'reason', orderable:false, render:(d,t,row)=>{
+          if(t==='display') return reasonCellHtml(row._id, d, 'property');
+          return d||'';
+      }},
+      /* 49 – Remarks */
       { data:'remarks', orderable:false, render:(d,t,row)=>{
           if(t==='display') return remarkCellHtml(row._id, d, 'property');
           return d||'';
       }},
-      /* 49 – Action (orderable purely so setOfficeLocation() above can sort
-         nearest-first via propTable.order([[49,'asc']]) — the 'sort'/'type'
+      /* 50 – Action (orderable purely so setOfficeLocation() above can sort
+         nearest-first via propTable.order([[50,'asc']]) — the 'sort'/'type'
          branch returns the plain distance number computeDistanceKm() already
          powers the Directions button and ≤km filter with; display is
          untouched. Rows with no computable distance sort to the end.) */
@@ -10156,7 +10257,7 @@ $(document).ready(function(){
 				// Column 0 is the select checkbox — it has no printable
 				// value, so leave it out of the PDF entirely instead of
 				// exporting a blank column.
-				return idx !== 0 && idx !== 48 && idx !== 49 &&
+				return idx !== 0 && idx !== 49 && idx !== 50 &&
 					   propTable.column(idx).visible();
 			},
 			// Use each column's dedicated "export" text instead of stripping
@@ -11090,7 +11191,7 @@ window.setOfficeLocation = async function(){
   const clearBtn = document.getElementById('clearOfficeLocationBtn');
   if (clearBtn) clearBtn.style.display = '';
   if (propTable){
-    propTable.order([[49, 'asc']]); // Action column's sort value is distance-from-origin
+    propTable.order([[50, 'asc']]); // Action column's sort value is distance-from-origin
     propTable.draw();
   }
 };
@@ -11185,7 +11286,7 @@ window.confirmOfficeMapLocation = function(){
   const clearBtn = document.getElementById('clearOfficeLocationBtn');
   if (clearBtn) clearBtn.style.display = '';
   if (propTable){
-    propTable.order([[49, 'asc']]);
+    propTable.order([[50, 'asc']]);
     propTable.draw();
   }
   closeOfficeMapModal();
@@ -11748,7 +11849,7 @@ const _propColumnFilters = {
   pgGender:'', pgRoomType:'', pgMeals:'', pgOccupancy:'', pgNotice:'',
   ssRoomType:'', ssAvailable24hrs:'', ssCancellation:'', ssCouplesAllowed:'',
   visitCount:'', views:'', propertyId:'', userId:'', promotedPriority:'',
-  listedOnStart:'', listedOnEnd:'', promoted:'', verified:'', booked:'', remarks:'', amenities:'',
+  listedOnStart:'', listedOnEnd:'', promoted:'', verified:'', booked:'', remarks:'', reason:'', amenities:'',
   maxDistanceKm:''
 };
 
@@ -11922,7 +12023,7 @@ const PROP_COL_GROUPS = [
   ]},
   { label:'Listing Status', cols:[
     {idx:11, label:'Status'}, {idx:3, label:'Promoted'}, {idx:44, label:'Promoted Priority'},
-    {idx:4, label:'Verified'}, {idx:5, label:'Booked'}, {idx:47, label:'Listed On'}, {idx:48, label:'Remarks'}
+    {idx:4, label:'Verified'}, {idx:5, label:'Booked'}, {idx:47, label:'Listed On'}, {idx:48, label:'Reason'}, {idx:49, label:'Remarks'}
   ]},
   { label:'Traffic', cols:[
     {idx:36, label:'Visits'}, {idx:37, label:'Views'}
@@ -11972,11 +12073,11 @@ function apptExportRowSelector(idx){
 }
 
 function propExportColumnPredicate(idx){
-  return idx!==0 && idx!==48 && idx!==49 && propTable.column(idx).visible();
+  return idx!==0 && idx!==49 && idx!==50 && propTable.column(idx).visible();
 }
 function propExportColumnIndices(){
   const idxs=[];
-  for(let i=0;i<=49;i++){ if(propExportColumnPredicate(i)) idxs.push(i); }
+  for(let i=0;i<=50;i++){ if(propExportColumnPredicate(i)) idxs.push(i); }
   return idxs;
 }
 
@@ -12193,7 +12294,7 @@ const COL_TOGGLE_CONFIGS = {
     cols: [
       {idx:3, label:'Type'}, {idx:4, label:'User ID'}, {idx:5, label:'Phone'},
       {idx:6, label:'Email'}, {idx:7, label:'Property Listings'}, {idx:8, label:'Visit Requests'},
-      {idx:9, label:'Views'}, {idx:10, label:'Registered'}, {idx:11, label:'Remarks'}
+      {idx:9, label:'Views'}, {idx:10, label:'Registered'}, {idx:11, label:'Reason'}, {idx:12, label:'Remarks'}
     ],
     menuId:'custColToggleMenu', btnId:'custColToggleBtn', wrapId:'custColToggleWrap',
     storageKey:'rip_admin_custColVisibility',
@@ -12330,7 +12431,7 @@ window.onColActionGroupToggle = function(tab, inputEl){
 // (which shifts whenever a column is hidden) back to the original index.
 function custExportColumnIndices(){
   const idxs=[];
-  for(let i=0;i<=12;i++){ if(i!==0 && i!==11 && i!==12 && dataTable.column(i).visible()) idxs.push(i); }
+  for(let i=0;i<=13;i++){ if(i!==0 && i!==12 && i!==13 && dataTable.column(i).visible()) idxs.push(i); }
   return idxs;
 }
 function apptExportColumnIndices(){
@@ -12606,6 +12707,7 @@ $.fn.dataTable.ext.search.push(function(settings, data, dataIndex){
   if(cf.booked === 'yes' && !row.booked) return false;
   if(cf.booked === 'no'  && row.booked)  return false;
   if(cf.remarks && !contains(flattenRemarks(row.remarks||[]), cf.remarks)) return false;
+  if(cf.reason && (row.reason||'') !== cf.reason) return false;
   if(cf.amenities && !contains((Array.isArray(row.amenities)?row.amenities:[]).join(', '), cf.amenities)) return false;
   if(cf.maxDistanceKm){
     const maxKm = parseFloat(cf.maxDistanceKm);

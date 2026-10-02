@@ -907,6 +907,7 @@ self.addEventListener('notificationclick', event => {
         email:         u.email  || '',
         profilePhoto:  u.profilePhoto || '',
         remarks:       u.remarks || [],
+        reason:        u.reason || '',
         accountType:   u.accountType || 'customer',
         isVerified:    !!u.isVerified,
         verifiedAt:    u.verifiedAt || null,
@@ -1424,6 +1425,35 @@ self.addEventListener('notificationclick', event => {
     }
   });
 
+  const TENANT_REASONS = ['Not interested', 'Found elsewhere', 'Spam / fake', 'Not serviceable location', 'Callback', 'Not answered', 'Switched off', 'Shifted through us'];
+  const OWNER_REASONS  = ['Not reachable', 'Verification pending', 'Duplicate account', 'Wants to delist', 'Rent expectation high', 'Agent / broker', 'Callback', 'Not answered', 'Switched off', 'Shifted through us'];
+  app.patch('/api/users/mobile/:mobile/reason', requireAdmin, requireModuleAction('customers'), async (req, res) => {
+    try {
+      const reason = String((req.body && req.body.reason) || '').trim();
+      const user = await findUserByMobileOrId(req.params.mobile);
+      if (!user) return res.status(404).json({ message: 'Customer not found' });
+      const allowed = user.accountType === 'owner' ? OWNER_REASONS : TENANT_REASONS;
+      if (reason && !allowed.includes(reason)) return res.status(400).json({ message: 'Invalid reason' });
+      user.reason = reason;
+      await user.save();
+      res.json({ message: 'Reason saved', reason: user.reason });
+    } catch (err) {
+      console.error('PATCH /api/users/mobile/:mobile/reason error:', err);
+      res.status(500).json({ message: 'Error saving reason' });
+    }
+  });
+
+  // Removes remarks[idx] straight in MongoDB with an atomic update (no full-document
+  // validate/save, so unrelated invalid fields on the record can't block the delete).
+  // Returns the remaining remarks, or null if nothing was written.
+  async function deleteRemarkAt(doc, idx) {
+    const remaining = doc.toObject().remarks || [];
+    remaining.splice(idx, 1);
+    const r = await doc.constructor.updateOne({ _id: doc._id }, { $set: { remarks: remaining } });
+    if (!r || r.matchedCount === 0) return null;
+    return remaining;
+  }
+
   app.delete('/api/users/mobile/:mobile/remarks/:idx', requireAdmin, requireModuleAction('customers'), async (req, res) => {
     try {
       const idx  = Number(req.params.idx);
@@ -1431,9 +1461,9 @@ self.addEventListener('notificationclick', event => {
       if (!user) return res.status(404).json({ message: 'Customer not found' });
       if (!Number.isInteger(idx) || idx < 0 || idx >= user.remarks.length)
         return res.status(400).json({ message: 'Invalid remark index' });
-      user.remarks.splice(idx, 1);
-      await user.save();
-      res.json({ message: 'Remark deleted', remarks: user.remarks });
+      const remaining = await deleteRemarkAt(user, idx);
+      if (!remaining) return res.status(404).json({ message: 'Customer not found' });
+      res.json({ message: 'Remark deleted', remarks: remaining });
     } catch (err) {
       console.error('DELETE /api/users/mobile/:mobile/remarks/:idx error:', err);
       res.status(500).json({ message: 'Error deleting remark' });
@@ -1558,9 +1588,9 @@ self.addEventListener('notificationclick', event => {
       if (!visit) return res.status(404).json({ message: 'Appointment not found' });
       if (!Number.isInteger(idx) || idx < 0 || idx >= visit.remarks.length)
         return res.status(400).json({ message: 'Invalid remark index' });
-      visit.remarks.splice(idx, 1);
-      await visit.save();
-      res.json({ message: 'Remark deleted', remarks: visit.remarks });
+      const remaining = await deleteRemarkAt(visit, idx);
+      if (!remaining) return res.status(404).json({ message: 'Appointment not found' });
+      res.json({ message: 'Remark deleted', remarks: remaining });
     } catch (err) {
       console.error('DELETE /api/appointments/:id/remarks/:idx error:', err);
       res.status(500).json({ message: 'Error deleting remark' });
@@ -1736,6 +1766,7 @@ self.addEventListener('notificationclick', event => {
 
           // Admin
           remarks:      doc.remarks || [],
+          reason:       doc.reason || '',
           createdAt:    doc.createdAt,
 
           // Gallery / description / amenities / map
@@ -1776,18 +1807,35 @@ self.addEventListener('notificationclick', event => {
     }
   });
 
+  // ── PATCH /api/properties/:id/reason (admin: set reason from dropdown; '' clears) ──
+  const PROPERTY_REASONS = ['Already rented', 'Wrong details', 'Photos missing', 'Price too high', 'Duplicate listing', 'Fake listing', 'Location mismatch', 'Under renovation', 'Callback', 'Not answered', 'Switched off', 'Shifted through us'];
+  app.patch('/api/properties/:id/reason', requireAdmin, requireModuleAction('properties'), async (req, res) => {
+    try {
+      const reason = String((req.body && req.body.reason) || '').trim();
+      if (reason && !PROPERTY_REASONS.includes(reason)) return res.status(400).json({ message: 'Invalid reason' });
+      const { doc: prop } = await findListingById(req.params.id);
+      if (!prop) return res.status(404).json({ message: 'Property not found' });
+      prop.reason = reason;
+      await prop.save();
+      res.json({ message: 'Reason saved', reason: prop.reason });
+    } catch (err) {
+      console.error('PATCH /api/properties/:id/reason error:', err);
+      res.status(500).json({ message: 'Error saving reason' });
+    }
+  });
+
   // ── DELETE /api/properties/:id/remarks/:idx (admin: remove a remark) ──
   app.delete('/api/properties/:id/remarks/:idx', requireAdmin, requireModuleAction('properties'), async (req, res) => {
     try {
       const idx = Number(req.params.idx);
       const { doc: prop } = await findListingById(req.params.id);
       if (!prop) return res.status(404).json({ message: 'Property not found' });
-      if (idx < 0 || idx >= prop.remarks.length) {
+      if (!Number.isInteger(idx) || idx < 0 || idx >= prop.remarks.length) {
         return res.status(400).json({ message: 'Invalid remark index' });
       }
-      prop.remarks.splice(idx, 1);
-      await prop.save();
-      res.json({ message: 'Remark deleted', remarks: prop.remarks });
+      const remaining = await deleteRemarkAt(prop, idx);
+      if (!remaining) return res.status(404).json({ message: 'Property not found' });
+      res.json({ message: 'Remark deleted', remarks: remaining });
     } catch (err) {
       console.error('DELETE /api/properties/:id/remarks/:idx error:', err);
       res.status(500).json({ message: 'Error deleting remark' });

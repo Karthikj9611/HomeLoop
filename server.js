@@ -153,6 +153,8 @@ const UserSchema = new mongoose.Schema({
   isBlocked: { type: Boolean, default: false, index: true },
   blockedAt: { type: Date, default: null },
   remarks:   { type: [RemarkEntrySchema], default: [] },
+  // Admin-selected reason (Customers grid dropdown). '' = none chosen.
+  reason:    { type: String, trim: true, maxlength: 100, default: '' },
   // Human-readable unique id, same pattern as Property.propertyId (e.g. USER-000001).
   // This is a *display* identifier, distinct from the Mongo _id. Session docs
   // (UserSession) store this alongside the ObjectId reference — see below.
@@ -1083,6 +1085,7 @@ function buildListingSchema() {
     visitCount:       { type: Number,  default: 0 }, // # of "Schedule a Visit" requests made for this listing
     bookingCount:     { type: Number,  default: 0 }, // # of direct "Book Now" requests made for this listing (Short Stay only)
     remarks:          { type: [String], default: [] }, // admin-panel notes
+    reason:           { type: String, default: '', trim: true, maxlength: 100 }, // admin-selected reason (Properties grid dropdown)
     createdAt:        { type: Date,    default: Date.now },
   });
   schema.index({ createdAt: -1 });
