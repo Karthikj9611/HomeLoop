@@ -837,6 +837,7 @@ table.dataTable.no-footer{border-bottom:none!important}
 .status-shortstay{background:#ede7f6;color:#6a3fb5}
 .status-acct-customer{background:var(--green-light);color:var(--green)}
 .status-acct-owner{background:var(--gold-light);color:var(--gold-dark)}
+.status-badge-icon{padding:8px 14px;font-size:0.8rem;line-height:1}
 .status-verified{background:var(--green-light);color:var(--green)}
 .status-unverified{background:#fdecea;color:#c0392b}
 
@@ -1354,6 +1355,8 @@ footer i{color:var(--gold)}
 .btn-view.btn-action-sub.is-set{background:var(--green-light);color:var(--green);border-color:rgba(5,150,105,0.25)}
 .btn-view.btn-action-sub.is-set:hover{background:var(--green);color:#fff;box-shadow:0 4px 12px rgba(5,150,105,0.3)}
 
+.btn-view.btn-action-wa{background:#e8f9ef;color:#128c4a;border-color:rgba(37,211,102,0.35)}
+.btn-view.btn-action-wa:hover{background:#25D366;color:#fff;box-shadow:0 4px 12px rgba(37,211,102,0.35)}
 .btn-view.btn-action-delete{background:var(--red-light);color:var(--red);border-color:rgba(220,38,38,0.25)}
 .btn-view.btn-action-delete:hover{background:var(--red);color:#fff;box-shadow:0 4px 12px rgba(220,38,38,0.3)}
 
@@ -5872,6 +5875,7 @@ const AA_BTN_META = {
   customers: {
     verified:{i:'fa-circle-check',d:'Show the verified status badge'},
     view:{i:'fa-eye',d:'Open the customer profile'},
+    whatsapp:{i:'fa-brands fa-whatsapp',d:'Open a WhatsApp chat with the tenant or owner'},
     edit:{i:'fa-pen',d:"Edit this customer's details",danger:1},
     subscription:{i:'fa-crown',d:'Set or change their subscription',danger:1},
     delete:{i:'fa-trash-can',d:'Permanently remove a customer',danger:1},
@@ -6593,8 +6597,9 @@ function verifiedBadge(v, id){
   const cls = v ? 'status-verified' : 'status-unverified';
   const icon = v ? 'fa-user-check' : 'fa-user-xmark';
   const label = v ? 'Verified' : 'Pending';
-  const title = v ? 'Click to revoke verification' : 'Click to verify this account';
-  return `<span class="status-badge ${cls}" style="cursor:pointer" onclick="toggleUserVerified('${id}', ${!v})" title="${title}"><i class="fas ${icon}"></i> ${label}</span>`;
+  const title = (v ? 'Verified — click to revoke verification' : 'Pending — click to verify this account');
+  // icon only (no text label) on desktop and mobile; the status stays in the tooltip / aria-label
+  return `<span class="status-badge status-badge-icon ${cls}" role="button" aria-label="${label}" style="cursor:pointer" onclick="toggleUserVerified('${id}', ${!v})" title="${title}"><i class="fas ${icon}"></i></span>`;
 }
 function renderOwnerPhone(row){
   if(row.ownerNumber) return `<a href="tel:${row.ownerNumber}" class="phone-link">${escapeHtml(row.ownerNumber)}</a>`;
@@ -8486,6 +8491,17 @@ function waDigits(raw){
   return d;                                                      // already has a country code, or unrecognized — pass through as-is
 }
 
+// Customers table "WhatsApp" button: opens a chat with the registered tenant / owner.
+window.openCustomerWhatsApp = function(id){
+  const row = _customerCache[id];
+  const num = waDigits(row && row.mobile);
+  if(!num || num.length < 12){
+    alert('No valid mobile number on file for this user.');
+    return;
+  }
+  window.open('https://wa.me/' + num, '_blank');
+};
+
 function openWhatsAppTabs(numbers, text){
   numbers.forEach((num, i) => {
     // A tiny stagger keeps back-to-back window.open() calls (owner + alt
@@ -9808,6 +9824,10 @@ $(document).ready(function(){
 
 				<span class="pact pact-view"><button class="btn-view btn-action-view" onclick="openCustomerModal('${row.mobile || row._id}')">
 				  <i class="fas fa-eye"></i><span class="btn-label"> View</span>
+				</button></span>
+
+				<span class="pact pact-whatsapp"><button class="btn-view btn-action-wa" onclick="openCustomerWhatsApp('${row.mobile || row._id}')" title="Open a WhatsApp chat with this ${row.accountType === 'owner' ? 'owner' : 'tenant'}">
+				  <i class="fab fa-whatsapp"></i><span class="btn-label"> WhatsApp</span>
 				</button></span>
 
 				<span class="pact pact-edit"><button class="btn-view btn-action-edit" onclick="openCustomerEditModal('${row.mobile || row._id}')" title="Edit this customer's details">
@@ -12367,6 +12387,7 @@ const COL_TOGGLE_CONFIGS = {
     actions:[
       {key:'verified',     label:'Verified badge'},
       {key:'view',         label:'View'},
+      {key:'whatsapp',     label:'WhatsApp'},
       {key:'edit',         label:'Edit'},
       {key:'subscription', label:'Subscription'},
       {key:'delete',       label:'Delete'},

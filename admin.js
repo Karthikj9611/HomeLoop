@@ -194,7 +194,7 @@ module.exports = function registerAdminRoutes(app, deps) {
       facebook: 'Facebook', instagram: 'Instagram', delete: 'Delete', booking: 'Booking',
     },
     customers: {
-      verified: 'Verified badge', view: 'View', edit: 'Edit', subscription: 'Subscription',
+      verified: 'Verified badge', view: 'View', whatsapp: 'WhatsApp', edit: 'Edit', subscription: 'Subscription',
       delete: 'Delete', logout: 'Force logout', resetviews: 'Reset views', publiccall: 'Public call toggle', block: 'Block / Unblock',
     },
   };
