@@ -3232,20 +3232,20 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
   <div class="tab-panel" id="panel-customers">
     <!-- Account-type sub-tabs: Tenants / Owners -->
     <div class="cat-tab-bar" id="custTypeTabs">
-      <button class="cat-tab-btn" data-type="customer" onclick="switchCustType('customer')">
-        <i class="fas fa-user"></i><span class="cat-tab-btn-label" data-mobile="Tenants">Tenants</span><span class="cat-count" id="cust-type-count-customer">—</span>
+      <button class="cat-tab-btn" data-type="all" onclick="switchCustType('all')">
+        <i class="fas fa-users"></i><span class="cat-tab-btn-label" data-mobile="All">All</span><span class="cat-count" id="cust-type-count-all">—</span>
       </button>
       <button class="cat-tab-btn" data-type="owner" onclick="switchCustType('owner')">
         <i class="fas fa-house-user"></i><span class="cat-tab-btn-label" data-mobile="Owners">Owners</span><span class="cat-count" id="cust-type-count-owner">—</span>
+      </button>
+      <button class="cat-tab-btn" data-type="customer" onclick="switchCustType('customer')">
+        <i class="fas fa-user"></i><span class="cat-tab-btn-label" data-mobile="Tenants">Tenants</span><span class="cat-count" id="cust-type-count-customer">—</span>
       </button>
       <button class="cat-tab-btn" data-type="leads" onclick="switchCustType('leads')">
         <i class="fas fa-bullseye"></i><span class="cat-tab-btn-label" data-mobile="Lost Leads">Lost Leads</span><span class="cat-count" id="cust-type-count-leads">—</span>
       </button>
       <button class="cat-tab-btn" data-type="rented" onclick="switchCustType('rented')">
         <i class="fas fa-handshake"></i><span class="cat-tab-btn-label" data-mobile="Rented Through Us">Rented Through Us</span><span class="cat-count" id="cust-type-count-rented">—</span>
-      </button>
-      <button class="cat-tab-btn" data-type="all" onclick="switchCustType('all')">
-        <i class="fas fa-users"></i><span class="cat-tab-btn-label" data-mobile="All">All Customers</span><span class="cat-count" id="cust-type-count-all">—</span>
       </button>
     </div>
     <div class="card">
