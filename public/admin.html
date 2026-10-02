@@ -175,9 +175,7 @@ body{
   background:var(--gold-light);color:var(--gold-dark);
 }
 
-/* Visits panel sub-tabs: only 2 items — split evenly across full width */
 #visitsCatTabs{width:100%}
-#visitsCatTabs .cat-tab-btn{flex:1;justify-content:center}
 
 /* ── EQUAL-WIDTH BUTTON-STYLE TABS (main tab bar + every category sub-tab bar) ──
    Every tab is a bordered button with the SAME width. alignThreeRowsAsColumns()
@@ -3398,16 +3396,6 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
         </button>
       </div>
       <div class="bulk-toolbar-right">
-        <input type="text" id="officeLocationInput" class="col-filter-input" style="width:200px" placeholder="Office location or lat,lng" title="Type a place, area or company name (e.g. &quot;HSR Layout&quot; or your office name) — or paste exact coordinates as lat,lng. Once set, every Directions distance, the km filter, and the property sort use this as the origin instead of your device location." onkeydown="if(event.key==='Enter'){event.preventDefault();setOfficeLocation();}">
-        <button class="bulk-btn" id="setOfficeLocationBtn" onclick="setOfficeLocation()" title="Look up this location and sort properties nearest-first">
-          <i class="fas fa-building"></i> <span class="bulk-btn-label" data-mobile="Set">Set Office</span>
-        </button>
-        <button class="bulk-btn" id="pickOfficeMapBtn" onclick="openOfficeMapModal()" title="Pick your office location by clicking/dragging on a map instead of typing">
-          <i class="fas fa-map-location-dot"></i> <span class="bulk-btn-label" data-mobile="Map">Pick on Map</span>
-        </button>
-        <button class="bulk-btn bulk-btn-outline-danger" id="clearOfficeLocationBtn" style="display:none" onclick="clearOfficeLocation()" title="Stop using the office location; go back to your device location for distances">
-          <i class="fas fa-xmark"></i> <span class="bulk-btn-label" data-mobile="Clear">Clear Office</span>
-        </button>
         <button class="bulk-btn" id="recalcDistanceBtn" onclick="recalculateUserLocation()" title="Re-fetch your current location and recalculate the distance shown on every Directions button">
           <i class="fas fa-location-crosshairs"></i> <span class="bulk-btn-label" data-mobile="Recalc">Recalculate Distance</span>
         </button>
@@ -4879,7 +4867,9 @@ async function doLogin(){
 // row 1, item 2 under item 2, and so on (e.g. Visits/All, Customers/Promoted).
 // Row 3 (the PDF/Reset/Delete/Columns toolbar) stays on its own normal layout.
 function alignThreeRowsAsColumns(){
-  var bars = [document.querySelector('.tab-bar'), document.getElementById('propCatTabs')].filter(Boolean);
+  // every tab row in the admin: main bar + the sub-tab bar of each panel
+  var bars = [document.querySelector('.tab-bar'), document.getElementById('propCatTabs'),
+              document.getElementById('custTypeTabs'), document.getElementById('visitsCatTabs')].filter(Boolean);
   if(!bars.length) return;
   // clear any old inline sizing from earlier versions of this function
   bars.forEach(function(bar){
@@ -4901,14 +4891,21 @@ function alignThreeRowsAsColumns(){
   bars.forEach(function(bar){
     visibleBtns(bar).forEach(function(b){ widest = Math.max(widest, Math.ceil(b.getBoundingClientRect().width)); });
   });
-  // 3) per bar: equal share of the full width if that's wider than the minimum
-  var gap = 6, pad = 12 + 2; // bar padding (6px each side) + 1px border each side
+  // 3) ONE tab width for every bar, so each sub-tab row lines up under the main
+  //    row exactly like Properties: the widest label sets the minimum, and the
+  //    bar with the most tabs decides how much spare width can be shared out.
+  //    (Bars inside hidden panels have no width yet, so use the main bar's.)
+  var gap = 6;
+  var refW = bars[0].clientWidth;
+  var common = Infinity;
   bars.forEach(function(bar){
     var n = visibleBtns(bar).length;
     if(!n){ return; }
-    var share = Math.floor((bar.clientWidth - 12 - gap * (n - 1)) / n);
-    bar.style.setProperty('--tab-w', Math.max(widest, share) + 'px');
+    var share = Math.floor(((bar.clientWidth || refW) - 12 - gap * (n - 1)) / n);
+    common = Math.min(common, share);
   });
+  var tabW = Math.max(widest, isFinite(common) ? common : 0);
+  bars.forEach(function(bar){ bar.style.setProperty('--tab-w', tabW + 'px'); });
 }
 window.addEventListener('load', function(){ setTimeout(alignThreeRowsAsColumns, 60); });
 window.addEventListener('resize', function(){
@@ -5599,6 +5596,7 @@ function switchTab(tab){
   // Update panels
   document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.remove('active'));
   document.getElementById('panel-'+tab).classList.add('active');
+  setTimeout(alignThreeRowsAsColumns, 0);   // size the newly visible panel's tab row
 
   // Adjust DataTable columns when switching (fixes column widths)
   if(tab === 'properties' && propTable){
@@ -11193,7 +11191,10 @@ function _loadCachedOfficePos(){
 function _saveCachedOfficePos(pos){
   try { localStorage.setItem(OFFICE_GEO_CACHE_KEY, JSON.stringify(pos)); } catch(e) { /* ignore quota/blocked storage */ }
 }
-let _officeGeoPos = _loadCachedOfficePos(); // may include a human-readable `label` alongside lat/lng
+// Office-location feature removed from the UI: always measure from the device location,
+// and drop any office position saved by an earlier version.
+try { localStorage.removeItem(OFFICE_GEO_CACHE_KEY); } catch(e) { /* ignore blocked storage */ }
+let _officeGeoPos = null;
 // The origin every distance calculation should measure from: the office
 // location when one's been set, otherwise the device's own geolocation.
 function effectiveGeoOrigin(){
@@ -12081,9 +12082,6 @@ const PROP_COL_GROUPS = [
   { label:'Owner / Agent Details', cols:[
     {idx:6, label:'Owner Name'}, {idx:7, label:'Owner Number'}, {idx:8, label:'Owner Alt Phone'},
     {idx:9, label:'Owner Email'}, {idx:10, label:'Owner Contact Time'}, {idx:46, label:'User ID'}
-  ]},
-  { label:'Images & Videos', cols:[
-    {idx:38, label:'Photos'}, {idx:39, label:'Image URLs'}, {idx:40, label:'Video URL'}
   ]},
   { label:'Amenities', cols:[
     {idx:45, label:'Amenities'}
@@ -15106,42 +15104,6 @@ markRequiredLabels();
       </div>
 
       <div id="amenitiesModalList" style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center"></div>
-
-    </div>
-
-  </div>
-
-</div>
-
-<div class="prop-modal-wrap" id="officeMapModal" onclick="if(event.target===this)closeOfficeMapModal()">
-
-  <div class="prop-modal" style="max-width:640px">
-
-    <div class="prop-modal-close-row">
-      <button class="prop-modal-close-btn" onclick="closeOfficeMapModal()">✕</button>
-    </div>
-
-    <div class="prop-modal-body">
-
-      <div style="text-align:center;font-size:1.2rem;font-weight:700;margin-bottom:16px;color:var(--ink)">
-        Pick Office Location
-      </div>
-
-      <div style="display:flex;gap:8px;margin-bottom:10px">
-        <input type="text" id="officeMapSearchInput" class="col-filter-input" style="flex:1" placeholder="Jump to a place, area or company name…" onkeydown="if(event.key==='Enter'){event.preventDefault();searchOfficeMap();}">
-        <button class="bulk-btn" id="officeMapSearchBtn" onclick="searchOfficeMap()"><i class="fas fa-magnifying-glass"></i> <span class="bulk-btn-label">Search</span></button>
-      </div>
-
-      <div id="officeMapDiv" style="height:380px;border-radius:12px;overflow:hidden;border:1px solid var(--border,#ddd)"></div>
-
-      <div id="officeMapLabel" style="margin:12px 0;font-size:0.85rem;color:var(--muted,#666);text-align:center;min-height:1.2em">
-        Click or drag the pin to your exact office location.
-      </div>
-
-      <div style="display:flex;gap:8px;justify-content:center">
-        <button class="bulk-btn" onclick="closeOfficeMapModal()">Cancel</button>
-        <button class="bulk-btn" style="background:var(--brand);color:#fff;border-color:var(--brand)" onclick="confirmOfficeMapLocation()"><i class="fas fa-check"></i> Use This Location</button>
-      </div>
 
     </div>
 
