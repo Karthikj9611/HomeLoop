@@ -805,6 +805,11 @@ table.dataTable.no-footer{border-bottom:none!important}
 }
 .remark-cancel-small:hover{background:var(--red-light);color:var(--red)}
 .remark-saving{opacity:0.5;pointer-events:none}
+.tp-item{padding:9px 12px;cursor:pointer;font-size:13px;border-bottom:1px solid #f0f1f4}
+.tp-item:last-child{border-bottom:none}
+.tp-item:hover,.tp-item.tp-active{background:#fdf3e3}
+.tp-item b{font-weight:600}
+.tp-empty{padding:10px 12px;font-size:12px;color:#6b7280}
 .reason-select{
   min-width:150px;cursor:pointer;
   font-family:'Inter',sans-serif;font-size:0.78rem;color:var(--ink3);
@@ -2911,9 +2916,12 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
   <div class="confirm-card" style="max-width:460px;width:100%;text-align:left">
     <div class="confirm-icon info" style="margin:0 auto 10px"><i class="fas fa-paper-plane"></i></div>
     <div class="confirm-title" style="text-align:center">Share property with tenant</div>
-    <div class="confirm-msg" style="text-align:center;margin-bottom:14px">Enter the tenant's WhatsApp number. A short HomeLoop message with the property view link(s) is sent on WhatsApp.</div>
+    <div class="confirm-msg" style="text-align:center;margin-bottom:14px">Pick a tenant from the list, or type a WhatsApp number. A short HomeLoop message with the property view link(s) is sent on WhatsApp.</div>
     <div id="shareTenantNote" style="display:none;font-size:12px;color:#0369a1;background:#e0f2fe;border-radius:8px;padding:6px 10px;margin-bottom:10px"></div>
-    <label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px">Tenant mobile number</label>
+    <label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px">Find tenant <span style="font-weight:400;color:#6b7280">(name or number)</span></label>
+    <input type="text" id="shareTenantSearch" autocomplete="off" placeholder="Search tenants…" style="width:100%;padding:10px 12px;border:1px solid #d5d9e0;border-radius:10px;font-size:14px;margin-bottom:4px">
+    <div id="shareTenantList" style="display:none;max-height:190px;overflow-y:auto;border:1px solid #d5d9e0;border-radius:10px;background:#fff;margin-bottom:8px"></div>
+    <label style="font-size:12px;font-weight:600;display:block;margin:8px 0 4px">Tenant mobile number</label>
     <input type="tel" id="shareTenantPhone" inputmode="numeric" maxlength="15" placeholder="10-digit mobile number" style="width:100%;padding:10px 12px;border:1px solid #d5d9e0;border-radius:10px;font-size:14px;margin-bottom:6px">
     <div id="shareTenantErr" style="color:#c0392b;font-size:12px;min-height:16px;margin-bottom:6px"></div>
     <label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px">Message (you can edit it)</label>
@@ -8530,6 +8538,64 @@ function buildTenantShareMessage(links){
     + links.map((l, i) => (i + 1) + '. ' + l).join('\n');
 }
 
+/* Tenant picker for the share popup: lists every tenant (owners and Lost Leads
+   are left out) as "Name – number". Typing filters by name or number; tapping
+   one fills the mobile field. Typing a number by hand still works. */
+function _normTenants(rows){
+  return (rows || [])
+    .filter(r => r && r.accountType !== 'owner' && !isLeadRow(r))
+    .map(r => {
+      let m = String(r.mobile || '').replace(/\D/g, '');
+      if(m.length === 12 && m.indexOf('91') === 0) m = m.slice(2);
+      const name = (r.name || ((r.firstName || '') + ' ' + (r.lastName || '')).trim() || 'Unnamed').trim();
+      return { name, mobile: m };
+    })
+    .filter(t => t.mobile.length >= 10)
+    .sort((a, b) => a.name.localeCompare(b.name));
+}
+function initTenantPicker(phoneEl, errEl){
+  const search = document.getElementById('shareTenantSearch');
+  const list   = document.getElementById('shareTenantList');
+  search.value = ''; list.style.display = 'none'; list.innerHTML = '';
+
+  let tenants = [];
+  try{ if(typeof dataTable !== 'undefined' && dataTable) tenants = _normTenants(dataTable.rows().data().toArray()); }catch(e){}
+  let loaded = tenants.length > 0;
+  async function ensureLoaded(){
+    if(loaded) return;
+    loaded = true;
+    try{
+      const res = await fetch(`${BASE}/api/users`, { headers: authHeaders() });
+      if(res.ok){ const d = await res.json(); if(Array.isArray(d)) tenants = _normTenants(d); }
+    }catch(e){}
+  }
+
+  let hits = [];
+  function render(){
+    const q  = search.value.trim().toLowerCase();
+    const qd = q.replace(/\D/g, '');
+    hits = tenants.filter(t => !q || t.name.toLowerCase().includes(q) || (qd && t.mobile.includes(qd))).slice(0, 80);
+    list.innerHTML = hits.length
+      ? hits.map((t, i) => `<div class="tp-item" data-i="${i}"><b>${escapeHtml(t.name)}</b> – ${escapeHtml(t.mobile)}</div>`).join('')
+      : '<div class="tp-empty">No matching tenant — type the number below.</div>';
+    list.style.display = 'block';
+  }
+  search.onfocus = async function(){ await ensureLoaded(); render(); };
+  search.oninput = async function(){ await ensureLoaded(); render(); };
+  search.onblur  = function(){ list.style.display = 'none'; };
+  list.onmousedown = function(e){ e.preventDefault(); };   // keep focus so the click lands
+  list.onclick = function(e){
+    const el = e.target.closest('.tp-item');
+    if(!el) return;
+    const t = hits[Number(el.getAttribute('data-i'))];
+    if(!t) return;
+    phoneEl.value = t.mobile;
+    search.value = t.name + ' – ' + t.mobile;
+    errEl.textContent = '';
+    list.style.display = 'none';
+  };
+}
+
 // Opens the tenant-share popup for one or many listings (only verified
 // ones are included, since the link opens only for live listings).
 function openTenantShareModal(ids){
@@ -8555,6 +8621,7 @@ function openTenantShareModal(ids){
 
   phoneEl.value = '';
   errEl.textContent = '';
+  initTenantPicker(phoneEl, errEl);
   noteEl.textContent = (verifiedRows.length > 1 ? verifiedRows.length + ' property links included. ' : '')
     + (skipped ? skipped + ' unverified listing' + (skipped > 1 ? 's were' : ' was') + ' left out.' : '');
   noteEl.style.display = noteEl.textContent ? 'block' : 'none';
@@ -8588,7 +8655,7 @@ function openTenantShareModal(ids){
   overlay.addEventListener('click', onOverlay);
   document.addEventListener('keydown', onKey);
   overlay.style.display = 'flex';
-  phoneEl.focus();
+  phoneEl.focus();   // search list opens only when the Find tenant box is tapped
 }
 
 // Row "Tenant" button — one listing.
