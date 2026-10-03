@@ -13518,92 +13518,128 @@ async function openTodayRegistrationsModal(){
 window.openTodayRegistrationsModal = openTodayRegistrationsModal;
 
 /* Visits -> Property Views -> click the eye icon:
-   shows which registered users viewed which properties today.
-   Built from /api/users + each user's /viewed-properties (same data as the
-   Customers -> Views eye), keeping only views whose last-viewed time is today. */
-let _todayPvToken = 0;
+   everyone who viewed a listing today — tenants, owners AND guests — grouped by
+   viewer with the properties they opened. Built from each listing's
+   /viewers-admin data (the same source as Properties -> Views eye), keeping only
+   views stamped today. Listings with 0 total views are skipped. */
+let _todayPvToken = 0, _tpv = null, _tpvTab = 'tenants';
+function _tpvCallBtn(mobile, name){
+  const tel = String(mobile || '').replace(/[^\d+]/g, '');
+  return tel
+    ? '<a class="vx-call" href="tel:' + _adminModalEsc(tel) + '" title="Call ' + _adminModalEsc(name) + '" aria-label="Call ' + _adminModalEsc(name) + '"><i class="fas fa-phone"></i></a>'
+    : '<span class="vx-call disabled" title="No phone number"><i class="fas fa-phone-slash"></i></span>';
+}
+function setTodayPvTab(t){ _tpvTab = t; renderTodayPv(); }
+function renderTodayPv(){
+  const box = document.getElementById('viewedPropsModalBox');
+  const d = _tpv; if(!d) return;
+  const tabs = _pvTabsHtml([
+    ['tenants','Tenants','fa-user', d.tenants.length],
+    ['owners','Owners','fa-user-tie', d.owners.length],
+    ['guests','Guests','fa-user-secret', d.guests.length],
+  ], _tpvTab, 'setTodayPvTab');
+  const note = d.failed ? '<div class="pv-note">' + d.failed + ' listing(s) could not be loaded.</div>' : '';
+  const list = d[_tpvTab];
+  let body;
+  if(!list.length){
+    body = '<div class="vp-empty"><i class="fas fa-eye-slash"></i>No ' + _tpvTab + ' viewed a property today.</div>';
+  } else {
+    const guest = _tpvTab === 'guests', owner = _tpvTab === 'owners';
+    body = '<div class="vx-list"><div class="vx-group">' + list.map((g, i) => {
+      const u = g.u;
+      const name = guest ? 'Guest visitor' : (u.removed ? 'Deleted user' : (u.name || u.email || u.mobile || 'User'));
+      const meta = guest ? ('Device ' + (u.ref || '—')) : [u.mobile, u.email].filter(Boolean).join(' · ');
+      const props = g.items.map(({ pid, pm, d: dt }) =>
+        '<div class="vx-uprop" title="' + _adminModalEsc(fmtDateDMY(dt) + ' ' + fmtTimeHM(dt)) + '">' +
+          '<i class="fas fa-house" style="color:var(--ink3)"></i><b>' + _adminModalEsc(pid) + '</b>' +
+          '<span class="vx-uprop-meta">' + _adminModalEsc(pm) + '</span>' +
+          '<span class="vx-uprop-time">' + _adminModalEsc(fmtTimeHM(dt)) + '</span></div>').join('');
+      return '<div class="vx-row' + (owner ? ' sale' : '') + (u.removed ? ' gone' : '') + '" style="align-items:flex-start;animation-delay:' + Math.min(i, 10) * 35 + 'ms">' +
+        '<div class="vx-main"><div class="vx-pid">' + _adminModalEsc((i + 1) + '. ' + name) +
+          (guest ? '<span class="vx-tag" style="background:#f1f5f9;color:#64748b">Guest</span>' : '<span class="vx-tag">' + (owner ? 'Owner' : 'Tenant') + '</span>') + '</div>' +
+        (meta ? '<div class="vx-meta">' + _adminModalEsc(meta) + '</div>' : '') +
+        '<div class="vx-uprops">' + props + '</div></div>' +
+        (guest ? '' : _tpvCallBtn(u.mobile, name)) + '</div>';
+    }).join('') + '</div></div>';
+  }
+  box.innerHTML = '<div class="pv-tabs">' + tabs + '</div>' + body + note;
+}
 async function openTodayPropertyViewsModal(){
   const token = ++_todayPvToken;
   const modal = document.getElementById('viewedPropsModal');
   const box = document.getElementById('viewedPropsModalBox');
   const countEl = document.getElementById('viewedPropsModalCount');
   const subEl = document.getElementById('viewedPropsModalSub');
-  const setCount = n => { countEl.innerHTML = '<b>' + n + '</b><span>' + (n === 1 ? 'user' : 'users') + '</span>'; };
   document.getElementById('viewedPropsModalAvatar').innerHTML = '<i class="fas fa-eye"></i>';
   document.getElementById('viewedPropsModalName').textContent = "Today's property views";
   subEl.textContent = fmtDateDMY(new Date());
-  setCount(0);
+  countEl.innerHTML = '<b>…</b><span>viewers</span>';
+  _tpv = null; _tpvTab = 'tenants';
   box.innerHTML = '<div class="vp-empty"><i class="fas fa-circle-notch fa-spin"></i><span id="todayPvProgress">Loading…</span></div>';
   modal.classList.add('open');
   document.body.style.overflow = 'hidden';
   const stillOpen = () => token === _todayPvToken && modal.classList.contains('open');
   try{
-    const ures = await fetch(BASE + '/api/users', { headers: authHeaders() });
-    if(!ures.ok) throw new Error('bad status');
-    const users = await ures.json();
+    const pres = await fetch(BASE + '/api/admin/properties', { headers: authHeaders() });
+    if(!pres.ok) throw new Error('bad status');
+    const allProps = await pres.json();
     if(!stillOpen()) return;
-    // Skip users who have never viewed anything (when the count is known).
-    const cand = (Array.isArray(users) ? users : []).filter(u => u && u._id && !(typeof u.propertiesViewed === 'number' && u.propertiesViewed === 0));
+    const props = (Array.isArray(allProps) ? allProps : []).filter(x => x && x._id && Number(x.views || 0) > 0);
     const t0 = new Date(); t0.setHours(0,0,0,0);
-    const rows = [];
-    let done = 0, failed = 0, idx = 0;
-    const prog = document.getElementById('todayPvProgress');
+    const acc = { tenants: new Map(), owners: new Map(), guests: new Map() };
+    let done = 0, failed = 0, idx = 0, gAnon = 0;
+    const add = (kind, key, u, item) => {
+      const m = acc[kind];
+      let g = m.get(key);
+      if(!g){ g = { u, items: [], last: item.d }; m.set(key, g); }
+      g.items.push(item);
+      if(item.d > g.last) g.last = item.d;
+    };
     const worker = async () => {
-      while(idx < cand.length){
-        const u = cand[idx++];
+      while(idx < props.length){
+        const pr = props[idx++];
         try{
-          const r = await fetch(BASE + '/api/users/' + encodeURIComponent(u._id) + '/viewed-properties', { headers: authHeaders() });
-          if(!r.ok) throw new Error('bad status');
-          const list = await r.json();
-          const today = (Array.isArray(list) ? list : [])
-            .map(v => ({ v, d: v.lastViewedAt ? new Date(v.lastViewedAt) : null }))
-            .filter(x => x.d && x.d >= t0)
-            .sort((a, b) => b.d - a.d);
-          if(today.length) rows.push({ u, items: today, last: today[0].d });
+          const d = await _pvFetchJson('/api/properties/' + encodeURIComponent(pr._id) + '/viewers-admin');
+          const pid = d.propertyId || pr.propertyId || pr._id;
+          const pm = [pr.type, [pr.area, pr.city].filter(Boolean)[0]].filter(Boolean).join(' · ');
+          [['tenants', d.tenants], ['owners', d.owners]].forEach(([kind, arr]) => {
+            (arr || []).forEach(u => {
+              const dt = u.lastViewedAt ? new Date(u.lastViewedAt) : null;
+              if(!dt || dt < t0) return;
+              add(kind, String(u.userId || u.mobile || u.email || u.name || ('x' + (gAnon++))), u, { pid, pm, d: dt });
+            });
+          });
+          (d.guests || []).forEach(g => {
+            const dt = g.viewedAt ? new Date(g.viewedAt) : null;
+            if(!dt || dt < t0) return;
+            add('guests', String(g.ref || ('x' + (gAnon++))), g, { pid, pm, d: dt });
+          });
         }catch(_){ failed++; }
         done++;
         const el = document.getElementById('todayPvProgress');
-        if(el && stillOpen()) el.textContent = 'Loading… ' + done + ' / ' + cand.length;
+        if(el && stillOpen()) el.textContent = 'Loading… ' + done + ' / ' + props.length + ' listings';
       }
     };
-    await Promise.all(Array.from({ length: Math.min(6, cand.length) }, worker));
+    await Promise.all(Array.from({ length: Math.min(8, props.length) }, worker));
     if(!stillOpen()) return;
 
-    rows.sort((a, b) => b.last - a.last);
-    const totalViews = rows.reduce((n, r) => n + r.items.length, 0);
-    setCount(rows.length);
-    subEl.textContent = fmtDateDMY(new Date()) + ' · ' + totalViews + ' propert' + (totalViews === 1 ? 'y' : 'ies') + ' viewed';
-    const note = '<div class="pv-note">Registered users only — guest (not logged-in) views are counted in the total but not listed here.' + (failed ? ' ' + failed + ' user(s) could not be loaded.' : '') + '</div>';
-    if(!rows.length){
-      box.innerHTML = '<div class="vp-empty"><i class="fas fa-eye-slash"></i>No registered user has viewed a property today.</div>' + note;
-      return;
-    }
-    box.innerHTML = '<div class="vx-list"><div class="vx-group">' + rows.map(({ u, items }, i) => {
-      const name = ((u.firstName||'') + ' ' + (u.lastName||'')).trim() || u.name || u.email || u.mobile || 'Unnamed user';
-      const typ = u.accountType === 'owner' ? 'Owner' : 'Tenant';
-      const meta = [u.mobile, u.email].filter(Boolean).join(' · ');
-      const tel = String(u.mobile || '').replace(/[^\d+]/g, '');
-      const callBtn = tel
-        ? '<a class="vx-call" href="tel:' + _adminModalEsc(tel) + '" title="Call ' + _adminModalEsc(name) + '" aria-label="Call ' + _adminModalEsc(name) + '"><i class="fas fa-phone"></i></a>'
-        : '<span class="vx-call disabled" title="No phone number"><i class="fas fa-phone-slash"></i></span>';
-      const props = items.map(({ v, d }) => {
-        const idTxt = v.removed ? 'Listing removed' : (v.propertyId || v._id);
-        const pm = [v.type, [v.area, v.city].filter(Boolean)[0]].filter(Boolean).join(' · ');
-        return '<div class="vx-uprop' + (v.removed ? ' gone' : '') + '" title="' + _adminModalEsc(fmtDateDMY(d) + ' ' + fmtTimeHM(d)) + '">' +
-          '<i class="fas fa-house" style="color:var(--ink3)"></i><b>' + _adminModalEsc(idTxt) + '</b>' +
-          '<span class="vx-uprop-meta">' + _adminModalEsc(pm) + '</span>' +
-          '<span class="vx-uprop-time">' + _adminModalEsc(fmtTimeHM(d)) + '</span></div>';
-      }).join('');
-      return '<div class="vx-row' + (u.accountType === 'owner' ? ' sale' : '') + '" style="align-items:flex-start;animation-delay:' + Math.min(i, 10) * 35 + 'ms">' +
-        '<div class="vx-main"><div class="vx-pid">' + _adminModalEsc((i + 1) + '. ' + name) + '<span class="vx-tag">' + typ + '</span></div>' +
-        (meta ? '<div class="vx-meta">' + _adminModalEsc(meta) + '</div>' : '') +
-        '<div class="vx-uprops">' + props + '</div></div>' + callBtn + '</div>';
-    }).join('') + '</div></div>' + note;
+    const out = { failed };
+    ['tenants','owners','guests'].forEach(k => {
+      out[k] = Array.from(acc[k].values()).map(g => { g.items.sort((a, b) => b.d - a.d); return g; }).sort((a, b) => b.last - a.last);
+    });
+    _tpv = out;
+    const viewers = out.tenants.length + out.owners.length + out.guests.length;
+    const views = ['tenants','owners','guests'].reduce((n, k) => n + out[k].reduce((m, g) => m + g.items.length, 0), 0);
+    countEl.innerHTML = '<b>' + viewers + '</b><span>' + (viewers === 1 ? 'viewer' : 'viewers') + '</span>';
+    subEl.textContent = fmtDateDMY(new Date()) + ' · ' + views + (views === 1 ? ' view' : ' views');
+    _tpvTab = out.tenants.length ? 'tenants' : out.owners.length ? 'owners' : out.guests.length ? 'guests' : 'tenants';
+    renderTodayPv();
   }catch(e){
-    if(stillOpen()) box.innerHTML = '<div class="vp-empty"><i class="fas fa-triangle-exclamation"></i>Could not load the list. Please try again.</div>';
+    if(stillOpen()) box.innerHTML = _pvErrHtml(e);
   }
 }
 window.openTodayPropertyViewsModal = openTodayPropertyViewsModal;
+window.setTodayPvTab = setTodayPvTab;
 
 function closeViewedPropsModal(){
   document.getElementById('viewedPropsModal').classList.remove('open');
