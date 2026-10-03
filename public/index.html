@@ -8531,7 +8531,7 @@ function renderViewersModal(data) {
     body.innerHTML = total
       ? `<div class="viewers-modal-empty">
           <span class="viewers-modal-empty-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg></span>
-          ${total.toLocaleString('en-IN')} ${total===1?'':'s'} Unregistered Viewers.
+          ${total.toLocaleString('en-IN')} Unregistered ${total===1?'Viewer':'Viewers'}.
         </div>`
       : `<div class="viewers-modal-empty">
           <span class="viewers-modal-empty-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg></span>
@@ -8590,7 +8590,7 @@ function renderViewersModal(data) {
           </span>
         </div>
         <div class="viewer-info">
-          <div class="viewer-name">${unnamed === 1 ? '1  Viewers' : unnamed.toLocaleString('en-IN') + '  Viewers'}</div>
+          <div class="viewer-name">${unnamed === 1 ? '1 Viewer' : unnamed.toLocaleString('en-IN') + ' Viewers'}</div>
 		  <div class="viewer-meta">Unregistered</div>
         </div>
       </div>`
