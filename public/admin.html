@@ -265,8 +265,8 @@ body{
 
 /* ── PER-COLUMN HEADER SEARCH FILTERS ── */
 table.dataTable thead tr.col-filter-row th{
-  padding:6px 8px!important;background:var(--surface2);
-  border-top:1px solid var(--border);
+  padding:6px 8px!important;background:#faebd3;
+  border-top:1px solid #f1dfc4;
 }
 .col-filter-input,.col-filter-select{
   width:100%;box-sizing:border-box;
@@ -412,20 +412,28 @@ table.dataTable{
   font-family:'Inter',sans-serif;min-width:680px;
 }
 table.dataTable thead th{
-  background:var(--surface2);color:var(--ink3);
+  background:#faebd3;color:#7c4a1d; /* same cream/brown family as the tab buttons */
   font-weight:700;font-size:0.72rem;letter-spacing:0.8px;
   text-transform:uppercase;padding:13px 14px;
-  border-bottom:1px solid var(--border)!important;border-top:none!important;
+  border-bottom:1px solid #f1dfc4!important;border-top:none!important;
   white-space:nowrap;text-align:center!important;
 }
 table.dataTable thead th:first-child{border-radius:var(--radius-xs) 0 0 var(--radius-xs)}
 table.dataTable thead th:last-child{border-radius:0 var(--radius-xs) var(--radius-xs) 0}
 table.dataTable tbody td{
-  padding:13px 14px;border-bottom:1px solid #f5f2ee!important;
+  padding:13px 14px;border-bottom:1px solid #f1dfc4!important;
   font-size:0.84rem;vertical-align:middle;text-align:center!important;
 }
 table.dataTable tbody tr:last-child td{border-bottom:none!important}
-table.dataTable tbody tr:hover td{background:#fdfaf6}
+/* Row backgrounds match the tab buttons (.tab-btn / .cat-tab-btn): cream
+   #fdf6ec, hover #faebd3, divider #f1dfc4. DataTables' own stripe/sort/hover
+   shading is drawn as an inset box-shadow overlay (which made row 1 look
+   darker than row 2), so it's switched off here — the repeated .display
+   class only raises specificity above DataTables' own selectors. Selected
+   rows still get their gold edge (ID selectors elsewhere win over this). */
+table.dataTable tbody tr td{background:#fdf6ec}
+table.dataTable.display.display.display.display>tbody>tr>*{box-shadow:none}
+table.dataTable tbody tr:hover td{background:#faebd3}
 table.dataTable.no-footer{border-bottom:none!important}
 
 /* ── FIRST COLUMNS (Properties table: checkbox + Property name) ──
@@ -442,15 +450,15 @@ table.dataTable.no-footer{border-bottom:none!important}
 }
 #propertyTable thead th.col-sticky-1,
 #propertyTable thead th.col-sticky-2{
-  background:var(--surface2)!important;
+  background:#faebd3!important;
 }
 #propertyTable tbody td.col-sticky-1,
 #propertyTable tbody td.col-sticky-2{
-  background:var(--surface);
+  background:#fdf6ec;
 }
 #propertyTable tbody tr:hover td.col-sticky-1,
 #propertyTable tbody tr:hover td.col-sticky-2{
-  background:#fdfaf6;
+  background:#faebd3;
 }
 
 /* Fully highlight a selected row (checkbox ticked) — covers every cell,
