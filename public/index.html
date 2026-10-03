@@ -6153,20 +6153,20 @@ main.tab-explore .empty-state{display:none !important}
     <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
 	<div class="form-group">
       <label class="form-label">Property name</label>
-      <input class="form-input" type="text" id="f-title" />
+      <input class="form-input" type="text" id="f-title" autocapitalize="words" onblur="capitalizeWordsInput(this)" oninput="capitalizeWordsInput(this)" />
     </div>
 	  <div class="form-group">
         <label class="form-label">Area <span style="color:var(--brand)">*</span></label>
-        <input class="form-input" type="text" id="f-location" />
+        <input class="form-input" type="text" id="f-location" autocapitalize="words" oninput="capitalizeWordsInput(this)" onblur="capitalizeWordsInput(this)" />
       </div>
       <div class="form-group">
         <label class="form-label">City</label>
-        <input class="form-input" type="text" id="f-city" value="Bangalore" />
+        <input class="form-input" type="text" id="f-city" autocapitalize="words" onblur="capitalizeWordsInput(this)" oninput="capitalizeWordsInput(this)" value="Bangalore" />
       </div>
       <div class="form-group" id="fullAddressGroup" style="grid-column:span 2">
         <label class="form-label">Building Live Address</label>
         <div style="display:flex;gap:7px;align-items:flex-start">
-          <textarea class="form-input" id="f-fullAddress" rows="2" style="flex:1;min-width:0;resize:vertical;background:var(--bg-2,#f5f5f5)" oninput="onFullAddressInput(this.value)" onblur="onFullAddressBlur(this.value)"></textarea>
+          <textarea class="form-input" id="f-fullAddress" autocapitalize="words" rows="2" style="flex:1;min-width:0;resize:vertical;background:var(--bg-2,#f5f5f5)" oninput="capitalizeWordsInput(this); onFullAddressInput(this.value)" onblur="capitalizeWordsInput(this); onFullAddressBlur(this.value)"></textarea>
           <button type="button" onclick="fCaptureLocation()"
             style="flex-shrink:0;padding:9px 12px;border-radius:9px;border:1.5px solid var(--text);background:var(--bg);color:var(--text);font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;white-space:nowrap;height:40px;margin-top:1px">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M1 12h4M19 12h4"/></svg>
@@ -6191,7 +6191,7 @@ main.tab-explore .empty-state{display:none !important}
       </div>
       <div class="form-group">
         <label class="form-label">Owner name <span style="color:var(--brand)">*</span></label>
-        <input class="form-input" type="text" id="f-ownerName"/>
+        <input class="form-input" type="text" id="f-ownerName" autocapitalize="words" onblur="capitalizeWordsInput(this)" oninput="capitalizeWordsInput(this)"/>
         <div class="identity-locked-hint" id="f-ownerName-hint" style="display:none">Auto-filled from your account</div>
       </div>
       <div class="form-group">
@@ -6228,7 +6228,7 @@ main.tab-explore .empty-state{display:none !important}
           <input type="checkbox" id="f-sameAsBuildingAddress" onchange="toggleSameAsBuildingAddress(this)" style="width:auto;margin:0" />
           <label for="f-sameAsBuildingAddress" style="font-weight:400;cursor:pointer">Same as building live address</label>
         </div>
-        <textarea class="form-input" id="f-ownerAddress" rows="2" style="resize:vertical"></textarea>
+        <textarea class="form-input" id="f-ownerAddress" autocapitalize="words" onblur="capitalizeWordsInput(this)" oninput="capitalizeWordsInput(this)" rows="2" style="resize:vertical"></textarea>
       </div>
       <!-- Agent-only fields — shown when Listed by = Agent -->
       <div id="f-agentFields" style="grid-column:span 3">
@@ -6582,7 +6582,7 @@ main.tab-explore .empty-state{display:none !important}
         </div>
         <div class="form-group" style="grid-column:span 2">
           <label class="form-label">Society / Project name (optional)</label>
-          <input class="form-input" type="text" id="f-sellProjectName" maxlength="120" placeholder="e.g. Prestige Shantiniketan" />
+          <input class="form-input" type="text" id="f-sellProjectName" autocapitalize="words" onblur="capitalizeWordsInput(this)" oninput="capitalizeWordsInput(this)" maxlength="120" placeholder="e.g. Prestige Shantiniketan" />
         </div>
       </div>
 
@@ -6685,7 +6685,7 @@ main.tab-explore .empty-state{display:none !important}
     </div>
     <div class="form-group">
       <label class="form-label">Additional amenities (comma-separated)</label>
-      <input class="form-input" type="text" id="f-amenities-extra"/>
+      <input class="form-input" type="text" id="f-amenities-extra" autocapitalize="words" onblur="capitalizeWordsInput(this)" oninput="capitalizeWordsInput(this)"/>
     </div>
     </div>
 
@@ -6713,7 +6713,7 @@ main.tab-explore .empty-state{display:none !important}
     </div>
     <div class="form-group">
       <label class="form-label">Description (optional)</label>
-      <textarea class="form-input" id="f-desc" rows="3" style="resize:vertical"></textarea>
+      <textarea class="form-input" id="f-desc" autocapitalize="sentences" onblur="capitalizeSentencesInput(this)" oninput="capitalizeSentencesInput(this)" rows="3" style="resize:vertical"></textarea>
     </div>
     </div>
 
@@ -7449,7 +7449,7 @@ main.tab-explore .empty-state{display:none !important}
       <div class="svc-price-note charges-refer-note"><strong>Note:</strong> Call owners directly and visit their properties — verified homes straight from the owner. Your Direct Plan activates after payment — schedule visits <b>whenever you're free for 2 days</b> and find your home.</div>
 
 
-<a class="charges-call-btn" href="tel:9035205230"><svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.8 19.8 0 0 1 1.61 3.4 2 2 0 0 1 3.59 1.22h3a2 2 0 0 1 2 1.72 12.8 12.8 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 8.78a16 16 0 0 0 6.29 6.29l1.14-1.14a2 2 0 0 1 2.11-.45 12.8 12.8 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>9035205230</a>
+<a class="charges-call-btn" href="tel:9611459960"><svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.8 19.8 0 0 1 1.61 3.4 2 2 0 0 1 3.59 1.22h3a2 2 0 0 1 2 1.72 12.8 12.8 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 8.78a16 16 0 0 0 6.29 6.29l1.14-1.14a2 2 0 0 1 2.11-.45 12.8 12.8 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>9611459960</a>
 </div></div>
       </div>
 
@@ -7535,7 +7535,7 @@ main.tab-explore .empty-state{display:none !important}
       <div class="svc-price-note charges-refer-note"><strong>Note:</strong> Promote your listing for greater visibility until it’s filled. Verified tenants can contact you directly by phone or WhatsApp, with no time limit.</div>
 
 
-<a class="charges-call-btn" href="tel:9035205230"><svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.8 19.8 0 0 1 1.61 3.4 2 2 0 0 1 3.59 1.22h3a2 2 0 0 1 2 1.72 12.8 12.8 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 8.78a16 16 0 0 0 6.29 6.29l1.14-1.14a2 2 0 0 1 2.11-.45 12.8 12.8 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>9035205230</a>
+<a class="charges-call-btn" href="tel:9611459960"><svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.8 19.8 0 0 1 1.61 3.4 2 2 0 0 1 3.59 1.22h3a2 2 0 0 1 2 1.72 12.8 12.8 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 8.78a16 16 0 0 0 6.29 6.29l1.14-1.14a2 2 0 0 1 2.11-.45 12.8 12.8 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>9611459960</a>
 </div></div>
 </div>
       <div class="charges-or-divider">or</div>
@@ -7602,7 +7602,7 @@ main.tab-explore .empty-state{display:none !important}
         <div class="svc-price-note charges-refer-note"><strong>Note:</strong> Call owners directly and visit their properties — verified homes straight from the owner. Your Direct Plan activates after payment — schedule visits <b>whenever you're free for 2 days</b> and find your home.</div>
   
 
-<a class="charges-call-btn" href="tel:9035205230"><svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.8 19.8 0 0 1 1.61 3.4 2 2 0 0 1 3.59 1.22h3a2 2 0 0 1 2 1.72 12.8 12.8 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 8.78a16 16 0 0 0 6.29 6.29l1.14-1.14a2 2 0 0 1 2.11-.45 12.8 12.8 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>9035205230</a>
+<a class="charges-call-btn" href="tel:9611459960"><svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.8 19.8 0 0 1 1.61 3.4 2 2 0 0 1 3.59 1.22h3a2 2 0 0 1 2 1.72 12.8 12.8 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 8.78a16 16 0 0 0 6.29 6.29l1.14-1.14a2 2 0 0 1 2.11-.45 12.8 12.8 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>9611459960</a>
 </div></div>
 </div>
         <div class="charges-or-divider">or</div>
@@ -7683,7 +7683,7 @@ main.tab-explore .empty-state{display:none !important}
         <div class="svc-price-note charges-refer-note"><strong>Note:</strong> Promote your listing for greater visibility until it’s filled. Verified tenants can contact you directly by phone or WhatsApp, with no time limit.</div>
 
 
-<a class="charges-call-btn" href="tel:9035205230"><svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.8 19.8 0 0 1 1.61 3.4 2 2 0 0 1 3.59 1.22h3a2 2 0 0 1 2 1.72 12.8 12.8 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 8.78a16 16 0 0 0 6.29 6.29l1.14-1.14a2 2 0 0 1 2.11-.45 12.8 12.8 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>9035205230</a>
+<a class="charges-call-btn" href="tel:9611459960"><svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.8 19.8 0 0 1 1.61 3.4 2 2 0 0 1 3.59 1.22h3a2 2 0 0 1 2 1.72 12.8 12.8 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 8.78a16 16 0 0 0 6.29 6.29l1.14-1.14a2 2 0 0 1 2.11-.45 12.8 12.8 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>9611459960</a>
 </div></div>
 </div>
         <div class="charges-or-divider">or</div>
@@ -12648,6 +12648,22 @@ function requireLoginForContact(message) {
   openAuthModal();
   return true;
 }
+function capitalizeSentencesInput(el) {
+  const v = el.value;
+  const out = v.replace(/(^|[.!?]\s+|\n\s*)(\p{Ll})/gu, (m, a, b) => a + b.toUpperCase());
+  if (out === v) return;
+  const s = el.selectionStart, e = el.selectionEnd;
+  el.value = out;
+  try { el.setSelectionRange(s, e); } catch (_) {}
+}
+function capitalizeWordsInput(el) {
+  const v = el.value;
+  const out = v.replace(/(^|\s)(\p{Ll})/gu, (m, a, b) => a + b.toUpperCase());
+  if (out === v) return;
+  const s = el.selectionStart, e = el.selectionEnd;
+  el.value = out;
+  try { el.setSelectionRange(s, e); } catch (_) {}
+}
 function openCall(propId) {
   const p = PROPERTIES.find(x => x.id === propId);
   if (!p) return;
@@ -12663,7 +12679,7 @@ function openCall(propId) {
 /* Shortlist + Schedule visit in the property view are hidden by default. Set to false to show them again (they're only hidden, not removed). */
 const HIDE_SAVE_SCHEDULE = true;
 /* Description row in the property view is hidden by default (it's still saved with the listing, just not shown). Set to false to show it again. */
-const HIDE_DESCRIPTION_IN_VIEW = true;
+const HIDE_DESCRIPTION_IN_VIEW = false;
 
 /* Opens Google Maps directions to the property — only listings with a public owner number carry navigateUrl. */
 function openPropertyNavigate(propId) {
