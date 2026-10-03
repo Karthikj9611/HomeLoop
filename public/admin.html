@@ -648,7 +648,7 @@ table.dataTable.no-footer{border-bottom:none!important}
    REMARKS — subgrid card design
    ══════════════════════════════════════ */
 .remark-cell{
-  min-width:380px;max-width:440px;
+  width:400px;min-width:400px;max-width:400px;box-sizing:border-box;
   text-align:left!important;
   padding:2px 0!important;
 }
@@ -758,9 +758,9 @@ table.dataTable.no-footer{border-bottom:none!important}
 /* No remarks yet: placeholder and "Add Remark" share one straight row
    (the slide-down input still opens on its own full-width line below). */
 /* wide enough that the placeholder and the button never wrap onto two lines */
-.remark-cell.remark-cell-empty{min-width:340px;max-width:none}
+.remark-cell.remark-cell-empty{width:400px;min-width:400px;max-width:400px}
 .remark-subgrid-empty{flex-direction:row;flex-wrap:wrap;align-items:center;column-gap:10px;row-gap:0}
-.remark-subgrid-empty .remark-empty{padding:4px 0;white-space:nowrap}
+.remark-subgrid-empty .remark-empty{flex:1 1 0;width:auto;min-width:0;box-sizing:border-box;padding:7px 12px;border:1.5px solid transparent;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .remark-subgrid-empty .remark-add-btn{margin-top:0;flex-shrink:0}
 .remark-subgrid-empty .remark-input-panel{flex:0 0 100%}
 
