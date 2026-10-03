@@ -2830,6 +2830,86 @@ self.addEventListener('notificationclick', event => {
   // categories under the Visits tab ("Visits" / "Users Registered" / "Property Views").
   const DAILY_STAT_TYPES = ['visit', 'registration', 'propertyView'];
 
+  // GET /api/admin/visitors?scope=today|all — who visited the site (Visits tab).
+  //   scope=today (default): visitors whose last visit date is today (todayStr(),
+  //                          the same clock as the "Today's site visits" card).
+  //   scope=all            : every visitor on record (the "All-time visits" card).
+  // Backed by the Visitor dedup collection — one row per device. Logged-in
+  // visitors come back with their name/contact (resolved from Visitor.userId);
+  // everyone else is a guest, identified only by a short device ref. Raw IPs
+  // and fingerprint hashes are never returned. Visitors recorded before this
+  // feature shipped have no user link until they next visit / log in.
+  function parseDeviceInfo(ua) {
+    ua = String(ua || '');
+    if (!ua) return { type: '', browser: '', os: '' };
+    const type = /iPad|Tablet/i.test(ua) ? 'Tablet'
+      : /Mobi|Android|iPhone|iPod/i.test(ua) ? 'Mobile' : 'Desktop';
+    const browser = /Edg\//.test(ua) ? 'Edge'
+      : /OPR\/|Opera/.test(ua) ? 'Opera'
+      : /SamsungBrowser/.test(ua) ? 'Samsung Internet'
+      : /Firefox\/|FxiOS/.test(ua) ? 'Firefox'
+      : /Chrome\/|CriOS/.test(ua) ? 'Chrome'
+      : /Safari\//.test(ua) ? 'Safari' : '';
+    const os = /Windows/.test(ua) ? 'Windows'
+      : /Android/.test(ua) ? 'Android'
+      : /iPhone|iPad|iPod/.test(ua) ? 'iOS'
+      : /Mac OS X|Macintosh/.test(ua) ? 'macOS'
+      : /Linux/.test(ua) ? 'Linux' : '';
+    return { type, browser, os };
+  }
+
+  app.get('/api/admin/visitors', requireAdmin, requireAnyModule('stats', 'visits'), async (req, res) => {
+    try {
+      const scope = req.query.scope === 'all' ? 'all' : 'today';
+      const date = todayStr();
+      const LIMIT = 1000;
+      const filter = scope === 'today' ? { lastSeenDate: date } : {};
+      const [rows, total] = await Promise.all([
+        Visitor.find(filter).sort({ lastSeenAt: -1 }).limit(LIMIT).lean(),
+        Visitor.countDocuments(filter),
+      ]);
+
+      const ids = [...new Set(rows.map(v => v.userId && String(v.userId)).filter(Boolean))]
+        .filter(id => mongoose.Types.ObjectId.isValid(id));
+      const users = ids.length
+        ? await User.find({ _id: { $in: ids } })
+            .select('name firstName lastName email mobile accountType userId')
+            .lean()
+        : [];
+      const byId = new Map(users.map(u => [String(u._id), u]));
+
+      const visitors = rows.map(v => {
+        const u = v.userId ? byId.get(String(v.userId)) : null;
+        const ref = String(v.visitorId || v.fingerprint || '').slice(0, 6).toUpperCase();
+        return {
+          ref,
+          firstSeenAt: v.firstSeenAt,
+          // First visit of "today" for the today scope; otherwise the first visit ever.
+          visitedAt: scope === 'today' ? (v.dayFirstAt || v.lastSeenAt || v.firstSeenAt) : v.firstSeenAt,
+          lastSeenAt: v.lastSeenAt,
+          isNew: !!(v.firstSeenAt && v.lastSeenDate === date && new Date(v.firstSeenAt).toISOString().slice(0, 10) === date),
+          device: parseDeviceInfo(v.userAgent),
+          // userId set but account since deleted → removed:true so the UI can say so.
+          user: v.userId
+            ? (u ? {
+                _id: String(u._id),
+                userId: u.userId || '',
+                name: u.name || [u.firstName, u.lastName].filter(Boolean).join(' ').trim(),
+                mobile: u.mobile || '',
+                email: u.email || '',
+                accountType: u.accountType === 'owner' ? 'owner' : 'customer',
+              } : { removed: true })
+            : null,
+        };
+      });
+
+      res.json({ scope, date, total, truncated: total > rows.length, visitors });
+    } catch (err) {
+      console.error('GET /api/admin/visitors error:', err.message);
+      res.status(500).json({ message: 'Error fetching visitors' });
+    }
+  });
+
   // Which module(s) a sub-admin needs, per stat type, to see/act on these
   // generic daily-stats routes. All three ride on the Visits tab's
   // 'stats'/'visits' permissions — 'propertyView' backs the Visits tab's

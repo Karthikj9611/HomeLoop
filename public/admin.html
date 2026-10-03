@@ -1277,12 +1277,13 @@ table.dataTable.no-footer{border-bottom:none!important}
 .vp-time b{display:block;color:var(--ink2);font-size:.76rem;font-weight:700}
 .vp-empty{text-align:center;padding:28px 10px;color:var(--ink3);font-size:.86rem}
 .vp-empty i{display:block;font-size:2rem;margin-bottom:10px;opacity:.35}
-.pv-tabs{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
-.pv-tab{display:inline-flex;align-items:center;gap:7px;padding:7px 14px;border-radius:999px;border:1px solid var(--border);background:var(--surface);color:var(--ink2);font:inherit;font-size:.8rem;font-weight:700;cursor:pointer;transition:all .15s}
+.pv-tabs{display:flex;gap:8px;margin-bottom:12px;flex-wrap:nowrap}
+.pv-tab{flex:1 1 0;min-width:0;justify-content:center;white-space:nowrap;display:inline-flex;align-items:center;gap:6px;padding:7px 8px;border-radius:999px;border:1px solid var(--border);background:var(--surface);color:var(--ink2);font:inherit;font-size:.8rem;font-weight:700;cursor:pointer;transition:all .15s}
 .pv-tab b{min-width:20px;padding:2px 7px;border-radius:999px;background:var(--surface2);font-size:.72rem;text-align:center}
 .pv-tab:hover{border-color:rgba(234,88,12,.4)}
 .pv-tab.active{background:var(--ink);color:#fff;border-color:var(--ink)}
 .pv-tab.active b{background:rgba(255,255,255,.2);color:#fff}
+@media(max-width:430px){.pv-tabs{gap:6px}.pv-tab{font-size:.74rem;padding:7px 4px;gap:5px}.pv-tab i{display:none}.pv-tab b{min-width:18px;padding:2px 6px;font-size:.68rem}}
 .vp-ico.pv-owner{background:#fef3c7;color:#b45309}
 .vp-ico.pv-guest{background:#f1f5f9;color:#64748b}
 .vp-avatar.pv-house{border-radius:14px}
@@ -3750,7 +3751,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
       <div style="display:flex;flex-wrap:wrap;gap:16px">
         <div class="card" style="flex:1;min-width:0">
           <div class="stat-card-big compact">
-            <div class="stat-card-big-icon"><i class="fas fa-globe"></i></div>
+            <div class="stat-card-big-icon clickable" role="button" tabindex="0" title="See who has visited the site (all time)" onclick="openSiteVisitorsModal('all')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openSiteVisitorsModal('all');}"><i class="fas fa-globe"></i></div>
             <div class="stat-card-big-num" id="totalVisitsBigNum">—</div>
             <div class="stat-card-big-label">All-time website visits</div>
             <div class="stat-card-big-actions">
@@ -3762,7 +3763,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
         </div>
         <div class="card" style="flex:1;min-width:0">
           <div class="stat-card-big compact">
-            <div class="stat-card-big-icon"><i class="fas fa-chart-line"></i></div>
+            <div class="stat-card-big-icon clickable" role="button" tabindex="0" title="See who visited the site today" onclick="openSiteVisitorsModal('today')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openSiteVisitorsModal('today');}"><i class="fas fa-chart-line"></i></div>
             <div class="stat-card-big-num" id="dailyVisitsBigNum">—</div>
             <div class="stat-card-big-label">Today's site visits</div>
             <div class="stat-card-big-actions">
@@ -6382,17 +6383,40 @@ function refreshActiveVisitsCategory(){
   else if(_activeVisitsCategory === 'property-views'){ loadDailyStat('propertyView'); }
 }
 
-window.switchVisitsCategory = function(cat){
-  _activeVisitsCategory = cat;
-
+// Which Visits sub-tab (Visits / Users Registered / Property Views) is open is
+// remembered across page refreshes, like the main tab and the Customers /
+// Properties sub-tabs are.
+const VISITS_CATS = ['visits', 'users', 'property-views'];
+function applyVisitsCategoryUI(cat){
   document.querySelectorAll('#visitsCatTabs .cat-tab-btn').forEach(btn=>{
     btn.classList.toggle('active', btn.getAttribute('data-cat') === cat);
   });
   document.querySelectorAll('.visits-subpanel').forEach(panel=> panel.classList.remove('active'));
-  document.getElementById('visits-sub-'+cat).classList.add('active');
+  const sub = document.getElementById('visits-sub-'+cat);
+  if(sub) sub.classList.add('active');
+}
+
+window.switchVisitsCategory = function(cat){
+  _activeVisitsCategory = cat;
+  try{ localStorage.setItem('kr_admin_visitsCat', cat); }catch(e){}
+
+  applyVisitsCategoryUI(cat);
 
   refreshActiveVisitsCategory();
 };
+
+// Restore on load. No data fetch needed here: switchTab('visits') (or the
+// initial load) already calls refreshActiveVisitsCategory() for whatever
+// _activeVisitsCategory is by then.
+(function(){
+  try{
+    const saved = localStorage.getItem('kr_admin_visitsCat');
+    if(saved && VISITS_CATS.includes(saved) && document.getElementById('visits-sub-'+saved)){
+      _activeVisitsCategory = saved;
+      applyVisitsCategoryUI(saved);
+    }
+  }catch(e){}
+})();
 
 function escapeHtml(str){
   if(!str) return '—';
@@ -13469,9 +13493,39 @@ function closePropertyViewersModal(){
 }
 
 /* Visits -> Users Registered -> click the "Today's registrations" icon:
-   lists everyone who registered today (name, contact, time) with the total.
+   lists everyone who registered today (name, contact, time, call button),
+   split into Tenants / Owners tabs, with the total in the header.
    Reuses the viewedPropsModal shell + its timeline styles. */
+let _trList = null, _trTab = 'tenants';
+function setTodayRegTab(t){ _trTab = t; renderTodayRegistrations(); }
+function renderTodayRegistrations(){
+  const box = document.getElementById('viewedPropsModalBox');
+  const d = _trList; if(!d) return;
+  const tabs = _pvTabsHtml([
+    ['tenants','Tenants','fa-user', d.tenants.length],
+    ['owners','Owners','fa-user-tie', d.owners.length],
+  ], _trTab, 'setTodayRegTab');
+  const list = d[_trTab];
+  const owner = _trTab === 'owners';
+  let body;
+  if(!list.length){
+    body = '<div class="vp-empty"><i class="fas fa-user-slash"></i>No ' + _trTab + ' registered today.</div>';
+  } else {
+    body = '<div class="vx-list"><div class="vx-group">' + list.map((u, i) => {
+      const dt = new Date(u.createdAt);
+      const name = ((u.firstName||'') + ' ' + (u.lastName||'')).trim() || u.name || u.email || u.mobile || 'Unnamed user';
+      const meta = [u.mobile, u.email].filter(Boolean).join(' · ');
+      return '<div class="vx-row' + (owner ? ' sale' : '') + '" title="' + _adminModalEsc(fmtDateDMY(dt) + ' ' + fmtTimeHM(dt)) + '" style="animation-delay:' + Math.min(i, 10) * 35 + 'ms">' +
+        '<div class="vx-main"><div class="vx-pid">' + _adminModalEsc((i + 1) + '. ' + name) + '<span class="vx-tag">' + (owner ? 'Owner' : 'Tenant') + '</span></div>' +
+        (meta ? '<div class="vx-meta">' + _adminModalEsc(meta) + '</div>' : '') + '</div>' +
+        '<span class="vx-ago">' + _adminModalEsc(fmtTimeHM(dt)) + '</span>' + _tpvCallBtn(u.mobile, name) + '</div>';
+    }).join('') + '</div></div>';
+  }
+  box.innerHTML = '<div class="pv-tabs">' + tabs + '</div>' + body;
+}
+let _trToken = 0;
 async function openTodayRegistrationsModal(){
+  const token = ++_trToken;
   const modal = document.getElementById('viewedPropsModal');
   const box = document.getElementById('viewedPropsModalBox');
   const countEl = document.getElementById('viewedPropsModalCount');
@@ -13480,42 +13534,32 @@ async function openTodayRegistrationsModal(){
   document.getElementById('viewedPropsModalName').textContent = "Today's registrations";
   document.getElementById('viewedPropsModalSub').textContent = fmtDateDMY(new Date());
   setCount(0);
+  _trList = null; _trTab = 'tenants';
   box.innerHTML = '<div class="vx-list"><div class="vx-skel"></div><div class="vx-skel"></div><div class="vx-skel"></div></div>';
   modal.classList.add('open');
   document.body.style.overflow = 'hidden';
   try{
     const res = await fetch(BASE + '/api/users', { headers: authHeaders() });
-    if(!modal.classList.contains('open')) return;
+    if(token !== _trToken || !modal.classList.contains('open')) return;
     if(!res.ok) throw new Error('bad status');
     const all = await res.json();
     const t0 = new Date(); t0.setHours(0,0,0,0);
-    const list = (Array.isArray(all) ? all : [])
+    const today = (Array.isArray(all) ? all : [])
       .filter(u => u && u.createdAt && new Date(u.createdAt) >= t0)
       .sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
-    setCount(list.length);
-    if(!list.length){
-      box.innerHTML = '<div class="vp-empty"><i class="fas fa-user-slash"></i>No one has registered today.</div>';
-      return;
-    }
-    box.innerHTML = '<div class="vx-list"><div class="vx-group">' + list.map((u, i) => {
-      const d = new Date(u.createdAt);
-      const name = ((u.firstName||'') + ' ' + (u.lastName||'')).trim() || u.name || u.email || u.mobile || 'Unnamed user';
-      const typ = u.accountType === 'owner' ? 'Owner' : 'Tenant';
-      const meta = [u.mobile, u.email].filter(Boolean).join(' · ');
-      const tel = String(u.mobile || '').replace(/[^\d+]/g, '');
-      const callBtn = tel
-        ? '<a class="vx-call" href="tel:' + _adminModalEsc(tel) + '" title="Call ' + _adminModalEsc(name) + '" aria-label="Call ' + _adminModalEsc(name) + '"><i class="fas fa-phone"></i></a>'
-        : '<span class="vx-call disabled" title="No phone number"><i class="fas fa-phone-slash"></i></span>';
-      return '<div class="vx-row' + (u.accountType === 'owner' ? ' sale' : '') + '" title="' + _adminModalEsc(fmtDateDMY(d) + ' ' + fmtTimeHM(d)) + '" style="animation-delay:' + Math.min(i, 10) * 35 + 'ms">' +
-        '<div class="vx-main"><div class="vx-pid">' + _adminModalEsc((i + 1) + '. ' + name) + '<span class="vx-tag">' + typ + '</span></div>' +
-        (meta ? '<div class="vx-meta">' + _adminModalEsc(meta) + '</div>' : '') + '</div>' +
-        '<span class="vx-ago">' + _adminModalEsc(fmtTimeHM(d)) + '</span>' + callBtn + '</div>';
-    }).join('') + '</div></div>';
+    _trList = {
+      tenants: today.filter(u => u.accountType !== 'owner'),
+      owners:  today.filter(u => u.accountType === 'owner'),
+    };
+    setCount(today.length);
+    _trTab = _trList.tenants.length || !_trList.owners.length ? 'tenants' : 'owners';
+    renderTodayRegistrations();
   }catch(e){
-    box.innerHTML = '<div class="vp-empty"><i class="fas fa-triangle-exclamation"></i>Could not load the list. Please try again.</div>';
+    if(token === _trToken) box.innerHTML = '<div class="vp-empty"><i class="fas fa-triangle-exclamation"></i>Could not load the list. Please try again.</div>';
   }
 }
 window.openTodayRegistrationsModal = openTodayRegistrationsModal;
+window.setTodayRegTab = setTodayRegTab;
 
 /* Visits -> Property Views -> click the eye icon:
    everyone who viewed a listing today — tenants, owners AND guests — grouped by
@@ -13640,6 +13684,92 @@ async function openTodayPropertyViewsModal(){
 }
 window.openTodayPropertyViewsModal = openTodayPropertyViewsModal;
 window.setTodayPvTab = setTodayPvTab;
+
+/* Visits -> Visits -> click the globe (all-time) or chart (today) icon:
+   who visited the site — tenants, owners and guests — from GET /api/admin/visitors
+   (the server's per-device Visitor records). Logged-in visitors show name + call
+   button; guests show a device ref. Reuses the viewedPropsModal shell. */
+let _svToken = 0, _sv = null, _svTab = 'tenants', _svScope = 'today';
+function _svDateStr(ymd){ const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(ymd || ''); return m ? (m[3] + '-' + m[2] + '-' + m[1]) : ''; }
+function _svWhen(v){
+  const dt = v ? new Date(v) : null;
+  if(!dt || isNaN(dt)) return '';
+  return _svScope === 'today' ? fmtTimeHM(dt) : (fmtDateDMY(dt) + ' ' + fmtTimeHM(dt));
+}
+function setSiteVisitorsTab(t){ _svTab = t; renderSiteVisitors(); }
+function renderSiteVisitors(){
+  const box = document.getElementById('viewedPropsModalBox');
+  const d = _sv; if(!d) return;
+  const tabs = _pvTabsHtml([
+    ['tenants','Tenants','fa-user', d.tenants.length],
+    ['owners','Owners','fa-user-tie', d.owners.length],
+    ['guests','Guests','fa-user-secret', d.guests.length],
+  ], _svTab, 'setSiteVisitorsTab');
+  const notes = (d.truncated ? '<div class="pv-note">Showing the most recent ' + d.shown + ' of ' + d.total + ' visitors.</div>' : '') +
+    '<div class="pv-note">Visitors from before this feature was added show as guests until they visit or log in again.</div>';
+  const list = d[_svTab];
+  let body;
+  if(!list.length){
+    body = '<div class="vp-empty"><i class="fas fa-user-slash"></i>No ' + _svTab + (_svScope === 'today' ? ' have visited today.' : ' on record.') + '</div>';
+  } else {
+    const guest = _svTab === 'guests', owner = _svTab === 'owners';
+    body = '<div class="vx-list"><div class="vx-group">' + list.map((v, i) => {
+      const u = v.user;
+      const name = guest ? 'Guest visitor' : (u.removed ? 'Deleted user' : (u.name || u.email || u.mobile || 'User'));
+      const contact = guest ? ('Device ' + (v.ref || '—')) : (u.removed ? '' : [u.mobile, u.email].filter(Boolean).join(' · '));
+      const dev = v.device ? [v.device.type, v.device.browser, v.device.os].filter(Boolean).join(' · ') : '';
+      const first = _svWhen(v.visitedAt), last = _svWhen(v.lastSeenAt);
+      const timing = (_svScope === 'today' ? 'First visit ' : 'First seen ') + first + (last && last !== first ? ' · Last seen ' + last : '');
+      const tag = guest
+        ? '<span class="vx-tag" style="background:#f1f5f9;color:#64748b">Guest</span>'
+        : '<span class="vx-tag">' + (owner ? 'Owner' : 'Tenant') + '</span>';
+      const newTag = v.isNew ? '<span class="vx-tag" style="background:#fff7ed;color:#c2410c">New</span>' : '';
+      return '<div class="vx-row' + (owner ? ' sale' : '') + (!guest && u.removed ? ' gone' : '') + '" style="animation-delay:' + Math.min(i, 10) * 35 + 'ms">' +
+        '<div class="vx-main"><div class="vx-pid">' + _adminModalEsc((i + 1) + '. ' + name) + tag + newTag + '</div>' +
+          (contact ? '<div class="vx-meta">' + _adminModalEsc(contact) + '</div>' : '') +
+          (dev ? '<div class="vx-meta"><i class="fas fa-mobile-screen-button" style="margin-right:5px"></i>' + _adminModalEsc(dev) + '</div>' : '') +
+          '<div class="vx-meta">' + _adminModalEsc(timing) + '</div></div>' +
+        (guest || u.removed ? '' : _tpvCallBtn(u.mobile, name)) + '</div>';
+    }).join('') + '</div></div>';
+  }
+  box.innerHTML = '<div class="pv-tabs">' + tabs + '</div>' + body + notes;
+}
+async function openSiteVisitorsModal(scope){
+  scope = scope === 'all' ? 'all' : 'today';
+  const token = ++_svToken;
+  _svScope = scope; _sv = null; _svTab = 'tenants';
+  const modal = document.getElementById('viewedPropsModal');
+  const box = document.getElementById('viewedPropsModalBox');
+  const countEl = document.getElementById('viewedPropsModalCount');
+  document.getElementById('viewedPropsModalAvatar').innerHTML = '<i class="fas ' + (scope === 'all' ? 'fa-globe' : 'fa-chart-line') + '"></i>';
+  document.getElementById('viewedPropsModalName').textContent = scope === 'all' ? 'All-time site visitors' : "Today's site visitors";
+  document.getElementById('viewedPropsModalSub').textContent = scope === 'all' ? 'Every device on record' : fmtDateDMY(new Date());
+  countEl.innerHTML = '<b>…</b><span>visitors</span>';
+  box.innerHTML = '<div class="vx-list"><div class="vx-skel"></div><div class="vx-skel"></div><div class="vx-skel"></div></div>';
+  modal.classList.add('open');
+  document.body.style.overflow = 'hidden';
+  try{
+    const data = await _pvFetchJson('/api/admin/visitors?scope=' + scope);
+    if(token !== _svToken || !modal.classList.contains('open')) return;
+    const all = Array.isArray(data.visitors) ? data.visitors : [];
+    const out = { tenants: [], owners: [], guests: [], total: data.total || all.length, shown: all.length, truncated: !!data.truncated };
+    all.forEach(v => {
+      if(!v.user) out.guests.push(v);
+      else if(v.user.accountType === 'owner') out.owners.push(v);
+      else out.tenants.push(v);   // deleted accounts (user.removed) land here, shown as "Deleted user"
+    });
+    _sv = out;
+    const n = out.total;
+    countEl.innerHTML = '<b>' + n + '</b><span>' + (n === 1 ? 'visitor' : 'visitors') + '</span>';
+    if(scope === 'today' && data.date) document.getElementById('viewedPropsModalSub').textContent = _svDateStr(data.date);
+    _svTab = out.tenants.length ? 'tenants' : out.owners.length ? 'owners' : out.guests.length ? 'guests' : 'tenants';
+    renderSiteVisitors();
+  }catch(e){
+    if(token === _svToken) box.innerHTML = _pvErrHtml(e);
+  }
+}
+window.openSiteVisitorsModal = openSiteVisitorsModal;
+window.setSiteVisitorsTab = setSiteVisitorsTab;
 
 function closeViewedPropsModal(){
   document.getElementById('viewedPropsModal').classList.remove('open');

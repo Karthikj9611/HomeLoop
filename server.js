@@ -517,6 +517,7 @@ app.post('/api/user/signup', userAuthLimiter, async (req, res) => {
       userId,
     });
     const userKey = await issueUserSession(user);
+    linkVisitorToUser(req, user._id); // fire-and-forget: tag this device's visitor record with the account
     await EmailOtp.deleteOne({ email: cleanEmail }); // one-time use — clear it now that the account exists
     bumpDailyStat('registration'); // fire-and-forget; doesn't block the response
     notifyAdmin({
@@ -570,6 +571,7 @@ app.post('/api/user/login', userAuthLimiter, async (req, res) => {
     }
 
     const userKey = await issueUserSession(user);
+    linkVisitorToUser(req, user._id); // fire-and-forget: tag this device's visitor record with the account
     return res.json({
       message: 'Logged in successfully',
       _id: user._id, userId: user.userId,
@@ -1870,6 +1872,7 @@ app.post('/api/properties/:id/view', viewLimiter, attachUserIfPresent, async (re
     // still counts as just the one view already on file for them, matching
     // PropertyViewer's one-row-per-user list below exactly.
     const fingerprint = req.userId ? `user:${req.userId}` : visitorFingerprint(req);
+    if (req.userId) linkVisitorToUser(req, req.userId); // fire-and-forget: tag this device's visitor record with the account
 
     // Try to claim this (propertyId, fingerprint) pair. The unique index
     // rejects a repeat with E11000 — that's how we know this person has
@@ -3273,6 +3276,13 @@ const VisitorSchema = new mongoose.Schema({
   firstSeenAt:  { type: Date, default: Date.now },
   lastSeenAt:   { type: Date, default: Date.now },
   lastSeenDate: { type: String, required: true }, // 'YYYY-MM-DD', local to bumpDailyStat's clock
+  // ── Who is this visitor? (powers the admin Visits tab's "who visited" popup) ──
+  // userId: set when a logged-in session is seen on this device (on a visit,
+  //   a login/signup, or a listing view) — null means a guest. If several
+  //   people share one device, the most recent one wins.
+  userId:       { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null, index: true },
+  userAgent:    { type: String, default: '' },   // truncated UA, parsed into "Mobile · Chrome · Android" for the admin popup
+  dayFirstAt:   { type: Date, default: null },   // when this visitor first showed up on lastSeenDate (their first visit of that day)
 });
 const Visitor = mongoose.model('Visitor', VisitorSchema);
 
@@ -3338,6 +3348,20 @@ function readCookie(req, name) {
   return null;
 }
 
+// Links this browser's visitor record (matched by the hl_vid cookie) to a
+// logged-in account, so the admin "who visited" list can show the person's
+// name instead of "Guest". Fire-and-forget: never blocks or breaks a request.
+async function linkVisitorToUser(req, userId) {
+  try {
+    if (!userId) return;
+    const vid = readCookie(req, VISITOR_COOKIE_NAME);
+    if (!vid) return;
+    await Visitor.updateOne({ visitorId: vid }, { $set: { userId } });
+  } catch (err) {
+    console.error('linkVisitorToUser error:', err.message);
+  }
+}
+
 function visitorFingerprint(req) {
   const ua = (req.headers['user-agent'] || '').toString();
 
@@ -3398,11 +3422,13 @@ const visitLimiterStats = rateLimit({
   message: { message: 'Too many requests. Please try again later.' }
 });
 
-app.post('/api/stats/visit', visitLimiterStats, async (req, res) => {
+app.post('/api/stats/visit', visitLimiterStats, attachUserIfPresent, async (req, res) => {
   try {
     const today = todayStr();
     const cookieVid = readCookie(req, VISITOR_COOKIE_NAME);
     const fingerprint = visitorFingerprint(req);
+    const userAgent = (req.headers['user-agent'] || '').toString().slice(0, 300);
+    const visitUserId = req.userId || null; // null for guests (attachUserIfPresent never blocks)
 
     // Cookie match first (most precise — one browser, not "one IP+UA").
     // Fingerprint is only a fallback for when the cookie didn't come back,
@@ -3423,6 +3449,9 @@ app.post('/api/stats/visit', visitLimiterStats, async (req, res) => {
       visitor.fingerprint   = fingerprint;
       visitor.lastSeenAt    = new Date();
       visitor.lastSeenDate  = today;
+      if (isNewDay || !visitor.dayFirstAt) visitor.dayFirstAt = new Date();
+      if (visitUserId) visitor.userId = visitUserId; // never overwrite with null — a guest page-load after logout keeps the known owner
+      if (userAgent) visitor.userAgent = userAgent;
       await visitor.save();
 
       if (isNewDay) await bumpDailyStat('visit');
@@ -3437,6 +3466,9 @@ app.post('/api/stats/visit', visitLimiterStats, async (req, res) => {
         visitorId:    visitorIdForCookie,
         fingerprint,
         lastSeenDate: today,
+        dayFirstAt:   new Date(),
+        userId:       visitUserId,
+        userAgent,
       });
 
       const doc = await SiteStat.findOneAndUpdate(
