@@ -8361,6 +8361,19 @@ function saveViewedSeen() {
 function getViews(p) {
   return (p && p.views) || 0;
 }
+/* Updates the view-count badges for one listing in place. Re-rendering the
+   whole grid just to bump a number shrinks the page (cards stream back in
+   chunks) and loses the visitor's scroll position, so we patch the DOM. */
+function updateCardViews(p) {
+  const n = getViews(p);
+  const needle = "openViewersModal('" + p.id + "')";
+  document.querySelectorAll('[onclick*="openViewersModal"]').forEach(el => {
+    if ((el.getAttribute('onclick') || '').indexOf(needle) === -1) return;
+    const badge = el.querySelector('.prop-views-badge, .prop-views-float-badge');
+    if (badge) badge.textContent = formatViews(n);
+    el.title = n.toLocaleString('en-IN') + ' views \u00b7 tap to see who viewed';
+  });
+}
 function incrementViews(p) {
   const key = String(p.id);
   const alreadyCountedThisBrowser = viewedSeen.has(key);
@@ -8403,7 +8416,7 @@ function incrementViews(p) {
         // worked. Re-render immediately so the corrected number shows up
         // right away, not one open later.
         p.views = data.views;
-        renderCards();
+        updateCardViews(p);
       }
     })
     .catch(() => { /* view count will reconcile on next full reload */ });
@@ -11057,7 +11070,13 @@ function unlockBodyScroll() {
     document.body.style.right = '';
     document.body.style.width = '';
     document.body.style.overflow = '';
+    // html{scroll-behavior:smooth} would animate this jump from the top;
+    // force an instant restore so the page stays exactly where it was.
+    const _root = document.documentElement;
+    const _prevSB = _root.style.scrollBehavior;
+    _root.style.scrollBehavior = 'auto';
     window.scrollTo(0, _scrollLockY);
+    _root.style.scrollBehavior = _prevSB;
   }
 }
 
@@ -11991,7 +12010,7 @@ function openDetailReal(id) {
   // Viewed, so only record it when it's a live (non-booked) property, i.e.
   // actually present in PROPERTIES rather than only in BOOKED_PROPERTIES.
   if (PROPERTIES.some(x => x.id === id)) recordRecentlyViewed(p);
-  renderCards();        // reflect the new count on the card grid
+  updateCardViews(p);   // reflect the new count on the card, without re-rendering the grid
 
   // View mode never touches the actual "list your property" form — it
   // builds a plain read-only key/value table straight from the property
