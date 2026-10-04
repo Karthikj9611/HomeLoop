@@ -209,6 +209,20 @@ body{
 #bulkToolbar{width:150px!important;align-items:stretch!important}
 #bulkToolbar .bulk-toolbar-left,#bulkToolbar .bulk-toolbar-right{width:100%;align-items:stretch!important}
 #bulkToolbar .bulk-btn{width:100%!important;justify-content:flex-start!important}
+/* Mobile: icon-only floating stack, selection count as a badge on the icon's top-right */
+@media(max-width:768px){
+  #bulkToolbar{width:auto!important;align-items:flex-end!important;right:14px;bottom:14px;gap:10px!important}
+  #bulkToolbar .bulk-toolbar-left,#bulkToolbar .bulk-toolbar-right{width:auto!important;align-items:flex-end!important;gap:10px!important}
+  #bulkToolbar .bulk-btn{position:relative;width:46px!important;min-width:46px!important;height:46px!important;padding:0!important;gap:0!important;justify-content:center!important;align-items:center!important;border-radius:50%!important;flex-direction:row!important}
+  #bulkToolbar .bulk-btn i{font-size:1.05rem!important;margin:0!important}
+  #bulkToolbar .bulk-btn .bulk-btn-label{display:none!important}
+  #bulkCompareCount,#bulkShareTenantCount,#bulkShareLinksCount,#bulkCheckAvailabilityCount{
+    position:absolute;top:-6px;right:-6px;min-width:20px;height:20px;padding:0 5px;box-sizing:border-box;
+    display:flex;align-items:center;justify-content:center;
+    border-radius:10px;background:var(--ink,#1f2937);color:#fff;border:2px solid #fff;
+    font-size:.64rem;font-weight:800;line-height:1;box-shadow:0 1px 4px rgba(0,0,0,.3);pointer-events:none
+  }
+}
 /* "n selected" pill removed everywhere */
 #custSelectedCount,#bulkSelectedCount,#apptSelectedCount,#reviewSelectedCount,#urSelectedCount,#partnerSelectedCount{display:none!important}
 /* Bulk Delete (n) buttons removed everywhere */
@@ -3500,7 +3514,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
          it's a create action, not a housekeeping one like the rest here. -->
     <div class="bulk-toolbar bulk-toolbar-spaced" id="bulkToolbar">
       <div class="bulk-toolbar-left">
-        <button class="bulk-btn" id="addPropertyBtn" onclick="openAdminAddPropertyModal()" style="background:var(--brand);color:#fff;border-color:var(--brand)">
+        <button class="bulk-btn" id="addPropertyBtn" onclick="openAdminAddPropertyModal()" title="Add property" aria-label="Add property" style="background:var(--brand);color:#fff;border-color:var(--brand)">
           <i class="fas fa-plus"></i> <span class="bulk-btn-label" data-mobile="Add">Add Property</span>
         </button>
         <button class="bulk-btn" id="bulkCompareBtn" style="display:none;background:var(--brand);color:#fff;border-color:var(--brand)" onclick="openAdminCompareModal()" title="Compare the selected properties and share the link with a customer">
@@ -3512,7 +3526,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
         <button class="bulk-btn" id="bulkShareLinksBtn" style="display:none;background:#25D366;color:#fff;border-color:#25D366" onclick="shareSelectedLinksToNumber()" title="Share links for all selected properties to a WhatsApp number you enter">
           <i class="fab fa-whatsapp"></i> <span class="bulk-btn-label" data-mobile="Share">Share Links - </span><span id="bulkShareLinksCount">0</span>
         </button>
-        <button class="bulk-btn" id="bulkCheckAvailabilityBtn" style="display:none;background:#25D366;color:#fff;border-color:#25D366" onclick="checkAvailabilityWithOwners()" title="Review and send a WhatsApp availability check to each selected property's owner (alt number only)">
+        <button class="bulk-btn" id="bulkCheckAvailabilityBtn" style="display:none;background:#7c3aed;color:#fff;border-color:#7c3aed" onclick="checkAvailabilityWithOwners()" title="Review and send a WhatsApp availability check to each selected property's owner (alt number only)">
           <i class="fab fa-whatsapp"></i> <span class="bulk-btn-label" data-mobile="Check">Check Availability - </span><span id="bulkCheckAvailabilityCount">0</span>
         </button>
         <span id="addPropertyDivider" style="width:1px;align-self:stretch;background:var(--border,#ddd);margin:2px 4px;flex-shrink:0"></span>
