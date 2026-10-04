@@ -4929,6 +4929,24 @@ main.tab-explore .empty-state{display:none !important}
     </div>
   </div>
 
+      <!-- RENT + LEASE: No. of persons allowed (shows listings that allow at least N people) -->
+  <div class="fd-btn fd-rent fd-lease" id="fdb-persons" onclick="toggleFd('persons',this)">
+    <span class="fd-icon">👥</span>
+    <span class="fd-label">Persons</span> <span class="fd-badge" id="fdbc-persons" style="display:none"></span>
+    <svg class="chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+    <div class="fd-pop" id="fdp-persons" onclick="event.stopPropagation()">
+      <div class="fd-pop-label">No. of persons staying</div>
+      <div class="fd-range-inputs">
+        <input class="fd-range-input" type="number" min="1" max="50" step="1" inputmode="numeric" placeholder="e.g. 3" id="fd-persons-min" oninput="refreshFdRangeBtn('persons')">
+      </div>
+      <div class="fd-range-hint">Shows homes that allow at least this many people</div>
+      <div class="fd-pop-footer">
+        <button class="fd-clear-btn" onclick="clearFdRange('persons')">Clear</button>
+        <button class="fd-apply-btn" onclick="applyFdRange('persons')">Apply</button>
+      </div>
+    </div>
+  </div>
+
   <!-- RENT + LEASE + PG + SHORT STAY: Property Type -->
   <div class="fd-btn fd-rent fd-lease fd-pg fd-shortstay fd-sell" id="fdb-type" onclick="toggleFd('type',this)">
     <span class="fd-icon">🏢</span>
@@ -6375,6 +6393,10 @@ main.tab-explore .empty-state{display:none !important}
           </div>
         </div>
         <input type="hidden" id="f-tenant" />
+      </div>
+      <div class="form-group" id="maxPersonsFormGroup">
+        <label class="form-label">No. of persons allowed</label>
+        <input class="form-input" type="number" id="f-maxPersons" min="1" max="50" step="1" inputmode="numeric" placeholder="e.g. 4" oninput="if(this.value!==''){this.value=this.value.replace(/\D/g,'').slice(0,2)}" />
       </div>
       <div class="form-group" id="f-availWrap">
         <label class="form-label">Available from</label>
@@ -10376,6 +10398,7 @@ function renderCompareTable() {
     { label: 'Toilet type', get: p => dash(p.property?.toiletType ?? p.pg?.toiletType) },
     { label: 'Facing', get: p => dash(p.property?.facing) },
     { label: 'Tenant preferred', get: p => dash(p.property?.tenant) },
+    { label: 'Persons allowed', get: p => dash(p.property?.maxPersons) },
     { label: 'Lift', get: p => yn(pHasLift(p)) },
     { label: 'Car park', get: p => (parseInt(p.property?.car ?? p.pg?.car, 10) || 0) > 0 ? `${parseInt(p.property?.car ?? p.pg?.car, 10)}` : 'No' },
     { label: 'Bike park', get: p => (parseInt(p.property?.bike ?? p.pg?.bike, 10) || 0) > 0 ? `${parseInt(p.property?.bike ?? p.pg?.bike, 10)}` : 'No' },
@@ -11319,7 +11342,7 @@ function clearFilters() {
    price.maintenance) across every property type — Rent, Lease, PG, and
    Short Stay — instead of type-specific preset buckets. The user types
    any custom range, e.g. 0–10000, or leaves Max blank for "0 and above". */
-const FD_RANGE_IDS = ['price', 'deposit', 'maintenance'];
+const FD_RANGE_IDS = ['price', 'deposit', 'maintenance', 'persons']; // 'persons' only has a Min input
 
 function fdActiveRangeCount() {
   let n = 0;
@@ -11586,7 +11609,8 @@ function restoreFilterStateBeforeBuild() {
   const RANGE_MAP = {
     _priceMin: ['price', 'min'], _priceMax: ['price', 'max'],
     _depositMin: ['deposit', 'min'], _depositMax: ['deposit', 'max'],
-    _maintenanceMin: ['maintenance', 'min'], _maintenanceMax: ['maintenance', 'max']
+    _maintenanceMin: ['maintenance', 'min'], _maintenanceMax: ['maintenance', 'max'],
+    _personsMin: ['persons', 'min']
   };
   Object.keys(RANGE_MAP).forEach(k => {
     const val = sel[k];
@@ -11649,6 +11673,7 @@ function getFilterState() {
   [state._priceMin, state._priceMax] = fdRange('price');
   [state._depositMin, state._depositMax] = fdRange('deposit');
   [state._maintenanceMin, state._maintenanceMax] = fdRange('maintenance');
+  state._personsMin = fdRange('persons')[0];
 
   return state;
 }
@@ -11835,6 +11860,14 @@ function getFiltered(source = PROPERTIES, fsIn) {
     }
     if (fs._maintenanceMin != null && fdPriceNum(p.price?.maintenance) < fs._maintenanceMin) return false;
     if (fs._maintenanceMax != null && fdPriceNum(p.price?.maintenance) > fs._maintenanceMax) return false;
+
+    // No. of persons allowed — Rent/Lease only. Keeps listings that allow at
+    // least the requested number of people; listings with no limit entered
+    // are kept too (no restriction stated).
+    if (fs._personsMin != null && ['Rent','Lease'].includes(pType)) {
+      const maxP = Number(p.property?.maxPersons);
+      if (maxP > 0 && maxP < fs._personsMin) return false;
+    }
 
     // Area / Floor range filters are shown on Rent, Lease, AND Sell only —
     // guarded here so they're a no-op for PG/ShortStay listings (which have
@@ -12298,6 +12331,7 @@ function buildDetailTable(p) {
     !isPG && !isShortStay ? kv((isSell && sale.areaType) ? sale.areaType : 'Built-up area', property.area) : null,
     !isPG && !isShortStay ? kv('Age of property', property.age) : null,
     !isPG && !isShortStay && !isSell ? kv('Preferred tenants', property.tenant) : null,
+    !isPG && !isShortStay && !isSell ? kv('Persons allowed', property.maxPersons) : null,
     !isPG && !isShortStay ? kv('Facing', property.facing) : null,
     kv('Bike parking', property.bike),
     kv('Car parking', property.car),
@@ -13236,6 +13270,7 @@ function applyImportedProperty(p) {
     formatAreaSqft(document.getElementById('f-area'));
     sv('f-age', property.age);
     sv('f-tenant', property.tenant);
+    sv('f-maxPersons', property.maxPersons);
     if (typeof syncTenantCheckboxesFromValue === 'function') syncTenantCheckboxesFromValue(property.tenant);
     sv('f-facing', property.facing);
   }
@@ -17297,6 +17332,8 @@ function onFTypeChange(val) {
   // Tenant preference is a rental-only concept — doesn't apply when selling.
   const tenantGroup = document.getElementById('tenantFormGroup');
   if (tenantGroup) tenantGroup.style.display = isSell ? 'none' : '';
+  const maxPersonsGroup = document.getElementById('maxPersonsFormGroup');
+  if (maxPersonsGroup) maxPersonsGroup.style.display = isSell ? 'none' : '';
   const lbl = document.getElementById('f-rentLabel');
   if (lbl) lbl.innerHTML = (val === 'For Rent' || val === 'Rent') ? 'Monthly rent (₹) <span style="color:var(--brand)">*</span>'
     : isLease ? 'Token rent (₹) <span style="color:var(--brand)">*</span>'
@@ -17753,6 +17790,7 @@ function submitListing() {
           }),
           facing:    document.getElementById('f-facing').value,
           tenant:    document.getElementById('f-tenant').value,
+          maxPersons: document.getElementById('f-maxPersons').value ? parseInt(document.getElementById('f-maxPersons').value, 10) : null,
           available: isLease ? gv('f-leaseAvailableFrom') : (document.getElementById('f-avail').value || null),
         }),
       },

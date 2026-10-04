@@ -914,6 +914,7 @@ const PropertyDetailsSchema = new mongoose.Schema({
   facing:    { type: String }, // Not collected for Short Stay (form hides this field) — no default, so it's omitted entirely instead of appearing as a default value
   age:       { type: String },   // not collected for PG/Short Stay; no default, so omitted entirely for them
   tenant:    { type: String }, // Not collected for Short Stay (form hides this field) — no default, so it's omitted entirely instead of appearing as a default value
+  maxPersons: { type: Number, min: 1 }, // No. of persons allowed — optional; omitted when not provided
   available: { type: String }, // Not collected for Short Stay (form hides this field) — no default, so it's omitted entirely instead of appearing as null
 }, { _id: false });
 

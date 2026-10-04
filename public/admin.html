@@ -4506,6 +4506,10 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
         </div>
         <input type="hidden" id="f-tenant" />
       </div>
+      <div class="form-group" id="maxPersonsFormGroup">
+        <label class="form-label">No. of persons allowed</label>
+        <input class="form-input" type="number" id="f-maxPersons" min="1" max="50" step="1" inputmode="numeric" placeholder="e.g. 4" oninput="if(this.value!==''){this.value=this.value.replace(/\D/g,'').slice(0,2)}" />
+      </div>
       <div class="form-group" id="f-availWrap">
         <label class="form-label">Available from</label>
         <input class="form-input" type="date" id="f-avail" />
@@ -12143,6 +12147,7 @@ function renderAdminCompareTable(){
     { label: 'Toilet type', get: p => dash(p.property?.toiletType ?? p.pg?.toiletType) },
     { label: 'Facing', get: p => dash(p.property?.facing) },
     { label: 'Tenant preferred', get: p => dash(p.property?.tenant) },
+    { label: 'Persons allowed', get: p => dash(p.property?.maxPersons) },
     { label: 'Lift', get: p => yn(pHasLift(p)) },
     { label: 'Car park', get: p => (parseInt(p.property?.car ?? p.pg?.car, 10) || 0) > 0 ? `${parseInt(p.property?.car ?? p.pg?.car, 10)}` : 'No' },
     { label: 'Bike park', get: p => (parseInt(p.property?.bike ?? p.pg?.bike, 10) || 0) > 0 ? `${parseInt(p.property?.bike ?? p.pg?.bike, 10)}` : 'No' },
@@ -14676,6 +14681,7 @@ function applyImportedProperty(p) {
     formatAreaSqft(document.getElementById('f-area'));
     sv('f-age', property.age);
     sv('f-tenant', property.tenant);
+    sv('f-maxPersons', property.maxPersons);
     if (typeof syncTenantCheckboxesFromValue === 'function') syncTenantCheckboxesFromValue(property.tenant);
     sv('f-facing', property.facing);
   }
@@ -14815,6 +14821,8 @@ function onFTypeChange(val) {
   // Tenant preference is a rental-only concept — doesn't apply when selling.
   const tenantGroup = document.getElementById('tenantFormGroup');
   if (tenantGroup) tenantGroup.style.display = isSell ? 'none' : '';
+  const maxPersonsGroup = document.getElementById('maxPersonsFormGroup');
+  if (maxPersonsGroup) maxPersonsGroup.style.display = isSell ? 'none' : '';
   const lbl = document.getElementById('f-rentLabel');
   if (lbl) lbl.innerHTML = (val === 'For Rent' || val === 'Rent') ? 'Monthly rent (₹) <span style="color:var(--brand)">*</span>'
     : isLease ? 'Token rent (₹) <span style="color:var(--brand)">*</span>'
@@ -15617,6 +15625,7 @@ async function adminSubmitListing() {
           }),
           facing:    document.getElementById('f-facing').value,
           tenant:    document.getElementById('f-tenant').value,
+          maxPersons: document.getElementById('f-maxPersons').value ? parseInt(document.getElementById('f-maxPersons').value, 10) : null,
           available: isLease ? gv('f-leaseAvailableFrom') : (document.getElementById('f-avail').value || null),
         }),
       },
