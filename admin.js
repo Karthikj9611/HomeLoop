@@ -1036,12 +1036,22 @@ self.addEventListener('notificationclick', event => {
       if (!ALLOWED_BHK.includes(bhkVal)) return res.status(400).json({ message: 'Invalid BHK' });
       const user = await User.findByIdAndUpdate(
         id,
-        { subscriptionAt: fromVal, subscriptionFrom: fromVal, subscriptionTo: toVal, subscriptionBhk: fromVal ? bhkVal : '', subscriptionExpiryHandled: false },
+        { subscriptionAt: fromVal, subscriptionFrom: fromVal, subscriptionTo: toVal, subscriptionBhk: fromVal ? bhkVal : '', subscriptionExpiryHandled: false, subscriptionStartHandled: false },
         { new: true }
       ).lean();
       if (!user) return res.status(404).json({ message: 'Customer not found' });
+      // Saved period is already running (From is now/past, To still ahead) → switch this tenant's Public call ON now,
+      // instead of waiting for the next 1-minute sweep. Tenants only (owners' Public call means something else).
+      if (fromVal && toVal && fromVal <= new Date() && toVal > new Date()) {
+        await User.updateOne(
+          { _id: id, accountType: { $ne: 'owner' }, isBlocked: { $ne: true } },
+          { publicCall: true, subscriptionStartHandled: true }
+        );
+        user.publicCall = true;
+      }
       res.json({
         message: fromVal ? 'Subscription updated' : 'Subscription cleared',
+        publicCall: !!user.publicCall,
         _id: user._id, subscriptionAt: user.subscriptionAt || null,
         subscriptionFrom: user.subscriptionFrom || null, subscriptionTo: user.subscriptionTo || null,
         subscriptionBhk: user.subscriptionBhk || '',
@@ -1077,6 +1087,34 @@ self.addEventListener('notificationclick', event => {
   }
   expireSubscriptions();
   setInterval(expireSubscriptions, 60 * 1000).unref();
+
+  // ── SUBSCRIPTION START SWEEP ──
+  // When a tenant's subscriptionFrom has arrived (and subscriptionTo hasn't): turn THEIR Public call ON.
+  // Only that user is touched. Handled once per saved period (subscriptionStartHandled), so if an admin later
+  // switches Public call off by hand during the plan, it is not switched back on. Runs at startup + every minute.
+  async function startSubscriptions() {
+    try {
+      const now = new Date();
+      const due = await User.find({
+        subscriptionFrom: { $ne: null, $lte: now },
+        subscriptionTo:   { $ne: null, $gt: now },
+        subscriptionStartHandled: { $ne: true },
+        accountType: { $ne: 'owner' },
+        isBlocked: { $ne: true },
+      }).select('_id').lean();
+      for (const { _id } of due) {
+        // Atomic claim so overlapping runs / multiple instances act only once per user.
+        await User.findOneAndUpdate(
+          { _id, subscriptionStartHandled: { $ne: true }, subscriptionFrom: { $lte: new Date() }, subscriptionTo: { $gt: new Date() } },
+          { publicCall: true, subscriptionStartHandled: true }
+        );
+      }
+    } catch (err) {
+      console.error('startSubscriptions error:', err.message);
+    }
+  }
+  startSubscriptions();
+  setInterval(startSubscriptions, 60 * 1000).unref();
 
   // ── PATCH /api/users/:id (admin: edit a customer's profile) ──
   // Body: { firstName, lastName, email, mobile, accountType }. Powers the Customers

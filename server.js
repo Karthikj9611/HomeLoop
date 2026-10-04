@@ -149,6 +149,10 @@ const UserSchema = new mongoose.Schema({
   // (no logout) for the current subscriptionTo. Reset to false whenever an admin saves
   // a new subscription period, so each period expires exactly once.
   subscriptionExpiryHandled: { type: Boolean, default: false },
+  // true once Public call was switched ON automatically at this period's subscriptionFrom (admin.js start sweep).
+  // Reset to false whenever an admin saves a new period, so each period switches on exactly once — and an
+  // admin who turns Public call OFF by hand during the plan is not overridden again.
+  subscriptionStartHandled: { type: Boolean, default: false },
   // BHK type this tenant subscribed for (e.g. '1 BHK'). '' = no restriction (all listings).
   // While the tenant's Public call is ON and this is set, GET /api/properties returns ONLY
   // listings whose property.bhk equals this value (see the viewer lookup in that route).
@@ -1686,9 +1690,25 @@ app.get('/api/properties', attachUserIfPresent, async (req, res) => {
     // If the tenant also subscribed for ONE BHK type, ONLY that BHK's listings are loaded at all.
     let _viewerPublicCall = false;
     let _viewerBhk = '';
+    let _viewerSubFrom = null;   // when this tenant's subscription starts / ends (page uses them to reset "Viewed")
+    let _viewerSubTo = null;
     if (req.userId) {
-      const _viewer = await User.findById(req.userId).select('publicCall accountType subscriptionBhk').lean();
+      const _viewer = await User.findById(req.userId).select('publicCall accountType subscriptionBhk subscriptionFrom subscriptionAt subscriptionTo subscriptionExpiryHandled subscriptionStartHandled').lean();
+      if (_viewer && (_viewer.accountType || 'customer') === 'customer') {
+        _viewerSubFrom = _viewer.subscriptionFrom || _viewer.subscriptionAt || null;
+        _viewerSubTo = _viewer.subscriptionTo || null;
+      }
       _viewerPublicCall = !!(_viewer && _viewer.publicCall && (_viewer.accountType || 'customer') === 'customer');
+      // Plan just started but the 1-minute start sweep hasn't switched Public call on yet → treat it as ON now.
+      if (_viewer && !_viewerPublicCall && (_viewer.accountType || 'customer') === 'customer' && !_viewer.subscriptionStartHandled) {
+        const _sf = _viewer.subscriptionFrom || _viewer.subscriptionAt, _st = _viewer.subscriptionTo, _n = new Date();
+        if (_sf && _st && new Date(_sf) <= _n && new Date(_st) > _n) _viewerPublicCall = true;
+      }
+      // Plan just ended but the 1-minute expiry sweep hasn't switched Public call off yet → treat it as OFF now.
+      // (Once the sweep has handled it, publicCall is the admin's switch again — a manual re-enable still works.)
+      if (_viewerPublicCall && _viewer.subscriptionTo && new Date(_viewer.subscriptionTo) <= new Date() && !_viewer.subscriptionExpiryHandled) {
+        _viewerPublicCall = false;
+      }
       if (_viewerPublicCall && _viewer.subscriptionBhk) _viewerBhk = String(_viewer.subscriptionBhk).trim();
     }
     // Match tolerant of case / spacing ("1 BHK", "1BHK", "1 bhk"). PG / Short Stay (no BHK) are excluded too.
@@ -1854,7 +1874,7 @@ app.get('/api/properties', attachUserIfPresent, async (req, res) => {
     res.vary('x-user-key');
     res.set('Cache-Control', _viewerPublicCall ? 'private, no-store' : 'private, max-age=30');
     // bhkFilter: which BHK restriction was applied for this viewer ('' = none) — handy for checking in DevTools → Network.
-    res.json({ properties: mapped, total: mapped.length, bhkFilter: _viewerBhk });
+    res.json({ properties: mapped, total: mapped.length, bhkFilter: _viewerBhk, subscriptionFrom: _viewerSubFrom, subscriptionTo: _viewerSubTo });
   } catch (err) {
     console.error('GET /api/properties error:', err);
     res.status(500).json({ message: 'Error fetching properties' });

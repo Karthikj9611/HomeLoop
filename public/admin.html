@@ -26,9 +26,6 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.css"/>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.js"></script>
-<style>.flatpickr-calendar{z-index:100000 !important}</style>
 
 <style>
 :root{
@@ -3079,6 +3076,16 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
   </div>
 </div>
 
+<style>
+/* Subscription popup: date shown as dd-mm-yyyy in a text field; the browser's own picker opens from the calendar icon */
+.sub-dt-wrap{position:relative}
+.sub-dt-wrap .form-input{padding-right:46px}
+.sub-dt-wrap .form-input.sub-invalid{border-color:var(--red);background:var(--red-light)}
+.sub-dt-btn{position:absolute;right:8px;top:50%;transform:translateY(-50%);width:32px;height:32px;border:none;border-radius:9px;
+  background:transparent;color:var(--gold);font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.sub-dt-btn:hover{background:var(--gold-light)}
+.sub-dt-native{position:absolute;left:0;bottom:0;width:100%;height:1px;opacity:0;pointer-events:none;border:0;padding:0}
+</style>
 <!-- ══ SUBSCRIPTION MODAL — capture/update a customer's subscription date & time ══ -->
 <div class="add-modal-overlay" id="subscriptionModal" role="dialog" aria-modal="true" aria-label="Set subscription date and time">
   <div class="add-modal" id="subscriptionModalBox" style="max-width:380px">
@@ -3090,11 +3097,19 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
     </div>
     <div class="form-group">
       <label class="form-label" for="subscriptionFromInput">Subscription from</label>
-      <input class="form-input" type="text" id="subscriptionFromInput" placeholder="dd/mm/yyyy hh:mm AM" autocomplete="off" />
+      <div class="sub-dt-wrap">
+        <input class="form-input" type="text" id="subscriptionFromInput" placeholder="dd-mm-yyyy hh:mm AM" autocomplete="off" inputmode="numeric" />
+        <button type="button" class="sub-dt-btn" onclick="subPickDate('From')" aria-label="Pick date and time" title="Pick date & time"><i class="far fa-calendar-alt"></i></button>
+        <input type="datetime-local" class="sub-dt-native" id="subscriptionFromNative" tabindex="-1" aria-hidden="true" />
+      </div>
     </div>
     <div class="form-group">
       <label class="form-label" for="subscriptionToInput">Subscription to</label>
-      <input class="form-input" type="text" id="subscriptionToInput" placeholder="dd/mm/yyyy hh:mm AM" autocomplete="off" />
+      <div class="sub-dt-wrap">
+        <input class="form-input" type="text" id="subscriptionToInput" placeholder="dd-mm-yyyy hh:mm AM" autocomplete="off" inputmode="numeric" />
+        <button type="button" class="sub-dt-btn" onclick="subPickDate('To')" aria-label="Pick date and time" title="Pick date & time"><i class="far fa-calendar-alt"></i></button>
+        <input type="datetime-local" class="sub-dt-native" id="subscriptionToNative" tabindex="-1" aria-hidden="true" />
+      </div>
     </div>
     <div class="form-group">
       <label class="form-label" for="subscriptionBhkInput">Subscribed BHK</label>
@@ -4821,8 +4836,8 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
 let dataTable, propTable, apptTable, honestReviewsTable, userReviewsTable, partnersTable, referralsTable;
 
 
-const BASE = 'https://www.homeloop.in';
-//const BASE = 'http://localhost:5000';
+//const BASE = 'https://www.homeloop.in';
+const BASE = 'http://localhost:5000';
 
 
 /* ── ADMIN KEY – set after login ──
@@ -6798,26 +6813,69 @@ window.toggleUserVerified = async function(id, nextVerified){
    input with whatever's already on file (via _customerCache), so reopening
    the modal shows the existing value rather than a blank field. */
 let _subscriptionTargetId = null;
-let _subFromFp = null, _subToFp = null;   // flatpickr instances (created on first open)
+/* Dates are shown/typed as  dd-mm-yyyy hh:mm AM  (a text field), because the browser's own date-time field
+   always follows the browser language (month first for English-US) and a page cannot change that.
+   The calendar icon opens the browser's picker; whatever is picked is written back in dd-mm-yyyy. */
+const _subPad = n => String(n).padStart(2,'0');
+function subFmt(d){
+  if(!d || isNaN(d.getTime())) return '';
+  let h = d.getHours(); const ap = h >= 12 ? 'PM' : 'AM'; h = h % 12 || 12;
+  return `${_subPad(d.getDate())}-${_subPad(d.getMonth()+1)}-${d.getFullYear()} ${_subPad(h)}:${_subPad(d.getMinutes())} ${ap}`;
+}
+function subParse(str){
+  const m = String(str||'').trim().match(/^(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{4})\s+(\d{1,2}):(\d{2})\s*(AM|PM)?$/i);
+  if(!m) return null;
+  let [ , dd, mm, yy, hh, mi, ap ] = m; dd=+dd; mm=+mm; yy=+yy; hh=+hh; mi=+mi;
+  if(ap){ ap = ap.toUpperCase(); if(hh < 1 || hh > 12) return null; hh = hh % 12 + (ap === 'PM' ? 12 : 0); }
+  else if(hh > 23) return null;
+  if(mm < 1 || mm > 12 || dd < 1 || dd > 31 || mi > 59) return null;
+  const d = new Date(yy, mm-1, dd, hh, mi, 0, 0);
+  return (d.getMonth() === mm-1 && d.getDate() === dd) ? d : null;   // rejects 31-02 etc.
+}
+const subNativeVal = d => (!d || isNaN(d.getTime())) ? '' :
+  `${d.getFullYear()}-${_subPad(d.getMonth()+1)}-${_subPad(d.getDate())}T${_subPad(d.getHours())}:${_subPad(d.getMinutes())}`;
+function subSet(name, d){                     // write a Date into the text field + its hidden native picker
+  document.getElementById(`subscription${name}Input`).value  = subFmt(d);
+  document.getElementById(`subscription${name}Native`).value = subNativeVal(d);
+  document.getElementById(`subscription${name}Input`).classList.remove('sub-invalid');
+}
+function subGet(name){ return subParse(document.getElementById(`subscription${name}Input`).value); }
+// Standard plan = 48 hours: when "From" changes, "To" fills in as From + 48 h (still editable).
+function subAutoTo(){
+  const f = subGet('From');
+  if(f) subSet('To', new Date(f.getTime() + 48*60*60*1000));
+}
+window.subPickDate = function(name){
+  const nat = document.getElementById(`subscription${name}Native`);
+  const cur = subGet(name);
+  nat.value = cur ? subNativeVal(cur) : '';
+  try { nat.showPicker ? nat.showPicker() : (nat.focus(), nat.click()); } catch(e){ nat.focus(); nat.click(); }
+};
+['From','To'].forEach(function(name){
+  const txt = document.getElementById(`subscription${name}Input`);
+  const nat = document.getElementById(`subscription${name}Native`);
+  nat.addEventListener('change', function(){            // picked in the browser's calendar
+    if(!nat.value) return;
+    subSet(name, new Date(nat.value));
+    if(name === 'From') subAutoTo();
+  });
+  txt.addEventListener('change', function(){            // typed by hand
+    if(!txt.value.trim()){ txt.classList.remove('sub-invalid'); nat.value = ''; return; }
+    const d = subParse(txt.value);
+    if(!d){ txt.classList.add('sub-invalid'); return; }
+    subSet(name, d);                                    // re-format to dd-mm-yyyy hh:mm AM
+    if(name === 'From') subAutoTo();
+  });
+});
 window.openSubscriptionModal = function(key){
   if(blockIfViewOnly('customers')) return;
   const c = _customerCache[key];
   if(!c){ alert('Customer details not loaded yet — please retry.'); return; }
   _subscriptionTargetId = c._id;
-  // datetime-local wants "YYYY-MM-DDTHH:mm" in LOCAL time — build it from
-  // the date's own local fields rather than toISOString() (which is UTC
-  // and would shift the displayed time).
-  // Date pickers always show dd/mm/yyyy hh:mm AM/PM (the native datetime-local input
-  // follows the browser's language, which can't be overridden by the page).
-  if(!_subFromFp){
-    const opts = { enableTime:true, dateFormat:'d/m/Y h:i K', time_24hr:false, allowInput:false, disableMobile:true };
-    _subFromFp = flatpickr('#subscriptionFromInput', opts);
-    _subToFp   = flatpickr('#subscriptionToInput', opts);
-  }
-  const fromV = c.subscriptionFrom || c.subscriptionAt;
-  _subFromFp.setDate(fromV ? new Date(fromV) : null, false);
-  _subToFp.setDate(c.subscriptionTo ? new Date(c.subscriptionTo) : null, false);
-  document.getElementById('subscriptionBhkInput').value  = c.subscriptionBhk || '';
+  const f = c.subscriptionFrom || c.subscriptionAt;
+  subSet('From', f ? new Date(f) : null);
+  subSet('To',   c.subscriptionTo ? new Date(c.subscriptionTo) : null);
+  document.getElementById('subscriptionBhkInput').value = c.subscriptionBhk || '';
   document.getElementById('subscriptionModal').classList.add('open');
   lockBodyScroll();
 };
@@ -6829,10 +6887,10 @@ window.closeSubscriptionModal = function(){
 window.saveSubscription = async function(){
   if(blockIfViewOnly('customers')) return;
   if(!_subscriptionTargetId) return;
-  const rawFrom = _subFromFp && _subFromFp.selectedDates[0];
-  const rawTo   = _subToFp && _subToFp.selectedDates[0];
-  if(!rawFrom || !rawTo){ showAlertModal('Pick both From and To date & time.', { variant:'error', title:'Dates needed' }); return; }
-  if(new Date(rawTo) < new Date(rawFrom)){ showAlertModal('"To" must be after "From".', { variant:'error', title:'Invalid range' }); return; }
+  const rawFrom = subGet('From');
+  const rawTo   = subGet('To');
+  if(!rawFrom || !rawTo){ showAlertModal('Enter both From and To as dd-mm-yyyy hh:mm AM/PM (or use the calendar icon).', { variant:'error', title:'Dates needed' }); return; }
+  if(rawTo < rawFrom){ showAlertModal('"To" must be after "From".', { variant:'error', title:'Invalid range' }); return; }
   const okSub = await showConfirmModal({
     title: 'Save subscription period?',
     message: 'This customer\'s subscription From – To dates will be updated.',
@@ -6843,7 +6901,7 @@ window.saveSubscription = async function(){
   const res = await fetch(`${BASE}/api/users/${_subscriptionTargetId}/subscription`, {
     method:'PATCH',
     headers:{ ...authHeaders(), 'Content-Type':'application/json' },
-    body: JSON.stringify({ subscriptionFrom: new Date(rawFrom).toISOString(), subscriptionTo: new Date(rawTo).toISOString(), subscriptionBhk: document.getElementById('subscriptionBhkInput').value })
+    body: JSON.stringify({ subscriptionFrom: rawFrom.toISOString(), subscriptionTo: rawTo.toISOString(), subscriptionBhk: document.getElementById('subscriptionBhkInput').value })
   });
   const data = await res.json().catch(()=>({}));
   if(res.ok){

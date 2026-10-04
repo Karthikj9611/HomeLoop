@@ -4728,7 +4728,7 @@ main.tab-explore .empty-state{display:none !important}
   // Locally cached listing data (shortlist / recently viewed) — wiped whenever there is no session,
   // so nothing from a previous login is left behind for the next guest on this device.
   var SHORTLIST_KEYS = ['homeloop_shortlisted_properties', 'homeloop_shortlisted_properties_data'];
-  var PRIVATE_KEYS = SHORTLIST_KEYS.concat(['homeloop_recently_viewed', 'homeloop_recently_viewed_data']);
+  var PRIVATE_KEYS = SHORTLIST_KEYS.concat(['homeloop_recently_viewed', 'homeloop_recently_viewed_data', 'homeloop_rv_subscription_from']);
   // Full wipe — used on logout / expired session so nothing is left behind on a shared device.
   window.hlClearPrivateData = function () {
     try { PRIVATE_KEYS.forEach(function (k) { localStorage.removeItem(k); }); } catch (e) {}
@@ -8723,6 +8723,59 @@ function clearRecentlyViewed() {
   saveRecentlyViewedData();
   renderRecentlyViewed();
 }
+
+/* Subscription → Viewed reset (twice per plan).
+   • When the plan STARTS  → "Viewed" is wiped once, so it holds only what he opens during the plan.
+   • When the plan ENDS    → "Viewed" is wiped once more (fresh again for normal browsing).
+   The server sends subscriptionFrom / subscriptionTo with GET /api/properties. We remember which
+   reset we already did (start-of-this-period or end-of-this-period) so a normal refresh never clears
+   again; a NEW From/To saved by the admin counts as a new period and resets again. If the page is
+   open when the start/end time arrives, a timer does the reset at that moment. */
+const SUB_VIEWED_MARK_KEY = 'homeloop_rv_subscription_from';
+let _subViewedTimer = null;
+function syncViewedWithSubscription(subFromIso, subToIso, liveCheck) {
+  try {
+    if (_subViewedTimer) { clearTimeout(_subViewedTimer); _subViewedTimer = null; }
+    if (!subFromIso) return;                       // guest / no subscription
+    const from = new Date(subFromIso);
+    const to   = subToIso ? new Date(subToIso) : null;
+    if (isNaN(from.getTime())) return;
+    const hasTo = !!(to && !isNaN(to.getTime()));
+    const now = Date.now();
+
+    // Which reset is due right now?  ended → "E<to>",  running → "S<from>",  not started → none.
+    let due = null;
+    if (hasTo && now >= to.getTime()) due = 'E' + to.getTime();
+    else if (now >= from.getTime())   due = 'S' + from.getTime();
+    if (due && localStorage.getItem(SUB_VIEWED_MARK_KEY) !== due) {
+      clearRecentlyViewed();
+      localStorage.setItem(SUB_VIEWED_MARK_KEY, due);
+      // Plan ended while this page was already open: the owner numbers / BHK limit it loaded earlier are
+      // now stale, so close any open property popup and reload the listings (server now sends them
+      // without owner numbers). On a normal page load the data is already fresh, so this is skipped.
+      // Same when the plan STARTS while the page is open: reload so he gets owner numbers + his BHK listings.
+      if (liveCheck) {
+        if (due.charAt(0) === 'E') {
+          try { const dm = document.getElementById('addModal'); if (dm && dm.classList.contains('open') && propertyViewMode) closeDetail(); } catch (e) {}
+        }
+        try { fetchProperties(true); } catch (e) {}
+      }
+    }
+
+    // Page stays open across the next boundary (start, or end) → re-check right then.
+    const next = now < from.getTime() ? from.getTime() : (hasTo && now < to.getTime() ? to.getTime() : null);
+    if (next && next - now < 2147483000) {
+      _subViewedTimer = setTimeout(() => syncViewedWithSubscription(subFromIso, subToIso, true), next - now + 500);
+    }
+    window._subWindow = { from: subFromIso, to: subToIso };
+  } catch (e) { console.warn('Subscription viewed-reset failed:', e); }
+}
+// Browsers pause timers in background tabs — when the tab is used again, re-check the plan end.
+document.addEventListener('visibilitychange', function () {
+  if (document.visibilityState === 'visible' && window._subWindow) {
+    syncViewedWithSubscription(window._subWindow.from, window._subWindow.to, true);
+  }
+});
 
 function recentlyViewedCardHTML(rv) {
   // When the property is still live, render it with the exact same card
@@ -16490,6 +16543,7 @@ async function fetchProperties(renderAfter = true) {
     const res = await fetch('/api/properties', { headers: userAuthHeaders() });
     if (!res.ok) throw new Error('Server returned ' + res.status);
     const data = await res.json();
+    syncViewedWithSubscription(data.subscriptionFrom, data.subscriptionTo); // reset "Viewed" at plan start and at plan end
     if (data.properties && data.properties.length > 0) {
       PROPERTIES = data.properties;
       // One-time migration: backfill shortlistedData for ids saved before
