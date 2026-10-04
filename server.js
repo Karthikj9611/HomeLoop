@@ -149,6 +149,10 @@ const UserSchema = new mongoose.Schema({
   // (no logout) for the current subscriptionTo. Reset to false whenever an admin saves
   // a new subscription period, so each period expires exactly once.
   subscriptionExpiryHandled: { type: Boolean, default: false },
+  // BHK type this tenant subscribed for (e.g. '1 BHK'). '' = no restriction (all listings).
+  // While the tenant's Public call is ON and this is set, GET /api/properties returns ONLY
+  // listings whose property.bhk equals this value (see the viewer lookup in that route).
+  subscriptionBhk: { type: String, trim: true, default: '' },
   // Admin "Block" (Customers grid): blocked accounts are logged out everywhere and refused at login.
   isBlocked: { type: Boolean, default: false, index: true },
   blockedAt: { type: Date, default: null },
@@ -1677,6 +1681,22 @@ app.get('/api/properties', attachUserIfPresent, async (req, res) => {
       ? { verified: true, booked: true, blocked: { $ne: true } }
       : { verified: true, booked: { $ne: true }, blocked: { $ne: true } }; // a listing only appears to the public once admin has verified it, and disappears again once marked booked
     if (status && typeof status === 'string') filter['basic.status'] = status;
+
+    // Logged-in tenant with admin "Public call" ON → owner numbers on listings (applied below).
+    // If the tenant also subscribed for ONE BHK type, ONLY that BHK's listings are loaded at all.
+    let _viewerPublicCall = false;
+    let _viewerBhk = '';
+    if (req.userId) {
+      const _viewer = await User.findById(req.userId).select('publicCall accountType subscriptionBhk').lean();
+      _viewerPublicCall = !!(_viewer && _viewer.publicCall && (_viewer.accountType || 'customer') === 'customer');
+      if (_viewerPublicCall && _viewer.subscriptionBhk) _viewerBhk = String(_viewer.subscriptionBhk).trim();
+    }
+    // Match tolerant of case / spacing ("1 BHK", "1BHK", "1 bhk"). PG / Short Stay (no BHK) are excluded too.
+    if (_viewerBhk) {
+      const _bhkRe = '^\\s*' + _viewerBhk.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\s+/g, '\\s*') + '\\s*$';
+      filter['property.bhk'] = new RegExp(_bhkRe, 'i');
+    }
+
     if (q && typeof q === 'string') {
       const re = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
       filter.$or = [{ 'owner.propertyName': re }, { 'location.area': re }, { 'media.desc': re }];
@@ -1735,11 +1755,7 @@ app.get('/api/properties', attachUserIfPresent, async (req, res) => {
 
     // 2) Tenant switch: if the logged-in viewer is a tenant account with publicCall on, EVERY listing
     //    is public for THIS viewer only (the response is then private/uncached — see Cache-Control below).
-    let _viewerPublicCall = false;
-    if (req.userId) {
-      const _viewer = await User.findById(req.userId).select('publicCall accountType').lean();
-      _viewerPublicCall = !!(_viewer && _viewer.publicCall && (_viewer.accountType || 'customer') === 'customer');
-    }
+    // (_viewerPublicCall is resolved above, before the query.)
     if (_viewerPublicCall) docs.forEach(d => { d.ownerPhoneCall = true; d.ownerDirectCall = true; });
 
     // Backfill location.pincode from the free-text address for listings that
@@ -1837,7 +1853,8 @@ app.get('/api/properties', attachUserIfPresent, async (req, res) => {
     // can never hand one viewer's response to another.
     res.vary('x-user-key');
     res.set('Cache-Control', _viewerPublicCall ? 'private, no-store' : 'private, max-age=30');
-    res.json({ properties: mapped, total: mapped.length });
+    // bhkFilter: which BHK restriction was applied for this viewer ('' = none) — handy for checking in DevTools → Network.
+    res.json({ properties: mapped, total: mapped.length, bhkFilter: _viewerBhk });
   } catch (err) {
     console.error('GET /api/properties error:', err);
     res.status(500).json({ message: 'Error fetching properties' });

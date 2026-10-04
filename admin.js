@@ -916,6 +916,7 @@ self.addEventListener('notificationclick', event => {
         subscriptionAt: u.subscriptionAt || null,
         subscriptionFrom: u.subscriptionFrom || u.subscriptionAt || null,
         subscriptionTo:   u.subscriptionTo || null,
+        subscriptionBhk:  u.subscriptionBhk || '',
         listingsCount: propMap[String(u._id)]  || 0,
         visitsCount:   visitMap[String(u._id)] || 0,
         viewsCount:    viewsMap[String(u._id)] || 0,   // total views on this customer's listings
@@ -1029,9 +1030,13 @@ self.addEventListener('notificationclick', event => {
       if (fromVal === undefined || toVal === undefined) return res.status(400).json({ message: 'Invalid date/time' });
       if (toVal && !fromVal) return res.status(400).json({ message: 'From date is required' });
       if (fromVal && toVal && toVal < fromVal) return res.status(400).json({ message: 'To date must be after From date' });
+      // Optional BHK restriction ('' = all BHKs). Must be one of the post-form dropdown values.
+      const ALLOWED_BHK = ['', '1 RK', '1 BHK', '2 BHK', '3 BHK', '4 BHK'];
+      const bhkVal = body.subscriptionBhk === undefined ? '' : String(body.subscriptionBhk).trim();
+      if (!ALLOWED_BHK.includes(bhkVal)) return res.status(400).json({ message: 'Invalid BHK' });
       const user = await User.findByIdAndUpdate(
         id,
-        { subscriptionAt: fromVal, subscriptionFrom: fromVal, subscriptionTo: toVal, subscriptionExpiryHandled: false },
+        { subscriptionAt: fromVal, subscriptionFrom: fromVal, subscriptionTo: toVal, subscriptionBhk: fromVal ? bhkVal : '', subscriptionExpiryHandled: false },
         { new: true }
       ).lean();
       if (!user) return res.status(404).json({ message: 'Customer not found' });
@@ -1039,6 +1044,7 @@ self.addEventListener('notificationclick', event => {
         message: fromVal ? 'Subscription updated' : 'Subscription cleared',
         _id: user._id, subscriptionAt: user.subscriptionAt || null,
         subscriptionFrom: user.subscriptionFrom || null, subscriptionTo: user.subscriptionTo || null,
+        subscriptionBhk: user.subscriptionBhk || '',
       });
     } catch (err) {
       console.error('PATCH /api/users/:id/subscription error:', err);
