@@ -1169,8 +1169,8 @@ table.dataTable.no-footer{border-bottom:none!important}
 .aa-bm-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 24px;border-top:1px solid var(--border);flex-shrink:0}
 .aa-bm-note{font-size:.76rem;color:var(--ink3);display:flex;align-items:center;gap:7px}
 @media (max-width:640px){
-  #aaBtnModal.add-modal-overlay{align-items:flex-end;padding:0}
-  .add-modal.aa-bm-box{max-width:100%;max-height:92vh;border-radius:22px 22px 0 0}
+  #aaBtnModal.add-modal-overlay{align-items:center;justify-content:center;padding:12px}
+  .add-modal.aa-bm-box{max-width:100%;max-height:calc(100vh - 24px);max-height:calc(100dvh - 24px);border-radius:24px}
   .aa-bm-head{padding:18px 16px 12px}
   .aa-bm-bar{padding:2px 16px 12px}
   .aa-bm-grid{grid-template-columns:1fr;padding:2px 16px 16px}
@@ -1223,8 +1223,8 @@ table.dataTable.no-footer{border-bottom:none!important}
   .aa-search,.aa-search input{width:100%}
   .aa-row{padding:12px 14px;gap:12px}
   .aa-row-go span{display:none}
-  #aaModal.add-modal-overlay{align-items:flex-end;padding:0}
-  .add-modal.aa-modal-box{max-width:100%;max-height:94vh;border-radius:20px 20px 0 0}
+  #aaModal.add-modal-overlay{align-items:center;justify-content:center;padding:12px}
+  .add-modal.aa-modal-box{max-width:100%;max-height:calc(100vh - 24px);max-height:calc(100dvh - 24px);border-radius:24px}
   .aa-modal-head{padding:16px 56px 14px 16px}
   .aa-modal-body{padding:14px 16px 18px}
   .aa-grid{grid-template-columns:1fr}
@@ -1365,6 +1365,151 @@ table.dataTable.no-footer{border-bottom:none!important}
 .vx-skel{height:56px;border-radius:14px;margin:8px 0;background:linear-gradient(90deg,var(--surface2) 25%,var(--border) 37%,var(--surface2) 63%);background-size:400% 100%;animation:vxShim 1.3s ease infinite}
 @keyframes vxShim{0%{background-position:100% 50%}100%{background-position:0 50%}}
 #viewedPropsModal .vp-empty{margin:auto;padding:28px 10px}
+/* ── Site visitors modal (Today's / All-time): colourful redesign. Only applies while #viewedPropsModal carries .sv-modal (added by openSiteVisitorsModal), so the other modals that share this shell are untouched. ── */
+#viewedPropsModal.sv-modal .prop-modal{background:#fff;box-shadow:0 40px 90px -24px rgba(79,70,229,.55),0 0 0 1px rgba(15,23,42,.05)}
+@media(min-width:521px){#viewedPropsModal.sv-modal .prop-modal{max-width:460px;height:min(88vh,680px)}}
+#viewedPropsModal.sv-modal .prop-modal-close-btn{background:rgba(255,255,255,.22);color:#fff;border:1px solid rgba(255,255,255,.35);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+#viewedPropsModal.sv-modal .prop-modal-close-btn:hover{background:rgba(255,255,255,.38)}
+#viewedPropsModal.sv-modal .vp-hero{position:relative;overflow:hidden;margin:0 -1.3rem 14px;padding:26px 64px 22px 1.3rem;border-radius:0 0 30px 30px;background:var(--sv-hero);box-shadow:0 14px 30px -14px var(--sv-glow)}
+#viewedPropsModal.sv-modal .vp-hero::before,#viewedPropsModal.sv-modal .vp-hero::after{content:"";position:absolute;border-radius:50%;pointer-events:none}
+#viewedPropsModal.sv-modal .vp-hero::before{width:190px;height:190px;right:-50px;top:-80px;background:radial-gradient(circle,rgba(255,255,255,.35),transparent 68%)}
+#viewedPropsModal.sv-modal .vp-hero::after{width:150px;height:150px;left:30%;bottom:-90px;background:radial-gradient(circle,rgba(253,224,71,.45),transparent 70%)}
+#viewedPropsModal.sv-modal .vp-hero>*{position:relative;z-index:1}
+#viewedPropsModal.sv-modal .vp-avatar{background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.45);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);box-shadow:0 10px 24px -8px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.5)}
+#viewedPropsModal.sv-modal .vp-name{color:#fff;font-weight:800;text-shadow:0 1px 8px rgba(0,0,0,.18)}
+#viewedPropsModal.sv-modal .vp-sub{color:rgba(255,255,255,.85);font-weight:600}
+#viewedPropsModal.sv-modal .vp-count{align-items:center;padding:8px 14px 7px;border-radius:18px;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.35);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+#viewedPropsModal.sv-modal .vp-count b{background:none;color:#fff;-webkit-text-fill-color:#fff;font-size:1.9rem;text-shadow:0 2px 10px rgba(0,0,0,.2)}
+#viewedPropsModal.sv-modal .vp-count span{color:rgba(255,255,255,.85)}
+#viewedPropsModal.sv-modal .prop-modal-body{padding:0 1.3rem 1rem}
+
+/* distribution bar */
+.sv-dist{display:flex;gap:4px;height:8px;margin:0 2px 12px}
+.sv-dist span{flex-basis:0;min-width:10px;border-radius:99px}
+.sv-dist-t{background:linear-gradient(90deg,#10b981,#06b6d4)}
+.sv-dist-o{background:linear-gradient(90deg,#6366f1,#8b5cf6)}
+.sv-dist-g{background:linear-gradient(90deg,#f59e0b,#ec4899)}
+
+/* tabs */
+#viewedPropsModal.sv-modal .pv-tabs{gap:8px;margin-bottom:10px}
+#viewedPropsModal.sv-modal .pv-tab{--tc:#10b981;--tc2:#06b6d4;padding:9px 8px;border-radius:16px;border:1.5px solid color-mix(in srgb,var(--tc) 25%,#fff);background:color-mix(in srgb,var(--tc) 7%,#fff);color:color-mix(in srgb,var(--tc) 75%,#0f172a);transition:transform .15s,box-shadow .15s,background .15s}
+#viewedPropsModal.sv-modal .pv-tab:nth-child(2){--tc:#6366f1;--tc2:#8b5cf6}
+#viewedPropsModal.sv-modal .pv-tab:nth-child(3){--tc:#f59e0b;--tc2:#ec4899}
+#viewedPropsModal.sv-modal .pv-tab i{color:var(--tc)}
+#viewedPropsModal.sv-modal .pv-tab b{background:color-mix(in srgb,var(--tc) 16%,#fff);color:color-mix(in srgb,var(--tc) 80%,#0f172a)}
+#viewedPropsModal.sv-modal .pv-tab:hover{transform:translateY(-1px);border-color:var(--tc)}
+#viewedPropsModal.sv-modal .pv-tab.active{background:linear-gradient(135deg,var(--tc),var(--tc2));border-color:transparent;color:#fff;box-shadow:0 10px 22px -8px var(--tc)}
+#viewedPropsModal.sv-modal .pv-tab.active i{color:#fff}
+#viewedPropsModal.sv-modal .pv-tab.active b{background:rgba(255,255,255,.28);color:#fff}
+
+/* visitor cards */
+#viewedPropsModal.sv-modal .vx-list{padding:4px 2px 14px}
+#viewedPropsModal.sv-modal .vx-group{margin:0;padding:0;border-left:0}
+#viewedPropsModal.sv-modal .vx-row{--c1:#10b981;--c2:#06b6d4;gap:12px;padding:12px;margin:0 0 10px;border-radius:20px;border:1px solid color-mix(in srgb,var(--c1) 20%,#fff);background:linear-gradient(135deg,color-mix(in srgb,var(--c1) 9%,#fff) 0%,#fff 62%);box-shadow:0 1px 2px rgba(15,23,42,.04);transition:transform .18s,box-shadow .18s}
+#viewedPropsModal.sv-modal .vx-row.sale{--c1:#6366f1;--c2:#8b5cf6}
+#viewedPropsModal.sv-modal .vx-row.guest{--c1:#f59e0b;--c2:#ec4899}
+#viewedPropsModal.sv-modal .vx-row.gone{--c1:#94a3b8;--c2:#cbd5e1;opacity:.7}
+#viewedPropsModal.sv-modal .vx-row::before{display:none}
+#viewedPropsModal.sv-modal .vx-row:hover{background:linear-gradient(135deg,color-mix(in srgb,var(--c1) 13%,#fff) 0%,#fff 70%);transform:translateY(-2px);box-shadow:0 14px 26px -14px var(--c1)}
+.sv-av{position:relative;flex:0 0 auto;width:46px;height:46px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:1rem;letter-spacing:.02em;color:#fff;background:linear-gradient(135deg,var(--c1),var(--c2));box-shadow:0 8px 16px -6px var(--c1)}
+.sv-rank{position:absolute;right:-6px;bottom:-6px;min-width:19px;height:19px;padding:0 4px;border-radius:99px;background:#fff;color:var(--c1);font-family:inherit;font-weight:800;font-size:.62rem;line-height:19px;font-style:normal;text-align:center;box-shadow:0 0 0 2px var(--c1)}
+#viewedPropsModal.sv-modal .vx-pid{letter-spacing:0;font-size:.98rem}
+.sv-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#viewedPropsModal.sv-modal .vx-tag{flex:0 0 auto;padding:3px 8px;border-radius:99px;background:color-mix(in srgb,var(--c1) 14%,#fff);color:color-mix(in srgb,var(--c1) 80%,#0f172a)}
+#viewedPropsModal.sv-modal .vx-row.sale .vx-tag,#viewedPropsModal.sv-modal .vx-row.gone .vx-tag{background:color-mix(in srgb,var(--c1) 14%,#fff);color:color-mix(in srgb,var(--c1) 80%,#0f172a)}
+#viewedPropsModal.sv-modal .vx-tag.new{background:linear-gradient(135deg,#f97316,#ec4899);color:#fff;box-shadow:0 4px 10px -3px rgba(236,72,153,.6)}
+#viewedPropsModal.sv-modal .vx-tag.new i{font-size:.55rem;margin-right:3px}
+#viewedPropsModal.sv-modal .vx-meta i{width:15px;margin-right:4px;color:var(--c1);font-size:.72rem;text-align:center}
+.sv-chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.sv-chip{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:99px;font-size:.68rem;font-weight:700;line-height:1.35;background:color-mix(in srgb,var(--c1) 11%,#fff);color:color-mix(in srgb,var(--c1) 75%,#0f172a)}
+.sv-chip i{font-size:.64rem;opacity:.85}
+.sv-chip.t1{background:#ecfeff;color:#0e7490}
+.sv-chip.t2{background:#fdf2f8;color:#be185d}
+#viewedPropsModal.sv-modal .vx-call{width:40px;height:40px;border:0;background:linear-gradient(135deg,#10b981,#059669);color:#fff;font-size:.9rem;box-shadow:0 10px 18px -8px rgba(5,150,105,.8)}
+#viewedPropsModal.sv-modal .vx-call:hover{background:linear-gradient(135deg,#059669,#047857);transform:translateY(-2px) scale(1.06)}
+#viewedPropsModal.sv-modal .vx-call.disabled{background:#f1f5f9;color:#cbd5e1;box-shadow:none}
+#viewedPropsModal.sv-modal .pv-note{display:flex;align-items:center;justify-content:center;gap:7px;margin:8px 0 0;padding:8px 12px;border-radius:14px;background:linear-gradient(90deg,#eef2ff,#fdf2f8);color:#6b7280;font-size:.72rem;line-height:1.35;text-align:left}
+#viewedPropsModal.sv-modal .pv-note i{color:#7c3aed;flex:0 0 auto}
+#viewedPropsModal.sv-modal .vp-empty{color:var(--ink3)}
+#viewedPropsModal.sv-modal .vp-empty i{font-size:2rem;background:linear-gradient(135deg,#6366f1,#ec4899);-webkit-background-clip:text;background-clip:text;color:transparent}
+@media(max-width:430px){#viewedPropsModal.sv-modal .vp-hero{padding-right:58px}#viewedPropsModal.sv-modal .vp-count{padding:6px 10px}#viewedPropsModal.sv-modal .vp-count b{font-size:1.6rem}#viewedPropsModal.sv-modal .pv-tab i{display:inline}}
+/* theme palettes (one per modal) */
+#viewedPropsModal.sv-modal{--sv-hero:linear-gradient(125deg,#4f46e5 0%,#7c3aed 38%,#db2777 74%,#f97316 100%);--sv-glow:rgba(124,58,237,.7)}
+#viewedPropsModal.sv-t-reg{--sv-hero:linear-gradient(125deg,#1d4ed8 0%,#2563eb 28%,#06b6d4 68%,#10b981 100%);--sv-glow:rgba(37,99,235,.65)}
+#viewedPropsModal.sv-t-views{--sv-hero:linear-gradient(125deg,#f97316 0%,#ef4444 38%,#ec4899 72%,#8b5cf6 100%);--sv-glow:rgba(239,68,68,.6)}
+#viewedPropsModal.sv-t-cust{--sv-hero:linear-gradient(125deg,#0ea5e9 0%,#6366f1 40%,#a855f7 72%,#ec4899 100%);--sv-glow:rgba(99,102,241,.65)}
+
+/* listing-status colours for the customer "viewed properties" cards */
+#viewedPropsModal.sv-modal .vx-row.st-lease{--c1:#f59e0b;--c2:#f97316}
+#viewedPropsModal.sv-modal .vx-row.st-pg{--c1:#ec4899;--c2:#f43f5e}
+#viewedPropsModal.sv-modal .vx-row.st-short{--c1:#0ea5e9;--c2:#6366f1}
+#viewedPropsModal.sv-modal .vx-day{display:inline-flex;align-items:center;gap:6px;margin:12px 0 8px;padding:5px 12px;border-radius:99px;background:linear-gradient(135deg,#6366f1,#ec4899);color:#fff;font-size:.64rem;box-shadow:0 8px 16px -8px rgba(236,72,153,.7)}
+#viewedPropsModal.sv-modal .vx-day:first-child{margin-top:2px}
+#viewedPropsModal.sv-modal .vx-day i{font-size:.62rem}
+#viewedPropsModal.sv-modal .vx-ago{padding:4px 10px;border-radius:99px;background:color-mix(in srgb,var(--c1) 12%,#fff);color:color-mix(in srgb,var(--c1) 78%,#0f172a);font-size:.7rem;font-weight:700}
+.sv-av.sq{border-radius:14px}
+
+/* properties opened (today's property views) */
+#viewedPropsModal.sv-modal .vx-uprops{gap:6px;margin-top:9px}
+#viewedPropsModal.sv-modal .vx-uprop{padding:6px 10px;border-radius:12px;background:#fff;border:1px solid color-mix(in srgb,var(--c1) 22%,#fff);box-shadow:0 1px 2px rgba(15,23,42,.04)}
+#viewedPropsModal.sv-modal .vx-uprop>i{width:22px;height:22px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;font-size:.62rem;color:#fff!important;background:linear-gradient(135deg,var(--c1),var(--c2))}
+#viewedPropsModal.sv-modal .vx-uprop-time{padding:2px 8px;border-radius:99px;background:color-mix(in srgb,var(--c1) 11%,#fff);color:color-mix(in srgb,var(--c1) 78%,#0f172a)!important}
+
+/* ── "Who viewed this listing" modal (Properties → Views eye): same colourful look ── */
+#viewersModal{--sv-hero:linear-gradient(125deg,#f97316 0%,#ef4444 38%,#ec4899 72%,#8b5cf6 100%);--sv-glow:rgba(239,68,68,.6);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+@media(min-width:521px){#viewersModal .prop-modal{max-width:460px!important;height:min(88vh,680px)!important;border-radius:28px;box-shadow:0 40px 90px -24px rgba(239,68,68,.5),0 0 0 1px rgba(15,23,42,.05)}}
+#viewersModal .prop-modal-close-btn{width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.22);color:#fff;border:1px solid rgba(255,255,255,.35);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+#viewersModal .prop-modal-close-btn:hover{background:rgba(255,255,255,.38)}
+#viewersModal .vp-hero{position:relative;overflow:hidden;margin:0 -1.2rem 14px;padding:26px 64px 22px 1.2rem;border-bottom:0;border-radius:0 0 30px 30px;background:var(--sv-hero);box-shadow:0 14px 30px -14px var(--sv-glow)}
+#viewersModal .vp-hero::before,#viewersModal .vp-hero::after{content:"";position:absolute;border-radius:50%;pointer-events:none}
+#viewersModal .vp-hero::before{width:190px;height:190px;right:-50px;top:-80px;background:radial-gradient(circle,rgba(255,255,255,.35),transparent 68%)}
+#viewersModal .vp-hero::after{width:150px;height:150px;left:30%;bottom:-90px;background:radial-gradient(circle,rgba(253,224,71,.45),transparent 70%)}
+#viewersModal .vp-hero>*{position:relative;z-index:1}
+#viewersModal .vp-avatar{background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.45);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);box-shadow:0 10px 24px -8px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.5)}
+#viewersModal .vp-name{color:#fff;font-weight:800;text-shadow:0 1px 8px rgba(0,0,0,.18)}
+#viewersModal .vp-sub{color:rgba(255,255,255,.85);font-weight:600}
+#viewersModal .vp-count{padding:8px 14px;border-radius:18px;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.35);color:#fff;font-size:.8rem;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+/* tabs */
+#viewersModal .pv-tabs{gap:8px;margin-bottom:10px}
+#viewersModal .pv-tab{--tc:#10b981;--tc2:#06b6d4;padding:9px 8px;border-radius:16px;border:1.5px solid color-mix(in srgb,var(--tc) 25%,#fff);background:color-mix(in srgb,var(--tc) 7%,#fff);color:color-mix(in srgb,var(--tc) 75%,#0f172a);transition:transform .15s,box-shadow .15s,background .15s}
+#viewersModal .pv-tab:nth-child(2){--tc:#6366f1;--tc2:#8b5cf6}
+#viewersModal .pv-tab:nth-child(3){--tc:#f59e0b;--tc2:#ec4899}
+#viewersModal .pv-tab i{color:var(--tc)}
+#viewersModal .pv-tab b{background:color-mix(in srgb,var(--tc) 16%,#fff);color:color-mix(in srgb,var(--tc) 80%,#0f172a)}
+#viewersModal .pv-tab:hover{transform:translateY(-1px);border-color:var(--tc)}
+#viewersModal .pv-tab.active{background:linear-gradient(135deg,var(--tc),var(--tc2));border-color:transparent;color:#fff;box-shadow:0 10px 22px -8px var(--tc)}
+#viewersModal .pv-tab.active i{color:#fff}
+#viewersModal .pv-tab.active b{background:rgba(255,255,255,.28);color:#fff}
+
+
+#viewersModal .vp-list{gap:10px;padding:4px 2px 12px}
+#viewersModal .vp-card{--c1:#10b981;--c2:#06b6d4;border-radius:20px;border:1px solid color-mix(in srgb,var(--c1) 20%,#fff);background:linear-gradient(135deg,color-mix(in srgb,var(--c1) 9%,#fff) 0%,#fff 62%)}
+#viewersModal .vp-card:has(.pv-owner){--c1:#6366f1;--c2:#8b5cf6}
+#viewersModal .vp-card:has(.pv-guest){--c1:#f59e0b;--c2:#ec4899}
+#viewersModal .vp-card:hover{border-color:var(--c1);box-shadow:0 14px 26px -14px var(--c1)}
+#viewersModal .vp-ico,#viewersModal .vp-ico.pv-owner,#viewersModal .vp-ico.pv-guest{flex-basis:46px;width:46px;height:46px;border-radius:16px;background:linear-gradient(135deg,var(--c1),var(--c2));color:#fff;box-shadow:0 8px 16px -6px var(--c1)}
+#viewersModal .vp-pid{letter-spacing:0}
+#viewersModal .vp-badge,#viewersModal .vp-badge.sale{background:color-mix(in srgb,var(--c1) 14%,#fff);color:color-mix(in srgb,var(--c1) 80%,#0f172a)}
+#viewersModal .vp-badge.gone{background:#fef2f2;color:#dc2626}
+#viewersModal .vp-loc i{color:var(--c1)}
+#viewersModal .vp-time b{color:color-mix(in srgb,var(--c1) 78%,#0f172a)}
+#viewersModal .pv-note{display:flex;align-items:center;justify-content:center;gap:7px;margin:8px 0 0;padding:8px 12px;border-radius:14px;background:linear-gradient(90deg,#eef2ff,#fdf2f8);color:#6b7280}
+#viewersModal .vp-empty i{background:linear-gradient(135deg,#6366f1,#ec4899);-webkit-background-clip:text;background-clip:text;color:transparent;opacity:1}
+@media(max-width:430px){#viewersModal .vp-hero{padding-right:58px}#viewersModal .pv-tab i{display:inline}}
+/* ── Phones: visitor / views modals are centred cards (not bottom sheets) ── */
+@media(max-width:520px){
+  #viewedPropsModal .prop-modal,#viewersModal .prop-modal{width:100%;max-width:100%!important;height:min(86vh,640px)!important;height:min(86dvh,640px)!important;max-height:calc(100dvh - 24px)!important;margin:auto;border-radius:26px}
+  #viewedPropsModal.sv-modal .vp-hero,#viewersModal .vp-hero{gap:10px;padding:22px 56px 18px 1.2rem}
+  #viewedPropsModal.sv-modal .vp-name,#viewersModal .vp-name{white-space:normal;line-height:1.2;font-size:1.02rem}
+  #viewedPropsModal.sv-modal .vp-avatar,#viewersModal .vp-avatar{flex-basis:42px;width:42px;height:42px}
+  #viewedPropsModal.sv-modal .vp-count b{font-size:1.5rem}
+  #viewedPropsModal.sv-modal .vp-count span{font-size:.56rem;letter-spacing:.1em}
+  #viewedPropsModal.sv-modal .prop-modal-body{padding:0 1rem .9rem}
+  #viewedPropsModal.sv-modal .vp-hero{margin:0 -1rem 12px}
+}
+/* property pills sit under the visitor, full card width */
+#viewedPropsModal.sv-modal .vx-row.has-props{flex-wrap:wrap}
+#viewedPropsModal.sv-modal .vx-row.has-props>.vx-uprops{flex:1 1 100%;min-width:0;margin-top:2px}
 @media(max-width:520px){.vp-card{flex-wrap:wrap}.vp-time{text-align:left;width:100%;padding-left:58px}}
 
 /* ── DATATABLES CONTROLS ── */
@@ -1675,8 +1820,8 @@ body.pact-hide-booking #propertyTable .pact-booking{display:none!important}
 .prop-modal::-webkit-scrollbar{width:5px}
 .prop-modal::-webkit-scrollbar-thumb{background:var(--border);border-radius:99px}
 @media(max-width:600px){
-  .prop-modal-wrap{padding:0;align-items:flex-end}
-  .prop-modal{border-radius:24px 24px 0 0;max-height:94vh}
+  .prop-modal-wrap{padding:12px;align-items:center;justify-content:center}
+  .prop-modal{border-radius:24px;max-height:calc(100vh - 24px);max-height:calc(100dvh - 24px);margin:auto}
 }
 .prop-modal-close-row{
   position:sticky;top:0;display:flex;justify-content:flex-end;
@@ -2573,11 +2718,11 @@ body.pact-hide-booking #propertyTable .pact-booking{display:none!important}
   .prop-filter-select{flex:1;min-width:0}
 
   /* Modal: bottom sheet */
-  .prop-modal-wrap{padding:0;align-items:flex-end}
+  .prop-modal-wrap{padding:12px;align-items:center;justify-content:center}
   .prop-modal{
-    border-radius:22px 22px 0 0;
-    max-height:92vh;
-    padding-bottom:env(safe-area-inset-bottom);
+    border-radius:24px;
+    max-height:calc(100vh - 24px);max-height:calc(100dvh - 24px);
+    margin:auto;
   }
 
   /* Login overlay card */
@@ -13666,6 +13811,15 @@ function _pvListHtml(kind, list, showProps){
     '</div>';
   }).join('') + '</div>';
 }
+/* Colourful theme for the shared #viewedPropsModal shell: 'visit' | 'reg' | 'views' | 'cust'. */
+function _vmTheme(modal, theme){
+  ['sv-t-visit','sv-t-reg','sv-t-views','sv-t-cust'].forEach(c => modal.classList.remove(c));
+  modal.classList.add('sv-modal', 'sv-t-' + theme);
+}
+function _vmDist(parts){
+  const tot = parts.reduce((n, p) => n + p[1], 0);
+  return tot ? '<div class="sv-dist" aria-hidden="true">' + parts.filter(p => p[1]).map(p => '<span class="sv-dist-' + p[0] + '" style="flex-grow:' + p[1] + '"></span>').join('') + '</div>' : '';
+}
 function _pvTabsHtml(tabs, active, fn){
   return tabs.map(t => '<button type="button" class="pv-tab' + (active === t[0] ? ' active' : '') + '" onclick="' + fn + '(\'' + t[0] + '\')">' +
     '<i class="fas ' + t[2] + '"></i>' + t[1] + '<b>' + t[3] + '</b></button>').join('');
@@ -13690,6 +13844,7 @@ async function openViewedPropsModal(key){
   const c = _customerCache[key];
   if(!c) return;
   const modal = document.getElementById('viewedPropsModal');
+  _vmTheme(modal, 'cust');
   const box = document.getElementById('viewedPropsModalBox');
   const fullName = ((c.firstName||'')+' '+(c.lastName||'')).trim() || c.email || 'Customer';
   const initials = fullName.split(/\s+/).slice(0,2).map(w => w.charAt(0)).join('').toUpperCase() || '?';
@@ -13739,16 +13894,17 @@ async function openViewedPropsModal(key){
     });
     let n = 0;
     box.innerHTML = '<div class="vx-list">' + groups.map(g =>
-      '<div class="vx-day">' + _adminModalEsc(dayLabel(g.d)) + '</div><div class="vx-group">' +
+      '<div class="vx-day"><i class="fas fa-calendar-day"></i>' + _adminModalEsc(dayLabel(g.d)) + '</div><div class="vx-group">' +
       g.items.map(({ v, d }) => {
         const idTxt = v.removed ? 'Listing removed' : (v.propertyId || v._id);
         const st = String(v.status || '').replace(/^for\s+/i, '');
-        const cls = v.removed ? ' gone' : /sale/i.test(st) ? ' sale' : '';
+        const cls = v.removed ? ' gone' : /sale|sell/i.test(st) ? ' sale' : /lease/i.test(st) ? ' st-lease' : /\bpg\b/i.test(st) ? ' st-pg' : /short/i.test(st) ? ' st-short' : '';
         const tag = v.removed ? 'Removed' : st;
         const meta = [v.type, [v.area, v.city].filter(Boolean)[0]].filter(Boolean).join(' · ');
         return '<div class="vx-row' + cls + '"' + (d ? ' title="' + _adminModalEsc(fmtDateDMY(d) + ' ' + fmtTimeHM(d)) + '"' : '') + ' style="animation-delay:' + Math.min(n++, 10) * 35 + 'ms">' +
-          '<div class="vx-main"><div class="vx-pid">' + _adminModalEsc(idTxt) + (tag ? '<span class="vx-tag">' + _adminModalEsc(tag) + '</span>' : '') + '</div>' +
-          (meta ? '<div class="vx-meta">' + _adminModalEsc(meta) + '</div>' : '') + '</div>' +
+          '<div class="sv-av sq"><i class="fas ' + (v.removed ? 'fa-house-circle-xmark' : 'fa-house') + '"></i></div>' +
+          '<div class="vx-main"><div class="vx-pid"><span class="sv-name">' + _adminModalEsc(idTxt) + '</span>' + (tag ? '<span class="vx-tag">' + _adminModalEsc(tag) + '</span>' : '') + '</div>' +
+          (meta ? '<div class="vx-meta"><i class="fas fa-location-dot"></i>' + _adminModalEsc(meta) + '</div>' : '') + '</div>' +
           (d ? '<span class="vx-ago">' + _adminModalEsc(ago(d)) + '</span>' : '') +
         '</div>';
       }).join('') + '</div>'
@@ -13793,7 +13949,7 @@ function renderPropertyViewers(){
   ], _pvTab, 'setPropertyViewersTab');
   const listed = d.tenants.length + d.owners.length + d.guests.length;
   const older = (d.totalViews || 0) - listed;
-  const note = older > 0 ? '<div class="pv-note">' + older + ' older view' + (older > 1 ? 's' : '') + ' have no identity recorded.</div>' : '';
+  const note = older > 0 ? '<div class="pv-note"><i class="fas fa-circle-info"></i><span>' + older + ' older view' + (older > 1 ? 's' : '') + ' have no identity recorded.</span></div>' : '';
   document.getElementById('viewersModalBox').innerHTML = _pvListHtml(_pvTab, d[_pvTab], false) + note;
 }
 function closePropertyViewersModal(){
@@ -13823,19 +13979,24 @@ function renderTodayRegistrations(){
     body = '<div class="vx-list"><div class="vx-group">' + list.map((u, i) => {
       const dt = new Date(u.createdAt);
       const name = ((u.firstName||'') + ' ' + (u.lastName||'')).trim() || u.name || u.email || u.mobile || 'Unnamed user';
-      const meta = [u.mobile, u.email].filter(Boolean).join(' · ');
+      let contact = '';
+      if(u.mobile) contact += '<div class="vx-meta"><i class="fas fa-phone"></i>' + _adminModalEsc(u.mobile) + '</div>';
+      if(u.email)  contact += '<div class="vx-meta"><i class="fas fa-envelope"></i>' + _adminModalEsc(u.email) + '</div>';
       return '<div class="vx-row' + (owner ? ' sale' : '') + '" title="' + _adminModalEsc(fmtDateDMY(dt) + ' ' + fmtTimeHM(dt)) + '" style="animation-delay:' + Math.min(i, 10) * 35 + 'ms">' +
-        '<div class="vx-main"><div class="vx-pid">' + _adminModalEsc((i + 1) + '. ' + name) + '<span class="vx-tag">' + (owner ? 'Owner' : 'Tenant') + '</span></div>' +
-        (meta ? '<div class="vx-meta">' + _adminModalEsc(meta) + '</div>' : '') + '</div>' +
-        '<span class="vx-ago">' + _adminModalEsc(fmtTimeHM(dt)) + '</span>' + _tpvCallBtn(u.mobile, name) + '</div>';
+        '<div class="sv-av">' + _adminModalEsc(_svInitials(name)) + '<em class="sv-rank">' + (i + 1) + '</em></div>' +
+        '<div class="vx-main"><div class="vx-pid"><span class="sv-name">' + _adminModalEsc(name) + '</span><span class="vx-tag">' + (owner ? 'Owner' : 'Tenant') + '</span></div>' +
+          contact +
+          '<div class="sv-chips"><span class="sv-chip t1"><i class="fas fa-user-plus"></i>Registered ' + _adminModalEsc(fmtTimeHM(dt)) + '</span></div></div>' +
+        _tpvCallBtn(u.mobile, name) + '</div>';
     }).join('') + '</div></div>';
   }
-  box.innerHTML = '<div class="pv-tabs">' + tabs + '</div>' + body;
+  box.innerHTML = _vmDist([['t', d.tenants.length], ['o', d.owners.length]]) + '<div class="pv-tabs">' + tabs + '</div>' + body;
 }
 let _trToken = 0;
 async function openTodayRegistrationsModal(){
   const token = ++_trToken;
   const modal = document.getElementById('viewedPropsModal');
+  _vmTheme(modal, 'reg');
   const box = document.getElementById('viewedPropsModalBox');
   const countEl = document.getElementById('viewedPropsModalCount');
   const setCount = n => { countEl.innerHTML = '<b>' + n + '</b><span>registered</span>'; };
@@ -13891,7 +14052,7 @@ function renderTodayPv(){
     ['owners','Owners','fa-user-tie', d.owners.length],
     ['guests','Guests','fa-user-secret', d.guests.length],
   ], _tpvTab, 'setTodayPvTab');
-  const note = d.failed ? '<div class="pv-note">' + d.failed + ' listing(s) could not be loaded.</div>' : '';
+  const note = d.failed ? '<div class="pv-note"><i class="fas fa-circle-info"></i><span>' + d.failed + ' listing(s) could not be loaded.</span></div>' : '';
   const list = d[_tpvTab];
   let body;
   if(!list.length){
@@ -13901,25 +14062,35 @@ function renderTodayPv(){
     body = '<div class="vx-list"><div class="vx-group">' + list.map((g, i) => {
       const u = g.u;
       const name = guest ? 'Guest visitor' : (u.removed ? 'Deleted user' : (u.name || u.email || u.mobile || 'User'));
-      const meta = guest ? ('Device ' + (u.ref || '—')) : [u.mobile, u.email].filter(Boolean).join(' · ');
+      const avatar = guest ? '<i class="fas fa-user-secret"></i>' : (u.removed ? '<i class="fas fa-user-slash"></i>' : _adminModalEsc(_svInitials(name)));
+      let contact = '';
+      if(guest) contact = '<div class="vx-meta"><i class="fas fa-fingerprint"></i>' + _adminModalEsc('Device ' + (u.ref || '—')) + '</div>';
+      else {
+        if(u.mobile) contact += '<div class="vx-meta"><i class="fas fa-phone"></i>' + _adminModalEsc(u.mobile) + '</div>';
+        if(u.email)  contact += '<div class="vx-meta"><i class="fas fa-envelope"></i>' + _adminModalEsc(u.email) + '</div>';
+      }
       const props = g.items.map(({ pid, pm, d: dt }) =>
         '<div class="vx-uprop" title="' + _adminModalEsc(fmtDateDMY(dt) + ' ' + fmtTimeHM(dt)) + '">' +
-          '<i class="fas fa-house" style="color:var(--ink3)"></i><b>' + _adminModalEsc(pid) + '</b>' +
+          '<i class="fas fa-house"></i><b>' + _adminModalEsc(pid) + '</b>' +
           '<span class="vx-uprop-meta">' + _adminModalEsc(pm) + '</span>' +
           '<span class="vx-uprop-time">' + _adminModalEsc(fmtTimeHM(dt)) + '</span></div>').join('');
-      return '<div class="vx-row' + (owner ? ' sale' : '') + (u.removed ? ' gone' : '') + '" style="align-items:flex-start;animation-delay:' + Math.min(i, 10) * 35 + 'ms">' +
-        '<div class="vx-main"><div class="vx-pid">' + _adminModalEsc((i + 1) + '. ' + name) +
-          (guest ? '<span class="vx-tag" style="background:#f1f5f9;color:#64748b">Guest</span>' : '<span class="vx-tag">' + (owner ? 'Owner' : 'Tenant') + '</span>') + '</div>' +
-        (meta ? '<div class="vx-meta">' + _adminModalEsc(meta) + '</div>' : '') +
-        '<div class="vx-uprops">' + props + '</div></div>' +
-        (guest ? '' : _tpvCallBtn(u.mobile, name)) + '</div>';
+      const n = g.items.length;
+      return '<div class="vx-row has-props' + (owner ? ' sale' : '') + (guest ? ' guest' : '') + (u.removed ? ' gone' : '') + '" style="animation-delay:' + Math.min(i, 10) * 35 + 'ms">' +
+        '<div class="sv-av">' + avatar + '<em class="sv-rank">' + (i + 1) + '</em></div>' +
+        '<div class="vx-main"><div class="vx-pid"><span class="sv-name">' + _adminModalEsc(name) + '</span><span class="vx-tag">' + (guest ? 'Guest' : owner ? 'Owner' : 'Tenant') + '</span></div>' +
+          contact +
+          '<div class="sv-chips"><span class="sv-chip"><i class="fas fa-eye"></i>' + n + (n === 1 ? ' property' : ' properties') + ' viewed</span></div>' +
+          '</div>' +
+        (guest ? '' : _tpvCallBtn(u.mobile, name)) +
+        '<div class="vx-uprops">' + props + '</div></div>';
     }).join('') + '</div></div>';
   }
-  box.innerHTML = '<div class="pv-tabs">' + tabs + '</div>' + body + note;
+  box.innerHTML = _vmDist([['t', d.tenants.length], ['o', d.owners.length], ['g', d.guests.length]]) + '<div class="pv-tabs">' + tabs + '</div>' + body + note;
 }
 async function openTodayPropertyViewsModal(){
   const token = ++_todayPvToken;
   const modal = document.getElementById('viewedPropsModal');
+  _vmTheme(modal, 'views');
   const box = document.getElementById('viewedPropsModalBox');
   const countEl = document.getElementById('viewedPropsModalCount');
   const subEl = document.getElementById('viewedPropsModalSub');
@@ -14006,6 +14177,15 @@ function _svWhen(v){
   return _svScope === 'today' ? fmtTimeHM(dt) : (fmtDateDMY(dt) + ' ' + fmtTimeHM(dt));
 }
 function setSiteVisitorsTab(t){ _svTab = t; renderSiteVisitors(); }
+function _svInitials(name){
+  const parts = String(name || '').replace(/[^\p{L}\p{N}\s]/gu, ' ').trim().split(/\s+/).filter(Boolean);
+  if(!parts.length) return '?';
+  return (parts[0][0] + (parts.length > 1 ? parts[1][0] : '')).toUpperCase();
+}
+function _svDeviceIcon(t){
+  t = String(t || '').toLowerCase();
+  return /tablet|ipad/.test(t) ? 'fa-tablet-screen-button' : /desktop|laptop|pc|mac|windows/.test(t) ? 'fa-desktop' : 'fa-mobile-screen-button';
+}
 function renderSiteVisitors(){
   const box = document.getElementById('viewedPropsModalBox');
   const d = _sv; if(!d) return;
@@ -14014,8 +14194,14 @@ function renderSiteVisitors(){
     ['owners','Owners','fa-user-tie', d.owners.length],
     ['guests','Guests','fa-user-secret', d.guests.length],
   ], _svTab, 'setSiteVisitorsTab');
-  const notes = (d.truncated ? '<div class="pv-note">Showing the most recent ' + d.shown + ' of ' + d.total + ' visitors.</div>' : '') +
-    '<div class="pv-note">Visitors from before this feature was added show as guests until they visit or log in again.</div>';
+  const dist = (d.tenants.length + d.owners.length + d.guests.length)
+    ? '<div class="sv-dist" aria-hidden="true">' +
+        [['t', d.tenants.length], ['o', d.owners.length], ['g', d.guests.length]]
+          .filter(x => x[1]).map(x => '<span class="sv-dist-' + x[0] + '" style="flex-grow:' + x[1] + '"></span>').join('') +
+      '</div>'
+    : '';
+  const notes = (d.truncated ? '<div class="pv-note"><i class="fas fa-circle-info"></i><span>Showing the most recent ' + d.shown + ' of ' + d.total + ' visitors.</span></div>' : '') +
+    '<div class="pv-note"><i class="fas fa-circle-info"></i><span>Visitors from before this feature was added show as guests until they visit or log in again.</span></div>';
   const list = d[_svTab];
   let body;
   if(!list.length){
@@ -14023,31 +14209,42 @@ function renderSiteVisitors(){
   } else {
     const guest = _svTab === 'guests', owner = _svTab === 'owners';
     body = '<div class="vx-list"><div class="vx-group">' + list.map((v, i) => {
-      const u = v.user;
+      const u = v.user || {};
       const name = guest ? 'Guest visitor' : (u.removed ? 'Deleted user' : (u.name || u.email || u.mobile || 'User'));
-      const contact = guest ? ('Device ' + (v.ref || '—')) : (u.removed ? '' : [u.mobile, u.email].filter(Boolean).join(' · '));
-      const dev = v.device ? [v.device.type, v.device.browser, v.device.os].filter(Boolean).join(' · ') : '';
+      const avatar = guest ? '<i class="fas fa-user-secret"></i>' : (u.removed ? '<i class="fas fa-user-slash"></i>' : _adminModalEsc(_svInitials(name)));
+      let contact = '';
+      if(guest) contact = '<div class="vx-meta"><i class="fas fa-fingerprint"></i>' + _adminModalEsc('Device ' + (v.ref || '—')) + '</div>';
+      else if(!u.removed){
+        if(u.mobile) contact += '<div class="vx-meta"><i class="fas fa-phone"></i>' + _adminModalEsc(u.mobile) + '</div>';
+        if(u.email)  contact += '<div class="vx-meta"><i class="fas fa-envelope"></i>' + _adminModalEsc(u.email) + '</div>';
+      }
+      const chips = [];
+      if(v.device){
+        if(v.device.type)    chips.push('<span class="sv-chip"><i class="fas ' + _svDeviceIcon(v.device.type) + '"></i>' + _adminModalEsc(v.device.type) + '</span>');
+        if(v.device.browser) chips.push('<span class="sv-chip"><i class="fas fa-compass"></i>' + _adminModalEsc(v.device.browser) + '</span>');
+        if(v.device.os)      chips.push('<span class="sv-chip"><i class="fas fa-layer-group"></i>' + _adminModalEsc(v.device.os) + '</span>');
+      }
       const first = _svWhen(v.visitedAt), last = _svWhen(v.lastSeenAt);
-      const timing = (_svScope === 'today' ? 'First visit ' : 'First seen ') + first + (last && last !== first ? ' · Last seen ' + last : '');
-      const tag = guest
-        ? '<span class="vx-tag" style="background:#f1f5f9;color:#64748b">Guest</span>'
-        : '<span class="vx-tag">' + (owner ? 'Owner' : 'Tenant') + '</span>';
-      const newTag = v.isNew ? '<span class="vx-tag" style="background:#fff7ed;color:#c2410c">New</span>' : '';
-      return '<div class="vx-row' + (owner ? ' sale' : '') + (!guest && u.removed ? ' gone' : '') + '" style="animation-delay:' + Math.min(i, 10) * 35 + 'ms">' +
-        '<div class="vx-main"><div class="vx-pid">' + _adminModalEsc((i + 1) + '. ' + name) + tag + newTag + '</div>' +
-          (contact ? '<div class="vx-meta">' + _adminModalEsc(contact) + '</div>' : '') +
-          (dev ? '<div class="vx-meta"><i class="fas fa-mobile-screen-button" style="margin-right:5px"></i>' + _adminModalEsc(dev) + '</div>' : '') +
-          '<div class="vx-meta">' + _adminModalEsc(timing) + '</div></div>' +
+      if(first) chips.push('<span class="sv-chip t1"><i class="fas fa-arrow-right-to-bracket"></i>' + (_svScope === 'today' ? 'First visit ' : 'First seen ') + _adminModalEsc(first) + '</span>');
+      if(last && last !== first) chips.push('<span class="sv-chip t2"><i class="fas fa-clock"></i>Last seen ' + _adminModalEsc(last) + '</span>');
+      const tag = '<span class="vx-tag">' + (guest ? 'Guest' : owner ? 'Owner' : 'Tenant') + '</span>';
+      const newTag = v.isNew ? '<span class="vx-tag new"><i class="fas fa-star"></i>New</span>' : '';
+      return '<div class="vx-row' + (owner ? ' sale' : '') + (guest ? ' guest' : '') + (!guest && u.removed ? ' gone' : '') + '" style="animation-delay:' + Math.min(i, 10) * 35 + 'ms">' +
+        '<div class="sv-av">' + avatar + '<em class="sv-rank">' + (i + 1) + '</em></div>' +
+        '<div class="vx-main"><div class="vx-pid"><span class="sv-name">' + _adminModalEsc(name) + '</span>' + tag + newTag + '</div>' +
+          contact +
+          (chips.length ? '<div class="sv-chips">' + chips.join('') + '</div>' : '') + '</div>' +
         (guest || u.removed ? '' : _tpvCallBtn(u.mobile, name)) + '</div>';
     }).join('') + '</div></div>';
   }
-  box.innerHTML = '<div class="pv-tabs">' + tabs + '</div>' + body + notes;
+  box.innerHTML = dist + '<div class="pv-tabs">' + tabs + '</div>' + body + notes;
 }
 async function openSiteVisitorsModal(scope){
   scope = scope === 'all' ? 'all' : 'today';
   const token = ++_svToken;
   _svScope = scope; _sv = null; _svTab = 'tenants';
   const modal = document.getElementById('viewedPropsModal');
+  _vmTheme(modal, 'visit');
   const box = document.getElementById('viewedPropsModalBox');
   const countEl = document.getElementById('viewedPropsModalCount');
   document.getElementById('viewedPropsModalAvatar').innerHTML = '<i class="fas ' + (scope === 'all' ? 'fa-globe' : 'fa-chart-line') + '"></i>';
@@ -14082,6 +14279,7 @@ window.setSiteVisitorsTab = setSiteVisitorsTab;
 
 function closeViewedPropsModal(){
   document.getElementById('viewedPropsModal').classList.remove('open');
+  ['sv-modal','sv-t-visit','sv-t-reg','sv-t-views','sv-t-cust'].forEach(c => document.getElementById('viewedPropsModal').classList.remove(c));
   if(!document.getElementById('customerModal').classList.contains('open')) document.body.style.overflow = '';
 }
 
