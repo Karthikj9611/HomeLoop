@@ -3274,6 +3274,48 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
 .sub-form-card{background:#fff;border:1px solid var(--border);border-radius:14px;padding:16px 16px 4px;margin-bottom:12px}
 .sub-form-card.editing{border-color:#4f46e5;box-shadow:0 0 0 3px rgba(79,70,229,.08)}
 .sub-field-hint{font-size:11.5px;color:var(--text-2);margin:-2px 0 0;line-height:1.4}
+.sub-tabs{display:flex;gap:6px;padding:0 24px;border-bottom:1px solid var(--border);background:var(--bg)}
+.sub-tab{border:none;background:none;padding:12px 14px;font-size:14px;font-weight:700;color:var(--text-2);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-1px;font-family:inherit;display:flex;align-items:center;gap:8px}
+.sub-tab:hover{color:var(--ink)}
+.sub-tab.on{color:var(--brand);border-bottom-color:var(--brand)}
+.sub-tab-count{background:#e5e7eb;color:#374151;border-radius:99px;font-size:11.5px;padding:1px 8px}
+.sub-tab.on .sub-tab-count{background:var(--brand-light);color:var(--brand)}
+.sub-pane{display:none}
+.sub-pane.on{display:block}
+.sub-req{color:#dc2626;margin-left:3px;font-weight:700}
+.sub-err{color:#dc2626;font-size:12.5px;font-weight:600;margin-top:6px}
+#subscriptionFormCard .form-group.has-error .form-input,
+#subscriptionFormCard .form-group.has-error .msel-btn{border-color:#dc2626;background:#fef2f2}
+.msel{position:relative}
+.msel-btn{width:100%;display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:46px;padding:8px 14px;border:1.5px solid var(--border);border-radius:var(--radius-xs);background:#fff;color:var(--ink);font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;text-align:left}
+.msel-btn:hover,.msel.open .msel-btn{border-color:var(--brand)}
+.msel-val{flex:1;min-width:0;display:flex;flex-wrap:wrap;gap:6px}
+.msel-ph{color:var(--text-2);font-weight:500}
+.msel-tag{display:inline-flex;align-items:center;gap:5px;background:var(--brand-light);color:var(--brand);border-radius:99px;padding:3px 6px 3px 10px;font-size:12.5px;font-weight:700}
+.msel-tag b{width:16px;height:16px;border-radius:50%;background:rgba(0,0,0,.08);display:inline-flex;align-items:center;justify-content:center;font-size:12px;line-height:1;cursor:pointer}
+.msel-caret{flex:none;width:8px;height:8px;border-right:2px solid var(--text-2);border-bottom:2px solid var(--text-2);transform:rotate(45deg) translateY(-2px);transition:transform .15s}
+.msel.open .msel-caret{transform:rotate(-135deg) translateY(-2px)}
+.msel-menu{display:none;position:absolute;left:0;right:0;top:calc(100% + 6px);z-index:30;background:#fff;border:1px solid var(--border);border-radius:12px;box-shadow:0 12px 32px rgba(0,0,0,.14);padding:6px;max-height:240px;overflow-y:auto}
+.msel.open .msel-menu{display:block}
+.msel-search{width:100%;box-sizing:border-box;border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:13.5px;margin-bottom:6px;font-family:inherit;outline:none}
+.msel-search:focus{border-color:var(--brand)}
+.msel-opt{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600;color:var(--ink);user-select:none}
+.msel-opt:hover{background:#f3f4f6}
+.msel-opt i{flex:none;width:18px;height:18px;border:1.5px solid #cbd5e1;border-radius:5px;display:inline-flex;align-items:center;justify-content:center;font-style:normal;font-size:12px;color:#fff}
+.msel-opt.on i{background:var(--brand);border-color:var(--brand)}
+.msel-opt.on i::after{content:'\2713'}
+.msel-empty{padding:10px;font-size:13px;color:var(--text-2)}
+.sub-form-card{padding-bottom:6px}
+.sub-chips{display:flex;flex-wrap:wrap;gap:8px}
+.sub-chip{border:1.5px solid var(--border);background:#fff;color:#374151;border-radius:99px;padding:8px 14px;font-size:13.5px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .12s}
+.sub-chip:hover{border-color:var(--brand)}
+.sub-chip.on{background:var(--brand);border-color:var(--brand);color:#fff}
+.sub-chip.on::before{content:'\2713\00a0'}
+.sub-opt-tag{font-weight:500;font-size:11.5px;color:var(--text-2);margin-left:6px}
+.sub-area-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.sub-area-tag{display:inline-flex;align-items:center;gap:6px;background:var(--brand-light);color:var(--brand);border-radius:99px;padding:5px 6px 5px 12px;font-size:12.5px;font-weight:600}
+.sub-area-tag button{border:none;background:rgba(0,0,0,.08);color:inherit;width:18px;height:18px;border-radius:50%;cursor:pointer;font-size:12px;line-height:1;padding:0}
+.sub-row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .sub-edit-cancel{background:none;border:none;color:#4338ca;font-size:12.5px;font-weight:600;cursor:pointer;padding:0;margin-left:8px}
 .sub-foot{display:flex;gap:10px;padding:14px 24px 18px;border-top:1px solid var(--border);background:var(--bg)}
 .sub-foot button{padding:12px 14px;border-radius:var(--radius-xs);border:none;font-family:'Inter',sans-serif;font-size:14px;font-weight:700;cursor:pointer;white-space:nowrap}
@@ -3289,47 +3331,68 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
       <div class="sub-head-sub" id="subscriptionCustomerName">Manage this customer's plans</div>
     </div>
 
+    <div class="sub-tabs" role="tablist">
+      <button type="button" class="sub-tab on" id="subTabSaved" role="tab" onclick="subShowTab('saved')">Saved plans <span class="sub-tab-count" id="subTabSavedCount">0</span></button>
+      <button type="button" class="sub-tab" id="subTabAdd" role="tab" onclick="subShowTab('add')"><span id="subTabAddLabel">Add plan</span></button>
+    </div>
+
     <div class="sub-body">
       <!-- Saved plans -->
-      <div class="sub-section-title">Saved plans</div>
-      <div class="sub-empty" id="subscriptionEmpty">No subscription yet. Add the first one below.</div>
+      <div class="sub-pane on" id="subPaneSaved">
+      <div class="sub-empty" id="subscriptionEmpty">No subscription yet. Use the Add plan tab to create the first one.</div>
       <div class="sub-plan-list" id="subscriptionPlanList"></div>
+      </div>
 
       <!-- Add / edit form -->
-      <div class="sub-section-title" id="subscriptionFormHeading">Add a new plan</div>
-      <div class="sub-section-hint" id="subscriptionFormHint">A new plan can't overlap a plan this customer already has.</div>
+      <div class="sub-pane" id="subPaneAdd">
       <div class="sub-form-card" id="subscriptionFormCard">
-        <div class="form-group">
-          <label class="form-label" for="subscriptionFromInput">Starts on</label>
+        <div class="form-group" id="subGrpFrom">
+          <label class="form-label" for="subscriptionFromInput">Starts on<span class="sub-req">*</span></label>
           <div class="sub-dt-wrap">
             <input class="form-input" type="text" id="subscriptionFromInput" placeholder="dd-mm-yyyy hh:mm AM" autocomplete="off" inputmode="numeric" />
             <button type="button" class="sub-dt-btn" onclick="subPickDate('From')" aria-label="Pick date and time" title="Pick date & time"><i class="far fa-calendar-alt"></i></button>
             <input type="datetime-local" class="sub-dt-native" id="subscriptionFromNative" tabindex="-1" aria-hidden="true" />
           </div>
         </div>
-        <div class="form-group">
-          <label class="form-label" for="subscriptionToInput">Ends on</label>
+        <div class="form-group" id="subGrpTo">
+          <label class="form-label" for="subscriptionToInput">Ends on<span class="sub-req">*</span></label>
           <div class="sub-dt-wrap">
             <input class="form-input" type="text" id="subscriptionToInput" placeholder="dd-mm-yyyy hh:mm AM" autocomplete="off" inputmode="numeric" />
             <button type="button" class="sub-dt-btn" onclick="subPickDate('To')" aria-label="Pick date and time" title="Pick date & time"><i class="far fa-calendar-alt"></i></button>
             <input type="datetime-local" class="sub-dt-native" id="subscriptionToNative" tabindex="-1" aria-hidden="true" />
           </div>
-          <div class="sub-field-hint" style="margin-top:6px">Fills in automatically as 48 hours after the start. You can change it.</div>
+        </div>
+        <div class="form-group" id="subGrpBhk">
+          <label class="form-label">BHK<span class="sub-req">*</span></label>
+          <div class="msel" id="subBhkSel"></div>
         </div>
         <div class="form-group">
-          <label class="form-label" for="subscriptionBhkInput">Which homes can they see?</label>
-          <select class="form-select" id="subscriptionBhkInput">
-            <option value="">All BHKs (no restriction)</option>
-            <option>1 RK</option><option>1 BHK</option><option>2 BHK</option><option>3 BHK</option><option>4 BHK</option>
-          </select>
+          <label class="form-label">Areas</label>
+          <div class="msel" id="subAreaSel"></div>
         </div>
+        <div class="form-group">
+          <label class="form-label">Bike parking</label>
+          <div class="msel" id="subBikeSel"></div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Car parking</label>
+          <div class="msel" id="subCarSel"></div>
+        </div>
+        <div class="form-group" id="subGrpBudget">
+          <label class="form-label">Budget (&#8377;/month)</label>
+          <div class="sub-row2">
+            <input class="form-input" type="number" min="0" step="500" inputmode="numeric" id="subscriptionBudgetMin" placeholder="Min" />
+            <input class="form-input" type="number" min="0" step="500" inputmode="numeric" id="subscriptionBudgetMax" placeholder="Max" />
+          </div>
+        </div>
+      </div>
       </div>
     </div>
 
     <div class="sub-foot">
       <button class="confirm-cancel-btn" onclick="closeSubscriptionModal()" style="flex:1">Close</button>
-      <button class="confirm-ok-btn success" onclick="saveSubscription()" style="flex:1.6">
-        <i class="fas fa-check"></i> <span id="subscriptionSaveLabel">Add plan</span>
+      <button class="confirm-ok-btn success" id="subscriptionFootBtn" onclick="subFootAction()" style="flex:1.6">
+        <i class="fas" id="subscriptionFootIcon"></i> <span id="subscriptionSaveLabel">Add plan</span>
       </button>
     </div>
   </div>
@@ -7085,8 +7148,10 @@ window.openSubscriptionModal = function(key){
   if(!c){ alert('Customer details not loaded yet — please retry.'); return; }
   _subscriptionTargetId = c._id;
   _subscriptionCacheKey = key;
+  _subTab = subPlans().length ? 'saved' : 'add';   // no plans yet → straight to the form
   subResetForm();                       // always a blank form: saving ADDS another plan
   subRenderPlans();
+  subLoadAreaSuggestions();
   document.getElementById('subscriptionModal').classList.add('open');
   lockBodyScroll();
 };
@@ -7107,28 +7172,157 @@ function subDuration(f, t){
   if(m < 60*48) { const h = Math.round(m/60*10)/10; return h + (h === 1 ? ' hour' : ' hours'); }
   const d = Math.round(m/1440*10)/10; return d + ' days';
 }
+/* Multi-select dropdown: button shows selected values as tags; menu lists checkbox options.
+   opts: { options:[{v,l}], placeholder, search:true|false, custom:true|false } */
+function subMsel(rootId, opts){
+  const root = document.getElementById(rootId);
+  let options = opts.options || [], sel = [];
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  root.innerHTML = '<button type="button" class="msel-btn"><span class="msel-val"></span><span class="msel-caret"></span></button><div class="msel-menu"></div>';
+  const btn = root.querySelector('.msel-btn'), val = root.querySelector('.msel-val'), menu = root.querySelector('.msel-menu');
+  let q = '';
+  const label = v => (options.find(o => o.v === v) || { l: v }).l;
+  function paintBtn(){
+    val.innerHTML = sel.length
+      ? sel.map(v => `<span class="msel-tag">${esc(label(v))}<b data-rm="${esc(v)}" title="Remove">&times;</b></span>`).join('')
+      : `<span class="msel-ph">${esc(opts.placeholder || 'Select')}</span>`;
+  }
+  function paintMenu(){
+    const list = options.filter(o => !q || o.l.toLowerCase().includes(q.toLowerCase()));
+    let html = opts.search ? `<input type="text" class="msel-search" placeholder="${opts.custom ? 'Search or type a new area, press Enter' : 'Search'}" value="${esc(q)}">` : '';
+    html += list.length ? list.map(o => `<div class="msel-opt${sel.includes(o.v) ? ' on' : ''}" data-v="${esc(o.v)}"><i></i>${esc(o.l)}</div>`).join('')
+                        : `<div class="msel-empty">${opts.custom && q ? 'Press Enter to add \u201c' + esc(q) + '\u201d' : 'No options'}</div>`;
+    menu.innerHTML = html;
+    const si = menu.querySelector('.msel-search');
+    if(si){
+      si.addEventListener('input', () => { q = si.value; const pos = si.selectionStart; paintMenu(); const n = menu.querySelector('.msel-search'); n.focus(); n.setSelectionRange(pos, pos); });
+      si.addEventListener('keydown', ev => {
+        if(ev.key === 'Enter'){ ev.preventDefault(); const t = si.value.trim(); if(t && opts.custom){ api.add(t); q = ''; paintMenu(); const n = menu.querySelector('.msel-search'); n.focus(); } }
+      });
+    }
+  }
+  const api = {
+    get: () => sel.slice(),
+    set: (arr) => { sel = (arr || []).slice(); paintBtn(); if(root.classList.contains('open')) paintMenu(); },
+    add: (v) => { if(!sel.some(x => x.toLowerCase() === v.toLowerCase())){ sel.push(v); if(!options.some(o => o.v.toLowerCase() === v.toLowerCase())) options = options.concat([{ v, l: v }]); } paintBtn(); },
+    setOptions: (arr) => { options = arr; if(root.classList.contains('open')) paintMenu(); },
+    close: () => root.classList.remove('open'),
+  };
+  btn.addEventListener('click', ev => {
+    if(ev.target.dataset && ev.target.dataset.rm !== undefined){ sel = sel.filter(x => x !== ev.target.dataset.rm); paintBtn(); paintMenu(); return; }
+    const was = root.classList.contains('open');
+    document.querySelectorAll('#subscriptionModal .msel.open').forEach(m => m.classList.remove('open'));
+    if(!was){ q = ''; paintMenu(); root.classList.add('open'); const si = menu.querySelector('.msel-search'); if(si) si.focus(); setTimeout(() => menu.scrollIntoView({ block:'nearest', behavior:'smooth' }), 0); }
+  });
+  menu.addEventListener('click', ev => {
+    const o = ev.target.closest('.msel-opt'); if(!o) return;
+    const v = o.dataset.v;
+    sel = sel.includes(v) ? sel.filter(x => x !== v) : sel.concat([v]);
+    paintBtn(); paintMenu();
+  });
+  paintBtn();
+  return api;
+}
+document.addEventListener('click', ev => {
+  if(ev.target.closest && ev.target.closest('.msel')) return;
+  document.querySelectorAll('#subscriptionModal .msel.open').forEach(m => m.classList.remove('open'));
+});
+const _subBhkSel  = subMsel('subBhkSel',  { placeholder: 'Select BHK', options: ['1 RK','1 BHK','2 BHK','3 BHK','4 BHK'].map(v => ({ v, l: v })) });
+const _subAreaSel = subMsel('subAreaSel', { placeholder: 'All areas', options: [], search: true, custom: true });
+const _subParkOpts = ['0','1','2','3','4'].map(v => ({ v, l: v }));   // same values as the listing form's parking dropdowns
+const _subBikeSel = subMsel('subBikeSel', { placeholder: 'Any', options: _subParkOpts });
+const _subCarSel  = subMsel('subCarSel',  { placeholder: 'Any', options: _subParkOpts });
+let _subAreasLoaded = false;
+function subLoadAreaSuggestions(){
+  if(_subAreasLoaded) return;
+  _subAreasLoaded = true;
+  fetch(`${BASE}/api/admin/listing-areas`, { headers: authHeaders() })
+    .then(r => r.ok ? r.json() : null)
+    .then(d => {
+      if(!d || !d.areas){ _subAreasLoaded = false; return; }
+      const have = new Set(_subAreaSel.get().map(x => x.toLowerCase()));
+      _subAreaSel.setOptions(d.areas.map(a => ({ v: a, l: a })).concat(_subAreaSel.get().filter(a => !d.areas.some(x => x.toLowerCase() === a.toLowerCase())).map(a => ({ v: a, l: a }))));
+    })
+    .catch(() => { _subAreasLoaded = false; });
+}
+function subFillFilters(p){
+  p = p || {};
+  _subBhkSel.set((p.bhks && p.bhks.length) ? p.bhks : (p.bhk ? [p.bhk] : []));
+  const ar = p.areas || [];
+  ar.forEach(a => _subAreaSel.add(a));
+  _subAreaSel.set(ar);
+  const legacy = ['1','2','3','4'];
+  _subBikeSel.set((p.bikeCounts && p.bikeCounts.length) ? p.bikeCounts : (p.bike ? legacy : []));
+  _subCarSel.set((p.carCounts && p.carCounts.length) ? p.carCounts : (p.car ? legacy : []));
+  document.getElementById('subscriptionBudgetMin').value = p.budgetMin == null ? '' : p.budgetMin;
+  document.getElementById('subscriptionBudgetMax').value = p.budgetMax == null ? '' : p.budgetMax;
+}
+// "2 BHK, 3 BHK homes · Indiranagar, HSR (+1) · Bike + Car parking · ₹15,000–₹30,000"
+function subPlanSummary(p){
+  const bhks = (p.bhks && p.bhks.length) ? p.bhks : (p.bhk ? [p.bhk] : []);
+  const parts = [bhks.length ? bhks.join(', ') + ' homes only' : 'All BHKs'];
+  const ar = p.areas || [];
+  if(ar.length) parts.push(ar.length > 2 ? ar.slice(0,2).join(', ') + ' (+' + (ar.length - 2) + ')' : ar.join(', '));
+  const bc = p.bikeCounts || [], cc = p.carCounts || [];
+  if(bc.length) parts.push('Bike ' + bc.slice().sort().join(', '));
+  if(cc.length) parts.push('Car ' + cc.slice().sort().join(', '));
+  const f = n => '\u20B9' + Number(n).toLocaleString('en-IN');
+  const hasMin = p.budgetMin != null, hasMax = p.budgetMax != null;
+  if(hasMin || hasMax) parts.push(hasMin && hasMax ? f(p.budgetMin) + '\u2013' + f(p.budgetMax) : hasMin ? 'from ' + f(p.budgetMin) : 'up to ' + f(p.budgetMax));
+  return parts.join(' \u00b7 ');
+}
+let _subTab = 'saved';
+window.subShowTab = function(tab){
+  _subTab = tab;
+  document.getElementById('subPaneSaved').classList.toggle('on', tab === 'saved');
+  document.getElementById('subPaneAdd').classList.toggle('on', tab === 'add');
+  document.getElementById('subTabSaved').classList.toggle('on', tab === 'saved');
+  document.getElementById('subTabAdd').classList.toggle('on', tab === 'add');
+  const editing = !!_subscriptionEditId;
+  if(tab === 'add' && !editing && document.getElementById('subscriptionFromInput').value === _subDefFrom && document.getElementById('subscriptionToInput').value === _subDefTo) subDefaultDates();   // untouched defaults → refresh to the current time
+  const icon = document.getElementById('subscriptionFootIcon');
+  if(tab === 'saved'){
+    document.getElementById('subscriptionSaveLabel').textContent = 'New plan';
+    icon.className = 'fas fa-plus';
+  } else {
+    document.getElementById('subscriptionSaveLabel').textContent = editing ? 'Save changes' : 'Add plan';
+    icon.className = 'fas fa-check';
+  }
+  const body = document.querySelector('#subscriptionModal .sub-body'); if(body) body.scrollTop = 0;
+};
+// Footer button: on "Saved plans" it opens a blank Add tab; on "Add plan" it saves.
+window.subCancelEdit = function(){ subResetForm(); subShowTab('saved'); };
+window.subFootAction = function(){
+  if(_subTab === 'saved'){ subResetForm(); subShowTab('add'); return; }
+  saveSubscription();
+};
 function subSetFormMode(){
   const n = subPlans().length;
   const editing = !!_subscriptionEditId;
   document.getElementById('subscriptionFormCard').classList.toggle('editing', editing);
-  document.getElementById('subscriptionFormHeading').innerHTML = editing
-    ? 'Editing this plan <button type="button" class="sub-edit-cancel" onclick="subResetForm()">Cancel editing</button>'
-    : (n ? 'Add another plan' : 'Add a new plan');
-  document.getElementById('subscriptionFormHint').textContent = editing
-    ? 'Change the dates or BHK below, then press Save changes.'
-    : 'A new plan can\'t overlap a plan this customer already has.';
-  document.getElementById('subscriptionSaveLabel').textContent = editing ? 'Save changes' : 'Add plan';
+  document.getElementById('subTabAddLabel').textContent = editing ? 'Edit plan' : (n ? 'Add another plan' : 'Add plan');
+  if(typeof subShowTab === 'function' && document.getElementById('subPaneAdd')) subShowTab(_subTab);
+}
+// New plan: Starts on = right now, Ends on = +48h (both editable).
+let _subDefFrom = '', _subDefTo = '';
+function subDefaultDates(){
+  const n = new Date(); n.setSeconds(0, 0);
+  subSet('From', n); subAutoTo();
+  _subDefFrom = document.getElementById('subscriptionFromInput').value;
+  _subDefTo = document.getElementById('subscriptionToInput').value;
 }
 function subResetForm(){
   _subscriptionEditId = null;
-  subSet('From', null); subSet('To', null);
-  document.getElementById('subscriptionBhkInput').value = '';
+  subDefaultDates();
+  if(typeof subClearErrs === 'function') subClearErrs();
+  subFillFilters(null);
   subSetFormMode();
 }
 function subRenderPlans(){
   const c = _customerCache[_subscriptionCacheKey] || {};
   document.getElementById('subscriptionCustomerName').textContent = 'Plans for ' + (c.name || ((c.firstName||'') + ' ' + (c.lastName||'')).trim() || c.mobile || 'this customer');
   const plans = subPlans().slice().sort((a,b) => new Date(a.from) - new Date(b.from));
+  document.getElementById('subTabSavedCount').textContent = plans.length;
   const list = document.getElementById('subscriptionPlanList');
   document.getElementById('subscriptionEmpty').style.display = plans.length ? 'none' : '';
   list.style.display = plans.length ? '' : 'none';
@@ -7145,7 +7339,7 @@ function subRenderPlans(){
         </div>
       </div>
       <div class="sub-plan-dates"><span>From</span><b>${subNice(p.from)}</b><span>To</span><b>${subNice(p.to)}</b></div>
-      <div class="sub-plan-meta">${p.bhk ? p.bhk + ' homes only' : 'All BHKs'} &middot; ${subDuration(p.from, p.to)}</div>
+      <div class="sub-plan-meta">${subPlanSummary(p)} &middot; ${subDuration(p.from, p.to)}</div>
     </div>`;
   }).join('');
 }
@@ -7154,7 +7348,8 @@ window.subEditPlan = function(subId){
   if(!p) return;
   _subscriptionEditId = String(p._id);
   subSet('From', new Date(p.from)); subSet('To', new Date(p.to));
-  document.getElementById('subscriptionBhkInput').value = p.bhk || '';
+  subFillFilters(p);
+  subShowTab('add');
   subSetFormMode();
   const card = document.getElementById('subscriptionFormCard');
   if(card && card.scrollIntoView) card.scrollIntoView({ behavior:'smooth', block:'nearest' });
@@ -7168,7 +7363,7 @@ window.subDeletePlan = async function(subId){
   const data = await res.json().catch(()=>({}));
   if(!res.ok){ showAlertModal(data.message || 'Error removing subscription', { variant:'error', title:'Could not remove' }); return; }
   const c = _customerCache[_subscriptionCacheKey];
-  if(c){ c.subscriptions = data.subscriptions || []; c.subscriptionFrom = data.subscriptionFrom; c.subscriptionTo = data.subscriptionTo; c.subscriptionAt = data.subscriptionAt; c.subscriptionBhk = data.subscriptionBhk; }
+  if(c){ c.subscriptions = data.subscriptions || []; c.subscriptionFrom = data.subscriptionFrom; c.subscriptionTo = data.subscriptionTo; c.subscriptionAt = data.subscriptionAt; c.subscriptionBhk = data.subscriptionBhk; c.subscriptionFilter = data.subscriptionFilter; }
   if(_subscriptionEditId === String(subId)) subResetForm(); else subSetFormMode();
   subRenderPlans();
   dataTable.ajax.reload(null,false);
@@ -7179,13 +7374,55 @@ window.closeSubscriptionModal = function(){
   _subscriptionTargetId = null;
   _subscriptionEditId = null;
 };
+// Inline validation: red border + message under the field.
+function subSetErr(groupId, msg){
+  const g = document.getElementById(groupId); if(!g) return;
+  let e = g.querySelector('.sub-err');
+  if(!msg){ g.classList.remove('has-error'); if(e) e.remove(); return; }
+  g.classList.add('has-error');
+  if(!e){ e = document.createElement('div'); e.className = 'sub-err'; g.appendChild(e); }
+  e.textContent = msg;
+}
+function subClearErrs(){ ['subGrpFrom','subGrpTo','subGrpBhk','subGrpBudget'].forEach(id => subSetErr(id, '')); }
+(function(){
+  const card = document.getElementById('subscriptionFormCard');
+  const clear = ev => { const g = ev.target.closest && ev.target.closest('.form-group'); if(g && g.id) subSetErr(g.id, ''); };
+  card.addEventListener('input', clear);
+  card.addEventListener('click', ev => setTimeout(() => clear(ev), 0));
+  card.addEventListener('change', clear);
+})();
+function subValidate(){
+  subClearErrs();
+  const errs = [];
+  const fromTxt = document.getElementById('subscriptionFromInput').value.trim();
+  const toTxt   = document.getElementById('subscriptionToInput').value.trim();
+  const from = subGet('From'), to = subGet('To');
+  if(!fromTxt) errs.push(['subGrpFrom', 'Start date & time is required']);
+  else if(!from) errs.push(['subGrpFrom', 'Use dd-mm-yyyy hh:mm AM/PM']);
+  if(!toTxt) errs.push(['subGrpTo', 'End date & time is required']);
+  else if(!to) errs.push(['subGrpTo', 'Use dd-mm-yyyy hh:mm AM/PM']);
+  else if(from && to <= from) errs.push(['subGrpTo', 'End must be after the start']);
+  if(!_subBhkSel.get().length) errs.push(['subGrpBhk', 'Select at least one BHK']);
+  const bMin = document.getElementById('subscriptionBudgetMin').value.trim();
+  const bMax = document.getElementById('subscriptionBudgetMax').value.trim();
+  if((bMin !== '' && !(Number(bMin) >= 0)) || (bMax !== '' && !(Number(bMax) >= 0))) errs.push(['subGrpBudget', 'Budget must be a positive number']);
+  else if(bMin !== '' && bMax !== '' && Number(bMax) < Number(bMin)) errs.push(['subGrpBudget', 'Max must be at least the min']);
+  errs.forEach(([id, m]) => subSetErr(id, m));
+  if(errs.length){
+    const first = document.getElementById(errs[0][0]);
+    if(first && first.scrollIntoView) first.scrollIntoView({ behavior:'smooth', block:'center' });
+    return false;
+  }
+  return true;
+}
 window.saveSubscription = async function(){
   if(blockIfViewOnly('customers')) return;
   if(!_subscriptionTargetId) return;
+  if(!subValidate()) return;
   const rawFrom = subGet('From');
   const rawTo   = subGet('To');
-  if(!rawFrom || !rawTo){ showAlertModal('Enter both From and To as dd-mm-yyyy hh:mm AM/PM (or use the calendar icon).', { variant:'error', title:'Dates needed' }); return; }
-  if(rawTo < rawFrom){ showAlertModal('"To" must be after "From".', { variant:'error', title:'Invalid range' }); return; }
+  const bMin = document.getElementById('subscriptionBudgetMin').value.trim();
+  const bMax = document.getElementById('subscriptionBudgetMax').value.trim();
   const okSub = await showConfirmModal({
     title: _subscriptionEditId ? 'Update subscription?' : 'Add subscription?',
     message: _subscriptionEditId ? 'This subscription\'s From – To dates will be updated.' : 'This will be added as another subscription for this customer.',
@@ -7196,7 +7433,12 @@ window.saveSubscription = async function(){
   const res = await fetch(`${BASE}/api/users/${_subscriptionTargetId}/subscription`, {
     method:'PATCH',
     headers:{ ...authHeaders(), 'Content-Type':'application/json' },
-    body: JSON.stringify({ subscriptionId: _subscriptionEditId || undefined, subscriptionFrom: rawFrom.toISOString(), subscriptionTo: rawTo.toISOString(), subscriptionBhk: document.getElementById('subscriptionBhkInput').value })
+    body: JSON.stringify({ subscriptionId: _subscriptionEditId || undefined, subscriptionFrom: rawFrom.toISOString(), subscriptionTo: rawTo.toISOString(), subscriptionBhks: _subBhkSel.get(),
+      subscriptionAreas: _subAreaSel.get(),
+      subscriptionBikeCounts: _subBikeSel.get(),
+      subscriptionCarCounts: _subCarSel.get(),
+      subscriptionBudgetMin: bMin === '' ? null : Number(bMin),
+      subscriptionBudgetMax: bMax === '' ? null : Number(bMax) })
   });
   const data = await res.json().catch(()=>({}));
   if(res.ok){

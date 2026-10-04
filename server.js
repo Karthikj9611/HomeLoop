@@ -162,9 +162,22 @@ const UserSchema = new mongoose.Schema({
   // *Handled fields above always mirror the CURRENT plan (running, else next upcoming, else the
   // latest ended) — admin.js keeps them in sync, so every other part of the app works unchanged.
   subscriptions: {
-    type: [{ from: { type: Date, required: true }, to: { type: Date, required: true }, bhk: { type: String, trim: true, default: '' } }],
+    type: [{
+      from: { type: Date, required: true }, to: { type: Date, required: true },
+      bhk: { type: String, trim: true, default: '' },          // legacy single BHK (kept in sync = first of bhks)
+      bhks: { type: [String], default: [] },                   // multi-select BHK types ([] = all)
+      areas: { type: [String], default: [] },                  // optional: only these areas ([] = all)
+      bike: { type: Boolean, default: false },                 // legacy flag (= bikeCounts non-empty)
+      car: { type: Boolean, default: false },                  // legacy flag (= carCounts non-empty)
+      bikeCounts: { type: [String], default: [] },             // optional: allowed bike-parking counts ('0'..'4'); [] = no filter
+      carCounts: { type: [String], default: [] },              // optional: allowed car-parking counts ('0'..'4'); [] = no filter
+      budgetMin: { type: Number, default: null },              // optional: monthly rent range (price.rent)
+      budgetMax: { type: Number, default: null },
+    }],
     default: [],
   },
+  // Mirror of the CURRENT plan's filters — { bhks, areas, bikeCounts, carCounts, budgetMin, budgetMax } (see GET /api/properties).
+  subscriptionFilter: { type: mongoose.Schema.Types.Mixed, default: null },
   // Admin "Block" (Customers grid): blocked accounts are logged out everywhere and refused at login.
   isBlocked: { type: Boolean, default: false, index: true },
   blockedAt: { type: Date, default: null },
@@ -1705,10 +1718,11 @@ app.get('/api/properties', attachUserIfPresent, async (req, res) => {
     // If the tenant also subscribed for ONE BHK type, ONLY that BHK's listings are loaded at all.
     let _viewerPublicCall = false;
     let _viewerBhk = '';
+    let _viewerSub = null;    // current plan's filters (multi-BHK / areas / parking / budget)
     let _viewerSubFrom = null;   // when this tenant's subscription starts / ends (page uses them to reset "Viewed")
     let _viewerSubTo = null;
     if (req.userId) {
-      const _viewer = await User.findById(req.userId).select('publicCall accountType subscriptionBhk subscriptionFrom subscriptionAt subscriptionTo subscriptionExpiryHandled subscriptionStartHandled').lean();
+      const _viewer = await User.findById(req.userId).select('publicCall accountType subscriptionBhk subscriptionFilter subscriptionFrom subscriptionAt subscriptionTo subscriptionExpiryHandled subscriptionStartHandled').lean();
       if (_viewer && (_viewer.accountType || 'customer') === 'customer') {
         _viewerSubFrom = _viewer.subscriptionFrom || _viewer.subscriptionAt || null;
         _viewerSubTo = _viewer.subscriptionTo || null;
@@ -1724,12 +1738,34 @@ app.get('/api/properties', attachUserIfPresent, async (req, res) => {
       if (_viewerPublicCall && _viewer.subscriptionTo && new Date(_viewer.subscriptionTo) <= new Date() && !_viewer.subscriptionExpiryHandled) {
         _viewerPublicCall = false;
       }
-      if (_viewerPublicCall && _viewer.subscriptionBhk) _viewerBhk = String(_viewer.subscriptionBhk).trim();
+      if (_viewerPublicCall && _viewer) {
+        _viewerSub = _viewer.subscriptionFilter || {};
+        const _bl = (_viewerSub.bhks && _viewerSub.bhks.length) ? _viewerSub.bhks : (_viewer.subscriptionBhk ? [String(_viewer.subscriptionBhk).trim()] : []);
+        _viewerBhk = _bl.join(', ');
+      }
     }
-    // Match tolerant of case / spacing ("1 BHK", "1BHK", "1 bhk"). PG / Short Stay (no BHK) are excluded too.
-    if (_viewerBhk) {
-      const _bhkRe = '^\\s*' + _viewerBhk.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\s+/g, '\\s*') + '\\s*$';
-      filter['property.bhk'] = new RegExp(_bhkRe, 'i');
+    // Subscription filters (all optional; each one only narrows). BHK match is tolerant of case / spacing
+    // ("1 BHK", "1BHK", "1 bhk"). PG / Short Stay (no BHK) are excluded when a BHK list is set.
+    if (_viewerPublicCall && _viewerSub) {
+      const _esc = (x) => String(x).trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const _bhkList = _viewerBhk ? _viewerBhk.split(',').map(x => x.trim()).filter(Boolean) : [];
+      if (_bhkList.length) {
+        filter['property.bhk'] = new RegExp('^\\s*(?:' + _bhkList.map(b => _esc(b).replace(/\s+/g, '\\s*')).join('|') + ')\\s*$', 'i');
+      }
+      const _areas = (_viewerSub.areas || []).map(a => String(a).trim()).filter(Boolean);
+      if (_areas.length) filter['location.area'] = { $in: _areas.map(a => new RegExp('^\\s*' + _esc(a).replace(/\s+/g, '\\s+') + '\\s*$', 'i')) };
+      // parking counts are stored as strings ('0'..'4'); each selected count is allowed. Legacy plans (bike/car true) = any parking.
+      const _cnt = (a) => (Array.isArray(a) ? a : []).map(x => String(x).trim()).filter(x => /^[0-4]$/.test(x));
+      const _bikeC = _cnt(_viewerSub.bikeCounts), _carC = _cnt(_viewerSub.carCounts);
+      if (_bikeC.length) filter['property.bike'] = { $in: _bikeC };
+      else if (_viewerSub.bike) filter['property.bike'] = { $exists: true, $nin: ['0', ''] };
+      if (_carC.length) filter['property.car'] = { $in: _carC };
+      else if (_viewerSub.car) filter['property.car'] = { $exists: true, $nin: ['0', ''] };
+      const _bMin = Number(_viewerSub.budgetMin), _bMax = Number(_viewerSub.budgetMax);
+      const _rent = {};
+      if (_viewerSub.budgetMin != null && _viewerSub.budgetMin !== '' && isFinite(_bMin)) _rent.$gte = _bMin;
+      if (_viewerSub.budgetMax != null && _viewerSub.budgetMax !== '' && isFinite(_bMax)) _rent.$lte = _bMax;
+      if (Object.keys(_rent).length) filter['price.rent'] = _rent;
     }
 
     if (q && typeof q === 'string') {

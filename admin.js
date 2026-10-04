@@ -917,6 +917,7 @@ self.addEventListener('notificationclick', event => {
         subscriptionFrom: u.subscriptionFrom || u.subscriptionAt || null,
         subscriptionTo:   u.subscriptionTo || null,
         subscriptionBhk:  u.subscriptionBhk || '',
+        subscriptionFilter: u.subscriptionFilter || null,
         subscriptions:    (u.subscriptions || []).map(subPlanOut),
         listingsCount: propMap[String(u._id)]  || 0,
         visitsCount:   visitMap[String(u._id)] || 0,
@@ -1017,7 +1018,17 @@ self.addEventListener('notificationclick', event => {
   // (running → else next upcoming → else latest ended), so the start / expiry sweeps, GET /api/properties
   // and the site's popups keep working exactly as before, one plan at a time.
   const SUB_ALLOWED_BHK = ['', '1 RK', '1 BHK', '2 BHK', '3 BHK', '4 BHK'];
-  const subPlanOut = (p) => ({ _id: p._id, from: p.from, to: p.to, bhk: p.bhk || '' });
+  const SUB_BHK_LIST = ['1 RK', '1 BHK', '2 BHK', '3 BHK', '4 BHK'];
+  // A plan's BHK list (new `bhks`, falling back to the legacy single `bhk`).
+  const planBhks = (p) => (p.bhks && p.bhks.length) ? p.bhks : (p.bhk ? [p.bhk] : []);
+  // Parking counts for a plan; legacy plans (bike/car = true) mean "any parking" = 1–4.
+  const planCounts = (p, k) => (p[k + 'Counts'] && p[k + 'Counts'].length) ? p[k + 'Counts'] : (p[k] ? ['1', '2', '3', '4'] : []);
+  const planFilter = (p) => ({
+    bhks: planBhks(p), areas: p.areas || [], bikeCounts: planCounts(p, 'bike'), carCounts: planCounts(p, 'car'),
+    budgetMin: p.budgetMin == null ? null : p.budgetMin, budgetMax: p.budgetMax == null ? null : p.budgetMax,
+  });
+  const sameFilter = (x, y) => JSON.stringify(x || {}) === JSON.stringify(y || {});
+  const subPlanOut = (p) => Object.assign({ _id: p._id, from: p.from, to: p.to, bhk: planBhks(p)[0] || '' }, planFilter(p));
   function pickCurrentPlan(plans, now) {
     const list = (plans || []).filter(p => p && p.from && p.to);
     const running = list.find(p => new Date(p.from) <= now && new Date(p.to) > now);
@@ -1029,7 +1040,7 @@ self.addEventListener('notificationclick', event => {
   // Makes the legacy single-plan fields mirror the current plan. Returns the fresh user (lean).
   async function syncCurrentSubscription(id, opts) {
     opts = opts || {};
-    const user = await User.findById(id).select('subscriptions subscriptionFrom subscriptionAt subscriptionTo subscriptionBhk subscriptionExpiryHandled accountType isBlocked publicCall').lean();
+    const user = await User.findById(id).select('subscriptions subscriptionFrom subscriptionAt subscriptionTo subscriptionBhk subscriptionFilter subscriptionExpiryHandled accountType isBlocked publicCall').lean();
     if (!user) return null;
     const now = new Date();
     const plan = pickCurrentPlan(user.subscriptions, now);
@@ -1039,17 +1050,18 @@ self.addEventListener('notificationclick', event => {
     if (!plan) {
       // No plans left → clear the mirror. If a plan was running, switch Public call off (as the expiry sweep would).
       const wasRunning = !!(curFrom && curTo && new Date(curFrom) <= now && new Date(curTo) > now);
-      const upd = { subscriptionAt: null, subscriptionFrom: null, subscriptionTo: null, subscriptionBhk: '', subscriptionExpiryHandled: false, subscriptionStartHandled: false };
+      const upd = { subscriptionAt: null, subscriptionFrom: null, subscriptionTo: null, subscriptionBhk: '', subscriptionFilter: null, subscriptionExpiryHandled: false, subscriptionStartHandled: false };
       if (wasRunning && (user.accountType || 'customer') !== 'owner') upd.publicCall = false;
       return User.findByIdAndUpdate(id, upd, { new: true }).lean();
     }
     const same = curFrom && curTo && +new Date(curFrom) === +new Date(plan.from) && +new Date(curTo) === +new Date(plan.to);
     if (same) {
-      if ((user.subscriptionBhk || '') !== (plan.bhk || '')) return User.findByIdAndUpdate(id, { subscriptionBhk: plan.bhk || '' }, { new: true }).lean();
+      const pf = planFilter(plan);
+      if ((user.subscriptionBhk || '') !== (pf.bhks[0] || '') || !sameFilter(user.subscriptionFilter, pf)) return User.findByIdAndUpdate(id, { subscriptionBhk: pf.bhks[0] || '', subscriptionFilter: pf }, { new: true }).lean();
       return user;
     }
     // Current plan changed (new / edited / next one promoted).
-    const upd = { subscriptionAt: plan.from, subscriptionFrom: plan.from, subscriptionTo: plan.to, subscriptionBhk: plan.bhk || '', subscriptionExpiryHandled: false, subscriptionStartHandled: false };
+    const upd = { subscriptionAt: plan.from, subscriptionFrom: plan.from, subscriptionTo: plan.to, subscriptionBhk: planBhks(plan)[0] || '', subscriptionFilter: planFilter(plan), subscriptionExpiryHandled: false, subscriptionStartHandled: false };
     const running = new Date(plan.from) <= now && new Date(plan.to) > now;
     if (running) {
       if (isTenant) { upd.publicCall = true; upd.subscriptionStartHandled = true; }   // already running → Public call ON now
@@ -1062,10 +1074,22 @@ self.addEventListener('notificationclick', event => {
     message, publicCall: !!user.publicCall, _id: user._id,
     subscriptionAt: user.subscriptionAt || null,
     subscriptionFrom: user.subscriptionFrom || null, subscriptionTo: user.subscriptionTo || null,
-    subscriptionBhk: user.subscriptionBhk || '',
+    subscriptionBhk: user.subscriptionBhk || '', subscriptionFilter: user.subscriptionFilter || null,
     subscriptions: (user.subscriptions || []).map(subPlanOut),
   });
   const fmtPlanDate = (d) => new Date(d).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Kolkata' });
+
+  // ── GET /api/admin/listing-areas — distinct listing areas (suggestions for the subscription "Areas" field) ──
+  app.get('/api/admin/listing-areas', requireAdmin, async (req, res) => {
+    try {
+      const lists = await Promise.all(LISTING_MODEL_LIST.map(M => M.distinct('location.area')));
+      const areas = [...new Set(lists.flat().map(x => String(x || '').trim()).filter(Boolean))].sort((x, y) => x.localeCompare(y));
+      res.json({ areas });
+    } catch (err) {
+      console.error('GET /api/admin/listing-areas error:', err);
+      res.status(500).json({ message: 'Error loading areas' });
+    }
+  });
 
   // ── POST/PATCH /api/users/:id/subscription  (admin: ADD a subscription plan, or edit one) ──
   // Body: { subscriptionFrom, subscriptionTo, subscriptionBhk, subscriptionId? }
@@ -1082,8 +1106,21 @@ self.addEventListener('notificationclick', event => {
       if (fromVal === undefined || toVal === undefined) return res.status(400).json({ message: 'Invalid date/time' });
       if (!fromVal || !toVal) return res.status(400).json({ message: 'Both From and To dates are required' });
       if (toVal <= fromVal) return res.status(400).json({ message: 'To date must be after From date' });
-      const bhkVal = body.subscriptionBhk === undefined ? '' : String(body.subscriptionBhk).trim();
-      if (!SUB_ALLOWED_BHK.includes(bhkVal)) return res.status(400).json({ message: 'Invalid BHK' });
+      // BHK: multi-select array (`subscriptionBhks`); a legacy single `subscriptionBhk` string is still accepted. [] = all BHKs.
+      let bhksVal = Array.isArray(body.subscriptionBhks) ? body.subscriptionBhks
+                  : (body.subscriptionBhk ? [body.subscriptionBhk] : []);
+      bhksVal = [...new Set(bhksVal.map(x => String(x).trim()).filter(Boolean))];
+      if (!bhksVal.length) return res.status(400).json({ message: 'Select at least one BHK' });
+      if (bhksVal.some(b => !SUB_BHK_LIST.includes(b))) return res.status(400).json({ message: 'Invalid BHK' });
+      const areasVal = [...new Set((Array.isArray(body.subscriptionAreas) ? body.subscriptionAreas : []).map(x => String(x).trim().slice(0, 80)).filter(Boolean))].slice(0, 50);
+      const cleanCounts = (v) => [...new Set((Array.isArray(v) ? v : []).map(x => String(x).trim()).filter(Boolean))];
+      const bikeCounts = cleanCounts(body.subscriptionBikeCounts), carCounts = cleanCounts(body.subscriptionCarCounts);
+      if ([...bikeCounts, ...carCounts].some(x => !/^[0-4]$/.test(x))) return res.status(400).json({ message: 'Invalid parking count' });
+      const num = (v) => (v === undefined || v === null || v === '') ? null : Number(v);
+      const budgetMinVal = num(body.subscriptionBudgetMin), budgetMaxVal = num(body.subscriptionBudgetMax);
+      if ((budgetMinVal !== null && (!isFinite(budgetMinVal) || budgetMinVal < 0)) || (budgetMaxVal !== null && (!isFinite(budgetMaxVal) || budgetMaxVal < 0))) return res.status(400).json({ message: 'Invalid budget' });
+      if (budgetMinVal !== null && budgetMaxVal !== null && budgetMaxVal < budgetMinVal) return res.status(400).json({ message: 'Max budget must be at least the min budget' });
+      const planFields = { bhk: bhksVal[0] || '', bhks: bhksVal, areas: areasVal, bike: bikeCounts.length > 0, car: carCounts.length > 0, bikeCounts, carCounts, budgetMin: budgetMinVal, budgetMax: budgetMaxVal };
       const subId = body.subscriptionId ? String(body.subscriptionId) : '';
       if (subId && !mongoose.Types.ObjectId.isValid(subId)) return res.status(400).json({ message: 'Invalid subscription id' });
 
@@ -1098,9 +1135,10 @@ self.addEventListener('notificationclick', event => {
       }
       if (subId) {
         await User.updateOne({ _id: id, 'subscriptions._id': subId },
-          { $set: { 'subscriptions.$.from': fromVal, 'subscriptions.$.to': toVal, 'subscriptions.$.bhk': bhkVal } });
+          { $set: Object.assign({ 'subscriptions.$.from': fromVal, 'subscriptions.$.to': toVal },
+            ...Object.keys(planFields).map(k => ({ ['subscriptions.$.' + k]: planFields[k] }))) });
       } else {
-        await User.updateOne({ _id: id }, { $push: { subscriptions: { from: fromVal, to: toVal, bhk: bhkVal } } });
+        await User.updateOne({ _id: id }, { $push: { subscriptions: Object.assign({ from: fromVal, to: toVal }, planFields) } });
       }
       const user = await syncCurrentSubscription(id);
       res.json(subResponse(user, subId ? 'Subscription updated' : 'Subscription added'));
@@ -1138,7 +1176,7 @@ self.addEventListener('notificationclick', event => {
         if (!from || !u.subscriptionTo) continue;
         await User.updateOne(
           { _id: u._id, $or: [{ subscriptions: { $exists: false } }, { subscriptions: { $size: 0 } }] },
-          { $set: { subscriptions: [{ from, to: u.subscriptionTo, bhk: u.subscriptionBhk || '' }] } }
+          { $set: { subscriptions: [{ from, to: u.subscriptionTo, bhk: u.subscriptionBhk || '', bhks: u.subscriptionBhk ? [u.subscriptionBhk] : [] }] } }
         );
       }
     } catch (err) {
