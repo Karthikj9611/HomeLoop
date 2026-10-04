@@ -4238,20 +4238,20 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
     <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
 	<div class="form-group">
       <label class="form-label">Property name</label>
-      <input class="form-input" type="text" id="f-title" />
+      <input class="form-input" type="text" id="f-title" autocapitalize="words" onblur="capitalizeWordsInput(this)" oninput="capitalizeWordsInput(this)" />
     </div>
 	  <div class="form-group">
         <label class="form-label">Area <span style="color:var(--brand)">*</span></label>
-        <input class="form-input" type="text" id="f-location" />
+        <input class="form-input" type="text" id="f-location" autocapitalize="words" onblur="capitalizeWordsInput(this)" oninput="capitalizeWordsInput(this)" />
       </div>
       <div class="form-group">
         <label class="form-label">City</label>
-        <input class="form-input" type="text" id="f-city" value="Bangalore" />
+        <input class="form-input" type="text" id="f-city" autocapitalize="words" onblur="capitalizeWordsInput(this)" oninput="capitalizeWordsInput(this)" value="Bangalore" />
       </div>
       <div class="form-group" id="fullAddressGroup" style="grid-column:span 2">
         <label class="form-label">Building Live Address</label>
         <div style="display:flex;gap:7px;align-items:flex-start">
-          <textarea class="form-input" id="f-fullAddress" rows="2" style="flex:1;min-width:0;resize:vertical;background:var(--bg-2,#f5f5f5)" oninput="onFullAddressInput(this.value)"></textarea>
+          <textarea class="form-input" id="f-fullAddress" autocapitalize="words" rows="2" style="flex:1;min-width:0;resize:vertical;background:var(--bg-2,#f5f5f5)" oninput="capitalizeWordsInput(this); onFullAddressInput(this.value)" onblur="capitalizeWordsInput(this)"></textarea>
           <button type="button" onclick="fCaptureLocation()"
             style="flex-shrink:0;padding:9px 12px;border-radius:9px;border:1.5px solid var(--text);background:var(--bg);color:var(--text);font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;white-space:nowrap;height:40px;margin-top:1px">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M1 12h4M19 12h4"/></svg>
@@ -4277,7 +4277,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
       </div>
       <div class="form-group">
         <label class="form-label">Owner name <span style="color:var(--brand)">*</span></label>
-        <input class="form-input" type="text" id="f-ownerName"/>
+        <input class="form-input" type="text" id="f-ownerName" autocapitalize="words" onblur="capitalizeWordsInput(this)" oninput="capitalizeWordsInput(this)"/>
         <div class="identity-locked-hint" id="f-ownerName-hint" style="display:none">Auto-filled from your account</div>
       </div>
       <div class="form-group">
@@ -4314,7 +4314,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
           <input type="checkbox" id="f-sameAsBuildingAddress" onchange="toggleSameAsBuildingAddress(this)" style="width:auto;margin:0" />
           <label for="f-sameAsBuildingAddress" style="font-weight:400;cursor:pointer">Same as building live address</label>
         </div>
-        <textarea class="form-input" id="f-ownerAddress" rows="2" style="resize:vertical"></textarea>
+        <textarea class="form-input" id="f-ownerAddress" autocapitalize="words" onblur="capitalizeWordsInput(this)" oninput="capitalizeWordsInput(this)" rows="2" style="resize:vertical"></textarea>
       </div>
       <!-- Agent-only fields — shown when Listed by = Agent.
            Unlike index.html (where these are fixed to the platform's own
@@ -4569,7 +4569,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
         </div>
         <div class="form-group" style="grid-column:span 2">
           <label class="form-label">Society / Project name (optional)</label>
-          <input class="form-input" type="text" id="f-sellProjectName" maxlength="120" placeholder="e.g. Prestige Shantiniketan" />
+          <input class="form-input" type="text" id="f-sellProjectName" autocapitalize="words" onblur="capitalizeWordsInput(this)" oninput="capitalizeWordsInput(this)" maxlength="120" placeholder="e.g. Prestige Shantiniketan" />
         </div>
       </div>
 
@@ -4753,7 +4753,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
     </div>
     <div class="form-group">
       <label class="form-label">Additional amenities (comma-separated)</label>
-      <input class="form-input" type="text" id="f-amenities-extra"/>
+      <input class="form-input" type="text" id="f-amenities-extra" autocapitalize="words" onblur="capitalizeWordsInput(this)" oninput="capitalizeWordsInput(this)"/>
     </div>
     </div>
 
@@ -4781,7 +4781,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
     </div>
     <div class="form-group">
       <label class="form-label">Description (optional)</label>
-      <textarea class="form-input" id="f-desc" rows="3" style="resize:vertical"></textarea>
+      <textarea class="form-input" id="f-desc" autocapitalize="sentences" onblur="capitalizeSentencesInput(this)" oninput="capitalizeSentencesInput(this)" rows="3" style="resize:vertical"></textarea>
     </div>
     </div>
 
@@ -14746,6 +14746,22 @@ function extractPincodeFromAddress(text) {
 // (or a pincode the address text doesn't contain) always sticks.
 let pincodeManuallyEdited = false;
 
+function capitalizeWordsInput(el) {
+  const v = el.value;
+  const out = v.replace(/(^|\s)(\p{Ll})/gu, (m, a, b) => a + b.toUpperCase());
+  if (out === v) return;
+  const s = el.selectionStart, e = el.selectionEnd;
+  el.value = out;
+  try { el.setSelectionRange(s, e); } catch (_) {}
+}
+function capitalizeSentencesInput(el) {
+  const v = el.value;
+  const out = v.replace(/(^|[.!?]\s+|\n\s*)(\p{Ll})/gu, (m, a, b) => a + b.toUpperCase());
+  if (out === v) return;
+  const s = el.selectionStart, e = el.selectionEnd;
+  el.value = out;
+  try { el.setSelectionRange(s, e); } catch (_) {}
+}
 function onFullAddressInput(value) {
   if (pincodeManuallyEdited) return;
   const guess = extractPincodeFromAddress(value);
