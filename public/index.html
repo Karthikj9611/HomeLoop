@@ -7781,7 +7781,7 @@ main.tab-explore .empty-state{display:none !important}
 <!-- ─── Subscription activated modal — shown once per plan period (keyed by subscriptionFrom),
      either on page load or live when the plan start time arrives. OK reloads the page so the
      owner numbers / BHK listings for the new plan load fresh. Only the OK button closes it. ─── -->
-<div class="add-modal-overlay" id="planActivatedModal" role="dialog" aria-modal="true" aria-label="Subscription activated">
+<div class="add-modal-overlay" id="planActivatedModal" style="overscroll-behavior:contain" role="dialog" aria-modal="true" aria-label="Subscription activated">
   <div class="add-modal" id="planActivatedModalBox" style="max-width:400px">
     <div class="add-modal-header">
       <div class="add-modal-title">Subscription activated</div>
@@ -7797,7 +7797,7 @@ main.tab-explore .empty-state{display:none !important}
 
 <!-- ─── Plan expired modal — shown once per expiry when the admin-set subscription
      period (User.subscriptionTo) has ended; Public call is switched off server-side. ─── -->
-<div class="add-modal-overlay" id="planExpiredModal" role="dialog" aria-modal="true" aria-label="Your plan has expired">
+<div class="add-modal-overlay" id="planExpiredModal" style="overscroll-behavior:contain" role="dialog" aria-modal="true" aria-label="Your plan has expired">
   <div class="add-modal" id="planExpiredModalBox" style="max-width:400px">
     <div class="add-modal-header">
       <div class="add-modal-title">Your plan has expired</div>
@@ -13549,8 +13549,7 @@ function showPlanActivated(fromIso, toIso) {
   const el = document.getElementById('planActivatedUntil');
   if (el) el.textContent = toIso ? ' until ' + new Date(toIso).toLocaleString('en-IN', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' }) : '';
   m.dataset.seenKey = key;
-  m.classList.add('open');
-  lockBodyScroll();
+  m.classList.add('open');   // no body scroll-lock: the page behind keeps its exact layout (page reloads on close anyway)
   return true;
 }
 function checkPlanActivated(data) {
@@ -13561,7 +13560,6 @@ function closePlanActivatedModal() {
   const m = document.getElementById('planActivatedModal');
   if (m.dataset.seenKey) { try { localStorage.setItem(m.dataset.seenKey, '1'); } catch (e) {} }
   m.classList.remove('open');
-  unlockBodyScroll();
   location.reload();
 }
 // Plan-expired popup. Shown once per expiry (keyed by the subscriptionTo value, so a
@@ -13576,8 +13574,7 @@ function showPlanExpired(toIso) {
   const el = document.getElementById('planExpiredDate');
   if (el) el.textContent = new Date(toIso).toLocaleString('en-IN', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' });
   m.dataset.seenKey = key;
-  m.classList.add('open');
-  lockBodyScroll();
+  m.classList.add('open');   // no body scroll-lock: the page behind keeps its exact layout (page reloads on close anyway)
   return true;
 }
 function checkPlanExpired(data) {
@@ -13589,7 +13586,6 @@ function closePlanExpiredModal() {
   const m = document.getElementById('planExpiredModal');
   if (m.dataset.seenKey) { try { localStorage.setItem(m.dataset.seenKey, '1'); } catch (e) {} }
   m.classList.remove('open');
-  unlockBodyScroll();
   location.reload();
 }
 // Call at the top of any "open the submit form" function, right after the
