@@ -7778,6 +7778,23 @@ main.tab-explore .empty-state{display:none !important}
   </div>
 </div>
 
+<!-- ─── Subscription activated modal — shown once per plan period (keyed by subscriptionFrom),
+     either on page load or live when the plan start time arrives. OK reloads the page so the
+     owner numbers / BHK listings for the new plan load fresh. Only the OK button closes it. ─── -->
+<div class="add-modal-overlay" id="planActivatedModal" role="dialog" aria-modal="true" aria-label="Subscription activated">
+  <div class="add-modal" id="planActivatedModalBox" style="max-width:400px">
+    <div class="add-modal-header">
+      <div class="add-modal-title">Subscription activated</div>
+      <button class="modal-close" onclick="closePlanActivatedModal()" aria-label="Close">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <p style="font-size:13.5px;color:var(--text-2);line-height:1.6;margin-bottom:8px">Your subscription is now active<span id="planActivatedUntil"></span>. Direct owner calling is switched on for your account.</p>
+    <p style="font-size:13.5px;color:var(--text-2);line-height:1.6;margin-bottom:18px">Tap OK to refresh and start using your plan.</p>
+    <button class="confirm-ok-btn" id="planActivatedOkBtn" onclick="closePlanActivatedModal()" style="width:100%;padding:11px 16px;border:none;border-radius:10px;font-weight:600;cursor:pointer">OK</button>
+  </div>
+</div>
+
 <!-- ─── Plan expired modal — shown once per expiry when the admin-set subscription
      period (User.subscriptionTo) has ended; Public call is switched off server-side. ─── -->
 <div class="add-modal-overlay" id="planExpiredModal" role="dialog" aria-modal="true" aria-label="Your plan has expired">
@@ -7790,6 +7807,7 @@ main.tab-explore .empty-state{display:none !important}
     </div>
     <p style="font-size:13.5px;color:var(--text-2);line-height:1.6;margin-bottom:8px">Your subscription ended on <strong id="planExpiredDate"></strong>. Direct owner calling is now switched off for your account.</p>
     <p style="font-size:13.5px;color:var(--text-2);line-height:1.6;margin-bottom:18px">Contact us to renew your plan and get it back.</p>
+    <button class="confirm-ok-btn" id="planExpiredOkBtn" onclick="closePlanExpiredModal()" style="width:100%;padding:11px 16px;border:none;border-radius:10px;font-weight:600;cursor:pointer;margin-bottom:12px">OK</button>
     <div class="help-quick-strip">
       <a class="help-quick-btn" href="tel:9035205230">
         <svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.8 19.8 0 0 1 1.61 3.4 2 2 0 0 1 3.59 1.22h3a2 2 0 0 1 2 1.72 12.8 12.8 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 8.78a16 16 0 0 0 6.29 6.29l1.14-1.14a2 2 0 0 1 2.11-.45 12.8 12.8 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
@@ -8758,7 +8776,10 @@ function syncViewedWithSubscription(subFromIso, subToIso, liveCheck) {
         if (due.charAt(0) === 'E') {
           try { const dm = document.getElementById('addModal'); if (dm && dm.classList.contains('open') && propertyViewMode) closeDetail(); } catch (e) {}
         }
-        try { fetchProperties(true); } catch (e) {}
+        // Plan just started / ended while the page is open → tell him; OK reloads the page with fresh data.
+        // (If the popup was already seen for this period, just reload the listings quietly as before.)
+        const shown = due.charAt(0) === 'S' ? showPlanActivated(subFromIso, subToIso) : showPlanExpired(subToIso);
+        if (!shown) { try { fetchProperties(true); } catch (e) {} }
       }
     }
 
@@ -13512,26 +13533,64 @@ async function refreshVerificationStatus() {
     fresh.accountType = data.accountType || fresh.accountType;
     localStorage.setItem('homeloop_user', JSON.stringify(fresh));
     checkPlanExpired(data);
+    checkPlanActivated(data);
   } catch (err) { /* best-effort */ }
+}
+// Subscription-activated popup. Shown once per plan period (keyed by subscriptionFrom, so a
+// newly-set period shows it again). Called on page load (from /api/user/me) and live from
+// syncViewedWithSubscription() when the start time arrives while the page is open.
+// Closing it (OK only) marks it seen and reloads the page.
+function showPlanActivated(fromIso, toIso) {
+  if (!fromIso) return false;
+  const key = 'hl_planActivatedSeen_' + fromIso;
+  try { if (localStorage.getItem(key)) return false; } catch (e) {}
+  const m = document.getElementById('planActivatedModal');
+  if (!m || m.classList.contains('open')) return false;
+  const el = document.getElementById('planActivatedUntil');
+  if (el) el.textContent = toIso ? ' until ' + new Date(toIso).toLocaleString('en-IN', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' }) : '';
+  m.dataset.seenKey = key;
+  m.classList.add('open');
+  lockBodyScroll();
+  return true;
+}
+function checkPlanActivated(data) {
+  if (!data || !data.subscriptionActive || !data.subscriptionFrom) return;
+  showPlanActivated(data.subscriptionFrom, data.subscriptionTo);
+}
+function closePlanActivatedModal() {
+  const m = document.getElementById('planActivatedModal');
+  if (m.dataset.seenKey) { try { localStorage.setItem(m.dataset.seenKey, '1'); } catch (e) {} }
+  m.classList.remove('open');
+  unlockBodyScroll();
+  location.reload();
 }
 // Plan-expired popup. Shown once per expiry (keyed by the subscriptionTo value, so a
 // renewed-then-expired-again plan shows it again). Public call itself is switched off
 // server-side by the expiry sweep; this is only the notice.
+function showPlanExpired(toIso) {
+  if (!toIso) return false;
+  const key = 'hl_planExpiredSeen_' + toIso;
+  try { if (localStorage.getItem(key)) return false; } catch (e) {}
+  const m = document.getElementById('planExpiredModal');
+  if (!m || m.classList.contains('open')) return false;
+  const el = document.getElementById('planExpiredDate');
+  if (el) el.textContent = new Date(toIso).toLocaleString('en-IN', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' });
+  m.dataset.seenKey = key;
+  m.classList.add('open');
+  lockBodyScroll();
+  return true;
+}
 function checkPlanExpired(data) {
   if (!data || !data.subscriptionExpired || !data.subscriptionTo) return;
-  const key = 'hl_planExpiredSeen_' + data.subscriptionTo;
-  try { if (localStorage.getItem(key)) return; } catch (e) {}
-  const el = document.getElementById('planExpiredDate');
-  if (el) el.textContent = new Date(data.subscriptionTo).toLocaleString('en-IN', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' });
-  document.getElementById('planExpiredModal').dataset.seenKey = key;
-  document.getElementById('planExpiredModal').classList.add('open');
-  lockBodyScroll();
+  showPlanExpired(data.subscriptionTo);
 }
+// Closing (OK, X or backdrop) marks it seen and reloads the page so the listings reload without owner numbers.
 function closePlanExpiredModal() {
   const m = document.getElementById('planExpiredModal');
   if (m.dataset.seenKey) { try { localStorage.setItem(m.dataset.seenKey, '1'); } catch (e) {} }
   m.classList.remove('open');
   unlockBodyScroll();
+  location.reload();
 }
 // Call at the top of any "open the submit form" function, right after the
 // existing getLoggedInUser() login check. Shows the pending-verification
@@ -17993,6 +18052,9 @@ document.addEventListener('keydown', e => {
     if (e.key === 'ArrowRight') { lightboxStep(1); return; }
   }
   if (e.key === 'Escape') {
+    // Subscription popups: any way of closing them (OK, X, outside click, Escape) refreshes the page.
+    if (document.getElementById('planActivatedModal').classList.contains('open')) { closePlanActivatedModal(); return; }
+    if (document.getElementById('planExpiredModal').classList.contains('open')) { closePlanExpiredModal(); return; }
     closeDetail();
     closeSort();
     closeAddModal();
@@ -18072,6 +18134,9 @@ document.getElementById('pendingVerificationModal').addEventListener('click', fu
 });
 document.getElementById('planExpiredModal').addEventListener('click', function(e) {
   if (e.target === this) closePlanExpiredModal();
+});
+document.getElementById('planActivatedModal').addEventListener('click', function(e) {
+  if (e.target === this) closePlanActivatedModal();
 });
 document.getElementById('aboutModal').addEventListener('click', function(e) {
   if (e.target === this) closeAboutModal();

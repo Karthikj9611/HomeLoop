@@ -157,6 +157,14 @@ const UserSchema = new mongoose.Schema({
   // While the tenant's Public call is ON and this is set, GET /api/properties returns ONLY
   // listings whose property.bhk equals this value (see the viewer lookup in that route).
   subscriptionBhk: { type: String, trim: true, default: '' },
+  // ALL subscription plans saved for this user (an admin can add more than one — e.g. a renewal
+  // queued behind the running plan). The subscriptionFrom / subscriptionTo / subscriptionBhk /
+  // *Handled fields above always mirror the CURRENT plan (running, else next upcoming, else the
+  // latest ended) — admin.js keeps them in sync, so every other part of the app works unchanged.
+  subscriptions: {
+    type: [{ from: { type: Date, required: true }, to: { type: Date, required: true }, bhk: { type: String, trim: true, default: '' } }],
+    default: [],
+  },
   // Admin "Block" (Customers grid): blocked accounts are logged out everywhere and refused at login.
   isBlocked: { type: Boolean, default: false, index: true },
   blockedAt: { type: Date, default: null },
@@ -619,8 +627,14 @@ app.get('/api/user/me', requireUser, async (req, res) => {
       profilePhoto: user.profilePhoto || '',
       accountType: user.accountType || 'customer',
       isVerified: !!user.isVerified,
+      subscriptionFrom: user.subscriptionFrom || user.subscriptionAt || null,
       subscriptionTo: user.subscriptionTo || null,
       subscriptionExpired: !!(user.subscriptionTo && new Date(user.subscriptionTo) <= new Date()),
+      // true while the plan is running: From has arrived and To hasn't (customers only)
+      subscriptionActive: !!((user.accountType || 'customer') === 'customer'
+        && (user.subscriptionFrom || user.subscriptionAt) && user.subscriptionTo
+        && new Date(user.subscriptionFrom || user.subscriptionAt) <= new Date()
+        && new Date(user.subscriptionTo) > new Date()),
       createdAt: user.createdAt,
     });
   } catch (err) {

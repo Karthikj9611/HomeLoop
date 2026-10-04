@@ -3099,43 +3099,92 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
   background:transparent;color:var(--gold);font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center}
 .sub-dt-btn:hover{background:var(--gold-light)}
 .sub-dt-native{position:absolute;left:0;bottom:0;width:100%;height:1px;opacity:0;pointer-events:none;border:0;padding:0}
+/* Subscription popup (clear, step-by-step layout) */
+#subscriptionModalBox{max-width:460px;padding:0;display:flex;flex-direction:column;overflow:hidden}
+.sub-head{padding:20px 24px 14px;border-bottom:1px solid var(--border);padding-right:64px}
+.sub-head-title{font-size:18px;font-weight:700;color:var(--ink)}
+.sub-head-sub{font-size:13px;color:var(--text-2);margin-top:3px}
+.sub-body{padding:18px 24px 6px;overflow-y:auto;flex:1}
+.sub-section-title{font-size:14px;font-weight:700;color:var(--ink);margin-bottom:4px}
+.sub-section-hint{font-size:12.5px;color:var(--text-2);margin-bottom:12px;line-height:1.5}
+.sub-empty{font-size:13px;color:var(--text-2);background:#fff;border:1px dashed var(--border);border-radius:12px;padding:14px;margin-bottom:18px;line-height:1.5}
+.sub-plan-list{display:flex;flex-direction:column;gap:10px;margin-bottom:20px}
+.sub-plan-card{background:#fff;border:1px solid var(--border);border-left:4px solid #9ca3af;border-radius:12px;padding:12px 14px}
+.sub-plan-card.active{border-left-color:#1e9e57}
+.sub-plan-card.upcoming{border-left-color:#4f46e5}
+.sub-plan-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+.sub-plan-chip{font-size:12px;font-weight:700;padding:3px 10px;border-radius:99px;white-space:nowrap}
+.sub-plan-chip.active{background:#d1fae5;color:#047857}
+.sub-plan-chip.upcoming{background:#eef2ff;color:#4338ca}
+.sub-plan-chip.ended{background:#f3f4f6;color:#6b7280}
+.sub-plan-actions{display:flex;gap:6px}
+.sub-plan-btn{display:flex;align-items:center;gap:5px;height:30px;padding:0 10px;border:none;border-radius:8px;background:#f3f4f6;color:#374151;cursor:pointer;font-size:12px;font-weight:600}
+.sub-plan-btn:hover{background:#e5e7eb}
+.sub-plan-btn.del{color:#b91c1c}
+.sub-plan-btn.del:hover{background:#fee2e2}
+.sub-plan-dates{display:grid;grid-template-columns:auto 1fr;gap:3px 12px;font-size:13.5px;align-items:baseline}
+.sub-plan-dates span{color:var(--text-2);font-size:12px}
+.sub-plan-dates b{font-weight:600;color:var(--ink)}
+.sub-plan-meta{margin-top:8px;font-size:12px;color:var(--text-2)}
+.sub-form-card{background:#fff;border:1px solid var(--border);border-radius:14px;padding:16px 16px 4px;margin-bottom:12px}
+.sub-form-card.editing{border-color:#4f46e5;box-shadow:0 0 0 3px rgba(79,70,229,.08)}
+.sub-field-hint{font-size:11.5px;color:var(--text-2);margin:-2px 0 0;line-height:1.4}
+.sub-edit-cancel{background:none;border:none;color:#4338ca;font-size:12.5px;font-weight:600;cursor:pointer;padding:0;margin-left:8px}
+.sub-foot{display:flex;gap:10px;padding:14px 24px 18px;border-top:1px solid var(--border);background:var(--bg)}
+.sub-foot button{padding:12px 14px;border-radius:var(--radius-xs);border:none;font-family:'Inter',sans-serif;font-size:14px;font-weight:700;cursor:pointer;white-space:nowrap}
 </style>
-<!-- ══ SUBSCRIPTION MODAL — capture/update a customer's subscription date & time ══ -->
-<div class="add-modal-overlay" id="subscriptionModal" role="dialog" aria-modal="true" aria-label="Set subscription date and time">
-  <div class="add-modal" id="subscriptionModalBox" style="max-width:380px">
-    <div class="compare-modal-header">
-      <span class="compare-modal-title">Subscription</span>
-      <button class="modal-close" onclick="closeSubscriptionModal()" aria-label="Close">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-      </button>
+<!-- ══ SUBSCRIPTION MODAL — view / add / edit / remove a customer's subscription plans ══ -->
+<div class="add-modal-overlay" id="subscriptionModal" role="dialog" aria-modal="true" aria-label="Customer subscriptions">
+  <div class="add-modal" id="subscriptionModalBox">
+    <button class="modal-close" onclick="closeSubscriptionModal()" aria-label="Close">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <div class="sub-head">
+      <div class="sub-head-title">Subscription</div>
+      <div class="sub-head-sub" id="subscriptionCustomerName">Manage this customer's plans</div>
     </div>
-    <div class="form-group">
-      <label class="form-label" for="subscriptionFromInput">Subscription from</label>
-      <div class="sub-dt-wrap">
-        <input class="form-input" type="text" id="subscriptionFromInput" placeholder="dd-mm-yyyy hh:mm AM" autocomplete="off" inputmode="numeric" />
-        <button type="button" class="sub-dt-btn" onclick="subPickDate('From')" aria-label="Pick date and time" title="Pick date & time"><i class="far fa-calendar-alt"></i></button>
-        <input type="datetime-local" class="sub-dt-native" id="subscriptionFromNative" tabindex="-1" aria-hidden="true" />
+
+    <div class="sub-body">
+      <!-- Saved plans -->
+      <div class="sub-section-title">Saved plans</div>
+      <div class="sub-empty" id="subscriptionEmpty">No subscription yet. Add the first one below.</div>
+      <div class="sub-plan-list" id="subscriptionPlanList"></div>
+
+      <!-- Add / edit form -->
+      <div class="sub-section-title" id="subscriptionFormHeading">Add a new plan</div>
+      <div class="sub-section-hint" id="subscriptionFormHint">A new plan can't overlap a plan this customer already has.</div>
+      <div class="sub-form-card" id="subscriptionFormCard">
+        <div class="form-group">
+          <label class="form-label" for="subscriptionFromInput">Starts on</label>
+          <div class="sub-dt-wrap">
+            <input class="form-input" type="text" id="subscriptionFromInput" placeholder="dd-mm-yyyy hh:mm AM" autocomplete="off" inputmode="numeric" />
+            <button type="button" class="sub-dt-btn" onclick="subPickDate('From')" aria-label="Pick date and time" title="Pick date & time"><i class="far fa-calendar-alt"></i></button>
+            <input type="datetime-local" class="sub-dt-native" id="subscriptionFromNative" tabindex="-1" aria-hidden="true" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="subscriptionToInput">Ends on</label>
+          <div class="sub-dt-wrap">
+            <input class="form-input" type="text" id="subscriptionToInput" placeholder="dd-mm-yyyy hh:mm AM" autocomplete="off" inputmode="numeric" />
+            <button type="button" class="sub-dt-btn" onclick="subPickDate('To')" aria-label="Pick date and time" title="Pick date & time"><i class="far fa-calendar-alt"></i></button>
+            <input type="datetime-local" class="sub-dt-native" id="subscriptionToNative" tabindex="-1" aria-hidden="true" />
+          </div>
+          <div class="sub-field-hint" style="margin-top:6px">Fills in automatically as 48 hours after the start. You can change it.</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="subscriptionBhkInput">Which homes can they see?</label>
+          <select class="form-select" id="subscriptionBhkInput">
+            <option value="">All BHKs (no restriction)</option>
+            <option>1 RK</option><option>1 BHK</option><option>2 BHK</option><option>3 BHK</option><option>4 BHK</option>
+          </select>
+        </div>
       </div>
     </div>
-    <div class="form-group">
-      <label class="form-label" for="subscriptionToInput">Subscription to</label>
-      <div class="sub-dt-wrap">
-        <input class="form-input" type="text" id="subscriptionToInput" placeholder="dd-mm-yyyy hh:mm AM" autocomplete="off" inputmode="numeric" />
-        <button type="button" class="sub-dt-btn" onclick="subPickDate('To')" aria-label="Pick date and time" title="Pick date & time"><i class="far fa-calendar-alt"></i></button>
-        <input type="datetime-local" class="sub-dt-native" id="subscriptionToNative" tabindex="-1" aria-hidden="true" />
-      </div>
-    </div>
-    <div class="form-group">
-      <label class="form-label" for="subscriptionBhkInput">Subscribed BHK</label>
-      <select class="form-select" id="subscriptionBhkInput">
-        <option value="">All BHKs (no restriction)</option>
-        <option>1 RK</option><option>1 BHK</option><option>2 BHK</option><option>3 BHK</option><option>4 BHK</option>
-      </select>
-    </div>
-    <div class="share-links-footer">
-      <button class="confirm-cancel-btn" onclick="closeSubscriptionModal()" style="flex:1">Cancel</button>
-      <button class="confirm-ok-btn success" onclick="saveSubscription()" style="flex:1">
-        <i class="fas fa-check"></i> Save
+
+    <div class="sub-foot">
+      <button class="confirm-cancel-btn" onclick="closeSubscriptionModal()" style="flex:1">Close</button>
+      <button class="confirm-ok-btn success" onclick="saveSubscription()" style="flex:1.6">
+        <i class="fas fa-check"></i> <span id="subscriptionSaveLabel">Add plan</span>
       </button>
     </div>
   </div>
@@ -6886,17 +6935,100 @@ window.openSubscriptionModal = function(key){
   const c = _customerCache[key];
   if(!c){ alert('Customer details not loaded yet — please retry.'); return; }
   _subscriptionTargetId = c._id;
-  const f = c.subscriptionFrom || c.subscriptionAt;
-  subSet('From', f ? new Date(f) : null);
-  subSet('To',   c.subscriptionTo ? new Date(c.subscriptionTo) : null);
-  document.getElementById('subscriptionBhkInput').value = c.subscriptionBhk || '';
+  _subscriptionCacheKey = key;
+  subResetForm();                       // always a blank form: saving ADDS another plan
+  subRenderPlans();
   document.getElementById('subscriptionModal').classList.add('open');
   lockBodyScroll();
+};
+/* A customer can have several subscriptions. The popup lists the saved ones (edit / remove) and the
+   form below ADDS a new one — overlapping / duplicate periods are refused by the server. */
+let _subscriptionCacheKey = null;
+let _subscriptionEditId = null;
+function subPlans(){ const c = _customerCache[_subscriptionCacheKey]; return (c && c.subscriptions) || []; }
+// "04 Oct 2026, 1:55 pm"
+function subNice(v){
+  const d = new Date(v);
+  return d.toLocaleString('en-IN', { day:'2-digit', month:'short', year:'numeric', hour:'numeric', minute:'2-digit', hour12:true });
+}
+// "3 min", "5 hours", "2 days"
+function subDuration(f, t){
+  const m = Math.round((new Date(t) - new Date(f)) / 60000);
+  if(m < 60) return m + ' min';
+  if(m < 60*48) { const h = Math.round(m/60*10)/10; return h + (h === 1 ? ' hour' : ' hours'); }
+  const d = Math.round(m/1440*10)/10; return d + ' days';
+}
+function subSetFormMode(){
+  const n = subPlans().length;
+  const editing = !!_subscriptionEditId;
+  document.getElementById('subscriptionFormCard').classList.toggle('editing', editing);
+  document.getElementById('subscriptionFormHeading').innerHTML = editing
+    ? 'Editing this plan <button type="button" class="sub-edit-cancel" onclick="subResetForm()">Cancel editing</button>'
+    : (n ? 'Add another plan' : 'Add a new plan');
+  document.getElementById('subscriptionFormHint').textContent = editing
+    ? 'Change the dates or BHK below, then press Save changes.'
+    : 'A new plan can\'t overlap a plan this customer already has.';
+  document.getElementById('subscriptionSaveLabel').textContent = editing ? 'Save changes' : 'Add plan';
+}
+function subResetForm(){
+  _subscriptionEditId = null;
+  subSet('From', null); subSet('To', null);
+  document.getElementById('subscriptionBhkInput').value = '';
+  subSetFormMode();
+}
+function subRenderPlans(){
+  const c = _customerCache[_subscriptionCacheKey] || {};
+  document.getElementById('subscriptionCustomerName').textContent = 'Plans for ' + (c.name || ((c.firstName||'') + ' ' + (c.lastName||'')).trim() || c.mobile || 'this customer');
+  const plans = subPlans().slice().sort((a,b) => new Date(a.from) - new Date(b.from));
+  const list = document.getElementById('subscriptionPlanList');
+  document.getElementById('subscriptionEmpty').style.display = plans.length ? 'none' : '';
+  list.style.display = plans.length ? '' : 'none';
+  const now = Date.now();
+  list.innerHTML = plans.map(p => {
+    const f = new Date(p.from).getTime(), t = new Date(p.to).getTime();
+    const st = (f <= now && t > now) ? ['active','Active now'] : (f > now ? ['upcoming','Starts later'] : ['ended','Ended']);
+    return `<div class="sub-plan-card ${st[0]}">
+      <div class="sub-plan-top">
+        <span class="sub-plan-chip ${st[0]}">${st[1]}</span>
+        <div class="sub-plan-actions">
+          <button type="button" class="sub-plan-btn" onclick="subEditPlan('${p._id}')"><i class="fas fa-pen"></i> Edit</button>
+          <button type="button" class="sub-plan-btn del" onclick="subDeletePlan('${p._id}')"><i class="fas fa-trash"></i> Remove</button>
+        </div>
+      </div>
+      <div class="sub-plan-dates"><span>From</span><b>${subNice(p.from)}</b><span>To</span><b>${subNice(p.to)}</b></div>
+      <div class="sub-plan-meta">${p.bhk ? p.bhk + ' homes only' : 'All BHKs'} &middot; ${subDuration(p.from, p.to)}</div>
+    </div>`;
+  }).join('');
+}
+window.subEditPlan = function(subId){
+  const p = subPlans().find(x => String(x._id) === String(subId));
+  if(!p) return;
+  _subscriptionEditId = String(p._id);
+  subSet('From', new Date(p.from)); subSet('To', new Date(p.to));
+  document.getElementById('subscriptionBhkInput').value = p.bhk || '';
+  subSetFormMode();
+  const card = document.getElementById('subscriptionFormCard');
+  if(card && card.scrollIntoView) card.scrollIntoView({ behavior:'smooth', block:'nearest' });
+};
+window.subDeletePlan = async function(subId){
+  if(blockIfViewOnly('customers')) return;
+  if(!_subscriptionTargetId) return;
+  const ok = await showConfirmModal({ title:'Remove this subscription?', message:'This subscription will be deleted for the customer.', okText:'Remove', variant:'danger' });
+  if(!ok) return;
+  const res = await fetch(`${BASE}/api/users/${_subscriptionTargetId}/subscription/${subId}`, { method:'DELETE', headers: authHeaders() });
+  const data = await res.json().catch(()=>({}));
+  if(!res.ok){ showAlertModal(data.message || 'Error removing subscription', { variant:'error', title:'Could not remove' }); return; }
+  const c = _customerCache[_subscriptionCacheKey];
+  if(c){ c.subscriptions = data.subscriptions || []; c.subscriptionFrom = data.subscriptionFrom; c.subscriptionTo = data.subscriptionTo; c.subscriptionAt = data.subscriptionAt; c.subscriptionBhk = data.subscriptionBhk; }
+  if(_subscriptionEditId === String(subId)) subResetForm(); else subSetFormMode();
+  subRenderPlans();
+  dataTable.ajax.reload(null,false);
 };
 window.closeSubscriptionModal = function(){
   document.getElementById('subscriptionModal').classList.remove('open');
   unlockBodyScroll();
   _subscriptionTargetId = null;
+  _subscriptionEditId = null;
 };
 window.saveSubscription = async function(){
   if(blockIfViewOnly('customers')) return;
@@ -6906,23 +7038,23 @@ window.saveSubscription = async function(){
   if(!rawFrom || !rawTo){ showAlertModal('Enter both From and To as dd-mm-yyyy hh:mm AM/PM (or use the calendar icon).', { variant:'error', title:'Dates needed' }); return; }
   if(rawTo < rawFrom){ showAlertModal('"To" must be after "From".', { variant:'error', title:'Invalid range' }); return; }
   const okSub = await showConfirmModal({
-    title: 'Save subscription period?',
-    message: 'This customer\'s subscription From – To dates will be updated.',
-    okText: 'Save',
+    title: _subscriptionEditId ? 'Update subscription?' : 'Add subscription?',
+    message: _subscriptionEditId ? 'This subscription\'s From – To dates will be updated.' : 'This will be added as another subscription for this customer.',
+    okText: _subscriptionEditId ? 'Update' : 'Add',
     variant: 'info'
   });
   if(!okSub) return;
   const res = await fetch(`${BASE}/api/users/${_subscriptionTargetId}/subscription`, {
     method:'PATCH',
     headers:{ ...authHeaders(), 'Content-Type':'application/json' },
-    body: JSON.stringify({ subscriptionFrom: rawFrom.toISOString(), subscriptionTo: rawTo.toISOString(), subscriptionBhk: document.getElementById('subscriptionBhkInput').value })
+    body: JSON.stringify({ subscriptionId: _subscriptionEditId || undefined, subscriptionFrom: rawFrom.toISOString(), subscriptionTo: rawTo.toISOString(), subscriptionBhk: document.getElementById('subscriptionBhkInput').value })
   });
   const data = await res.json().catch(()=>({}));
   if(res.ok){
     closeSubscriptionModal();
     dataTable.ajax.reload(null,false);
   } else {
-    alert(data.message || 'Error updating subscription');
+    showAlertModal(data.message || 'Error updating subscription', { variant:'error', title: res.status === 409 ? 'Subscription overlaps' : 'Could not save' });
   }
 };
 
@@ -10163,7 +10295,7 @@ $(document).ready(function(){
 				  <i class="fas fa-pen"></i><span class="btn-label"> Edit</span>
 				</button></span>
 
-				<span class="pact pact-subscription"><button class="btn-view btn-action-sub${(row.subscriptionFrom || row.subscriptionAt) ? ' is-set' : ''}" onclick="openSubscriptionModal('${row.mobile || row._id}')" title="${(row.subscriptionFrom || row.subscriptionAt) ? 'Subscribed: ' + plainDateTime(row.subscriptionFrom || row.subscriptionAt) + (row.subscriptionTo ? ' → ' + plainDateTime(row.subscriptionTo) : '') : 'Set subscription From – To'}">
+				<span class="pact pact-subscription"><button class="btn-view btn-action-sub${(row.subscriptionFrom || row.subscriptionAt) ? ' is-set' : ''}" onclick="openSubscriptionModal('${row.mobile || row._id}')" title="${(row.subscriptionFrom || row.subscriptionAt) ? 'Subscribed: ' + plainDateTime(row.subscriptionFrom || row.subscriptionAt) + (row.subscriptionTo ? ' → ' + plainDateTime(row.subscriptionTo) : '') + ((row.subscriptions || []).length > 1 ? '  (' + row.subscriptions.length + ' subscriptions — click to view / add)' : '  (click to add another)') : 'Set subscription From – To'}">
 				  <i class="fas fa-calendar-check"></i><span class="btn-label"> Subscription</span>
 				</button></span>
 

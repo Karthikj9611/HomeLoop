@@ -917,6 +917,7 @@ self.addEventListener('notificationclick', event => {
         subscriptionFrom: u.subscriptionFrom || u.subscriptionAt || null,
         subscriptionTo:   u.subscriptionTo || null,
         subscriptionBhk:  u.subscriptionBhk || '',
+        subscriptions:    (u.subscriptions || []).map(subPlanOut),
         listingsCount: propMap[String(u._id)]  || 0,
         visitsCount:   visitMap[String(u._id)] || 0,
         viewsCount:    viewsMap[String(u._id)] || 0,   // total views on this customer's listings
@@ -1009,58 +1010,152 @@ self.addEventListener('notificationclick', event => {
     }
   });
 
-  // ── PATCH /api/users/:id/subscription (admin: set/update a customer's subscription date & time) ──
-  // Body: { subscriptionAt: <ISO datetime string> } — pass null/omit to clear it.
-  // Purely a manual record captured from the Customers grid's "Subscription"
-  // button (see openSubscriptionModal() in admin.html) — nothing else in the
-  // app reads or enforces this automatically yet.
+  // ── SUBSCRIPTIONS (admin: add / edit / remove a customer's subscription plans) ──
+  // A customer can have MORE THAN ONE plan (e.g. a renewal added while the first is still running).
+  // Plans may not overlap or duplicate each other. User.subscriptions holds them all; the legacy
+  // subscriptionFrom / subscriptionTo / subscriptionBhk / *Handled fields mirror the CURRENT plan
+  // (running → else next upcoming → else latest ended), so the start / expiry sweeps, GET /api/properties
+  // and the site's popups keep working exactly as before, one plan at a time.
+  const SUB_ALLOWED_BHK = ['', '1 RK', '1 BHK', '2 BHK', '3 BHK', '4 BHK'];
+  const subPlanOut = (p) => ({ _id: p._id, from: p.from, to: p.to, bhk: p.bhk || '' });
+  function pickCurrentPlan(plans, now) {
+    const list = (plans || []).filter(p => p && p.from && p.to);
+    const running = list.find(p => new Date(p.from) <= now && new Date(p.to) > now);
+    if (running) return running;
+    const upcoming = list.filter(p => new Date(p.from) > now).sort((a, b) => new Date(a.from) - new Date(b.from))[0];
+    if (upcoming) return upcoming;
+    return list.sort((a, b) => new Date(b.to) - new Date(a.to))[0] || null;
+  }
+  // Makes the legacy single-plan fields mirror the current plan. Returns the fresh user (lean).
+  async function syncCurrentSubscription(id, opts) {
+    opts = opts || {};
+    const user = await User.findById(id).select('subscriptions subscriptionFrom subscriptionAt subscriptionTo subscriptionBhk subscriptionExpiryHandled accountType isBlocked publicCall').lean();
+    if (!user) return null;
+    const now = new Date();
+    const plan = pickCurrentPlan(user.subscriptions, now);
+    const curFrom = user.subscriptionFrom || user.subscriptionAt || null;
+    const curTo = user.subscriptionTo || null;
+    const isTenant = (user.accountType || 'customer') !== 'owner' && !user.isBlocked;
+    if (!plan) {
+      // No plans left → clear the mirror. If a plan was running, switch Public call off (as the expiry sweep would).
+      const wasRunning = !!(curFrom && curTo && new Date(curFrom) <= now && new Date(curTo) > now);
+      const upd = { subscriptionAt: null, subscriptionFrom: null, subscriptionTo: null, subscriptionBhk: '', subscriptionExpiryHandled: false, subscriptionStartHandled: false };
+      if (wasRunning && (user.accountType || 'customer') !== 'owner') upd.publicCall = false;
+      return User.findByIdAndUpdate(id, upd, { new: true }).lean();
+    }
+    const same = curFrom && curTo && +new Date(curFrom) === +new Date(plan.from) && +new Date(curTo) === +new Date(plan.to);
+    if (same) {
+      if ((user.subscriptionBhk || '') !== (plan.bhk || '')) return User.findByIdAndUpdate(id, { subscriptionBhk: plan.bhk || '' }, { new: true }).lean();
+      return user;
+    }
+    // Current plan changed (new / edited / next one promoted).
+    const upd = { subscriptionAt: plan.from, subscriptionFrom: plan.from, subscriptionTo: plan.to, subscriptionBhk: plan.bhk || '', subscriptionExpiryHandled: false, subscriptionStartHandled: false };
+    const running = new Date(plan.from) <= now && new Date(plan.to) > now;
+    if (running) {
+      if (isTenant) { upd.publicCall = true; upd.subscriptionStartHandled = true; }   // already running → Public call ON now
+    } else if (curTo && new Date(curTo) <= now && !user.subscriptionExpiryHandled && (user.accountType || 'customer') !== 'owner') {
+      upd.publicCall = false;   // previous plan ended before the expiry sweep ran, next one hasn't started
+    }
+    return User.findByIdAndUpdate(id, upd, { new: true }).lean();
+  }
+  const subResponse = (user, message) => ({
+    message, publicCall: !!user.publicCall, _id: user._id,
+    subscriptionAt: user.subscriptionAt || null,
+    subscriptionFrom: user.subscriptionFrom || null, subscriptionTo: user.subscriptionTo || null,
+    subscriptionBhk: user.subscriptionBhk || '',
+    subscriptions: (user.subscriptions || []).map(subPlanOut),
+  });
+  const fmtPlanDate = (d) => new Date(d).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Kolkata' });
+
+  // ── POST/PATCH /api/users/:id/subscription  (admin: ADD a subscription plan, or edit one) ──
+  // Body: { subscriptionFrom, subscriptionTo, subscriptionBhk, subscriptionId? }
+  // Without subscriptionId a NEW plan is added to the customer; with it, that plan is updated.
+  // A plan that overlaps / duplicates another of the same customer is refused (409).
   app.patch('/api/users/:id/subscription', requireAdmin, requireModuleAction('customers'), requireButton('customers', 'subscription'), async (req, res) => {
     try {
       const { id } = req.params;
       if (!mongoose.Types.ObjectId.isValid(id)) return res.status(400).json({ message: 'Invalid user id' });
-      // Accepts { subscriptionFrom, subscriptionTo } (legacy { subscriptionAt } = from).
       const body = req.body || {};
-      const parse = (v) => {
-        if (!v) return null;
-        const d = new Date(v);
-        return isNaN(d.getTime()) ? undefined : d;
-      };
+      const parse = (v) => { if (!v) return null; const d = new Date(v); return isNaN(d.getTime()) ? undefined : d; };
       const fromVal = parse(body.subscriptionFrom !== undefined ? body.subscriptionFrom : body.subscriptionAt);
       const toVal   = parse(body.subscriptionTo);
       if (fromVal === undefined || toVal === undefined) return res.status(400).json({ message: 'Invalid date/time' });
-      if (toVal && !fromVal) return res.status(400).json({ message: 'From date is required' });
-      if (fromVal && toVal && toVal < fromVal) return res.status(400).json({ message: 'To date must be after From date' });
-      // Optional BHK restriction ('' = all BHKs). Must be one of the post-form dropdown values.
-      const ALLOWED_BHK = ['', '1 RK', '1 BHK', '2 BHK', '3 BHK', '4 BHK'];
+      if (!fromVal || !toVal) return res.status(400).json({ message: 'Both From and To dates are required' });
+      if (toVal <= fromVal) return res.status(400).json({ message: 'To date must be after From date' });
       const bhkVal = body.subscriptionBhk === undefined ? '' : String(body.subscriptionBhk).trim();
-      if (!ALLOWED_BHK.includes(bhkVal)) return res.status(400).json({ message: 'Invalid BHK' });
-      const user = await User.findByIdAndUpdate(
-        id,
-        { subscriptionAt: fromVal, subscriptionFrom: fromVal, subscriptionTo: toVal, subscriptionBhk: fromVal ? bhkVal : '', subscriptionExpiryHandled: false, subscriptionStartHandled: false },
-        { new: true }
-      ).lean();
-      if (!user) return res.status(404).json({ message: 'Customer not found' });
-      // Saved period is already running (From is now/past, To still ahead) → switch this tenant's Public call ON now,
-      // instead of waiting for the next 1-minute sweep. Tenants only (owners' Public call means something else).
-      if (fromVal && toVal && fromVal <= new Date() && toVal > new Date()) {
-        await User.updateOne(
-          { _id: id, accountType: { $ne: 'owner' }, isBlocked: { $ne: true } },
-          { publicCall: true, subscriptionStartHandled: true }
-        );
-        user.publicCall = true;
+      if (!SUB_ALLOWED_BHK.includes(bhkVal)) return res.status(400).json({ message: 'Invalid BHK' });
+      const subId = body.subscriptionId ? String(body.subscriptionId) : '';
+      if (subId && !mongoose.Types.ObjectId.isValid(subId)) return res.status(400).json({ message: 'Invalid subscription id' });
+
+      const existing = await User.findById(id).select('subscriptions').lean();
+      if (!existing) return res.status(404).json({ message: 'Customer not found' });
+      const plans = existing.subscriptions || [];
+      if (subId && !plans.some(p => String(p._id) === subId)) return res.status(404).json({ message: 'Subscription not found' });
+      // Duplicate / overlap check against every OTHER plan of this customer.
+      const clash = plans.find(p => String(p._id) !== subId && fromVal < new Date(p.to) && toVal > new Date(p.from));
+      if (clash) {
+        return res.status(409).json({ message: `This overlaps an existing subscription (${fmtPlanDate(clash.from)} → ${fmtPlanDate(clash.to)}). Pick dates that don't overlap.` });
       }
-      res.json({
-        message: fromVal ? 'Subscription updated' : 'Subscription cleared',
-        publicCall: !!user.publicCall,
-        _id: user._id, subscriptionAt: user.subscriptionAt || null,
-        subscriptionFrom: user.subscriptionFrom || null, subscriptionTo: user.subscriptionTo || null,
-        subscriptionBhk: user.subscriptionBhk || '',
-      });
+      if (subId) {
+        await User.updateOne({ _id: id, 'subscriptions._id': subId },
+          { $set: { 'subscriptions.$.from': fromVal, 'subscriptions.$.to': toVal, 'subscriptions.$.bhk': bhkVal } });
+      } else {
+        await User.updateOne({ _id: id }, { $push: { subscriptions: { from: fromVal, to: toVal, bhk: bhkVal } } });
+      }
+      const user = await syncCurrentSubscription(id);
+      res.json(subResponse(user, subId ? 'Subscription updated' : 'Subscription added'));
     } catch (err) {
       console.error('PATCH /api/users/:id/subscription error:', err);
       res.status(500).json({ message: 'Error updating subscription' });
     }
   });
+
+  // ── DELETE /api/users/:id/subscription/:subId  (admin: remove one subscription plan) ──
+  app.delete('/api/users/:id/subscription/:subId', requireAdmin, requireModuleAction('customers'), requireButton('customers', 'subscription'), async (req, res) => {
+    try {
+      const { id, subId } = req.params;
+      if (!mongoose.Types.ObjectId.isValid(id) || !mongoose.Types.ObjectId.isValid(subId)) return res.status(400).json({ message: 'Invalid id' });
+      const r = await User.updateOne({ _id: id }, { $pull: { subscriptions: { _id: subId } } });
+      if (!r.matchedCount && !r.n) return res.status(404).json({ message: 'Customer not found' });
+      const user = await syncCurrentSubscription(id);
+      res.json(subResponse(user, 'Subscription removed'));
+    } catch (err) {
+      console.error('DELETE /api/users/:id/subscription/:subId error:', err);
+      res.status(500).json({ message: 'Error removing subscription' });
+    }
+  });
+
+  // Plans saved before multi-subscription existed live only in the legacy fields → copy them into
+  // User.subscriptions once (idempotent: only users whose list is still empty).
+  async function migrateLegacySubscriptions() {
+    try {
+      const users = await User.find({
+        subscriptionTo: { $ne: null },
+        $or: [{ subscriptions: { $exists: false } }, { subscriptions: { $size: 0 } }],
+      }).select('_id subscriptionFrom subscriptionAt subscriptionTo subscriptionBhk').lean();
+      for (const u of users) {
+        const from = u.subscriptionFrom || u.subscriptionAt;
+        if (!from || !u.subscriptionTo) continue;
+        await User.updateOne(
+          { _id: u._id, $or: [{ subscriptions: { $exists: false } }, { subscriptions: { $size: 0 } }] },
+          { $set: { subscriptions: [{ from, to: u.subscriptionTo, bhk: u.subscriptionBhk || '' }] } }
+        );
+      }
+    } catch (err) {
+      console.error('migrateLegacySubscriptions error:', err.message);
+    }
+  }
+  // When the current plan has ended and the customer has another plan that is running / upcoming,
+  // move on to it (runs right after the expiry sweep, every minute).
+  async function promoteNextSubscriptions() {
+    try {
+      const now = new Date();
+      const due = await User.find({ subscriptionTo: { $lte: now }, subscriptions: { $elemMatch: { to: { $gt: now } } } }).select('_id').lean();
+      for (const { _id } of due) await syncCurrentSubscription(_id);
+    } catch (err) {
+      console.error('promoteNextSubscriptions error:', err.message);
+    }
+  }
 
   // ── SUBSCRIPTION EXPIRY SWEEP ──
   // When a customer's subscriptionTo has passed: turn their Public call OFF. They stay logged in
@@ -1084,8 +1179,9 @@ self.addEventListener('notificationclick', event => {
     } catch (err) {
       console.error('expireSubscriptions error:', err.message);
     }
+    await promoteNextSubscriptions();
   }
-  expireSubscriptions();
+  migrateLegacySubscriptions().then(expireSubscriptions);
   setInterval(expireSubscriptions, 60 * 1000).unref();
 
   // ── SUBSCRIPTION START SWEEP ──
