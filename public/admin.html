@@ -3338,11 +3338,23 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
       <button class="cat-tab-btn" data-type="customer" onclick="switchCustType('customer')">
         <i class="fas fa-user"></i><span class="cat-tab-btn-label" data-mobile="Tenants">Tenants</span><span class="cat-count" id="cust-type-count-customer">—</span>
       </button>
-      <button class="cat-tab-btn" data-type="leads" onclick="switchCustType('leads')">
-        <i class="fas fa-bullseye"></i><span class="cat-tab-btn-label" data-mobile="Lost Leads">Lost Leads</span><span class="cat-count" id="cust-type-count-leads">—</span>
+    </div>
+    <!-- Status sub-sub tabs (below the account-type tabs): Active / Lost Leads / Rented / Subscription / All -->
+    <div class="cat-tab-bar" id="custStatusTabs">
+      <button class="cat-tab-btn" data-status="all" onclick="switchCustStatus('all')">
+        <i class="fas fa-layer-group"></i><span class="cat-tab-btn-label" data-mobile="All">All</span><span class="cat-count" id="cust-status-count-all">—</span>
       </button>
-      <button class="cat-tab-btn" data-type="rented" onclick="switchCustType('rented')">
-        <i class="fas fa-handshake"></i><span class="cat-tab-btn-label" data-mobile="Rented Through Us">Rented Through Us</span><span class="cat-count" id="cust-type-count-rented">—</span>
+      <button class="cat-tab-btn" data-status="active" onclick="switchCustStatus('active')">
+        <i class="fas fa-user-check"></i><span class="cat-tab-btn-label" data-mobile="Active">Active</span><span class="cat-count" id="cust-status-count-active">—</span>
+      </button>
+      <button class="cat-tab-btn" data-status="subscription" onclick="switchCustStatus('subscription')">
+        <i class="fas fa-crown"></i><span class="cat-tab-btn-label" data-mobile="Subscription">Subscription</span><span class="cat-count" id="cust-status-count-subscription">—</span>
+      </button>
+      <button class="cat-tab-btn" data-status="rented" onclick="switchCustStatus('rented')">
+        <i class="fas fa-handshake"></i><span class="cat-tab-btn-label" data-mobile="Rented">Rented Through Us</span><span class="cat-count" id="cust-status-count-rented">—</span>
+      </button>
+      <button class="cat-tab-btn" data-status="leads" onclick="switchCustStatus('leads')">
+        <i class="fas fa-bullseye"></i><span class="cat-tab-btn-label" data-mobile="Lost Leads">Lost Leads</span><span class="cat-count" id="cust-status-count-leads">—</span>
       </button>
     </div>
     <div class="card">
@@ -4960,7 +4972,7 @@ async function doLogin(){
 function alignThreeRowsAsColumns(){
   // every tab row in the admin: main bar + the sub-tab bar of each panel
   var bars = [document.querySelector('.tab-bar'), document.getElementById('propCatTabs'),
-              document.getElementById('custTypeTabs'), document.getElementById('visitsCatTabs')].filter(Boolean);
+              document.getElementById('custTypeTabs'), document.getElementById('custStatusTabs'), document.getElementById('visitsCatTabs')].filter(Boolean);
   if(!bars.length) return;
   // clear any old inline sizing from earlier versions of this function
   bars.forEach(function(bar){
@@ -6558,8 +6570,15 @@ const CUST_FILTER_STORAGE_KEY = 'rip_admin_custFilters';
 loadFilterState(CUST_FILTER_STORAGE_KEY, _custColumnFilters);
 _custColumnFilters.accountType = ''; // type is now chosen via the Tenants / Owners sub-tabs
 
-let _custTypeTab = 'customer';
-try{ const t = localStorage.getItem('kr_admin_custType'); if(t === 'customer' || t === 'owner' || t === 'leads' || t === 'rented' || t === 'all') _custTypeTab = t; }catch(e){}
+let _custTypeTab = 'customer';   // account type: all | owner | customer (Tenants)
+let _custStatusTab = 'active';   // status: active | leads | rented | subscription | all
+try{
+  const t = localStorage.getItem('kr_admin_custType');
+  const st = localStorage.getItem('kr_admin_custStatus');
+  if(t === 'customer' || t === 'owner' || t === 'all') _custTypeTab = t;
+  else if(t === 'leads' || t === 'rented' || t === 'subscription'){ _custTypeTab = 'all'; _custStatusTab = t; } // migrate old saved tab
+  if(st === 'active' || st === 'leads' || st === 'rented' || st === 'subscription' || st === 'all') _custStatusTab = st;
+}catch(e){}
 
 // Records whose saved Reason is one of these are shown ONLY in the Leads tab
 // (they are removed from Tenants / Owners). Edit this list to change the rule.
@@ -6570,32 +6589,57 @@ function isLeadRow(r){ return LEAD_REASONS.indexOf((r && r.reason) || '') >= 0; 
 const RENTED_REASONS = ['Shifted through us'];
 function isRentedRow(r){ return RENTED_REASONS.indexOf((r && r.reason) || '') >= 0; }
 
-window.switchCustType = function(type){
-  _custTypeTab = type;
-  try{ localStorage.setItem('kr_admin_custType', type); }catch(e){}
-  document.querySelectorAll('#custTypeTabs .cat-tab-btn').forEach(btn=>{
-    btn.classList.toggle('active', btn.getAttribute('data-type') === type);
-  });
-  if(dataTable) dataTable.draw();
-};
+// Records with any subscription detail saved (from / to / legacy subscriptionAt)
+// are shown ONLY in the "Subscription" tab (removed from Tenants / Owners / Leads / Rented).
+function isSubscriptionRow(r){ return !!(r && (r.subscriptionFrom || r.subscriptionAt || r.subscriptionTo)); }
 
-function updateCustTypeCounts(data){
-  const c = {customer:0, owner:0, leads:0, rented:0, all:data.length};
-  data.forEach(r=>{
-    if(isLeadRow(r)) c.leads++;
-    else if(isRentedRow(r)) c.rented++;
-    else c[(r.accountType === 'owner') ? 'owner' : 'customer']++;
-  });
-  Object.keys(c).forEach(k=>{
-    const el = document.getElementById('cust-type-count-'+k);
-    if(el) el.innerText = c[k];
-  });
+function custRowStatus(r){
+  if(isSubscriptionRow(r)) return 'subscription';
+  if(isLeadRow(r)) return 'leads';
+  if(isRentedRow(r)) return 'rented';
+  return 'active';
+}
+function custRowType(r){ return (r && r.accountType === 'owner') ? 'owner' : 'customer'; }
+function syncCustTabActive(){
   document.querySelectorAll('#custTypeTabs .cat-tab-btn').forEach(btn=>{
     btn.classList.toggle('active', btn.getAttribute('data-type') === _custTypeTab);
   });
+  document.querySelectorAll('#custStatusTabs .cat-tab-btn').forEach(btn=>{
+    btn.classList.toggle('active', btn.getAttribute('data-status') === _custStatusTab);
+  });
+}
+window.switchCustType = function(type){
+  _custTypeTab = type;
+  try{ localStorage.setItem('kr_admin_custType', type); }catch(e){}
+  updateCustTypeCounts();
+  if(dataTable) dataTable.draw();
+};
+window.switchCustStatus = function(status){
+  _custStatusTab = status;
+  try{ localStorage.setItem('kr_admin_custStatus', status); }catch(e){}
+  syncCustTabActive();
+  if(dataTable) dataTable.draw();
+};
+
+let _custCountsData = [];
+function updateCustTypeCounts(data){
+  if(data) _custCountsData = data; else data = _custCountsData;
+  // Level 1: every record of that account type, whatever its status.
+  const t = {customer:0, owner:0, all:data.length};
+  // Level 2: records of the currently selected account type, by status.
+  const st = {active:0, leads:0, rented:0, subscription:0, all:0};
+  data.forEach(r=>{
+    const ty = custRowType(r);
+    t[ty]++;
+    if(_custTypeTab === 'all' || _custTypeTab === ty){ st[custRowStatus(r)]++; st.all++; }
+  });
+  Object.keys(t).forEach(k=>{ const el = document.getElementById('cust-type-count-'+k); if(el) el.innerText = t[k]; });
+  // Status counts follow the selected account type; a status with no records for it shows no badge.
+  Object.keys(st).forEach(k=>{ const el = document.getElementById('cust-status-count-'+k); if(el){ el.innerText = st[k]; el.style.display = st[k] ? '' : 'none'; } });
+  syncCustTabActive();
 }
 
-document.querySelectorAll('#custTypeTabs .cat-tab-btn').forEach(function(btn){ btn.classList.toggle('active', btn.getAttribute('data-type') === _custTypeTab); });
+syncCustTabActive();
 
 window.clearCustFilters = function(){
   clearFiltersGeneric('bookingTable_wrapper', _custColumnFilters, dataTable, CUST_FILTER_STORAGE_KEY, 'custFilterBadge', 'custFilterCount', 'custClearFiltersBtn');
@@ -6627,16 +6671,8 @@ $.fn.dataTable.ext.search.push(function(settings, data, dataIndex){
   const row = dataTable ? dataTable.row(dataIndex).data() : null;
   if(!row) return true;
   const cf = _custColumnFilters;
-  if(_custTypeTab === 'leads'){
-    if(!isLeadRow(row)) return false;
-  } else if(_custTypeTab === 'rented'){
-    if(!isRentedRow(row)) return false;
-  } else if(_custTypeTab === 'all'){
-    /* All Customers: every record (tenants, owners, lost leads, rented) */
-  } else {
-    if(isLeadRow(row) || isRentedRow(row)) return false;
-    if((row.accountType||'customer') !== _custTypeTab) return false;
-  }
+  if(_custTypeTab !== 'all' && custRowType(row) !== _custTypeTab) return false;
+  if(_custStatusTab !== 'all' && custRowStatus(row) !== _custStatusTab) return false;
   const contains = (val, needle) => String(val||'').toLowerCase().includes(needle.toLowerCase());
   const fullName = row.name || ((row.firstName||'')+' '+(row.lastName||'')).trim();
   if(cf.name && !contains(fullName, cf.name)) return false;
