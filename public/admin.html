@@ -194,6 +194,25 @@ body{
 /* count pills: orange on white so they pop against the cream buttons */
 .tab-btn:not(.active) .tab-count,.cat-tab-btn:not(.active) .cat-count{background:#fff;color:var(--gold-dark)}
 
+/* One-word labels on the floating stack (uses each button's data-mobile word) */
+#bulkToolbar .bulk-btn{width:auto!important;min-width:0!important;height:38px!important;flex-direction:row!important;gap:6px!important;padding:0 14px!important;white-space:nowrap}
+#bulkToolbar .bulk-btn-label{font-size:0!important;line-height:0!important}
+#bulkToolbar .bulk-btn-label::after{content:attr(data-mobile);font-size:.82rem;line-height:1.2;display:inline;font-weight:700}
+#bulkCompareBtn .bulk-btn-label::after,#bulkShareTenantBtn .bulk-btn-label::after,#bulkShareLinksBtn .bulk-btn-label::after,#bulkCheckAvailabilityBtn .bulk-btn-label::after{content:attr(data-mobile) " - "!important}
+/* Property actions: floating vertical stack, bottom-right */
+#bulkToolbar{position:fixed!important;right:16px;bottom:16px;z-index:900;width:auto!important;max-width:none!important;flex-direction:column!important;align-items:flex-end!important;gap:8px!important;padding:0!important;margin:0!important;background:transparent!important;border:none!important;box-shadow:none!important;overflow:visible!important}
+#bulkToolbar .bulk-toolbar-left,#bulkToolbar .bulk-toolbar-right{flex-direction:column!important;align-items:flex-end!important;gap:8px!important;flex-wrap:nowrap!important}
+#bulkToolbar #addPropertyDivider{display:none!important}
+#bulkToolbar .bulk-btn{box-shadow:0 4px 14px rgba(0,0,0,.22)}
+#recalcDistanceBtn{background:var(--surface,#fff)}
+/* Uniform column: every button same width, left-aligned, one under the other */
+#bulkToolbar{width:150px!important;align-items:stretch!important}
+#bulkToolbar .bulk-toolbar-left,#bulkToolbar .bulk-toolbar-right{width:100%;align-items:stretch!important}
+#bulkToolbar .bulk-btn{width:100%!important;justify-content:flex-start!important}
+/* "n selected" pill removed everywhere */
+#custSelectedCount,#bulkSelectedCount,#apptSelectedCount,#reviewSelectedCount,#urSelectedCount,#partnerSelectedCount{display:none!important}
+/* Bulk Delete (n) buttons removed everywhere */
+#custDeleteSelectedBtn,#bulkDeleteSelectedBtn,#apptDeleteSelectedBtn,#reviewDeleteSelectedBtn,#urDeleteSelectedBtn,#partnerDeleteSelectedBtn{display:none!important}
 /* ── BULK DELETE TOOLBAR ──
    Boxed pill container matching .tab-bar exactly (row 1), left-aligned
    instead of a full-width bar, so row 3 lines up with rows 1 & 2. */
@@ -359,14 +378,14 @@ table.dataTable thead tr.col-filter-row th{
   box-shadow:var(--shadow-md);border:1px solid var(--border);overflow:hidden;
 }
 .card-header{
-  padding:20px 24px 0;display:flex;align-items:center;
+  padding:12px 16px 0;display:flex;align-items:center;
   justify-content:space-between;flex-wrap:wrap;gap:12px;
 }
 .card-title{font-size:1rem;font-weight:700;color:var(--ink)}
 .card-sub{font-size:0.76rem;color:var(--ink3);margin-top:2px}
 .card-header-left,.card-header-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 #propGridHeader .dt-buttons{margin-bottom:0}
-#propGridHeader{padding-bottom:16px}
+#propGridHeader{padding-bottom:8px}
 /* PDF, filters-active badge, and Clear filters all take on the same pill
    shape as the Columns toggle button — bordered, rounded-full — just with
    each control's own color to show its state (neutral, active-blue, muted). */
@@ -391,7 +410,7 @@ table.dataTable thead tr.col-filter-row th{
 #propGridHeader #propClearFiltersBtn:hover{background:var(--surface2);border-color:var(--border2)}
 .table-wrapper{
   width:100%;max-width:100%;
-  padding:16px 20px 20px;overflow-x:auto;-webkit-overflow-scrolling:touch;
+  padding:8px 12px 12px;overflow-x:auto;-webkit-overflow-scrolling:touch;
 }
 .dataTables_wrapper{width:100%;max-width:100%;box-sizing:border-box}
 
@@ -7153,6 +7172,11 @@ window.shiftVisitsMonth = function(delta){
   loadVisitsMonth(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`);
 };
 
+/* Delete is never offered when a select-all has picked every record */
+function _selAllBlocksDelete(syncFn, cls, n){
+  try{ syncFn(); }catch(e){}
+  return n > 1 && !!document.querySelector('.'+cls+':checked');
+}
 /* ── HONEST REVIEWS: SELECTION & BULK DELETE ── */
 const _selectedReviewIds = new Set();
 let _hrCache = {};
@@ -7211,6 +7235,7 @@ function updateUserReviewBulkToolbarUI(){
   document.getElementById('urSelectedNum').textContent = n;
   const delBtn = document.getElementById('urDeleteSelectedBtn');
   if(delBtn) delBtn.style.display = (n && canAct('userReviews')) ? 'inline-flex' : 'none';
+  if(delBtn && n > 1 && typeof userReviewsTable !== 'undefined' && userReviewsTable && n === userReviewsTable.rows({search:'applied'}).data().toArray().filter(r => _selectedUrIds.has(r._id)).length && n === userReviewsTable.rows({search:'applied'}).count()){ delBtn.style.display = 'none'; document.getElementById('urSelectedCount').style.display = 'none'; }
   const cnt = document.getElementById('urDeleteCount');
   if(cnt) cnt.textContent = n;
 }
@@ -7224,6 +7249,8 @@ window.clearUserReviewSelection = function(){
 };
 
 window.deleteSelectedUserReviews = async function(){
+  alert('Bulk delete is disabled.'); return;
+  if(_selectedUrIds.size > 1 && typeof userReviewsTable !== 'undefined' && userReviewsTable && userReviewsTable.rows({search:'applied'}).data().toArray().every(r => _selectedUrIds.has(r._id))){ alert('Deleting all records at once is disabled.'); return; }
   if(blockIfViewOnly('userReviews')) return;
   const ids = Array.from(_selectedUrIds);
   if(!ids.length) return;
@@ -7320,6 +7347,7 @@ function updateReviewBulkToolbarUI(){
   const show = n > 0;
   countEl.style.display = show ? 'inline-flex' : 'none';
   if (delBtn) delBtn.style.display = show ? 'inline-flex' : 'none';
+  if (show && _selAllBlocksDelete(syncReviewSelectAllCheckbox, 'review-select-all-checkbox', n)){ if (delBtn) delBtn.style.display = 'none'; if (countEl) countEl.style.display = 'none'; }
   numEl.textContent = n;
   if (delCountEl) delCountEl.textContent = n;
 }
@@ -7333,6 +7361,8 @@ window.clearReviewSelection = function(){
 };
 
 window.deleteSelectedReviews = async function(){
+  alert('Bulk delete is disabled.'); return;
+  if(_selAllBlocksDelete(syncReviewSelectAllCheckbox, 'review-select-all-checkbox', _selectedReviewIds.size)){ alert('Deleting all records at once is disabled.'); return; }
   if(blockIfViewOnly('reviews')) return;
   const ids = Array.from(_selectedReviewIds);
   if(!ids.length) return;
@@ -7590,6 +7620,7 @@ function updatePartnerBulkToolbarUI(){
   const show = n > 0;
   countEl.style.display = show ? 'inline-flex' : 'none';
   if (delBtn) delBtn.style.display = show ? 'inline-flex' : 'none';
+  if (show && _selAllBlocksDelete(syncPartnerSelectAllCheckbox, 'partner-select-all-checkbox', n)){ if (delBtn) delBtn.style.display = 'none'; if (countEl) countEl.style.display = 'none'; }
   numEl.textContent = n;
   if (delCountEl) delCountEl.textContent = n;
 }
@@ -7603,6 +7634,8 @@ window.clearPartnerSelection = function(){
 };
 
 window.deleteSelectedPartners = async function(){
+  alert('Bulk delete is disabled.'); return;
+  if(_selAllBlocksDelete(syncPartnerSelectAllCheckbox, 'partner-select-all-checkbox', _selectedPartnerIds.size)){ alert('Deleting all records at once is disabled.'); return; }
   if(blockIfViewOnly('partners')) return;
   const ids = Array.from(_selectedPartnerIds);
   if(!ids.length) return;
@@ -9240,6 +9273,7 @@ function updateBulkToolbarUI(){
   const show = n > 0;
   countEl.style.display = show ? 'inline-flex' : 'none';
   if (delBtn) delBtn.style.display = show ? 'inline-flex' : 'none';
+  if (show && _selAllBlocksDelete(syncPropSelectAllCheckbox, 'prop-select-all-checkbox', n)){ if (delBtn) delBtn.style.display = 'none'; if (countEl) countEl.style.display = 'none'; }
   numEl.textContent = n;
   if (delCountEl) delCountEl.textContent = n;
 
@@ -9295,6 +9329,8 @@ window.clearPropSelection = function(){
 };
 
 window.deleteSelectedProperties = async function(){
+  alert('Bulk delete is disabled.'); return;
+  if(_selAllBlocksDelete(syncPropSelectAllCheckbox, 'prop-select-all-checkbox', _selectedPropIds.size)){ alert('Deleting all records at once is disabled.'); return; }
   if(blockIfViewOnly('properties')) return;
   const ids = Array.from(_selectedPropIds);
   if(!ids.length) return;
@@ -9418,6 +9454,7 @@ function updateCustBulkToolbarUI(){
   const show = n > 0;
   countEl.style.display = show ? 'inline-flex' : 'none';
   if (delBtn) delBtn.style.display = show ? 'inline-flex' : 'none';
+  if (show && _selAllBlocksDelete(syncCustSelectAllCheckbox, 'cust-select-all-checkbox', n)){ if (delBtn) delBtn.style.display = 'none'; if (countEl) countEl.style.display = 'none'; }
   numEl.textContent = n;
   if (delCountEl) delCountEl.textContent = n;
 }
@@ -9434,6 +9471,8 @@ window.clearCustSelection = function(){
 // sends the existing per-customer DELETE request for each selected row
 // (in parallel) and reports how many succeeded/failed.
 window.deleteSelectedCustomers = async function(){
+  alert('Bulk delete is disabled.'); return;
+  if(_selAllBlocksDelete(syncCustSelectAllCheckbox, 'cust-select-all-checkbox', _selectedCustIds.size)){ alert('Deleting all records at once is disabled.'); return; }
   if(blockIfViewOnly('customers')) return;
   const ids = Array.from(_selectedCustIds);
   if(!ids.length) return;
@@ -9525,6 +9564,7 @@ function updateApptBulkToolbarUI(){
   const show = n > 0;
   countEl.style.display = show ? 'inline-flex' : 'none';
   if (delBtn) delBtn.style.display = show ? 'inline-flex' : 'none';
+  if (show && _selAllBlocksDelete(syncApptSelectAllCheckbox, 'appt-select-all-checkbox', n)){ if (delBtn) delBtn.style.display = 'none'; if (countEl) countEl.style.display = 'none'; }
   numEl.textContent = n;
   if (delCountEl) delCountEl.textContent = n;
 }
@@ -9541,6 +9581,8 @@ window.clearApptSelection = function(){
 // sends the existing per-appointment DELETE request for each selected row
 // (in parallel) and reports how many succeeded/failed.
 window.deleteSelectedAppointments = async function(){
+  alert('Bulk delete is disabled.'); return;
+  if(_selAllBlocksDelete(syncApptSelectAllCheckbox, 'appt-select-all-checkbox', _selectedApptIds.size)){ alert('Deleting all records at once is disabled.'); return; }
   if(blockIfViewOnly('appointments')) return;
   const ids = Array.from(_selectedApptIds);
   if(!ids.length) return;
