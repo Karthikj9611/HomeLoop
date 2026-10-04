@@ -10817,8 +10817,10 @@ function fdCollectMerged(fields, predicate) {
 function fdCollectPropertyIds() {
   const seen = new Set();
   const rows = [];
-  PROPERTIES.forEach(p => {
+  // Booked listings are fetched separately (BOOKED_PROPERTIES), so pool both.
+  PROPERTIES.concat(BOOKED_PROPERTIES).forEach(p => {
     if (!matchesTab(p, currentTab)) return;
+    if (!p.verified) return; // verified properties only (booked ones are verified too)
     if (!p.propertyId || seen.has(p.propertyId)) return;
     seen.add(p.propertyId);
     rows.push(p);
@@ -12185,7 +12187,6 @@ function buildDetailTable(p) {
 
   section('📋 Basic Information', 'sec-listing-info', [
     kv('Status', status),
-    kv('Listed by', basic.listedBy),
   ]);
 
   section('📍 Location', 'sec-listing-info', [
