@@ -177,6 +177,13 @@ body{
 
 #visitsCatTabs{width:100%}
 
+/* Reviews / Partners / Referrals grids use the same layout as Properties:
+   toolbar pill above the card, Columns + Clear filters in the card header,
+   per-column filter row under the headings (no Show-entries / Search bar). */
+.gcf-card-header{padding-bottom:8px}
+.bulk-toolbar.gcf-auto-hide{display:none}
+.bulk-toolbar.gcf-auto-hide.gcf-show{display:flex}
+
 /* Booked sub-tabs (Booked by us / Booked) - shown only while the Booked category tab is active */
 #propBookedSubTabs{display:none;width:fit-content;max-width:100%;margin-top:-10px;margin-bottom:18px}
 #propBookedSubTabs.show{display:flex}
@@ -210,6 +217,32 @@ body{
 #bulkToolbar #addPropertyDivider{display:none!important}
 #bulkToolbar .bulk-btn{box-shadow:0 4px 14px rgba(0,0,0,.22)}
 #recalcDistanceBtn{background:var(--surface,#fff)}
+
+/* Honest Reviews + Partners: same floating bottom-right action stack as Properties */
+#reviewBulkToolbar .bulk-btn{width:auto!important;min-width:0!important;height:38px!important;flex-direction:row!important;gap:6px!important;padding:0 14px!important;white-space:nowrap}
+#partnerBulkToolbar .bulk-btn{width:auto!important;min-width:0!important;height:38px!important;flex-direction:row!important;gap:6px!important;padding:0 14px!important;white-space:nowrap}
+#reviewBulkToolbar .bulk-btn-label{font-size:0!important;line-height:0!important}
+#partnerBulkToolbar .bulk-btn-label{font-size:0!important;line-height:0!important}
+#reviewBulkToolbar .bulk-btn-label::after{content:attr(data-mobile);font-size:.82rem;line-height:1.2;display:inline;font-weight:700}
+#partnerBulkToolbar .bulk-btn-label::after{content:attr(data-mobile);font-size:.82rem;line-height:1.2;display:inline;font-weight:700}
+#reviewBulkToolbar{position:fixed!important;right:16px;bottom:16px;z-index:900;width:150px!important;max-width:none!important;flex-direction:column!important;align-items:stretch!important;gap:8px!important;padding:0!important;margin:0!important;background:transparent!important;border:none!important;box-shadow:none!important;overflow:visible!important}
+#partnerBulkToolbar{position:fixed!important;right:16px;bottom:16px;z-index:900;width:150px!important;max-width:none!important;flex-direction:column!important;align-items:stretch!important;gap:8px!important;padding:0!important;margin:0!important;background:transparent!important;border:none!important;box-shadow:none!important;overflow:visible!important}
+#reviewBulkToolbar .bulk-toolbar-left{display:flex;flex-direction:column!important;align-items:stretch!important;gap:8px!important;flex-wrap:nowrap!important;width:100%}
+#partnerBulkToolbar .bulk-toolbar-left{display:flex;flex-direction:column!important;align-items:stretch!important;gap:8px!important;flex-wrap:nowrap!important;width:100%}
+#reviewBulkToolbar .bulk-btn{box-shadow:0 4px 14px rgba(0,0,0,.22);width:100%!important;justify-content:flex-start!important}
+#partnerBulkToolbar .bulk-btn{box-shadow:0 4px 14px rgba(0,0,0,.22);width:100%!important;justify-content:flex-start!important}
+@media(max-width:768px){
+  #reviewBulkToolbar{width:auto!important;align-items:flex-end!important;right:14px;bottom:14px;gap:10px!important}
+  #partnerBulkToolbar{width:auto!important;align-items:flex-end!important;right:14px;bottom:14px;gap:10px!important}
+  #reviewBulkToolbar .bulk-toolbar-left{width:auto!important;align-items:flex-end!important;gap:10px!important}
+  #partnerBulkToolbar .bulk-toolbar-left{width:auto!important;align-items:flex-end!important;gap:10px!important}
+  #reviewBulkToolbar .bulk-btn{position:relative;width:46px!important;min-width:46px!important;height:46px!important;padding:0!important;gap:0!important;justify-content:center!important;align-items:center!important;border-radius:50%!important;flex-direction:row!important}
+  #partnerBulkToolbar .bulk-btn{position:relative;width:46px!important;min-width:46px!important;height:46px!important;padding:0!important;gap:0!important;justify-content:center!important;align-items:center!important;border-radius:50%!important;flex-direction:row!important}
+  #reviewBulkToolbar .bulk-btn i{font-size:1.05rem!important;margin:0!important}
+  #partnerBulkToolbar .bulk-btn i{font-size:1.05rem!important;margin:0!important}
+  #reviewBulkToolbar .bulk-btn .bulk-btn-label{display:none!important}
+  #partnerBulkToolbar .bulk-btn .bulk-btn-label{display:none!important}
+}
 /* Uniform column: every button same width, left-aligned, one under the other */
 #bulkToolbar{width:150px!important;align-items:stretch!important}
 #bulkToolbar .bulk-toolbar-left,#bulkToolbar .bulk-toolbar-right{width:100%;align-items:stretch!important}
@@ -4257,10 +4290,11 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
 
   <!-- ══ HONEST REVIEWS PANEL ══ -->
   <div class="tab-panel" id="panel-honest-reviews">
-    <div class="card">
-      <div class="table-wrapper">
-        <div class="bulk-toolbar" id="reviewBulkToolbar">
+    <div class="bulk-toolbar" id="reviewBulkToolbar">
           <div class="bulk-toolbar-left">
+            <button class="bulk-btn" id="addHonestReviewBtn" onclick="openHonestReviewModal()" title="Add review" aria-label="Add review" style="background:var(--brand);color:#fff;border-color:var(--brand)">
+              <i class="fas fa-plus"></i> <span class="bulk-btn-label" data-mobile="Add">Add review</span>
+            </button>
             <button type="button" class="bulk-selected-count" id="reviewSelectedCount" style="display:none" onclick="clearReviewSelection()" title="Clear selection">
               <i class="fas fa-check-circle bulk-selected-icon"></i> <span id="reviewSelectedNum" class="bulk-selected-num">0</span><span class="bulk-btn-label" data-mobile="Selected"> selected</span> <span class="bulk-selected-clear-x">X</span>
             </button>
@@ -4268,20 +4302,22 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
               <i class="fas fa-trash"></i> <span class="bulk-btn-label" data-mobile="Delete">Delete (<span id="reviewDeleteCount">0</span>)</span>
             </button>
           </div>
-          <div class="bulk-toolbar-right">
-            <button class="btn-add-review" onclick="openHonestReviewModal()" title="Add review">
-              <i class="fas fa-plus"></i> <span class="bulk-btn-label" data-mobile="Add">Add Review</span>
-            </button>
-          </div>
         </div>
-        <div style="display:flex;justify-content:flex-end;margin-bottom:10px">
+    <div class="card">
+      <div class="card-header gcf-card-header">
+        <div class="card-header-left">
           <div class="col-toggle-wrap" id="reviewColToggleWrap">
             <button type="button" class="col-toggle-btn" id="reviewColToggleBtn" onclick="toggleColMenu('review')">
               <i class="fas fa-table-columns"></i> <span class="bulk-btn-label" data-mobile="Columns">Columns</span>
             </button>
             <div class="col-toggle-menu" id="reviewColToggleMenu"></div>
           </div>
+          <button class="bulk-btn bulk-btn-clear" id="reviewClearFiltersBtn" style="display:none" onclick="clearGcf('honestReview')" title="Clear all filters">
+            <i class="fas fa-filter-circle-xmark"></i> <span class="bulk-btn-label" data-mobile="Clear">Clear filters</span>
+          </button>
         </div>
+      </div>
+      <div class="table-wrapper">
         <table id="honestReviewsTable" class="display nowrap" style="width:100%">
           <thead>
             <tr>
@@ -4292,6 +4328,15 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
               <th>Active</th>
               <th>Order</th>
               <th>Action</th>
+            </tr>
+            <tr class="col-filter-row">
+              <th></th>
+              <th><input type="text" class="col-filter-input" data-gcf-key="honestReview" placeholder="Search…" oninput="onGcfFilter('honestReview',1,this.value,this)"></th>
+              <th><input type="text" class="col-filter-input" data-gcf-key="honestReview" placeholder="Search…" oninput="onGcfFilter('honestReview',2,this.value,this)"></th>
+              <th><select class="col-filter-select" data-gcf-key="honestReview" onchange="onGcfFilter('honestReview',3,this.value,this)"><option value="">All</option><option value="pending">Pending</option><option value="approved">Approved</option><option value="rejected">Rejected</option></select></th>
+              <th><select class="col-filter-select" data-gcf-key="honestReview" onchange="onGcfFilter('honestReview',4,this.value,this)"><option value="">All</option><option value="Yes">Yes</option><option value="No">No</option></select></th>
+              <th><input type="text" class="col-filter-input" data-gcf-key="honestReview" placeholder="Search…" oninput="onGcfFilter('honestReview',5,this.value,this)"></th>
+              <th></th>
             </tr>
           </thead>
           <tbody>
@@ -4304,9 +4349,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
 
   <!-- ══ REVIEWS PANEL (star reviews shown as Owner / Tenant Reviews on the site) ══ -->
   <div class="tab-panel" id="panel-user-reviews">
-    <div class="card">
-      <div class="table-wrapper">
-        <div class="bulk-toolbar" id="urBulkToolbar">
+    <div class="bulk-toolbar bulk-toolbar-spaced gcf-auto-hide" id="urBulkToolbar">
           <div class="bulk-toolbar-left">
             <button type="button" class="bulk-selected-count" id="urSelectedCount" style="display:none" onclick="clearUserReviewSelection()" title="Clear selection">
               <i class="fas fa-check-circle bulk-selected-icon"></i> <span id="urSelectedNum" class="bulk-selected-num">0</span><span class="bulk-btn-label" data-mobile="Selected"> selected</span> <span class="bulk-selected-clear-x">X</span>
@@ -4316,19 +4359,24 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
             </button>
           </div>
           <div class="bulk-toolbar-right">
-            <select id="urTypeFilter" onchange="filterUserReviews(this.value)" title="Filter by reviewer type" style="padding:8px 12px;border:1px solid var(--border,#e5e5e5);border-radius:10px;font:inherit;background:#fff;color:var(--ink)">
-              <option value="">All reviews</option>
-              <option value="Owner">Owner reviews</option>
-              <option value="Tenant">Tenant reviews</option>
-            </select>
-            <div class="col-toggle-wrap" id="userReviewColToggleWrap">
-              <button type="button" class="col-toggle-btn" id="userReviewColToggleBtn" onclick="toggleColMenu('userReview')">
-                <i class="fas fa-table-columns"></i> <span class="bulk-btn-label" data-mobile="Columns">Columns</span>
-              </button>
-              <div class="col-toggle-menu" id="userReviewColToggleMenu"></div>
-            </div>
+            
           </div>
+    </div>
+    <div class="card">
+      <div class="card-header gcf-card-header">
+        <div class="card-header-left">
+          <div class="col-toggle-wrap" id="userReviewColToggleWrap">
+            <button type="button" class="col-toggle-btn" id="userReviewColToggleBtn" onclick="toggleColMenu('userReview')">
+              <i class="fas fa-table-columns"></i> <span class="bulk-btn-label" data-mobile="Columns">Columns</span>
+            </button>
+            <div class="col-toggle-menu" id="userReviewColToggleMenu"></div>
+          </div>
+          <button class="bulk-btn bulk-btn-clear" id="urClearFiltersBtn" style="display:none" onclick="clearGcf('userReview')" title="Clear all filters">
+            <i class="fas fa-filter-circle-xmark"></i> <span class="bulk-btn-label" data-mobile="Clear">Clear filters</span>
+          </button>
         </div>
+      </div>
+      <div class="table-wrapper">
         <table id="userReviewsTable" class="display nowrap" style="width:100%">
           <thead>
             <tr>
@@ -4339,6 +4387,15 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
               <th>Review</th>
               <th>Posted</th>
               <th>Action</th>
+            </tr>
+            <tr class="col-filter-row">
+              <th></th>
+              <th><input type="text" class="col-filter-input" data-gcf-key="userReview" placeholder="Search…" oninput="onGcfFilter('userReview',1,this.value,this)"></th>
+              <th><select class="col-filter-select" data-gcf-key="userReview" onchange="onGcfFilter('userReview',2,this.value,this)"><option value="">All</option><option value="Owner">Owner</option><option value="Tenant">Tenant</option></select></th>
+              <th><select class="col-filter-select" data-gcf-key="userReview" onchange="onGcfFilter('userReview',3,this.value,this)"><option value="">All</option><option value="5">5 stars</option><option value="4">4 stars</option><option value="3">3 stars</option><option value="2">2 stars</option><option value="1">1 star</option></select></th>
+              <th><input type="text" class="col-filter-input" data-gcf-key="userReview" placeholder="Search…" oninput="onGcfFilter('userReview',4,this.value,this)"></th>
+              <th><div class="col-date-range"><input type="date" data-gcf-key="userReview" title="From" onchange="onGcfDate('userReview',5,'start',this.value,this)"><input type="date" data-gcf-key="userReview" title="To" onchange="onGcfDate('userReview',5,'end',this.value,this)"></div></th>
+              <th></th>
             </tr>
           </thead>
           <tbody>
@@ -4351,10 +4408,11 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
 
   <!-- ══ PARTNERS PANEL ══ -->
   <div class="tab-panel" id="panel-partners">
-    <div class="card">
-      <div class="table-wrapper">
-        <div class="bulk-toolbar" id="partnerBulkToolbar">
+    <div class="bulk-toolbar" id="partnerBulkToolbar">
           <div class="bulk-toolbar-left">
+            <button class="bulk-btn" id="addPartnerBtn" onclick="openPartnerModal()" title="Add partner" aria-label="Add partner" style="background:var(--brand);color:#fff;border-color:var(--brand)">
+              <i class="fas fa-plus"></i> <span class="bulk-btn-label" data-mobile="Add">Add partner</span>
+            </button>
             <button type="button" class="bulk-selected-count" id="partnerSelectedCount" style="display:none" onclick="clearPartnerSelection()" title="Clear selection">
               <i class="fas fa-check-circle bulk-selected-icon"></i> <span id="partnerSelectedNum" class="bulk-selected-num">0</span><span class="bulk-btn-label" data-mobile="Selected"> selected</span> <span class="bulk-selected-clear-x">X</span>
             </button>
@@ -4362,18 +4420,22 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
               <i class="fas fa-trash"></i> <span class="bulk-btn-label" data-mobile="Delete">Delete (<span id="partnerDeleteCount">0</span>)</span>
             </button>
           </div>
-          <div class="bulk-toolbar-right">
-            <button class="btn-add-review" onclick="openPartnerModal()" title="Add partner">
-              <i class="fas fa-plus"></i> <span class="bulk-btn-label" data-mobile="Add">Add Partner</span>
-            </button>
-            <div class="col-toggle-wrap" id="partnerColToggleWrap">
-              <button type="button" class="col-toggle-btn" id="partnerColToggleBtn" onclick="toggleColMenu('partner')">
-                <i class="fas fa-table-columns"></i> <span class="bulk-btn-label" data-mobile="Columns">Columns</span>
-              </button>
-              <div class="col-toggle-menu" id="partnerColToggleMenu"></div>
-            </div>
-          </div>
         </div>
+    <div class="card">
+      <div class="card-header gcf-card-header">
+        <div class="card-header-left">
+          <div class="col-toggle-wrap" id="partnerColToggleWrap">
+            <button type="button" class="col-toggle-btn" id="partnerColToggleBtn" onclick="toggleColMenu('partner')">
+              <i class="fas fa-table-columns"></i> <span class="bulk-btn-label" data-mobile="Columns">Columns</span>
+            </button>
+            <div class="col-toggle-menu" id="partnerColToggleMenu"></div>
+          </div>
+          <button class="bulk-btn bulk-btn-clear" id="partnerClearFiltersBtn" style="display:none" onclick="clearGcf('partner')" title="Clear all filters">
+            <i class="fas fa-filter-circle-xmark"></i> <span class="bulk-btn-label" data-mobile="Clear">Clear filters</span>
+          </button>
+        </div>
+      </div>
+      <div class="table-wrapper">
         <table id="partnersTable" class="display nowrap" style="width:100%">
           <thead>
             <tr>
@@ -4384,6 +4446,15 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
               <th>Active</th>
               <th>Order</th>
               <th>Action</th>
+            </tr>
+            <tr class="col-filter-row">
+              <th></th>
+              <th><input type="text" class="col-filter-input" data-gcf-key="partner" placeholder="Search…" oninput="onGcfFilter('partner',1,this.value,this)"></th>
+              <th><input type="text" class="col-filter-input" data-gcf-key="partner" placeholder="Search…" oninput="onGcfFilter('partner',2,this.value,this)"></th>
+              <th><input type="text" class="col-filter-input" data-gcf-key="partner" placeholder="Search…" oninput="onGcfFilter('partner',3,this.value,this)"></th>
+              <th><select class="col-filter-select" data-gcf-key="partner" onchange="onGcfFilter('partner',4,this.value,this)"><option value="">All</option><option value="Yes">Yes</option><option value="No">No</option></select></th>
+              <th><input type="text" class="col-filter-input" data-gcf-key="partner" placeholder="Search…" oninput="onGcfFilter('partner',5,this.value,this)"></th>
+              <th></th>
             </tr>
           </thead>
           <tbody>
@@ -4397,24 +4468,20 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
   <!-- ══ REFERRALS PANEL ══ -->
   <div class="tab-panel" id="panel-referrals">
     <div class="card">
-      <div class="table-wrapper">
-        <div class="bulk-toolbar" id="referralBulkToolbar">
-          <div class="bulk-toolbar-left"></div>
-          <div class="bulk-toolbar-right">
-            <select class="col-filter-select" id="referralStatusFilter" onchange="onReferralStatusFilterChange(this.value)" style="margin-right:8px">
-              <option value="">All statuses</option>
-              <option value="Pending">Pending</option>
-              <option value="Rewarded">Rewarded</option>
-              <option value="Rejected">Rejected</option>
-            </select>
-            <div class="col-toggle-wrap" id="referralColToggleWrap">
-              <button type="button" class="col-toggle-btn" id="referralColToggleBtn" onclick="toggleColMenu('referral')">
-                <i class="fas fa-table-columns"></i> <span class="bulk-btn-label" data-mobile="Columns">Columns</span>
-              </button>
-              <div class="col-toggle-menu" id="referralColToggleMenu"></div>
-            </div>
+      <div class="card-header gcf-card-header">
+        <div class="card-header-left">
+          <div class="col-toggle-wrap" id="referralColToggleWrap">
+            <button type="button" class="col-toggle-btn" id="referralColToggleBtn" onclick="toggleColMenu('referral')">
+              <i class="fas fa-table-columns"></i> <span class="bulk-btn-label" data-mobile="Columns">Columns</span>
+            </button>
+            <div class="col-toggle-menu" id="referralColToggleMenu"></div>
           </div>
+          <button class="bulk-btn bulk-btn-clear" id="referralClearFiltersBtn" style="display:none" onclick="clearGcf('referral')" title="Clear all filters">
+            <i class="fas fa-filter-circle-xmark"></i> <span class="bulk-btn-label" data-mobile="Clear">Clear filters</span>
+          </button>
         </div>
+      </div>
+      <div class="table-wrapper">
         <table id="referralsTable" class="display nowrap" style="width:100%">
           <thead>
             <tr>
@@ -4426,6 +4493,16 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
               <th>Status</th>
               <th>Submitted</th>
               <th>Action</th>
+            </tr>
+            <tr class="col-filter-row">
+              <th><input type="text" class="col-filter-input" data-gcf-key="referral" placeholder="Search…" oninput="onGcfFilter('referral',0,this.value,this)"></th>
+              <th><input type="text" class="col-filter-input" data-gcf-key="referral" placeholder="Search…" oninput="onGcfFilter('referral',1,this.value,this)"></th>
+              <th><input type="text" class="col-filter-input" data-gcf-key="referral" placeholder="Search…" oninput="onGcfFilter('referral',2,this.value,this)"></th>
+              <th><input type="text" class="col-filter-input" data-gcf-key="referral" placeholder="Search…" oninput="onGcfFilter('referral',3,this.value,this)"></th>
+              <th><input type="text" class="col-filter-input" data-gcf-key="referral" placeholder="Search…" oninput="onGcfFilter('referral',4,this.value,this)"></th>
+              <th><select class="col-filter-select" data-gcf-key="referral" onchange="onGcfFilter('referral',5,this.value,this)"><option value="">All</option><option value="Pending">Pending</option><option value="Rewarded">Rewarded</option><option value="Rejected">Rejected</option></select></th>
+              <th><div class="col-date-range"><input type="date" data-gcf-key="referral" title="From" onchange="onGcfDate('referral',6,'start',this.value,this)"><input type="date" data-gcf-key="referral" title="To" onchange="onGcfDate('referral',6,'end',this.value,this)"></div></th>
+              <th></th>
             </tr>
           </thead>
           <tbody>
@@ -6294,8 +6371,8 @@ function applyAdminAccessUI(){
   if(!isSuper){
     const addBtnByPanel = {
       'properties':     '#panel-properties .btn-add-review, #panel-properties #addPropertyBtn',
-      'honest-reviews': '#panel-honest-reviews .btn-add-review',
-      'partners':       '#panel-partners .btn-add-review',
+      'honest-reviews': '#panel-honest-reviews #addHonestReviewBtn',
+      'partners':       '#panel-partners #addPartnerBtn',
     };
     const bulkDeleteBtnByPanel = {
       'user-reviews': '#urDeleteSelectedBtn',
@@ -8018,6 +8095,8 @@ function syncUserReviewSelectionUI(){
 
 function updateUserReviewBulkToolbarUI(){
   const n = _selectedUrIds.size;
+  const urTb = document.getElementById('urBulkToolbar');
+  if(urTb) urTb.classList.toggle('gcf-show', n > 0);
   document.getElementById('urSelectedCount').style.display = n ? 'inline-flex' : 'none';
   document.getElementById('urSelectedNum').textContent = n;
   const delBtn = document.getElementById('urDeleteSelectedBtn');
@@ -11788,13 +11867,15 @@ $(document).ready(function(){
       }}
     ],
     order:[[5,'asc']],
-    pageLength:10,
+    orderCellsTop:true,
+    dom:'rt<"bottom-controls"i>',
+    pageLength:-1,
     scrollX:true,
     language:{
       emptyTable:'<div class="empty-state"><i class="fas fa-video"></i>No honest reviews yet</div>',
       zeroRecords:'<div class="empty-state"><i class="fas fa-magnifying-glass"></i>No matching reviews</div>',
       lengthMenu:'Show _MENU_ entries',
-      info:'Showing _START_–_END_ of _TOTAL_ reviews',
+      info:'Showing all _TOTAL_ reviews',
       paginate:{previous:'‹ Prev',next:'Next ›'}
     },
     drawCallback:function(){}
@@ -11855,13 +11936,15 @@ $(document).ready(function(){
       }}
     ],
     order:[[5,'desc']],
-    pageLength:10,
+    orderCellsTop:true,
+    dom:'rt<"bottom-controls"i>',
+    pageLength:-1,
     scrollX:true,
     language:{
       emptyTable:'<div class="empty-state"><i class="fas fa-star"></i>No reviews yet</div>',
       zeroRecords:'<div class="empty-state"><i class="fas fa-magnifying-glass"></i>No matching reviews</div>',
       lengthMenu:'Show _MENU_ entries',
-      info:'Showing _START_–_END_ of _TOTAL_ reviews',
+      info:'Showing all _TOTAL_ reviews',
       paginate:{previous:'‹ Prev',next:'Next ›'}
     },
     drawCallback:function(){ syncUserReviewSelectionUI(); }
@@ -11937,13 +12020,15 @@ $(document).ready(function(){
       }}
     ],
     order:[[5,'asc']],
-    pageLength:10,
+    orderCellsTop:true,
+    dom:'rt<"bottom-controls"i>',
+    pageLength:-1,
     scrollX:true,
     language:{
       emptyTable:'<div class="empty-state"><i class="fas fa-handshake"></i>No partners added yet</div>',
       zeroRecords:'<div class="empty-state"><i class="fas fa-magnifying-glass"></i>No matching partners</div>',
       lengthMenu:'Show _MENU_ entries',
-      info:'Showing _START_–_END_ of _TOTAL_ partners',
+      info:'Showing all _TOTAL_ partners',
       paginate:{previous:'‹ Prev',next:'Next ›'}
     },
     drawCallback:function(){}
@@ -12004,13 +12089,15 @@ $(document).ready(function(){
       }}
     ],
     order:[[6,'desc']],
-    pageLength:10,
+    orderCellsTop:true,
+    dom:'rt<"bottom-controls"i>',
+    pageLength:-1,
     scrollX:true,
     language:{
       emptyTable:'<div class="empty-state"><i class="fas fa-share-nodes"></i>No referrals yet</div>',
       zeroRecords:'<div class="empty-state"><i class="fas fa-magnifying-glass"></i>No matching referrals</div>',
       lengthMenu:'Show _MENU_ entries',
-      info:'Showing _START_–_END_ of _TOTAL_ referrals',
+      info:'Showing all _TOTAL_ referrals',
       paginate:{previous:'‹ Prev',next:'Next ›'}
     }
   });
@@ -12024,6 +12111,75 @@ $(document).ready(function(){
   // (Done by restoreSavedTab(), called from loadAdminMe() once the admin's
   // permissions are known — see the note above _initialSavedTab.)
 
+});
+
+/* ════════════════════════════════════
+   COLUMN FILTER ROW — Honest Reviews / Reviews / Partners / Referrals
+   Same per-column filter row Properties has. Text + dropdown filters use
+   DataTables' own column search; date columns use a From/To range.
+════════════════════════════════════ */
+const _GCF = {
+  honestReview: { tableId:'honestReviewsTable', table:()=>honestReviewsTable, wrap:'honestReviewsTable_wrapper', clearBtn:'reviewClearFiltersBtn',  dateField:'createdAt', vals:{}, dates:{} },
+  userReview:   { tableId:'userReviewsTable',   table:()=>userReviewsTable,   wrap:'userReviewsTable_wrapper',   clearBtn:'urClearFiltersBtn',      dateField:'createdAt', vals:{}, dates:{} },
+  partner:      { tableId:'partnersTable',      table:()=>partnersTable,      wrap:'partnersTable_wrapper',      clearBtn:'partnerClearFiltersBtn', dateField:'createdAt', vals:{}, dates:{} },
+  referral:     { tableId:'referralsTable',     table:()=>referralsTable,     wrap:'referralsTable_wrapper',     clearBtn:'referralClearFiltersBtn',dateField:'createdAt', vals:{}, dates:{} }
+};
+function _gcfEsc(v){ return String(v).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+function _gcfRefresh(key){
+  const c = _GCF[key];
+  const any = Object.values(c.vals).some(Boolean) || Object.values(c.dates).some(d => d.start || d.end);
+  const btn = document.getElementById(c.clearBtn);
+  if(btn) btn.style.display = any ? '' : 'none';
+  if(key === 'userReview' && typeof syncUserReviewSelectionUI === 'function') syncUserReviewSelectionUI();
+}
+window.onGcfFilter = function(key, col, value, el){
+  const c = _GCF[key], t = c && c.table();
+  if(!t) return;
+  c.vals[col] = value || '';
+  if(el) el.classList.toggle('active-col-filter', !!value);
+  if(el && el.tagName === 'SELECT') t.column(col).search(value ? '^' + _gcfEsc(value) + '$' : '', true, false);
+  else t.column(col).search(value || '', false, true);
+  t.draw();
+  _gcfRefresh(key);
+};
+window.onGcfDate = function(key, col, which, value, el){
+  const c = _GCF[key], t = c && c.table();
+  if(!t) return;
+  const d = c.dates[col] || (c.dates[col] = { start:'', end:'' });
+  d[which] = value || '';
+  if(el) el.classList.toggle('active-col-filter', !!value);
+  reconcileDateRange(el ? el.closest('.col-date-range') : null, d, 'start', 'end');
+  t.draw();
+  _gcfRefresh(key);
+};
+window.clearGcf = function(key){
+  const c = _GCF[key], t = c && c.table();
+  if(!t) return;
+  c.vals = {}; c.dates = {};
+  const wrap = document.getElementById(c.wrap);
+  if(wrap) wrap.querySelectorAll('[data-gcf-key="' + key + '"]').forEach(el => { el.value = ''; el.classList.remove('active-col-filter'); });
+  t.columns().search('');
+  t.draw();
+  _gcfRefresh(key);
+};
+$.fn.dataTable.ext.search.push(function(settings, data, dataIndex){
+  for(const key in _GCF){
+    const c = _GCF[key];
+    if(settings.nTable.id !== c.tableId) continue;
+    const t = c.table();
+    const row = t ? t.row(dataIndex).data() : null;
+    if(!row) return true;
+    for(const col in c.dates){
+      const d = c.dates[col];
+      if(!d.start && !d.end) continue;
+      const dt = new Date(row[c.dateField]);
+      if(isNaN(dt)) return false;
+      const ymd = dt.getFullYear() + '-' + String(dt.getMonth()+1).padStart(2,'0') + '-' + String(dt.getDate()).padStart(2,'0');
+      if(d.start && ymd < d.start) return false;
+      if(d.end && ymd > d.end) return false;
+    }
+  }
+  return true;
 });
 
 /* ════════════════════════════════════
