@@ -4758,6 +4758,69 @@ main.tab-explore .empty-state{display:none !important}
   };
 })();
 </script>
+<script>
+/* ── DevTools deterrent (desktop visitors only) ───────────────────────────────
+   What it does:
+     1. Blocks right-click, F12, Ctrl/Cmd+Shift+I/J/C/K, Ctrl+U and Cmd+Opt+I/J/C/U.
+     2. Detects an open DevTools panel (a `debugger` statement takes long to pass
+        only while DevTools is open) and covers the page with a notice until it is closed.
+   What it can NOT do: stop a determined person (view-source: URL, disabling JS, another
+   browser, curl). It is a speed bump for casual users — real protection is keeping every
+   secret and every permission check on the server.
+   Skipped on phones/tablets (no DevTools there) and on localhost (so you can develop).
+   To switch it off completely: set ENABLED = false. */
+(function(){
+  var ENABLED = true;
+  if(!ENABLED) return;
+  var ua = navigator.userAgent || '';
+  var isMobile = /Android|iPhone|iPad|iPod|Mobile|Windows Phone/i.test(ua)
+              || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);   // iPadOS
+  if(isMobile) return;
+  if(/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname)) return;
+
+  // 1) Shortcuts + right-click ------------------------------------------------
+  function isEditable(t){
+    return !!(t && t.closest && t.closest('input, textarea, [contenteditable=""], [contenteditable="true"]'));
+  }
+  document.addEventListener('contextmenu', function(e){
+    if(isEditable(e.target)) return;          // keep paste/copy menu inside form fields
+    e.preventDefault();
+  }, true);
+  document.addEventListener('keydown', function(e){
+    var mod = e.ctrlKey || e.metaKey, code = e.code;
+    var block =
+      e.key === 'F12' ||
+      (mod && e.shiftKey && (code === 'KeyI' || code === 'KeyJ' || code === 'KeyC' || code === 'KeyK')) ||
+      (mod && !e.shiftKey && !e.altKey && code === 'KeyU') ||                 // view source
+      (e.metaKey && e.altKey && (code === 'KeyI' || code === 'KeyJ' || code === 'KeyC' || code === 'KeyU')); // macOS
+    if(block){ e.preventDefault(); e.stopPropagation(); return false; }
+  }, true);
+
+  // 2) Detect an open DevTools panel ----------------------------------------
+  var overlay = null, cleanChecks = 0;
+  function devtoolsOpen(){
+    var t = performance.now();
+    debugger;                                  // pauses only while DevTools is open
+    return (performance.now() - t) > 100;
+  }
+  function showOverlay(){
+    if(overlay && overlay.isConnected) return;
+    overlay = document.createElement('div');
+    overlay.setAttribute('style',
+      'position:fixed;inset:0;z-index:2147483647;background:#0f172a;color:#fff;display:flex;' +
+      'align-items:center;justify-content:center;text-align:center;padding:24px;' +
+      'font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif');
+    overlay.innerHTML = '<div><div style="font-size:22px;font-weight:700;margin-bottom:8px">Developer tools are not allowed</div>' +
+      '<div style="font-size:15px;opacity:.8">Please close the developer tools to continue using this site.</div></div>';
+    (document.body || document.documentElement).appendChild(overlay);
+  }
+  function hideOverlay(){ if(overlay && overlay.parentNode) overlay.parentNode.removeChild(overlay); overlay = null; }
+  setInterval(function(){
+    if(devtoolsOpen()){ cleanChecks = 0; showOverlay(); }
+    else if(overlay && ++cleanChecks >= 2){ cleanChecks = 0; hideOverlay(); }   // closed -> restore page
+  }, 1000);
+})();
+</script>
 </head>
 <body>
 
