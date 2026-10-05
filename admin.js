@@ -192,6 +192,11 @@ module.exports = function registerAdminRoutes(app, deps) {
       check: 'Check availability', share: 'Share (WhatsApp)', tenant: 'Tenant share',
       view: 'View', navigate: 'Navigate', directions: 'Directions',
       facebook: 'Facebook', instagram: 'Instagram', delete: 'Delete', booking: 'Booking',
+      // Top toolbar of the Properties tab (the floating buttons on mobile). Keys MUST
+      // match TOOLBAR_BTN_SEL in admin.html. Not Action-column buttons, so no pact- class.
+      tbAdd: 'Toolbar: Add property', tbCompare: 'Toolbar: Compare',
+      tbTenant: 'Toolbar: Share to Tenant', tbShare: 'Toolbar: Share Links',
+      tbCheck: 'Toolbar: Check Availability', tbRecalc: 'Toolbar: Recalculate Distance',
     },
     customers: {
       verified: 'Verified badge', view: 'View', whatsapp: 'WhatsApp', edit: 'Edit', subscription: 'Subscription',
@@ -2411,7 +2416,7 @@ self.addEventListener('notificationclick', event => {
   // already blocks submission client-side until every visible required
   // field is filled, and validatePropertyFields() below still catches
   // malformed values same as the PUT route just above. ──
-  app.post('/api/admin/properties', requireAdmin, requireModuleAction('properties'), async (req, res) => {
+  app.post('/api/admin/properties', requireAdmin, requireModuleAction('properties'), requireButton('properties', 'tbAdd'), async (req, res) => {
     try {
       const body = req.body || {};
       const fields = NESTED_SECTIONS.reduce((acc, k) => {

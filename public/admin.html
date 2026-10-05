@@ -6100,6 +6100,13 @@ function blockIfViewOnly(...moduleKeys){
 // when the table renders vs when /api/admin/me answers); the matching API routes
 // are also blocked server-side (requireButton in admin.js).
 const BTN_TABLE_SEL = { properties:'#propertyTable', customers:'#bookingTable' };
+// Properties-tab toolbar buttons (floating buttons on mobile) — controlled by the same
+// per-button switches as the Action column, but hidden by element id instead of pact- class.
+const TOOLBAR_BTN_SEL = {
+  tbAdd:'#bulkToolbar #addPropertyBtn', tbCompare:'#bulkToolbar #bulkCompareBtn',
+  tbTenant:'#bulkToolbar #bulkShareTenantBtn', tbShare:'#bulkToolbar #bulkShareLinksBtn',
+  tbCheck:'#bulkToolbar #bulkCheckAvailabilityBtn', tbRecalc:'#bulkToolbar #recalcDistanceBtn'
+};
 const COL_ACT_MODULE = { cust:'customers' };
 function canBtn(moduleKey, key){
   return !!CURRENT_ADMIN.isSuperAdmin || (((CURRENT_ADMIN.buttons || {})[moduleKey] || {})[key] !== false);
@@ -6122,7 +6129,9 @@ function applyButtonAccess(){
     Object.keys(b).forEach(mod => {
       const sel = BTN_TABLE_SEL[mod]; if(!sel) return;
       Object.keys(b[mod] || {}).forEach(key => {
-        if(b[mod][key] === false) css += sel + ' .pact-' + key + '{display:none!important}\n';
+        if(b[mod][key] !== false) return;
+        if(mod === 'properties' && TOOLBAR_BTN_SEL[key]) css += TOOLBAR_BTN_SEL[key] + '{display:none!important}\n';
+        else css += sel + ' .pact-' + key + '{display:none!important}\n';
       });
     });
   }
@@ -6270,7 +6279,13 @@ const AA_BTN_META = {
     facebook:{i:'fa-brands fa-facebook-f',d:'Share the listing on Facebook'},
     instagram:{i:'fa-brands fa-instagram',d:'Share the listing on Instagram'},
     delete:{i:'fa-trash-can',d:'Permanently remove a property',danger:1},
-    booking:{i:'fa-calendar-days',d:'Edit booking details, images and documents',danger:1}
+    booking:{i:'fa-calendar-days',d:'Edit booking details, images and documents',danger:1},
+    tbAdd:{i:'fa-plus',d:'Top toolbar: add a new property',danger:1},
+    tbCompare:{i:'fa-code-compare',d:'Top toolbar: compare selected properties and share the link'},
+    tbTenant:{i:'fa-paper-plane',d:'Top toolbar: send selected properties to a tenant on WhatsApp'},
+    tbShare:{i:'fa-brands fa-whatsapp',d:'Top toolbar: share links of selected properties to a number'},
+    tbCheck:{i:'fa-brands fa-whatsapp',d:'Top toolbar: send availability check to owners of selected properties'},
+    tbRecalc:{i:'fa-location-crosshairs',d:'Top toolbar: recalculate distance from your location'}
   },
   customers: {
     verified:{i:'fa-circle-check',d:'Show the verified status badge'},
@@ -6328,7 +6343,7 @@ function aaOpenBtnModal(mod, trigger){
   const icon = MODULE_ICONS[mod] || 'fa-sliders';
   document.getElementById('aaBtnModalIcon').innerHTML = '<i class="fas ' + icon + '"></i>';
   document.getElementById('aaBtnModalTitle').textContent = modName + ' · Action buttons';
-  document.getElementById('aaBtnModalSub').textContent = 'Choose which buttons appear in the Action column of the ' + modName + ' table for this admin.';
+  document.getElementById('aaBtnModalSub').textContent = 'Choose which buttons appear in the Action column' + (mod === 'properties' ? ' and the top toolbar' : '') + ' of the ' + modName + ' table for this admin.';
   document.getElementById('aaBtnModalGrid').innerHTML = Object.keys(cat).map(k => {
     const m = meta[k] || {};
     return `<button type="button" class="aa-bm-card${m.danger ? ' is-danger' : ''}" role="switch" aria-checked="true" data-key="${k}" onclick="aaBtnToggle('${k}')">
