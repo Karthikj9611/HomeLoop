@@ -418,6 +418,21 @@ ul{list-style:none}
 }
 .fp-opt:hover{border-color:var(--brand);color:var(--brand)}
 .fp-opt.sel{background:var(--brand);color:#fff;border-color:var(--brand)}
+/* All option-list filter dropdowns (Property ID, Locality, Tenant, Type, BHK, …) —
+   multi-select rows with a checkbox. Checked rows keep
+   a light brand tint (not the solid pill fill) so the checkmark reads clearly. */
+.fd-opts .fp-opt{gap:10px}
+.fd-opts .fp-opt::before{
+  content:"";flex:0 0 auto;width:16px;height:16px;box-sizing:border-box;
+  border:1.5px solid var(--border-2);border-radius:4px;background:var(--bg);
+  background-repeat:no-repeat;background-position:center;background-size:11px 11px;
+}
+.fd-opts .fp-opt.sel{background:rgba(0,0,0,0);color:var(--brand);border-color:var(--brand);font-weight:600}
+.fd-opts .fp-opt.sel::before{
+  border-color:var(--brand);background-color:var(--brand);
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E");
+}
+.fd-empty-note{font-size:12px;color:var(--text-2);padding:8px 2px}
 /* Marks the pincode pill matching the visitor's detected current location
    (see fdHighlightNearbyPincode). Independent of .sel — a pill can be both
    "your area" and actively selected at once, so .sel's solid brand fill
@@ -4992,24 +5007,6 @@ main.tab-explore .empty-state{display:none !important}
     </div>
   </div>
 
-      <!-- RENT + LEASE: No. of persons allowed (shows listings that allow at least N people) -->
-  <div class="fd-btn fd-rent fd-lease" id="fdb-persons" onclick="toggleFd('persons',this)">
-    <span class="fd-icon">👥</span>
-    <span class="fd-label">Persons</span> <span class="fd-badge" id="fdbc-persons" style="display:none"></span>
-    <svg class="chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
-    <div class="fd-pop" id="fdp-persons" onclick="event.stopPropagation()">
-      <div class="fd-pop-label">No. of persons staying</div>
-      <div class="fd-range-inputs">
-        <input class="fd-range-input" type="number" min="1" max="50" step="1" inputmode="numeric" placeholder="e.g. 3" id="fd-persons-min" oninput="refreshFdRangeBtn('persons')">
-      </div>
-      <div class="fd-range-hint">Shows homes that allow at least this many people</div>
-      <div class="fd-pop-footer">
-        <button class="fd-clear-btn" onclick="clearFdRange('persons')">Clear</button>
-        <button class="fd-apply-btn" onclick="applyFdRange('persons')">Apply</button>
-      </div>
-    </div>
-  </div>
-
   <!-- RENT + LEASE + PG + SHORT STAY: Property Type -->
   <div class="fd-btn fd-rent fd-lease fd-pg fd-shortstay fd-sell" id="fdb-type" onclick="toggleFd('type',this)">
     <span class="fd-icon">🏢</span>
@@ -9304,7 +9301,14 @@ function renderBookedSections(fsIn) {
   const groups = { promoted: [], rent: [], lease: [], pg: [], sell: [] };
   // Booked listings go through the same search + filter pipeline as available
   // ones (getFiltered), so applied filters narrow the Booked bucket too.
-  const booked = getFiltered(BOOKED_PROPERTIES, fsIn);
+  // Any filter active (dropdown pills or Price/Deposit/Maintenance ranges) → the
+  // Booked section is left out entirely; it only shows with no filters applied.
+  const _fsB = fsIn || getFilterState();
+  const _filterActive = Object.keys(_fsB).some(k => {
+    const v = _fsB[k];
+    return Array.isArray(v) ? v.length > 0 : v !== null && v !== undefined;
+  });
+  const booked = (_filterActive || searchQuery) ? [] : getFiltered(BOOKED_PROPERTIES, _fsB); // search also hides Booked
   if (currentTab === 'Promoted') {
     groups.promoted = booked.filter(p => p.promoted);
   } else if (currentTab === 'Rent') {
@@ -10977,8 +10981,11 @@ function fdCollectMerged(fields, predicate) {
 function fdCollectPropertyIds() {
   const seen = new Set();
   const rows = [];
-  // Booked listings are fetched separately (BOOKED_PROPERTIES), so pool both.
-  PROPERTIES.concat(BOOKED_PROPERTIES).forEach(p => {
+  // Booked listings are excluded — they live in BOOKED_PROPERTIES (and may carry
+  // p.booked) and shouldn't be offered in the Property ID dropdown.
+  const bookedIds = new Set(BOOKED_PROPERTIES.map(x => x.id));
+  PROPERTIES.forEach(p => {
+    if (p.booked || bookedIds.has(p.id)) return;
     if (!matchesTab(p, currentTab)) return;
     if (!p.verified) return; // verified properties only (booked ones are verified too)
     if (!p.propertyId || seen.has(p.propertyId)) return;
@@ -11028,6 +11035,63 @@ function fdCollectAmenities() {
     });
   });
   return Array.from(set);
+}
+
+/* Property ID dropdown contents:
+   - multi-select: every row is an independent checkbox (selected set lives in the
+     .sel class, same as every other filter, and ANDs with them via getFiltered)
+   - cascading: only IDs that pass ALL the OTHER active filters (type, locality,
+     BHK, price range…) are offered, so the list narrows as other filters are set
+   - checked IDs are pinned to the top (always shown, even if another filter now
+     excludes them, so they can still be unchecked)
+   Rebuilt each time the dropdown opens — not on every click — so rows don't jump
+   around while someone is ticking several of them. */
+function fdRefreshPropertyIdOpts() {
+  const containerId = 'fdo-propertyIdFilter';
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  const checked = new Set();
+  container.querySelectorAll('.fp-opt.sel').forEach(o => checked.add(o.dataset.val));
+
+  // Same pool + verified/tab scoping as fdCollectPropertyIds…
+  const all = fdCollectPropertyIds();
+  // …then keep only those that survive every other filter.
+  const fs = getFilterState();
+  delete fs.propertyIdCode;
+  const pool = [];
+  const seenId = new Set();
+  PROPERTIES.forEach(p => {
+    if (p.booked || !p.propertyId || seenId.has(p.id)) return;
+    seenId.add(p.id);
+    pool.push(p);
+  });
+  const passing = new Set(getFiltered(pool, fs).map(p => p.propertyId));
+  const matching = all.filter(id => passing.has(id)); // keeps listed_on order
+
+  const ordered = [];
+  const done = new Set();
+  all.forEach(id => { if (checked.has(id)) { ordered.push(id); done.add(id); } });
+  checked.forEach(id => { if (!done.has(id)) { ordered.push(id); done.add(id); } });
+  matching.forEach(id => { if (!done.has(id)) { ordered.push(id); done.add(id); } });
+
+  fdRenderOpts(containerId, 'propertyIdCode', ordered, 'propertyIdFilter');
+  container.querySelectorAll('.fp-opt').forEach(o => {
+    if (checked.has(o.dataset.val)) o.classList.add('sel');
+  });
+
+  // Empty state
+  if (!ordered.length) {
+    const note = document.createElement('div');
+    note.className = 'fd-empty-note';
+    note.textContent = 'No properties match your other filters';
+    container.appendChild(note);
+  }
+
+  // Keep whatever is typed in the search box applied to the rebuilt rows.
+  const search = document.querySelector('#fdp-propertyIdFilter .fd-search');
+  if (search && search.value) fdSearchOpts(containerId, search.value);
+  refreshFdBtn('propertyIdFilter');
 }
 
 /* Render a list of values into a target <div class="fd-opts" id="..."> as .fp-opt pills */
@@ -11249,6 +11313,7 @@ function toggleFd(id, btnEl) {
   const isOpen = pop.classList.contains('open');
   closeAllFd();
   if (!isOpen) {
+    if (id === 'propertyIdFilter') fdRefreshPropertyIdOpts(); // narrow by other filters + pin checked ones first
     // Move pop to body so it escapes overflow:hidden/auto containers
     if (pop.parentElement !== document.body) document.body.appendChild(pop);
 
@@ -11550,26 +11615,18 @@ document.addEventListener('click', function(e) {
   if (!e.target.closest('.fd-btn') && !e.target.closest('.fd-pop')) closeAllFd();
 });
 /* The popover is appended to <body> with fixed pixel coordinates computed
-   from the trigger button's position (see toggleFd). Rather than closing
-   it every time the page scrolls, just recompute those coordinates so it
-   keeps tracking its button — the filter bar itself is sticky, so once it
-   reaches the top of the viewport the button stops moving anyway. */
-window.addEventListener('scroll', function() {
+   from the trigger button's position (see toggleFd), so it can't follow its
+   button when the page or the horizontally-scrolling filter bar moves.
+   Close it as soon as either one scrolls — but not for scrolling inside the
+   popover itself (its own option list), or while a field in it has focus
+   (the mobile keyboard can fire scroll events). */
+window.addEventListener('scroll', function(e) {
   if (!openFd) return;
+  const t = e.target;
+  if (t && t.nodeType === 1 && t.closest && t.closest('.fd-pop')) return;
   const active = document.activeElement;
-  if (active && active.closest('.fd-pop')) return;
-  const btnEl = document.getElementById('fdb-' + openFd);
-  const pop = document.getElementById('fdp-' + openFd);
-  if (!btnEl || !pop) { closeAllFd(); return; }
-  const rect = btnEl.getBoundingClientRect();
-  // Button scrolled out of view entirely (e.g. horizontal filter-bar
-  // scroll) — closing is still the right call here.
-  if (rect.bottom < 0 || rect.top > window.innerHeight) { closeAllFd(); return; }
-  const popW = pop.getBoundingClientRect().width || 240;
-  let left = rect.left;
-  if (left + popW > window.innerWidth - 12) left = Math.max(8, rect.right - popW);
-  pop.style.top  = (rect.bottom + 6) + 'px';
-  pop.style.left = left + 'px';
+  if (active && active.closest && active.closest('.fd-pop')) return;
+  closeAllFd();
 }, true);
 window.addEventListener('resize', () => {
   // On mobile, focusing one of the Min/Max range inputs opens the on-screen
