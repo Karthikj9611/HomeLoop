@@ -989,6 +989,10 @@ main.tab-explore .empty-state{display:none !important}
 .prop-icon-badge.prop-icon-call{background:linear-gradient(135deg,#5fd38a,#1f9e52);cursor:pointer}
 .prop-icon-badge.prop-icon-call svg{width:13px;height:13px;fill:#fff;stroke:none}
 .prop-icon-badge.prop-icon-call:active{transform:scale(.93)}
+/* Navigate icon — sits directly below the Call icon when the owner's number is public. */
+.prop-icon-badge.prop-icon-nav{background:linear-gradient(135deg,#5cb3ff,#1a73e8);cursor:pointer}
+.prop-icon-badge.prop-icon-nav svg{width:17px;height:17px;fill:none;stroke:none}
+.prop-icon-badge.prop-icon-nav:active{transform:scale(.93)}
 /* Views icon, relocated from the bottom action row to sit directly below
    the shortlist heart in the floating right-badge stack (see prop-right-badges
    above) — styled like the heart (translucent white circle) rather than the
@@ -1922,7 +1926,9 @@ main.tab-explore .empty-state{display:none !important}
 .recently-viewed-strip .prop-icon-badge svg,
 [id$="BookedGrid"] .prop-icon-badge svg{width:10px;height:10px}
 .recently-viewed-strip .prop-icon-badge.prop-icon-call svg,
-[id$="BookedGrid"] .prop-icon-badge.prop-icon-call svg{width:11px;height:11px}
+[id$="BookedGrid"] .prop-icon-badge.prop-icon-call svg,
+.recently-viewed-strip .prop-icon-badge.prop-icon-nav svg,
+[id$="BookedGrid"] .prop-icon-badge.prop-icon-nav svg{width:14px;height:14px}
 .recently-viewed-strip .prop-icon-badge.prop-views-float .prop-views-float-badge,
 [id$="BookedGrid"] .prop-icon-badge.prop-views-float .prop-views-float-badge{top:-2px;left:-5px;min-width:13px;height:13px;font-size:7.5px}
 .rv-card{position:relative;flex:0 0 var(--rv-card-w, 260px);border:1px solid var(--border);border-radius:16px;overflow:hidden;cursor:pointer;background:var(--bg);transition:box-shadow .15s,transform .15s}
@@ -9991,6 +9997,7 @@ function cardHTML(p, compact, extraLeftBadge) {
           <div class="prop-icon-badge prop-icon-call" onclick="event.stopPropagation();openCardCall('${p.id}')" aria-label="Call" title="${(p.ownerPhoneCall && p.ownerPhone) || (p.ownerDirectCall && p.ownerAltPhone) ? 'Call owner' : 'Call agent'}">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
           </div>
+          ${cardNavBadgeHTML(p)}
           `}
         </div>
       </div>
@@ -10129,6 +10136,7 @@ function shortlistCardHTML(p) {
           <div class="prop-icon-badge prop-icon-call" onclick="event.stopPropagation();openCardCall('${p.id}')" aria-label="Call" title="${(p.ownerPhoneCall && p.ownerPhone) || (p.ownerDirectCall && p.ownerAltPhone) ? 'Call owner' : 'Call agent'}">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
           </div>
+          ${cardNavBadgeHTML(p)}
           `}
         </div>
       </div>
@@ -10573,6 +10581,7 @@ function renderCompareTable() {
           <div class="prop-icon-badge prop-icon-call" onclick="event.stopPropagation();openCardCall('${p.id}')" aria-label="Call" title="${(p.ownerPhoneCall && p.ownerPhone) || (p.ownerDirectCall && p.ownerAltPhone) ? 'Call owner' : 'Call agent'}">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
           </div>
+          ${cardNavBadgeHTML(p)}
             </div>
           </div>
         </div>
@@ -12941,7 +12950,16 @@ function openPropertyNavigate(propId) {
   window.open(url, '_blank', 'noopener');
 }
 
-/* Property-card call icon: dials the owner's number that admin made public (main first, then alternate);
+/* Navigation icon shown right below the card's Call icon. The server only sends navigateUrl
+   for listings whose owner number is public to this viewer (active subscription plan for a
+   tenant/customer, or an owner who made their listing public), so it appears exactly then. */
+function cardNavBadgeHTML(p) {
+  if (!p || p.booked || !p.navigateUrl) return '';
+  return `<div class="prop-icon-badge prop-icon-nav" onclick="event.stopPropagation();openPropertyNavigate('${p.id}')" aria-label="Navigate" title="Navigate to property"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.6 21.4 12 12 21.4 2.6 12Z" fill="#fff" stroke="#fff" stroke-width="2" stroke-linejoin="round"/><path d="M8.6 15.2v-3.1c0-.8.6-1.4 1.4-1.4h4.6" fill="none" stroke="#1a73e8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M12.9 8.6l2.6 2.1-2.6 2.1" fill="none" stroke="#1a73e8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>`;
+}
+
+/* Property-card call icon: when the owner's numbers are public (active subscription plan),
+   dials the owner's ALTERNATE number first, then the main number if there is no alternate;
    listings with no public number keep the old behaviour and call the agent.
    Like every other Call/WhatsApp entry point, this dials straight away — no
    login gate — so a visitor can always reach someone directly. */
@@ -12950,8 +12968,8 @@ function openCardCall(propId) {
   if (!p) return;
   const rawPhone = String(
     isOwnerViewer() ? COORDINATOR_PHONE : (
-      (p.ownerPhoneCall && p.ownerPhone) ||
       (p.ownerDirectCall && p.ownerAltPhone) ||
+      (p.ownerPhoneCall && p.ownerPhone) ||
       p.owner?.agentPhone || '')
   ).replace(/\D/g, '');
   if (!rawPhone) {
