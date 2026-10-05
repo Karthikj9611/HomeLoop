@@ -1266,6 +1266,8 @@ table.dataTable.no-footer{border-bottom:none!important}
 .vx-uprop .vx-uprop-meta{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink3)}
 .vx-uprop .vx-uprop-time{flex:0 0 auto;font-variant-numeric:tabular-nums;color:var(--ink3);font-weight:600}
 .vx-uprop.gone{opacity:.6}
+.vx-uprops[hidden]{display:none}
+.vx-uprops{max-height:240px;overflow-y:auto}
 .stat-card-big-icon.clickable{cursor:pointer;transition:transform .15s,box-shadow .15s}
 .stat-card-big-icon.clickable:hover{transform:translateY(-2px) scale(1.06);box-shadow:0 8px 22px rgba(47,95,209,.4)}
 .stat-card-big-icon.clickable:focus-visible{outline:3px solid rgba(47,95,209,.45);outline-offset:3px}
@@ -3083,6 +3085,33 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
 .confirm-ok-btn.info:hover{background:#2a2d38;box-shadow:0 6px 20px rgba(12,13,16,0.25)}
 .confirm-ok-btn.success{background:#1e9e57}
 .confirm-ok-btn.success:hover{background:#178549;box-shadow:0 6px 20px rgba(30,158,87,0.3)}
+
+.vx-tel{color:inherit;text-decoration:none}
+.vx-tel:hover{color:var(--brand);text-decoration:underline}
+/* Popup listing the properties one person viewed */
+#userPropsModal{display:none;position:fixed;inset:0;z-index:1100;align-items:center;justify-content:center;padding:16px;background:rgba(12,13,16,.6);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+#userPropsModal.open{display:flex}
+.upm-card{width:100%;max-width:400px;max-height:min(80vh,560px);max-height:min(80dvh,560px);display:flex;flex-direction:column;background:#fff;border-radius:24px;box-shadow:0 30px 80px -20px rgba(15,23,42,.5);overflow:hidden;animation:confirmPop .22s cubic-bezier(.25,1.4,.5,1)}
+.upm-head{display:flex;align-items:center;gap:12px;padding:16px 16px 14px;border-bottom:1px solid var(--border);background:linear-gradient(135deg,#ecfdf5,#fff 70%)}
+.upm-av{flex:none;width:42px;height:42px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff;background:linear-gradient(135deg,#10b981,#06b6d4)}
+.upm-ttl{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.25}
+.upm-ttl b{font-size:1rem;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.upm-ttl span{font-size:.76rem;font-weight:600;color:var(--ink3)}
+.upm-x{flex:none;width:34px;height:34px;border-radius:50%;border:0;cursor:pointer;background:#f1f5f9;color:#475569;font-size:.95rem}
+.upm-x:hover{background:#e2e8f0}
+.upm-body{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:12px;display:flex;flex-direction:column;gap:6px}
+#userPropsModal .vx-uprop{padding:9px 10px;border-radius:12px;background:#f8fafc;border:1px solid #e2e8f0;gap:10px;font-size:.82rem}
+#userPropsModal .vx-uprop>i{flex:none;width:26px;height:26px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;font-size:.7rem;color:#fff;background:linear-gradient(135deg,#10b981,#06b6d4)}
+#userPropsModal .vx-uprop.gone>i{background:#cbd5e1}
+#userPropsModal .vx-uprop-time{padding:2px 8px;border-radius:99px;background:#d1fae5;color:#047857}
+/* Today's registrations: views chip */
+.trv-wrap{display:block}
+.trv-btn{border:0;cursor:pointer;font-family:inherit;background:#ecfeff;color:#0e7490;transition:background .15s}   /* same colours as the Registered chip (.sv-chip.t1) */
+.trv-btn:hover{background:#cffafe}
+.trv-btn .trv-caret{font-size:.62rem;margin-left:5px}
+.trv-none{background:#f1f5f9;color:#94a3b8}
+.trv-msg{padding:10px;font-size:.78rem;color:var(--ink3);text-align:center}
+.trv-msg.err{color:#dc2626}
 
 /* ── PHONES: every modal is a centred card ──
    One final rule set so no modal can sit at the top/bottom of the screen. Overlays are centred
@@ -14136,13 +14165,13 @@ function _pvListHtml(kind, list, showProps){
   const owner = kind === 'owners';
   return '<div class="vp-list">' + list.map((u, i) => {
     const nm = u.removed ? 'Deleted user' : (u.name || u.email || u.mobile || 'User');
-    const contact = [u.mobile, u.email].filter(Boolean).join(' · ');
+    const contact = u.mobile || '';
     return '<div class="vp-card' + (u.removed ? ' removed' : '') + '" style="animation-delay:' + Math.min(i, 8) * 40 + 'ms">' +
       '<div class="vp-ico' + (owner ? ' pv-owner' : '') + '"><i class="fas ' + (owner ? 'fa-user-tie' : 'fa-user') + '"></i></div>' +
       '<div class="vp-main"><div class="vp-top"><span class="vp-pid">' + _adminModalEsc(nm) + '</span>' +
         (u.userId ? '<span class="vp-badge sale">' + _adminModalEsc(u.userId) + '</span>' : '') +
         (u.removed ? '<span class="vp-badge gone">Removed</span>' : '') + '</div>' +
-        (contact ? '<div class="vp-loc"><i class="fas fa-phone"></i>' + _adminModalEsc(contact) + '</div>' : '') +
+        (contact ? '<div class="vp-loc">' + _telLink(contact) + '</div>' : '') +
         (showProps ? _pvPropsLine(u.props) : '') +
       '</div>' + _pvTimeHtml(u.lastViewedAt) +
     '</div>';
@@ -14187,7 +14216,7 @@ async function openViewedPropsModal(key){
   const initials = fullName.split(/\s+/).slice(0,2).map(w => w.charAt(0)).join('').toUpperCase() || '?';
   document.getElementById('viewedPropsModalAvatar').textContent = initials;
   document.getElementById('viewedPropsModalName').textContent = fullName;
-  document.getElementById('viewedPropsModalSub').textContent = c.email || c.mobile || '';
+  document.getElementById('viewedPropsModalSub').textContent = c.mobile || '';
   const countEl = document.getElementById('viewedPropsModalCount');
   const setCount = n => { countEl.innerHTML = '<b>' + n + '</b><span>viewed</span>'; };
   setCount(Number(c.propertiesViewed || 0));
@@ -14317,18 +14346,94 @@ function renderTodayRegistrations(){
       const dt = new Date(u.createdAt);
       const name = ((u.firstName||'') + ' ' + (u.lastName||'')).trim() || u.name || u.email || u.mobile || 'Unnamed user';
       let contact = '';
-      if(u.mobile) contact += '<div class="vx-meta"><i class="fas fa-phone"></i>' + _adminModalEsc(u.mobile) + '</div>';
-      if(u.email)  contact += '<div class="vx-meta"><i class="fas fa-envelope"></i>' + _adminModalEsc(u.email) + '</div>';
-      return '<div class="vx-row' + (owner ? ' sale' : '') + '" title="' + _adminModalEsc(fmtDateDMY(dt) + ' ' + fmtTimeHM(dt)) + '" style="animation-delay:' + Math.min(i, 10) * 35 + 'ms">' +
+      if(u.mobile) contact += '<div class="vx-meta">' + _telLink(u.mobile) + '</div>';
+      const nViewed = Number(u.propertiesViewed || 0);
+      const viewChip = nViewed > 0
+        ? '<button type="button" class="sv-chip trv-btn" data-uid="' + _adminModalEsc(u._id) + '" data-name="' + _adminModalEsc(name) + '" onclick="openRegViews(this)" title="Show properties viewed"><i class="fas fa-eye"></i>' + nViewed + ' viewed<i class="fas fa-chevron-right trv-caret"></i></button>'
+        : '<span class="sv-chip trv-none"><i class="fas fa-eye-slash"></i>No views yet</span>';
+      return '<div class="trv-wrap"><div class="vx-row' + (owner ? ' sale' : '') + '" title="' + _adminModalEsc(fmtDateDMY(dt) + ' ' + fmtTimeHM(dt)) + '" style="animation-delay:' + Math.min(i, 10) * 35 + 'ms">' +
         '<div class="sv-av">' + _adminModalEsc(_svInitials(name)) + '<em class="sv-rank">' + (i + 1) + '</em></div>' +
-        '<div class="vx-main"><div class="vx-pid"><span class="sv-name">' + _adminModalEsc(name) + '</span><span class="vx-tag">' + (owner ? 'Owner' : 'Tenant') + '</span></div>' +
+        '<div class="vx-main"><div class="vx-pid"><span class="sv-name">' + _adminModalEsc(name) + '</span></div>' +
           contact +
-          '<div class="sv-chips"><span class="sv-chip t1"><i class="fas fa-user-plus"></i>Registered ' + _adminModalEsc(fmtTimeHM(dt)) + '</span></div></div>' +
-        _tpvCallBtn(u.mobile, name) + '</div>';
+          '<div class="sv-chips"><span class="sv-chip t1"><i class="fas fa-user-plus"></i>Registered ' + _adminModalEsc(fmtTimeHM(dt)) + '</span>' + viewChip + '</div></div>' +
+        _tpvCallBtn(u.mobile, name) + '</div></div>';
     }).join('') + '</div></div>';
   }
   box.innerHTML = _vmDist([['t', d.tenants.length], ['o', d.owners.length]]) + '<div class="pv-tabs">' + tabs + '</div>' + body;
 }
+/* Small centred modal listing the properties one person viewed (opened from the "N viewed" chips).
+   Built once, reused. Closes on X, backdrop click or Escape. */
+function _upmEl(){
+  let m = document.getElementById('userPropsModal');
+  if(m) return m;
+  m = document.createElement('div');
+  m.id = 'userPropsModal';
+  m.setAttribute('role', 'dialog'); m.setAttribute('aria-modal', 'true');
+  m.innerHTML = '<div class="upm-card"><div class="upm-head"><div class="upm-av" id="upmAv"></div>' +
+    '<div class="upm-ttl"><b id="upmName"></b><span id="upmSub"></span></div>' +
+    '<button type="button" class="upm-x" aria-label="Close" onclick="closeUserPropsModal()"><i class="fas fa-xmark"></i></button></div>' +
+    '<div class="upm-body" id="upmBody"></div></div>';
+  m.addEventListener('click', ev => { if(ev.target === m) closeUserPropsModal(); });
+  document.body.appendChild(m);
+  return m;
+}
+function openUserPropsModal(btn, nameArg, bodyHtml, subArg){
+  const row = btn && btn.closest ? btn.closest('.vx-row') : null;
+  const m = _upmEl();
+  const name = nameArg || (row && row.querySelector('.sv-name') ? row.querySelector('.sv-name').textContent : 'Properties viewed');
+  document.getElementById('upmAv').textContent = _svInitials(name);
+  document.getElementById('upmName').textContent = name;
+  const list = row ? row.querySelector('.vx-uprops') : null;
+  const n = list ? list.querySelectorAll('.vx-uprop').length : 0;
+  document.getElementById('upmSub').textContent = subArg != null ? subArg : (n + (n === 1 ? ' property viewed' : ' properties viewed'));
+  document.getElementById('upmBody').innerHTML = bodyHtml != null ? bodyHtml : (list ? list.innerHTML : '');
+  m.classList.add('open');
+  document.getElementById('upmBody').scrollTop = 0;
+  return m;
+}
+function closeUserPropsModal(){
+  const m = document.getElementById('userPropsModal');
+  if(m) m.classList.remove('open');
+}
+document.addEventListener('keydown', ev => {
+  const m = document.getElementById('userPropsModal');
+  if(ev.key === 'Escape' && m && m.classList.contains('open')){ closeUserPropsModal(); ev.stopPropagation(); }
+}, true);
+window.openUserPropsModal = openUserPropsModal;
+window.closeUserPropsModal = closeUserPropsModal;
+/* "N viewed" chip on a registration card: loads that person's viewed properties (cached per modal open) and shows them in the popup. */
+const _trViews = {};
+async function openRegViews(btn){
+  const uid = btn.dataset.uid, name = btn.dataset.name || 'Properties viewed';
+  const count = (btn.textContent.match(/\d+/) || ['0'])[0];
+  const sub = count + (count === '1' ? ' property viewed' : ' properties viewed');
+  if(_trViews[uid]){ openUserPropsModal(null, name, _trViews[uid], sub); return; }
+  openUserPropsModal(null, name, '<div class="trv-msg"><i class="fas fa-circle-notch fa-spin"></i> Loading…</div>', sub);
+  try{
+    const res = await fetch(BASE + '/api/users/' + encodeURIComponent(uid) + '/viewed-properties', { headers: authHeaders() });
+    if(res.status === 403) throw new Error('You do not have access to customer details.');
+    if(!res.ok) throw new Error('Could not load the list.');
+    const list = await res.json();
+    const html = list.length
+      ? list.map(v => {
+          const idTxt = v.removed ? 'Listing removed' : (v.propertyId || v._id);
+          const meta = [v.type, String(v.status || '').replace(/^for\s+/i, ''), [v.area, v.city].filter(Boolean)[0]].filter(Boolean).join(' · ');
+          const d = v.lastViewedAt ? new Date(v.lastViewedAt) : null;
+          return '<div class="vx-uprop' + (v.removed ? ' gone' : '') + '"' + (d ? ' title="' + _adminModalEsc(fmtDateDMY(d) + ' ' + fmtTimeHM(d)) + '"' : '') + '>' +
+            '<i class="fas ' + (v.removed ? 'fa-house-circle-xmark' : 'fa-house') + '"></i><b>' + _adminModalEsc(idTxt) + '</b>' +
+            '<span class="vx-uprop-meta">' + _adminModalEsc(meta) + '</span>' +
+            (d ? '<span class="vx-uprop-time">' + _adminModalEsc(_pvAgo(d)) + '</span>' : '') + '</div>';
+        }).join('')
+      : '<div class="trv-msg">No properties viewed yet.</div>';
+    _trViews[uid] = html;
+    const m = document.getElementById('userPropsModal');
+    if(m && m.classList.contains('open') && document.getElementById('upmName').textContent === name) document.getElementById('upmBody').innerHTML = html;
+  }catch(e){
+    const m = document.getElementById('userPropsModal');
+    if(m && m.classList.contains('open')) document.getElementById('upmBody').innerHTML = '<div class="trv-msg err"><i class="fas fa-triangle-exclamation"></i> ' + _adminModalEsc(e && e.message ? e.message : 'Could not load the list.') + '</div>';
+  }
+}
+window.openRegViews = openRegViews;
 let _trToken = 0;
 async function openTodayRegistrationsModal(){
   const token = ++_trToken;
@@ -14342,6 +14447,7 @@ async function openTodayRegistrationsModal(){
   document.getElementById('viewedPropsModalSub').textContent = fmtDateDMY(new Date());
   setCount(0);
   _trList = null; _trTab = 'tenants';
+  Object.keys(_trViews).forEach(k => delete _trViews[k]);
   box.innerHTML = '<div class="vx-list"><div class="vx-skel"></div><div class="vx-skel"></div><div class="vx-skel"></div></div>';
   modal.classList.add('open');
   document.body.style.overflow = 'hidden';
@@ -14374,6 +14480,11 @@ window.setTodayRegTab = setTodayRegTab;
    /viewers-admin data (the same source as Properties -> Views eye), keeping only
    views stamped today. Listings with 0 total views are skipped. */
 let _todayPvToken = 0, _tpv = null, _tpvTab = 'tenants';
+/* Phone number as plain text that dials when tapped (no icon). */
+function _telLink(mobile){
+  const tel = String(mobile || '').replace(/[^\d+]/g, '');
+  return tel ? '<a class="vx-tel" href="tel:' + _adminModalEsc(tel) + '" title="Call ' + _adminModalEsc(mobile) + '">' + _adminModalEsc(mobile) + '</a>' : _adminModalEsc(mobile || '');
+}
 function _tpvCallBtn(mobile, name){
   const tel = String(mobile || '').replace(/[^\d+]/g, '');
   return tel
@@ -14403,8 +14514,7 @@ function renderTodayPv(){
       let contact = '';
       if(guest) contact = '<div class="vx-meta"><i class="fas fa-fingerprint"></i>' + _adminModalEsc('Device ' + (u.ref || '—')) + '</div>';
       else {
-        if(u.mobile) contact += '<div class="vx-meta"><i class="fas fa-phone"></i>' + _adminModalEsc(u.mobile) + '</div>';
-        if(u.email)  contact += '<div class="vx-meta"><i class="fas fa-envelope"></i>' + _adminModalEsc(u.email) + '</div>';
+        if(u.mobile) contact += '<div class="vx-meta">' + _telLink(u.mobile) + '</div>';
       }
       const props = g.items.map(({ pid, pm, d: dt }) =>
         '<div class="vx-uprop" title="' + _adminModalEsc(fmtDateDMY(dt) + ' ' + fmtTimeHM(dt)) + '">' +
@@ -14414,12 +14524,12 @@ function renderTodayPv(){
       const n = g.items.length;
       return '<div class="vx-row has-props' + (owner ? ' sale' : '') + (guest ? ' guest' : '') + (u.removed ? ' gone' : '') + '" style="animation-delay:' + Math.min(i, 10) * 35 + 'ms">' +
         '<div class="sv-av">' + avatar + '<em class="sv-rank">' + (i + 1) + '</em></div>' +
-        '<div class="vx-main"><div class="vx-pid"><span class="sv-name">' + _adminModalEsc(name) + '</span><span class="vx-tag">' + (guest ? 'Guest' : owner ? 'Owner' : 'Tenant') + '</span></div>' +
+        '<div class="vx-main"><div class="vx-pid"><span class="sv-name">' + _adminModalEsc(name) + '</span></div>' +
           contact +
-          '<div class="sv-chips"><span class="sv-chip"><i class="fas fa-eye"></i>' + n + (n === 1 ? ' property' : ' properties') + ' viewed</span></div>' +
+          '<div class="sv-chips"><button type="button" class="sv-chip trv-btn" onclick="openUserPropsModal(this)" title="Show properties"><i class="fas fa-eye"></i>' + n + (n === 1 ? ' property' : ' properties') + ' viewed<i class="fas fa-chevron-right trv-caret"></i></button></div>' +
           '</div>' +
         (guest ? '' : _tpvCallBtn(u.mobile, name)) +
-        '<div class="vx-uprops">' + props + '</div></div>';
+        '<div class="vx-uprops" hidden>' + props + '</div></div>';
     }).join('') + '</div></div>';
   }
   box.innerHTML = _vmDist([['t', d.tenants.length], ['o', d.owners.length], ['g', d.guests.length]]) + '<div class="pv-tabs">' + tabs + '</div>' + body + note;
@@ -14552,8 +14662,7 @@ function renderSiteVisitors(){
       let contact = '';
       if(guest) contact = '<div class="vx-meta"><i class="fas fa-fingerprint"></i>' + _adminModalEsc('Device ' + (v.ref || '—')) + '</div>';
       else if(!u.removed){
-        if(u.mobile) contact += '<div class="vx-meta"><i class="fas fa-phone"></i>' + _adminModalEsc(u.mobile) + '</div>';
-        if(u.email)  contact += '<div class="vx-meta"><i class="fas fa-envelope"></i>' + _adminModalEsc(u.email) + '</div>';
+        if(u.mobile) contact += '<div class="vx-meta">' + _telLink(u.mobile) + '</div>';
       }
       const chips = [];
       if(v.device){
@@ -14561,14 +14670,19 @@ function renderSiteVisitors(){
         if(v.device.browser) chips.push('<span class="sv-chip"><i class="fas fa-compass"></i>' + _adminModalEsc(v.device.browser) + '</span>');
         if(v.device.os)      chips.push('<span class="sv-chip"><i class="fas fa-layer-group"></i>' + _adminModalEsc(v.device.os) + '</span>');
       }
+      if(!guest && !u.removed && u._id){
+        const nv = Number(u.propertiesViewed || 0);
+        chips.push(nv > 0
+          ? '<button type="button" class="sv-chip trv-btn" data-uid="' + _adminModalEsc(u._id) + '" data-name="' + _adminModalEsc(name) + '" onclick="openRegViews(this)" title="Show properties viewed"><i class="fas fa-eye"></i>' + nv + ' viewed<i class="fas fa-chevron-right trv-caret"></i></button>'
+          : '<span class="sv-chip trv-none"><i class="fas fa-eye-slash"></i>No views yet</span>');
+      }
       const first = _svWhen(v.visitedAt), last = _svWhen(v.lastSeenAt);
       if(first) chips.push('<span class="sv-chip t1"><i class="fas fa-arrow-right-to-bracket"></i>' + (_svScope === 'today' ? 'First visit ' : 'First seen ') + _adminModalEsc(first) + '</span>');
       if(last && last !== first) chips.push('<span class="sv-chip t2"><i class="fas fa-clock"></i>Last seen ' + _adminModalEsc(last) + '</span>');
-      const tag = '<span class="vx-tag">' + (guest ? 'Guest' : owner ? 'Owner' : 'Tenant') + '</span>';
       const newTag = v.isNew ? '<span class="vx-tag new"><i class="fas fa-star"></i>New</span>' : '';
       return '<div class="vx-row' + (owner ? ' sale' : '') + (guest ? ' guest' : '') + (!guest && u.removed ? ' gone' : '') + '" style="animation-delay:' + Math.min(i, 10) * 35 + 'ms">' +
         '<div class="sv-av">' + avatar + '<em class="sv-rank">' + (i + 1) + '</em></div>' +
-        '<div class="vx-main"><div class="vx-pid"><span class="sv-name">' + _adminModalEsc(name) + '</span>' + tag + newTag + '</div>' +
+        '<div class="vx-main"><div class="vx-pid"><span class="sv-name">' + _adminModalEsc(name) + '</span>' + newTag + '</div>' +
           contact +
           (chips.length ? '<div class="sv-chips">' + chips.join('') + '</div>' : '') + '</div>' +
         (guest || u.removed ? '' : _tpvCallBtn(u.mobile, name)) + '</div>';

@@ -124,14 +124,19 @@ module.exports = function registerAdminRoutes(app, deps) {
     // can tell the primary admin (ADMIN_EMAIL) apart from the numbered
     // sub-admins (ADMIN_EMAIL_2, _3, ...) and enforce per-feature access below.
     email:     { type: String, default: '' },
-    // true for sessions issued by the single-device login. Sessions created before that
-    // existed (no flag) never had a working logout, so they must not lock the account out.
+    // true for sessions issued by the single-device login (see the one-time purge below).
     single:    { type: Boolean, default: false },
     createdAt: { type: Date, default: Date.now },
     expiresAt: { type: Date, required: true, expires: 0 }, // TTL index: Mongo auto-deletes once expiresAt passes (= next 7 AM)
   });
 
   const AdminSession = mongoose.model('AdminSession', AdminSessionSchema);
+
+  // One-time cleanup: sessions from before single-device login (no `single` flag) never had a
+  // working logout, so any left over would lock the account out. Drop them once at startup; every
+  // session issued from now on carries the flag, so after the first run this deletes nothing.
+  // (Anyone still on such a session just sees the login screen once.)
+  AdminSession.deleteMany({ single: { $ne: true } }).catch(e => console.error('Legacy admin session purge failed:', e.message));
 
   async function issueAdminSession(email, single) {
     const key = crypto.randomBytes(32).toString('hex');
@@ -430,7 +435,7 @@ module.exports = function registerAdminRoutes(app, deps) {
   // second login is refused until that session logs out or hits the 7 AM reset.
   async function findActiveAdminSessions(email, sortAsc) {
     const now = new Date();
-    const q = AdminSession.find({ email, single: true, expiresAt: { $gt: now }, createdAt: { $gte: lastResetBefore(now) } });
+    const q = AdminSession.find({ email, expiresAt: { $gt: now }, createdAt: { $gte: lastResetBefore(now) } });
     return sortAsc ? q.sort({ createdAt: 1, _id: 1 }).lean() : q.lean();
   }
   const ADMIN_ALREADY_LOGGED_IN = {
@@ -3121,6 +3126,15 @@ self.addEventListener('notificationclick', event => {
             .lean()
         : [];
       const byId = new Map(users.map(u => [String(u._id), u]));
+      // Distinct listings each logged-in visitor has opened (same count the Customers grid shows),
+      // so the Visitors popup can offer a "N viewed" chip without a request per row.
+      const viewedAgg = users.length
+        ? await PropertyViewer.aggregate([
+            { $match: { userId: { $in: users.map(u => u._id) } } },
+            { $group: { _id: '$userId', count: { $sum: 1 } } },
+          ])
+        : [];
+      const viewedBy = new Map(viewedAgg.map(x => [String(x._id), x.count]));
 
       const visitors = rows.map(v => {
         const u = v.userId ? byId.get(String(v.userId)) : null;
@@ -3142,6 +3156,7 @@ self.addEventListener('notificationclick', event => {
                 mobile: u.mobile || '',
                 email: u.email || '',
                 accountType: u.accountType === 'owner' ? 'owner' : 'customer',
+                propertiesViewed: viewedBy.get(String(u._id)) || 0,
               } : { removed: true })
             : null,
         };
