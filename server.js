@@ -3485,8 +3485,22 @@ const DailyStatSchema = new mongoose.Schema({
 DailyStatSchema.index({ date: 1, type: 1 }, { unique: true });
 const DailyStat = mongoose.model('DailyStat', DailyStatSchema);
 
+// Every daily counter (visits / registrations / property views) buckets by the
+// calendar day in India, 12:00 AM -> 11:59 PM IST. The old version used
+// toISOString() (UTC), which rolled the day over at 5:30 AM IST instead.
+// Override with STATS_TIMEZONE in .env if ever needed.
+const STATS_TIMEZONE = process.env.STATS_TIMEZONE || 'Asia/Kolkata';
+const _statsDayFmt = new Intl.DateTimeFormat('en-US', {
+  timeZone: STATS_TIMEZONE, year: 'numeric', month: '2-digit', day: '2-digit',
+});
+// Any Date -> 'YYYY-MM-DD' in the stats time zone.
+function dateStrInTz(date = new Date()) {
+  const parts = _statsDayFmt.formatToParts(date);
+  const get = (t) => (parts.find(p => p.type === t) || {}).value;
+  return `${get('year')}-${get('month')}-${get('day')}`;
+}
 function todayStr() {
-  return new Date().toISOString().slice(0, 10);
+  return dateStrInTz(new Date());
 }
 
 async function bumpDailyStat(type) {
@@ -3615,7 +3629,7 @@ app.get('/api/stats', async (req, res) => {
   nextPropertyId, modelForStatus,
   notifyUser, visitCalendarMeta,
   HonestReview, Partner, PaymentSettings, PaymentRequest,
-  SiteStat, DailyStat, todayStr, Referral,
+  SiteStat, DailyStat, todayStr, dateStrInTz, Referral,
   Review, // star reviews (Owner/Tenant Reviews) — admin "Reviews" tab
   ImageAsset, // Booking Details modal's Agreement/Proof uploads reuse this store
   Visitor, // visitor-dedup collection — Visits tab's resets drop this collection (see admin.js)

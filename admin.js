@@ -20,7 +20,7 @@ module.exports = function registerAdminRoutes(app, deps) {
     nextPropertyId, modelForStatus,
     notifyUser, visitCalendarMeta,
     HonestReview, Partner, PaymentSettings, PaymentRequest,
-    SiteStat, DailyStat, todayStr, Referral,
+    SiteStat, DailyStat, todayStr, dateStrInTz, Referral,
     Review,
     ImageAsset,
     Visitor,
@@ -3065,7 +3065,7 @@ self.addEventListener('notificationclick', event => {
           // First visit of "today" for the today scope; otherwise the first visit ever.
           visitedAt: scope === 'today' ? (v.dayFirstAt || v.lastSeenAt || v.firstSeenAt) : v.firstSeenAt,
           lastSeenAt: v.lastSeenAt,
-          isNew: !!(v.firstSeenAt && v.lastSeenDate === date && new Date(v.firstSeenAt).toISOString().slice(0, 10) === date),
+          isNew: !!(v.firstSeenAt && v.lastSeenDate === date && dateStrInTz(new Date(v.firstSeenAt)) === date),
           device: parseDeviceInfo(v.userAgent),
           // userId set but account since deleted → removed:true so the UI can say so.
           user: v.userId
