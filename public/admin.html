@@ -3323,6 +3323,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
 .msel-opt i{flex:none;width:18px;height:18px;border:1.5px solid #cbd5e1;border-radius:5px;display:inline-flex;align-items:center;justify-content:center;font-style:normal;font-size:12px;color:#fff}
 .msel-opt.on i{background:var(--brand);border-color:var(--brand)}
 .msel-opt.on i::after{content:'\2713'}
+.msel-all{border-bottom:1px solid var(--border);border-radius:8px 8px 0 0;margin-bottom:4px;color:var(--brand)}
 .msel-empty{padding:10px;font-size:13px;color:var(--text-2)}
 .sub-form-card{padding-bottom:6px}
 .sub-chips{display:flex;flex-wrap:wrap;gap:8px}
@@ -7262,9 +7263,16 @@ function subMsel(rootId, opts){
   function paintMenu(){
     const list = options.filter(o => !q || o.l.toLowerCase().includes(q.toLowerCase()));
     let html = opts.search ? `<input type="text" class="msel-search" placeholder="${opts.custom ? 'Search or type a new area, press Enter' : 'Search'}" value="${esc(q)}">` : '';
+    // "Select all" (acts on the options currently listed, so it respects the search box)
+    if(list.length > 1){
+      const allOn = list.every(o => sel.includes(o.v));
+      html += `<div class="msel-opt msel-all${allOn ? ' on' : ''}" data-all="1"><i></i>Select all</div>`;
+    }
     html += list.length ? list.map(o => `<div class="msel-opt${sel.includes(o.v) ? ' on' : ''}" data-v="${esc(o.v)}"><i></i>${esc(o.l)}</div>`).join('')
                         : `<div class="msel-empty">${opts.custom && q ? 'Press Enter to add \u201c' + esc(q) + '\u201d' : 'No options'}</div>`;
+    const keepScroll = menu.scrollTop;
     menu.innerHTML = html;
+    menu.scrollTop = keepScroll;
     const si = menu.querySelector('.msel-search');
     if(si){
       si.addEventListener('input', () => { q = si.value; const pos = si.selectionStart; paintMenu(); const n = menu.querySelector('.msel-search'); n.focus(); n.setSelectionRange(pos, pos); });
@@ -7280,14 +7288,23 @@ function subMsel(rootId, opts){
     setOptions: (arr) => { options = arr; if(root.classList.contains('open')) paintMenu(); },
     close: () => root.classList.remove('open'),
   };
+  // Clicks re-render the button/menu (the clicked node is replaced), so by the time the document-level
+  // "click outside closes the menu" handler runs, ev.target is detached and closest('.msel') is null —
+  // which closed the dropdown after every single pick. Flag the event while the node is still attached.
+  root.addEventListener('click', ev => { ev._inMsel = true; }, true);
   btn.addEventListener('click', ev => {
-    if(ev.target.dataset && ev.target.dataset.rm !== undefined){ sel = sel.filter(x => x !== ev.target.dataset.rm); paintBtn(); paintMenu(); return; }
+    if(ev.target.dataset && ev.target.dataset.rm !== undefined){ sel = sel.filter(x => x !== ev.target.dataset.rm); paintBtn(); if(root.classList.contains('open')) paintMenu(); return; }
     const was = root.classList.contains('open');
     document.querySelectorAll('#subscriptionModal .msel.open').forEach(m => m.classList.remove('open'));
     if(!was){ q = ''; paintMenu(); root.classList.add('open'); const si = menu.querySelector('.msel-search'); if(si) si.focus(); setTimeout(() => menu.scrollIntoView({ block:'nearest', behavior:'smooth' }), 0); }
   });
   menu.addEventListener('click', ev => {
     const o = ev.target.closest('.msel-opt'); if(!o) return;
+    if(o.dataset.all){
+      const shown = options.filter(x => !q || x.l.toLowerCase().includes(q.toLowerCase())).map(x => x.v);
+      sel = shown.every(x => sel.includes(x)) ? sel.filter(x => !shown.includes(x)) : sel.concat(shown.filter(x => !sel.includes(x)));
+      paintBtn(); paintMenu(); return;
+    }
     const v = o.dataset.v;
     sel = sel.includes(v) ? sel.filter(x => x !== v) : sel.concat([v]);
     paintBtn(); paintMenu();
@@ -7296,7 +7313,7 @@ function subMsel(rootId, opts){
   return api;
 }
 document.addEventListener('click', ev => {
-  if(ev.target.closest && ev.target.closest('.msel')) return;
+  if(ev._inMsel || (ev.target.closest && ev.target.closest('.msel'))) return;
   document.querySelectorAll('#subscriptionModal .msel.open').forEach(m => m.classList.remove('open'));
 });
 const _subBhkSel  = subMsel('subBhkSel',  { placeholder: 'Select BHK', options: ['1 RK','1 BHK','2 BHK','3 BHK','4 BHK'].map(v => ({ v, l: v })) });
