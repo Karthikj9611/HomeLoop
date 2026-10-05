@@ -177,6 +177,11 @@ body{
 
 #visitsCatTabs{width:100%}
 
+/* Booked sub-tabs (Booked by us / Booked) - shown only while the Booked category tab is active */
+#propBookedSubTabs{display:none;width:fit-content;max-width:100%;margin-top:-10px;margin-bottom:18px}
+#propBookedSubTabs.show{display:flex}
+#propBookedSubTabs .cat-tab-btn{flex:0 0 auto;padding:7px 18px;font-size:0.8rem}
+
 /* ── EQUAL-WIDTH BUTTON-STYLE TABS (main tab bar + every category sub-tab bar) ──
    Every tab is a bordered button with the SAME width. alignThreeRowsAsColumns()
    (JS) measures the widest label and sets --tab-w on each bar: never narrower
@@ -3813,6 +3818,17 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
         <i class="fas fa-suitcase-rolling"></i><span class="cat-tab-btn-label" data-mobile="Stay">Short Stay</span><span class="cat-count" id="cat-count-Short-Stay">—</span>
       </button>
     </div>
+    <!-- Booked sub-tabs: only visible while the Booked category is selected.
+         "Booked by us" = booked listings that have Booking Details saved.
+         "Booked"       = booked listings with no Booking Details yet. -->
+    <div class="cat-tab-bar" id="propBookedSubTabs">
+      <button class="cat-tab-btn" data-sub="us" onclick="switchBookedSub('us')">
+        <i class="fas fa-handshake"></i><span class="cat-tab-btn-label" data-mobile="By Us">Booked by us</span><span class="cat-count" id="cat-count-BookedUs">—</span>
+      </button>
+      <button class="cat-tab-btn" data-sub="other" onclick="switchBookedSub('other')">
+        <i class="fas fa-lock"></i><span class="cat-tab-btn-label" data-mobile="Booked">Booked</span><span class="cat-count" id="cat-count-BookedOther">—</span>
+      </button>
+    </div>
     <!-- Toolbar: PDF export + selection controls + column toggle, all in one row.
          Kept outside .card so it floats as its own pill, not embedded in the
          table's white card. Add Property sits in the same row (so there's no
@@ -3917,6 +3933,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
               <th>Listed On</th>
               <th>Reason</th>
               <th>Remarks</th>
+              <th>Booked Date</th>
               <th title="Click to sort nearest→farthest (distance from your office location, or your device location if none is set)">Action</th>
             </tr>
             <tr class="col-filter-row">
@@ -3980,6 +3997,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
               </div></th>
               <th><select class="col-filter-select" data-filter-key="reason" onchange="onPropColumnFilter('reason', this.value, this)"><option value="">All</option><option value="Already rented">Already rented</option><option value="Wrong details">Wrong details</option><option value="Photos missing">Photos missing</option><option value="Price too high">Price too high</option><option value="Duplicate listing">Duplicate listing</option><option value="Fake listing">Fake listing</option><option value="Location mismatch">Location mismatch</option><option value="Under renovation">Under renovation</option><option value="Callback">Callback</option><option value="Not answered">Not answered</option><option value="Switched off">Switched off</option><option value="Shifted through us">Shifted through us</option></select></th>
               <th><input type="text" class="col-filter-input" data-filter-key="remarks" placeholder="Search…" oninput="onPropColumnFilter('remarks', this.value, this)"></th>
+              <th></th>
               <th><input type="number" min="0" step="0.1" class="col-filter-input" data-filter-key="maxDistanceKm" placeholder="≤ km" title="Show only listings within this many km of your current location (needs location access, used by the Directions button)" oninput="onPropColumnFilter('maxDistanceKm', this.value, this)"></th>
             </tr>
           </thead>
@@ -11196,8 +11214,19 @@ $(document).ready(function(){
           if(t==='display') return remarkCellHtml(row._id, d, 'property');
           return d||'';
       }},
-      /* 50 – Action (orderable purely so setOfficeLocation() above can sort
-         nearest-first via propTable.order([[50,'asc']]) — the 'sort'/'type'
+      /* 50 – Booked Date (Booked > "Booked by us" tab only; hidden elsewhere by
+         applyPropCategoryColumnVisibility). Date the booking was made, from the
+         Booking Details modal. 'sort' returns the raw YYYY-MM-DD so it orders correctly. */
+      { data:null, visible:false, className:'dt-body-center', render:(d,t,row)=>{
+          const v = (row.bookingDetails && row.bookingDetails.bookedOn) || '';
+          if(t === 'sort' || t === 'type') return v;
+          const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(v);
+          if(!m) return t === 'display' ? '—' : '';
+          const txt = new Date(+m[1], +m[2]-1, +m[3]).toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' });
+          return t === 'display' ? `<span style="font-weight:600;white-space:nowrap">${txt}</span>` : txt;
+      }},
+      /* 51 – Action (orderable purely so setOfficeLocation() above can sort
+         nearest-first via propTable.order([[51,'asc']]) — the 'sort'/'type'
          branch returns the plain distance number computeDistanceKm() already
          powers the Directions button and ≤km filter with; display is
          untouched. Rows with no computable distance sort to the end.) */
@@ -11318,7 +11347,7 @@ $(document).ready(function(){
 				// Column 0 is the select checkbox — it has no printable
 				// value, so leave it out of the PDF entirely instead of
 				// exporting a blank column.
-				return idx !== 0 && idx !== 49 && idx !== 50 &&
+				return idx !== 0 && idx !== 49 && idx !== 51 &&
 					   propTable.column(idx).visible();
 			},
 			// Use each column's dedicated "export" text instead of stripping
@@ -11461,6 +11490,8 @@ $(document).ready(function(){
   document.querySelectorAll('#propCatTabs .cat-tab-btn').forEach(btn=>{
     btn.classList.toggle('active', btn.getAttribute('data-cat') === _propCategoryState);
   });
+  syncBookedSubTabs();
+  applyBookedOrder(); // reopening on Booked > Booked by us: newest booked-on first
   applyPropCategoryColumnVisibility(_propCategoryState);
   buildPropColumnToggle();
   setTimeout(alignThreeRowsAsColumns, 50);
@@ -12255,7 +12286,7 @@ window.setOfficeLocation = async function(){
   const clearBtn = document.getElementById('clearOfficeLocationBtn');
   if (clearBtn) clearBtn.style.display = '';
   if (propTable){
-    propTable.order([[50, 'asc']]); // Action column's sort value is distance-from-origin
+    propTable.order([[51, 'asc']]); // Action column's sort value is distance-from-origin
     propTable.draw();
   }
 };
@@ -12350,7 +12381,7 @@ window.confirmOfficeMapLocation = function(){
   const clearBtn = document.getElementById('clearOfficeLocationBtn');
   if (clearBtn) clearBtn.style.display = '';
   if (propTable){
-    propTable.order([[50, 'asc']]);
+    propTable.order([[51, 'asc']]);
     propTable.draw();
   }
   closeOfficeMapModal();
@@ -13020,6 +13051,33 @@ function propCategoryOf(status){
 // clicking a different tab changes it. Falls back to 'Rent' the very first
 // time, matching the tab that's marked active in the static HTML.
 let _propCategoryState = localStorage.getItem('kr_admin_propCategory') || 'Rent';
+// Which Booked sub-tab is open: 'us' (booking details saved) or 'other' (no details yet)
+let _propBookedSub = localStorage.getItem('kr_admin_propBookedSub') === 'other' ? 'other' : 'us';
+// A booked listing counts as "booked by us" once any Booking Details are saved
+// (same test the row's Booking button uses for its filled/unfilled state).
+function isBookedByUs(row){
+  const bd = (row && row.bookingDetails) || {};
+  return !!(bd.bookedOn || bd.description || bd.propertyId || bd.tenantId);
+}
+// "Booked by us" lists the most recently booked first (booked-on date, newest
+// to oldest). Leaving that tab restores the grid's normal Listed On order.
+function applyBookedOrder(){
+  if(!propTable) return;
+  if(_propCategoryState === 'Booked' && _propBookedSub === 'us'){
+    propTable.order([[50, 'desc']]);
+  } else {
+    const cur = propTable.order();
+    if(cur.length && cur[0][0] === 50) propTable.order([[47, 'asc']]);
+  }
+}
+function syncBookedSubTabs(){
+  const bar = document.getElementById('propBookedSubTabs');
+  if(!bar) return;
+  bar.classList.toggle('show', _propCategoryState === 'Booked');
+  bar.querySelectorAll('.cat-tab-btn').forEach(btn=>{
+    btn.classList.toggle('active', btn.getAttribute('data-sub') === _propBookedSub);
+  });
+}
 if(_propCategoryState === 'PG') _propCategoryState = 'Rent'; // PG tab is hidden - don't reopen on it from a saved choice
 
 // PG-only and Short-Stay-only column indices in #propertyTable (see the
@@ -13029,6 +13087,7 @@ if(_propCategoryState === 'PG') _propCategoryState = 'Rent'; // PG tab is hidden
 // All/Promoted/Booked grids full of "—" for every non-PG/non-Short-Stay row.
 const PG_ONLY_COLS = [27, 28, 29, 30, 31]; // PG Gender, Room Type, Meals, Occupancy, Notice
 const SS_ONLY_COLS = [32, 33, 34, 35];     // SS Room Type, Available 24hrs, Cancellation, Couples Allowed
+const BOOKED_US_ONLY_COLS = [50];             // Booked Date - only on Booked > "Booked by us"
 
 // Short Stay is hidden site-wide for now (see SHORT_STAY_ENABLED in the
 // frontend) — mirroring that here: Short-Stay-only columns stay hidden in
@@ -13135,11 +13194,11 @@ function apptExportRowSelector(idx){
 }
 
 function propExportColumnPredicate(idx){
-  return idx!==0 && idx!==49 && idx!==50 && propTable.column(idx).visible();
+  return idx!==0 && idx!==49 && idx!==51 && propTable.column(idx).visible();
 }
 function propExportColumnIndices(){
   const idxs=[];
-  for(let i=0;i<=50;i++){ if(propExportColumnPredicate(i)) idxs.push(i); }
+  for(let i=0;i<=51;i++){ if(propExportColumnPredicate(i)) idxs.push(i); }
   return idxs;
 }
 
@@ -13663,6 +13722,8 @@ function applyPropCategoryColumnVisibility(cat){
   const showSS = SS_COLS_ENABLED && (cat === 'Short Stay');
   PG_ONLY_COLS.forEach(i => propTable.column(i).visible(showPG, false));
   SS_ONLY_COLS.forEach(i => propTable.column(i).visible(showSS, false));
+  const showBU = (cat === 'Booked' && _propBookedSub === 'us');
+  BOOKED_US_ONLY_COLS.forEach(i => propTable.column(i).visible(showBU, false));
   propTable.columns.adjust();
   updatePropStickyOffset();
 }
@@ -13673,12 +13734,23 @@ function switchPropCategory(cat){
   document.querySelectorAll('#propCatTabs .cat-tab-btn').forEach(btn=>{
     btn.classList.toggle('active', btn.getAttribute('data-cat') === cat);
   });
+  syncBookedSubTabs();
+  applyBookedOrder();
   applyPropCategoryColumnVisibility(cat);
   if(propTable) propTable.draw();
 }
 
+function switchBookedSub(sub){
+  _propBookedSub = sub;
+  localStorage.setItem('kr_admin_propBookedSub', sub);
+  syncBookedSubTabs();
+  applyBookedOrder();
+  applyPropCategoryColumnVisibility(_propCategoryState);
+  if(propTable) propTable.draw();
+}
+
 function updatePropCategoryCounts(data){
-  const counts = {all:0, Promoted:0, Booked:0, Blocked:0, Rent:0, Lease:0, Sell:0, PG:0, 'Short Stay':0};
+  const counts = {all:0, Promoted:0, Booked:0, BookedUs:0, BookedOther:0, Blocked:0, Rent:0, Lease:0, Sell:0, PG:0, 'Short Stay':0};
   data.forEach(r=>{
     counts.all++; // All includes booked and blocked properties too, unlike Promoted/Rent/Lease/Sell/PG/Short Stay
     if(r.blocked){
@@ -13688,9 +13760,10 @@ function updatePropCategoryCounts(data){
       if(r.promoted) counts.Promoted++; // once booked, no longer counted under Promoted either
     } else {
       counts.Booked++;
+      if(isBookedByUs(r)) counts.BookedUs++; else counts.BookedOther++;
     }
   });
-  ['all','Promoted','Booked','Blocked','Rent','Lease','Sell','PG','Short Stay'].forEach(cat=>{
+  ['all','Promoted','Booked','BookedUs','BookedOther','Blocked','Rent','Lease','Sell','PG','Short Stay'].forEach(cat=>{
     const el = document.getElementById('cat-count-'+cat.replace(/\s+/g,'-'));
     if(el) el.innerText = counts[cat];
   });
@@ -13706,6 +13779,8 @@ $.fn.dataTable.ext.search.push(function(settings, data, dataIndex){
     return false; // blocked properties only show under All and Blocked
   } else if(_propCategoryState === 'Booked'){
     if(!row.booked) return false;
+    // Booked sub-tabs: "Booked by us" = has Booking Details, "Booked" = none yet
+    if((_propBookedSub === 'us') !== isBookedByUs(row)) return false;
   } else if(row.booked && _propCategoryState !== 'all'){
     return false; // once booked, hidden from Promoted/Rent/Lease/PG/Short Stay — All and Booked still show it
   } else if(_propCategoryState === 'Promoted'){
