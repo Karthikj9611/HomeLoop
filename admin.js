@@ -124,15 +124,18 @@ module.exports = function registerAdminRoutes(app, deps) {
     // can tell the primary admin (ADMIN_EMAIL) apart from the numbered
     // sub-admins (ADMIN_EMAIL_2, _3, ...) and enforce per-feature access below.
     email:     { type: String, default: '' },
+    // true for sessions issued by the single-device login. Sessions created before that
+    // existed (no flag) never had a working logout, so they must not lock the account out.
+    single:    { type: Boolean, default: false },
     createdAt: { type: Date, default: Date.now },
     expiresAt: { type: Date, required: true, expires: 0 }, // TTL index: Mongo auto-deletes once expiresAt passes (= next 7 AM)
   });
 
   const AdminSession = mongoose.model('AdminSession', AdminSessionSchema);
 
-  async function issueAdminSession(email) {
+  async function issueAdminSession(email, single) {
     const key = crypto.randomBytes(32).toString('hex');
-    await AdminSession.create({ key, email: email || '', createdAt: new Date(), expiresAt: nextReset(new Date()) });
+    await AdminSession.create({ key, email: email || '', single: !!single, createdAt: new Date(), expiresAt: nextReset(new Date()) });
     return key;
   }
 
@@ -396,18 +399,72 @@ module.exports = function registerAdminRoutes(app, deps) {
     message: { message: 'Too many login attempts. Please try again later.' }
   });
 
+  // ── Login input validation ──
+  // Rejects malformed input before any bcrypt work happens. Same email shape
+  // check the rest of the app uses; the length caps keep absurd payloads out.
+  const ADMIN_EMAIL_RE       = /^[^\s@"'<>\\]+@[^\s@"'<>\\]+\.[^\s@"'<>\\]+$/;
+  const ADMIN_EMAIL_MAX      = 254;
+  const ADMIN_PASSWORD_MAX   = 256;
+  // Login id is either an email or a 10-digit mobile number (+91 / 0 prefix, spaces, dashes tolerated).
+  function normalizeAdminId(raw) {
+    const v = String(raw || '').trim();
+    if (v.includes('@')) return v.toLowerCase();
+    let d = v.replace(/\D/g, '');
+    if (d.length > 10 && d.startsWith('0'))  d = d.slice(1);
+    if (d.length > 10 && d.startsWith('91')) d = d.slice(d.length - 10);
+    return d;
+  }
+  function validateAdminLoginInput(email, password) {
+    if (typeof email !== 'string' || !email.trim())  return 'Please enter your email or mobile number.';
+    if (typeof password !== 'string' || !password)   return 'Please enter your password.';
+    const e = email.trim();
+    if (e.length > ADMIN_EMAIL_MAX) return 'Please enter a valid email or mobile number.';
+    if (e.includes('@') ? !ADMIN_EMAIL_RE.test(e) : !/^\d{10}$/.test(normalizeAdminId(e))) return 'Please enter a valid email or 10-digit mobile number.';
+    if (password.length > ADMIN_PASSWORD_MAX)        return 'Password is too long.';
+    return null;
+  }
+
+  // ── Single-device admin login ──
+  // True if this admin account already has a live session (unexpired AND issued
+  // after the most recent 7 AM reset — same rule getAdminSession applies). A
+  // second login is refused until that session logs out or hits the 7 AM reset.
+  async function findActiveAdminSessions(email, sortAsc) {
+    const now = new Date();
+    const q = AdminSession.find({ email, single: true, expiresAt: { $gt: now }, createdAt: { $gte: lastResetBefore(now) } });
+    return sortAsc ? q.sort({ createdAt: 1, _id: 1 }).lean() : q.lean();
+  }
+  const ADMIN_ALREADY_LOGGED_IN = {
+    message: 'This admin account is already logged in on another device. Please log out there first.',
+    code: 'ALREADY_LOGGED_IN',
+  };
+
   app.post('/api/login', loginLimiter, async (req, res) => {
     try {
       const { email, password } = req.body || {};
-      const normalizedEmail = String(email || '').toLowerCase().trim();
-      const account = ADMIN_ACCOUNTS.find(a => a.email === normalizedEmail);
+      const invalid = validateAdminLoginInput(email, password);
+      if (invalid) return res.status(400).json({ message: invalid });
+      const normalizedEmail = normalizeAdminId(email);
+      const account = ADMIN_ACCOUNTS.find(a => normalizeAdminId(a.email) === normalizedEmail);
       // Always run bcrypt.compare — even when no account matches the email, in
       // which case we compare against DUMMY_PASSWORD_HASH — so a wrong-email
       // request and a wrong-password request take the same amount of time.
       const passwordMatch = typeof password === 'string'
         && await bcrypt.compare(password, account ? account.passwordHash : DUMMY_PASSWORD_HASH);
       if (account && passwordMatch) {
-        const adminKey = await issueAdminSession(account.email);
+        // Only checked AFTER the password is verified, so nobody without the
+        // password can probe whether an account is currently signed in.
+        if ((await findActiveAdminSessions(account.email)).length) {
+          return res.status(409).json(ADMIN_ALREADY_LOGGED_IN);
+        }
+        const adminKey = await issueAdminSession(account.email, true);
+        // Two logins racing past the check above would both create a session.
+        // Oldest live session wins (createdAt, then _id); the loser deletes its
+        // own and is refused, so exactly one device ends up signed in.
+        const [winner] = await findActiveAdminSessions(account.email, true);
+        if (!winner || winner.key !== adminKey) {
+          await AdminSession.deleteOne({ key: adminKey });
+          return res.status(409).json(ADMIN_ALREADY_LOGGED_IN);
+        }
         return res.json({
           message: 'Login successful', adminKey, firstName: ADMIN_NAME,
           isSuperAdmin: account.email === SUPER_ADMIN_EMAIL,
@@ -423,7 +480,11 @@ module.exports = function registerAdminRoutes(app, deps) {
   app.post('/api/admin/logout', async (req, res) => {
     try {
       const key = (req.headers['x-admin-key'] || '').toString();
-      await AdminSession.deleteOne({ key });
+      // Single-device login: signing out ends EVERY session for this account, so a
+      // stale/orphaned one (closed tab, old cached page) can never keep it locked.
+      const sess = key ? await AdminSession.findOne({ key }).lean() : null;
+      if (sess && sess.email) await AdminSession.deleteMany({ email: sess.email });
+      else await AdminSession.deleteOne({ key });
       res.json({ message: 'Logged out' });
     } catch (err) {
       console.error('Admin logout error:', err);

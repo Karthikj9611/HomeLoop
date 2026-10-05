@@ -3101,13 +3101,13 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
       </div>
     </div>
     <div class="login-field">
-      <label for="loginEmail">Email / Username</label>
-      <input type="text" id="loginEmail" placeholder="admin@yourdomain.com" autocomplete="username"
+      <label for="loginEmail">Email or Mobile Number</label>
+      <input type="text" id="loginEmail" placeholder="Email or 10-digit mobile" autocomplete="username" maxlength="254"
         onkeydown="if(event.key==='Enter')document.getElementById('loginPassword').focus()"/>
     </div>
     <div class="login-field">
       <label for="loginPassword">Password</label>
-      <input type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password"
+      <input type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password" maxlength="256"
         onkeydown="if(event.key==='Enter')doLogin()"/>
     </div>
     <div class="login-error" id="loginError"></div>
@@ -5227,13 +5227,31 @@ window.alert = function (message) { showAlertModal(message); };
 function showLogin(){ document.getElementById('loginOverlay').style.display='flex'; }
 function hideLogin(){ document.getElementById('loginOverlay').style.display='none'; }
 
+const ADMIN_LOGIN_EMAIL_RE = /^[^\s@"'<>\\]+@[^\s@"'<>\\]+\.[^\s@"'<>\\]+$/;
 async function doLogin(){
-  const email    = document.getElementById('loginEmail').value.trim();
-  const password = document.getElementById('loginPassword').value;
+  const emailEl  = document.getElementById('loginEmail');
+  const passEl   = document.getElementById('loginPassword');
+  const email    = emailEl.value.trim();
+  const password = passEl.value;
   const errEl    = document.getElementById('loginError');
   const btn      = document.getElementById('loginBtn');
   errEl.textContent = '';
-  if(!email || !password){ errEl.textContent = 'Please enter email and password.'; return; }
+  // Client-side validation (the server re-checks everything — this just saves a round trip).
+  if(!email){ errEl.textContent = 'Please enter your email or mobile number.'; emailEl.focus(); return; }
+  let validId = email.length <= 254;
+  if(validId){
+    if(email.includes('@')) validId = ADMIN_LOGIN_EMAIL_RE.test(email);
+    else {
+      let d = email.replace(/\D/g,'');
+      if(d.length > 10 && d.startsWith('0'))  d = d.slice(1);
+      if(d.length > 10 && d.startsWith('91')) d = d.slice(-10);
+      validId = /^\d{10}$/.test(d);
+    }
+  }
+  if(!validId){ errEl.textContent = 'Please enter a valid email or 10-digit mobile number.'; emailEl.focus(); return; }
+  if(!password){ errEl.textContent = 'Please enter your password.'; passEl.focus(); return; }
+  if(password.length > 256){ errEl.textContent = 'Password is too long.'; passEl.focus(); return; }
+  if(btn.disabled) return; // already signing in — ignore double Enter / double click
   btn.disabled = true; btn.textContent = 'Signing in…';
   try {
     const res  = await fetch(BASE + '/api/login', {
@@ -5241,12 +5259,17 @@ async function doLogin(){
       headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ email, password })
     });
-    const data = await res.json();
+    let data = {};
+    try { data = await res.json(); } catch(_){}
     if(!res.ok || !data.adminKey){
-      errEl.textContent = data.message || 'Login failed or not an admin account.';
+      // 409 = this account is already signed in on another device (single-device login).
+      errEl.textContent = data.message
+        || (res.status === 429 ? 'Too many login attempts. Please try again later.' : 'Login failed or not an admin account.');
+      if(res.status === 401){ passEl.value = ''; passEl.focus(); }
       btn.disabled = false; btn.textContent = 'Sign In';
       return;
     }
+    passEl.value = '';
     ADMIN_KEY = data.adminKey;
     localStorage.setItem('kr_admin_key', ADMIN_KEY);
     const adminName = data.firstName || 'Admin';
@@ -5343,6 +5366,21 @@ async function doLogout(){
       }
     }
   } catch(e){}
+  // Release the SERVER session. Login is single-device: a session left behind here
+  // would keep this account locked out of every other device until the 7 AM reset.
+  // If the request can't be confirmed, stay signed in so the user can simply retry.
+  let released = false;
+  try {
+    const r = await Promise.race([
+      fetch(BASE + '/api/admin/logout', { method:'POST', headers: authHeaders() }),
+      new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 6000))
+    ]);
+    released = r.ok || r.status === 401; // 401 = session already gone server-side
+  } catch(e){}
+  if(!released){
+    showAlertModal('Could not sign out — please check your connection and try again.', { variant:'error', title:'Sign out failed' });
+    return;
+  }
   localStorage.removeItem('kr_admin_key');
   localStorage.removeItem('kr_admin_name');
   ADMIN_KEY = '';
