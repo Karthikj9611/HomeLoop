@@ -3084,6 +3084,25 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
 .confirm-ok-btn.success{background:#1e9e57}
 .confirm-ok-btn.success:hover{background:#178549;box-shadow:0 6px 20px rgba(30,158,87,0.3)}
 
+/* ── PHONES: every modal is a centred card ──
+   One final rule set so no modal can sit at the top/bottom of the screen. Overlays are centred
+   with equal padding on all sides; cards size against the *visible* viewport (dvh — 100vh is taller
+   than the screen on phones with a collapsing browser bar, which pushed tall modals off-centre)
+   and use margin:auto so a short card stays in the middle and a tall one scrolls inside itself. */
+@media(max-width:768px){
+  .add-modal-overlay,.prop-modal-wrap,#confirmOverlay,#alertOverlay,#sharePickOverlay,#shareTenantOverlay,#loginOverlay{
+    align-items:center!important;justify-content:center!important;
+    padding:12px!important;box-sizing:border-box;
+    overflow-y:auto;overscroll-behavior:contain;
+  }
+  .add-modal,.prop-modal,.confirm-card,.login-card{
+    margin:auto!important;
+    max-height:calc(100vh - 24px)!important;max-height:calc(100dvh - 24px)!important;
+  }
+  .add-modal,.prop-modal{width:100%;max-width:100%;box-sizing:border-box}
+  .add-modal.share-links-modal-box,.add-modal.notif-modal-box,.add-modal.compare-modal-box{max-width:100%}
+  .confirm-card{max-width:380px}
+}
 </style>
 </head>
 <body>
