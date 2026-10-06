@@ -206,6 +206,22 @@ body{
 /* count pills: orange on white so they pop against the cream buttons */
 .tab-btn:not(.active) .tab-count,.cat-tab-btn:not(.active) .cat-count{background:#fff;color:var(--gold-dark)}
 
+/* ── TAB LEVEL COLOURS ──
+   Level 1 (.tab-bar)         : brand cream / ink  (unchanged)
+   Level 2 (.tab-lvl-2)       : amber
+   Level 3 (.tab-lvl-3)       : emerald
+   Level 4 (.tab-lvl-4)       : rose   (add class tab-lvl-4 to any deeper bar)
+   Level 5 (.tab-lvl-5)       : violet (and so on - just add another block below) */
+.cat-tab-bar.tab-lvl-2{--t-bg:#fffbeb;--t-bd:#fde68a;--t-fg:#92400e;--t-hov:#fef3c7;--t-hbd:#fcd34d;--t-act:#d97706;--t-sh:rgba(217,119,6,.32);--t-tint:#fffdf5}
+.cat-tab-bar.tab-lvl-3{--t-bg:#ecfdf5;--t-bd:#a7f3d0;--t-fg:#065f46;--t-hov:#d1fae5;--t-hbd:#6ee7b7;--t-act:#059669;--t-sh:rgba(5,150,105,.32);--t-tint:#f6fffb}
+.cat-tab-bar.tab-lvl-4{--t-bg:#fff1f2;--t-bd:#fecdd3;--t-fg:#9f1239;--t-hov:#ffe4e6;--t-hbd:#fda4af;--t-act:#e11d48;--t-sh:rgba(225,29,72,.32);--t-tint:#fffafa}
+.cat-tab-bar.tab-lvl-5{--t-bg:#f5f3ff;--t-bd:#ddd6fe;--t-fg:#5b21b6;--t-hov:#ede9fe;--t-hbd:#c4b5fd;--t-act:#7c3aed;--t-sh:rgba(124,58,237,.32);--t-tint:#fbfaff}
+.cat-tab-bar.tab-lvl-2,.cat-tab-bar.tab-lvl-3,.cat-tab-bar.tab-lvl-4,.cat-tab-bar.tab-lvl-5{background:var(--t-tint);border-color:var(--t-bd)}
+.cat-tab-bar.tab-lvl-2 .cat-tab-btn,.cat-tab-bar.tab-lvl-3 .cat-tab-btn,.cat-tab-bar.tab-lvl-4 .cat-tab-btn,.cat-tab-bar.tab-lvl-5 .cat-tab-btn{background:var(--t-bg);border-color:var(--t-bd);color:var(--t-fg)}
+.cat-tab-bar.tab-lvl-2 .cat-tab-btn:hover,.cat-tab-bar.tab-lvl-3 .cat-tab-btn:hover,.cat-tab-bar.tab-lvl-4 .cat-tab-btn:hover,.cat-tab-bar.tab-lvl-5 .cat-tab-btn:hover{background:var(--t-hov);border-color:var(--t-hbd);color:var(--t-fg)}
+.cat-tab-bar.tab-lvl-2 .cat-tab-btn.active,.cat-tab-bar.tab-lvl-3 .cat-tab-btn.active,.cat-tab-bar.tab-lvl-4 .cat-tab-btn.active,.cat-tab-bar.tab-lvl-5 .cat-tab-btn.active{background:var(--t-act);border-color:var(--t-act);color:#fff;box-shadow:0 4px 14px var(--t-sh)}
+.cat-tab-bar.tab-lvl-2 .cat-tab-btn:not(.active) .cat-count,.cat-tab-bar.tab-lvl-3 .cat-tab-btn:not(.active) .cat-count,.cat-tab-bar.tab-lvl-4 .cat-tab-btn:not(.active) .cat-count,.cat-tab-bar.tab-lvl-5 .cat-tab-btn:not(.active) .cat-count{background:#fff;color:var(--t-act)}
+
 /* One-word labels on the floating stack (uses each button's data-mobile word) */
 #bulkToolbar .bulk-btn{width:auto!important;min-width:0!important;height:38px!important;flex-direction:row!important;gap:6px!important;padding:0 14px!important;white-space:nowrap}
 #bulkToolbar .bulk-btn-label{font-size:0!important;line-height:0!important}
@@ -3732,7 +3748,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
   <!-- ══ CUSTOMERS PANEL ══ -->
   <div class="tab-panel" id="panel-customers">
     <!-- Account-type sub-tabs: Tenants / Owners -->
-    <div class="cat-tab-bar" id="custTypeTabs">
+    <div class="cat-tab-bar tab-lvl-2" id="custTypeTabs">
       <button class="cat-tab-btn" data-type="all" onclick="switchCustType('all')">
         <i class="fas fa-users"></i><span class="cat-tab-btn-label" data-mobile="All">All</span><span class="cat-count" id="cust-type-count-all">—</span>
       </button>
@@ -3747,7 +3763,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
       </button>
     </div>
     <!-- Status sub-sub tabs (below the account-type tabs): Active / Lost Leads / Rented / Subscription / All -->
-    <div class="cat-tab-bar" id="custStatusTabs">
+    <div class="cat-tab-bar tab-lvl-3" id="custStatusTabs">
       <button class="cat-tab-btn" data-status="all" onclick="switchCustStatus('all')">
         <i class="fas fa-layer-group"></i><span class="cat-tab-btn-label" data-mobile="All">All</span><span class="cat-count" id="cust-status-count-all">—</span>
       </button>
@@ -3765,7 +3781,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
       </button>
     </div>
     <!-- Property Owners status sub-tabs (shown only on the Property Owners tab) -->
-    <div class="cat-tab-bar po-hidden" id="poStatusTabs">
+    <div class="cat-tab-bar po-hidden tab-lvl-3" id="poStatusTabs">
       <button class="cat-tab-btn" data-postatus="tocall" onclick="switchPOStatus('tocall')" title="Owners not yet in Not Available, Callback, Follow-up or Listed">
         <i class="fas fa-phone"></i><span class="cat-tab-btn-label" data-mobile="To call">To call</span><span class="cat-count" id="po-status-count-tocall">—</span>
       </button>
@@ -3924,7 +3940,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
   <!-- ══ PROPERTIES PANEL ══ -->
   <div class="tab-panel active" id="panel-properties">
     <!-- Category sub-tabs: All / Rent / Lease / Sell / PG -->
-    <div class="cat-tab-bar" id="propCatTabs">
+    <div class="cat-tab-bar tab-lvl-2" id="propCatTabs">
       <button class="cat-tab-btn" data-cat="all" onclick="switchPropCategory('all')">
         <i class="fas fa-layer-group"></i><span class="cat-tab-btn-label" data-mobile="All">All</span><span class="cat-count" id="cat-count-all">—</span>
       </button>
@@ -3956,7 +3972,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
     <!-- Booked sub-tabs: only visible while the Booked category is selected.
          "Booked by us" = booked listings that have Booking Details saved.
          "Booked"       = booked listings with no Booking Details yet. -->
-    <div class="cat-tab-bar" id="propBookedSubTabs">
+    <div class="cat-tab-bar tab-lvl-3" id="propBookedSubTabs">
       <button class="cat-tab-btn" data-sub="us" onclick="switchBookedSub('us')">
         <i class="fas fa-handshake"></i><span class="cat-tab-btn-label" data-mobile="By Us">Booked by us</span><span class="cat-count" id="cat-count-BookedUs">—</span>
       </button>
@@ -4272,7 +4288,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
   <!-- ══ VISITS PANEL (Visits / Users Registered sub-tabs) ══ -->
   <div class="tab-panel" id="panel-visits">
     <!-- Category sub-tabs: Visits (Total + Daily combined) / Users Registered -->
-    <div class="cat-tab-bar" id="visitsCatTabs">
+    <div class="cat-tab-bar tab-lvl-2" id="visitsCatTabs">
       <button class="cat-tab-btn active" data-cat="visits" onclick="switchVisitsCategory('visits')">
         <i class="fas fa-globe"></i><span class="cat-tab-btn-label" data-mobile="Visits">Visits</span><span class="cat-count" id="cat-count-visits-total">—</span>
       </button>
