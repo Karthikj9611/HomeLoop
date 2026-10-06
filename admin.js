@@ -1904,6 +1904,82 @@ self.addEventListener('notificationclick', event => {
     }
   });
 
+  // ── PROPERTY AVAILABILITY (Customers > Property Owners table) ──────────────
+  // Reason (available / not available) + remark per listing, kept in its OWN
+  // collection ('propertyAvailability') instead of on the listing document.
+  // One doc per listing holds the latest values; every save is also pushed
+  // onto `history` so earlier reasons/remarks are never lost.
+  const AVAILABILITY_REASONS = {
+    'Available':              true,
+    'Already rented':         false,
+    'Rented through us':      false,
+    'Owner not reachable':    false,
+    'Owner withdrew listing': false,
+    'Under renovation':       false,
+    'Sold':                   false,
+  };
+  const PropertyAvailabilitySchema = new mongoose.Schema({
+    propertyObjectId: { type: mongoose.Schema.Types.ObjectId, required: true, unique: true },
+    propertyId:       { type: String, default: '', index: true },
+    available:        { type: Boolean, default: null },
+    reason:           { type: String, default: '' },
+    remark:           { type: String, default: '', maxlength: 500 },
+    updatedBy:        { type: String, default: '' },
+    updatedAt:        { type: Date, default: Date.now },
+    history: [{
+      _id: false,
+      available: Boolean, reason: String, remark: String, by: String,
+      at: { type: Date, default: Date.now },
+    }],
+  }, { collection: 'propertyAvailability' });
+  const PropertyAvailability = mongoose.model('PropertyAvailability', PropertyAvailabilitySchema);
+
+  app.get('/api/admin/property-availability', requireAdmin, requireModule('customers'), async (req, res) => {
+    try {
+      const rows = await PropertyAvailability.find({}, { history: 0 }).lean();
+      res.json(rows.map(r => ({
+        _id: String(r.propertyObjectId), propertyId: r.propertyId || '',
+        available: r.available, reason: r.reason || '', remark: r.remark || '',
+        updatedBy: r.updatedBy || '', updatedAt: r.updatedAt,
+      })));
+    } catch (err) {
+      console.error('GET /api/admin/property-availability error:', err);
+      res.status(500).json({ message: 'Error loading availability' });
+    }
+  });
+
+  app.put('/api/admin/property-availability/:id', requireAdmin, requireModuleAction('customers'), async (req, res) => {
+    try {
+      const { id } = req.params;
+      if (!mongoose.Types.ObjectId.isValid(id)) return res.status(400).json({ message: 'Invalid property id' });
+      const reason = String((req.body && req.body.reason) || '').trim();
+      const remark = String((req.body && req.body.remark) || '').trim().slice(0, 500);
+      if (reason && !Object.prototype.hasOwnProperty.call(AVAILABILITY_REASONS, reason)) {
+        return res.status(400).json({ message: 'Invalid reason' });
+      }
+      const found = await findListingById(id, { lean: true });
+      if (!found || !found.doc) return res.status(404).json({ message: 'Property not found' });
+      const available = reason ? AVAILABILITY_REASONS[reason] : null;
+      const by = req.adminEmail || '';
+      const now = new Date();
+      const doc = await PropertyAvailability.findOneAndUpdate(
+        { propertyObjectId: id },
+        {
+          $set:  { propertyId: found.doc.propertyId || '', available, reason, remark, updatedBy: by, updatedAt: now },
+          $push: { history: { available, reason, remark, by, at: now } },
+        },
+        { upsert: true, new: true, setDefaultsOnInsert: true }
+      ).lean();
+      res.json({
+        _id: String(doc.propertyObjectId), propertyId: doc.propertyId, available: doc.available,
+        reason: doc.reason, remark: doc.remark, updatedBy: doc.updatedBy, updatedAt: doc.updatedAt,
+      });
+    } catch (err) {
+      console.error('PUT /api/admin/property-availability/:id error:', err);
+      res.status(500).json({ message: 'Error saving availability' });
+    }
+  });
+
   app.get('/api/admin/properties', requireAdmin, requireModule('properties'), async (req, res) => {
     try {
       const docArrays = await Promise.all(LISTING_MODEL_LIST.map(M => M.find({}).populate('userId', 'profilePhoto').lean()));

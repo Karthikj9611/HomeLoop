@@ -3721,6 +3721,9 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
       <button class="cat-tab-btn" data-type="customer" onclick="switchCustType('customer')">
         <i class="fas fa-user"></i><span class="cat-tab-btn-label" data-mobile="Tenants">Tenants</span><span class="cat-count" id="cust-type-count-customer">—</span>
       </button>
+      <button class="cat-tab-btn" data-type="propowner" onclick="switchCustType('propowner')" title="Owners taken from the Properties section">
+        <i class="fas fa-building-user"></i><span class="cat-tab-btn-label" data-mobile="Prop. Owners">Property Owners</span><span class="cat-count" id="cust-type-count-propowner">—</span>
+      </button>
     </div>
     <!-- Status sub-sub tabs (below the account-type tabs): Active / Lost Leads / Rented / Subscription / All -->
     <div class="cat-tab-bar" id="custStatusTabs">
@@ -3740,7 +3743,27 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
         <i class="fas fa-bullseye"></i><span class="cat-tab-btn-label" data-mobile="Lost Leads">Lost Leads</span><span class="cat-count" id="cust-status-count-leads">—</span>
       </button>
     </div>
-    <div class="card">
+    <!-- Property Owners: owner details collected from the Properties section -->
+    <div class="card" id="propOwnersCard" style="display:none">
+      <div class="table-wrapper">
+        <table id="propOwnersTable" class="display nowrap" style="width:100%">
+          <thead>
+            <tr>
+              <th>S.No</th>
+              <th>Property ID</th>
+              <th>Owner Number</th>
+              <th>Owner Alt Number</th>
+              <th>Location</th>
+              <th>Availability Reason</th>
+              <th>Remark</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card" id="custMainCard">
       <div class="table-wrapper">
         <div class="bulk-toolbar bulk-toolbar-spaced" id="custBulkToolbar">
           <div class="bulk-toolbar-left">
@@ -7107,9 +7130,19 @@ function syncCustTabActive(){
 }
 window.switchCustType = function(type){
   _custTypeTab = type;
-  try{ localStorage.setItem('kr_admin_custType', type); }catch(e){}
+  // "propowner" is a view of the Properties data, not a customer filter — don't persist it.
+  if(type !== 'propowner'){ try{ localStorage.setItem('kr_admin_custType', type); }catch(e){} }
+  const isPO = type === 'propowner';
+  const poCard = document.getElementById('propOwnersCard');
+  const mainCard = document.getElementById('custMainCard');
+  const stTabs = document.getElementById('custStatusTabs');
+  if(poCard) poCard.style.display = isPO ? '' : 'none';
+  if(mainCard) mainCard.style.display = isPO ? 'none' : '';
+  if(stTabs) stTabs.style.display = isPO ? 'none' : '';
   updateCustTypeCounts();
-  if(dataTable) dataTable.draw();
+  if(isPO){
+    if(_propOwnersTable) _propOwnersTable.columns.adjust();
+  } else if(dataTable) dataTable.draw();
 };
 window.switchCustStatus = function(status){
   _custStatusTab = status;
@@ -7137,6 +7170,136 @@ function updateCustTypeCounts(data){
 }
 
 syncCustTabActive();
+
+/* ── PROPERTY OWNERS (built from the Properties section) ──
+   Every property row carries ownerName / ownerNumber / ownerAltPhone / ownerEmail /
+   ownerContactTime. Rows are grouped by owner phone number (falling back to
+   name+email) so an owner with several listings appears once, with a property count. */
+let _propOwnersTable = null;
+let _propOwnersList = [];
+// One row per property (not grouped): its owner number, owner alt number and location.
+function buildPropOwners(props){
+  return (props || []).map(p => ({
+    _id: p._id || '',
+    propertyId: p.propertyId || '',
+    number: p.ownerNumber || '',
+    alt: p.ownerAltPhone || '',
+    loc: [p.loc, p.city].filter(Boolean).join(', '),
+    lat: parseFloat(p.latitude),
+    lng: parseFloat(p.longitude)
+  })).filter(r => r.propertyId || r.number || r.alt);
+}
+// Open Google Maps directions to the property (coordinates if present, else its location text).
+window.navigateToProperty = function(lat, lng, loc){
+  const dest = (isFinite(lat) && isFinite(lng)) ? lat + ',' + lng : (loc || '');
+  if(!dest){ alert('No location available for this property'); return; }
+  window.open('https://www.google.com/maps/dir/?api=1&destination=' + encodeURIComponent(dest), '_blank', 'noopener');
+};
+// Jump to the Properties tab, filtered to this owner's number.
+window.viewOwnerProperties = function(num){
+  if(typeof switchTab === 'function') switchTab('properties');
+  const inp = document.querySelector('#propertyTable_wrapper [data-filter-key="ownerNumber"]') || document.querySelector('[data-filter-key="ownerNumber"]');
+  if(inp) inp.value = num;
+  if(typeof onPropColumnFilter === 'function') onPropColumnFilter('ownerNumber', num, inp);
+};
+const _poPhone = (d,t)=> t==='display' ? (d ? `<a href="tel:${escapeHtml(d)}" class="phone-link">${escapeHtml(d)}</a>` : '—') : (d||'');
+/* Availability reason + remark per property — saved to the separate
+   'propertyAvailability' collection (PUT /api/admin/property-availability/:id). */
+const PO_REASONS = [
+  { label:'Available', color:'#16a34a' },
+  { label:'Already rented', color:'#16a34a' }, { label:'Rented through us', color:'#16a34a' },
+  { label:'Owner not reachable', color:'#ca8a04' }, { label:'Owner withdrew listing', color:'#dc2626' },
+  { label:'Under renovation', color:'#0891b2' }, { label:'Sold', color:'#64748b' }
+];
+const _poColor = r => { const x = PO_REASONS.find(o => o.label === r); return x ? x.color : ''; };
+function poReasonHtml(r){
+  const cur = r.reason || '';
+  const opt = o => `<option value="${escapeHtml(o.label)}" style="color:${o.color};font-weight:600"${o.label===cur?' selected':''}>${escapeHtml(o.label)}</option>`;
+  const rc = _poColor(cur);
+  return `<select class="reason-select${cur?' has-reason':''}" ${rc?`style="--rc:${rc}"`:''} data-id="${escapeHtml(r._id)}" data-prev="${escapeHtml(cur)}" onchange="poDirty(this)">`
+       + `<option value="">Select reason…</option>`
+       + `<optgroup label="Available">${opt(PO_REASONS[0])}</optgroup>`
+       + `<optgroup label="Not available">${PO_REASONS.slice(1).map(opt).join('')}</optgroup></select>`;
+}
+function poRemarkHtml(r){
+  const cur = r.remark || '';
+  return `<div style="display:flex;gap:6px;align-items:center;min-width:240px">`
+       + `<input type="text" class="remark-input" maxlength="500" placeholder="Add remark…" value="${escapeHtml(cur)}" data-prev="${escapeHtml(cur)}" oninput="poDirty(this)" onkeydown="if(event.key==='Enter'){poSave(this)}">`
+       + `<button type="button" class="remark-save-btn" title="Save reason & remark" disabled onclick="poSave(this)"><i class="fas fa-check"></i></button></div>`;
+}
+window.poDirty = function(el){
+  const tr = el.closest('tr'); if(!tr) return;
+  const sel = tr.querySelector('select.reason-select'), inp = tr.querySelector('input.remark-input'), btn = tr.querySelector('.remark-save-btn');
+  if(el === sel){
+    const rc = _poColor(sel.value);
+    sel.classList.toggle('has-reason', !!sel.value);
+    if(rc) sel.style.setProperty('--rc', rc); else sel.style.removeProperty('--rc');
+  }
+  if(btn) btn.disabled = (sel.value === (sel.dataset.prev||'')) && (inp.value.trim() === (inp.dataset.prev||''));
+};
+window.poSave = async function(el){
+  if(blockIfViewOnly('customers')) return;
+  const tr = el.closest('tr'); if(!tr) return;
+  const sel = tr.querySelector('select.reason-select'), inp = tr.querySelector('input.remark-input'), btn = tr.querySelector('.remark-save-btn');
+  if(!btn || btn.disabled) return;
+  const id = sel.dataset.id; if(!id){ alert('Missing property id'); return; }
+  btn.disabled = true; sel.disabled = true; inp.disabled = true;
+  try{
+    const res = await fetch(`${BASE}/api/admin/property-availability/${encodeURIComponent(id)}`, {
+      method:'PUT', headers: authHeaders({'Content-Type':'application/json'}),
+      body: JSON.stringify({ reason: sel.value, remark: inp.value.trim() })
+    });
+    if(!res.ok) throw new Error('Save failed');
+    const saved = await res.json();
+    sel.dataset.prev = saved.reason || ''; inp.dataset.prev = saved.remark || ''; inp.value = saved.remark || '';
+    const row = _propOwnersList.find(x => x._id === id);
+    if(row){ row.reason = saved.reason || ''; row.remark = saved.remark || ''; }
+  }catch(e){
+    alert('Could not save reason / remark. Please try again.');
+  }
+  sel.disabled = false; inp.disabled = false;
+  btn.disabled = (sel.value === (sel.dataset.prev||'')) && (inp.value.trim() === (inp.dataset.prev||''));
+};
+async function _loadPropAvailability(){
+  try{
+    const res = await fetch(`${BASE}/api/admin/property-availability`, { headers: authHeaders() });
+    if(!res.ok) return {};
+    const map = {}; (await res.json()).forEach(a => { map[a._id] = a; });
+    return map;
+  }catch(e){ return {}; }
+}
+window.setPropOwnersData = async function(props){
+  _propOwnersList = buildPropOwners(props);
+  const el = document.getElementById('cust-type-count-propowner');
+  if(el) el.innerText = _propOwnersList.length;
+  if(!window.jQuery || !jQuery.fn.dataTable) return;
+  const avail = await _loadPropAvailability();
+  _propOwnersList.forEach(r => { const a = avail[r._id]; r.reason = a ? a.reason : ''; r.remark = a ? a.remark : ''; });
+  if(!_propOwnersTable){
+    _propOwnersTable = $('#propOwnersTable').DataTable({
+      data: _propOwnersList,
+      pageLength: 25,
+      order: [],
+      columns: [
+        { data:null, orderable:false, className:'dt-body-center', render:(d,t,r,meta)=> String(meta.row+1) },
+        { data:'propertyId', render:(d,t)=> t==='display' ? escapeHtml(d||'—') : (d||'') },
+        { data:'number', render:_poPhone },
+        { data:'alt', render:_poPhone },
+        { data:'loc', render:(d,t)=> t==='display' ? escapeHtml(d||'—') : (d||'') },
+        { data:'reason', render:(d,t,r)=> t==='display' ? poReasonHtml(r) : (d||'') },
+        { data:'remark', render:(d,t,r)=> t==='display' ? poRemarkHtml(r) : (d||'') },
+        { data:null, orderable:false, render:(d,t,r)=> {
+            if(t!=='display') return '';
+            const loc = escapeHtml(r.loc || '').replace(/'/g, '&#39;');
+            return `<button type="button" class="bulk-btn" onclick="navigateToProperty(${isFinite(r.lat)?r.lat:'NaN'}, ${isFinite(r.lng)?r.lng:'NaN'}, '${loc}')" title="Get directions in Google Maps"><i class="fas fa-location-arrow"></i> Navigate</button> `
+                 + `<button type="button" class="bulk-btn" onclick="viewOwnerProperties('${escapeHtml(r.number||'')}')" title="Open in the Properties tab"><i class="fas fa-arrow-up-right-from-square"></i> View</button>`;
+        }}
+      ]
+    });
+  } else {
+    _propOwnersTable.clear().rows.add(_propOwnersList).draw(false);
+  }
+};
 
 window.clearCustFilters = function(){
   clearFiltersGeneric('bookingTable_wrapper', _custColumnFilters, dataTable, CUST_FILTER_STORAGE_KEY, 'custFilterBadge', 'custFilterCount', 'custClearFiltersBtn');
@@ -11054,6 +11217,7 @@ $(document).ready(function(){
       dataSrc: function(res){
         if(!Array.isArray(res)) return [];
         document.getElementById('tab-properties-count').innerText = res.length;
+        try{ setPropOwnersData(res); }catch(e){ console.error('Property owners failed:', e); }
         buildPropFilters(res);
         return res;
       }
