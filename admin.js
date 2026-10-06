@@ -564,12 +564,33 @@ module.exports = function registerAdminRoutes(app, deps) {
         for (const key of Object.keys(ADMIN_MODULES)) {
           actions[key] = !perm || !perm.actions || perm.actions[key] !== false;
         }
-        return { email: a.email, modules, actions, buttons };
+        const online = (await findActiveAdminSessions(a.email)).length > 0;
+        return { email: a.email, modules, actions, buttons, online };
       }));
       res.json({ subAdmins, availableModules: ADMIN_MODULES, availableButtons: ADMIN_BUTTONS });
     } catch (err) {
       console.error('GET /api/admin/sub-admins error:', err.message);
       res.status(500).json({ message: 'Error fetching sub-admins' });
+    }
+  });
+
+  // ── POST /api/admin/sub-admins/:email/logout — super admin force-logs a sub-admin out.
+  // Deletes every session for that account (single-device login means there is at most
+  // one live, but stale ones are cleared too). The sub-admin's next request gets a 401
+  // and lands on the login screen; they can sign in again straight away. ──
+  app.post('/api/admin/sub-admins/:email/logout', requireAdmin, requireSuperAdmin, async (req, res) => {
+    try {
+      const targetEmail = String(req.params.email || '').toLowerCase().trim();
+      const account = ADMIN_ACCOUNTS.find(a => a.email === targetEmail);
+      if (!account) return res.status(404).json({ message: 'No admin account with that email' });
+      if (targetEmail === SUPER_ADMIN_EMAIL) {
+        return res.status(400).json({ message: 'The primary admin cannot be force-logged out.' });
+      }
+      const r = await AdminSession.deleteMany({ email: targetEmail });
+      res.json({ message: r.deletedCount ? 'Sub-admin logged out' : 'That sub-admin was not logged in', loggedOut: r.deletedCount || 0 });
+    } catch (err) {
+      console.error('POST /api/admin/sub-admins/:email/logout error:', err.message);
+      res.status(500).json({ message: 'Error logging out sub-admin' });
     }
   });
 

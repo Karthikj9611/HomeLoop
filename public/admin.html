@@ -1251,6 +1251,11 @@ table.dataTable.no-footer{border-bottom:none!important}
 .aa-btn-quiet:hover{background:var(--bg-3)}
 .aa-btn-primary{background:var(--ink);color:#fff}
 .aa-btn-primary:hover:not(:disabled){filter:brightness(1.25)}
+.aa-btn-danger{background:#fef2f2;color:#b91c1c;border:1px solid #fecaca;margin-right:auto}
+.aa-btn-danger:hover:not(:disabled){background:#fee2e2}
+.aa-btn-danger:disabled{opacity:.5;cursor:not-allowed}
+.aa-online{display:inline-flex;align-items:center;gap:5px;margin-left:8px;padding:1px 8px;border-radius:99px;font-size:.68rem;font-weight:700;background:#ecfdf5;color:#047857;vertical-align:middle}
+.aa-online::before{content:'';width:6px;height:6px;border-radius:50%;background:#10b981}
 .aa-btn:disabled{opacity:0.4;cursor:default}
 
 @media (max-width:900px){
@@ -3622,6 +3627,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
     <div class="aa-modal-foot">
       <div class="aa-foot-msg" id="aaModalMsg" role="status" aria-live="polite"></div>
       <div class="aa-foot-actions">
+        <button type="button" class="aa-btn aa-btn-danger" id="aaModalLogout" onclick="aaForceLogout()" title="End this sub-admin's login session"><i class="fas fa-right-from-bracket"></i> Force logout</button>
         <button type="button" class="aa-btn aa-btn-quiet" onclick="aaRequestClose()">Cancel</button>
         <button type="button" class="aa-btn aa-btn-primary" id="aaModalSave" onclick="aaSaveModal()" disabled>Save changes</button>
       </div>
@@ -6625,7 +6631,7 @@ function aaRowInner(email){
   return `
     <span class="aa-avatar">${escapeHtml(adminInitial(email))}</span>
     <span class="aa-row-main">
-      <span class="aa-email">${escapeHtml(email)}</span>
+      <span class="aa-email">${escapeHtml(email)}${(ADMIN_ACCESS.online || {})[email] ? '<span class="aa-online">Online</span>' : ''}</span>
       <span class="aa-tally">${aaTallyHtml(aaCount(lv))}</span>
     </span>
     <span class="aa-strip" aria-hidden="true">${ADMIN_ACCESS.keys.map(k =>
@@ -6680,7 +6686,9 @@ async function loadAdminAccessTab(){
     ADMIN_ACCESS.btnCatalog = data.availableButtons || {};
     ADMIN_ACCESS.saved = {};
     ADMIN_ACCESS.savedBtns = {};
+    ADMIN_ACCESS.online = {};
     data.subAdmins.forEach(sub => {
+      ADMIN_ACCESS.online[sub.email] = !!sub.online;
       const levels = {};
       ADMIN_ACCESS.keys.forEach(k => { levels[k] = aaLevelOf(sub, k); });
       ADMIN_ACCESS.saved[sub.email] = levels;
@@ -6770,6 +6778,36 @@ function aaModalRefresh(){
 function aaModalSetAll(input){
   document.querySelectorAll('#aaModalGrid input[value="'+input.value+'"]').forEach(r => { r.checked = true; });
   aaModalRefresh();
+}
+
+async function aaForceLogout(){
+  const email = ADMIN_ACCESS.open;
+  if(!email || ADMIN_ACCESS.saving || ADMIN_ACCESS.confirming) return;
+  ADMIN_ACCESS.confirming = true;
+  let ok = false;
+  try {
+    ok = await showConfirmModal({
+      title:'Force logout?',
+      message: email + ' will be signed out immediately and sent to the login screen. Unsaved work on their side is lost.',
+      okText:'Force logout', cancelText:'Cancel', variant:'danger'
+    });
+  } finally { ADMIN_ACCESS.confirming = false; }
+  if(!ok) return;
+  const btn = document.getElementById('aaModalLogout');
+  if(btn) btn.disabled = true;
+  try {
+    const res = await fetch(BASE + '/api/admin/sub-admins/' + encodeURIComponent(email) + '/logout', {
+      method:'POST', headers: authHeaders()
+    });
+    const data = await res.json().catch(() => ({}));
+    if(!res.ok) throw new Error(data.message || 'Could not log out');
+    ADMIN_ACCESS.online[email] = false;
+    aaUpdateRow(email, true);
+    aaSetMsg(escapeHtml(data.message || 'Sub-admin logged out'), false);
+  } catch(e){
+    aaSetMsg(escapeHtml(e.message || 'Could not log out. Try again.'), true);
+  }
+  if(btn) btn.disabled = false;
 }
 
 function aaOpenModal(btn){
