@@ -458,17 +458,22 @@ module.exports = function registerAdminRoutes(app, deps) {
       if (account && passwordMatch) {
         // Only checked AFTER the password is verified, so nobody without the
         // password can probe whether an account is currently signed in.
-        if ((await findActiveAdminSessions(account.email)).length) {
+        // The super admin (ADMIN_EMAIL) may be signed in on several devices at
+        // once, so the single-device checks below apply to sub-admins only.
+        const isSuper = account.email === SUPER_ADMIN_EMAIL;
+        if (!isSuper && (await findActiveAdminSessions(account.email)).length) {
           return res.status(409).json(ADMIN_ALREADY_LOGGED_IN);
         }
         const adminKey = await issueAdminSession(account.email, true);
         // Two logins racing past the check above would both create a session.
         // Oldest live session wins (createdAt, then _id); the loser deletes its
         // own and is refused, so exactly one device ends up signed in.
-        const [winner] = await findActiveAdminSessions(account.email, true);
-        if (!winner || winner.key !== adminKey) {
-          await AdminSession.deleteOne({ key: adminKey });
-          return res.status(409).json(ADMIN_ALREADY_LOGGED_IN);
+        if (!isSuper) {
+          const [winner] = await findActiveAdminSessions(account.email, true);
+          if (!winner || winner.key !== adminKey) {
+            await AdminSession.deleteOne({ key: adminKey });
+            return res.status(409).json(ADMIN_ALREADY_LOGGED_IN);
+          }
         }
         return res.json({
           message: 'Login successful', adminKey, firstName: ADMIN_NAME,
@@ -487,8 +492,10 @@ module.exports = function registerAdminRoutes(app, deps) {
       const key = (req.headers['x-admin-key'] || '').toString();
       // Single-device login: signing out ends EVERY session for this account, so a
       // stale/orphaned one (closed tab, old cached page) can never keep it locked.
+      // Super admin can be on several devices, so logging out there ends only
+      // THIS device's session; sub-admins still clear every session.
       const sess = key ? await AdminSession.findOne({ key }).lean() : null;
-      if (sess && sess.email) await AdminSession.deleteMany({ email: sess.email });
+      if (sess && sess.email && sess.email !== SUPER_ADMIN_EMAIL) await AdminSession.deleteMany({ email: sess.email });
       else await AdminSession.deleteOne({ key });
       res.json({ message: 'Logged out' });
     } catch (err) {
