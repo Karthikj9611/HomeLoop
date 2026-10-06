@@ -1251,6 +1251,17 @@ table.dataTable.no-footer{border-bottom:none!important}
 .aa-btn-quiet:hover{background:var(--bg-3)}
 .aa-btn-primary{background:var(--ink);color:#fff}
 .aa-btn-primary:hover:not(:disabled){filter:brightness(1.25)}
+.po-hidden{display:none !important}
+/* Property Owners table: compact so every column (incl. Follow-up Date + Action) fits on a normal desktop width without sideways scrolling */
+#propOwnersTable th, #propOwnersTable td{padding-left:8px !important;padding-right:8px !important}
+#propOwnersTable .remark-cell, #propOwnersTable .remark-cell.remark-cell-empty{width:300px;min-width:300px;max-width:300px}
+#propOwnersTable .reason-select{min-width:170px;max-width:200px}
+#propOwnersTable .po-date-input{min-width:135px;padding:8px 10px}
+#propOwnersTable td:nth-child(5){white-space:normal;min-width:170px;max-width:230px}
+.po-date-input{font:inherit;font-weight:600;font-size:.85rem;color:var(--ink);background:#fff;border:1px solid var(--border,#e5e7eb);border-radius:99px;padding:9px 14px;min-width:150px;cursor:pointer}
+.confirm-ok-btn:disabled{opacity:.5;cursor:not-allowed}
+.po-date-input:focus{outline:none;border-color:var(--gold-dark,#b45309);box-shadow:0 0 0 3px rgba(180,83,9,.12)}
+.po-date-input.has-date{border-color:#0891b2;background:#ecfeff;color:#0e7490}
 .aa-btn-danger{background:#fef2f2;color:#b91c1c;border:1px solid #fecaca;margin-right:auto}
 .aa-btn-danger:hover:not(:disabled){background:#fee2e2}
 .aa-btn-danger:disabled{opacity:.5;cursor:not-allowed}
@@ -3212,6 +3223,10 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
     <div class="confirm-icon" id="confirmIcon"><i class="fas fa-trash-alt"></i></div>
     <div class="confirm-title" id="confirmTitle">Are you sure?</div>
     <div class="confirm-msg" id="confirmMsg">This action cannot be undone.</div>
+    <div id="confirmDateWrap" style="display:none;margin:4px 0 14px;text-align:left">
+      <label id="confirmDateLabel" for="confirmDateInput" style="display:block;font-size:.8rem;font-weight:700;margin-bottom:6px">Follow-up date <span style="color:#dc2626">*</span></label>
+      <input type="date" id="confirmDateInput" class="po-date-input" style="width:100%;box-sizing:border-box">
+    </div>
     <div class="confirm-actions">
       <button class="confirm-cancel-btn" id="confirmCancelBtn">Cancel</button>
       <button class="confirm-ok-btn" id="confirmOkBtn">Delete</button>
@@ -3749,9 +3764,45 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
         <i class="fas fa-bullseye"></i><span class="cat-tab-btn-label" data-mobile="Lost Leads">Lost Leads</span><span class="cat-count" id="cust-status-count-leads">—</span>
       </button>
     </div>
+    <!-- Property Owners status sub-tabs (shown only on the Property Owners tab) -->
+    <div class="cat-tab-bar po-hidden" id="poStatusTabs">
+      <button class="cat-tab-btn" data-postatus="all" onclick="switchPOStatus('all')">
+        <i class="fas fa-layer-group"></i><span class="cat-tab-btn-label" data-mobile="All">All</span><span class="cat-count" id="po-status-count-all">—</span>
+      </button>
+      <button class="cat-tab-btn" data-postatus="notavailable" onclick="switchPOStatus('notavailable')" title="Reason: Not available">
+        <i class="fas fa-ban"></i><span class="cat-tab-btn-label" data-mobile="Not Available">Not Available</span><span class="cat-count" id="po-status-count-notavailable">—</span>
+      </button>
+      <button class="cat-tab-btn" data-postatus="callback" onclick="switchPOStatus('callback')" title="Reason: Not answered / Call back later">
+        <i class="fas fa-phone-volume"></i><span class="cat-tab-btn-label" data-mobile="Callback">Callback</span><span class="cat-count" id="po-status-count-callback">—</span>
+      </button>
+      <button class="cat-tab-btn" data-postatus="followup" onclick="switchPOStatus('followup')" title="Owners with a follow-up date or a remark">
+        <i class="fas fa-calendar-check"></i><span class="cat-tab-btn-label" data-mobile="Follow-up">Follow-up</span><span class="cat-count" id="po-status-count-followup">—</span>
+      </button>
+      <button class="cat-tab-btn" data-postatus="listed" onclick="switchPOStatus('listed')" title="Reason: Listed">
+        <i class="fas fa-clipboard-check"></i><span class="cat-tab-btn-label" data-mobile="Listed">Listed</span><span class="cat-count" id="po-status-count-listed">—</span>
+      </button>
+    </div>
     <!-- Property Owners: owner details collected from the Properties section -->
     <div class="card" id="propOwnersCard" style="display:none">
       <div class="table-wrapper">
+        <div class="bulk-toolbar bulk-toolbar-spaced" id="propOwnerBulkToolbar">
+          <div class="bulk-toolbar-left">
+            <span class="filter-active-badge" id="poFilterBadge" style="display:none">
+              <i class="fas fa-filter"></i> <span id="poFilterCount">0</span><span class="bulk-btn-label" data-mobile="Filters"> filters active</span>
+            </span>
+            <button class="bulk-btn bulk-btn-clear" id="poClearFiltersBtn" style="display:none" onclick="clearPOFilters()" title="Clear all filters">
+              <i class="fas fa-filter-circle-xmark"></i> <span class="bulk-btn-label" data-mobile="Clear">Clear filters</span>
+            </button>
+          </div>
+          <div class="bulk-toolbar-right">
+            <div class="col-toggle-wrap" id="propOwnerColToggleWrap">
+              <button type="button" class="col-toggle-btn" id="propOwnerColToggleBtn" onclick="toggleColMenu('propOwner')">
+                <i class="fas fa-table-columns"></i> <span class="bulk-btn-label" data-mobile="Columns">Columns</span>
+              </button>
+              <div class="col-toggle-menu" id="propOwnerColToggleMenu"></div>
+            </div>
+          </div>
+        </div>
         <table id="propOwnersTable" class="display nowrap" style="width:100%">
           <thead>
             <tr>
@@ -3760,9 +3811,31 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
               <th>Owner Number</th>
               <th>Owner Alt Number</th>
               <th>Location</th>
-              <th>Availability Reason</th>
-              <th>Remark</th>
+              <th>Reason</th>
+              <th>Remarks</th>
+              <th>Follow-up Date</th>
               <th>Action</th>
+            </tr>
+            <tr class="col-filter-row">
+              <th></th>
+              <th><input type="text" class="col-filter-input" data-filter-key="propertyId" placeholder="Search…" oninput="onPOColumnFilter('propertyId', this.value, this)"></th>
+              <th><input type="text" class="col-filter-input" data-filter-key="number" placeholder="Search…" oninput="onPOColumnFilter('number', this.value, this)"></th>
+              <th><input type="text" class="col-filter-input" data-filter-key="alt" placeholder="Search…" oninput="onPOColumnFilter('alt', this.value, this)"></th>
+              <th><input type="text" class="col-filter-input" data-filter-key="loc" placeholder="Search…" oninput="onPOColumnFilter('loc', this.value, this)"></th>
+              <th><select class="col-filter-select" data-filter-key="reason" onchange="onPOColumnFilter('reason', this.value, this)"><option value="">All</option><option value="__none__">No reason yet</option><option value="Available">Available</option><option value="Not available">Not available</option><option value="Not answered">Not answered</option><option value="Call back later">Call back later</option><option value="Listed">Listed</option></select></th>
+              <th><input type="text" class="col-filter-input" data-filter-key="remarks" placeholder="Search…" oninput="onPOColumnFilter('remarks', this.value, this)"></th>
+              <th><div class="col-date-range">
+                <select class="date-preset-select" onchange="applyDatePreset(this,'onPOFollowUpRangeFilter')">
+                  <option value="">Presets</option>
+                  <option value="today">Today</option>
+                  <option value="week">This Week</option>
+                  <option value="month">This Month</option>
+                  <option value="last30">Last 30 Days</option>
+                </select>
+                <input type="date" data-filter-key="followStart" title="From" onchange="onPOFollowUpRangeFilter('start', this.value, this)">
+                <input type="date" data-filter-key="followEnd" title="To" onchange="onPOFollowUpRangeFilter('end', this.value, this)">
+              </div></th>
+              <th></th>
             </tr>
           </thead>
           <tbody></tbody>
@@ -5301,8 +5374,10 @@ function authHeaders(extra){
 /* ── CONFIRM MODAL ──
    Promise-based replacement for window.confirm(). Usage:
      if(!await showConfirmModal({ message:'Delete this property?' })) return;
-   Options: title, message, okText, cancelText, variant ('danger'|'info') */
-function showConfirmModal({ title='Are you sure?', message='This action cannot be undone.', okText='Delete', cancelText='Cancel', variant='danger' } = {}){
+   Options: title, message, okText, cancelText, variant ('danger'|'info'),
+            dateInput { min, value, label } -> shows a REQUIRED date field; the promise then
+            resolves with the chosen 'YYYY-MM-DD' string (or false if cancelled). */
+function showConfirmModal({ title='Are you sure?', message='This action cannot be undone.', okText='Delete', cancelText='Cancel', variant='danger', dateInput=null } = {}){
   return new Promise(resolve=>{
     const overlay  = document.getElementById('confirmOverlay');
     const iconEl   = document.getElementById('confirmIcon');
@@ -5310,6 +5385,17 @@ function showConfirmModal({ title='Are you sure?', message='This action cannot b
     const msgEl    = document.getElementById('confirmMsg');
     const okBtn    = document.getElementById('confirmOkBtn');
     const cancelBtn= document.getElementById('confirmCancelBtn');
+    const dateWrap = document.getElementById('confirmDateWrap');
+    const dateInp  = document.getElementById('confirmDateInput');
+    const needDate = !!dateInput;
+    dateWrap.style.display = needDate ? 'block' : 'none';
+    if(needDate){
+      dateInp.min = dateInput.min || '';
+      dateInp.value = dateInput.value || '';
+      document.getElementById('confirmDateLabel').innerHTML = escapeHtml(dateInput.label || 'Follow-up date') + ' <span style="color:#dc2626">*</span>';
+    }
+    const dateOk = () => !needDate || (!!dateInp.value && (!dateInp.min || dateInp.value >= dateInp.min));
+    const refreshOk = () => { okBtn.disabled = !dateOk(); };
 
     titleEl.textContent = title;
     msgEl.textContent = message;
@@ -5324,24 +5410,31 @@ function showConfirmModal({ title='Are you sure?', message='This action cannot b
 
     function cleanup(result){
       overlay.style.display = 'none';
+      dateWrap.style.display = 'none';
+      okBtn.disabled = false;
+      dateInp.removeEventListener('input', refreshOk);
+      dateInp.removeEventListener('change', refreshOk);
       okBtn.removeEventListener('click', onOk);
       cancelBtn.removeEventListener('click', onCancel);
       overlay.removeEventListener('click', onOverlayClick);
       document.removeEventListener('keydown', onKeydown);
       resolve(result);
     }
-    function onOk(){ cleanup(true); }
+    function onOk(){ if(!dateOk()) return; cleanup(needDate ? dateInp.value : true); }
     function onCancel(){ cleanup(false); }
     function onOverlayClick(e){ if(e.target === overlay) cleanup(false); }
-    function onKeydown(e){ if(e.key === 'Escape') cleanup(false); if(e.key === 'Enter') cleanup(true); }
+    function onKeydown(e){ if(e.key === 'Escape') cleanup(false); if(e.key === 'Enter') onOk(); }
 
     okBtn.addEventListener('click', onOk);
     cancelBtn.addEventListener('click', onCancel);
     overlay.addEventListener('click', onOverlayClick);
     document.addEventListener('keydown', onKeydown);
+    dateInp.addEventListener('input', refreshOk);
+    dateInp.addEventListener('change', refreshOk);
+    refreshOk();
 
     overlay.style.display = 'flex';
-    okBtn.focus();
+    if(needDate) dateInp.focus(); else okBtn.focus();
   });
 }
 
@@ -5468,7 +5561,7 @@ async function doLogin(){
 function alignThreeRowsAsColumns(){
   // every tab row in the admin: main bar + the sub-tab bar of each panel
   var bars = [document.querySelector('.tab-bar'), document.getElementById('propCatTabs'),
-              document.getElementById('custTypeTabs'), document.getElementById('custStatusTabs'), document.getElementById('visitsCatTabs')].filter(Boolean);
+              document.getElementById('custTypeTabs'), document.getElementById('custStatusTabs'), document.getElementById('poStatusTabs'), document.getElementById('visitsCatTabs')].filter(Boolean);
   if(!bars.length) return;
   // clear any old inline sizing from earlier versions of this function
   bars.forEach(function(bar){
@@ -7133,7 +7226,7 @@ let _custStatusTab = 'active';   // status: active | leads | rented | subscripti
 try{
   const t = localStorage.getItem('kr_admin_custType');
   const st = localStorage.getItem('kr_admin_custStatus');
-  if(t === 'customer' || t === 'owner' || t === 'all') _custTypeTab = t;
+  if(t === 'customer' || t === 'owner' || t === 'all' || t === 'propowner') _custTypeTab = t;
   else if(t === 'leads' || t === 'rented' || t === 'subscription'){ _custTypeTab = 'all'; _custStatusTab = t; } // migrate old saved tab
   if(st === 'active' || st === 'leads' || st === 'rented' || st === 'subscription' || st === 'all') _custStatusTab = st;
 }catch(e){}
@@ -7168,18 +7261,20 @@ function syncCustTabActive(){
 }
 window.switchCustType = function(type){
   _custTypeTab = type;
-  // "propowner" is a view of the Properties data, not a customer filter — don't persist it.
-  if(type !== 'propowner'){ try{ localStorage.setItem('kr_admin_custType', type); }catch(e){} }
+  try{ localStorage.setItem('kr_admin_custType', type); }catch(e){}   // incl. 'propowner', so a refresh stays on this tab
   const isPO = type === 'propowner';
   const poCard = document.getElementById('propOwnersCard');
   const mainCard = document.getElementById('custMainCard');
   const stTabs = document.getElementById('custStatusTabs');
   if(poCard) poCard.style.display = isPO ? '' : 'none';
   if(mainCard) mainCard.style.display = isPO ? 'none' : '';
-  if(stTabs) stTabs.style.display = isPO ? 'none' : '';
+  if(stTabs) stTabs.classList.toggle('po-hidden', isPO);   // class, not inline display: alignThreeRowsAsColumns() clears inline styles
+  const poTabs = document.getElementById('poStatusTabs');
+  if(poTabs) poTabs.classList.toggle('po-hidden', !isPO);
   updateCustTypeCounts();
   if(isPO){
-    if(_propOwnersTable) _propOwnersTable.columns.adjust();
+    if(window.alignThreeRowsAsColumns) alignThreeRowsAsColumns();
+    if(_propOwnersTable){ _propOwnersTable.draw(false); _propOwnersTable.columns.adjust(); }
   } else if(dataTable) dataTable.draw();
 };
 window.switchCustStatus = function(status){
@@ -7208,6 +7303,8 @@ function updateCustTypeCounts(data){
 }
 
 syncCustTabActive();
+// Refresh on the Property Owners tab: show its card + sub-tabs again (DOM + helpers are ready once this script has run).
+if(_custTypeTab === 'propowner') setTimeout(function(){ try{ switchCustType('propowner'); syncPOStatusTabs(); }catch(e){ console.error(e); } }, 0);
 
 /* ── PROPERTY OWNERS (built from the Properties section) ──
    Every property row carries ownerName / ownerNumber / ownerAltPhone / ownerEmail /
@@ -7241,63 +7338,91 @@ window.viewOwnerProperties = function(num){
   if(typeof onPropColumnFilter === 'function') onPropColumnFilter('ownerNumber', num, inp);
 };
 const _poPhone = (d,t)=> t==='display' ? (d ? `<a href="tel:${escapeHtml(d)}" class="phone-link">${escapeHtml(d)}</a>` : '—') : (d||'');
-/* Availability reason + remark per property — saved to the separate
-   'propertyAvailability' collection (PUT /api/admin/property-availability/:id). */
-const PO_REASONS = [
-  { label:'Available', color:'#16a34a' },
-  { label:'Already rented', color:'#16a34a' }, { label:'Rented through us', color:'#16a34a' },
-  { label:'Owner not reachable', color:'#ca8a04' }, { label:'Owner withdrew listing', color:'#dc2626' },
-  { label:'Under renovation', color:'#0891b2' }, { label:'Sold', color:'#64748b' }
-];
-const _poColor = r => { const x = PO_REASONS.find(o => o.label === r); return x ? x.color : ''; };
-function poReasonHtml(r){
-  const cur = r.reason || '';
-  const opt = o => `<option value="${escapeHtml(o.label)}" style="color:${o.color};font-weight:600"${o.label===cur?' selected':''}>${escapeHtml(o.label)}</option>`;
-  const rc = _poColor(cur);
-  return `<select class="reason-select${cur?' has-reason':''}" ${rc?`style="--rc:${rc}"`:''} data-id="${escapeHtml(r._id)}" data-prev="${escapeHtml(cur)}" onchange="poDirty(this)">`
-       + `<option value="">Select reason…</option>`
-       + `<optgroup label="Available">${opt(PO_REASONS[0])}</optgroup>`
-       + `<optgroup label="Not available">${PO_REASONS.slice(1).map(opt).join('')}</optgroup></select>`;
+/* Property Owners status sub-tabs: All / Not Available / Callback / Follow-up / Listed.
+   Not Available = reason 'Not available'. Callback = reason 'Not answered' / 'Call back later'.
+   Follow-up = has a follow-up date or at least one remark (not Listed). Listed = reason 'Listed' (set from Available). */
+let _poStatusTab = 'all';
+try{ const _sp = localStorage.getItem('kr_admin_poStatus'); if(['all','notavailable','callback','followup','listed'].indexOf(_sp) >= 0) _poStatusTab = _sp; }catch(e){}
+function _poHasRemarks(r){ return Array.isArray(r.remarks) && r.remarks.some(x => x && String(x.remark || '').trim()); }
+function _poMatchesStatus(r, st){
+  const reason = r.reason || '';
+  if(st === 'notavailable') return reason === 'Not available';
+  if(st === 'callback')     return reason === 'Not answered' || reason === 'Call back later';
+  if(st === 'listed')       return reason === 'Listed';
+  if(st === 'followup')     return reason !== 'Listed' && (!!r.followUpDate || _poHasRemarks(r));   // Listed owners move to the Listed tab
+  return true;
 }
-function poRemarkHtml(r){
-  const cur = r.remark || '';
-  return `<div style="display:flex;gap:6px;align-items:center;min-width:240px">`
-       + `<input type="text" class="remark-input" maxlength="500" placeholder="Add remark…" value="${escapeHtml(cur)}" data-prev="${escapeHtml(cur)}" oninput="poDirty(this)" onkeydown="if(event.key==='Enter'){poSave(this)}">`
-       + `<button type="button" class="remark-save-btn" title="Save reason & remark" disabled onclick="poSave(this)"><i class="fas fa-check"></i></button></div>`;
+function syncPOStatusTabs(){
+  document.querySelectorAll('#poStatusTabs .cat-tab-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.getAttribute('data-postatus') === _poStatusTab);
+  });
 }
-window.poDirty = function(el){
-  const tr = el.closest('tr'); if(!tr) return;
-  const sel = tr.querySelector('select.reason-select'), inp = tr.querySelector('input.remark-input'), btn = tr.querySelector('.remark-save-btn');
-  if(el === sel){
-    const rc = _poColor(sel.value);
-    sel.classList.toggle('has-reason', !!sel.value);
-    if(rc) sel.style.setProperty('--rc', rc); else sel.style.removeProperty('--rc');
-  }
-  if(btn) btn.disabled = (sel.value === (sel.dataset.prev||'')) && (inp.value.trim() === (inp.dataset.prev||''));
+window.updatePOStatusCounts = function(){
+  ['all','notavailable','callback','followup','listed'].forEach(k => {
+    const n = _propOwnersList.filter(r => _poMatchesStatus(r, k)).length;
+    const el = document.getElementById('po-status-count-' + k);
+    if(el){ el.innerText = n; el.style.display = (n || k === 'all') ? '' : 'none'; }
+  });
+  syncPOStatusTabs();
 };
-window.poSave = async function(el){
-  if(blockIfViewOnly('customers')) return;
-  const tr = el.closest('tr'); if(!tr) return;
-  const sel = tr.querySelector('select.reason-select'), inp = tr.querySelector('input.remark-input'), btn = tr.querySelector('.remark-save-btn');
-  if(!btn || btn.disabled) return;
-  const id = sel.dataset.id; if(!id){ alert('Missing property id'); return; }
-  btn.disabled = true; sel.disabled = true; inp.disabled = true;
-  try{
-    const res = await fetch(`${BASE}/api/admin/property-availability/${encodeURIComponent(id)}`, {
-      method:'PUT', headers: authHeaders({'Content-Type':'application/json'}),
-      body: JSON.stringify({ reason: sel.value, remark: inp.value.trim() })
-    });
-    if(!res.ok) throw new Error('Save failed');
-    const saved = await res.json();
-    sel.dataset.prev = saved.reason || ''; inp.dataset.prev = saved.remark || ''; inp.value = saved.remark || '';
-    const row = _propOwnersList.find(x => x._id === id);
-    if(row){ row.reason = saved.reason || ''; row.remark = saved.remark || ''; }
-  }catch(e){
-    alert('Could not save reason / remark. Please try again.');
-  }
-  sel.disabled = false; inp.disabled = false;
-  btn.disabled = (sel.value === (sel.dataset.prev||'')) && (inp.value.trim() === (inp.dataset.prev||''));
+window.switchPOStatus = function(st){
+  _poStatusTab = st;
+  try{ localStorage.setItem('kr_admin_poStatus', st); }catch(e){}
+  syncPOStatusTabs();
+  if(_propOwnersTable) _propOwnersTable.draw();
 };
+/* Per-column filters (second header row), same behaviour as the other tables. */
+const _poColumnFilters = { propertyId:'', number:'', alt:'', loc:'', reason:'', remarks:'', followStart:'', followEnd:'' };
+const PO_FILTER_STORAGE_KEY = 'rip_admin_propOwnerFilters';
+loadFilterState(PO_FILTER_STORAGE_KEY, _poColumnFilters);
+function _poFiltersUi(){ updateFilterBadge(_poColumnFilters, 'poFilterBadge', 'poFilterCount', 'poClearFiltersBtn'); }
+window.onPOColumnFilter = function(field, value, inputEl){
+  _poColumnFilters[field] = (value||'').trim();
+  if(inputEl) inputEl.classList.toggle('active-col-filter', !!_poColumnFilters[field]);
+  saveFilterState(PO_FILTER_STORAGE_KEY, _poColumnFilters);
+  _poFiltersUi();
+  if(_propOwnersTable) _propOwnersTable.draw();
+};
+window.onPOFollowUpRangeFilter = function(which, value, inputEl){
+  const v = (value||'').trim();
+  if(which === 'start') _poColumnFilters.followStart = v; else _poColumnFilters.followEnd = v;
+  if(inputEl) inputEl.classList.toggle('active-col-filter', !!v);
+  reconcileDateRange(inputEl ? inputEl.closest('.col-date-range') : null, _poColumnFilters, 'followStart', 'followEnd');
+  saveFilterState(PO_FILTER_STORAGE_KEY, _poColumnFilters);
+  _poFiltersUi();
+  if(_propOwnersTable) _propOwnersTable.draw();
+};
+window.clearPOFilters = function(){
+  clearFiltersGeneric('propOwnersTable_wrapper', _poColumnFilters, _propOwnersTable, PO_FILTER_STORAGE_KEY, 'poFilterBadge', 'poFilterCount', 'poClearFiltersBtn');
+};
+$.fn.dataTable.ext.search.push(function(settings, data, dataIndex){
+  if(!settings.nTable || settings.nTable.id !== 'propOwnersTable') return true;
+  const r = settings.aoData[dataIndex] && settings.aoData[dataIndex]._aData;
+  if(!r) return true;
+  if(!_poMatchesStatus(r, _poStatusTab)) return false;
+  const cf = _poColumnFilters;
+  const has = (val, needle) => String(val||'').toLowerCase().includes(needle.toLowerCase());
+  if(cf.propertyId && !has(r.propertyId, cf.propertyId)) return false;
+  if(cf.number && !has(r.number, cf.number)) return false;
+  if(cf.alt && !has(r.alt, cf.alt)) return false;
+  if(cf.loc && !has(r.loc, cf.loc)) return false;
+  if(cf.reason){
+    if(cf.reason === '__none__'){ if(r.reason) return false; }
+    else if((r.reason||'') !== cf.reason) return false;
+  }
+  if(cf.remarks && !has(flattenRemarks(r.remarks||[]), cf.remarks)) return false;
+  if(cf.followStart || cf.followEnd){
+    const d = r.followUpDate || '';
+    if(!d) return false;
+    if(cf.followStart && d < cf.followStart) return false;
+    if(cf.followEnd && d > cf.followEnd) return false;
+  }
+  return true;
+});
+
+/* Reason + remarks for Property Owners use the SAME widgets as the Customers /
+   Properties tables (reasonCellHtml / remarkCellHtml, type 'propowner') but are
+   saved to the separate 'propertyAvailability' collection. */
 async function _loadPropAvailability(){
   try{
     const res = await fetch(`${BASE}/api/admin/property-availability`, { headers: authHeaders() });
@@ -7306,26 +7431,70 @@ async function _loadPropAvailability(){
     return map;
   }catch(e){ return {}; }
 }
+function _poMerge(avail){
+  _propOwnersList.forEach(r => { const a = avail[r._id]; r.reason = a ? a.reason : ''; r.remarks = a ? a.remarks : []; r.followUpDate = a ? (a.followUpDate || '') : ''; });
+}
+function _poToday(){ const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); }
+function poDateCellHtml(r){
+  const v = r.followUpDate || '';
+  return `<input type="date" class="po-date-input${v?' has-date':''}" min="${_poToday()}" value="${escapeHtml(v)}" data-id="${escapeHtml(r._id)}" data-prev="${escapeHtml(v)}" title="Pick today or a future date" onchange="savePOFollowUp(this)">`;
+}
+window.savePOFollowUp = async function(inp){
+  const prev = inp.dataset.prev || '', val = inp.value || '', id = inp.dataset.id;
+  if(blockIfViewOnly('customers')){ inp.value = prev; return; }
+  if(val && val < _poToday()){ alert('Please pick today or a future date.'); inp.value = prev; return; }
+  const _poRow = _propOwnersList.find(x => String(x._id) === String(id));
+  if(!val && _poRow && _poRow.reason === 'Available'){ alert('Follow-up date is required while the reason is Available.'); inp.value = prev; return; }
+  inp.disabled = true;
+  try{
+    const res = await fetch(`${BASE}/api/admin/property-availability/${encodeURIComponent(id)}/followup`, {
+      method:'PATCH', headers: authHeaders({'Content-Type':'application/json'}), body: JSON.stringify({ date: val })
+    });
+    if(!res.ok) throw new Error('Save failed');
+    inp.dataset.prev = val;
+    inp.classList.toggle('has-date', !!val);
+    const row = _propOwnersList.find(x => x._id === id); if(row) row.followUpDate = val;
+  }catch(e){
+    inp.value = prev;
+    alert('Could not save the date. Please try again.');
+  }
+  inp.disabled = false;
+};
+window.reloadPropOwnerAvailability = async function(){
+  _poMerge(await _loadPropAvailability());
+  if(_propOwnersTable) _propOwnersTable.clear().rows.add(_propOwnersList).draw(false);
+  updatePOStatusCounts();
+};
 window.setPropOwnersData = async function(props){
   _propOwnersList = buildPropOwners(props);
   const el = document.getElementById('cust-type-count-propowner');
   if(el) el.innerText = _propOwnersList.length;
   if(!window.jQuery || !jQuery.fn.dataTable) return;
   const avail = await _loadPropAvailability();
-  _propOwnersList.forEach(r => { const a = avail[r._id]; r.reason = a ? a.reason : ''; r.remark = a ? a.remark : ''; });
+  _poMerge(avail);
+  updatePOStatusCounts();
   if(!_propOwnersTable){
     _propOwnersTable = $('#propOwnersTable').DataTable({
       data: _propOwnersList,
-      pageLength: 25,
+      pageLength: -1,          // load every row at once, like the other tables
+      scrollX: true,
+      orderCellsTop: true,
       order: [],
+      language: {
+        emptyTable:'<div class="empty-state"><i class="fas fa-inbox"></i>No property owners yet</div>',
+        zeroRecords:'<div class="empty-state"><i class="fas fa-magnifying-glass"></i>No matching records</div>',
+        info:'Showing all _TOTAL_ property owners', infoEmpty:'', infoFiltered:'(filtered from _MAX_)'
+      },
+      dom: 'rt<"bottom-controls"i>',   // no global search box — per-column filters instead
       columns: [
         { data:null, orderable:false, className:'dt-body-center', render:(d,t,r,meta)=> String(meta.row+1) },
         { data:'propertyId', render:(d,t)=> t==='display' ? escapeHtml(d||'—') : (d||'') },
         { data:'number', render:_poPhone },
         { data:'alt', render:_poPhone },
         { data:'loc', render:(d,t)=> t==='display' ? escapeHtml(d||'—') : (d||'') },
-        { data:'reason', render:(d,t,r)=> t==='display' ? poReasonHtml(r) : (d||'') },
-        { data:'remark', render:(d,t,r)=> t==='display' ? poRemarkHtml(r) : (d||'') },
+        { data:'reason', orderable:false, render:(d,t,r)=> t==='display' ? reasonCellHtml(r._id, d, 'propowner') : (d||'') },
+        { data:'remarks', orderable:false, render:(d,t,r)=> t==='display' ? remarkCellHtml(r._id, d, 'propowner') : flattenRemarks(d) },
+        { data:'followUpDate', render:(d,t,r)=> t==='display' ? poDateCellHtml(r) : (d||'') },
         { data:null, orderable:false, render:(d,t,r)=> {
             if(t!=='display') return '';
             const loc = escapeHtml(r.loc || '').replace(/'/g, '&#39;');
@@ -7334,9 +7503,14 @@ window.setPropOwnersData = async function(props){
         }}
       ]
     });
+    initColumnToggle('propOwner');   // Columns button: restore saved choices + build the menu
+    restoreFilterInputsUI('propOwnersTable_wrapper', _poColumnFilters);
+    _poFiltersUi();
+    _propOwnersTable.draw();
   } else {
     _propOwnersTable.clear().rows.add(_propOwnersList).draw(false);
   }
+  if(_custTypeTab === 'propowner'){ try{ _propOwnersTable.columns.adjust(); }catch(e){} }
 };
 
 window.clearCustFilters = function(){
@@ -10683,7 +10857,8 @@ window.deleteSelectedAppointments = async function(){
 const REASON_PRESETS = {
   customer: ['Not interested', 'Found elsewhere', 'Spam / fake', 'Not serviceable location', 'Callback', 'Not answered', 'Switched off', 'Shifted through us'],
   owner:    ['Not reachable', 'Verification pending', 'Duplicate account', 'Wants to delist', 'Rent expectation high', 'Agent / broker', 'Callback', 'Not answered', 'Switched off', 'Shifted through us'],
-  property: ['Already rented', 'Wrong details', 'Photos missing', 'Price too high', 'Duplicate listing', 'Fake listing', 'Location mismatch', 'Under renovation', 'Callback', 'Not answered', 'Switched off', 'Shifted through us']
+  property: ['Already rented', 'Wrong details', 'Photos missing', 'Price too high', 'Duplicate listing', 'Fake listing', 'Location mismatch', 'Under renovation', 'Callback', 'Not answered', 'Switched off', 'Shifted through us'],
+  propowner: ['Available', 'Not available', 'Not answered', 'Call back later', 'Listed']
 };
 // Indicator colour per reason (shown on the dropdown's border, tint and dot).
 const REASON_COLORS = {
@@ -10696,15 +10871,20 @@ const REASON_COLORS = {
   'Wants to delist':'#dc2626', 'Rent expectation high':'#ea580c', 'Agent / broker':'#7c3aed',
   // properties
   'Already rented':'#16a34a', 'Wrong details':'#ea580c', 'Photos missing':'#ca8a04', 'Price too high':'#d97706',
-  'Duplicate listing':'#64748b', 'Fake listing':'#be123c', 'Location mismatch':'#b45309', 'Under renovation':'#0891b2'
+  'Duplicate listing':'#64748b', 'Fake listing':'#be123c', 'Location mismatch':'#b45309', 'Under renovation':'#0891b2',
+  // property owners
+  'Available':'#16a34a', 'Listed':'#7c3aed', 'Not available':'#dc2626', 'Call back later':'#2563eb', 'Rented through us':'#16a34a', 'Owner not reachable':'#ca8a04', 'Owner withdrew listing':'#dc2626', 'Sold':'#64748b'
 };
 function reasonColor(r){ return r ? (REASON_COLORS[r] || '#64748b') : ''; }
 function reasonCellHtml(id, value, type, accountType){
-  const list = REASON_PRESETS[(type === 'customer' && accountType === 'owner') ? 'owner' : type] || [];
+  let list = REASON_PRESETS[(type === 'customer' && accountType === 'owner') ? 'owner' : type] || [];
   const cur = value || '';
+  const listedLocked = (type === 'propowner' && cur !== 'Available' && cur !== 'Listed');   // Listed is only reachable from Available
   const optHtml = (o, sel) => `<option value="${escapeHtml(o)}" style="color:${reasonColor(o)};font-weight:600"${sel?' selected':''}>${escapeHtml(o)}</option>`;
   const opts = ['<option value="">Select reason…</option>']
-    .concat(list.map(o => optHtml(o, o === cur)));
+    .concat(list.map(o => (o === 'Listed' && listedLocked)
+      ? `<option value="Listed" disabled style="color:#94a3b8">Listed (set Available first)</option>`
+      : optHtml(o, o === cur)));
   if(cur && list.indexOf(cur) < 0) opts.push(optHtml(cur, true));
   const rc = reasonColor(cur);
   return `<select class="reason-select${cur?' has-reason':''}" ${rc ? `style="--rc:${rc}"` : ''} data-id="${escapeHtml(String(id))}" data-type="${type}" data-prev="${escapeHtml(cur)}" onchange="saveReason(this)">${opts.join('')}</select>`;
@@ -10712,31 +10892,55 @@ function reasonCellHtml(id, value, type, accountType){
 window.saveReason = async function(sel){
   const type = sel.dataset.type, id = sel.dataset.id, prev = sel.dataset.prev || '';
   const val = sel.value;
-  const mod = type === 'customer' ? 'customers' : 'properties';
+  const mod = (type === 'customer' || type === 'propowner') ? 'customers' : 'properties';
   if(blockIfViewOnly(mod)){ sel.value = prev; return; }
+  // Property Owners: "Available" needs a follow-up date, and is confirmed before it is stored.
+  let followUpDate = '';
+  if(type === 'propowner' && val === 'Available'){
+    const cur = (_propOwnersList.find(x => String(x._id) === String(id)) || {}).followUpDate || '';
+    const picked = await showConfirmModal({
+      title: 'Mark as Available?',
+      message: 'A follow-up date is required. Pick the date to follow up with this owner, then confirm.',
+      okText: 'Confirm & save', cancelText: 'Cancel', variant: 'info',
+      dateInput: { min: _poToday(), value: cur >= _poToday() ? cur : '', label: 'Follow-up date' }
+    });
+    if(!picked){ sel.value = prev; return; }
+    followUpDate = picked;
+  }
   sel.disabled = true;
   try {
     const url = type === 'customer'
       ? `${BASE}/api/users/mobile/${id}/reason`
+      : type === 'propowner'
+      ? `${BASE}/api/admin/property-availability/${id}/reason`
       : `${BASE}/api/properties/${id}/reason`;
     const res = await fetch(url, {
       method: 'PATCH',
       headers: authHeaders({'Content-Type':'application/json'}),
-      body: JSON.stringify({ reason: val })
+      body: JSON.stringify(followUpDate ? { reason: val, followUpDate } : { reason: val })
     });
-    if(!res.ok) throw new Error('Save failed');
+    if(!res.ok){
+      let msg = ''; try{ const j = await res.clone().json(); msg = j.message || j.error || ''; }catch(_){ try{ msg = (await res.text()).slice(0,200); }catch(__){} }
+      console.error('saveReason failed', res.status, msg);
+      throw new Error(msg || ('HTTP ' + res.status));
+    }
     sel.dataset.prev = val;
     sel.classList.toggle('has-reason', !!val);
     if(val) sel.style.setProperty('--rc', reasonColor(val)); else sel.style.removeProperty('--rc');
-    const tbl = type === 'customer' ? dataTable : propTable;
-    if(tbl){ const row = tbl.row(sel.closest('tr')).data(); if(row) row.reason = val; }
+    const tbl = type === 'customer' ? dataTable : type === 'propowner' ? _propOwnersTable : propTable;
+    if(tbl){ const row = tbl.row(sel.closest('tr')).data(); if(row){ row.reason = val; if(followUpDate) row.followUpDate = followUpDate; } }
     if(type === 'customer' && tbl){
       updateCustTypeCounts(tbl.rows().data().toArray());
       tbl.draw(false);   // re-apply tab filter so the row moves to / from Leads
     }
+    if(type === 'propowner' && tbl){
+      updatePOStatusCounts();
+      tbl.row(sel.closest('tr')).invalidate();   // re-render: new date cell + the Listed option only shows while Available
+      tbl.draw(false);   // re-apply the status tab so the row moves to / from it
+    }
   } catch(e){
     sel.value = prev;
-    alert('Could not save reason. Please try again.');
+    alert('Could not save reason. Please try again.' + (e && e.message && e.message !== 'Save failed' ? '\n\n' + e.message : ''));
   }
   sel.disabled = false;
 };
@@ -10892,7 +11096,7 @@ window.closeRemarkInput = function(cancelBtn){
 };
 
 async function saveRemark(cell, id, type){
-  const remarkModule = type === 'customer' ? 'customers' : type === 'appointment' ? 'appointments' : 'properties';
+  const remarkModule = (type === 'customer' || type === 'propowner') ? 'customers' : type === 'appointment' ? 'appointments' : 'properties';
   if(blockIfViewOnly(remarkModule)) return;
   const input  = cell.querySelector('.remark-input');
   const newVal = input.value.trim();
@@ -10914,6 +11118,8 @@ async function saveRemark(cell, id, type){
       ? `${BASE}/api/users/mobile/${id}/remarks`
       : type === 'appointment'
       ? `${BASE}/api/appointments/${id}/remarks`
+      : type === 'propowner'
+      ? `${BASE}/api/admin/property-availability/${id}/remarks`
       : `${BASE}/api/properties/${id}/remarks`;
     const res = await fetch(url, {
       method: 'PATCH',
@@ -10925,6 +11131,7 @@ async function saveRemark(cell, id, type){
     if(type === 'customer'    && dataTable) dataTable.ajax.reload(null, false);
     if(type === 'property'    && propTable)  propTable.ajax.reload(null, false);
     if(type === 'appointment' && apptTable)  apptTable.ajax.reload(null, false);
+    if(type === 'propowner') await reloadPropOwnerAvailability();
   } catch(e){
     alert('Could not save remark. Please try again.');
   }
@@ -10932,7 +11139,7 @@ async function saveRemark(cell, id, type){
 }
 
 window.deleteRemark = async function(btn, id, type, idx){
-  const remarkModule = type === 'customer' ? 'customers' : type === 'appointment' ? 'appointments' : 'properties';
+  const remarkModule = (type === 'customer' || type === 'propowner') ? 'customers' : type === 'appointment' ? 'appointments' : 'properties';
   if(blockIfViewOnly(remarkModule)) return;
   const cell = btn.closest('.remark-cell') || _remarkMenuCell;
   closeRemarkMenu();
@@ -10943,12 +11150,15 @@ window.deleteRemark = async function(btn, id, type, idx){
       ? `${BASE}/api/users/mobile/${id}/remarks/${idx}`
       : type === 'appointment'
       ? `${BASE}/api/appointments/${id}/remarks/${idx}`
+      : type === 'propowner'
+      ? `${BASE}/api/admin/property-availability/${id}/remarks/${idx}`
       : `${BASE}/api/properties/${id}/remarks/${idx}`;
     const res = await fetch(url, { method:'DELETE', headers: authHeaders() });
     if(!res.ok) throw new Error('Delete failed');
     if(type === 'customer'    && dataTable) dataTable.ajax.reload(null, false);
     if(type === 'property'    && propTable)  propTable.ajax.reload(null, false);
     if(type === 'appointment' && apptTable)  apptTable.ajax.reload(null, false);
+    if(type === 'propowner') await reloadPropOwnerAvailability();
   } catch(e){
     alert('Could not delete remark. Please try again.');
   }
@@ -13768,6 +13978,16 @@ document.addEventListener('click', function(e){
    the DOM ids for its button/menu, and a localStorage key so choices
    survive a refresh, same as Properties. */
 const COL_TOGGLE_CONFIGS = {
+  propOwner: {
+    getTable: ()=>_propOwnersTable,
+    cols: [
+      {idx:1, label:'Property ID'}, {idx:2, label:'Owner Number'}, {idx:3, label:'Owner Alt Number'},
+      {idx:4, label:'Location'}, {idx:5, label:'Reason'}, {idx:6, label:'Remarks'}, {idx:7, label:'Follow-up Date'}
+    ],
+    menuId:'propOwnerColToggleMenu', btnId:'propOwnerColToggleBtn', wrapId:'propOwnerColToggleWrap',
+    storageKey:'rip_admin_propOwnerColVisibility',
+    tableSel:'#propOwnersTable'
+  },
   cust: {
     getTable: ()=>dataTable,
     cols: [

@@ -1933,78 +1933,169 @@ self.addEventListener('notificationclick', event => {
   });
 
   // ── PROPERTY AVAILABILITY (Customers > Property Owners table) ──────────────
-  // Reason (available / not available) + remark per listing, kept in its OWN
+  // Reason (available / not available) + remarks per listing, kept in its OWN
   // collection ('propertyAvailability') instead of on the listing document.
-  // One doc per listing holds the latest values; every save is also pushed
-  // onto `history` so earlier reasons/remarks are never lost.
+  // One doc per listing: current `reason`, a `remarks` list (same {remark, date}
+  // shape the other tables use) and an audit `history` of every change.
   const AVAILABILITY_REASONS = {
-    'Available':              true,
-    'Already rented':         false,
-    'Rented through us':      false,
-    'Owner not reachable':    false,
-    'Owner withdrew listing': false,
-    'Under renovation':       false,
-    'Sold':                   false,
+    'Available':       true,
+    'Listed':          true,    // owner's property has been listed (only reachable from Available)
+    'Not available':   false,
+    'Not answered':    null,   // follow-up states: availability still unknown
+    'Call back later': null,
   };
   const PropertyAvailabilitySchema = new mongoose.Schema({
     propertyObjectId: { type: mongoose.Schema.Types.ObjectId, required: true, unique: true },
     propertyId:       { type: String, default: '', index: true },
     available:        { type: Boolean, default: null },
     reason:           { type: String, default: '' },
-    remark:           { type: String, default: '', maxlength: 500 },
+    remarks: [{ _id: false, remark: String, date: { type: Date, default: Date.now }, by: String }],
+    followUpDate:     { type: String, default: '' },   // 'YYYY-MM-DD', today or later (admin picks a future date)
+    remark:           { type: String, default: '' },   // legacy single remark — migrated into `remarks` on first write
     updatedBy:        { type: String, default: '' },
     updatedAt:        { type: Date, default: Date.now },
     history: [{
-      _id: false,
-      available: Boolean, reason: String, remark: String, by: String,
+      _id: false, kind: String, reason: String, available: Boolean, remark: String, by: String,
       at: { type: Date, default: Date.now },
     }],
   }, { collection: 'propertyAvailability' });
   const PropertyAvailability = mongoose.model('PropertyAvailability', PropertyAvailabilitySchema);
 
+  function availRemarks(d) {
+    const list = (d.remarks || []).map(r => ({ remark: r.remark || '', date: r.date }));
+    if (!list.length && d.remark) list.push({ remark: d.remark, date: d.updatedAt });
+    return list;
+  }
+  function availShape(d) {
+    return {
+      _id: String(d.propertyObjectId), propertyId: d.propertyId || '', available: d.available,
+      reason: d.reason || '', followUpDate: d.followUpDate || '', remarks: availRemarks(d), updatedBy: d.updatedBy || '', updatedAt: d.updatedAt,
+    };
+  }
+  // Loads (or starts) the availability doc for a listing. Returns null when the listing doesn't exist.
+  async function availDocFor(id) {
+    const found = await findListingById(id, { lean: true });
+    if (!found || !found.doc) return null;
+    const doc = (await PropertyAvailability.findOne({ propertyObjectId: id })) || new PropertyAvailability({ propertyObjectId: id });
+    if (doc.remark && !(doc.remarks || []).length) {
+      doc.remarks.push({ remark: doc.remark, date: doc.updatedAt || new Date(), by: doc.updatedBy || '' });
+      doc.remark = '';
+    }
+    doc.propertyId = found.doc.propertyId || '';
+    return doc;
+  }
+
   app.get('/api/admin/property-availability', requireAdmin, requireModule('customers'), async (req, res) => {
     try {
       const rows = await PropertyAvailability.find({}, { history: 0 }).lean();
-      res.json(rows.map(r => ({
-        _id: String(r.propertyObjectId), propertyId: r.propertyId || '',
-        available: r.available, reason: r.reason || '', remark: r.remark || '',
-        updatedBy: r.updatedBy || '', updatedAt: r.updatedAt,
-      })));
+      res.json(rows.map(availShape));
     } catch (err) {
       console.error('GET /api/admin/property-availability error:', err);
       res.status(500).json({ message: 'Error loading availability' });
     }
   });
 
-  app.put('/api/admin/property-availability/:id', requireAdmin, requireModuleAction('customers'), async (req, res) => {
+  app.patch('/api/admin/property-availability/:id/reason', requireAdmin, requireModuleAction('customers'), async (req, res) => {
     try {
       const { id } = req.params;
       if (!mongoose.Types.ObjectId.isValid(id)) return res.status(400).json({ message: 'Invalid property id' });
       const reason = String((req.body && req.body.reason) || '').trim();
-      const remark = String((req.body && req.body.remark) || '').trim().slice(0, 500);
       if (reason && !Object.prototype.hasOwnProperty.call(AVAILABILITY_REASONS, reason)) {
         return res.status(400).json({ message: 'Invalid reason' });
       }
-      const found = await findListingById(id, { lean: true });
-      if (!found || !found.doc) return res.status(404).json({ message: 'Property not found' });
-      const available = reason ? AVAILABILITY_REASONS[reason] : null;
+      // "Available" must come with a follow-up date (today or later)
+      let followUp = '';
+      if (reason === 'Available') {
+        followUp = String((req.body && req.body.followUpDate) || '').trim();
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(followUp) || Number.isNaN(Date.parse(followUp + 'T00:00:00Z'))) {
+          return res.status(400).json({ message: 'Follow-up date is required when the reason is Available' });
+        }
+        const todayIST = new Date(Date.now() + 5.5 * 3600 * 1000).toISOString().slice(0, 10);
+        if (followUp < todayIST) return res.status(400).json({ message: 'Pick today or a future follow-up date' });
+      }
+      const doc = await availDocFor(id);
+      if (!doc) return res.status(404).json({ message: 'Property not found' });
+      if (reason === 'Listed' && doc.reason !== 'Available' && doc.reason !== 'Listed') {
+        return res.status(400).json({ message: 'Listed can only be set from Available' });
+      }
       const by = req.adminEmail || '';
-      const now = new Date();
-      const doc = await PropertyAvailability.findOneAndUpdate(
-        { propertyObjectId: id },
-        {
-          $set:  { propertyId: found.doc.propertyId || '', available, reason, remark, updatedBy: by, updatedAt: now },
-          $push: { history: { available, reason, remark, by, at: now } },
-        },
-        { upsert: true, new: true, setDefaultsOnInsert: true }
-      ).lean();
-      res.json({
-        _id: String(doc.propertyObjectId), propertyId: doc.propertyId, available: doc.available,
-        reason: doc.reason, remark: doc.remark, updatedBy: doc.updatedBy, updatedAt: doc.updatedAt,
-      });
+      if (followUp) doc.followUpDate = followUp;
+      doc.reason = reason;
+      doc.available = reason ? AVAILABILITY_REASONS[reason] : null;
+      doc.updatedBy = by; doc.updatedAt = new Date();
+      doc.history.push({ kind: 'reason', reason, available: doc.available, by, at: doc.updatedAt });
+      await doc.save();
+      res.json(availShape(doc));
     } catch (err) {
-      console.error('PUT /api/admin/property-availability/:id error:', err);
-      res.status(500).json({ message: 'Error saving availability' });
+      console.error('PATCH /api/admin/property-availability/:id/reason error:', err);
+      res.status(500).json({ message: 'Error saving reason' });
+    }
+  });
+
+  app.patch('/api/admin/property-availability/:id/followup', requireAdmin, requireModuleAction('customers'), async (req, res) => {
+    try {
+      const { id } = req.params;
+      if (!mongoose.Types.ObjectId.isValid(id)) return res.status(400).json({ message: 'Invalid property id' });
+      const date = String((req.body && req.body.date) || '').trim();
+      if (date) {
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || Number.isNaN(Date.parse(date + 'T00:00:00Z'))) {
+          return res.status(400).json({ message: 'Invalid date' });
+        }
+        const todayIST = new Date(Date.now() + 5.5 * 3600 * 1000).toISOString().slice(0, 10);
+        if (date < todayIST) return res.status(400).json({ message: 'Pick today or a future date' });
+      }
+      const doc = await availDocFor(id);
+      if (!doc) return res.status(404).json({ message: 'Property not found' });
+      if (!date && doc.reason === 'Available') return res.status(400).json({ message: 'Follow-up date is required while the reason is Available' });
+      const by = req.adminEmail || '';
+      doc.followUpDate = date;
+      doc.updatedBy = by; doc.updatedAt = new Date();
+      doc.history.push({ kind: 'followup', remark: date, by, at: doc.updatedAt });
+      await doc.save();
+      res.json(availShape(doc));
+    } catch (err) {
+      console.error('PATCH /api/admin/property-availability/:id/followup error:', err);
+      res.status(500).json({ message: 'Error saving date' });
+    }
+  });
+
+  app.patch('/api/admin/property-availability/:id/remarks', requireAdmin, requireModuleAction('customers'), async (req, res) => {
+    try {
+      const { id } = req.params;
+      if (!mongoose.Types.ObjectId.isValid(id)) return res.status(400).json({ message: 'Invalid property id' });
+      const text = String((req.body && req.body.remarks) || '').trim().slice(0, 200);
+      if (!text) return res.status(400).json({ message: 'Remark is required' });
+      const doc = await availDocFor(id);
+      if (!doc) return res.status(404).json({ message: 'Property not found' });
+      const by = req.adminEmail || '';
+      doc.remarks.push({ remark: text, date: new Date(), by });
+      doc.updatedBy = by; doc.updatedAt = new Date();
+      doc.history.push({ kind: 'remark', remark: text, by, at: doc.updatedAt });
+      await doc.save();
+      res.json(availShape(doc));
+    } catch (err) {
+      console.error('PATCH /api/admin/property-availability/:id/remarks error:', err);
+      res.status(500).json({ message: 'Error saving remark' });
+    }
+  });
+
+  app.delete('/api/admin/property-availability/:id/remarks/:idx', requireAdmin, requireModuleAction('customers'), async (req, res) => {
+    try {
+      const { id } = req.params;
+      if (!mongoose.Types.ObjectId.isValid(id)) return res.status(400).json({ message: 'Invalid property id' });
+      const idx = Number(req.params.idx);
+      const doc = await availDocFor(id);
+      if (!doc) return res.status(404).json({ message: 'Property not found' });
+      if (!Number.isInteger(idx) || idx < 0 || idx >= doc.remarks.length) return res.status(404).json({ message: 'Remark not found' });
+      const [gone] = doc.remarks.splice(idx, 1);
+      const by = req.adminEmail || '';
+      doc.updatedBy = by; doc.updatedAt = new Date();
+      doc.history.push({ kind: 'remark-delete', remark: gone.remark, by, at: doc.updatedAt });
+      await doc.save();
+      res.json(availShape(doc));
+    } catch (err) {
+      console.error('DELETE /api/admin/property-availability/:id/remarks/:idx error:', err);
+      res.status(500).json({ message: 'Error deleting remark' });
     }
   });
 
