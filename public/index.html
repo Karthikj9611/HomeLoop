@@ -4879,8 +4879,8 @@ main.tab-explore .empty-state{display:none !important}
       Short Stay
     </div>
 	<div class="nav-tab" data-tab="All" role="tab" onclick="switchTab(this)" tabindex="0">
-      <span class="nav-tab-icon">🧰</span>
-      Explore
+      <span class="nav-tab-icon">⭐</span>
+      Review
     </div>
   </div>
 
@@ -5520,7 +5520,7 @@ main.tab-explore .empty-state{display:none !important}
 </main>
 
 <!-- ─── Premium Services Section ────────────────── -->
-<section class="services-section" id="premiumServicesSection" aria-label="Our premium services">
+<section class="services-section" id="premiumServicesSection" style="display:none !important" aria-label="Our premium services">
   <div class="services-head">
     <div class="services-title">Our <span>Premium Services</span></div>
   </div>
@@ -5936,8 +5936,8 @@ main.tab-explore .empty-state{display:none !important}
     PG
   </div>
   <div class="bottom-tab" data-tab="All" onclick="switchTabMobile(this)">
-    <span class="bottom-tab-icon">🧰</span>
-    Explore
+    <span class="bottom-tab-icon">⭐</span>
+    Review
   </div>
   <div class="bottom-tab" onclick="toggleShortlistPanel()">
     <span class="bottom-tab-icon-wrap">
@@ -10714,7 +10714,7 @@ function updateAllOnlySections() {
   // Show only on "All"
   if (urbanAware) urbanAware.style.display = (show && hasHonestReviews) ? '' : 'none';
   if (reviewsSection) reviewsSection.style.display = show ? '' : 'none';
-  if (premiumServices) premiumServices.style.display = show ? '' : 'none';
+  if (premiumServices) premiumServices.style.display = 'none'; // Premium Services hidden
 
   // Hide Promoted, Rent, Lease, PG, Sell and the Booked bucket when "All" is
   // selected — each of these already has its own dedicated bottom-nav tab,
