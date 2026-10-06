@@ -1944,6 +1944,14 @@ self.addEventListener('notificationclick', event => {
     'Not answered':    null,   // follow-up states: availability still unknown
     'Call back later': null,
   };
+  // Follow-up is a date AND time: 'YYYY-MM-DDTHH:mm' (IST). 10-minute grace for the time it takes to submit.
+  const FOLLOWUP_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/;
+  function followUpError(v) {
+    if (!FOLLOWUP_RE.test(v) || Number.isNaN(Date.parse(v + ':00Z'))) return 'Follow-up date & time is required';
+    const nowIST = new Date(Date.now() + 5.5 * 3600 * 1000 - 10 * 60 * 1000).toISOString().slice(0, 16);
+    if (v < nowIST) return 'Pick the current time or a future follow-up date & time';
+    return '';
+  }
   const PropertyAvailabilitySchema = new mongoose.Schema({
     propertyObjectId: { type: mongoose.Schema.Types.ObjectId, required: true, unique: true },
     propertyId:       { type: String, default: '', index: true },
@@ -2007,11 +2015,8 @@ self.addEventListener('notificationclick', event => {
       let followUp = '';
       if (reason === 'Available') {
         followUp = String((req.body && req.body.followUpDate) || '').trim();
-        if (!/^\d{4}-\d{2}-\d{2}$/.test(followUp) || Number.isNaN(Date.parse(followUp + 'T00:00:00Z'))) {
-          return res.status(400).json({ message: 'Follow-up date is required when the reason is Available' });
-        }
-        const todayIST = new Date(Date.now() + 5.5 * 3600 * 1000).toISOString().slice(0, 10);
-        if (followUp < todayIST) return res.status(400).json({ message: 'Pick today or a future follow-up date' });
+        const fe = followUpError(followUp);
+        if (fe) return res.status(400).json({ message: fe });
       }
       const doc = await availDocFor(id);
       if (!doc) return res.status(404).json({ message: 'Property not found' });
@@ -2020,6 +2025,7 @@ self.addEventListener('notificationclick', event => {
       }
       const by = req.adminEmail || '';
       if (followUp) doc.followUpDate = followUp;
+      if (!reason) doc.followUpDate = '';   // reason deselected -> follow-up date is cleared too
       doc.reason = reason;
       doc.available = reason ? AVAILABILITY_REASONS[reason] : null;
       doc.updatedBy = by; doc.updatedAt = new Date();
@@ -2038,15 +2044,12 @@ self.addEventListener('notificationclick', event => {
       if (!mongoose.Types.ObjectId.isValid(id)) return res.status(400).json({ message: 'Invalid property id' });
       const date = String((req.body && req.body.date) || '').trim();
       if (date) {
-        if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || Number.isNaN(Date.parse(date + 'T00:00:00Z'))) {
-          return res.status(400).json({ message: 'Invalid date' });
-        }
-        const todayIST = new Date(Date.now() + 5.5 * 3600 * 1000).toISOString().slice(0, 10);
-        if (date < todayIST) return res.status(400).json({ message: 'Pick today or a future date' });
+        const fe = followUpError(date);
+        if (fe) return res.status(400).json({ message: fe });
       }
       const doc = await availDocFor(id);
       if (!doc) return res.status(404).json({ message: 'Property not found' });
-      if (!date && doc.reason === 'Available') return res.status(400).json({ message: 'Follow-up date is required while the reason is Available' });
+      if (!date && doc.reason === 'Available') return res.status(400).json({ message: 'Follow-up date & time is required while the reason is Available' });
       const by = req.adminEmail || '';
       doc.followUpDate = date;
       doc.updatedBy = by; doc.updatedAt = new Date();

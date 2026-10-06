@@ -1256,7 +1256,7 @@ table.dataTable.no-footer{border-bottom:none!important}
 #propOwnersTable th, #propOwnersTable td{padding-left:8px !important;padding-right:8px !important}
 #propOwnersTable .remark-cell, #propOwnersTable .remark-cell.remark-cell-empty{width:300px;min-width:300px;max-width:300px}
 #propOwnersTable .reason-select{min-width:170px;max-width:200px}
-#propOwnersTable .po-date-input{min-width:135px;padding:8px 10px}
+#propOwnersTable .po-date-input{min-width:200px;padding:8px 10px}
 #propOwnersTable td:nth-child(5){white-space:normal;min-width:170px;max-width:230px}
 .po-date-input{font:inherit;font-weight:600;font-size:.85rem;color:var(--ink);background:#fff;border:1px solid var(--border,#e5e7eb);border-radius:99px;padding:9px 14px;min-width:150px;cursor:pointer}
 .confirm-ok-btn:disabled{opacity:.5;cursor:not-allowed}
@@ -3766,8 +3766,8 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
     </div>
     <!-- Property Owners status sub-tabs (shown only on the Property Owners tab) -->
     <div class="cat-tab-bar po-hidden" id="poStatusTabs">
-      <button class="cat-tab-btn" data-postatus="all" onclick="switchPOStatus('all')">
-        <i class="fas fa-layer-group"></i><span class="cat-tab-btn-label" data-mobile="All">All</span><span class="cat-count" id="po-status-count-all">—</span>
+      <button class="cat-tab-btn" data-postatus="tocall" onclick="switchPOStatus('tocall')" title="Owners not yet in Not Available, Callback, Follow-up or Listed">
+        <i class="fas fa-phone"></i><span class="cat-tab-btn-label" data-mobile="To call">To call</span><span class="cat-count" id="po-status-count-tocall">—</span>
       </button>
       <button class="cat-tab-btn" data-postatus="notavailable" onclick="switchPOStatus('notavailable')" title="Reason: Not available">
         <i class="fas fa-ban"></i><span class="cat-tab-btn-label" data-mobile="Not Available">Not Available</span><span class="cat-count" id="po-status-count-notavailable">—</span>
@@ -5375,7 +5375,7 @@ function authHeaders(extra){
    Promise-based replacement for window.confirm(). Usage:
      if(!await showConfirmModal({ message:'Delete this property?' })) return;
    Options: title, message, okText, cancelText, variant ('danger'|'info'),
-            dateInput { min, value, label } -> shows a REQUIRED date field; the promise then
+            dateInput { type ('date'|'datetime-local'), min, value, label } -> shows a REQUIRED date field; the promise then
             resolves with the chosen 'YYYY-MM-DD' string (or false if cancelled). */
 function showConfirmModal({ title='Are you sure?', message='This action cannot be undone.', okText='Delete', cancelText='Cancel', variant='danger', dateInput=null } = {}){
   return new Promise(resolve=>{
@@ -5389,6 +5389,7 @@ function showConfirmModal({ title='Are you sure?', message='This action cannot b
     const dateInp  = document.getElementById('confirmDateInput');
     const needDate = !!dateInput;
     dateWrap.style.display = needDate ? 'block' : 'none';
+    dateInp.type = needDate ? (dateInput.type || 'date') : 'date';
     if(needDate){
       dateInp.min = dateInput.min || '';
       dateInp.value = dateInput.value || '';
@@ -7321,7 +7322,8 @@ function buildPropOwners(props){
     alt: p.ownerAltPhone || '',
     loc: [p.loc, p.city].filter(Boolean).join(', '),
     lat: parseFloat(p.latitude),
-    lng: parseFloat(p.longitude)
+    lng: parseFloat(p.longitude),
+    createdAt: p.createdAt || ''      // when the property was listed into the DB (used for the default order)
   })).filter(r => r.propertyId || r.number || r.alt);
 }
 // Open Google Maps directions to the property (coordinates if present, else its location text).
@@ -7338,11 +7340,11 @@ window.viewOwnerProperties = function(num){
   if(typeof onPropColumnFilter === 'function') onPropColumnFilter('ownerNumber', num, inp);
 };
 const _poPhone = (d,t)=> t==='display' ? (d ? `<a href="tel:${escapeHtml(d)}" class="phone-link">${escapeHtml(d)}</a>` : '—') : (d||'');
-/* Property Owners status sub-tabs: All / Not Available / Callback / Follow-up / Listed.
-   Not Available = reason 'Not available'. Callback = reason 'Not answered' / 'Call back later'.
+/* Property Owners status sub-tabs: To call / Not Available / Callback / Follow-up / Listed.
+   To call = owners not in any of the other tabs. Not Available = reason 'Not available'. Callback = reason 'Not answered' / 'Call back later'.
    Follow-up = has a follow-up date or at least one remark (not Listed). Listed = reason 'Listed' (set from Available). */
-let _poStatusTab = 'all';
-try{ const _sp = localStorage.getItem('kr_admin_poStatus'); if(['all','notavailable','callback','followup','listed'].indexOf(_sp) >= 0) _poStatusTab = _sp; }catch(e){}
+let _poStatusTab = 'tocall';
+try{ const _sp = localStorage.getItem('kr_admin_poStatus'); if(['tocall','notavailable','callback','followup','listed'].indexOf(_sp) >= 0) _poStatusTab = _sp; }catch(e){}
 function _poHasRemarks(r){ return Array.isArray(r.remarks) && r.remarks.some(x => x && String(x.remark || '').trim()); }
 function _poMatchesStatus(r, st){
   const reason = r.reason || '';
@@ -7350,7 +7352,8 @@ function _poMatchesStatus(r, st){
   if(st === 'callback')     return reason === 'Not answered' || reason === 'Call back later';
   if(st === 'listed')       return reason === 'Listed';
   if(st === 'followup')     return reason !== 'Listed' && (!!r.followUpDate || _poHasRemarks(r));   // Listed owners move to the Listed tab
-  return true;
+  // 'tocall': owners that are not in any other tab yet
+  return !['notavailable','callback','followup','listed'].some(k => _poMatchesStatus(r, k));
 }
 function syncPOStatusTabs(){
   document.querySelectorAll('#poStatusTabs .cat-tab-btn').forEach(btn => {
@@ -7358,10 +7361,10 @@ function syncPOStatusTabs(){
   });
 }
 window.updatePOStatusCounts = function(){
-  ['all','notavailable','callback','followup','listed'].forEach(k => {
+  ['tocall','notavailable','callback','followup','listed'].forEach(k => {
     const n = _propOwnersList.filter(r => _poMatchesStatus(r, k)).length;
     const el = document.getElementById('po-status-count-' + k);
-    if(el){ el.innerText = n; el.style.display = (n || k === 'all') ? '' : 'none'; }
+    if(el){ el.innerText = n; el.style.display = (n || k === 'tocall') ? '' : 'none'; }
   });
   syncPOStatusTabs();
 };
@@ -7412,7 +7415,7 @@ $.fn.dataTable.ext.search.push(function(settings, data, dataIndex){
   }
   if(cf.remarks && !has(flattenRemarks(r.remarks||[]), cf.remarks)) return false;
   if(cf.followStart || cf.followEnd){
-    const d = r.followUpDate || '';
+    const d = (r.followUpDate || '').slice(0, 10);   // filter is by calendar day
     if(!d) return false;
     if(cf.followStart && d < cf.followStart) return false;
     if(cf.followEnd && d > cf.followEnd) return false;
@@ -7433,18 +7436,32 @@ async function _loadPropAvailability(){
 }
 function _poMerge(avail){
   _propOwnersList.forEach(r => { const a = avail[r._id]; r.reason = a ? a.reason : ''; r.remarks = a ? a.remarks : []; r.followUpDate = a ? (a.followUpDate || '') : ''; });
+  // Load order: by the date each property was listed into the DB, oldest first -> newest last
+  // (same order as the Properties tab). Rows with no listed date go to the end.
+  const keyed = _propOwnersList.map((r, i) => ({ r, i, t: r.createdAt ? Date.parse(r.createdAt) : NaN }));
+  keyed.sort((a, b) => {
+    const an = Number.isNaN(a.t), bn = Number.isNaN(b.t);
+    if (an && bn) return a.i - b.i;
+    if (an) return 1;
+    if (bn) return -1;
+    return (a.t - b.t) || (a.i - b.i);
+  });
+  _propOwnersList.splice(0, _propOwnersList.length, ...keyed.map(e => e.r));
 }
 function _poToday(){ const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); }
+// Follow-up is a date AND time, stored as 'YYYY-MM-DDTHH:mm' (older records may still be date-only).
+function _poNow(){ const d = new Date(); return _poToday() + 'T' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0'); }
+function _poNorm(v){ v = v || ''; return v.length === 10 ? v + 'T00:00' : v; }
 function poDateCellHtml(r){
-  const v = r.followUpDate || '';
-  return `<input type="date" class="po-date-input${v?' has-date':''}" min="${_poToday()}" value="${escapeHtml(v)}" data-id="${escapeHtml(r._id)}" data-prev="${escapeHtml(v)}" title="Pick today or a future date" onchange="savePOFollowUp(this)">`;
+  const v = _poNorm(r.followUpDate);
+  return `<input type="datetime-local" class="po-date-input${v?' has-date':''}" min="${_poNow()}" value="${escapeHtml(v)}" data-id="${escapeHtml(r._id)}" data-prev="${escapeHtml(v)}" title="Pick a date and time (now or later)" onchange="savePOFollowUp(this)">`;
 }
 window.savePOFollowUp = async function(inp){
   const prev = inp.dataset.prev || '', val = inp.value || '', id = inp.dataset.id;
   if(blockIfViewOnly('customers')){ inp.value = prev; return; }
-  if(val && val < _poToday()){ alert('Please pick today or a future date.'); inp.value = prev; return; }
+  if(val && val < _poNow()){ alert('Please pick the current time or a future date & time.'); inp.value = prev; return; }
   const _poRow = _propOwnersList.find(x => String(x._id) === String(id));
-  if(!val && _poRow && _poRow.reason === 'Available'){ alert('Follow-up date is required while the reason is Available.'); inp.value = prev; return; }
+  if(!val && _poRow && _poRow.reason === 'Available'){ alert('Follow-up date & time is required while the reason is Available.'); inp.value = prev; return; }
   inp.disabled = true;
   try{
     const res = await fetch(`${BASE}/api/admin/property-availability/${encodeURIComponent(id)}/followup`, {
@@ -7456,7 +7473,7 @@ window.savePOFollowUp = async function(inp){
     const row = _propOwnersList.find(x => x._id === id); if(row) row.followUpDate = val;
   }catch(e){
     inp.value = prev;
-    alert('Could not save the date. Please try again.');
+    alert('Could not save the date & time. Please try again.');
   }
   inp.disabled = false;
 };
@@ -10898,12 +10915,12 @@ window.saveReason = async function(sel){
   // Property Owners: "Available" needs a follow-up date, and is confirmed before it is stored.
   let followUpDate = '';
   if(type === 'propowner' && val === 'Available'){
-    const cur = (_propOwnersList.find(x => String(x._id) === String(id)) || {}).followUpDate || '';
+    const cur = _poNorm((_propOwnersList.find(x => String(x._id) === String(id)) || {}).followUpDate);
     const picked = await showConfirmModal({
       title: 'Mark as Available?',
-      message: 'A follow-up date is required. Pick the date to follow up with this owner, then confirm.',
+      message: 'A follow-up date and time is required. Pick when to follow up with this owner, then confirm.',
       okText: 'Confirm & save', cancelText: 'Cancel', variant: 'info',
-      dateInput: { min: _poToday(), value: cur >= _poToday() ? cur : '', label: 'Follow-up date' }
+      dateInput: { type: 'datetime-local', min: _poNow(), value: cur >= _poNow() ? cur : '', label: 'Follow-up date & time' }
     });
     if(!picked){ sel.value = prev; return; }
     followUpDate = picked;
@@ -10929,14 +10946,14 @@ window.saveReason = async function(sel){
     sel.classList.toggle('has-reason', !!val);
     if(val) sel.style.setProperty('--rc', reasonColor(val)); else sel.style.removeProperty('--rc');
     const tbl = type === 'customer' ? dataTable : type === 'propowner' ? _propOwnersTable : propTable;
-    if(tbl){ const row = tbl.row(sel.closest('tr')).data(); if(row){ row.reason = val; if(followUpDate) row.followUpDate = followUpDate; } }
+    if(tbl){ const row = tbl.row(sel.closest('tr')).data(); if(row){ row.reason = val; if(followUpDate) row.followUpDate = followUpDate; if(type === 'propowner' && !val) row.followUpDate = ''; } }
     if(type === 'customer' && tbl){
       updateCustTypeCounts(tbl.rows().data().toArray());
       tbl.draw(false);   // re-apply tab filter so the row moves to / from Leads
     }
     if(type === 'propowner' && tbl){
       updatePOStatusCounts();
-      tbl.row(sel.closest('tr')).invalidate();   // re-render: new date cell + the Listed option only shows while Available
+      tbl.row(sel.closest('tr')).invalidate();   // re-render: new/cleared date cell + the Listed option only shows while Available
       tbl.draw(false);   // re-apply the status tab so the row moves to / from it
     }
   } catch(e){
@@ -15812,6 +15829,15 @@ function cloneAdminProperty(id) {
   const submitBtn = document.getElementById('listingSubmitBtn');
   if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Add property'; }
 
+  // Safety net: unlock everything again once any async prefill work has settled.
+  // (Electricity/Water are not locked while cloning.)
+  setTimeout(() => {
+    if (!_cloningListing) return;
+    document.querySelectorAll('#listingFormSections input, #listingFormSections select, #listingFormSections textarea')
+      .forEach(el => { el.disabled = false; });
+    onMaintenanceChange();
+  }, 0);
+
   hideDraftSavedIndicator();
   _listingFormDirty = true;   // unsaved copy: closing asks before discarding
   const body = document.getElementById('addModalScrollBody');
@@ -16225,6 +16251,10 @@ function onMaintenanceChange() {
   const maint = parseFloat(document.getElementById('f-maintenance').value) || 0;
   const elec = document.getElementById('f-electricityIncluded');
   const water = document.getElementById('f-waterCharge');
+  if (_cloningListing) {   // cloned listing: keep the copied values and leave both fields editable
+    elec.disabled = false; water.disabled = false;
+    return;
+  }
   if (maint > 0) {
     elec.value = 'Included'; elec.disabled = true;
     water.value = 'Included'; water.disabled = true;
