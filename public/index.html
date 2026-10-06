@@ -9164,6 +9164,15 @@ function renderCards() {
       document.getElementById(key + 'Grid').innerHTML = '';
       document.getElementById(key + 'Divider').style.display = 'none';
     });
+    // Keep the category's horizontal line (e.g. "Sell 0") visible above the
+    // "No listings" message, so the empty state doesn't look like it belongs
+    // to the BOOKED section sitting above it.
+    const _emptyKey = { Promoted:'promoted', Rent:'rent', Lease:'lease', PG:'pg', ShortStay:'shortstay', Sell:'sell' }[currentTab];
+    if (_emptyKey && _initialPropertiesFetchDone) {
+      const _d = document.getElementById(_emptyKey + 'Divider'), _c = document.getElementById(_emptyKey + 'Count');
+      if (_d) _d.style.display = '';
+      if (_c) _c.textContent = '0';
+    }
     setEmptyStateContent();
     empty.classList.add('show');
     renderBookedSections(_fsNow); // booked matches (if any) must still follow the filters
