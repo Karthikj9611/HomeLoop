@@ -7467,6 +7467,7 @@ window.reloadPropOwnerAvailability = async function(){
 };
 window.setPropOwnersData = async function(props){
   _propOwnersList = buildPropOwners(props);
+  (props || []).forEach(p => { if(p && p._id && typeof _adminPropCache !== 'undefined' && !_adminPropCache[p._id]) _adminPropCache[p._id] = p; });   // lets the View button open the property modal
   const el = document.getElementById('cust-type-count-propowner');
   if(el) el.innerText = _propOwnersList.length;
   if(!window.jQuery || !jQuery.fn.dataTable) return;
@@ -7499,7 +7500,7 @@ window.setPropOwnersData = async function(props){
             if(t!=='display') return '';
             const loc = escapeHtml(r.loc || '').replace(/'/g, '&#39;');
             return `<button type="button" class="bulk-btn" onclick="navigateToProperty(${isFinite(r.lat)?r.lat:'NaN'}, ${isFinite(r.lng)?r.lng:'NaN'}, '${loc}')" title="Get directions in Google Maps"><i class="fas fa-location-arrow"></i> Navigate</button> `
-                 + `<button type="button" class="bulk-btn" onclick="viewOwnerProperties('${escapeHtml(r.number||'')}')" title="Open in the Properties tab"><i class="fas fa-arrow-up-right-from-square"></i> View</button>`;
+                 + `<button type="button" class="bulk-btn" onclick="openPropOwnerView('${escapeHtml(r._id||'')}')" title="View this property"><i class="fas fa-arrow-up-right-from-square"></i> View</button>`;
         }}
       ]
     });
@@ -15481,6 +15482,8 @@ function closeApptModal(){
    ══════════════════════════════════════════════════════════════════ */
 
 let editingPropertyId = null;
+let _adminModalFromPO = false;   // popup was opened from Customers > Property Owners -> header button is "Clone" instead of "Edit"
+let _cloningListing = false;     // form holds a cloned (not-yet-saved) copy of an existing property
 let fImages = [];
 let _listingFormDirty = false; // true once the open modal has any unsaved edits
 let _scrollLockCount = 0;
@@ -15584,7 +15587,7 @@ function applyListingFormState(state) {
   if (typeof applySameAsBuildingAddressState === 'function') applySameAsBuildingAddressState();
 }
 function saveListingDraftNow() {
-  if (editingPropertyId) return; // edit-mode isn't covered — see comment above
+  if (editingPropertyId || _cloningListing) return; // edit-mode / clones aren't covered — see comment above
   const modal = document.getElementById('addModal');
   if (!modal || !modal.classList.contains('open')) return;
   try {
@@ -15719,6 +15722,7 @@ function resetFieldVisibility() {
 function openAdminAddPropertyModal() {
   if(blockIfViewOnly('properties')) return;
   editingPropertyId = null;
+  _adminModalFromPO = false; _cloningListing = false;
   resetListingForm();
   onFTypeChange(document.getElementById('f-type').value);
 
@@ -15748,11 +15752,13 @@ function openAdminAddPropertyModal() {
   lockBodyScroll();
 }
 
-function openAdminListingModal(id, mode) {
+function openAdminListingModal(id, mode, opts) {
   const p = _adminPropCache[id];
   if (!p) { alert('Could not find that listing'); return; }
   const full = p.full || {};
 
+  _adminModalFromPO = !!(opts && opts.fromPO);
+  _cloningListing = false;
   editingPropertyId = id;
   resetListingForm();
   applyImportedProperty(full);
@@ -15769,6 +15775,53 @@ function openAdminListingModal(id, mode) {
 
   _setAdminListingMode(mode);
 }
+/* Clone: loads an existing property's details into the form as a brand-new
+   listing (editingPropertyId = null, so Submit does a POST). The admin can
+   change anything, then press "Add property" to create it. */
+function cloneAdminProperty(id) {
+  if (blockIfViewOnly('properties')) return;
+  const p = _adminPropCache[id];
+  if (!p) { alert('Could not find that listing'); return; }
+  const full = p.full || {};
+
+  editingPropertyId = null;
+  _adminModalFromPO = false;
+  _cloningListing = true;
+  resetListingForm();
+  applyImportedProperty(full);
+  onFTypeChange(document.getElementById('f-type').value);
+
+  document.getElementById('addModalBox').classList.remove('view-mode');
+  document.getElementById('addModal').classList.remove('view-mode');
+  document.querySelectorAll('#listingFormSections input, #listingFormSections select, #listingFormSections textarea')
+    .forEach(el => { el.disabled = false; });
+
+  const toggleBtn = document.getElementById('addModalModeToggleBtn');
+  if (toggleBtn) toggleBtn.style.display = 'none';
+  document.getElementById('addModalTitleText').textContent = 'Clone property';
+  const sub = document.getElementById('addModalSubtitleText');
+  if (sub) { sub.textContent = 'Copy of ' + (p.propertyId || p.title || 'property') + ' — saved as a new listing'; sub.style.display = ''; }
+
+  ['aeGallerySlot', 'aeAdminMetaSlot', 'aeVideoEmbedWrap'].forEach(sid => {
+    const el = document.getElementById(sid);
+    if (el) { el.innerHTML = ''; el.style.display = 'none'; }
+  });
+  const videoRow = document.getElementById('aeVideoViewRow');
+  if (videoRow) videoRow.style.display = 'none';
+
+  const submitBtn = document.getElementById('listingSubmitBtn');
+  if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Add property'; }
+
+  hideDraftSavedIndicator();
+  _listingFormDirty = true;   // unsaved copy: closing asks before discarding
+  const body = document.getElementById('addModalScrollBody');
+  if (body) body.scrollTop = 0;
+}
+// View button in Customers > Property Owners: same property popup, but with Clone instead of Edit.
+function openPropOwnerView(id) {
+  openAdminListingModal(id, 'view', { fromPO: true });
+}
+
 // Confirms before discarding unsaved edits — draft persistence only covers
 // an accidental *refresh*; without this, simply clicking ✕ or clicking
 // outside the modal would silently throw away everything just as easily.
@@ -15786,6 +15839,7 @@ async function closeAdminEditModal() {
   document.getElementById('addModal').classList.remove('open');
   unlockBodyScroll();
   editingPropertyId = null;
+  _adminModalFromPO = false; _cloningListing = false;
   resetListingForm();
   _listingFormDirty = false;
 }
@@ -15795,6 +15849,7 @@ async function closeAdminEditModal() {
    button (id="addModalModeToggleBtn"). */
 function toggleAdminListingMode(){
   const isCurrentlyView = document.getElementById('addModalBox').classList.contains('view-mode');
+  if (_adminModalFromPO && isCurrentlyView) { cloneAdminProperty(editingPropertyId); return; }
   _setAdminListingMode(isCurrentlyView ? 'edit' : 'view');
 }
 
@@ -15820,7 +15875,9 @@ function _setAdminListingMode(mode){
   const toggleBtn = document.getElementById('addModalModeToggleBtn');
   if (toggleBtn){
     toggleBtn.innerHTML = isView
-      ? '<i class="fas fa-pen" style="font-size:11px"></i> Edit'
+      ? (_adminModalFromPO
+          ? '<i class="fas fa-clone" style="font-size:11px"></i> Clone'
+          : '<i class="fas fa-pen" style="font-size:11px"></i> Edit')
       : '<i class="fas fa-eye" style="font-size:11px"></i> View';
   }
 
