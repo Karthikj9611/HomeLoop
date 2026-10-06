@@ -2994,7 +2994,9 @@ main.tab-explore .empty-state{display:none !important}
 .form-input[readonly].identity-locked{
   background:var(--bg-2,#f4f4f6);cursor:not-allowed;
 }
-.identity-locked-hint{font-size:11px;color:var(--text-3);margin-top:2px}
+.identity-locked-hint{font-size:11px;color:var(--text-3);margin-top:2px}
+/* Owner phone is filled from the logged-in account and never shown. !important so resetFieldVisibility()/hideEmptyViewFields() can't re-show it. */
+.form-group.owner-phone-hidden{display:none !important}
 .add-modal.view-mode input:disabled,
 .add-modal.view-mode select:disabled,
 .add-modal.view-mode textarea:disabled{
@@ -6279,7 +6281,7 @@ main.tab-explore .empty-state{display:none !important}
         <input class="form-input" type="text" id="f-ownerName" autocapitalize="words" onblur="capitalizeWordsInput(this)" oninput="capitalizeWordsInput(this)"/>
         <div class="identity-locked-hint" id="f-ownerName-hint" style="display:none">Auto-filled from your account</div>
       </div>
-      <div class="form-group">
+      <div class="form-group owner-phone-hidden" id="f-ownerPhone-group">
         <label class="form-label">Phone number <span style="color:var(--brand)">*</span></label>
         <div class="input-icon-wrap">
           <input class="form-input" type="tel" id="f-ownerPhone" inputmode="numeric" maxlength="10" oninput="sanitizeMobileInput(this)"/>
@@ -6290,7 +6292,7 @@ main.tab-explore .empty-state{display:none !important}
         <div class="identity-locked-hint" id="f-ownerPhone-hint" style="display:none">Auto-filled from your account</div>
       </div>
       <div class="form-group">
-        <label class="form-label">Alternate number</label>
+        <label class="form-label">Owner number</label>
         <div class="input-icon-wrap">
           <input class="form-input" type="tel" id="f-ownerAltPhone" inputmode="numeric" maxlength="10" oninput="sanitizeMobileInput(this)"/>
           <button type="button" class="contact-pick-btn" onclick="pickContactFromDevice('f-ownerAltPhone')" title="Pick from contacts">
@@ -13265,13 +13267,15 @@ function lockIdentityFieldsForNewListing() {
   // whoever is logged in. Email remains locked since it's the verified
   // contact identity tied to the account.
   const prefillOnly = [
-    ['f-ownerName', fullName],
-    ['f-ownerPhone', user.mobile || '']
+    ['f-ownerName', fullName]
   ];
   prefillOnly.forEach(([id, val]) => {
     const el = document.getElementById(id);
     if (el && !el.value.trim()) el.value = val;
   });
+  // Owner phone field is hidden: it always carries the logged-in number.
+  const phoneEl = document.getElementById('f-ownerPhone');
+  if (phoneEl) phoneEl.value = String(user.mobile || '').replace(/\D/g, '').slice(-10);
 
   const fields = [
     ['f-ownerEmail', user.email || '']
@@ -17681,7 +17685,7 @@ const OPTIONAL_FIELD_IDS = new Set([
   'f-latitude', 'f-longitude', 'f-latLngDisplay',
   'f-imgFileInput', 'f-imgCameraInput',
   'f-amenities-extra', 'f-desc',   // description is optional
-  'f-ownerAltPhone', 'f-videoUrl', 'f-age', 'f-area',
+  'f-videoUrl', 'f-age', 'f-area',
   'f-maintenance', 'f-leaseMaintenance',
   'f-sellPossessionDate', 'f-sellReraId', 'f-pricePerSqft',
   // Sell-only trust/detail fields kept optional — same reasoning as
@@ -17802,8 +17806,8 @@ function submitListing() {
     return;
   }
   const ownerAltPhone = gv('f-ownerAltPhone');
-  if (ownerAltPhone && !isValidIndianMobile(ownerAltPhone)) {
-    showToast('Enter a valid 10-digit alternate number starting with 6, 7, 8 or 9', 'warning');
+  if (!ownerAltPhone || !isValidIndianMobile(ownerAltPhone)) {
+    showToast('Enter a valid 10-digit owner number starting with 6, 7, 8 or 9', 'warning');
     return;
   }
   const agentPhone = gv('f-agentPhone');
