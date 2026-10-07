@@ -84,8 +84,9 @@ body{
   line-height:1.5;
   -webkit-font-smoothing:antialiased;
   width:100%;
-  overscroll-behavior-x:none;
+  overscroll-behavior:none;  /* no white rubber-band gap when over-scrolling */
 }
+html{background:var(--bg-2)}
 input,button,select,textarea{font-family:inherit;font-size:inherit}
 button{cursor:pointer;border:none;background:none}
 a{text-decoration:none;color:inherit}
@@ -759,6 +760,11 @@ main.tab-explore .empty-state{display:none !important}
   z-index:2;
 }
 .prop-card:hover .prop-img .img-slide.active{transform:scale(1.045)}
+/* touch screens: no sticky hover lift/zoom while scrolling past cards */
+@media(hover:none){
+  .prop-card:hover{transform:none;box-shadow:0 1px 2px rgba(20,16,17,.03),0 1px 3px rgba(20,16,17,.04);border-color:rgba(20,16,17,.07);z-index:0}
+  .prop-card:hover .prop-img .img-slide.active{transform:none}
+}
 .prop-card.list-view{
   display:flex;flex-direction:row;
 }
@@ -9643,7 +9649,7 @@ function observeCardImgs(root) {
         entry.target.querySelectorAll('img.img-slide[loading=lazy]').forEach(img => { img.loading = 'eager'; });
         _cardImgObserver.unobserve(entry.target);
       });
-    }, { rootMargin: '2000px 0px' });
+    }, { rootMargin: '4000px 0px' });
   }
   (root || document).querySelectorAll('.img-slides').forEach(el => {
     if (el.querySelector('.img-slide[data-src], img.img-slide[loading=lazy]')) _cardImgObserver.observe(el);
