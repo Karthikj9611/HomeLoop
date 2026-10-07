@@ -15930,15 +15930,12 @@ var _chargesTab = 'tenant';
 function shareChargesLink() {
   var tab = _chargesTab || 'tenant';
   var url = window.location.origin + '/?charges=' + tab;
-  var titles = { tenant: 'Tenant Brokerage Charges', owner: 'Owner Charges', notice: 'Payment Safety Notice' };
+  var titles = { tenant: 'Our Charges', owner: 'Our Charges', notice: 'Payment Safety Notice' };
   var title = (titles[tab] || 'Our Charges') + ' - RentInPeace';
-  var text = tab === 'notice'
-    ? 'Stay safe: read this payment safety notice before paying any advance or token.'
-    : 'Simple & transparent charges.';
   if (navigator.share) {
-    navigator.share({ title: title, text: text, url: url }).catch(function () {});
+    navigator.share({ title: title, text: title, url: url }).catch(function () {});
   } else if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(text + '\n' + url).then(function () { showToast('Link copied!'); });
+    navigator.clipboard.writeText(title + '\n' + url).then(function () { showToast('Link copied!'); });
   } else {
     showToast('Link: ' + url, 'info');
   }
