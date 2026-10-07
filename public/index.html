@@ -6305,8 +6305,11 @@ main.tab-explore .empty-state{display:none !important}
       </div>
       <div class="form-group" id="currentLocGroup">
         <label class="form-label">Current location link <span style="color:var(--brand)">*</span></label>
-        <input class="form-input" type="url" id="f-currentLocationLink" inputmode="url" autocomplete="off" placeholder="Tap to add your location link" onfocus="if(!this.value.trim()){this.blur();openLocHelp();}" onclick="if(!this.value.trim()){this.blur();openLocHelp();}" oninput="this.value=this.value.trim()" />
-        <div style="font-size:11px;color:var(--text-2);margin-top:2px">Required · Google Maps link of your current location or your building's location · <a href="#" onclick="openLocHelp();return false" style="color:var(--brand);font-weight:700;text-decoration:underline">How to get it</a></div>
+        <div style="display:flex;gap:7px;align-items:stretch">
+          <input class="form-input" style="flex:1;min-width:0" type="url" id="f-currentLocationLink" inputmode="url" autocomplete="off" placeholder="Tap to add your location link" onfocus="if(!this.value.trim()){this.blur();openLocHelp();}" onclick="if(!this.value.trim()){this.blur();openLocHelp();}" oninput="this.value=this.value.trim()" />
+          <button type="button" onclick="copyCurrentLocLink()" style="flex-shrink:0;padding:0 12px;border-radius:9px;border:1.5px solid var(--text);background:var(--bg);color:var(--text);font-size:12px;font-weight:700;cursor:pointer">Copy</button>
+        </div>
+        <div style="font-size:11px;color:var(--text-2);margin-top:2px"><a href="#" onclick="openLocHelp();return false" style="color:var(--brand);font-weight:700;text-decoration:underline">How to get it</a></div>
       </div>
       <div class="form-group">
         <label class="form-label">Owner name <span style="color:var(--brand)">*</span></label>
@@ -13205,6 +13208,17 @@ function hideEmptyViewFields() {
 /* ── Draft autosave: keeps whatever the user has typed even if the
    modal gets closed accidentally (backdrop click, Escape, etc.) ── */
 const LISTING_DRAFT_KEY = 'homeloop_listing_draft_v1';
+// Filled ONLY by tapping "Live" (fCaptureLocation) — never persisted in the
+// draft and always blank when the form opens for a new listing.
+const LIVE_ONLY_FIELD_IDS = ['f-fullAddress', 'f-pincode', 'f-latitude', 'f-longitude', 'f-latLngDisplay', 'f-googleMapsLink'];
+function clearLiveOnlyFields() {
+  LIVE_ONLY_FIELD_IDS.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  const chk = document.getElementById('f-sameAsBuildingAddress');
+  if (chk && chk.checked) { chk.checked = false; const oa = document.getElementById('f-ownerAddress'); if (oa) oa.value = ''; applySameAsBuildingAddressState(); }
+  const btnTxt = document.getElementById('f-locBtnTxt'); if (btnTxt) btnTxt.textContent = 'Live';
+  const st = document.getElementById('f-locStatus'); if (st) st.textContent = 'Tap Live to fill from your current location, or type the address';
+  pincodeManuallyEdited = false;
+}
 let _draftSaveTimer = null;
 
 function saveListingDraftNow() {
@@ -13215,7 +13229,7 @@ function saveListingDraftNow() {
   try {
     const fields = {};
     document.querySelectorAll('#addModal input, #addModal select, #addModal textarea').forEach(el => {
-      if (!el.id || el.type === 'file') return;
+      if (!el.id || el.type === 'file' || LIVE_ONLY_FIELD_IDS.includes(el.id)) return;
       if (el.type === 'checkbox') fields[el.id] = el.checked;
       else fields[el.id] = el.value;
     });
@@ -13237,7 +13251,7 @@ function restoreListingDraft() {
 
   Object.keys(draft.fields).forEach(id => {
     const el = document.getElementById(id);
-    if (!el) return;
+    if (!el || LIVE_ONLY_FIELD_IDS.includes(id)) return;
     if (el.type === 'checkbox') el.checked = !!draft.fields[id];
     else el.value = draft.fields[id];
   });
@@ -13346,6 +13360,7 @@ function openAddModal(presetType) {
   if (blockIfNotVerified()) return;
   const restored = restoreListingDraft();
   if (!restored) resetListingForm();
+  clearLiveOnlyFields(); // address/pincode/lat-lng/maps link come only from tapping Live
   if (presetType) {
     document.getElementById('f-type').value = presetType;
   }
@@ -17794,14 +17809,18 @@ function fieldLabelText(el) {
 // Only genuine Google Maps links are accepted (what "Share your location" /
 // "Copy link" in Google Maps produces). The server enforces the same rule.
 function isGoogleMapsShareLink(v) {
-  let u;
-  try { u = new URL(String(v || '').trim()); } catch (e) { return false; }
-  if (u.protocol !== 'https:' && u.protocol !== 'http:') return false;
-  const h = u.hostname.toLowerCase(), p = u.pathname;
-  if (h === 'maps.app.goo.gl') return p.length > 1;
-  if (h === 'goo.gl') return /^\/maps\//i.test(p);
-  if (h === 'maps.google.com') return true;
-  return /^(www\.)?google\.[a-z.]+$/.test(h) && /^\/maps/i.test(p);
+  // Any http(s) link is accepted (Google now also issues share.google/... links);
+  // only a missing/garbled URL is rejected.
+  try { const u = new URL(String(v || '').trim()); return u.protocol === 'https:' || u.protocol === 'http:'; }
+  catch (e) { return false; }
+}
+function copyCurrentLocLink() {
+  const el = document.getElementById('f-currentLocationLink');
+  const v = (el.value || '').trim();
+  if (!v) { openLocHelp(); return; }
+  const done = () => showToast('Link copied', 'success');
+  const fallback = () => { el.focus(); el.select(); el.setSelectionRange(0, v.length); try { document.execCommand('copy'); done(); } catch (e) {} };
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(v).then(done).catch(fallback); else fallback();
 }
 function openLocHelp() {
   const m = document.getElementById('locHelpModal');
@@ -17827,7 +17846,7 @@ function applyLocHelp() {
   const v = document.getElementById('locHelpInput').value.trim();
   const err = document.getElementById('locHelpErr');
   if (!v) { err.textContent = 'Paste the link you copied from Google Maps.'; return; }
-  if (!isGoogleMapsShareLink(v)) { err.textContent = 'That is not a Google Maps link. Use Share → Copy link.'; return; }
+  if (!isGoogleMapsShareLink(v)) { err.textContent = 'Paste a valid link (starting with https://).'; return; }
   const f = document.getElementById('f-currentLocationLink');
   f.value = v;
   const g = f.closest('.form-group');
@@ -17851,7 +17870,7 @@ function validateListingForm() {
   // already caught by the generic required check above)
   const curLoc = document.getElementById('f-currentLocationLink');
   if (curLoc && isFieldVisible(curLoc) && curLoc.value.trim() && !isGoogleMapsShareLink(curLoc.value)) {
-    setGroupError(curLoc.closest('.form-group'), 'Enter a valid Google Maps link (Share → Copy link)');
+    setGroupError(curLoc.closest('.form-group'), 'Enter a valid link (starting with https://)');
     if (!firstErrorEl) firstErrorEl = curLoc;
   }
   // Property images — at least one is required

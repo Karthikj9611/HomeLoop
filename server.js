@@ -1422,19 +1422,6 @@ function validatePropertyFields(fields) {
     if (val && String(val).length > max)
       return `Field '${path}' must be at most ${max} characters.`;
   }
-  const curLoc = (fields.location || {}).currentLocationLink;
-  if (curLoc && String(curLoc).trim()) {
-    let u; try { u = new URL(String(curLoc).trim()); } catch { u = null; }
-    const h = u ? u.hostname.toLowerCase() : '';
-    const ok = u && (
-      (h === 'maps.app.goo.gl' && u.pathname.length > 1) ||
-      (h === 'goo.gl' && /^\/maps\//i.test(u.pathname)) ||
-      h === 'maps.google.com' ||
-      (/^(www\.)?google\.[a-z.]+$/.test(h) && /^\/maps/i.test(u.pathname))
-    );
-    if (!ok) return `Field 'location.currentLocationLink' must be a Google Maps link.`;
-  }
-
   const pincode = (fields.location || {}).pincode;
   if (pincode && String(pincode).trim() && !/^\d{6}$/.test(String(pincode).trim()))
     return `Field 'location.pincode' must be a 6-digit PIN code.`;

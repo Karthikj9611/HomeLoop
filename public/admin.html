@@ -4819,8 +4819,11 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
       </div>
       <div class="form-group" id="currentLocGroup">
         <label class="form-label">Current location link <span style="color:var(--brand)">*</span></label>
-        <input class="form-input" type="url" id="f-currentLocationLink" inputmode="url" autocomplete="off" placeholder="Tap to add location link" onfocus="if(!this.value.trim()){this.blur();openLocHelp();}" onclick="if(!this.value.trim()){this.blur();openLocHelp();}" oninput="this.value=this.value.trim()" />
-        <div style="font-size:11px;color:var(--text-2);margin-top:2px">Required · Google Maps link of the owner's current location or the building's location · <a href="#" onclick="openLocHelp();return false" style="color:var(--brand);font-weight:700;text-decoration:underline">How to get it</a></div>
+        <div style="display:flex;gap:7px;align-items:stretch">
+          <input class="form-input" style="flex:1;min-width:0" type="url" id="f-currentLocationLink" inputmode="url" autocomplete="off" placeholder="Tap to add location link" onfocus="if(!this.value.trim()){this.blur();openLocHelp();}" onclick="if(!this.value.trim()){this.blur();openLocHelp();}" oninput="this.value=this.value.trim()" />
+          <button type="button" onclick="copyCurrentLocLink()" style="flex-shrink:0;padding:0 12px;border-radius:9px;border:1.5px solid var(--text);background:var(--bg);color:var(--text);font-size:12px;font-weight:700;cursor:pointer">Copy</button>
+        </div>
+        <div style="font-size:11px;color:var(--text-2);margin-top:2px"><a href="#" onclick="openLocHelp();return false" style="color:var(--brand);font-weight:700;text-decoration:underline">How to get it</a></div>
       </div>
       <div class="form-group">
         <label class="form-label">Owner name <span style="color:var(--brand)">*</span></label>
@@ -16826,14 +16829,18 @@ function fieldLabelText(el) {
 }
 // ── Current location link (mandatory) — same rule as index.html + server ──
 function isGoogleMapsShareLink(v) {
-  let u;
-  try { u = new URL(String(v || '').trim()); } catch (e) { return false; }
-  if (u.protocol !== 'https:' && u.protocol !== 'http:') return false;
-  const h = u.hostname.toLowerCase(), p = u.pathname;
-  if (h === 'maps.app.goo.gl') return p.length > 1;
-  if (h === 'goo.gl') return /^\/maps\//i.test(p);
-  if (h === 'maps.google.com') return true;
-  return /^(www\.)?google\.[a-z.]+$/.test(h) && /^\/maps/i.test(p);
+  // Any http(s) link is accepted (Google now also issues share.google/... links);
+  // only a missing/garbled URL is rejected.
+  try { const u = new URL(String(v || '').trim()); return u.protocol === 'https:' || u.protocol === 'http:'; }
+  catch (e) { return false; }
+}
+function copyCurrentLocLink() {
+  const el = document.getElementById('f-currentLocationLink');
+  const v = (el.value || '').trim();
+  if (!v) { openLocHelp(); return; }
+  const done = () => _adminToast('Link copied');
+  const fallback = () => { el.focus(); el.select(); el.setSelectionRange(0, v.length); try { document.execCommand('copy'); done(); } catch (e) {} };
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(v).then(done).catch(fallback); else fallback();
 }
 function openLocHelp() {
   document.getElementById('locHelpErr').textContent = '';
@@ -16851,7 +16858,7 @@ function applyLocHelp() {
   const v = document.getElementById('locHelpInput').value.trim();
   const err = document.getElementById('locHelpErr');
   if (!v) { err.textContent = 'Paste the link copied from Google Maps.'; return; }
-  if (!isGoogleMapsShareLink(v)) { err.textContent = 'That is not a Google Maps link. Use Share → Copy link.'; return; }
+  if (!isGoogleMapsShareLink(v)) { err.textContent = 'Paste a valid link (starting with https://).'; return; }
   const f = document.getElementById('f-currentLocationLink');
   f.value = v;
   const g = f.closest('.form-group');
@@ -16884,7 +16891,7 @@ function validateListingForm() {
   }
   const curLoc = document.getElementById('f-currentLocationLink');
   if (curLoc && isFieldVisible(curLoc) && curLoc.value.trim() && !isGoogleMapsShareLink(curLoc.value)) {
-    setGroupError(curLoc.closest('.form-group'), 'Enter a valid Google Maps link (Share → Copy link)');
+    setGroupError(curLoc.closest('.form-group'), 'Enter a valid link (starting with https://)');
     if (!firstErrorEl) firstErrorEl = curLoc;
   }
   const imgGroup = document.getElementById('imgFormGroup');
