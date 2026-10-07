@@ -4656,6 +4656,29 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
   </footer>
 </div>
 
+<!-- ─── Current Location Link help modal (outside #addModal so form resets never touch it) ─── -->
+<div class="add-modal-overlay" id="locHelpModal" role="dialog" aria-modal="true" aria-label="How to get a location link" onclick="if(event.target===this)closeLocHelp()" style="z-index:420">
+  <div class="add-modal" style="max-width:440px;padding:22px 22px 20px">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px">
+      <div style="font-size:15px;font-weight:700;color:var(--text);line-height:1.4">Here's how to get a shareable Google Maps location link:</div>
+      <button type="button" onclick="closeLocHelp()" aria-label="Close" style="flex-shrink:0;background:var(--brand);border:none;color:#fff;border-radius:50%;width:30px;height:30px;font-size:18px;line-height:1;cursor:pointer">&times;</button>
+    </div>
+    <div style="font-size:13px;font-weight:700;color:var(--text);margin:14px 0 6px">Google Maps (Android / iPhone)</div>
+    <ol style="margin:0 0 14px 18px;padding:0;font-size:13px;color:var(--text-2);line-height:1.7">
+      <li>Open Google Maps. Tap the blue dot (your current location) or search for your building's location.</li>
+      <li>Tap <b>Share</b> (or <b>Share your location</b>), then <b>Copy link</b>.</li>
+    </ol>
+    <a href="https://maps.google.com" target="_blank" rel="noopener" style="display:inline-block;margin-bottom:14px;font-size:12.5px;font-weight:700;color:var(--brand);text-decoration:underline">Open Google Maps</a>
+    <label for="locHelpInput" style="display:block;font-size:12px;font-weight:700;color:var(--text);margin-bottom:5px">Paste the copied link here</label>
+    <div style="display:flex;gap:7px">
+      <input type="url" id="locHelpInput" class="form-input" inputmode="url" autocomplete="off" placeholder="https://maps.app.goo.gl/..." style="flex:1;min-width:0" oninput="this.value=this.value.trim();document.getElementById('locHelpErr').textContent=''" />
+      <button type="button" onclick="pasteLocHelp()" style="flex-shrink:0;padding:0 12px;border-radius:9px;border:1.5px solid var(--text);background:var(--bg);color:var(--text);font-size:12px;font-weight:700;cursor:pointer">Paste</button>
+    </div>
+    <div id="locHelpErr" style="font-size:11.5px;color:#d93025;min-height:15px;margin-top:4px"></div>
+    <button type="button" class="form-submit" onclick="applyLocHelp()" style="margin-top:8px;width:100%">Use this link</button>
+  </div>
+</div>
+
 <!-- ─── Property EDIT modal — ported from index.html's "List your property"
      form (openEditListingFull/applyImportedProperty/submitListing), so
      admin edits every field exactly the way the property owner would.
@@ -4793,6 +4816,11 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
         <label class="form-label">Google Maps link (optional)</label>
         <input class="form-input" type="url" id="f-googleMapsLink" />
         <div style="font-size:11px;color:var(--text-2);margin-top:2px">Auto-filled from your location · replace it if you have a more exact link</div>
+      </div>
+      <div class="form-group" id="currentLocGroup">
+        <label class="form-label">Current location link <span style="color:var(--brand)">*</span></label>
+        <input class="form-input" type="url" id="f-currentLocationLink" inputmode="url" autocomplete="off" placeholder="Tap to add location link" onfocus="if(!this.value.trim()){this.blur();openLocHelp();}" onclick="if(!this.value.trim()){this.blur();openLocHelp();}" oninput="this.value=this.value.trim()" />
+        <div style="font-size:11px;color:var(--text-2);margin-top:2px">Required · Google Maps link of the owner's current location or the building's location · <a href="#" onclick="openLocHelp();return false" style="color:var(--brand);font-weight:700;text-decoration:underline">How to get it</a></div>
       </div>
       <div class="form-group">
         <label class="form-label">Owner name <span style="color:var(--brand)">*</span></label>
@@ -16049,6 +16077,7 @@ function applyImportedProperty(p) {
     sv('f-latLngDisplay', Number(location.lat).toFixed(6) + '° N, ' + Number(location.lng).toFixed(6) + '° E');
   }
   sv('f-googleMapsLink', location.mapLink);
+  sv('f-currentLocationLink', location.currentLocationLink);
 
   sv('f-title', owner.propertyName);
   sv('f-ownerName', owner.name);
@@ -16795,6 +16824,41 @@ function fieldLabelText(el) {
   if (!label) return 'This field';
   return label.textContent.replace(/\*\s*$/, '').trim();
 }
+// ── Current location link (mandatory) — same rule as index.html + server ──
+function isGoogleMapsShareLink(v) {
+  let u;
+  try { u = new URL(String(v || '').trim()); } catch (e) { return false; }
+  if (u.protocol !== 'https:' && u.protocol !== 'http:') return false;
+  const h = u.hostname.toLowerCase(), p = u.pathname;
+  if (h === 'maps.app.goo.gl') return p.length > 1;
+  if (h === 'goo.gl') return /^\/maps\//i.test(p);
+  if (h === 'maps.google.com') return true;
+  return /^(www\.)?google\.[a-z.]+$/.test(h) && /^\/maps/i.test(p);
+}
+function openLocHelp() {
+  document.getElementById('locHelpErr').textContent = '';
+  document.getElementById('locHelpInput').value = document.getElementById('f-currentLocationLink').value || '';
+  document.getElementById('locHelpModal').classList.add('open');
+}
+function closeLocHelp() { document.getElementById('locHelpModal').classList.remove('open'); }
+function pasteLocHelp() {
+  const inp = document.getElementById('locHelpInput');
+  const fallback = () => { inp.focus(); _adminToast('Long-press the box and choose Paste'); };
+  if (!navigator.clipboard || !navigator.clipboard.readText) return fallback();
+  navigator.clipboard.readText().then(t => { inp.value = (t || '').trim(); }).catch(fallback);
+}
+function applyLocHelp() {
+  const v = document.getElementById('locHelpInput').value.trim();
+  const err = document.getElementById('locHelpErr');
+  if (!v) { err.textContent = 'Paste the link copied from Google Maps.'; return; }
+  if (!isGoogleMapsShareLink(v)) { err.textContent = 'That is not a Google Maps link. Use Share → Copy link.'; return; }
+  const f = document.getElementById('f-currentLocationLink');
+  f.value = v;
+  const g = f.closest('.form-group');
+  if (g) { g.classList.remove('has-error'); const m = g.querySelector('.field-error-text'); if (m) m.remove(); }
+  closeLocHelp();
+}
+
 function validateListingForm() {
   clearAllFieldErrors();
   let firstErrorEl = null;
@@ -16817,6 +16881,11 @@ function validateListingForm() {
       setGroupError(titleEl.closest('.form-group'), 'Title must contain letters or numbers');
       if (!firstErrorEl) firstErrorEl = titleEl;
     }
+  }
+  const curLoc = document.getElementById('f-currentLocationLink');
+  if (curLoc && isFieldVisible(curLoc) && curLoc.value.trim() && !isGoogleMapsShareLink(curLoc.value)) {
+    setGroupError(curLoc.closest('.form-group'), 'Enter a valid Google Maps link (Share → Copy link)');
+    if (!firstErrorEl) firstErrorEl = curLoc;
   }
   const imgGroup = document.getElementById('imgFormGroup');
   if (imgGroup && isFieldVisible(imgGroup) && (!Array.isArray(fImages) || fImages.length === 0)) {
@@ -16978,6 +17047,7 @@ async function adminSubmitListing() {
       lat:     parseFloat(document.getElementById('f-latitude').value) || null,
       lng:     parseFloat(document.getElementById('f-longitude').value) || null,
       mapLink: gv('f-googleMapsLink') || null,
+      currentLocationLink: gv('f-currentLocationLink'),
     },
     owner: {
       propertyName: title,

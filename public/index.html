@@ -2997,6 +2997,8 @@ main.tab-explore .empty-state{display:none !important}
 .identity-locked-hint{font-size:11px;color:var(--text-3);margin-top:2px}
 /* Owner phone is filled from the logged-in account and never shown. !important so resetFieldVisibility()/hideEmptyViewFields() can't re-show it. */
 .form-group.owner-phone-hidden{display:none !important}
+/* Lat/Lng and Google Maps link are auto-filled and never edited by hand, so they stay hidden. !important so resetFieldVisibility()/hideEmptyViewFields() can't re-show them. */
+.form-group.auto-hidden{display:none !important}
 .add-modal.view-mode input:disabled,
 .add-modal.view-mode select:disabled,
 .add-modal.view-mode textarea:disabled{
@@ -6180,6 +6182,31 @@ main.tab-explore .empty-state{display:none !important}
 </div>
 
 
+<!-- ─── Current Location Link help modal ─────────────────────────────────
+     Lives outside #addModal on purpose: resetListingForm() blanks every input
+     inside #addModal, and this modal's paste box must not be affected. -->
+<div class="add-modal-overlay" id="locHelpModal" role="dialog" aria-modal="true" aria-label="How to get a location link" onclick="if(event.target===this)closeLocHelp()" style="z-index:420">
+  <div class="add-modal" style="max-width:440px;padding:22px 22px 20px">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px">
+      <div style="font-size:15px;font-weight:700;color:var(--text);line-height:1.4">Here's how to get a shareable Google Maps location link:</div>
+      <button type="button" onclick="closeLocHelp()" aria-label="Close" style="flex-shrink:0;background:var(--brand);border:none;color:#fff;border-radius:50%;width:30px;height:30px;font-size:18px;line-height:1;cursor:pointer">&times;</button>
+    </div>
+    <div style="font-size:13px;font-weight:700;color:var(--text);margin:14px 0 6px">Google Maps (Android / iPhone)</div>
+    <ol style="margin:0 0 14px 18px;padding:0;font-size:13px;color:var(--text-2);line-height:1.7">
+      <li>Open Google Maps. Tap the blue dot (your current location) or search for your building's location.</li>
+      <li>Tap <b>Share</b> (or <b>Share your location</b>), then <b>Copy link</b>.</li>
+    </ol>
+    <a href="https://maps.google.com" target="_blank" rel="noopener" style="display:inline-block;margin-bottom:14px;font-size:12.5px;font-weight:700;color:var(--brand);text-decoration:underline">Open Google Maps</a>
+    <label for="locHelpInput" style="display:block;font-size:12px;font-weight:700;color:var(--text);margin-bottom:5px">Paste the copied link here</label>
+    <div style="display:flex;gap:7px">
+      <input type="url" id="locHelpInput" class="form-input" inputmode="url" autocomplete="off" placeholder="https://maps.app.goo.gl/..." style="flex:1;min-width:0" oninput="this.value=this.value.trim();document.getElementById('locHelpErr').textContent=''" />
+      <button type="button" onclick="pasteLocHelp()" style="flex-shrink:0;padding:0 12px;border-radius:9px;border:1.5px solid var(--text);background:var(--bg);color:var(--text);font-size:12px;font-weight:700;cursor:pointer">Paste</button>
+    </div>
+    <div id="locHelpErr" style="font-size:11.5px;color:#d93025;min-height:15px;margin-top:4px"></div>
+    <button type="button" class="form-submit" onclick="applyLocHelp()" style="margin-top:8px;width:100%">Use this link</button>
+  </div>
+</div>
+
 <!-- ─── Add Listing Modal (List Your Property) ───────────────────────── -->
 <div class="add-modal-overlay" id="addModal" role="dialog" aria-modal="true" aria-label="Add property listing">
   <div class="add-modal" id="addModalBox" style="max-width:860px;padding:0;overflow:hidden;display:flex;flex-direction:column;max-height:92vh">
@@ -6260,21 +6287,26 @@ main.tab-explore .empty-state{display:none !important}
             <span id="f-locBtnTxt">Live</span>
           </button>
         </div>
-        <div id="f-locStatus" style="font-size:11px;color:var(--text-2);min-height:14px;margin-top:2px">Auto-filled from your current location · Tap Live to update, or edit the text directly</div>
+        <div id="f-locStatus" style="font-size:11px;color:var(--text-2);min-height:14px;margin-top:2px">Tap Live to fill from your current location, or type the address</div>
       </div>
       <div class="form-group" id="pincodeGroup">
         <label class="form-label">Pincode</label>
         <input class="form-input" type="text" id="f-pincode" inputmode="numeric" maxlength="6" placeholder="e.g. 560034" oninput="onPincodeInput(this)"/>
         <div style="font-size:11px;color:var(--text-2);margin-top:2px">Auto-filled from the address · edit if it's wrong</div>
       </div>
-      <div class="form-group" id="latLngGroup">
+      <div class="form-group auto-hidden" id="latLngGroup">
         <label class="form-label">Latitude / Longitude (auto)</label>
         <input class="form-input" type="text" id="f-latLngDisplay" readonly />
       </div>
-      <div class="form-group" id="mapsLinkGroup">
+      <div class="form-group auto-hidden" id="mapsLinkGroup">
         <label class="form-label">Google Maps link (optional)</label>
         <input class="form-input" type="url" id="f-googleMapsLink" />
         <div style="font-size:11px;color:var(--text-2);margin-top:2px">Auto-filled from your location · replace it if you have a more exact link</div>
+      </div>
+      <div class="form-group" id="currentLocGroup">
+        <label class="form-label">Current location link <span style="color:var(--brand)">*</span></label>
+        <input class="form-input" type="url" id="f-currentLocationLink" inputmode="url" autocomplete="off" placeholder="Tap to add your location link" onfocus="if(!this.value.trim()){this.blur();openLocHelp();}" onclick="if(!this.value.trim()){this.blur();openLocHelp();}" oninput="this.value=this.value.trim()" />
+        <div style="font-size:11px;color:var(--text-2);margin-top:2px">Required · Google Maps link of your current location or your building's location · <a href="#" onclick="openLocHelp();return false" style="color:var(--brand);font-weight:700;text-decoration:underline">How to get it</a></div>
       </div>
       <div class="form-group">
         <label class="form-label">Owner name <span style="color:var(--brand)">*</span></label>
@@ -13124,7 +13156,7 @@ function resetFieldVisibility() {
     header.classList.remove('view-hidden');
   });
 }
-const VIEW_ALWAYS_HIDDEN_GROUPS = ['fullAddressGroup', 'latLngGroup', 'mapsLinkGroup', 'imgFormGroup'];
+const VIEW_ALWAYS_HIDDEN_GROUPS = ['fullAddressGroup', 'latLngGroup', 'mapsLinkGroup', 'currentLocGroup', 'imgFormGroup'];
 const VIEW_SECTION_HEADERS_SKIP = ['mediaSectionHeader']; // hidden by their own logic already
 function hideEmptyViewFields() {
   document.querySelectorAll('#addModalScrollBody .form-group').forEach(group => {
@@ -13328,12 +13360,8 @@ function openAddModal(presetType) {
   lockBodyScroll();
   onFTypeChange(document.getElementById('f-type').value);
   if (restored) showToast('Your unfinished listing was restored');
-  // Fresh listing (no restored draft, no address yet): auto-fill the
-  // current location so the field is populated without the person having
-  // to tap "Live" themselves. They can still tap it later to refresh.
-  if (!restored && !document.getElementById('f-fullAddress').value.trim()) {
-    fCaptureLocation();
-  }
+  // Location is NOT auto-captured on open — the address, lat/lng and Maps
+  // link are only filled when the person taps "Live" (fCaptureLocation).
 }
 function closeAddModal() {
   // Same modal/header X button and backdrop-click are shared with the
@@ -13383,6 +13411,7 @@ function applyImportedProperty(p) {
     sv('f-latLngDisplay', Number(location.lat).toFixed(6) + '° N, ' + Number(location.lng).toFixed(6) + '° E');
   }
   sv('f-googleMapsLink', location.mapLink);
+  sv('f-currentLocationLink', location.currentLocationLink);
 
   // Owner
   sv('f-title', owner.propertyName);
@@ -13886,7 +13915,7 @@ function updateAdBannerAudience() {
 function updateListPropertyVisibility(user) {
   const canList = !user || user.accountType === 'owner';
   const display = canList ? '' : 'none';
-  ['fabAdd', 'fabInlineAdd', 'menuManageLabel', 'menuListRent', 'menuListLease', 'menuListPG', 'menuListSell']
+  ['fabAdd', 'fabInlineAdd', 'menuManageLabel', 'menuListRent', 'menuListLease', 'menuListSell']  /* menuListPG intentionally excluded: PG listing stays hidden (see PG_ENABLED) */
     .forEach(id => { const el = document.getElementById(id); if (el) el.style.display = display; });
   // resultsHeader/adBanner visibility depends on both owner status and the
   // active tab (see updateAllOnlySections), so defer to that instead of
@@ -17761,6 +17790,51 @@ function fieldLabelText(el) {
   // Strip the trailing red "*" and any stray whitespace, keep just the label text.
   return label.textContent.replace(/\*\s*$/, '').trim();
 }
+// ── Current location link (mandatory) ──────────────────────────────
+// Only genuine Google Maps links are accepted (what "Share your location" /
+// "Copy link" in Google Maps produces). The server enforces the same rule.
+function isGoogleMapsShareLink(v) {
+  let u;
+  try { u = new URL(String(v || '').trim()); } catch (e) { return false; }
+  if (u.protocol !== 'https:' && u.protocol !== 'http:') return false;
+  const h = u.hostname.toLowerCase(), p = u.pathname;
+  if (h === 'maps.app.goo.gl') return p.length > 1;
+  if (h === 'goo.gl') return /^\/maps\//i.test(p);
+  if (h === 'maps.google.com') return true;
+  return /^(www\.)?google\.[a-z.]+$/.test(h) && /^\/maps/i.test(p);
+}
+function openLocHelp() {
+  const m = document.getElementById('locHelpModal');
+  const inp = document.getElementById('locHelpInput');
+  document.getElementById('locHelpErr').textContent = '';
+  inp.value = document.getElementById('f-currentLocationLink').value || '';
+  m.classList.add('open');
+}
+function closeLocHelp() {
+  document.getElementById('locHelpModal').classList.remove('open');
+}
+function pasteLocHelp() {
+  const inp = document.getElementById('locHelpInput');
+  if (!navigator.clipboard || !navigator.clipboard.readText) {
+    inp.focus();
+    showToast('Long-press the box and choose Paste', 'info');
+    return;
+  }
+  navigator.clipboard.readText().then(t => { inp.value = (t || '').trim(); })
+    .catch(() => { inp.focus(); showToast('Long-press the box and choose Paste', 'info'); });
+}
+function applyLocHelp() {
+  const v = document.getElementById('locHelpInput').value.trim();
+  const err = document.getElementById('locHelpErr');
+  if (!v) { err.textContent = 'Paste the link you copied from Google Maps.'; return; }
+  if (!isGoogleMapsShareLink(v)) { err.textContent = 'That is not a Google Maps link. Use Share → Copy link.'; return; }
+  const f = document.getElementById('f-currentLocationLink');
+  f.value = v;
+  const g = f.closest('.form-group');
+  if (g) { g.classList.remove('has-error'); const m = g.querySelector('.field-error-text'); if (m) m.remove(); }
+  closeLocHelp();
+}
+
 function validateListingForm() {
   clearAllFieldErrors();
   let firstErrorEl = null;
@@ -17773,6 +17847,13 @@ function validateListingForm() {
       if (!firstErrorEl) firstErrorEl = el;
     }
   });
+  // Current location link — must be a real Google Maps link (empty case is
+  // already caught by the generic required check above)
+  const curLoc = document.getElementById('f-currentLocationLink');
+  if (curLoc && isFieldVisible(curLoc) && curLoc.value.trim() && !isGoogleMapsShareLink(curLoc.value)) {
+    setGroupError(curLoc.closest('.form-group'), 'Enter a valid Google Maps link (Share → Copy link)');
+    if (!firstErrorEl) firstErrorEl = curLoc;
+  }
   // Property images — at least one is required
   const imgGroup = document.getElementById('imgFormGroup');
   if (imgGroup && isFieldVisible(imgGroup) && (!Array.isArray(fImages) || fImages.length === 0)) {
@@ -17865,7 +17946,11 @@ function submitListing() {
       pincode: document.getElementById('f-pincode').value.trim() || null,
       lat:     parseFloat(document.getElementById('f-latitude').value) || null,
       lng:     parseFloat(document.getElementById('f-longitude').value) || null,
-      mapLink: gv('f-googleMapsLink') || null,
+      mapLink: gv('f-googleMapsLink')
+        || (document.getElementById('f-latitude').value && document.getElementById('f-longitude').value
+              ? 'https://www.google.com/maps?q=' + document.getElementById('f-latitude').value + ',' + document.getElementById('f-longitude').value
+              : 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent([document.getElementById('f-fullAddress').value.trim(), loc, document.getElementById('f-city').value.trim() || 'Bangalore'].filter(Boolean).join(', '))),
+      currentLocationLink: gv('f-currentLocationLink'),
     },
     owner: {
       propertyName: title,

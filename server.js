@@ -889,6 +889,9 @@ const LocationSchema = new mongoose.Schema({
   lat:     { type: Number, default: null },
   lng:     { type: Number, default: null },
   mapLink: { type: String, default: '' },
+  // Owner's live Google Maps share link, mandatory on new listings. Private:
+  // never sent to the public frontend (see PUBLIC_SELECT below).
+  currentLocationLink: { type: String, default: '' },
 }, { _id: false });
 
 const OwnerSchema = new mongoose.Schema({
@@ -1382,13 +1385,14 @@ function formatPostedDateTime(date) {
 // Top-level keys accepted from the client, matching the nested submission shape exactly.
 const NESTED_SECTIONS = ['basic','location','owner','price','property','amenities','terms','rules','media','pg','shortStay','sale'];
 
-const URL_FIELDS_BY_SECTION = { location: ['mapLink'], media: ['video'] };
+const URL_FIELDS_BY_SECTION = { location: ['mapLink', 'currentLocationLink'], media: ['video'] };
 const MAX_LENGTHS = {
   'owner.propertyName': 200,
   'media.desc':         5000,
   'location.area':      200,
   'location.address':   500,
   'location.pincode':   6,
+  'location.currentLocationLink': 500,
   'owner.name':         100,
   'owner.address':      300,
   'owner.contactTime':  100,
@@ -1418,6 +1422,19 @@ function validatePropertyFields(fields) {
     if (val && String(val).length > max)
       return `Field '${path}' must be at most ${max} characters.`;
   }
+  const curLoc = (fields.location || {}).currentLocationLink;
+  if (curLoc && String(curLoc).trim()) {
+    let u; try { u = new URL(String(curLoc).trim()); } catch { u = null; }
+    const h = u ? u.hostname.toLowerCase() : '';
+    const ok = u && (
+      (h === 'maps.app.goo.gl' && u.pathname.length > 1) ||
+      (h === 'goo.gl' && /^\/maps\//i.test(u.pathname)) ||
+      h === 'maps.google.com' ||
+      (/^(www\.)?google\.[a-z.]+$/.test(h) && /^\/maps/i.test(u.pathname))
+    );
+    if (!ok) return `Field 'location.currentLocationLink' must be a Google Maps link.`;
+  }
+
   const pincode = (fields.location || {}).pincode;
   if (pincode && String(pincode).trim() && !/^\d{6}$/.test(String(pincode).trim()))
     return `Field 'location.pincode' must be a 6-digit PIN code.`;
@@ -1472,6 +1489,7 @@ const BASE_REQUIRED_FIELDS = [
   ['location.address',  'Location: Building live address'],
   ['location.pincode',  'Location: Pincode'],
   ['location.mapLink',  'Location: Google Maps link'],
+  ['location.currentLocationLink', 'Current location link'],
   ['owner.name',        'Owner name'],
   ['owner.phone',       'Owner phone number'],
   ['owner.email',       'Owner email'],
@@ -1785,7 +1803,7 @@ app.get('/api/properties', attachUserIfPresent, async (req, res) => {
       // owner.propertyName excluded too (client-side search no longer matches on
       // it — search now matches area/BHK only). owner.agentPhone is kept for
       // Call/WhatsApp.
-      '-owner.name -owner.propertyName -owner.email -owner.contactTime -owner.address -owner.agentArea ' +
+      '-owner.name -owner.propertyName -owner.email -owner.contactTime -owner.address -owner.agentArea -location.currentLocationLink ' +
       // Location detail that's likewise only used to fill the always-hidden
       // full-address/lat-lng/Google-Maps-link form groups.
       // NOTE: location.address is intentionally *not* excluded at the query
@@ -1867,6 +1885,7 @@ app.get('/api/properties', attachUserIfPresent, async (req, res) => {
       delete doc.location.lat;
       delete doc.location.lng;
       delete doc.location.mapLink;
+      delete doc.location.currentLocationLink;
     });
 
     // Sort/paginate in memory across the merged set (same ordering as before:
