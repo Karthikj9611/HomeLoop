@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
 <title>HomeLoop</title>
 <script>
 // Preload today's festive wish image (if any) — but only as a low-priority,
@@ -74,6 +74,8 @@
   --search-h:64px;
 }
 html{scroll-behavior:smooth;overflow-x:hidden;width:100%}
+html,body{touch-action:pan-x pan-y;-webkit-text-size-adjust:100%;text-size-adjust:100%}  /* no pinch / double-tap zoom */
+@media(max-width:900px){input,select,textarea{font-size:16px !important}}  /* iOS auto-zooms focused fields under 16px */
 body{
   font-family:'Inter',system-ui,sans-serif;
   background:var(--bg-2);
@@ -4850,6 +4852,11 @@ main.tab-explore .empty-state{display:none !important}
     else if(overlay && ++cleanChecks >= 2){ cleanChecks = 0; hideOverlay(); }   // closed -> restore page
   }, 1000);
 })();
+</script>
+<script>
+/* iOS Safari ignores user-scalable=no: block pinch + double-tap zoom explicitly */
+["gesturestart","gesturechange","gestureend"].forEach(function(e){document.addEventListener(e,function(ev){ev.preventDefault();},{passive:false});});
+(function(){var t=0;document.addEventListener("touchend",function(e){var n=Date.now();if(n-t<=300)e.preventDefault();t=n;},{passive:false});})();
 </script>
 </head>
 <body>
