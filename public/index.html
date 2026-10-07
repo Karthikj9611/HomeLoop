@@ -3695,6 +3695,10 @@ main.tab-explore .empty-state{display:none !important}
   background:rgba(255,255,255,.22);box-shadow:none;
 }
 #chargesModal .modal-close:hover{background:rgba(255,255,255,.36);transform:scale(1.06)}
+#chargesModal .charges-share-btn{position:absolute;top:14px;right:50px;z-index:2;width:28px;height:28px;border:none;border-radius:50%;background:rgba(255,255,255,.22);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;transition:background .2s,transform .2s}
+#chargesModal .charges-share-btn:hover{background:rgba(255,255,255,.36);transform:scale(1.06)}
+#chargesModal .charges-share-btn svg{width:14px;height:14px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+#chargesModal .add-modal-header{padding-right:90px !important}
 #chargesModal .modal-close svg{stroke:#fff;width:14px;height:14px}
 #chargesModal .charges-body{padding:16px 18px 18px;display:flex;flex-direction:column;gap:10px}
 
@@ -7545,6 +7549,7 @@ main.tab-explore .empty-state{display:none !important}
           <div class="charges-hero-subtitle">Simple &amp; transparent - pay only when we deliver</div>
         </div>
       </div>
+      <button type="button" class="charges-share-btn" onclick="shareChargesLink()" aria-label="Share this page"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg></button>
       <button class="modal-close" onclick="closeChargesModal()" aria-label="Close">
         <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
@@ -15894,23 +15899,47 @@ Find verified Rentals, PGs, Leases, Short Stays, and more—all in one place.`;
 /* ═══════════════════════════════════════════════
    HELP & SUPPORT MODAL
 ═══════════════════════════════════════════════ */
-function openChargesModal() {
-  showChargesModal();
+function openChargesModal(tab) {
+  showChargesModal(tab);
 }
-function showChargesModal() {
+function showChargesModal(tab) {
   const user = getLoggedInUser();
   const isOwner = !!user && user.accountType === 'owner';
   const isTenant = !!user && user.accountType !== 'owner';
   // Tab bar: guests see Tenants + Owners; signed-in users see only their own audience. Notice is always available.
-  document.getElementById('chargesTabBtn-tenant').style.display = (!user || isTenant) ? '' : 'none';
-  document.getElementById('chargesTabBtn-owner').style.display  = (!user || isOwner)  ? '' : 'none';
-  switchChargesAudience(isOwner ? 'owner' : 'tenant');
+  // Tabs follow the login: tenants share Tenants + Notice, owners share Owners + Notice, guests see all.
+  // A tab opened from a shared link (?charges=...) is always shown to whoever opens it, read-only if it isn't their audience.
+  document.getElementById('chargesTabBtn-tenant').style.display = (!user || isTenant || tab === 'tenant') ? '' : 'none';
+  document.getElementById('chargesTabBtn-owner').style.display  = (!user || isOwner  || tab === 'owner')  ? '' : 'none';
+  var _want = (tab === 'tenant' || tab === 'owner' || tab === 'notice') ? tab : (isOwner ? 'owner' : 'tenant');
+  switchChargesAudience(_want);
   document.getElementById('chargesModal').classList.add('open');
   lockBodyScroll();
 }
 function closeChargesModal() {
   document.getElementById('chargesModal').classList.remove('open');
   unlockBodyScroll();
+  try {
+    var u = new URL(window.location.href);
+    if (u.searchParams.has('charges')) { u.searchParams.delete('charges'); history.replaceState(null, '', u.pathname + u.search + u.hash); }
+  } catch (e) {}
+}
+var _chargesTab = 'tenant';
+function shareChargesLink() {
+  var tab = _chargesTab || 'tenant';
+  var url = window.location.origin + '/?charges=' + tab;
+  var titles = { tenant: 'Tenant Brokerage Charges', owner: 'Owner Charges', notice: 'Payment Safety Notice' };
+  var title = (titles[tab] || 'Our Charges') + ' - RentInPeace';
+  var text = tab === 'notice'
+    ? 'Stay safe: read this payment safety notice before paying any advance or token.'
+    : 'Simple & transparent charges - pay only when we deliver.';
+  if (navigator.share) {
+    navigator.share({ title: title, text: text, url: url }).catch(function () {});
+  } else if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text + '\n' + url).then(function () { showToast('Link copied!'); });
+  } else {
+    showToast('Link: ' + url, 'info');
+  }
 }
 function copyUpiNumber(btn, num) {
   var done = function () { var t = btn.textContent; btn.textContent = 'Copied'; setTimeout(function () { btn.textContent = t; }, 1500); };
@@ -15930,6 +15959,7 @@ function togglePlan(id) {
 }
 
 function switchChargesAudience(which) {
+  _chargesTab = which;
   const user = getLoggedInUser();
   const isOwner = !!user && user.accountType === 'owner';
   const isTenant = !!user && user.accountType !== 'owner';
@@ -15941,7 +15971,8 @@ function switchChargesAudience(which) {
   });
   document.getElementById('chargesTenantView').style.display = (isTenant && which === 'tenant') ? '' : 'none';
   document.getElementById('chargesOwnerView').style.display  = (isOwner  && which === 'owner')  ? '' : 'none';
-  document.getElementById('chargesGuestView').style.display  = (!user && which !== 'notice')    ? '' : 'none';
+  // Guest view doubles as the read-only view for anyone looking at an audience that isn't theirs (e.g. an owner opening the Tenants tab).
+  document.getElementById('chargesGuestView').style.display  = (which !== 'notice' && !(isTenant && which === 'tenant') && !(isOwner && which === 'owner')) ? '' : 'none';
   document.getElementById('chargesNoticePanel').style.display = which === 'notice' ? '' : 'none';
   const box = document.getElementById('chargesModalBox');
   if (box) box.scrollTop = 0;
@@ -17005,6 +17036,10 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     renderBookedSections();
     renderRecentlyViewed();
+    // ── Deep-link: auto-open the charges modal (?charges=tenant|owner|notice) ──
+    const _chParam = new URLSearchParams(window.location.search).get('charges');
+    if (_chParam && ['tenant', 'owner', 'notice'].includes(_chParam)) openChargesModal(_chParam);
+
     if (!ok) return;
     initNearbyLocation(); // ask for location once listings are in, so "Near me first" has data to sort
 
