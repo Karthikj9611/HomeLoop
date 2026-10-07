@@ -6896,6 +6896,14 @@ main.tab-explore .empty-state{display:none !important}
          content instead of staying stuck to the bottom. Hidden while actually
          listing a property. -->
     <div class="view-actions-footer" id="viewActionsFooter" style="display:none">
+      <div id="viewLocLinkRow" style="margin-bottom:12px;display:none">
+        <div style="font-size:12px;font-weight:600;color:#5f6368;margin-bottom:4px">Location link (Google Maps)</div>
+        <div style="display:flex;gap:8px;align-items:stretch">
+          <a id="viewLocLinkText" href="#" target="_blank" rel="noopener noreferrer"
+             style="flex:1;min-width:0;padding:10px 12px;border:1px solid #dadce0;border-radius:10px;font-size:13px;color:#1a73e8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-decoration:none;background:#f8f9fa"></a>
+          <button type="button" id="viewLocLinkCopyBtn" style="padding:0 14px;border:1px solid #4285F4;background:#fff;color:#4285F4;border-radius:10px;font-weight:600;font-size:13px;cursor:pointer">Copy</button>
+        </div>
+      </div>
       <div class="modal-actions" id="viewActionsRow">
         <button class="modal-btn-secondary" id="modal-save-btn">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-6.7-4.35-9.3-8.55C1.02 9.77 1.9 6.5 4.6 5.2 6.9 4.1 9.5 4.9 12 7.4c2.5-2.5 5.1-3.3 7.4-2.2 2.7 1.3 3.58 4.57 1.9 7.25C18.7 16.65 12 21 12 21z"/></svg>
@@ -12417,6 +12425,16 @@ function openDetailReal(id) {
   // Navigate button: only for listings with a public owner number (server sends navigateUrl only then).
   document.getElementById('viewNavigateRow').style.display = ((_mainOn || _altOn) && p.navigateUrl) ? '' : 'none';
   document.getElementById('viewNavigateBtn').onclick = () => openPropertyNavigate(p.id);
+  // Pasted Google Maps link + Copy button — server only sends currentLocationLink to subscribed tenants.
+  const _locRow = document.getElementById('viewLocLinkRow');
+  const _locUrl = (!isOwnerViewer() && /^https?:\/\//i.test(String(p.currentLocationLink || ''))) ? String(p.currentLocationLink) : '';
+  if (_locUrl) {
+    const _locA = document.getElementById('viewLocLinkText');
+    _locA.href = _locUrl; _locA.textContent = _locUrl;
+    _locA.onclick = (e) => { e.preventDefault(); openLocationLinkNavigate(_locUrl); };
+    document.getElementById('viewLocLinkCopyBtn').onclick = (e) => copyPaymentDetail(_locUrl, e.currentTarget, e);
+    _locRow.style.display = '';
+  } else { _locRow.style.display = 'none'; }
   // Owner accounts don't need to schedule a visit or WhatsApp-contact through
   // the property view — those actions are for prospective tenants only.
   const viewerIsOwner = (() => { const u = getLoggedInUser(); return !!u && u.accountType === 'owner'; })();
@@ -12455,9 +12473,10 @@ function openDetailReal(id) {
       document.getElementById(id).style.display = 'none';
     });
     document.getElementById('viewNavigateRow').style.display = 'none';
+    document.getElementById('viewLocLinkRow').style.display = 'none';
     actionsRow1.style.display = [...actionsRow1.children].every(c => getComputedStyle(c).display === 'none') ? 'none' : '';
   }
-  const _footerHasContent = ['viewActionsRow', 'viewActionsRow2', 'viewOwnerMainRow', 'viewOwnerAltRow', 'viewNavigateRow']
+  const _footerHasContent = ['viewActionsRow', 'viewActionsRow2', 'viewOwnerMainRow', 'viewOwnerAltRow', 'viewNavigateRow', 'viewLocLinkRow']
     .some(id => document.getElementById(id).style.display !== 'none');
   footerEl.style.display = _footerHasContent ? 'block' : 'none';
 
@@ -13027,6 +13046,23 @@ function openCall(propId) {
 const HIDE_SAVE_SCHEDULE = true;
 /* Description row in the property view is hidden by default (it's still saved with the listing, just not shown). Set to false to show it again. */
 const HIDE_DESCRIPTION_IN_VIEW = false;
+
+/* Tap on the pasted Google Maps link: if the link carries coordinates (full google.com/maps URL),
+   open turn-by-turn directions to them; short links (maps.app.goo.gl) can't be read client-side,
+   so they open as-is in Google Maps (the app on phones), where Directions/Start is one tap. */
+function openLocationLinkNavigate(url) {
+  let target = url;
+  try {
+    const dec = decodeURIComponent(url);
+    const m = dec.match(/[?&](?:q|query|destination|ll)=(-?\d+\.\d+),\s*(-?\d+\.\d+)/)
+           || dec.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/)
+           || dec.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+    if (m && /(^|\.)google\.[a-z.]+\/maps/i.test(url.replace(/^https?:\/\//i, ''))) {
+      target = `https://www.google.com/maps/dir/?api=1&destination=${m[1]},${m[2]}&travelmode=driving`;
+    }
+  } catch (_) {}
+  window.open(target, '_blank', 'noopener');
+}
 
 /* Opens Google Maps directions to the property — only listings with a public owner number carry navigateUrl. */
 function openPropertyNavigate(propId) {

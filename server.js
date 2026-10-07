@@ -1790,7 +1790,7 @@ app.get('/api/properties', attachUserIfPresent, async (req, res) => {
       // owner.propertyName excluded too (client-side search no longer matches on
       // it — search now matches area/BHK only). owner.agentPhone is kept for
       // Call/WhatsApp.
-      '-owner.name -owner.propertyName -owner.email -owner.contactTime -owner.address -owner.agentArea -location.currentLocationLink ' +
+      '-owner.name -owner.propertyName -owner.email -owner.contactTime -owner.address -owner.agentArea ' +
       // Location detail that's likewise only used to fill the always-hidden
       // full-address/lat-lng/Google-Maps-link form groups.
       // NOTE: location.address is intentionally *not* excluded at the query
@@ -1868,6 +1868,11 @@ app.get('/api/properties', attachUserIfPresent, async (req, res) => {
       }
       // Full free-text address itself is still never sent to the public
       // frontend — only the derived pincode above survives past this point.
+      // Pasted Google Maps link (owner's live location) — ONLY for a logged-in tenant whose
+      // subscription / Public call is active. Everyone else never receives it.
+      if (_viewerPublicCall && /^https?:\/\//i.test(String(doc.location.currentLocationLink || '').trim())) {
+        doc.currentLocationLink = String(doc.location.currentLocationLink).trim();
+      }
       delete doc.location.address;
       delete doc.location.lat;
       delete doc.location.lng;
