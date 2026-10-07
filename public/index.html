@@ -10520,8 +10520,8 @@ function shareCompareViaWhatsApp() {
   if (ids.length < 2) return;
   const props = ids.map(id => PROPERTIES.find(p => p.id === id)).filter(Boolean);
   const compareUrl = `${window.location.origin}${window.location.pathname}?compare=${ids.join(',')}`;
-  const names = props.map(p => p.propertyId).join(', ');
-  const msg = `Comparing ${props.length} properties on HomeLoop: ${names} — ${compareUrl}`;
+  const propLines = props.map(p => `${p.propertyId} - ${window.location.origin}/property/${p.id}`).join('\n');
+  const msg = `Comparing ${props.length} properties on HomeLoop:\n${propLines}\n\nCompare together: ${compareUrl}`;
   const url = 'https://wa.me/?text=' + encodeURIComponent(msg);
   window.open(url, '_blank', 'noopener');
 }
@@ -12431,7 +12431,7 @@ function openDetailReal(id) {
   if (_altRole === 'Coordinator' && _mainRole === 'Owner') _mainRowEl.parentNode.insertBefore(_altRowEl, _mainRowEl);
   else _mainRowEl.parentNode.insertBefore(_mainRowEl, _altRowEl);
   // Navigate button: only for listings with a public owner number (server sends navigateUrl only then).
-  document.getElementById('viewNavigateRow').style.display = ((_mainOn || _altOn) && p.navigateUrl) ? '' : 'none';
+  document.getElementById('viewNavigateRow').style.display = ((_mainOn || _altOn) && (p.currentLocationLink || p.navigateUrl)) ? '' : 'none';
   document.getElementById('viewNavigateBtn').onclick = () => openPropertyNavigate(p.id);
   // Pasted Google Maps link + Copy button — server only sends currentLocationLink to subscribed tenants.
   const _locRow = document.getElementById('viewLocLinkRow');
@@ -13075,19 +13075,20 @@ function openLocationLinkNavigate(url) {
 /* Opens Google Maps directions to the property — only listings with a public owner number carry navigateUrl. */
 function openPropertyNavigate(propId) {
   const p = PROPERTIES.find(x => x.id === propId) || BOOKED_PROPERTIES.find(x => x.id === propId);
-  const url = p && p.navigateUrl;
+  // Prefer the owner's pasted Google Maps link (sent only to subscribed tenants); fall back to the address-built directions link.
+  const url = p && (p.currentLocationLink || p.navigateUrl);
   if (!url || !/^https?:\/\//i.test(url)) {
     showToast('Location not available for this listing', 'warning');
     return;
   }
-  window.open(url, '_blank', 'noopener');
+  openLocationLinkNavigate(url);
 }
 
 /* Navigation icon shown right below the card's Call icon. The server only sends navigateUrl
    for listings whose owner number is public to this viewer (active subscription plan for a
    tenant/customer, or an owner who made their listing public), so it appears exactly then. */
 function cardNavBadgeHTML(p) {
-  if (!p || p.booked || !p.navigateUrl) return '';
+  if (!p || p.booked || !(p.currentLocationLink || p.navigateUrl)) return '';
   return `<div class="prop-icon-badge prop-icon-nav" onclick="event.stopPropagation();openPropertyNavigate('${p.id}')" aria-label="Navigate" title="Navigate to property"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.6 21.4 12 12 21.4 2.6 12Z" fill="#fff" stroke="#fff" stroke-width="2" stroke-linejoin="round"/><path d="M8.6 15.2v-3.1c0-.8.6-1.4 1.4-1.4h4.6" fill="none" stroke="#1a73e8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M12.9 8.6l2.6 2.1-2.6 2.1" fill="none" stroke="#1a73e8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>`;
 }
 
@@ -13137,7 +13138,7 @@ function openOwnerWhatsApp(propId, which) {
   }
   const phone = raw.length === 10 ? '91' + raw : raw;
   const propertyUrl = `${window.location.origin}/property/${p.id}`;
-  const msg = `Interested in ${p.propertyId}. Still available? ${propertyUrl}`;
+  const msg = `Interested in this property. Still available?\n${p.propertyId} - ${propertyUrl}`;
   window.open('https://wa.me/' + phone + '?text=' + encodeURIComponent(msg), '_blank', 'noopener');
 }
 
@@ -13154,7 +13155,7 @@ function openWhatsApp(propId) {
   }
   const phone = rawPhone.length === 10 ? '91' + rawPhone : rawPhone;
   const propertyUrl = `${window.location.origin}/property/${p.id}`;
-  const msg = `Interested in ${p.propertyId}. Still available? ${propertyUrl}`;
+  const msg = `Interested in this property. Still available?\n${p.propertyId} - ${propertyUrl}`;
   const url = 'https://wa.me/' + phone + '?text=' + encodeURIComponent(msg);
   window.open(url, '_blank', 'noopener');
 }
@@ -14809,7 +14810,7 @@ function shareMyListingViaWhatsApp(id) {
   const rent = p.price?.rent != null ? fmtRupee(p.price.rent) : null;
   const propertyUrl = `${window.location.origin}/property/${p.id}`;
   const priceBit = rent ? `${rent}${isSell ? '' : isShortStay ? '/day' : '/month'}, ` : '';
-  const msg = `${p.propertyId}, ${status} on HomeLoop: ${propertyUrl}`;
+  const msg = `${status} on HomeLoop\n${p.propertyId} - ${propertyUrl}`;
   const url = 'https://wa.me/?text=' + encodeURIComponent(msg);
   window.open(url, '_blank', 'noopener');
 }

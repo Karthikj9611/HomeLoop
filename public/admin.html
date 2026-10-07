@@ -5441,8 +5441,8 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
 let dataTable, propTable, apptTable, honestReviewsTable, userReviewsTable, partnersTable, referralsTable;
 
 
-const BASE = 'https://www.homeloop.in';
-//const BASE = 'http://localhost:5000';
+//const BASE = 'https://www.homeloop.in';
+const BASE = 'http://localhost:5000';
 
 
 /* ── ADMIN KEY – set after login ──
@@ -9991,7 +9991,7 @@ window.shareListingToOwner = async function(id){
   if(!row.verified){ alert("This listing isn't verified yet — verify it first, then share."); return; }
 
   const link = `${BASE}/property/${id}`;
-  const msg = `Your property is live on HomeLoop: ${link}`;
+  const msg = `Your property is live on HomeLoop:\n${row.propertyId || id} - ${link}`;
   const text = encodeURIComponent(msg);
 
   const ownerNum = waDigits(row.ownerNumber);
@@ -10096,7 +10096,7 @@ function openTenantShareModal(ids){
     return;
   }
   const skipped = rows.length - verifiedRows.length;
-  const links = verifiedRows.map(r => `${BASE}/property/${r._id}`);
+  const links = verifiedRows.map(r => `${r.propertyId ? r.propertyId + ' - ' : ''}${BASE}/property/${r._id}`);
 
   const overlay = document.getElementById('shareTenantOverlay');
   const phoneEl = document.getElementById('shareTenantPhone');
@@ -10179,7 +10179,7 @@ function buildSocialCaption(row, link){
   const captionBits = [row.title || 'Property listing'];
   if(row.loc) captionBits.push(row.loc);
   if(row.displayPrice) captionBits.push(row.displayPrice);
-  return `${captionBits.join(' · ')}\n\nView more photos & details: ${link}\n\n#HomeLoop #Bangalore #RealEstate`;
+  return `${captionBits.join(' · ')}\n\nView more photos & details:\n${row.propertyId ? row.propertyId + ' - ' : ''}${link}\n\n#HomeLoop #Bangalore #RealEstate`;
 }
 
 window.shareListingToFacebook = function(id){
@@ -10330,7 +10330,7 @@ function buildShareLinksMessage(ids){
     return [
       `${i + 1}. ${name} — ${loc}, ${rent}, ${config}`,
       `Owner: ${ownerName} ${ownerNum}${ownerAlt}`,
-      link,
+      link ? `${row.propertyId ? row.propertyId + ' - ' : ''}${link}` : '',
       `${dirUrl}`
     ].filter(Boolean).join('\n');
   });
@@ -10381,7 +10381,7 @@ function buildAvailabilityCheckMessage(row){
   const furnish = row.furnishing || '—';
   const locStr = [row.loc, row.city].filter(Boolean).join(', ') || 'your listed location';
   const link = row._id ? `${BASE}/property/${row._id}` : '';
-  return `Is ${row.propertyId || 'listing'}, still available? ${link}`;
+  return `Is ${row.propertyId || 'listing'} still available?\n${row.propertyId ? row.propertyId + ' - ' : ''}${link}`;
 }
 
 window.checkAvailabilityForRow = async function(id){
@@ -13507,8 +13507,8 @@ window.shareAdminCompareViaWhatsApp = function(){
   if (ids.length < 2) return;
   const rows = ids.map(id => _adminPropCache[id]).filter(Boolean);
   const compareUrl = `${BASE}/?compare=${ids.join(',')}`;
-  const names = rows.map(r => r.propertyId).join(', ');
-  const msg = `Check out this comparison of ${rows.length} properties on HomeLoop — ${names}\n\n${compareUrl}`;
+  const propLines = rows.map(r => `${r.propertyId ? r.propertyId + ' - ' : ''}${BASE}/property/${r._id}`).join('\n');
+  const msg = `Check out this comparison of ${rows.length} properties on HomeLoop:\n${propLines}\n\nCompare together: ${compareUrl}`;
   const url = 'https://wa.me/?text=' + encodeURIComponent(msg);
   window.open(url, '_blank', 'noopener');
 };
