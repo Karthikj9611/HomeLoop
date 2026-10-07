@@ -7546,7 +7546,7 @@ main.tab-explore .empty-state{display:none !important}
         </div>
         <div>
           <div class="add-modal-title">Our Charges</div>
-          <div class="charges-hero-subtitle">Simple &amp; transparent - pay only when we deliver</div>
+          <div class="charges-hero-subtitle">Simple &amp; transparent</div>
         </div>
       </div>
       <button type="button" class="charges-share-btn" onclick="shareChargesLink()" aria-label="Share this page"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg></button>
@@ -15932,7 +15932,7 @@ function shareChargesLink() {
   var title = (titles[tab] || 'Our Charges') + ' - RentInPeace';
   var text = tab === 'notice'
     ? 'Stay safe: read this payment safety notice before paying any advance or token.'
-    : 'Simple & transparent charges - pay only when we deliver.';
+    : 'Simple & transparent charges.';
   if (navigator.share) {
     navigator.share({ title: title, text: text, url: url }).catch(function () {});
   } else if (navigator.clipboard && navigator.clipboard.writeText) {
