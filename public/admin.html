@@ -7327,7 +7327,7 @@ function isRentedRow(r){ return RENTED_REASONS.indexOf((r && r.reason) || '') >=
 
 // Records with any subscription detail saved (from / to / legacy subscriptionAt)
 // are shown ONLY in the "Subscription" tab (removed from Tenants / Owners / Leads / Rented).
-function isSubscriptionRow(r){ return !!(r && (r.subscriptionFrom || r.subscriptionAt || r.subscriptionTo)); }
+function isSubscriptionRow(r){ return !!(r && r.accountType !== 'owner' && (r.subscriptionFrom || r.subscriptionAt || r.subscriptionTo)); }
 
 function custRowStatus(r){
   if(isSubscriptionRow(r)) return 'subscription';
@@ -7337,6 +7337,11 @@ function custRowStatus(r){
 }
 function custRowType(r){ return (r && r.accountType === 'owner') ? 'owner' : 'customer'; }
 function syncCustTabActive(){
+  // Owners don't need subscriptions: hide the Subscription status tab on the Owners tab
+  const _hideSub = _custTypeTab === 'owner';
+  if(_hideSub && _custStatusTab === 'subscription'){ _custStatusTab = 'active'; try{ localStorage.setItem('kr_admin_custStatus','active'); }catch(e){} if(typeof dataTable !== 'undefined' && dataTable) dataTable.draw(); }
+  const _subBtn = document.querySelector('#custStatusTabs .cat-tab-btn[data-status="subscription"]');
+  if(_subBtn) _subBtn.classList.toggle('po-hidden', _hideSub);
   document.querySelectorAll('#custTypeTabs .cat-tab-btn').forEach(btn=>{
     btn.classList.toggle('active', btn.getAttribute('data-type') === _custTypeTab);
   });
@@ -11420,9 +11425,9 @@ $(document).ready(function(){
 				  <i class="fas fa-pen"></i><span class="btn-label"> Edit</span>
 				</button></span>
 
-				<span class="pact pact-subscription"><button class="btn-view btn-action-sub${(row.subscriptionFrom || row.subscriptionAt) ? ' is-set' : ''}" onclick="openSubscriptionModal('${row.mobile || row._id}')" title="${(row.subscriptionFrom || row.subscriptionAt) ? 'Subscribed: ' + plainDateTime(row.subscriptionFrom || row.subscriptionAt) + (row.subscriptionTo ? ' → ' + plainDateTime(row.subscriptionTo) : '') + ((row.subscriptions || []).length > 1 ? '  (' + row.subscriptions.length + ' subscriptions — click to view / add)' : '  (click to add another)') : 'Set subscription From – To'}">
+				${row.accountType === 'owner' ? '' : `<span class="pact pact-subscription"><button class="btn-view btn-action-sub${(row.subscriptionFrom || row.subscriptionAt) ? ' is-set' : ''}" onclick="openSubscriptionModal('${row.mobile || row._id}')" title="${(row.subscriptionFrom || row.subscriptionAt) ? 'Subscribed: ' + plainDateTime(row.subscriptionFrom || row.subscriptionAt) + (row.subscriptionTo ? ' → ' + plainDateTime(row.subscriptionTo) : '') + ((row.subscriptions || []).length > 1 ? '  (' + row.subscriptions.length + ' subscriptions — click to view / add)' : '  (click to add another)') : 'Set subscription From – To'}">
 				  <i class="fas fa-calendar-check"></i><span class="btn-label"> Subscription</span>
-				</button></span>
+				</button></span>`}
 
 				<span class="pact pact-delete"><button class="btn-view btn-action-delete" onclick="deleteBooking('${row.mobile || row._id}')" title="Delete this customer">
 				  <i class="fas fa-trash"></i><span class="btn-label"> Delete</span>
