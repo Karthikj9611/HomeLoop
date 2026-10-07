@@ -222,6 +222,16 @@ body{
 .cat-tab-bar.tab-lvl-2 .cat-tab-btn.active,.cat-tab-bar.tab-lvl-3 .cat-tab-btn.active,.cat-tab-bar.tab-lvl-4 .cat-tab-btn.active,.cat-tab-bar.tab-lvl-5 .cat-tab-btn.active{background:var(--t-act);border-color:var(--t-act);color:#fff;box-shadow:0 4px 14px var(--t-sh)}
 .cat-tab-bar.tab-lvl-2 .cat-tab-btn:not(.active) .cat-count,.cat-tab-bar.tab-lvl-3 .cat-tab-btn:not(.active) .cat-count,.cat-tab-bar.tab-lvl-4 .cat-tab-btn:not(.active) .cat-count,.cat-tab-bar.tab-lvl-5 .cat-tab-btn:not(.active) .cat-count{background:#fff;color:var(--t-act)}
 
+/* ── ONE TAB STYLE EVERYWHERE ──
+   The level colours above (amber / emerald / rose / violet) are neutralised so the
+   main tabs and every sub-tab row look identical: cream buttons, ink active state. */
+.cat-tab-bar[class*="tab-lvl-"]{
+  --t-bg:#fdf6ec;--t-bd:#f1dfc4;--t-fg:#7c4a1d;--t-hov:#faebd3;--t-hbd:#e3c89d;
+  --t-act:var(--ink);--t-sh:rgba(12,13,16,.18);--t-tint:var(--surface);
+}
+.cat-tab-bar[class*="tab-lvl-"] .cat-tab-btn:not(.active) .cat-count{background:#fff;color:var(--gold-dark)}
+.tab-btn.active,.cat-tab-btn.active{box-shadow:0 4px 14px rgba(12,13,16,.18)}
+
 /* One-word labels on the floating stack (uses each button's data-mobile word) */
 #bulkToolbar .bulk-btn{width:auto!important;min-width:0!important;height:38px!important;flex-direction:row!important;gap:6px!important;padding:0 14px!important;white-space:nowrap}
 #bulkToolbar .bulk-btn-label{font-size:0!important;line-height:0!important}
@@ -2840,6 +2850,10 @@ body.pact-hide-booking #propertyTable .pact-booking{display:none!important}
   .cat-tab-btn .cat-tab-btn-label::after{content:attr(data-mobile);font-size:0.62rem;line-height:1.2;display:block}
   .cat-tab-btn{padding:10px 8px;gap:4px;flex-direction:column;font-size:0.62rem;min-width:56px}
   .cat-tab-btn i{font-size:1rem;margin-bottom:1px}
+  /* identical footprint for every tab in all rows (no row / label makes a tab bigger) */
+  .tab-btn,.cat-tab-btn{flex:0 0 78px;width:78px;min-width:78px;box-sizing:border-box;justify-content:center}
+  .tab-btn .tab-btn-label,.cat-tab-btn .cat-tab-btn-label{text-align:center;white-space:nowrap}
+  .tab-btn.active,.cat-tab-btn.active{transform:none}
 
   /* Icon+label toolbar buttons (row 3): bump to the same footprint as
      .tab-btn/.cat-tab-btn at this breakpoint so all three rows match */
@@ -5427,8 +5441,8 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
 let dataTable, propTable, apptTable, honestReviewsTable, userReviewsTable, partnersTable, referralsTable;
 
 
-//const BASE = 'https://www.homeloop.in';
-const BASE = 'http://localhost:5000';
+const BASE = 'https://www.homeloop.in';
+//const BASE = 'http://localhost:5000';
 
 
 /* ── ADMIN KEY – set after login ──
@@ -7369,7 +7383,7 @@ function updateCustTypeCounts(data){
   });
   Object.keys(t).forEach(k=>{ const el = document.getElementById('cust-type-count-'+k); if(el) el.innerText = t[k]; });
   // Status counts follow the selected account type; a status with no records for it shows no badge.
-  Object.keys(st).forEach(k=>{ const el = document.getElementById('cust-status-count-'+k); if(el){ el.innerText = st[k]; el.style.display = st[k] ? '' : 'none'; } });
+  Object.keys(st).forEach(k=>{ const el = document.getElementById('cust-status-count-'+k); if(el){ el.innerText = st[k]; el.style.display = ''; }  /* always show, even 0, so every tab keeps the same height */ });
   syncCustTabActive();
 }
 
@@ -7434,7 +7448,7 @@ window.updatePOStatusCounts = function(){
   ['tocall','notavailable','callback','followup','listed'].forEach(k => {
     const n = _propOwnersList.filter(r => _poMatchesStatus(r, k)).length;
     const el = document.getElementById('po-status-count-' + k);
-    if(el){ el.innerText = n; el.style.display = (n || k === 'tocall') ? '' : 'none'; }
+    if(el){ el.innerText = n; el.style.display = ''; }  /* always show, even 0, so every tab keeps the same height */
   });
   syncPOStatusTabs();
 };
