@@ -3111,6 +3111,11 @@ main.tab-explore .empty-state{display:none !important}
      columns inline for desktop. */
   .form-row{grid-template-columns:1fr 1fr!important;gap:10px}
   .form-row [style*="grid-column"]{grid-column:1/-1!important}
+  /* Current location link is full-width on mobile, so give Pincode its own full row too (no half-empty row). */
+  #pincodeGroup{grid-column:1/-1}
+  #currentLocGroup{grid-column:1/-1!important}
+  .loc-act-btn{padding:0 11px!important}
+  .loc-act-btn .loc-btn-txt{display:none}
 }
 .lm-section{font-size:10px;font-weight:800;color:var(--text-2);text-transform:uppercase;letter-spacing:.8px;margin:20px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border-2)}
 .form-submit{
@@ -6182,6 +6187,25 @@ main.tab-explore .empty-state{display:none !important}
 </div>
 
 
+<!-- ─── Review & confirm modal (shown on final submit; editable key/value) ───
+     Outside #addModal on purpose so resetListingForm() never touches it. -->
+<div class="add-modal-overlay" id="listingReviewModal" role="dialog" aria-modal="true" aria-label="Review your listing" style="z-index:430" onclick="if(event.target===this)closeListingReview()">
+  <div class="add-modal" style="max-width:640px;padding:0;overflow:hidden;display:flex;flex-direction:column;max-height:90vh">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:16px 22px;border-bottom:1px solid var(--border)">
+      <div>
+        <div style="font-size:16px;font-weight:700;color:var(--text)">Review &amp; confirm</div>
+        <div id="listingReviewSub" style="font-size:12px;color:var(--text-2);margin-top:2px">Check every detail. You can edit any value here before submitting.</div>
+      </div>
+      <button type="button" onclick="closeListingReview()" aria-label="Close" style="flex-shrink:0;background:var(--brand);border:none;color:#fff;border-radius:50%;width:30px;height:30px;font-size:18px;line-height:1;cursor:pointer">&times;</button>
+    </div>
+    <div id="listingReviewBody" style="overflow-y:auto;padding:6px 22px 14px;flex:1"></div>
+    <div style="display:flex;gap:10px;padding:14px 22px;border-top:1px solid var(--border)">
+      <button type="button" onclick="closeListingReview()" style="flex:0 0 auto;padding:0 18px;height:44px;border-radius:10px;border:1.5px solid var(--text);background:var(--bg);color:var(--text);font-size:14px;font-weight:700;cursor:pointer">Back</button>
+      <button type="button" class="form-submit" id="listingReviewConfirmBtn" onclick="confirmListingReview()" style="flex:1;margin:0">Confirm &amp; submit</button>
+    </div>
+  </div>
+</div>
+
 <!-- ─── Current Location Link help modal ─────────────────────────────────
      Lives outside #addModal on purpose: resetListingForm() blanks every input
      inside #addModal, and this modal's paste box must not be affected. -->
@@ -6279,8 +6303,8 @@ main.tab-explore .empty-state{display:none !important}
       </div>
       <div class="form-group" id="fullAddressGroup" style="grid-column:span 2">
         <label class="form-label">Building Live Address</label>
-        <div style="display:flex;gap:7px;align-items:flex-start">
-          <textarea class="form-input" id="f-fullAddress" autocapitalize="words" rows="2" style="flex:1;min-width:0;resize:vertical;background:var(--bg-2,#f5f5f5)" oninput="capitalizeWordsInput(this); onFullAddressInput(this.value)" onblur="capitalizeWordsInput(this); onFullAddressBlur(this.value)"></textarea>
+        <div style="display:flex;gap:7px;align-items:stretch">
+          <textarea class="form-input" id="f-fullAddress" autocapitalize="words" rows="1" style="flex:1;min-width:0;resize:none;overflow:hidden" oninput="capitalizeWordsInput(this); onFullAddressInput(this.value)" onblur="capitalizeWordsInput(this); onFullAddressBlur(this.value)"></textarea>
           <button type="button" onclick="fCaptureLocation()"
             style="flex-shrink:0;padding:9px 12px;border-radius:9px;border:1.5px solid var(--text);background:var(--bg);color:var(--text);font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;white-space:nowrap;height:40px;margin-top:1px">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M1 12h4M19 12h4"/></svg>
@@ -6303,11 +6327,12 @@ main.tab-explore .empty-state{display:none !important}
         <input class="form-input" type="url" id="f-googleMapsLink" />
         <div style="font-size:11px;color:var(--text-2);margin-top:2px">Auto-filled from your location · replace it if you have a more exact link</div>
       </div>
-      <div class="form-group" id="currentLocGroup">
+      <div class="form-group" id="currentLocGroup" style="grid-column:1 / -1">
         <label class="form-label">Current location link <span style="color:var(--brand)">*</span></label>
         <div style="display:flex;gap:7px;align-items:stretch">
           <input class="form-input" style="flex:1;min-width:0" type="url" id="f-currentLocationLink" inputmode="url" autocomplete="off" placeholder="Tap to add your location link" onfocus="if(!this.value.trim()){this.blur();openLocHelp();}" onclick="if(!this.value.trim()){this.blur();openLocHelp();}" oninput="this.value=this.value.trim()" />
-          <button type="button" onclick="copyCurrentLocLink()" style="flex-shrink:0;padding:0 12px;border-radius:9px;border:1.5px solid var(--text);background:var(--bg);color:var(--text);font-size:12px;font-weight:700;cursor:pointer">Copy</button>
+          <button type="button" onclick="openCurrentLocLink()" class="loc-act-btn" aria-label="Open in Google Maps" title="Open in Google Maps" style="display:inline-flex;align-items:center;justify-content:center;gap:6px;flex-shrink:0;padding:0 12px;border-radius:9px;border:1.5px solid var(--text);background:var(--bg);color:var(--text);font-size:12px;font-weight:700;cursor:pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg><span class="loc-btn-txt">Navigate</span></button>
+          <button type="button" onclick="copyCurrentLocLink()" class="loc-act-btn" aria-label="Copy link" title="Copy link" style="display:inline-flex;align-items:center;justify-content:center;gap:6px;flex-shrink:0;padding:0 12px;border-radius:9px;border:1.5px solid var(--text);background:var(--bg);color:var(--text);font-size:12px;font-weight:700;cursor:pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><span class="loc-btn-txt">Copy</span></button>
         </div>
         <div style="font-size:11px;color:var(--text-2);margin-top:2px"><a href="#" onclick="openLocHelp();return false" style="color:var(--brand);font-weight:700;text-decoration:underline">How to get it</a></div>
       </div>
@@ -6846,7 +6871,7 @@ main.tab-explore .empty-state{display:none !important}
     </div>
     <!-- /listingFormSections -->
 
-    <button class="form-submit" id="listingSubmitBtn" onclick="submitListing()">Submit listing</button>
+    <button class="form-submit" id="listingSubmitBtn" onclick="openListingReview('submitListing')">Submit listing</button>
 
     <!-- View-mode only: quick actions carried over from the old detail view (save,
          contact, schedule a visit, WhatsApp). Sits inline at the end of the
@@ -15287,6 +15312,7 @@ function openEditListingFull(id) {
   unlockIdentityFieldsForEdit();
   applyImportedProperty(p);
   onFTypeChange(document.getElementById('f-type').value);
+  snapshotListingForm();
 
   // Changing the listing type (Rent/Lease/PG/Short Stay) after creation would
   // need re-deriving a lot of type-specific fields, so keep it locked here —
@@ -17814,6 +17840,12 @@ function isGoogleMapsShareLink(v) {
   try { const u = new URL(String(v || '').trim()); return u.protocol === 'https:' || u.protocol === 'http:'; }
   catch (e) { return false; }
 }
+function openCurrentLocLink() {
+  const v = (document.getElementById('f-currentLocationLink').value || '').trim();
+  if (!v) { openLocHelp(); return; }
+  if (!isGoogleMapsShareLink(v)) return;   // http(s) only
+  window.open(v, '_blank', 'noopener');     // opens in Google Maps (app on phones) without leaving the form
+}
 function copyCurrentLocLink() {
   const el = document.getElementById('f-currentLocationLink');
   const v = (el.value || '').trim();
@@ -17853,6 +17885,140 @@ function applyLocHelp() {
   if (g) { g.classList.remove('has-error'); const m = g.querySelector('.field-error-text'); if (m) m.remove(); }
   closeLocHelp();
 }
+
+// ── Review & confirm before the final submit ─────────────────────────
+// Clicking the form's submit button first shows every visible field as an
+// editable label/value row. Only "Confirm & submit" applies the edits back
+// to the real form and calls the real submit function.
+// Snapshot of the form as loaded for an EDIT, so the review step can show
+// only what the person actually changed. null for new listings.
+let _listingSnapshot = null;
+function snapshotListingForm() {
+  const vals = {};
+  document.querySelectorAll('#listingFormSections input[id^="f-"], #listingFormSections select[id^="f-"], #listingFormSections textarea[id^="f-"]')
+    .forEach(el => { if (!['file', 'checkbox', 'radio'].includes(el.type)) vals[el.id] = el.value; });
+  _listingSnapshot = { vals, imgs: (typeof fImages !== 'undefined' && Array.isArray(fImages)) ? fImages.slice() : [] };
+}
+let _reviewRows = [];
+let _reviewSubmitFn = null;
+function openListingReview(submitFnName) {
+  const realSubmit = window[submitFnName];
+  if (typeof realSubmit !== 'function') return;
+  if (submitFnName === 'adminSubmitListing' && typeof blockIfViewOnly === 'function' && blockIfViewOnly('properties')) return;
+  // Invalid form: let the real submit show its usual error / scroll-to-field.
+  if (validateListingForm()) { realSubmit(); return; }
+  _reviewSubmitFn = realSubmit;
+  _reviewRows = [];
+  const body = document.getElementById('listingReviewBody');
+  body.innerHTML = '';
+  const sections = Array.from(document.querySelectorAll('#listingFormSections .lm-section'));
+  const fields = Array.from(document.querySelectorAll(
+    '#listingFormSections input[id^="f-"], #listingFormSections select[id^="f-"], #listingFormSections textarea[id^="f-"]'
+  )).filter(el => !['hidden', 'file', 'checkbox', 'radio'].includes(el.type) && isFieldVisible(el));
+  const snap = (editingPropertyId && _listingSnapshot) ? _listingSnapshot : null;
+  const changedFields = snap ? fields.filter(el => (snap.vals[el.id] ?? '') !== el.value) : fields;
+  const imgsChanged = !!snap && (snap.imgs.length !== (typeof fImages !== 'undefined' ? fImages.length : 0) || snap.imgs.some((x, i) => x !== fImages[i]));
+  document.getElementById('listingReviewSub').textContent = snap
+    ? 'Only the details you changed are listed. You can still edit them here before saving.'
+    : 'Check every detail. You can edit any value here before submitting.';
+  let lastSec = null;
+  changedFields.forEach(el => {
+    let sec = null;
+    sections.forEach(s => { if (s.compareDocumentPosition(el) & Node.DOCUMENT_POSITION_FOLLOWING) sec = s; });
+    if (sec && sec !== lastSec) {
+      const h = document.createElement('div');
+      h.textContent = sec.textContent.trim();
+      h.style.cssText = 'font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--brand);margin:16px 0 4px';
+      body.appendChild(h);
+      lastSec = sec;
+    }
+    const row = document.createElement('div');
+    row.style.cssText = 'display:grid;grid-template-columns:minmax(110px,170px) 1fr;gap:10px;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)';
+    const lab = document.createElement('div');
+    const lt = fieldLabelText(el);
+    lab.textContent = (lt && lt !== 'This field') ? lt : (el.placeholder || el.id.replace(/^f-/, ''));
+    lab.style.cssText = 'font-size:12.5px;font-weight:600;color:var(--text-2)';
+    if (snap) {
+      const was = document.createElement('div');
+      was.textContent = 'Was: ' + ((snap.vals[el.id] ?? '') || '(empty)');
+      was.style.cssText = 'font-size:11px;font-weight:400;color:var(--text-3,#888);margin-top:2px;word-break:break-word';
+      lab.appendChild(was);
+    }
+    let ctl;
+    if (el.tagName === 'SELECT') {
+      ctl = document.createElement('select');
+      Array.from(el.options).forEach(o => ctl.appendChild(o.cloneNode(true)));
+    } else if (el.tagName === 'TEXTAREA') {
+      ctl = document.createElement('textarea'); ctl.rows = 2;
+    } else {
+      ctl = document.createElement('input');
+      ctl.type = ['tel', 'number', 'date', 'email', 'url'].includes(el.type) ? el.type : 'text';
+    }
+    ctl.className = 'form-input';
+    ctl.value = el.value;
+    ctl.style.cssText = 'width:100%;min-width:0';
+    // Locked fields (read-only / disabled) and the listing type stay display-only here.
+    if (el.readOnly || el.disabled || el.id === 'f-type') { ctl.disabled = true; ctl.style.opacity = '.7'; }
+    row.appendChild(lab); row.appendChild(ctl); body.appendChild(row);
+    _reviewRows.push({ el, ctl });
+  });
+  if (snap && !changedFields.length && !imgsChanged) {
+    const none = document.createElement('div');
+    none.textContent = 'No details were changed.';
+    none.style.cssText = 'padding:22px 0;font-size:13px;color:var(--text-2);text-align:center';
+    body.appendChild(none);
+  }
+  if ((!snap || imgsChanged) && (Array.isArray(window.fImages) || typeof fImages !== 'undefined')) {
+    const n = (typeof fImages !== 'undefined' && Array.isArray(fImages)) ? fImages.length : 0;
+    const row = document.createElement('div');
+    row.style.cssText = 'display:grid;grid-template-columns:minmax(110px,170px) 1fr;gap:10px;align-items:center;padding:8px 0';
+    row.innerHTML = '<div style="font-size:12.5px;font-weight:600;color:var(--text-2)">Property images</div><div style="font-size:13px;color:var(--text)">' + n + ' added <span style="color:var(--text-2)">(change them in the form)</span></div>';
+    body.appendChild(row);
+  }
+  document.getElementById('listingReviewModal').classList.add('open');
+  body.scrollTop = 0;
+}
+function closeListingReview() {
+  document.getElementById('listingReviewModal').classList.remove('open');
+}
+function confirmListingReview() {
+  _reviewRows.forEach(({ el, ctl }) => {
+    if (ctl.disabled || el.value === ctl.value) return;
+    el.value = ctl.value;
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+    if (el.tagName === 'SELECT') el.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+  closeListingReview();
+  const fn = _reviewSubmitFn; _reviewSubmitFn = null;
+  _reviewRows = [];
+  if (fn) fn(); // real submit re-validates, then POST/PUT
+}
+
+// ── Building Live Address: look/size like every other field ─────────
+// Starts one line tall (same height as the other inputs) and grows to fit the
+// text, including when Live / a saved listing fills it programmatically.
+(function initAddressAutosize() {
+  function setup() {
+    const el = document.getElementById('f-fullAddress');
+    if (!el || el._autosizeReady) return;
+    el._autosizeReady = true;
+    const grow = () => {
+      if (!el.offsetParent) return;            // hidden modal: measure once visible
+      el.style.height = 'auto';
+      el.style.height = el.scrollHeight + 2 + 'px';
+    };
+    const d = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value');
+    Object.defineProperty(el, 'value', {
+      get() { return d.get.call(this); },
+      set(v) { d.set.call(this, v); grow(); },
+      configurable: true
+    });
+    el.addEventListener('input', grow);
+    if (window.ResizeObserver) new ResizeObserver(grow).observe(el);  // fires when the modal opens / width changes
+    grow();
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', setup); else setup();
+})();
 
 function validateListingForm() {
   clearAllFieldErrors();
