@@ -9769,9 +9769,9 @@ function openPlansFromLock(ev) {
 }
 function lockPanelHtml() {
   return '<div class="plan-lock-icon">\uD83D\uDD12</div>'
-    + '<div class="plan-lock-title">To unlock the building photo</div>'
-    + '<div class="plan-lock-sub">Subscribe to a plan to view it and get direct owner contact details.</div>'
-    + '<button type="button" class="plan-lock-btn" onclick="openPlansFromLock(event)" ontouchstart="event.stopPropagation()" ontouchend="event.stopPropagation()">Subscribe now</button>';
+    + '<div class="plan-lock-title">Building photo locked</div>'
+    + '<div class="plan-lock-sub">Get the Direct Plan to view it and call owners directly.</div>'
+    + '<button type="button" class="plan-lock-btn" onclick="openPlansFromLock(event)" ontouchstart="event.stopPropagation()" ontouchend="event.stopPropagation()">View Direct Plan</button>';
 }
 function showPlansFromSwipe() {
   const u = getLoggedInUser();
