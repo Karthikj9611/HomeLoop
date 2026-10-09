@@ -9394,6 +9394,64 @@ function setupPromoSlider() {
 }
 window.addEventListener('resize', () => { if (currentTab === 'Rent') setupPromoSlider(); });
 
+// Booked strips: same behavior as the Promoted slider — glide to the end,
+// dwell, glide back; hover / touch / wheel holds it, manual swipe resumes
+// from wherever the user left it. One shared rAF loop drives every visible
+// [id$="BookedGrid"] strip, each with its own position/direction state.
+const _bookedSl = new Map(); // grid -> { pos, dir, dwellUntil, paused, resume }
+let _bookedRAF = null, _bookedLast = 0;
+function bookedFrame(ts) {
+  const dt = _bookedLast ? Math.min(ts - _bookedLast, 50) : 16;
+  _bookedLast = ts;
+  let active = 0;
+  document.querySelectorAll('[id$="BookedGrid"], #upcomingGrid.promo-slider').forEach(grid => {
+    const st = _bookedSl.get(grid);
+    if (!st || grid.style.display === 'none' || grid.classList.contains('list-view') || !grid.firstElementChild) return;
+    active++;
+    if (!st.paused && !document.hidden && ts >= st.dwellUntil) {
+      const max = grid.scrollWidth - grid.clientWidth;
+      if (max > 4) {
+        if (Math.abs(grid.scrollLeft - st.pos) > 1.5) st.pos = grid.scrollLeft;
+        st.pos += st.dir * PROMO_SPEED * dt;
+        if (st.pos >= max) { st.pos = max; st.dir = -1; st.dwellUntil = ts + 900; }
+        else if (st.pos <= 0) { st.pos = 0; st.dir = 1; st.dwellUntil = ts + 900; }
+        grid.scrollLeft = st.pos;
+      }
+    } else {
+      st.pos = grid.scrollLeft;
+    }
+  });
+  _bookedRAF = active ? requestAnimationFrame(bookedFrame) : null;
+  if (!active) _bookedLast = 0;
+}
+function setupUpcomingSlider() {
+  const grid = document.getElementById('upcomingGrid');
+  if (!grid) return;
+  const on = currentTab === 'Rent' && !isListView && !!grid.firstElementChild && !grid.querySelector('.pre-avail-empty');
+  grid.classList.toggle('promo-slider', on);
+  if (on) setupBookedSliders();
+}
+function setupBookedSliders() {
+  document.querySelectorAll('[id$="BookedGrid"], #upcomingGrid.promo-slider').forEach(grid => {
+    if (!_bookedSl.has(grid)) {
+      const st = { pos: 0, dir: 1, dwellUntil: 0, paused: false, resume: null };
+      _bookedSl.set(grid, st);
+      const hold = () => { st.paused = true; clearTimeout(st.resume); };
+      const release = (ms) => { clearTimeout(st.resume); st.resume = setTimeout(() => { st.pos = grid.scrollLeft; st.paused = false; }, ms); };
+      grid.addEventListener('mouseenter', hold);
+      grid.addEventListener('mouseleave', () => release(600));
+      grid.addEventListener('touchstart', hold, { passive: true });
+      grid.addEventListener('touchend', () => release(4000), { passive: true });
+      grid.addEventListener('touchcancel', () => release(4000), { passive: true });
+      grid.addEventListener('wheel', () => { hold(); release(4000); }, { passive: true });
+    }
+    const st = _bookedSl.get(grid);
+    st.pos = grid.scrollLeft; st.dir = 1; st.dwellUntil = 0;
+  });
+  if (!_bookedRAF) { _bookedLast = 0; _bookedRAF = requestAnimationFrame(bookedFrame); }
+}
+window.addEventListener('resize', () => { clearTimeout(window._bookedSlT); window._bookedSlT = setTimeout(setupBookedSliders, 200); });
+
 function syncViewerOwnerClass() {
   try { document.documentElement.classList.toggle('viewer-owner', isOwnerViewer()); } catch (_) {}
 }
@@ -9555,6 +9613,7 @@ function renderCards() {
   // the fresh markup is in the DOM and real widths are known.
   syncChipRowFade();
   setupPromoSlider();
+  setupUpcomingSlider();
 
   // Premium Services / Honest Reviews cards are fixed-width horizontal
   // scroll strips, but property cards are a fluid CSS Grid (auto-fill) —
@@ -9635,6 +9694,7 @@ function renderBookedSections(fsIn) {
   // syncRecentlyViewedCardWidth) — needs a fresh run once cards are in the
   // DOM so clientWidth reflects the just-rendered content.
   requestAnimationFrame(syncRecentlyViewedCardWidth);
+  setupBookedSliders();
 }
 
 // Only the stat/amenity row's own JS knows whether it truly overflows its
