@@ -932,6 +932,7 @@ const PropertyDetailsSchema = new mongoose.Schema({
   age:       { type: String },   // not collected for PG/Short Stay; no default, so omitted entirely for them
   tenant:    { type: String }, // Not collected for Short Stay (form hides this field) — no default, so it's omitted entirely instead of appearing as a default value
   maxPersons: { type: Number, min: 1 }, // No. of persons allowed — optional; omitted when not provided
+  kitchenType: { type: String }, // Straight / Parallel / L-Shaped / U-Shaped / Open / Closed / Island / Modular Kitchen — optional
   available: { type: String }, // Not collected for Short Stay (form hides this field) — no default, so it's omitted entirely instead of appearing as null
 }, { _id: false });
 
@@ -1433,6 +1434,10 @@ function validatePropertyFields(fields) {
       !/^[^\s@"'<>\\]+@[^\s@"'<>\\]+\.[^\s@"'<>\\]+$/.test(String(email).trim()))
     return `Invalid email address in field 'owner.email'.`;
 
+  const caretaker = (fields.owner || {}).caretakerPhone;
+  if (caretaker && String(caretaker).trim() && !/^[6-9]\d{9}$/.test(String(caretaker).trim()))
+    return `Field 'owner.caretakerPhone' must be a valid 10-digit mobile number.`;
+
   const images = (fields.media || {}).images;
   if (images !== undefined) {
     if (!Array.isArray(images)) return `Field 'media.images' must be an array.`;
@@ -1557,7 +1562,6 @@ const TYPE_REQUIRED_FIELDS = {
     // as reraId above, many legit resale listings won't have a tidy answer.
     ['sale.khataType',     'Khata type'],
     ['sale.loanStatus',    'Loan status'],
-    ['sale.areaType',      'Area type'],
   ],
 };
 

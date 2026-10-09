@@ -6400,6 +6400,15 @@ main.tab-explore .empty-state{display:none !important}
         </div>
       </div>
       <div class="form-group">
+        <label class="form-label">Caretaker number (optional)</label>
+        <div class="input-icon-wrap">
+          <input class="form-input" type="tel" id="f-ownerCaretakerPhone" inputmode="numeric" maxlength="10" oninput="sanitizeMobileInput(this)"/>
+          <button type="button" class="contact-pick-btn" onclick="pickContactFromDevice('f-ownerCaretakerPhone')" title="Pick from contacts">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="form-group">
         <label class="form-label">Email (optional)</label>
         <input class="form-input" type="email" id="f-ownerEmail"/>
         <div class="identity-locked-hint" id="f-ownerEmail-hint" style="display:none">Auto-filled from your account</div>
@@ -6530,6 +6539,10 @@ main.tab-explore .empty-state{display:none !important}
         <select class="form-select" id="f-furnishing">
           <option>Fully</option><option>Semi</option><option>Basic</option>
         </select>
+      </div>
+      <div class="form-group" id="f-kitchenTypeWrap">
+        <label class="form-label">Kitchen type</label>
+        <select class="form-select" id="f-kitchenType"><option value="">Select</option><option>Straight Kitchen</option><option>Parallel Kitchen</option><option>L-Shaped Kitchen</option><option>U-Shaped Kitchen</option><option>Open Kitchen</option><option>Closed Kitchen</option><option>Island Kitchen</option><option>Modular Kitchen</option></select>
       </div>
       <div class="form-group">
         <label class="form-label">Facing</label>
@@ -10669,6 +10682,7 @@ function renderCompareTable() {
     { label: 'Floor', get: p => dash(p.property?.floor) },
     { label: 'Bathrooms', get: p => dash(p.property?.bathrooms ?? p.pg?.bathroom) },
     { label: 'Toilet type', get: p => dash(p.property?.toiletType ?? p.pg?.toiletType) },
+    { label: 'Kitchen type', get: p => dash(p.property?.kitchenType) },
     { label: 'Facing', get: p => dash(p.property?.facing) },
     { label: 'Tenant preferred', get: p => dash(p.property?.tenant) },
     { label: 'Persons allowed', get: p => dash(p.property?.maxPersons) },
@@ -12676,6 +12690,7 @@ function buildDetailTable(p) {
     kv('Floor', property.floor),
     kv('Bathrooms', property.bathrooms),
     !isPG && !isShortStay ? kv('Toilet type', property.toiletType) : null,
+    !isPG && !isShortStay ? kv('Kitchen type', property.kitchenType) : null,
     kv('Furnishing', property.furnish),
     // 'Available from' hidden in the property view for now.
   ]);
@@ -13615,6 +13630,7 @@ function applyImportedProperty(p) {
   sv('f-ownerPhone', owner.phone);
   sv('f-ownerEmail', owner.email);
   sv('f-ownerAltPhone', owner.altPhone);
+  sv('f-ownerCaretakerPhone', owner.caretakerPhone);
   sv('f-contactTime', owner.contactTime);
   sv('f-ownerAddress', owner.address);
   // Agent contact is fixed/non-editable — always show the fixed value
@@ -13657,6 +13673,7 @@ function applyImportedProperty(p) {
   sv('f-floor', property.floor);
   sv('f-baths', isPG ? '1' : property.bathrooms);
   if (!isPG && !isShortStay) sv('f-toiletType', property.toiletType);
+  if (!isPG && !isShortStay) sv('f-kitchenType', property.kitchenType);
   sv('f-furnishing', property.furnish);
   if (isPG) sv('f-pgAvailableFrom', pg.available);
   else if (isLease) sv('f-leaseAvailableFrom', property.available);
@@ -17780,7 +17797,7 @@ function updateSellPricePerSqft() {
 function onSellPropertyTypeChange() {
   const isSell = document.getElementById('f-type').value === 'Sell';
   const isLand = isSell && document.getElementById('f-propertyType').value === 'Plot / Land';
-  ['f-bhkWrap', 'f-floorWrap', 'f-bathsWrap', 'f-toiletTypeWrap', 'f-furnishingWrap', 'f-ageWrap',
+  ['f-bhkWrap', 'f-floorWrap', 'f-bathsWrap', 'f-toiletTypeWrap', 'f-kitchenTypeWrap', 'f-furnishingWrap', 'f-ageWrap',
    'f-bikeparkWrap', 'f-carparkWrap', 'f-sellTotalFloorsWrap', 'f-sellBalconiesWrap',
    // Nothing's built yet on vacant land — no flooring, no Carpet/Super-Built-up
    // distinction, and nothing for a municipal body to issue an occupancy/
@@ -17948,14 +17965,15 @@ const OPTIONAL_FIELD_IDS = new Set([
   'f-imgFileInput', 'f-imgCameraInput',
   'f-amenities-extra', 'f-desc',   // description is optional
   'f-videoUrl', 'f-age', 'f-area',
+  'f-ownerCaretakerPhone', 'f-areaType', 'f-maxPersons', 'f-kitchenType',   // optional
   'f-maintenance', 'f-leaseMaintenance',
   'f-sellPossessionDate', 'f-sellReraId', 'f-pricePerSqft',
   // Sell-only trust/detail fields kept optional — same reasoning as
   // reraId above: many legit resale listings won't have a tidy answer
   // (pre-2000 buildings with no OC/CC on file, independent houses with
   // no "project" name, sellers who don't know the previous-owner count).
-  // Khata type, loan status, and area type are left OUT of this set on
-  // purpose — those are mandatory whenever the Sell tab is showing.
+  // Khata type and loan status are left OUT of this set on purpose —
+  // those are mandatory whenever the Sell tab is showing.
   'f-sellTaxPaid', 'f-sellOcAvailable', 'f-sellCcAvailable',
   'f-sellPreviousOwners', 'f-sellProjectName', 'f-sellFlooring',
   'f-sellWaterSource', 'f-sellBoundaryWall', 'f-sellRoadWidth',
@@ -18268,6 +18286,11 @@ function submitListing() {
     showToast('Enter a valid 10-digit owner number starting with 6, 7, 8 or 9', 'warning');
     return;
   }
+  const ownerCaretakerPhone = gv('f-ownerCaretakerPhone');
+  if (ownerCaretakerPhone && !isValidIndianMobile(ownerCaretakerPhone)) {
+    showToast('Enter a valid 10-digit caretaker number starting with 6, 7, 8 or 9', 'warning');
+    return;
+  }
   const agentPhone = gv('f-agentPhone');
   if (agentPhone && !isValidIndianMobile(agentPhone)) {
     showToast('Enter a valid 10-digit agent phone number starting with 6, 7, 8 or 9', 'warning');
@@ -18326,6 +18349,7 @@ function submitListing() {
       phone:        ownerPhone,
       email:        document.getElementById('f-ownerEmail').value.trim(),
       altPhone:     gv('f-ownerAltPhone') || null,
+      caretakerPhone: gv('f-ownerCaretakerPhone') || '',
       contactTime:  gv('f-contactTime') || null,
       address:      gv('f-ownerAddress') || null,
       agentPhone:   gv('f-agentPhone') || null,
@@ -18390,6 +18414,7 @@ function submitListing() {
             floor:     document.getElementById('f-floor').value || 'G',
             bathrooms: document.getElementById('f-baths').value || '1',
             toiletType: document.getElementById('f-toiletType').value,
+            kitchenType: document.getElementById('f-kitchenType').value || null,
             furnish:   document.getElementById('f-furnishing').value,
           }),
           facing:    document.getElementById('f-facing').value,

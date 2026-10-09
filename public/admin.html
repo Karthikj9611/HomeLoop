@@ -4728,6 +4728,11 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
         <div style="color:rgba(255,255,255,.85);font-size:12px;font-weight:600;margin-top:2px;display:none" id="addModalSubtitleText"></div>
       </div>
       <div style="display:flex;align-items:center;gap:10px">
+      <button type="button" id="addModalCloneBtn" onclick="cloneAdminProperty(editingPropertyId)" aria-label="Clone property"
+        style="display:none;align-items:center;gap:6px;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.4);color:#fff;border-radius:99px;padding:7px 14px;font-size:12.5px;font-weight:700;cursor:pointer;transition:background .15s"
+        onmouseover="this.style.background='rgba(255,255,255,.28)'" onmouseout="this.style.background='rgba(255,255,255,.16)'">
+        <i class="fas fa-clone" style="font-size:11px"></i> Clone
+      </button>
       <button type="button" id="addModalModeToggleBtn" onclick="toggleAdminListingMode()" aria-label="Toggle edit mode"
         style="display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.4);color:#fff;border-radius:99px;padding:7px 14px;font-size:12.5px;font-weight:700;cursor:pointer;transition:background .15s"
         onmouseover="this.style.background='rgba(255,255,255,.28)'" onmouseout="this.style.background='rgba(255,255,255,.16)'">
@@ -5022,6 +5027,10 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
         <select class="form-select" id="f-furnishing">
           <option>Fully</option><option>Semi</option><option>Basic</option>
         </select>
+      </div>
+      <div class="form-group" id="f-kitchenTypeWrap">
+        <label class="form-label">Kitchen type</label>
+        <select class="form-select" id="f-kitchenType"><option value="">Select</option><option>Straight Kitchen</option><option>Parallel Kitchen</option><option>L-Shaped Kitchen</option><option>U-Shaped Kitchen</option><option>Open Kitchen</option><option>Closed Kitchen</option><option>Island Kitchen</option><option>Modular Kitchen</option></select>
       </div>
       <div class="form-group">
         <label class="form-label">Facing</label>
@@ -13371,6 +13380,7 @@ function renderAdminCompareTable(){
     { label: 'Floor', get: p => dash(p.property?.floor) },
     { label: 'Bathrooms', get: p => dash(p.property?.bathrooms ?? p.pg?.bathroom) },
     { label: 'Toilet type', get: p => dash(p.property?.toiletType ?? p.pg?.toiletType) },
+    { label: 'Kitchen type', get: p => dash(p.property?.kitchenType) },
     { label: 'Facing', get: p => dash(p.property?.facing) },
     { label: 'Tenant preferred', get: p => dash(p.property?.tenant) },
     { label: 'Persons allowed', get: p => dash(p.property?.maxPersons) },
@@ -15848,6 +15858,8 @@ function openAdminAddPropertyModal() {
 
   const toggleBtn = document.getElementById('addModalModeToggleBtn');
   if (toggleBtn) toggleBtn.style.display = 'none';
+  const cloneBtnAdd = document.getElementById('addModalCloneBtn');
+  if (cloneBtnAdd) cloneBtnAdd.style.display = 'none';
   document.getElementById('addModalTitleText').textContent = 'Add property';
   const sub = document.getElementById('addModalSubtitleText');
   if (sub) { sub.textContent = ''; sub.style.display = 'none'; }
@@ -15914,6 +15926,8 @@ function cloneAdminProperty(id) {
 
   const toggleBtn = document.getElementById('addModalModeToggleBtn');
   if (toggleBtn) toggleBtn.style.display = 'none';
+  const cloneBtn = document.getElementById('addModalCloneBtn');
+  if (cloneBtn) cloneBtn.style.display = 'none';
   document.getElementById('addModalTitleText').textContent = 'Clone property';
   const sub = document.getElementById('addModalSubtitleText');
   if (sub) { sub.textContent = 'Copy of ' + (p.propertyId || p.title || 'property') + ' — saved as a new listing'; sub.style.display = ''; }
@@ -15965,6 +15979,7 @@ async function closeAdminEditModal() {
   unlockBodyScroll();
   editingPropertyId = null;
   _adminModalFromPO = false; _cloningListing = false;
+  { const cb = document.getElementById('addModalCloneBtn'); if (cb) cb.style.display = 'none'; }
   resetListingForm();
   _listingFormDirty = false;
 }
@@ -15996,6 +16011,9 @@ function _setAdminListingMode(mode){
 
   const submitBtn = document.getElementById('listingSubmitBtn');
   if (submitBtn) { submitBtn.disabled = isView; submitBtn.textContent = 'Save changes'; }
+
+  const cloneBtn = document.getElementById('addModalCloneBtn');
+  if (cloneBtn) cloneBtn.style.display = (isView && !_adminModalFromPO) ? 'flex' : 'none';
 
   const toggleBtn = document.getElementById('addModalModeToggleBtn');
   if (toggleBtn){
@@ -16178,6 +16196,7 @@ function applyImportedProperty(p) {
   sv('f-floor', property.floor);
   sv('f-baths', isPG ? '1' : property.bathrooms);
   if (!isPG && !isShortStay) sv('f-toiletType', property.toiletType);
+  if (!isPG && !isShortStay) sv('f-kitchenType', property.kitchenType);
   sv('f-furnishing', property.furnish);
   if (isPG) sv('f-pgAvailableFrom', pg.available);
   else if (isLease) sv('f-leaseAvailableFrom', property.available);
@@ -16553,7 +16572,7 @@ function onSellPropertyTypeChange() {
   const isSell = typeEl && typeEl.value === 'Sell';
   const propTypeEl = document.getElementById('f-propertyType');
   const isLand = isSell && propTypeEl && propTypeEl.value === 'Plot / Land';
-  ['f-bhkWrap', 'f-floorWrap', 'f-bathsWrap', 'f-toiletTypeWrap', 'f-furnishingWrap', 'f-ageWrap',
+  ['f-bhkWrap', 'f-floorWrap', 'f-bathsWrap', 'f-toiletTypeWrap', 'f-kitchenTypeWrap', 'f-furnishingWrap', 'f-ageWrap',
    'f-bikeparkWrap', 'f-carparkWrap', 'f-sellTotalFloorsWrap', 'f-sellBalconiesWrap',
    'f-sellFlooringWrap', 'f-areaTypeWrap', 'f-sellOcAvailableWrap', 'f-sellCcAvailableWrap'].forEach(id => {
     const el = document.getElementById(id);
@@ -16818,13 +16837,14 @@ const OPTIONAL_FIELD_IDS = new Set([
   'f-importFile', 'f-importText',
   'f-latitude', 'f-longitude', 'f-latLngDisplay',
   'f-imgFileInput', 'f-imgCameraInput',
-  'f-amenities-extra',
+  'f-amenities-extra', 'f-desc',   // description is optional (same as index.html)
   'f-ownerAltPhone', 'f-ownerCaretakerPhone', 'f-videoUrl', 'f-age', 'f-area',
+  'f-areaType', 'f-maxPersons', 'f-kitchenType',   // optional
   'f-maintenance', 'f-leaseMaintenance',
   'f-sellPossessionDate', 'f-sellReraId', 'f-pricePerSqft',
   // Sell-only trust/detail fields kept optional — many legit resale
-  // listings won't have a tidy answer for these. Khata type, loan status,
-  // and area type are left OUT on purpose — mandatory whenever Sell shows.
+  // listings won't have a tidy answer for these. Khata type and loan
+  // status are left OUT on purpose — mandatory whenever Sell shows.
   'f-sellTaxPaid', 'f-sellOcAvailable', 'f-sellCcAvailable',
   'f-sellPreviousOwners', 'f-sellProjectName', 'f-sellFlooring',
   'f-sellWaterSource', 'f-sellBoundaryWall', 'f-sellRoadWidth',
@@ -17307,6 +17327,7 @@ async function adminSubmitListing() {
             floor:     document.getElementById('f-floor').value || 'G',
             bathrooms: document.getElementById('f-baths').value || '1',
             toiletType: gv('f-toiletType') || null,
+            kitchenType: gv('f-kitchenType') || null,
             furnish:   document.getElementById('f-furnishing').value,
           }),
           facing:    document.getElementById('f-facing').value,
