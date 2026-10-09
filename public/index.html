@@ -1161,6 +1161,8 @@ main.tab-explore .empty-state{display:none !important}
 #promotedSection{position:relative}
 .prop-grid.promo-slider{display:flex;grid-template-columns:none;gap:16px;overflow-x:auto;overflow-y:hidden;scroll-snap-type:none;scroll-behavior:auto;scroll-padding-left:20px;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-top:4px;padding-bottom:10px}
 .prop-grid.promo-slider::-webkit-scrollbar{display:none}
+.prop-grid.promo-slider,[id$="BookedGrid"]{will-change:scroll-position;overscroll-behavior-x:contain}
+.prop-grid.promo-slider > .prop-card,[id$="BookedGrid"] > .prop-card{translate:var(--gfrac,0px) 0}
 .prop-grid.promo-slider > .prop-card{flex:0 0 calc((100% - 40px - 48px) / 4);min-width:260px;scroll-snap-align:start}
 @media (max-width:1100px){.prop-grid.promo-slider > .prop-card{flex-basis:calc((100% - 40px - 32px) / 3)}}
 @media (max-width:700px){.prop-grid.promo-slider{gap:8px;scroll-padding-left:12px}.prop-grid.promo-slider > .prop-card{flex-basis:calc((100% - 24px - 8px) / 2);min-width:0}}
@@ -9348,8 +9350,28 @@ function setEmptyStateContent() {
 // end, pauses a moment, then glides back to the start, and so on. Hover /
 // touch / manual scroll holds it; users can swipe left or right any time and
 // it picks up from wherever they left it.
-let _promoRAF = null, _promoPos = 0, _promoDir = 1, _promoPaused = false, _promoLast = 0, _promoDwellUntil = 0, _promoResume = null;
+let _promoRAF = null, _promoPos = 0, _promoDir = 1, _promoPaused = false, _promoLast = 0, _promoDwellUntil = 0, _promoResume = null, _promoRamp = 0;
 const PROMO_SPEED = 0.04; // pixels per millisecond (~40px/s) — gentle and steady
+// Shared easing so every slider (Promoted / Pre-available / Booked) starts, stops
+// and turns around smoothly instead of jerking: speed ramps up over ~600ms after
+// any pause, and eases down over the last 90px before each end.
+// Whole-pixel scrollLeft makes slow glides look steppy on normal-density screens,
+// so the integer part goes into scrollLeft and the leftover fraction (0-1px) is
+// applied as a GPU-composited sub-pixel shift on the cards via --gfrac.
+function glideTo(grid, pos) {
+  const base = Math.floor(pos);
+  grid.scrollLeft = base;
+  grid.style.setProperty('--gfrac', (-(pos - base)).toFixed(3) + 'px');
+  grid._gf = 1;
+}
+function glideClear(grid) {
+  if (grid._gf) { grid.style.setProperty('--gfrac', '0px'); grid._gf = 0; }
+}
+function glideEase(pos, max, dir, ramp) {
+  const edge = dir > 0 ? max - pos : pos;
+  const e = Math.min(1, Math.max(0.1, edge / 90));
+  return e * e * (3 - 2 * e) * ramp;
+}
 function promoFrame(ts) {
   const grid = document.getElementById('promotedGrid');
   if (!grid || currentTab !== 'Rent' || !grid.classList.contains('promo-slider')) { _promoRAF = null; _promoLast = 0; return; }
@@ -9360,13 +9382,14 @@ function promoFrame(ts) {
     if (max > 4) {
       // If the user moved it by hand, continue from where they left it.
       if (Math.abs(grid.scrollLeft - _promoPos) > 1.5) _promoPos = grid.scrollLeft;
-      _promoPos += _promoDir * PROMO_SPEED * dt;
-      if (_promoPos >= max) { _promoPos = max; _promoDir = -1; _promoDwellUntil = ts + 900; }
-      else if (_promoPos <= 0) { _promoPos = 0; _promoDir = 1; _promoDwellUntil = ts + 900; }
-      grid.scrollLeft = _promoPos;
+      _promoRamp = Math.min(1, _promoRamp + dt / 600);
+      _promoPos += _promoDir * PROMO_SPEED * dt * glideEase(_promoPos, max, _promoDir, _promoRamp);
+      if (_promoPos >= max) { _promoPos = max; _promoDir = -1; _promoDwellUntil = ts + 900; _promoRamp = 0; }
+      else if (_promoPos <= 0) { _promoPos = 0; _promoDir = 1; _promoDwellUntil = ts + 900; _promoRamp = 0; }
+      glideTo(grid, _promoPos);
     }
   } else {
-    _promoPos = grid.scrollLeft;
+    glideClear(grid); _promoPos = grid.scrollLeft; _promoRamp = 0;
   }
   _promoRAF = requestAnimationFrame(promoFrame);
 }
@@ -9412,13 +9435,14 @@ function bookedFrame(ts) {
       const max = grid.scrollWidth - grid.clientWidth;
       if (max > 4) {
         if (Math.abs(grid.scrollLeft - st.pos) > 1.5) st.pos = grid.scrollLeft;
-        st.pos += st.dir * PROMO_SPEED * dt;
-        if (st.pos >= max) { st.pos = max; st.dir = -1; st.dwellUntil = ts + 900; }
-        else if (st.pos <= 0) { st.pos = 0; st.dir = 1; st.dwellUntil = ts + 900; }
-        grid.scrollLeft = st.pos;
+        st.ramp = Math.min(1, (st.ramp || 0) + dt / 600);
+        st.pos += st.dir * PROMO_SPEED * dt * glideEase(st.pos, max, st.dir, st.ramp);
+        if (st.pos >= max) { st.pos = max; st.dir = -1; st.dwellUntil = ts + 900; st.ramp = 0; }
+        else if (st.pos <= 0) { st.pos = 0; st.dir = 1; st.dwellUntil = ts + 900; st.ramp = 0; }
+        glideTo(grid, st.pos);
       }
     } else {
-      st.pos = grid.scrollLeft;
+      glideClear(grid); st.pos = grid.scrollLeft; st.ramp = 0;
     }
   });
   _bookedRAF = active ? requestAnimationFrame(bookedFrame) : null;
