@@ -5542,6 +5542,14 @@ main.tab-explore .empty-state{display:none !important}
     </div>
     <div class="prop-grid" id="rentGrid"></div>
   </div>
+  <div id="upcomingSection">
+    <div class="section-divider" id="upcomingDivider" style="display:none">
+      <div class="section-divider-inner">
+        <span class="section-divider-label promoted-label">Upcoming<span class="section-divider-count" id="upcomingCount"></span></span>
+      </div>
+    </div>
+    <div class="prop-grid" id="upcomingGrid"></div>
+  </div>
   <div id="leaseSection">
     <div class="section-divider" id="leaseDivider" style="display:none">
       <div class="section-divider-inner">
@@ -9212,11 +9220,35 @@ function injectPaginationDividers(arr) {
 
 let promotedPage = 0;
 let rentPage = 0;
+let upcomingPage = 0;
 let leasePage = 0;
 let pgPage = 0;
 let shortstayPage = 0;
 let sellPage = 0;
 const PAGE_SIZE = 8;
+
+// "Upcoming" = a For Rent listing whose Available-from date is today or
+// later. Only split out on the Rent / All views; every other
+// tab keeps these listings in their normal section.
+function availableDateOnly(v) {
+  if (!v) return null;
+  if (typeof v === 'string') {
+    const m = v.match(/^(\d{4})-(\d{2})-(\d{2})/);            // YYYY-MM-DD (date input)
+    if (m) return new Date(+m[1], +m[2] - 1, +m[3]);
+    const m2 = v.match(/^(\d{2})-(\d{2})-(\d{4})/);          // DD-MM-YYYY
+    if (m2) return new Date(+m2[3], +m2[2] - 1, +m2[1]);
+  }
+  const d = parseFlexibleDate(v);
+  return isNaN(d) ? null : new Date(d.getFullYear(), d.getMonth(), d.getDate());
+}
+function upcomingActive() { return currentTab === 'Rent' || currentTab === 'All'; }
+function isUpcomingRent(p) {
+  if (p.basic?.status !== 'For Rent') return false;
+  const d = availableDateOnly(p.property?.available);
+  if (!d) return false;
+  const now = new Date();
+  return d >= new Date(now.getFullYear(), now.getMonth(), now.getDate()); // today or later
+}
 
 // Which of the four on-page sections a (non-promoted) listing belongs in,
 // mirroring the backend's rent/lease/pg collection split.
@@ -9301,7 +9333,7 @@ function renderCards() {
   const list = getFiltered(PROPERTIES, _fsNow);
   document.getElementById('resultCount').textContent = list.length;
 
-  const SECTIONS = ['promoted', 'rent', 'lease', 'pg', 'shortstay', 'sell'];
+  const SECTIONS = ['promoted', 'rent', 'upcoming', 'lease', 'pg', 'shortstay', 'sell'];
 
   if (list.length === 0) {
     SECTIONS.forEach(key => {
@@ -9362,7 +9394,8 @@ function renderCards() {
   const dedupe = ['Rent', 'Lease', 'PG', 'ShortStay', 'Sell'].includes(currentTab);
   const groups = {
     promoted,
-    rent:      list.filter(p => (!dedupe || !p.promoted) && sectionKeyFor(p) === 'rent'),
+    rent:      list.filter(p => (!dedupe || !p.promoted) && sectionKeyFor(p) === 'rent' && !(upcomingActive() && isUpcomingRent(p))),
+    upcoming:  upcomingActive() ? list.filter(p => (!dedupe || !p.promoted) && sectionKeyFor(p) === 'rent' && isUpcomingRent(p)) : [],
     lease:     list.filter(p => (!dedupe || !p.promoted) && sectionKeyFor(p) === 'lease'),
     pg:        list.filter(p => (!dedupe || !p.promoted) && sectionKeyFor(p) === 'pg'),
     shortstay: list.filter(p => (!dedupe || !p.promoted) && sectionKeyFor(p) === 'shortstay'),
@@ -9381,8 +9414,8 @@ function renderCards() {
   }
 
   const gridClass = 'prop-grid' + (isListView ? ' list-view' : '');
-  const pageGetters = { promoted: () => promotedPage, rent: () => rentPage, lease: () => leasePage, pg: () => pgPage, shortstay: () => shortstayPage, sell: () => sellPage };
-  const pageSetters = { promoted: v => promotedPage = v, rent: v => rentPage = v, lease: v => leasePage = v, pg: v => pgPage = v, shortstay: v => shortstayPage = v, sell: v => sellPage = v };
+  const pageGetters = { promoted: () => promotedPage, rent: () => rentPage, upcoming: () => upcomingPage, lease: () => leasePage, pg: () => pgPage, shortstay: () => shortstayPage, sell: () => sellPage };
+  const pageSetters = { promoted: v => promotedPage = v, rent: v => rentPage = v, upcoming: v => upcomingPage = v, lease: v => leasePage = v, pg: v => pgPage = v, shortstay: v => shortstayPage = v, sell: v => sellPage = v };
   // On the single-type tabs (Rent/Lease/PG/ShortStay) that section is the
   // only one populated, so pagination just adds noise — show every
   // matching listing on one page with no page controls. All/Promoted
@@ -9396,6 +9429,14 @@ function renderCards() {
     grid.className = gridClass;
 
     if (items.length === 0) {
+      // Upcoming stays visible on the Rent tab even when empty, so it's
+      // clear the section exists and what qualifies for it.
+      if (key === 'upcoming' && currentTab === 'Rent') {
+        divider.style.display = '';
+        document.getElementById('upcomingCount').textContent = '0';
+        grid.innerHTML = '<div style="grid-column:1/-1;padding:18px 8px;text-align:center;color:var(--text-2);font-size:14px">No upcoming properties right now. Rent listings with an "Available from" date of today or later will show here.</div>';
+        return;
+      }
       divider.style.display = 'none';
       grid.innerHTML = '';
       return;
@@ -9572,11 +9613,13 @@ function sectionItems(section) {
   const list = getFiltered();
   if (section === 'promoted') return list.filter(p => p.promoted);
   const dedupe = ['Rent', 'Lease', 'PG', 'ShortStay', 'Sell'].includes(currentTab);
+  if (section === 'upcoming') return upcomingActive() ? list.filter(p => (!dedupe || !p.promoted) && sectionKeyFor(p) === 'rent' && isUpcomingRent(p)) : [];
+  if (section === 'rent' && upcomingActive()) return list.filter(p => (!dedupe || !p.promoted) && sectionKeyFor(p) === 'rent' && !isUpcomingRent(p));
   return list.filter(p => (!dedupe || !p.promoted) && sectionKeyFor(p) === section);
 }
 
-const SECTION_PAGE_GETTERS = { promoted: () => promotedPage, rent: () => rentPage, lease: () => leasePage, pg: () => pgPage, shortstay: () => shortstayPage, sell: () => sellPage };
-const SECTION_PAGE_SETTERS = { promoted: v => promotedPage = v, rent: v => rentPage = v, lease: v => leasePage = v, pg: v => pgPage = v, shortstay: v => shortstayPage = v, sell: v => sellPage = v };
+const SECTION_PAGE_GETTERS = { promoted: () => promotedPage, rent: () => rentPage, upcoming: () => upcomingPage, lease: () => leasePage, pg: () => pgPage, shortstay: () => shortstayPage, sell: () => sellPage };
+const SECTION_PAGE_SETTERS = { promoted: v => promotedPage = v, rent: v => rentPage = v, upcoming: v => upcomingPage = v, lease: v => leasePage = v, pg: v => pgPage = v, shortstay: v => shortstayPage = v, sell: v => sellPage = v };
 
 function changePage(section, dir) {
   const items = sectionItems(section);
@@ -9600,6 +9643,7 @@ function goToPage(section, pageIndex) {
 function resetPages() {
   promotedPage = 0;
   rentPage = 0;
+  upcomingPage = 0;
   leasePage = 0;
   pgPage = 0;
 }
@@ -10947,6 +10991,7 @@ function updateAllOnlySections() {
 
   const promotedSection = document.getElementById('promotedSection');
   const rentSection = document.getElementById('rentSection');
+  const upcomingSection = document.getElementById('upcomingSection');
   const leaseSection = document.getElementById('leaseSection');
   const pgSection = document.getElementById('pgSection');
   const sellSection = document.getElementById('sellSection');
@@ -10964,6 +11009,7 @@ function updateAllOnlySections() {
   // out of this list and stays visible on Explore.
   if (promotedSection) promotedSection.style.display = show ? 'none' : '';
   if (rentSection) rentSection.style.display = show ? 'none' : '';
+  if (upcomingSection) upcomingSection.style.display = show ? 'none' : '';
   if (leaseSection) leaseSection.style.display = show ? 'none' : '';
   if (pgSection) pgSection.style.display = show ? 'none' : '';
   if (sellSection) sellSection.style.display = show ? 'none' : '';
