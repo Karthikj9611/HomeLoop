@@ -5549,7 +5549,7 @@ main.tab-explore .empty-state{display:none !important}
   <div id="upcomingSection">
     <div class="section-divider" id="upcomingDivider" style="display:none">
       <div class="section-divider-inner">
-        <span class="section-divider-label promoted-label">Upcoming<span class="section-divider-count" id="upcomingCount"></span></span>
+        <span class="section-divider-label promoted-label">Pre-Available<span class="section-divider-count" id="upcomingCount"></span></span>
       </div>
     </div>
     <div class="prop-grid" id="upcomingGrid"></div>
@@ -9438,7 +9438,7 @@ function renderCards() {
       if (key === 'upcoming' && currentTab === 'Rent') {
         divider.style.display = '';
         document.getElementById('upcomingCount').textContent = '0';
-        grid.innerHTML = '<div style="grid-column:1/-1;padding:18px 8px;text-align:center;color:var(--text-2);font-size:14px">No upcoming properties right now. Rent listings with an "Available from" date of today or later will show here.</div>';
+        grid.innerHTML = '<div style="grid-column:1/-1;padding:18px 8px;text-align:center;color:var(--text-2);font-size:14px">No pre-available properties right now. Rent listings with an "Available from" date of today or later will show here.</div>';
         return;
       }
       divider.style.display = 'none';
