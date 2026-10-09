@@ -249,12 +249,14 @@ ul{list-style:none}
   .logo-mark-wrap::after{animation:none;display:none}
 }
 .nav-tabs{
-  display:flex;align-items:center;gap:4px;
+  display:flex;align-items:center;gap:6px;
   flex:1;justify-content:center;
 }
 .nav-tab{
   display:flex;flex-direction:column;align-items:center;gap:2px;
-  padding:7px 18px;
+  padding:7px 8px;
+  /* equal fixed width so the bold active tab never changes spacing */
+  flex:0 0 108px;width:108px;box-sizing:border-box;
   font-size:12px;font-weight:500;color:var(--text-2);
   border-radius:99px;
   transition:color .2s ease,background .25s ease,box-shadow .25s ease,transform .2s cubic-bezier(.34,1.56,.64,1);
@@ -594,7 +596,7 @@ main.tab-explore .empty-state{display:none !important}
 .results-header{padding:0 20px}
 .results-header{
   display:flex;align-items:center;justify-content:space-between;
-  margin-bottom:16px;gap:12px;
+  margin-bottom:4px;gap:12px;
 }
 .results-count{display:none}
 
@@ -687,6 +689,17 @@ main.tab-explore .empty-state{display:none !important}
   background:rgba(255,255,255,.5);transition:background .3s,width .3s;
 }
 .ad-dot.active{width:16px;border-radius:3px;background:#fff}
+/* Slimmer desktop banner (mobile keeps its own sizing in the max-width:640px block) */
+@media(min-width:641px){
+  .ad-banner{height:54px;border-radius:16px}
+  .ad-slide{gap:14px}
+  .ad-slide-icon{width:30px;height:30px;font-size:16px}
+  .ad-slide-cta{padding:6px 16px;font-size:12.5px}
+  /* label sits above the headline text (icon 30 + gap 14 + padding 24 = 68px), not over the icon */
+  .ad-slide-audience{top:5px;left:68px}
+  .ad-slide-text{padding-top:6px}
+  .ad-dots{bottom:5px}
+}
 .view-toggle{display:flex;gap:4px}
 .view-btn{
   width:32px;height:32px;border-radius:7px;
@@ -1164,6 +1177,8 @@ main.tab-explore .empty-state{display:none !important}
 #promotedSection{position:relative}
 .prop-grid.promo-slider{display:flex;grid-template-columns:none;gap:16px;overflow-x:auto;overflow-y:hidden;scroll-snap-type:none;scroll-behavior:auto;scroll-padding-left:20px;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-top:4px;padding-bottom:10px}
 .prop-grid.promo-slider::-webkit-scrollbar{display:none}
+/* An empty slider (no cards) must take up no space — its own padding was adding ~14px between the banner and the first section header on the Promoted tab. */
+.prop-grid.promo-slider:empty{display:none}
 .prop-grid.promo-slider,[id$="BookedGrid"]{will-change:scroll-position;overscroll-behavior-x:contain}
 .prop-grid.promo-slider > .prop-card,[id$="BookedGrid"] > .prop-card{translate:var(--gfrac,0px) 0}
 .prop-grid.promo-slider > .prop-card{flex:0 0 var(--promo-card-w, calc((100% - 48px) / 4));width:var(--promo-card-w, auto);min-width:0;scroll-snap-align:start}
