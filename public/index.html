@@ -12093,6 +12093,13 @@ window.addEventListener('scroll', function(e) {
   if (!openFd) return;
   const t = e.target;
   if (t && t.nodeType === 1 && t.closest && t.closest('.fd-pop')) return;
+  // Only the PAGE or the filter bar itself moving should close the popover.
+  // Other elements scroll on their own (the Promoted/Booked sliders glide via
+  // requestAnimationFrame, chip rows auto-slide, banner carousel, etc.) and
+  // their scroll events were closing the dropdown the instant it opened.
+  const isPage = (t === document || t === document.documentElement || t === document.body);
+  const isBar  = !!(t && t.nodeType === 1 && t.id === 'filterDdBar');
+  if (!isPage && !isBar) return;
   const active = document.activeElement;
   if (active && active.closest && active.closest('.fd-pop')) return;
   closeAllFd();
@@ -12174,6 +12181,20 @@ function restoreFilterStateBeforeBuild() {
   let saved;
   try { saved = JSON.parse(localStorage.getItem(filterStateKey())); } catch (e) { saved = null; }
   if (!saved) return;
+
+  // Ignore a saved tab that can't be shown any more (PG / Short Stay are
+  // feature-flagged off, "Verified" has no nav tab). Restoring it left the
+  // visitor on a hidden tab: zero cards, empty/incorrect filter bar. Drop the
+  // whole saved state in that case so stale PG-only pills don't resurface.
+  const _tabUsable = !saved.tab || (
+    !!document.querySelector(`.nav-tab[data-tab="${saved.tab}"]`) &&
+    !(saved.tab === 'PG' && !PG_ENABLED) &&
+    !(saved.tab === 'ShortStay' && !SHORT_STAY_ENABLED)
+  );
+  if (!_tabUsable) {
+    try { localStorage.removeItem(filterStateKey()); } catch (e) {}
+    return;
+  }
 
   if (saved.tab) {
     currentTab = saved.tab;
