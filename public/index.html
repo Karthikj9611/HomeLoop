@@ -1154,6 +1154,11 @@ main.tab-explore .empty-state{display:none !important}
    upcoming (green) — set per-instance via one of these two modifier classes. */
 .prop-loc-avail.prop-loc-avail-past{color:#d13a4d}
 .prop-loc-avail.prop-loc-avail-future{color:#1a8f4c}
+.pre-avail-empty{grid-column:1/-1;display:flex;flex-direction:column;align-items:center;gap:4px;margin:6px auto 14px;padding:16px 20px;width:100%;max-width:420px;box-sizing:border-box;text-align:center;background:var(--bg-2,#fff);border:1px dashed var(--border,#e5d3d6);border-radius:14px}
+.pre-avail-empty svg{width:22px;height:22px;stroke:#d13a4d;fill:none;stroke-width:1.8;opacity:.8;margin-bottom:2px}
+.pre-avail-empty-title{font-size:14px;font-weight:700;color:var(--text,#222)}
+.pre-avail-empty-sub{font-size:12.5px;line-height:1.4;color:var(--text-2,#666)}
+@media (max-width:600px){.pre-avail-empty{margin:4px 12px 12px;width:auto;max-width:none;padding:14px 16px}.pre-avail-empty-title{font-size:13.5px}.pre-avail-empty-sub{font-size:12px}}
 .prop-avail-line{display:flex;align-items:center;gap:5px;margin:2px 0 4px;font-size:12px;font-weight:600}
 .prop-avail-line.prop-loc-avail-past{color:#d13a4d}
 .prop-avail-line.prop-loc-avail-future{color:#1a8f4c}
@@ -9439,7 +9444,7 @@ function renderCards() {
       if (key === 'upcoming' && currentTab === 'Rent') {
         divider.style.display = '';
         document.getElementById('upcomingCount').textContent = '0';
-        grid.innerHTML = '<div style="grid-column:1/-1;padding:18px 8px;text-align:center;color:var(--text-2);font-size:14px">No pre-available properties right now. Rent listings with an "Available from" date of today or later will show here.</div>';
+        grid.innerHTML = '<div class="pre-avail-empty"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg><div class="pre-avail-empty-title">No pre-available properties right now</div><div class="pre-avail-empty-sub">Homes with a future available date will show here.</div></div>';
         return;
       }
       divider.style.display = 'none';
