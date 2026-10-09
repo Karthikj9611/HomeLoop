@@ -9350,6 +9350,8 @@ function setEmptyStateContent() {
 // end, pauses a moment, then glides back to the start, and so on. Hover /
 // touch / manual scroll holds it; users can swipe left or right any time and
 // it picks up from wherever they left it.
+// Tabs where the Promoted / Pre-available rows slide (every tab that shows them).
+function promoSliderTab() { return currentTab === 'Rent' || currentTab === 'Promoted' || currentTab === 'All'; }
 let _promoRAF = null, _promoPos = 0, _promoDir = 1, _promoPaused = false, _promoLast = 0, _promoDwellUntil = 0, _promoResume = null, _promoRamp = 0;
 const PROMO_SPEED = 0.04; // pixels per millisecond (~40px/s) — gentle and steady
 // Shared easing so every slider (Promoted / Pre-available / Booked) starts, stops
@@ -9369,12 +9371,12 @@ function glideClear(grid) {
 }
 function glideEase(pos, max, dir, ramp) {
   const edge = dir > 0 ? max - pos : pos;
-  const e = Math.min(1, Math.max(0.1, edge / 90));
+  const e = Math.min(1, Math.max(0.45, edge / 40));
   return e * e * (3 - 2 * e) * ramp;
 }
 function promoFrame(ts) {
   const grid = document.getElementById('promotedGrid');
-  if (!grid || currentTab !== 'Rent' || !grid.classList.contains('promo-slider')) { _promoRAF = null; _promoLast = 0; return; }
+  if (!grid || !promoSliderTab() || !grid.classList.contains('promo-slider')) { _promoRAF = null; _promoLast = 0; return; }
   const dt = _promoLast ? Math.min(ts - _promoLast, 50) : 16;
   _promoLast = ts;
   if (!_promoPaused && !document.hidden && ts >= _promoDwellUntil) {
@@ -9384,8 +9386,8 @@ function promoFrame(ts) {
       if (Math.abs(grid.scrollLeft - _promoPos) > 1.5) _promoPos = grid.scrollLeft;
       _promoRamp = Math.min(1, _promoRamp + dt / 600);
       _promoPos += _promoDir * PROMO_SPEED * dt * glideEase(_promoPos, max, _promoDir, _promoRamp);
-      if (_promoPos >= max) { _promoPos = max; _promoDir = -1; _promoDwellUntil = ts + 900; _promoRamp = 0; }
-      else if (_promoPos <= 0) { _promoPos = 0; _promoDir = 1; _promoDwellUntil = ts + 900; _promoRamp = 0; }
+      if (_promoPos >= max) { _promoPos = max; _promoDir = -1; _promoDwellUntil = 0; _promoRamp = 0.5; }
+      else if (_promoPos <= 0) { _promoPos = 0; _promoDir = 1; _promoDwellUntil = 0; _promoRamp = 0.5; }
       glideTo(grid, _promoPos);
     }
   } else {
@@ -9397,7 +9399,7 @@ function setupPromoSlider() {
   const grid = document.getElementById('promotedGrid');
   const sec = document.getElementById('promotedSection');
   if (!grid || !sec) return;
-  const on = currentTab === 'Rent' && !isListView;
+  const on = promoSliderTab() && !isListView;
   grid.classList.toggle('promo-slider', on);
   sec.classList.toggle('promo-slider-on', on);
   if (!on) { if (_promoRAF) cancelAnimationFrame(_promoRAF); _promoRAF = null; _promoLast = 0; return; }
@@ -9415,7 +9417,7 @@ function setupPromoSlider() {
   _promoPos = grid.scrollLeft; _promoDir = 1; _promoLast = 0; _promoDwellUntil = 0;
   if (!_promoRAF) _promoRAF = requestAnimationFrame(promoFrame);
 }
-window.addEventListener('resize', () => { if (currentTab === 'Rent') setupPromoSlider(); });
+window.addEventListener('resize', () => { if (promoSliderTab()) setupPromoSlider(); });
 
 // Booked strips: same behavior as the Promoted slider — glide to the end,
 // dwell, glide back; hover / touch / wheel holds it, manual swipe resumes
@@ -9437,8 +9439,8 @@ function bookedFrame(ts) {
         if (Math.abs(grid.scrollLeft - st.pos) > 1.5) st.pos = grid.scrollLeft;
         st.ramp = Math.min(1, (st.ramp || 0) + dt / 600);
         st.pos += st.dir * PROMO_SPEED * dt * glideEase(st.pos, max, st.dir, st.ramp);
-        if (st.pos >= max) { st.pos = max; st.dir = -1; st.dwellUntil = ts + 900; st.ramp = 0; }
-        else if (st.pos <= 0) { st.pos = 0; st.dir = 1; st.dwellUntil = ts + 900; st.ramp = 0; }
+        if (st.pos >= max) { st.pos = max; st.dir = -1; st.dwellUntil = 0; st.ramp = 0.5; }
+        else if (st.pos <= 0) { st.pos = 0; st.dir = 1; st.dwellUntil = 0; st.ramp = 0.5; }
         glideTo(grid, st.pos);
       }
     } else {
@@ -9451,7 +9453,7 @@ function bookedFrame(ts) {
 function setupUpcomingSlider() {
   const grid = document.getElementById('upcomingGrid');
   if (!grid) return;
-  const on = currentTab === 'Rent' && !isListView && !!grid.firstElementChild && !grid.querySelector('.pre-avail-empty');
+  const on = upcomingActive() && !isListView && !!grid.firstElementChild && !grid.querySelector('.pre-avail-empty');
   grid.classList.toggle('promo-slider', on);
   if (on) setupBookedSliders();
 }
