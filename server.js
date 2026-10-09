@@ -924,6 +924,7 @@ const PropertyDetailsSchema = new mongoose.Schema({
   bike:      { type: String, default: '0' },    // bikeparking: count as string, e.g. '0'..'4'
   car:       { type: String, default: '0' },    // carparking:  count as string, e.g. '0'..'4'
   floor:     { type: String }, // Not collected for Short Stay (form hides this field) — no default, so it's omitted entirely instead of appearing as a default value
+  flatNo:    { type: String, default: null, trim: true, maxlength: 20 }, // optional flat/unit number (e.g. A-304) — not collected for PG/Short Stay/Plot
   area:      { type: String },   // not collected for PG/Short Stay; no default, so omitted entirely for them
   bathrooms: { type: String }, // Not collected for Short Stay (form hides this field) — no default, so it's omitted entirely instead of appearing as a default value
   toiletType: { type: String }, // Indian / Western / Both — not collected for PG/Short Stay; no default, so omitted entirely for them

@@ -5006,6 +5006,10 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
           <option>0</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option>9</option>
         </select>
       </div>
+      <div class="form-group" id="f-flatNoWrap">
+        <label class="form-label">Flat number (optional)</label>
+        <input class="form-input" type="text" id="f-flatNo" maxlength="20" placeholder="e.g. A-304" autocomplete="off" />
+      </div>
       <div class="form-group">
         <label class="form-label" id="f-areaLabel">Area (sqft)</label>
         <input class="form-input" type="text" inputmode="numeric" id="f-area" onfocus="stripAreaSqft(this)" onblur="formatAreaSqft(this)" oninput="updateSellPricePerSqft()" />
@@ -13378,6 +13382,7 @@ function renderAdminCompareTable(){
     { label: 'Age of property', get: p => dash(p.property?.age) },
     { label: 'Furnishing', get: p => dash(p.property?.furnish ?? p.pg?.furnish ?? p.shortStay?.furnish) },
     { label: 'Floor', get: p => dash(p.property?.floor) },
+    { label: 'Flat number', get: p => dash(p.property?.flatNo) },
     { label: 'Bathrooms', get: p => dash(p.property?.bathrooms ?? p.pg?.bathroom) },
     { label: 'Toilet type', get: p => dash(p.property?.toiletType ?? p.pg?.toiletType) },
     { label: 'Kitchen type', get: p => dash(p.property?.kitchenType) },
@@ -16194,6 +16199,7 @@ function applyImportedProperty(p) {
   if (isPG) { sv('f-pgBikePark', pg.bike); sv('f-pgCarPark', pg.car); }
   if (isShortStay) { sv('f-ssBikePark', property.bike); sv('f-ssCarPark', property.car); }
   sv('f-floor', property.floor);
+  sv('f-flatNo', property.flatNo);
   sv('f-baths', isPG ? '1' : property.bathrooms);
   if (!isPG && !isShortStay) sv('f-toiletType', property.toiletType);
   if (!isPG && !isShortStay) sv('f-kitchenType', property.kitchenType);
@@ -16572,7 +16578,7 @@ function onSellPropertyTypeChange() {
   const isSell = typeEl && typeEl.value === 'Sell';
   const propTypeEl = document.getElementById('f-propertyType');
   const isLand = isSell && propTypeEl && propTypeEl.value === 'Plot / Land';
-  ['f-bhkWrap', 'f-floorWrap', 'f-bathsWrap', 'f-toiletTypeWrap', 'f-kitchenTypeWrap', 'f-furnishingWrap', 'f-ageWrap',
+  ['f-bhkWrap', 'f-floorWrap', 'f-flatNoWrap', 'f-bathsWrap', 'f-toiletTypeWrap', 'f-kitchenTypeWrap', 'f-furnishingWrap', 'f-ageWrap',
    'f-bikeparkWrap', 'f-carparkWrap', 'f-sellTotalFloorsWrap', 'f-sellBalconiesWrap',
    'f-sellFlooringWrap', 'f-areaTypeWrap', 'f-sellOcAvailableWrap', 'f-sellCcAvailableWrap'].forEach(id => {
     const el = document.getElementById(id);
@@ -16846,7 +16852,7 @@ const OPTIONAL_FIELD_IDS = new Set([
   // listings won't have a tidy answer for these. Khata type and loan
   // status are left OUT on purpose — mandatory whenever Sell shows.
   'f-sellTaxPaid', 'f-sellOcAvailable', 'f-sellCcAvailable',
-  'f-sellPreviousOwners', 'f-sellProjectName', 'f-sellFlooring',
+  'f-sellPreviousOwners', 'f-sellProjectName', 'f-sellFlooring', 'f-flatNo',
   'f-sellWaterSource', 'f-sellBoundaryWall', 'f-sellRoadWidth',
   'f-sellOpenSides', 'f-sellCornerProperty',
 ]);
@@ -17325,6 +17331,7 @@ async function adminSubmitListing() {
         ...(isShortStay ? {} : {
           ...(isLand ? {} : {
             floor:     document.getElementById('f-floor').value || 'G',
+            flatNo:    (document.getElementById('f-flatNo').value || '').trim() || null,
             bathrooms: document.getElementById('f-baths').value || '1',
             toiletType: gv('f-toiletType') || null,
             kitchenType: gv('f-kitchenType') || null,

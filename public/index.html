@@ -6532,6 +6532,10 @@ main.tab-explore .empty-state{display:none !important}
           <option>0</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option>9</option>
         </select>
       </div>
+      <div class="form-group" id="f-flatNoWrap">
+        <label class="form-label">Flat number (optional)</label>
+        <input class="form-input" type="text" id="f-flatNo" maxlength="20" placeholder="e.g. A-304" autocomplete="off" />
+      </div>
       <div class="form-group">
         <label class="form-label" id="f-areaLabel">Area (sqft)</label>
         <input class="form-input" type="text" inputmode="numeric" id="f-area" onfocus="stripAreaSqft(this)" onblur="formatAreaSqft(this)" oninput="updateSellPricePerSqft()" />
@@ -12713,6 +12717,7 @@ function buildDetailTable(p) {
     kv('Bike parking', property.bike),
     kv('Car parking', property.car),
     kv('Floor', property.floor),
+    kv('Flat number', property.flatNo),
     kv('Bathrooms', property.bathrooms),
     !isPG && !isShortStay ? kv('Toilet type', property.toiletType) : null,
     !isPG && !isShortStay ? kv('Kitchen type', property.kitchenType) : null,
@@ -13696,6 +13701,7 @@ function applyImportedProperty(p) {
   if (isPG) { sv('f-pgBikePark', pg.bike); sv('f-pgCarPark', pg.car); }
   if (isShortStay) { sv('f-ssBikePark', property.bike); sv('f-ssCarPark', property.car); }
   sv('f-floor', property.floor);
+  sv('f-flatNo', property.flatNo);
   sv('f-baths', isPG ? '1' : property.bathrooms);
   if (!isPG && !isShortStay) sv('f-toiletType', property.toiletType);
   if (!isPG && !isShortStay) sv('f-kitchenType', property.kitchenType);
@@ -17822,7 +17828,7 @@ function updateSellPricePerSqft() {
 function onSellPropertyTypeChange() {
   const isSell = document.getElementById('f-type').value === 'Sell';
   const isLand = isSell && document.getElementById('f-propertyType').value === 'Plot / Land';
-  ['f-bhkWrap', 'f-floorWrap', 'f-bathsWrap', 'f-toiletTypeWrap', 'f-kitchenTypeWrap', 'f-furnishingWrap', 'f-ageWrap',
+  ['f-bhkWrap', 'f-floorWrap', 'f-flatNoWrap', 'f-bathsWrap', 'f-toiletTypeWrap', 'f-kitchenTypeWrap', 'f-furnishingWrap', 'f-ageWrap',
    'f-bikeparkWrap', 'f-carparkWrap', 'f-sellTotalFloorsWrap', 'f-sellBalconiesWrap',
    // Nothing's built yet on vacant land — no flooring, no Carpet/Super-Built-up
    // distinction, and nothing for a municipal body to issue an occupancy/
@@ -18000,7 +18006,7 @@ const OPTIONAL_FIELD_IDS = new Set([
   // Khata type and loan status are left OUT of this set on purpose —
   // those are mandatory whenever the Sell tab is showing.
   'f-sellTaxPaid', 'f-sellOcAvailable', 'f-sellCcAvailable',
-  'f-sellPreviousOwners', 'f-sellProjectName', 'f-sellFlooring',
+  'f-sellPreviousOwners', 'f-sellProjectName', 'f-sellFlooring', 'f-flatNo',
   'f-sellWaterSource', 'f-sellBoundaryWall', 'f-sellRoadWidth',
   'f-sellOpenSides', 'f-sellCornerProperty',
 ]);
@@ -18437,6 +18443,7 @@ function submitListing() {
         ...(isShortStay ? {} : {
           ...(isLand ? {} : {
             floor:     document.getElementById('f-floor').value || 'G',
+            flatNo:    (document.getElementById('f-flatNo').value || '').trim() || null,
             bathrooms: document.getElementById('f-baths').value || '1',
             toiletType: document.getElementById('f-toiletType').value,
             kitchenType: document.getElementById('f-kitchenType').value || null,
