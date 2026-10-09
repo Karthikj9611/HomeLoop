@@ -1154,6 +1154,10 @@ main.tab-explore .empty-state{display:none !important}
    upcoming (green) — set per-instance via one of these two modifier classes. */
 .prop-loc-avail.prop-loc-avail-past{color:#d13a4d}
 .prop-loc-avail.prop-loc-avail-future{color:#1a8f4c}
+.prop-avail-line{display:flex;align-items:center;gap:5px;margin:2px 0 4px;font-size:12px;font-weight:600}
+.prop-avail-line.prop-loc-avail-past{color:#d13a4d}
+.prop-avail-line.prop-loc-avail-future{color:#1a8f4c}
+.prop-avail-line svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;flex-shrink:0}
 .prop-loc-avail svg{width:11px;height:11px;stroke:currentColor;fill:none;stroke-width:2;flex-shrink:0;display:none}
 .prop-loc svg{width:11px;height:11px;stroke:#a85c6e;fill:#a85c6e;fill-opacity:.12;stroke-width:2;flex-shrink:0;display:none}
 .prop-loc-area span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;flex:1 1 auto;display:block}
@@ -9450,15 +9454,15 @@ function renderCards() {
       // small chunks over the next frames so filtering feels instant.
       const FIRST = 24, CHUNK = 40;
       if (items.length <= FIRST + 8) {
-        grid.innerHTML = items.map(p => cardHTML(p, key !== 'promoted')).join('');
+        grid.innerHTML = items.map(p => cardHTML(p, key !== 'promoted', undefined, key === 'upcoming')).join('');
         return;
       }
-      grid.innerHTML = items.slice(0, FIRST).map(p => cardHTML(p, key !== 'promoted')).join('');
+      grid.innerHTML = items.slice(0, FIRST).map(p => cardHTML(p, key !== 'promoted', undefined, key === 'upcoming')).join('');
       const tok = _renderToken;
       let i = FIRST;
       const step = () => {
         if (tok !== _renderToken) return; // a newer render superseded this one
-        grid.insertAdjacentHTML('beforeend', items.slice(i, i + CHUNK).map(p => cardHTML(p, key !== 'promoted')).join(''));
+        grid.insertAdjacentHTML('beforeend', items.slice(i, i + CHUNK).map(p => cardHTML(p, key !== 'promoted', undefined, key === 'upcoming')).join(''));
         observeCardImgs(grid);
         i += CHUNK;
         if (i < items.length) requestAnimationFrame(step);
@@ -9471,7 +9475,7 @@ function renderCards() {
     let page = Math.min(pageGetters[key](), Math.floor((items.length - 1) / PAGE_SIZE));
     pageSetters[key](page);
     const slice = items.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
-    grid.innerHTML = slice.map(p => cardHTML(p, key !== 'promoted')).join('') +
+    grid.innerHTML = slice.map(p => cardHTML(p, key !== 'promoted', undefined, key === 'upcoming')).join('') +
       paginationHTML(key, page, items.length);
   });
 
@@ -10215,7 +10219,7 @@ function amenityTagsHTML(p) {
   return list.map(a => `<span class="prop-chip chip-amenity" title="${esc(a)}"><span class="prop-chip-icon">${amenityIcon(a)}</span>${esc(a)}</span>`).join('');
 }
 
-function cardHTML(p, compact, extraLeftBadge) {
+function cardHTML(p, compact, extraLeftBadge, showAvail) {
   const liked = shortlisted.has(String(p.id));
   const compared = compareSet.has(p.id);
   const lockedType = getCompareType();
@@ -12768,7 +12772,9 @@ function buildDetailTable(p) {
     !isPG && !isShortStay ? kv('Toilet type', property.toiletType) : null,
     !isPG && !isShortStay ? kv('Kitchen type', property.kitchenType) : null,
     kv('Furnishing', property.furnish),
-    // 'Available from' hidden in the property view for now.
+    // 'Available from' stays hidden in the property view, except for Upcoming
+    // rent listings (future/today date) where the date is the key detail.
+    isUpcomingRent(p) ? kv('Available from', formatDateDisplay(property.available)) : null,
   ]);
 
   if (isSell) {
