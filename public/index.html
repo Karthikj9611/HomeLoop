@@ -1154,6 +1154,9 @@ main.tab-explore .empty-state{display:none !important}
    upcoming (green) — set per-instance via one of these two modifier classes. */
 .prop-loc-avail.prop-loc-avail-past{color:#d13a4d}
 .prop-loc-avail.prop-loc-avail-future{color:#1a8f4c}
+/* Logged-in owner accounts: no Compare / Call icons on the cards (the property view keeps its Call + WhatsApp buttons). */
+.viewer-owner .prop-action-compare,
+.viewer-owner .prop-icon-call{display:none !important}
 .pre-avail-empty{grid-column:1/-1;display:flex;flex-direction:column;align-items:center;gap:4px;margin:6px auto 14px;padding:16px 20px;width:100%;max-width:420px;box-sizing:border-box;text-align:center;background:var(--bg-2,#fff);border:1px dashed var(--border,#e5d3d6);border-radius:14px}
 .pre-avail-empty svg{width:22px;height:22px;stroke:#d13a4d;fill:none;stroke-width:1.8;opacity:.8;margin-bottom:2px}
 .pre-avail-empty-title{font-size:14px;font-weight:700;color:var(--text,#222)}
@@ -9333,8 +9336,13 @@ function setEmptyStateContent() {
   }
 }
 
+function syncViewerOwnerClass() {
+  try { document.documentElement.classList.toggle('viewer-owner', isOwnerViewer()); } catch (_) {}
+}
+syncViewerOwnerClass();
 let _renderToken = 0; // bumped on every renderCards(); cancels any in-flight chunked render
 function renderCards() {
+  syncViewerOwnerClass();
   _renderToken++;
   saveFilterState(); // keep localStorage in sync with live filter/tab state on every render
   const empty = document.getElementById('emptyState');
@@ -12533,6 +12541,7 @@ function openDetail(id) {
   openDetailReal(id);
 }
 function openDetailReal(id) {
+  syncViewerOwnerClass();
   const p = PROPERTIES.find(x => x.id === id) || BOOKED_PROPERTIES.find(x => x.id === id);
   if (!p) return;
   closeAllFd();        // clicks that reach here (card body, or an image/icon
