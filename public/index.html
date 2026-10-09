@@ -4774,15 +4774,34 @@ main.tab-explore .empty-state{display:none !important}
 
 
 /* Locked last photo (no active subscription plan) */
-.plan-lock{position:absolute;inset:0;z-index:3;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:16px;text-align:center;color:#fff;background:linear-gradient(135deg,rgba(20,20,28,.94),rgba(80,10,30,.94));backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);cursor:default}
-.plan-lock-icon{font-size:30px;line-height:1}
-.plan-lock-title{font-size:15px;font-weight:700}
-.plan-lock-sub{font-size:12px;opacity:.85;max-width:260px;line-height:1.45}
-.plan-lock-btn{margin-top:6px;padding:9px 16px;border:none;border-radius:999px;background:#fff;color:#a51845;font-weight:700;font-size:13px;cursor:pointer}
+.plan-lock{position:absolute;inset:0;z-index:3;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:18px;text-align:center;color:#fff;background:radial-gradient(120% 70% at 50% 0%,rgba(255,92,124,.20),transparent 60%),linear-gradient(160deg,rgba(22,18,32,.90),rgba(88,12,40,.90));backdrop-filter:blur(22px) saturate(1.2);-webkit-backdrop-filter:blur(22px) saturate(1.2);cursor:default;overflow:hidden;box-sizing:border-box;touch-action:pan-y;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+.plan-lock-icon{width:46px;height:46px;border-radius:50%;display:grid;place-items:center;font-size:21px;line-height:1;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.24);box-shadow:0 8px 24px -10px rgba(0,0,0,.6)}
+.plan-lock-title{font-size:16px;font-weight:700;letter-spacing:-.01em;line-height:1.2}
+.plan-lock-sub{font-size:12.5px;opacity:.78;max-width:240px;line-height:1.4}
+.plan-lock-btn{margin-top:4px;padding:10px 18px;border:none;border-radius:999px;background:#fff;color:#a51845;font-weight:700;font-size:13px;cursor:pointer;box-shadow:0 8px 20px -8px rgba(0,0,0,.55);display:inline-flex;align-items:center;gap:6px;white-space:nowrap;transition:transform .15s}
+.plan-lock-btn::after{content:"\203A";font-size:1.25em;line-height:1}
+.plan-lock-btn:active{transform:scale(.96)}
+/* Narrow photo areas (2-column mobile cards): scale the panel down to fit the card */
+@container prop-img-box (max-width:260px){
+  .plan-lock{gap:7px;padding:10px}
+  .plan-lock-icon{width:36px;height:36px;font-size:17px}
+  .plan-lock-title{font-size:13px}
+  .plan-lock-sub{display:none}
+  .plan-lock-btn{padding:8px 13px;font-size:11.5px;margin-top:2px}
+}
 .plan-lock-lightbox{position:relative;inset:auto;width:min(86vw,420px);height:min(44vh,340px);margin-bottom:96px;border-radius:10px}
 .plan-lock-lightbox .plan-lock-title{font-size:18px}
 .plan-lock-lightbox .plan-lock-sub{font-size:13px}
 .lightbox-thumb.locked{background:#222;display:flex;align-items:center;justify-content:center;font-size:18px}
+/* Mobile: lock panel must fit inside small card/compare image areas and the lightbox */
+@media (max-width:600px){
+  .compare-col-img .plan-lock{gap:5px;padding:8px}
+  .compare-col-img .plan-lock-icon{width:30px;height:30px;font-size:14px}
+  .compare-col-img .plan-lock-title{font-size:12px}
+  .compare-col-img .plan-lock-sub{display:none}
+  .compare-col-img .plan-lock-btn{padding:6px 11px;font-size:11px}
+  .plan-lock-lightbox{width:90vw;height:min(52vh,360px);margin-bottom:0;padding:16px}
+}
 </style>
 <script>
 /* Guests can browse freely — no full-page login gate. Every same-origin /api/ call still carries
@@ -9762,8 +9781,10 @@ function hasActivePlan() {
    replaced by a lock panel with a button that opens the Pricing & Charges (subscription plans)
    modal. Needs 2+ items so a single-photo listing is never fully hidden. */
 function lastItemLocked(total) { return total >= 2 && !hasActivePlan(); }
+window._lastSwipeTs = 0;
 function openPlansFromLock(ev) {
   if (ev) { ev.stopPropagation(); ev.preventDefault(); }
+  if (Date.now() - (window._lastSwipeTs || 0) < 500) return;   // a swipe, not a tap: never open the plans modal
   closeLightbox();
   showPlansFromSwipe();
 }
@@ -9771,7 +9792,7 @@ function lockPanelHtml() {
   return '<div class="plan-lock-icon">\uD83D\uDD12</div>'
     + '<div class="plan-lock-title">Building photo locked</div>'
     + '<div class="plan-lock-sub">Get the Direct Plan to view it and call owners directly.</div>'
-    + '<button type="button" class="plan-lock-btn" onclick="openPlansFromLock(event)" ontouchstart="event.stopPropagation()" ontouchend="event.stopPropagation()">View Direct Plan</button>';
+    + '<button type="button" class="plan-lock-btn" onclick="openPlansFromLock(event)">View Direct Plan</button>';
 }
 function showPlansFromSwipe() {
   const u = getLoggedInUser();
@@ -9807,6 +9828,7 @@ function slideSwipe(uid, dir) {
     const dx = t.clientX - sx;
     const dy = t.clientY - sy;
     if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) {
+      window._lastSwipeTs = Date.now();
       slideSwipe(active.id, dx < 0 ? 1 : -1);
     }
     active = null;
@@ -9833,6 +9855,7 @@ function slideSwipe(uid, dir) {
     const dx = e.clientX - mx;
     const dy = e.clientY - my;
     if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) {
+      window._lastSwipeTs = Date.now();
       slideSwipe(active.id, dx < 0 ? 1 : -1);
     }
     active = null;
@@ -10013,6 +10036,7 @@ function renderLightbox() {
       const dx = t.clientX - lsx;
       const dy = t.clientY - lsy;
       if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) {
+        window._lastSwipeTs = Date.now();
         lightboxSwipe(dx < 0 ? 1 : -1);
       }
       lactive = false;
@@ -10031,6 +10055,7 @@ function renderLightbox() {
       const dx = e.clientX - lmx;
       const dy = e.clientY - lmy;
       if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) {
+        window._lastSwipeTs = Date.now();
         lightboxSwipe(dx < 0 ? 1 : -1);
       }
       lmactive = false;
