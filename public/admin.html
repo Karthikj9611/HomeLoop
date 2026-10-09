@@ -4887,6 +4887,15 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
         </div>
       </div>
       <div class="form-group">
+        <label class="form-label">Caretaker number (optional)</label>
+        <div class="input-icon-wrap">
+          <input class="form-input" type="tel" id="f-ownerCaretakerPhone" inputmode="numeric" maxlength="10" oninput="sanitizeMobileInput(this)"/>
+          <button type="button" class="contact-pick-btn" onclick="pickContactFromDevice('f-ownerCaretakerPhone')" title="Pick from contacts">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="form-group">
         <label class="form-label">Email (optional)</label>
         <input class="form-input" type="email" id="f-ownerEmail"/>
         <div class="identity-locked-hint" id="f-ownerEmail-hint" style="display:none">Auto-filled from your account</div>
@@ -16130,6 +16139,7 @@ function applyImportedProperty(p) {
   sv('f-ownerPhone', owner.phone);
   sv('f-ownerEmail', owner.email);
   sv('f-ownerAltPhone', owner.altPhone);
+  sv('f-ownerCaretakerPhone', owner.caretakerPhone);
   sv('f-contactTime', owner.contactTime);
   sv('f-ownerAddress', owner.address);
   sv('f-agentPhone', owner.agentPhone);
@@ -16809,7 +16819,7 @@ const OPTIONAL_FIELD_IDS = new Set([
   'f-latitude', 'f-longitude', 'f-latLngDisplay',
   'f-imgFileInput', 'f-imgCameraInput',
   'f-amenities-extra',
-  'f-ownerAltPhone', 'f-videoUrl', 'f-age', 'f-area',
+  'f-ownerAltPhone', 'f-ownerCaretakerPhone', 'f-videoUrl', 'f-age', 'f-area',
   'f-maintenance', 'f-leaseMaintenance',
   'f-sellPossessionDate', 'f-sellReraId', 'f-pricePerSqft',
   // Sell-only trust/detail fields kept optional — many legit resale
@@ -17190,6 +17200,11 @@ async function adminSubmitListing() {
     alert('Enter a valid 10-digit alternate number starting with 6, 7, 8 or 9');
     return;
   }
+  const ownerCaretakerPhone = gv('f-ownerCaretakerPhone');
+  if (ownerCaretakerPhone && !isValidIndianMobile(ownerCaretakerPhone)) {
+    alert('Enter a valid 10-digit caretaker number starting with 6, 7, 8 or 9');
+    return;
+  }
   const agentPhone = gv('f-agentPhone');
   if (agentPhone && !isValidIndianMobile(agentPhone)) {
     alert('Enter a valid 10-digit agent phone number starting with 6, 7, 8 or 9');
@@ -17250,6 +17265,7 @@ async function adminSubmitListing() {
       phone:        ownerPhone,
       email:        document.getElementById('f-ownerEmail').value.trim(),
       altPhone:     gv('f-ownerAltPhone') || null,
+      caretakerPhone: gv('f-ownerCaretakerPhone') || '',
       contactTime:  gv('f-contactTime') || null,
       address:      gv('f-ownerAddress') || null,
       agentPhone:   gv('f-agentPhone') || null,

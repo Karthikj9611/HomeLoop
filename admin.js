@@ -2205,6 +2205,7 @@ self.addEventListener('notificationclick', event => {
           ownerNumber:  owner.phone || '',
           ownerEmail:   owner.email || '',
           ownerAltPhone:owner.altPhone || '',
+          ownerCaretakerPhone: owner.caretakerPhone || '',
           ownerContactTime: owner.contactTime || '',
           // There's no photo on the manually-entered owner contact card itself —
           // this borrows the profilePhoto off the User account that posted the

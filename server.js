@@ -900,6 +900,7 @@ const OwnerSchema = new mongoose.Schema({
   phone:        { type: String, default: '' },
   email:        { type: String, default: '' },
   altPhone:     { type: String, default: '' },
+  caretakerPhone: { type: String, default: '' }, // optional caretaker number (admin form) — private, never sent to the public site
   contactTime:  { type: String, default: '' },
   address:      { type: String, default: '' },
   agentPhone:   { type: String, default: '' },
@@ -1396,6 +1397,7 @@ const MAX_LENGTHS = {
   'owner.name':         100,
   'owner.address':      300,
   'owner.contactTime':  100,
+  'owner.caretakerPhone': 15,
   // sale.reraId had a client-side maxlength (50) but no server-side check —
   // closing that gap while adding one for the new free-text projectName.
   'sale.reraId':        50,
@@ -1790,7 +1792,7 @@ app.get('/api/properties', attachUserIfPresent, async (req, res) => {
       // owner.propertyName excluded too (client-side search no longer matches on
       // it — search now matches area/BHK only). owner.agentPhone is kept for
       // Call/WhatsApp.
-      '-owner.name -owner.propertyName -owner.email -owner.contactTime -owner.address -owner.agentArea ' +
+      '-owner.name -owner.propertyName -owner.email -owner.contactTime -owner.address -owner.agentArea -owner.caretakerPhone ' +
       // Location detail that's likewise only used to fill the always-hidden
       // full-address/lat-lng/Google-Maps-link form groups.
       // NOTE: location.address is intentionally *not* excluded at the query
@@ -1914,7 +1916,7 @@ app.get('/api/properties', attachUserIfPresent, async (req, res) => {
       doc.ownerPhoneCall  = !!doc.ownerPhoneCall  && !!main;
       if (doc.ownerDirectCall) doc.ownerAltPhone = alt;
       if (doc.ownerPhoneCall)  doc.ownerPhone = main;
-      if (doc.owner) { delete doc.owner.altPhone; delete doc.owner.phone; }
+      if (doc.owner) { delete doc.owner.altPhone; delete doc.owner.phone; delete doc.owner.caretakerPhone; }
       delete doc.userId; // internal — only used above for the per-owner Public call lookup
     });
 

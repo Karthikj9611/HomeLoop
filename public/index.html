@@ -2988,6 +2988,9 @@ main.tab-explore .empty-state{display:none !important}
    (.lightbox-overlay, z-index:400) or its full detail view, so it needs to
    sit above both instead of its shared .add-modal-overlay z-index:350. */
 #authModal{z-index:410}
+/* Pricing & Charges can be opened from the locked last-photo panel, i.e. from inside the property view
+   modal (z-index:350) or the photo zoom (400) — keep it above both so it never opens hidden behind them. */
+#chargesModal{z-index:420}
 .add-modal{
   background:var(--bg);border-radius:var(--radius-xl);
   width:100%;max-width:520px;max-height:92vh;
@@ -9755,7 +9758,7 @@ function lockPanelHtml() {
   return '<div class="plan-lock-icon">\uD83D\uDD12</div>'
     + '<div class="plan-lock-title">To unlock the building photo</div>'
     + '<div class="plan-lock-sub">Subscribe to a plan to view it and get direct owner contact details.</div>'
-    + '<button type="button" class="plan-lock-btn" onclick="openPlansFromLock(event)">Subscribe now</button>';
+    + '<button type="button" class="plan-lock-btn" onclick="openPlansFromLock(event)" ontouchstart="event.stopPropagation()" ontouchend="event.stopPropagation()">Subscribe now</button>';
 }
 function showPlansFromSwipe() {
   const u = getLoggedInUser();
