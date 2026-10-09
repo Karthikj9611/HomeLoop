@@ -4769,6 +4769,17 @@ main.tab-explore .empty-state{display:none !important}
   box-shadow:0 6px 16px -6px rgba(224,58,82,.45);
 }
 
+
+/* Locked last photo (no active subscription plan) */
+.plan-lock{position:absolute;inset:0;z-index:3;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:16px;text-align:center;color:#fff;background:linear-gradient(135deg,rgba(20,20,28,.94),rgba(80,10,30,.94));backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);cursor:default}
+.plan-lock-icon{font-size:30px;line-height:1}
+.plan-lock-title{font-size:15px;font-weight:700}
+.plan-lock-sub{font-size:12px;opacity:.85;max-width:260px;line-height:1.45}
+.plan-lock-btn{margin-top:6px;padding:9px 16px;border:none;border-radius:999px;background:#fff;color:#a51845;font-weight:700;font-size:13px;cursor:pointer}
+.plan-lock-lightbox{position:relative;inset:auto;width:min(86vw,420px);height:min(44vh,340px);margin-bottom:96px;border-radius:10px}
+.plan-lock-lightbox .plan-lock-title{font-size:18px}
+.plan-lock-lightbox .plan-lock-sub{font-size:13px}
+.lightbox-thumb.locked{background:#222;display:flex;align-items:center;justify-content:center;font-size:18px}
 </style>
 <script>
 /* Guests can browse freely — no full-page login gate. Every same-origin /api/ call still carries
@@ -9696,6 +9707,16 @@ function slideGo(uid, idx) {
   // compare-slide-dots) — keep them in sync too when present. Every other
   // .img-slides consumer (property cards, shortlist panel, etc.) has no
   // such sibling, so this is a no-op for them.
+  // Last slide locked for visitors without an active plan
+  const _old = c.querySelector(':scope > .plan-lock'); if (_old) _old.remove();
+  const _n = c.querySelectorAll('.img-slide').length;
+  if (idx === _n - 1 && lastItemLocked(_n)) {
+    const lk = document.createElement('div');
+    lk.className = 'plan-lock';
+    lk.innerHTML = lockPanelHtml();
+    lk.addEventListener('click', function(e){ e.stopPropagation(); });
+    c.appendChild(lk);
+  }
   const dotsWrap = c.parentElement && c.parentElement.querySelector('.compare-slide-dots');
   if (dotsWrap) dotsWrap.querySelectorAll('span').forEach((d,i) => d.classList.toggle('active', i===idx));
 }
@@ -9707,6 +9728,45 @@ function slideStep(uid, dir) {
   let cur = [...slides].findIndex(s => s.classList.contains('active'));
   const next = (cur + dir + slides.length) % slides.length;
   slideGo(uid, next);
+}
+
+/* Swiping forward past the LAST photo/video (without an active subscription plan)
+   opens the Pricing & Charges / subscription plan view instead of wrapping back to
+   the first photo. Arrow buttons and swiping backwards keep their normal behaviour. */
+function hasActivePlan() {
+  try {
+    const w = window._subWindow;
+    if (!w || !w.from) return false;
+    const now = Date.now(), from = new Date(w.from).getTime();
+    const to = w.to ? new Date(w.to).getTime() : null;
+    return !isNaN(from) && now >= from && (to === null || isNaN(to) || now < to);
+  } catch (e) { return false; }
+}
+/* The LAST photo/video of a listing is a subscriber-only item. Without an active plan it is
+   replaced by a lock panel with a button that opens the Pricing & Charges (subscription plans)
+   modal. Needs 2+ items so a single-photo listing is never fully hidden. */
+function lastItemLocked(total) { return total >= 2 && !hasActivePlan(); }
+function openPlansFromLock(ev) {
+  if (ev) { ev.stopPropagation(); ev.preventDefault(); }
+  closeLightbox();
+  showPlansFromSwipe();
+}
+function lockPanelHtml() {
+  return '<div class="plan-lock-icon">\uD83D\uDD12</div>'
+    + '<div class="plan-lock-title">To unlock the building photo</div>'
+    + '<div class="plan-lock-sub">Subscribe to a plan to view it and get direct owner contact details.</div>'
+    + '<button type="button" class="plan-lock-btn" onclick="openPlansFromLock(event)">Subscribe now</button>';
+}
+function showPlansFromSwipe() {
+  const u = getLoggedInUser();
+  openChargesModal(u && u.accountType === 'owner' ? 'owner' : 'tenant');
+}
+function slideSwipe(uid, dir) {
+  const c = document.getElementById(uid);
+  if (!c) return;
+  const slides = c.querySelectorAll('.img-slide');
+  const cur = [...slides].findIndex(s => s.classList.contains('active'));
+  slideStep(uid, dir);
 }
 
 /* Swipe-to-change-photo for every .img-slides gallery (property cards,
@@ -9731,7 +9791,7 @@ function slideStep(uid, dir) {
     const dx = t.clientX - sx;
     const dy = t.clientY - sy;
     if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) {
-      slideStep(active.id, dx < 0 ? 1 : -1);
+      slideSwipe(active.id, dx < 0 ? 1 : -1);
     }
     active = null;
   }, {passive:true});
@@ -9757,7 +9817,7 @@ function slideStep(uid, dir) {
     const dx = e.clientX - mx;
     const dy = e.clientY - my;
     if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) {
-      slideStep(active.id, dx < 0 ? 1 : -1);
+      slideSwipe(active.id, dx < 0 ? 1 : -1);
     }
     active = null;
   });
@@ -9769,6 +9829,7 @@ function slideStep(uid, dir) {
 let lightboxImgs = [];
 let lightboxIdx = 0;
 let lightboxVideoHtml = ''; // '' when this property has no (valid) video tour
+let lightboxPropertyMode = false; // true only for property photos (not the About-modal partner photos)
 
 // The lightbox swaps a single <img>'s src on each swipe instead of
 // pre-rendering hidden slides (see the note near the touch handler below),
@@ -9786,8 +9847,8 @@ function preloadLightboxImage(url) {
 function preloadLightboxNeighbors() {
   const total = lightboxImgs.length;
   if (total < 2) return;
-  preloadLightboxImage(lightboxImgs[(lightboxIdx + 1) % total]);
-  preloadLightboxImage(lightboxImgs[(lightboxIdx - 1 + total) % total]);
+  if (!(lightboxPropertyMode && lastItemLocked(lightboxTotal()) && (lightboxIdx + 1) % lightboxTotal() === lightboxTotal() - 1)) preloadLightboxImage(lightboxImgs[(lightboxIdx + 1) % total]);
+  if (!(lightboxPropertyMode && lastItemLocked(lightboxTotal()) && (lightboxIdx - 1 + total) % total === lightboxTotal() - 1)) preloadLightboxImage(lightboxImgs[(lightboxIdx - 1 + total) % total]);
 }
 
 // Public entry point — gated. A logged-out visitor gets the login/sign-up
@@ -9823,6 +9884,7 @@ function openLightboxReal(propId, idx) {
   renderCards();        // reflect the new count on the card grid
   lightboxImgs = p.media.images;
   lightboxVideoHtml = buildVideoSlideHtml(p);
+  lightboxPropertyMode = true;
   lightboxIdx = idx || 0;
   lightboxPreloaded.clear();
   renderLightbox();
@@ -9841,6 +9903,7 @@ function openLightboxSimple(urls, idx) {
   if (!Array.isArray(urls) || !urls.length) return;
   lightboxImgs = urls;
   lightboxVideoHtml = '';
+  lightboxPropertyMode = false;
   lightboxIdx = idx || 0;
   lightboxPreloaded.clear();
   renderLightbox();
@@ -9858,6 +9921,12 @@ function lightboxStep(dir) {
   renderLightbox();
 }
 
+function lightboxSwipe(dir) {
+  const total = lightboxTotal();
+  if (!total) return;
+  // Only the property lightbox (video handler present) gates on plan; simple partner-photo viewer wraps as before.
+  lightboxStep(dir);
+}
 function lightboxGo(idx) {
   lightboxIdx = idx;
   renderLightbox();
@@ -9869,11 +9938,30 @@ function renderLightbox() {
   const isVideo = lightboxIdx >= lightboxImgs.length;
   const imgEl = document.getElementById('lightboxImg');
   const videoEl = document.getElementById('lightboxVideo');
-  if (isVideo) {
+  const lockedIdx = (lightboxPropertyMode && lastItemLocked(total)) ? total - 1 : -1;
+  const stageEl = document.querySelector('.lightbox-stage');
+  let lockEl = document.getElementById('lightboxLock');
+  if (!lockEl && stageEl) {
+    lockEl = document.createElement('div');
+    lockEl.id = 'lightboxLock';
+    lockEl.className = 'plan-lock plan-lock-lightbox';
+    lockEl.style.display = 'none';
+    lockEl.innerHTML = lockPanelHtml();
+    stageEl.appendChild(lockEl);
+  }
+  if (lightboxIdx === lockedIdx) {
+    imgEl.style.display = 'none';
+    imgEl.removeAttribute('src');          // never load the locked photo
+    videoEl.style.display = 'none';
+    videoEl.innerHTML = '';
+    if (lockEl) lockEl.style.display = 'flex';
+  } else if (isVideo) {
+    if (lockEl) lockEl.style.display = 'none';
     imgEl.style.display = 'none';
     videoEl.style.display = 'block';
     videoEl.innerHTML = lightboxVideoHtml;
   } else {
+    if (lockEl) lockEl.style.display = 'none';
     videoEl.style.display = 'none';
     videoEl.innerHTML = '';
     imgEl.style.display = 'block';
@@ -9882,8 +9970,10 @@ function renderLightbox() {
   document.getElementById('lightboxCounter').textContent = (lightboxIdx + 1) + ' / ' + total;
   const multi = total > 1;
   document.getElementById('lightboxThumbs').innerHTML = multi
-    ? lightboxImgs.map((url, i) => `<div class="lightbox-thumb${i===lightboxIdx?' active':''}" style="background-image:url('${safeUrl(url)}')" onclick="lightboxGo(${i})"></div>`).join('')
-      + (lightboxVideoHtml ? `<div class="lightbox-thumb video-thumb${isVideo?' active':''}" onclick="lightboxGo(${lightboxImgs.length})"><svg viewBox="0 0 24 24" aria-hidden="true"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg></div>` : '')
+    ? lightboxImgs.map((url, i) => i===lockedIdx
+        ? `<div class="lightbox-thumb locked${i===lightboxIdx?' active':''}" onclick="lightboxGo(${i})">\uD83D\uDD12</div>`
+        : `<div class="lightbox-thumb${i===lightboxIdx?' active':''}" style="background-image:url('${safeUrl(url)}')" onclick="lightboxGo(${i})"></div>`).join('')
+      + (lightboxVideoHtml ? `<div class="lightbox-thumb video-thumb${lockedIdx===lightboxImgs.length?' locked':''}${isVideo?' active':''}" onclick="lightboxGo(${lightboxImgs.length})"><svg viewBox="0 0 24 24" aria-hidden="true"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg></div>` : '')
     : '';
   preloadLightboxNeighbors();
 }
@@ -9907,7 +9997,7 @@ function renderLightbox() {
       const dx = t.clientX - lsx;
       const dy = t.clientY - lsy;
       if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) {
-        lightboxStep(dx < 0 ? 1 : -1);
+        lightboxSwipe(dx < 0 ? 1 : -1);
       }
       lactive = false;
     }, {passive:true});
@@ -9925,7 +10015,7 @@ function renderLightbox() {
       const dx = e.clientX - lmx;
       const dy = e.clientY - lmy;
       if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) {
-        lightboxStep(dx < 0 ? 1 : -1);
+        lightboxSwipe(dx < 0 ? 1 : -1);
       }
       lmactive = false;
     });
