@@ -9392,7 +9392,7 @@ function renderCards() {
     (rankOf(a.promotedPriority) - rankOf(b.promotedPriority)) ||
     (propertyListedAt(b) - propertyListedAt(a));
 
-  const promoted = currentTab === 'Promoted' ? [] : list.filter(p => p.promoted).sort(byPromotedPriority);
+  const promoted = currentTab === 'Promoted' ? [] : list.filter(p => p.promoted && !(currentTab === 'Rent' && isUpcomingRent(p))).sort(byPromotedPriority);
   // On a single-type tab (Rent/Lease/PG/ShortStay), `list` is already
   // scoped to just that type, so the "promoted" and typed buckets below
   // would otherwise be drawing from the exact same set — showing every
@@ -9404,7 +9404,7 @@ function renderCards() {
   const groups = {
     promoted,
     rent:      list.filter(p => (!dedupe || !p.promoted) && sectionKeyFor(p) === 'rent' && !(upcomingActive() && isUpcomingRent(p))),
-    upcoming:  upcomingActive() ? list.filter(p => (!dedupe || !p.promoted) && sectionKeyFor(p) === 'rent' && isUpcomingRent(p)) : [],
+    upcoming:  upcomingActive() ? list.filter(p => sectionKeyFor(p) === 'rent' && isUpcomingRent(p)) : [],
     lease:     list.filter(p => (!dedupe || !p.promoted) && sectionKeyFor(p) === 'lease'),
     pg:        list.filter(p => (!dedupe || !p.promoted) && sectionKeyFor(p) === 'pg'),
     shortstay: list.filter(p => (!dedupe || !p.promoted) && sectionKeyFor(p) === 'shortstay'),
@@ -9621,9 +9621,9 @@ function paginationHTML(section, page, total) {
 
 function sectionItems(section) {
   const list = getFiltered();
-  if (section === 'promoted') return list.filter(p => p.promoted);
+  if (section === 'promoted') return list.filter(p => p.promoted && !(currentTab === 'Rent' && isUpcomingRent(p)));
   const dedupe = ['Rent', 'Lease', 'PG', 'ShortStay', 'Sell'].includes(currentTab);
-  if (section === 'upcoming') return upcomingActive() ? list.filter(p => (!dedupe || !p.promoted) && sectionKeyFor(p) === 'rent' && isUpcomingRent(p)) : [];
+  if (section === 'upcoming') return upcomingActive() ? list.filter(p => sectionKeyFor(p) === 'rent' && isUpcomingRent(p)) : [];
   if (section === 'rent' && upcomingActive()) return list.filter(p => (!dedupe || !p.promoted) && sectionKeyFor(p) === 'rent' && !isUpcomingRent(p));
   return list.filter(p => (!dedupe || !p.promoted) && sectionKeyFor(p) === section);
 }
@@ -12594,7 +12594,7 @@ function openDetailReal(id) {
   const _callLabelEl = document.getElementById('viewCallBtnLabel');
   if (_callLabelEl) {
     const _agentDigits = String(p.owner?.agentPhone || '').replace(/\D/g, '').slice(-10);
-    _callLabelEl.textContent = (isOwnerViewer() || _agentDigits === '9035205230') ? 'Coordinator' : 'Owner';
+    _callLabelEl.textContent = (_agentDigits === '9035205230') ? 'Coordinator' : 'Owner';
   }
   // Direct owner call — the server only sends ownerAltPhone when admin turned it on.
   // Each number has its own admin "Public call" toggle; the server only sends a number when its toggle is on.
@@ -13237,7 +13237,7 @@ function capitalizeWordsInput(el) {
 function openCall(propId) {
   const p = PROPERTIES.find(x => x.id === propId);
   if (!p) return;
-  const rawPhone = (isOwnerViewer() ? COORDINATOR_PHONE : (p.owner?.agentPhone || '')).replace(/\D/g, '');
+  const rawPhone = (p.owner?.agentPhone || '').replace(/\D/g, '');
   if (!rawPhone) {
     showToast('No agent phone number added for this listing', 'warning');
     return;
@@ -13297,7 +13297,7 @@ function openCardCall(propId) {
   const p = PROPERTIES.find(x => x.id === propId) || BOOKED_PROPERTIES.find(x => x.id === propId);
   if (!p) return;
   const rawPhone = String(
-    isOwnerViewer() ? COORDINATOR_PHONE : (
+    isOwnerViewer() ? (p.owner?.agentPhone || '') : (
       (p.ownerDirectCall && p.ownerAltPhone) ||
       (p.ownerPhoneCall && p.ownerPhone) ||
       p.owner?.agentPhone || '')
@@ -13335,7 +13335,7 @@ function openOwnerWhatsApp(propId, which) {
   const phone = raw.length === 10 ? '91' + raw : raw;
   const propertyUrl = `${window.location.origin}/property/${p.id}`;
   const msg = `Interested in this property. Still available?\n${p.propertyId} - ${propertyUrl}`;
-  window.open('https://wa.me/' + phone + '?text=' + encodeURIComponent(msg), '_blank', 'noopener');
+  window.open(isOwnerViewer() ? 'https://wa.me/' + phone : 'https://wa.me/' + phone + '?text=' + encodeURIComponent(msg), '_blank', 'noopener');
 }
 
 /* ═══════════════════════════════════════════════
@@ -13344,7 +13344,7 @@ function openOwnerWhatsApp(propId, which) {
 function openWhatsApp(propId) {
   const p = PROPERTIES.find(x => x.id === propId);
   if (!p) return;
-  const rawPhone = (isOwnerViewer() ? COORDINATOR_PHONE : (p.owner?.agentPhone || '')).replace(/\D/g, '');
+  const rawPhone = (p.owner?.agentPhone || '').replace(/\D/g, '');
   if (!rawPhone) {
     showToast('No agent phone number added for this listing', 'warning');
     return;
@@ -13352,7 +13352,11 @@ function openWhatsApp(propId) {
   const phone = rawPhone.length === 10 ? '91' + rawPhone : rawPhone;
   const propertyUrl = `${window.location.origin}/property/${p.id}`;
   const msg = `Interested in this property. Still available?\n${p.propertyId} - ${propertyUrl}`;
-  const url = 'https://wa.me/' + phone + '?text=' + encodeURIComponent(msg);
+  // Logged-in owner accounts get a blank chat with the agent — no prefilled
+  // "Interested in this property" text (that wording is for tenants).
+  const url = isOwnerViewer()
+    ? 'https://wa.me/' + phone
+    : 'https://wa.me/' + phone + '?text=' + encodeURIComponent(msg);
   window.open(url, '_blank', 'noopener');
 }
 
@@ -14021,8 +14025,8 @@ function availableDateInfo(available) {
   const cls = target < today ? 'prop-loc-avail-past' : 'prop-loc-avail-future';
   return { text: dateStr, cls };
 }
-// Logged-in owner accounts: every Call / WhatsApp on every listing goes to the
-// in-house Coordinator line (never to the listing's own agent/owner numbers).
+// In-house Coordinator line. Call / WhatsApp now go to each listing's own agent
+// number for every viewer, including logged-in owner accounts.
 const COORDINATOR_PHONE = '9035205230';
 function isOwnerViewer() {
   const u = getLoggedInUser();
