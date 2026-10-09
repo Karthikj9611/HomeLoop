@@ -9245,7 +9245,7 @@ function availableDateOnly(v) {
   const d = parseFlexibleDate(v);
   return isNaN(d) ? null : new Date(d.getFullYear(), d.getMonth(), d.getDate());
 }
-function upcomingActive() { return currentTab === 'Rent' || currentTab === 'All'; }
+function upcomingActive() { return currentTab === 'Rent' || currentTab === 'Promoted' || currentTab === 'All'; }
 function isUpcomingRent(p) {
   if (p.basic?.status !== 'For Rent') return false;
   const d = availableDateOnly(p.property?.available);
@@ -9411,6 +9411,7 @@ function renderCards() {
   // instead of leaving them in Sort-dropdown order.
   if (currentTab === 'Promoted') {
     groups.rent.sort(byPromotedPriority);
+    groups.upcoming.sort(byPromotedPriority);
     groups.lease.sort(byPromotedPriority);
     groups.pg.sort(byPromotedPriority);
     groups.shortstay.sort(byPromotedPriority);
