@@ -1159,7 +1159,7 @@ main.tab-explore .empty-state{display:none !important}
 .viewer-owner .prop-icon-call{display:none !important}
 /* Rent tab: Promoted listings slide horizontally instead of wrapping into a grid. */
 #promotedSection{position:relative}
-.prop-grid.promo-slider{display:flex;grid-template-columns:none;gap:16px;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;scroll-padding-left:20px;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-top:4px;padding-bottom:10px}
+.prop-grid.promo-slider{display:flex;grid-template-columns:none;gap:16px;overflow-x:auto;overflow-y:hidden;scroll-snap-type:none;scroll-behavior:auto;scroll-padding-left:20px;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-top:4px;padding-bottom:10px}
 .prop-grid.promo-slider::-webkit-scrollbar{display:none}
 .prop-grid.promo-slider > .prop-card{flex:0 0 calc((100% - 40px - 48px) / 4);min-width:260px;scroll-snap-align:start}
 @media (max-width:1100px){.prop-grid.promo-slider > .prop-card{flex-basis:calc((100% - 40px - 32px) / 3)}}
@@ -9344,46 +9344,53 @@ function setEmptyStateContent() {
 }
 
 // Rent tab only: the Promoted row becomes a horizontal slider with no buttons.
-// It slides one card at a time on its own — forward to the end, then back to
-// the start, and so on. Hover / touch / manual scroll pauses it; users can
-// swipe left or right at any time.
-let _promoTimer = null, _promoPaused = false, _promoDir = 1, _promoResume = null;
-function promoAutoStep() {
+// It glides continuously and smoothly (frame-by-frame, constant speed) to the
+// end, pauses a moment, then glides back to the start, and so on. Hover /
+// touch / manual scroll holds it; users can swipe left or right any time and
+// it picks up from wherever they left it.
+let _promoRAF = null, _promoPos = 0, _promoDir = 1, _promoPaused = false, _promoLast = 0, _promoDwellUntil = 0, _promoResume = null;
+const PROMO_SPEED = 0.04; // pixels per millisecond (~40px/s) — gentle and steady
+function promoFrame(ts) {
   const grid = document.getElementById('promotedGrid');
-  if (!grid) return;
-  const max = grid.scrollWidth - grid.clientWidth;
-  if (max <= 4) return;
-  if (grid.scrollLeft >= max - 4) _promoDir = -1;
-  else if (grid.scrollLeft <= 4) _promoDir = 1;
-  const card = grid.querySelector('.prop-card');
-  const step = card ? card.getBoundingClientRect().width + 16 : grid.clientWidth * 0.8;
-  grid.scrollBy({ left: _promoDir * step, behavior: 'smooth' });
+  if (!grid || currentTab !== 'Rent' || !grid.classList.contains('promo-slider')) { _promoRAF = null; _promoLast = 0; return; }
+  const dt = _promoLast ? Math.min(ts - _promoLast, 50) : 16;
+  _promoLast = ts;
+  if (!_promoPaused && !document.hidden && ts >= _promoDwellUntil) {
+    const max = grid.scrollWidth - grid.clientWidth;
+    if (max > 4) {
+      // If the user moved it by hand, continue from where they left it.
+      if (Math.abs(grid.scrollLeft - _promoPos) > 1.5) _promoPos = grid.scrollLeft;
+      _promoPos += _promoDir * PROMO_SPEED * dt;
+      if (_promoPos >= max) { _promoPos = max; _promoDir = -1; _promoDwellUntil = ts + 900; }
+      else if (_promoPos <= 0) { _promoPos = 0; _promoDir = 1; _promoDwellUntil = ts + 900; }
+      grid.scrollLeft = _promoPos;
+    }
+  } else {
+    _promoPos = grid.scrollLeft;
+  }
+  _promoRAF = requestAnimationFrame(promoFrame);
 }
 function setupPromoSlider() {
   const grid = document.getElementById('promotedGrid');
   const sec = document.getElementById('promotedSection');
   if (!grid || !sec) return;
-  clearInterval(_promoTimer); _promoTimer = null;
   const on = currentTab === 'Rent' && !isListView;
   grid.classList.toggle('promo-slider', on);
   sec.classList.toggle('promo-slider-on', on);
-  if (!on) return;
+  if (!on) { if (_promoRAF) cancelAnimationFrame(_promoRAF); _promoRAF = null; _promoLast = 0; return; }
   if (!grid.dataset.sliderBound) {
     grid.dataset.sliderBound = '1';
     const hold = () => { _promoPaused = true; clearTimeout(_promoResume); };
-    const release = (ms) => { clearTimeout(_promoResume); _promoResume = setTimeout(() => { _promoPaused = false; }, ms); };
+    const release = (ms) => { clearTimeout(_promoResume); _promoResume = setTimeout(() => { _promoPos = grid.scrollLeft; _promoPaused = false; }, ms); };
     grid.addEventListener('mouseenter', hold);
-    grid.addEventListener('mouseleave', () => release(800));
+    grid.addEventListener('mouseleave', () => release(600));
     grid.addEventListener('touchstart', hold, { passive: true });
-    grid.addEventListener('touchend', () => release(5000), { passive: true });
-    grid.addEventListener('touchcancel', () => release(5000), { passive: true });
-    grid.addEventListener('wheel', () => { hold(); release(5000); }, { passive: true });
+    grid.addEventListener('touchend', () => release(4000), { passive: true });
+    grid.addEventListener('touchcancel', () => release(4000), { passive: true });
+    grid.addEventListener('wheel', () => { hold(); release(4000); }, { passive: true });
   }
-  _promoDir = 1;
-  _promoTimer = setInterval(() => {
-    if (_promoPaused || document.hidden || currentTab !== 'Rent') return;
-    promoAutoStep();
-  }, 3000);
+  _promoPos = grid.scrollLeft; _promoDir = 1; _promoLast = 0; _promoDwellUntil = 0;
+  if (!_promoRAF) _promoRAF = requestAnimationFrame(promoFrame);
 }
 window.addEventListener('resize', () => { if (currentTab === 'Rent') setupPromoSlider(); });
 
