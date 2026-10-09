@@ -1166,9 +1166,11 @@ main.tab-explore .empty-state{display:none !important}
 .prop-grid.promo-slider::-webkit-scrollbar{display:none}
 .prop-grid.promo-slider,[id$="BookedGrid"]{will-change:scroll-position;overscroll-behavior-x:contain}
 .prop-grid.promo-slider > .prop-card,[id$="BookedGrid"] > .prop-card{translate:var(--gfrac,0px) 0}
-.prop-grid.promo-slider > .prop-card{flex:0 0 calc((100% - 40px - 48px) / 4);min-width:260px;scroll-snap-align:start}
-@media (max-width:1100px){.prop-grid.promo-slider > .prop-card{flex-basis:calc((100% - 40px - 32px) / 3)}}
-@media (max-width:700px){.prop-grid.promo-slider{gap:8px;scroll-padding-left:12px}.prop-grid.promo-slider > .prop-card{flex-basis:calc((100% - 24px - 8px) / 2);min-width:0}}
+.prop-grid.promo-slider > .prop-card{flex:0 0 var(--promo-card-w, calc((100% - 48px) / 4));width:var(--promo-card-w, auto);min-width:0;scroll-snap-align:start}
+/* Fallbacks only (used until JS measures the real Rent grid track): flex-basis % is already
+   relative to the content box, so the container padding must NOT be subtracted again. */
+@media (max-width:1100px){.prop-grid.promo-slider > .prop-card{flex-basis:var(--promo-card-w, calc((100% - 32px) / 3))}}
+@media (max-width:700px){.prop-grid.promo-slider{gap:8px;scroll-padding-left:12px}.prop-grid.promo-slider > .prop-card{flex-basis:var(--promo-card-w, calc((100% - 8px) / 2))}}
 .pre-avail-empty{grid-column:1/-1;display:flex;flex-direction:column;align-items:center;gap:4px;margin:6px auto 14px;padding:16px 20px;width:100%;max-width:420px;box-sizing:border-box;text-align:center;background:var(--bg-2,#fff);border:1px dashed var(--border,#e5d3d6);border-radius:14px}
 .pre-avail-empty svg{width:22px;height:22px;stroke:#d13a4d;fill:none;stroke-width:1.8;opacity:.8;margin-bottom:2px}
 .pre-avail-empty-title{font-size:14px;font-weight:700;color:var(--text,#222)}
@@ -9650,6 +9652,7 @@ function renderCards() {
   syncChipRowFade();
   setupPromoSlider();
   setupUpcomingSlider();
+  syncPromoCardWidth(); // Promoted + Pre-available cards = exact Rent card width
 
   // Premium Services / Honest Reviews cards are fixed-width horizontal
   // scroll strips, but property cards are a fluid CSS Grid (auto-fill) —
@@ -9747,6 +9750,32 @@ let _chipRowFadeTimer = null;
 window.addEventListener('resize', () => {
   clearTimeout(_chipRowFadeTimer);
   _chipRowFadeTimer = setTimeout(syncChipRowFade, 150);
+});
+
+// Promoted / Pre-available sliders must have cards EXACTLY as wide as Rent's grid
+// cards. Rent uses repeat(auto-fill, minmax(260px,1fr)) (+ mobile overrides), whose
+// column count/width no flex formula can mirror. So drop a hidden probe .prop-grid
+// next to each slider (same parent => same width, padding, gap, media queries),
+// read the browser's resolved first column track, and use that as the card width.
+function syncPromoCardWidth() {
+  ['promotedGrid', 'upcomingGrid'].forEach(id => {
+    const g = document.getElementById(id);
+    if (!g || !g.classList.contains('promo-slider') || !g.parentNode) return;
+    const probe = document.createElement('div');
+    probe.className = 'prop-grid';
+    probe.setAttribute('aria-hidden', 'true');
+    probe.style.cssText = 'visibility:hidden;pointer-events:none;height:0;min-height:0;margin:0;overflow:hidden';
+    probe.innerHTML = '<div style="height:0"></div>';
+    g.parentNode.insertBefore(probe, g);
+    const tracks = getComputedStyle(probe).gridTemplateColumns.split(' ');
+    probe.remove();
+    const w = parseFloat(tracks[0]);
+    if (w > 0) g.style.setProperty('--promo-card-w', w + 'px');
+  });
+}
+window.addEventListener('resize', () => {
+  clearTimeout(window._promoWidthTimer);
+  window._promoWidthTimer = setTimeout(syncPromoCardWidth, 100);
 });
 
 function syncScrollCardWidth() {
