@@ -1601,8 +1601,11 @@ main.tab-explore .empty-state{display:none !important}
   .preav-sub .s{display:inline}
   .preav-close{top:10px;right:10px;width:38px;height:38px}
   .preav-body{padding-bottom:16px}
-  .preav-grid{gap:12px;padding:4px 14px 12px;scroll-padding-left:14px}
-  .preav-grid > .prop-card{flex-basis:82%;width:82%}
+  /* Mobile: 2 cards visible at a time, equal width, swipe horizontally */
+  .preav-grid{gap:8px;padding:4px 10px 12px;scroll-padding-left:10px;scroll-snap-type:x mandatory}
+  .preav-grid > .prop-card{flex:0 0 calc((100% - 8px) / 2);width:calc((100% - 8px) / 2);scroll-snap-align:start}
+  /* Same card look as the main listings grid: square photo, single-line price ribbon (rent left, deposit right) */
+  .preav-grid .prop-img{aspect-ratio:1/1;min-height:0}
 }
 
 /* ─── Festive Wish Modal (reusable — shows a greeting image on chosen dates) ─── */
@@ -19341,12 +19344,14 @@ function showPreAvailModal() {
   ov.classList.add('open');
   document.documentElement.classList.add('preav-lock');
   observeCardImgs(grid);
+  preavAutoStart();
 }
 function closePreAvailModal() {
   var ov = document.getElementById('preavOverlay');
   if (!ov.classList.contains('open')) return;
   ov.classList.remove('open');
   document.documentElement.classList.remove('preav-lock');
+  preavAutoStop();
 }
 function preavSyncNav() {
   var g = document.getElementById('preavGrid');
@@ -19354,6 +19359,70 @@ function preavSyncNav() {
   document.getElementById('preavPrev').classList.toggle('hide', g.scrollLeft <= 4);
   document.getElementById('preavNext').classList.toggle('hide', g.scrollLeft >= max);
 }
+// Auto-slide: glides one step every 4s (2 cards on mobile, 1 on desktop) with a slow eased
+// animation, then loops back to the start. Pauses while the user touches/hovers/scrolls.
+var preavTimer = null, preavResume = null, preavRaf = null;
+function preavCancelAnim() {
+  if (preavRaf) { cancelAnimationFrame(preavRaf); preavRaf = null; }
+  var g = document.getElementById('preavGrid');
+  g.style.scrollSnapType = '';
+}
+function preavGlide(g, to, duration) {
+  preavCancelAnim();
+  var from = g.scrollLeft, dist = to - from;
+  if (Math.abs(dist) < 1) return;
+  g.style.scrollSnapType = 'none'; // snap would fight the animation frame by frame
+  var t0 = null;
+  function ease(t){ return t < .5 ? 4*t*t*t : 1 - Math.pow(-2*t + 2, 3)/2; } // easeInOutCubic
+  function frame(ts){
+    if (t0 === null) t0 = ts;
+    var t = Math.min((ts - t0) / duration, 1);
+    g.scrollLeft = from + dist * ease(t);
+    if (t < 1) preavRaf = requestAnimationFrame(frame);
+    else { preavRaf = null; g.style.scrollSnapType = ''; }
+  }
+  preavRaf = requestAnimationFrame(frame);
+}
+function preavAutoStep() {
+  var g = document.getElementById('preavGrid');
+  var first = g.firstElementChild;
+  if (!first || g.scrollWidth <= g.clientWidth + 4) return;
+  var gap = parseFloat(getComputedStyle(g).columnGap) || 0;
+  var per = window.matchMedia('(max-width:700px)').matches ? 2 : 1;
+  var step = (first.offsetWidth + gap) * per;
+  var max = g.scrollWidth - g.clientWidth;
+  if (g.scrollLeft >= max - 4) preavGlide(g, 0, 2000);
+  else preavGlide(g, Math.min(g.scrollLeft + step, max), 1400);
+}
+function preavAutoStart() {
+  preavAutoStop();
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  preavTimer = setInterval(preavAutoStep, 4500);
+}
+function preavAutoStop() {
+  preavCancelAnim();
+  clearInterval(preavTimer); preavTimer = null;
+  clearTimeout(preavResume); preavResume = null;
+}
+function preavAutoPause(delay) {
+  preavCancelAnim();
+  clearInterval(preavTimer); preavTimer = null;
+  clearTimeout(preavResume);
+  if (delay) preavResume = setTimeout(function(){
+    if (document.getElementById('preavOverlay').classList.contains('open')) preavAutoStart();
+  }, delay);
+}
+(function(){
+  var g = document.getElementById('preavGrid');
+  g.addEventListener('touchstart', function(){ preavAutoPause(5000); }, { passive: true });
+  g.addEventListener('touchmove', function(){ preavAutoPause(5000); }, { passive: true });
+  g.addEventListener('wheel', function(){ preavAutoPause(5000); }, { passive: true });
+  g.addEventListener('mouseenter', function(){ preavAutoPause(0); });
+  g.addEventListener('mouseleave', function(){ preavAutoPause(1500); });
+  ['preavPrev','preavNext'].forEach(function(id){
+    document.getElementById(id).addEventListener('click', function(){ preavAutoPause(5000); });
+  });
+})();
 document.getElementById('preavGrid').addEventListener('scroll', preavSyncNav, { passive: true });
 window.addEventListener('resize', preavSyncNav);
 document.getElementById('preavPrev').addEventListener('click', function(){ document.getElementById('preavGrid').scrollBy({ left: -640, behavior: 'smooth' }); });
