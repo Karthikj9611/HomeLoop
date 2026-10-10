@@ -7047,7 +7047,7 @@ main.tab-explore .empty-state{display:none !important}
       <input class="form-input" type="url" id="f-videoUrl" />
     </div>
     <div class="form-group" id="imgFormGroup">
-      <label class="form-label">Property images (optional)</label>
+      <label class="form-label">Property images</label>
       <div class="img-row" id="imgAddControls">
         <div class="img-btns">
           <button type="button" class="img-btn-sec" onclick="document.getElementById('f-imgFileInput').click()">📁 Upload</button>
@@ -17915,6 +17915,7 @@ function renderFImages() {
     '</div>'
   ).join('');
   hint.style.display = fImages.length ? 'none' : 'block';
+  if (fImages.length) { const g = document.getElementById('imgFormGroup'); if (g && g.classList.contains('has-error')) { g.classList.remove('has-error'); const m = g.querySelector('.field-error-text'); if (m) m.remove(); } }
   if (orderHint) orderHint.style.display = fImages.length > 1 ? 'block' : 'none';
 }
 function removeFImage(i) {
@@ -18279,9 +18280,9 @@ function waSetStatus(st, kind, text) {
   st.textContent = text;
 }
 
-function waApplyMessage() {
+function waApplyMessage(srcText) {
   var ta = document.getElementById('waPasteText'), st = document.getElementById('waPasteStatus');
-  var parsed = waParseMessage(ta ? ta.value : '');
+  var parsed = waParseMessage(typeof srcText === 'string' ? srcText : (ta ? ta.value : ''));
   var keys = Object.keys(parsed), report = { filled: [], skipped: [], unmatched: [] };
   if (!keys.length) { waSetStatus(st, 'err', 'No "Key: value" lines found. Paste the full message.'); return; }
   var liveOnly = (typeof LIVE_ONLY_FIELD_IDS !== 'undefined') ? LIVE_ONLY_FIELD_IDS : [];
@@ -18361,7 +18362,29 @@ function waSamplePaste(e) {
 }
 function waToggleEditSample() {
   var pre = document.getElementById('waSampleText'); if (!pre) return;
-  waSetSampleEditing(pre.getAttribute('contenteditable') !== 'true');
+  var editing = pre.classList.contains('wa-editing');
+  if (!editing) { waSetSampleEditing(true); return; }
+  waSampleDone();
+}
+var waSampleBusy = false;
+async function waSampleDone() {
+  var pre = document.getElementById('waSampleText'); if (!pre || waSampleBusy) return;
+  var txt = (pre.innerText || pre.textContent || '').trim();
+  if (!Object.keys(waParseMessage(txt)).length) {
+    if (typeof showToast === 'function') showToast('No "Key: value" lines found. Keep the keys and edit only the values.', 'error');
+    return;
+  }
+  waSampleBusy = true;
+  try {
+    var ok = await waConfirm({
+      title: 'Fill the form?',
+      message: 'Fill the listing form with your edited message? Matching fields will be replaced.',
+      okText: 'Fill form', cancelText: 'Keep editing', variant: 'info'
+    });
+    if (!ok) return;            // stay in edit mode so nothing is lost
+    waApplyMessage(txt);
+    waCloseSample();            // leaves edit mode + closes the sample modal
+  } finally { waSampleBusy = false; }
 }
 function waOpenSample() {
   var m = document.getElementById('waSampleModal'); if (!m) return;
@@ -18392,8 +18415,8 @@ function waClearMsg() {
   try { localStorage.removeItem(WA_DRAFT_KEY); } catch (e) {}
   document.getElementById('waModalErr').textContent = '';
 }
-function waConfirm() {
-  var o = { title: 'Fill the form?', message: 'Fill the listing form from this message? Matching fields will be replaced.', okText: 'Fill form', variant: 'info' };
+function waConfirm(opts) {
+  var o = Object.assign({ title: 'Fill the form?', message: 'Fill the listing form from this message? Matching fields will be replaced.', okText: 'Fill form', variant: 'info' }, opts || {});
   if (typeof showConfirmDialog === 'function') return showConfirmDialog(o);
   if (typeof showConfirmModal === 'function') return showConfirmModal(o);
   return Promise.resolve(window.confirm(o.message));
@@ -18696,6 +18719,19 @@ function markRequiredLabels() {
     const hasStar = Array.from(label.querySelectorAll('span')).some(s => s.textContent.trim() === '*');
     if (!hasStar) {
       label.insertAdjacentHTML('beforeend', ' <span style="color:var(--brand)">*</span>');
+    }
+  });
+  // Property images is mandatory too (checked in validateListingForm) but its
+  // controls are file inputs, so the loop above never reaches it.
+  const imgLabel = document.querySelector('#imgFormGroup > .form-label');
+  if (imgLabel && !imgLabel.querySelector('span')) {
+    imgLabel.insertAdjacentHTML('beforeend', ' <span style="color:var(--brand)">*</span>');
+  }
+  // Convention now: a * marks mandatory fields, so drop "(optional)" from every
+  // other label in the listing form.
+  document.querySelectorAll('#addModal .form-label').forEach(l => {
+    if (/\(\s*(?:₹,\s*)?optional\s*\)/i.test(l.innerHTML)) {
+      l.innerHTML = l.innerHTML.replace(/\s*\(₹,\s*optional\)/i, ' (₹)').replace(/\s*\(optional\)/i, '');
     }
   });
 }
