@@ -249,14 +249,12 @@ ul{list-style:none}
   .logo-mark-wrap::after{animation:none;display:none}
 }
 .nav-tabs{
-  display:flex;align-items:center;gap:6px;
+  display:flex;align-items:center;gap:4px;
   flex:1;justify-content:center;
 }
 .nav-tab{
   display:flex;flex-direction:column;align-items:center;gap:2px;
-  padding:7px 8px;
-  /* equal fixed width so the bold active tab never changes spacing */
-  flex:0 0 108px;width:108px;box-sizing:border-box;
+  padding:7px 18px;
   font-size:12px;font-weight:500;color:var(--text-2);
   border-radius:99px;
   transition:color .2s ease,background .25s ease,box-shadow .25s ease,transform .2s cubic-bezier(.34,1.56,.64,1);
@@ -596,7 +594,7 @@ main.tab-explore .empty-state{display:none !important}
 .results-header{padding:0 20px}
 .results-header{
   display:flex;align-items:center;justify-content:space-between;
-  margin-bottom:4px;gap:12px;
+  margin-bottom:16px;gap:12px;
 }
 .results-count{display:none}
 
@@ -689,17 +687,6 @@ main.tab-explore .empty-state{display:none !important}
   background:rgba(255,255,255,.5);transition:background .3s,width .3s;
 }
 .ad-dot.active{width:16px;border-radius:3px;background:#fff}
-/* Slimmer desktop banner (mobile keeps its own sizing in the max-width:640px block) */
-@media(min-width:641px){
-  .ad-banner{height:54px;border-radius:16px}
-  .ad-slide{gap:14px}
-  .ad-slide-icon{width:30px;height:30px;font-size:16px}
-  .ad-slide-cta{padding:6px 16px;font-size:12.5px}
-  /* label sits above the headline text (icon 30 + gap 14 + padding 24 = 68px), not over the icon */
-  .ad-slide-audience{top:5px;left:68px}
-  .ad-slide-text{padding-top:6px}
-  .ad-dots{bottom:5px}
-}
 .view-toggle{display:flex;gap:4px}
 .view-btn{
   width:32px;height:32px;border-radius:7px;
@@ -1177,8 +1164,6 @@ main.tab-explore .empty-state{display:none !important}
 #promotedSection{position:relative}
 .prop-grid.promo-slider{display:flex;grid-template-columns:none;gap:16px;overflow-x:auto;overflow-y:hidden;scroll-snap-type:none;scroll-behavior:auto;scroll-padding-left:20px;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-top:4px;padding-bottom:10px}
 .prop-grid.promo-slider::-webkit-scrollbar{display:none}
-/* An empty slider (no cards) must take up no space — its own padding was adding ~14px between the banner and the first section header on the Promoted tab. */
-.prop-grid.promo-slider:empty{display:none}
 .prop-grid.promo-slider,[id$="BookedGrid"]{will-change:scroll-position;overscroll-behavior-x:contain}
 .prop-grid.promo-slider > .prop-card,[id$="BookedGrid"] > .prop-card{translate:var(--gfrac,0px) 0}
 .prop-grid.promo-slider > .prop-card{flex:0 0 var(--promo-card-w, calc((100% - 48px) / 4));width:var(--promo-card-w, auto);min-width:0;scroll-snap-align:start}
@@ -6371,6 +6356,95 @@ main.tab-explore .empty-state{display:none !important}
          inside it can ever be visible or interactive while just viewing a
          listing. -->
     <div id="listingFormSections">
+
+    <!-- ===== PASTE WHATSAPP MESSAGE (Rent only) ===== -->
+    <div id="waPasteBox" style="margin-bottom:14px">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <button type="button" onclick="waOpenModal()" style="background:var(--brand);color:#fff;border:none;border-radius:9px;padding:0 16px;height:36px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">📋 Paste WhatsApp message</button>
+        <button type="button" onclick="waOpenSample()" style="background:transparent;color:var(--brand);border:1.5px solid var(--brand);border-radius:9px;padding:0 16px;height:36px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">📄 Sample message</button>
+        <span id="waPasteStatus" style="font-size:12px;font-weight:600;flex:1;min-width:140px"></span>
+      </div>
+      <div id="waModal" role="dialog" aria-modal="true" aria-label="Paste WhatsApp message" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.5);align-items:center;justify-content:center;padding:16px">
+        <div style="background:var(--bg,#fff);color:var(--text,#222);border-radius:16px;width:100%;max-width:560px;max-height:92vh;overflow:auto;padding:18px 20px;box-shadow:0 12px 40px rgba(0,0,0,.3)">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+            <div style="font-size:16px;font-weight:800">Paste WhatsApp message</div>
+            <button type="button" onclick="waCloseModal()" aria-label="Close" style="background:var(--brand);color:#fff;border:none;border-radius:50%;width:30px;height:30px;font-size:16px;line-height:1;cursor:pointer">✕</button>
+          </div>
+          <textarea class="form-input" id="waPasteText" rows="11" oninput="waSaveDraft()" style="width:100%;resize:vertical;color:var(--text,#222)" placeholder="Paste the owner's message here"></textarea>
+          <div id="waModalErr" style="font-size:12px;font-weight:600;color:#c0392b;min-height:16px;margin-top:6px"></div>
+          <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px;flex-wrap:wrap">
+            <button type="button" onclick="waClearMsg()" style="background:transparent;border:1.5px solid var(--border-2,#d0d0d0);color:var(--text,#222);border-radius:9px;padding:0 16px;height:36px;font-size:13px;font-weight:700;cursor:pointer">Clear</button>
+            <button type="button" onclick="waCloseModal()" style="background:transparent;border:1.5px solid var(--border-2,#d0d0d0);color:var(--text,#222);border-radius:9px;padding:0 16px;height:36px;font-size:13px;font-weight:700;cursor:pointer">Close</button>
+            <button type="button" onclick="waSubmitMsg()" style="background:var(--brand);color:#fff;border:none;border-radius:9px;padding:0 20px;height:36px;font-size:13px;font-weight:700;cursor:pointer">Submit</button>
+          </div>
+        </div>
+      </div>
+      <style>
+        #waSampleText.wa-editing{background:#fffbe6 !important}
+        #waSampleText.wa-editing .wa-k{color:#1e8449 !important}
+        #waSampleText.wa-editing .wa-v{color:#222 !important;display:inline-block;max-width:100%;vertical-align:top;min-width:2ch;background:#fff;border-radius:4px;padding:0 4px;outline:1px dashed #1e8449;cursor:text}
+        #waSampleText.wa-editing .wa-v:focus{outline:2px solid #1e8449}
+        #waSampleText.wa-editing .wa-o{color:#9a8f5a !important}
+      </style>
+      <div id="waSampleModal" role="dialog" aria-modal="true" aria-label="Sample WhatsApp message" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.5);align-items:center;justify-content:center;padding:16px">
+        <div style="background:var(--bg,#fff);color:var(--text,#222);border-radius:16px;width:100%;max-width:560px;max-height:92vh;overflow:auto;padding:18px 20px;box-shadow:0 12px 40px rgba(0,0,0,.3)">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+            <div style="font-size:16px;font-weight:800">Sample WhatsApp message</div>
+            <button type="button" onclick="waCloseSample()" aria-label="Close" style="background:var(--brand);color:#fff;border:none;border-radius:50%;width:30px;height:30px;font-size:16px;line-height:1;cursor:pointer">✕</button>
+          </div>
+          <div style="font-size:12px;font-weight:600;color:var(--text-3,#777);margin-bottom:10px">Keep the keys, change the values</div>
+          <pre id="waSampleText" contenteditable="false" spellcheck="false" onpaste="waSamplePaste(event)" onkeydown="waSampleKey(event)" style="outline:none;cursor:default;margin:0;max-height:55vh;overflow:auto;white-space:pre-wrap;word-break:break-word;font:12.5px/1.6 inherit;color:var(--text,#222);border:1px dashed var(--border-2,#d0d0d0);border-radius:10px;padding:12px 14px;background:var(--bg-2,#fafafa)"><span class="wa-k" style="color:var(--brand);font-weight:700">Listed by:</span> <span class="wa-v" style="color:#1f6fb2">Owner</span><span class="wa-o" style="color:#8a8a8a"> [Owner | Agent | Builder]</span>
+<span class="wa-k" style="color:var(--brand);font-weight:700">Property name:</span> <span class="wa-v" style="color:#1f6fb2">Sri Sai Residency</span>
+<span class="wa-k" style="color:var(--brand);font-weight:700">Area:</span> <span class="wa-v" style="color:#1f6fb2">HSR Layout</span>
+<span class="wa-k" style="color:var(--brand);font-weight:700">City:</span> <span class="wa-v" style="color:#1f6fb2">Bangalore</span>
+<span class="wa-k" style="color:var(--brand);font-weight:700">Full address:</span> <span class="wa-v" style="color:#1f6fb2">24, 27th Main Rd, Sector 2, HSR Layout, Bengaluru, Karnataka 560102</span>
+<span class="wa-k" style="color:var(--brand);font-weight:700">Pincode:</span> <span class="wa-v" style="color:#1f6fb2">560102</span>
+<span class="wa-k" style="color:var(--brand);font-weight:700">Google Maps location link:</span> <span class="wa-v" style="color:#1f6fb2">https://maps.app.goo.gl/Xk3q9TrPz7YhA2eM8</span>
+<span class="wa-k" style="color:var(--brand);font-weight:700">Owner name:</span> <span class="wa-v" style="color:#1f6fb2">Ramesh Kumar</span>
+<span class="wa-k" style="color:var(--brand);font-weight:700">Phone:</span> <span class="wa-v" style="color:#1f6fb2">9876543210</span>
+<span class="wa-k" style="color:var(--brand);font-weight:700">Alternate number:</span> <span class="wa-v" style="color:#1f6fb2">9845012345</span>
+<span class="wa-k" style="color:var(--brand);font-weight:700">Caretaker number:</span> <span class="wa-v" style="color:#1f6fb2">9900112233</span>
+<span class="wa-k" style="color:var(--brand);font-weight:700">Email:</span> <span class="wa-v" style="color:#1f6fb2">ramesh.kumar@gmail.com</span>
+<span class="wa-k" style="color:var(--brand);font-weight:700">Preferred contact time:</span> <span class="wa-v" style="color:#1f6fb2">Evening</span><span class="wa-o" style="color:#8a8a8a"> [Any | Morning | Afternoon | Evening]</span>
+<span class="wa-k" style="color:var(--brand);font-weight:700">Owner address:</span> <span class="wa-v" style="color:#1f6fb2">12, 5th Cross, Jayanagar 4th Block, Bangalore 560011</span>
+<span class="wa-k" style="color:var(--brand);font-weight:700">Monthly rent:</span> <span class="wa-v" style="color:#1f6fb2">28000</span>
+<span class="wa-k" style="color:var(--brand);font-weight:700">Security deposit:</span> <span class="wa-v" style="color:#1f6fb2">150000</span>
+<span class="wa-k" style="color:var(--brand);font-weight:700">Maintenance:</span> <span class="wa-v" style="color:#1f6fb2">2500</span>
+<span class="wa-k" style="color:var(--brand);font-weight:700">Escalation:</span> <span class="wa-v" style="color:#1f6fb2">5</span>
+<span class="wa-k" style="color:var(--brand);font-weight:700">Electricity:</span> <span class="wa-v" style="color:#1f6fb2">Separate</span><span class="wa-o" style="color:#8a8a8a"> [Included | Separate | Shared meter]</span>
+<span class="wa-k" style="color:var(--brand);font-weight:700">Water:</span> <span class="wa-v" style="color:#1f6fb2">Kaveri</span><span class="wa-o" style="color:#8a8a8a"> [Included | Separate | Tanker | Kaveri | Borewell]</span>
+<span class="wa-k" style="color:var(--brand);font-weight:700">Price negotiable:</span> <span class="wa-v" style="color:#1f6fb2">Yes</span><span class="wa-o" style="color:#8a8a8a"> [Yes | No]</span>
+<span class="wa-k" style="color:var(--brand);font-weight:700">Property type:</span> <span class="wa-v" style="color:#1f6fb2">Apartment</span><span class="wa-o" style="color:#8a8a8a"> [Apartment | House | Standalone | Villa | Studio | Duplex | Penthouse | Bungalow | Loft | Cottage | Farmhouse | PG | Hostel | Homestay | Plot / Land]</span>
+<span class="wa-k" style="color:var(--brand);font-weight:700">BHK:</span> <span class="wa-v" style="color:#1f6fb2">2 BHK</span><span class="wa-o" style="color:#8a8a8a"> [1 RK | 1 BHK | 2 BHK | 3 BHK | 4 BHK]</span>
+<span class="wa-k" style="color:var(--brand);font-weight:700">Floor:</span> <span class="wa-v" style="color:#1f6fb2">3</span><span class="wa-o" style="color:#8a8a8a"> [0 to 9 (0 = Ground)]</span>
+<span class="wa-k" style="color:var(--brand);font-weight:700">Flat no:</span> <span class="wa-v" style="color:#1f6fb2">B-304</span>
+<span class="wa-k" style="color:var(--brand);font-weight:700">Area sqft:</span> <span class="wa-v" style="color:#1f6fb2">1150</span>
+<span class="wa-k" style="color:var(--brand);font-weight:700">Bathrooms:</span> <span class="wa-v" style="color:#1f6fb2">2</span><span class="wa-o" style="color:#8a8a8a"> [1 | 2 | 3 | 4+]</span>
+<span class="wa-k" style="color:var(--brand);font-weight:700">Toilet type:</span> <span class="wa-v" style="color:#1f6fb2">Western</span><span class="wa-o" style="color:#8a8a8a"> [Western | Indian | Both]</span>
+<span class="wa-k" style="color:var(--brand);font-weight:700">Furnishing:</span> <span class="wa-v" style="color:#1f6fb2">Semi</span><span class="wa-o" style="color:#8a8a8a"> [Fully | Semi | Basic]</span>
+<span class="wa-k" style="color:var(--brand);font-weight:700">Kitchen type:</span> <span class="wa-v" style="color:#1f6fb2">L-Shaped</span><span class="wa-o" style="color:#8a8a8a"> [Straight | Parallel | L-Shaped | U-Shaped | Open | Closed | Island | Modular]</span>
+<span class="wa-k" style="color:var(--brand);font-weight:700">Facing:</span> <span class="wa-v" style="color:#1f6fb2">East</span><span class="wa-o" style="color:#8a8a8a"> [North | South | East | West | North-East | North-West | South-East | South-West]</span>
+<span class="wa-k" style="color:var(--brand);font-weight:700">Age of property:</span> <span class="wa-v" style="color:#1f6fb2">4</span><span class="wa-o" style="color:#8a8a8a"> [New | 1 to 20 years]</span>
+<span class="wa-k" style="color:var(--brand);font-weight:700">Bike parking:</span> <span class="wa-v" style="color:#1f6fb2">1</span><span class="wa-o" style="color:#8a8a8a"> [0 to 4]</span>
+<span class="wa-k" style="color:var(--brand);font-weight:700">Car parking:</span> <span class="wa-v" style="color:#1f6fb2">1</span><span class="wa-o" style="color:#8a8a8a"> [0 to 4]</span>
+<span class="wa-k" style="color:var(--brand);font-weight:700">Tenant preference:</span> <span class="wa-v" style="color:#1f6fb2">Family, Bachelor</span><span class="wa-o" style="color:#8a8a8a"> [Any | Family | Bachelor | Female only]</span>
+<span class="wa-k" style="color:var(--brand);font-weight:700">No. of persons allowed:</span> <span class="wa-v" style="color:#1f6fb2">4</span>
+<span class="wa-k" style="color:var(--brand);font-weight:700">Available from:</span> <span class="wa-v" style="color:#1f6fb2">01/11/2026</span>
+<span class="wa-k" style="color:var(--brand);font-weight:700">Notice period:</span> <span class="wa-v" style="color:#1f6fb2">2 Months</span><span class="wa-o" style="color:#8a8a8a"> [15 Days | 1 Month | 2 Months | 3 Months]</span>
+<span class="wa-k" style="color:var(--brand);font-weight:700">Contract term:</span> <span class="wa-v" style="color:#1f6fb2">11 Months</span><span class="wa-o" style="color:#8a8a8a"> [Any | 6 Months | 11 Months | 12 Months | 24 Months | 36 Months | 48 Months | 48+ Months]</span>
+<span class="wa-k" style="color:var(--brand);font-weight:700">Pets allowed:</span> <span class="wa-v" style="color:#1f6fb2">No</span><span class="wa-o" style="color:#8a8a8a"> [Yes | No | Restricted]</span>
+<span class="wa-k" style="color:var(--brand);font-weight:700">Non-veg allowed:</span> <span class="wa-v" style="color:#1f6fb2">Yes</span><span class="wa-o" style="color:#8a8a8a"> [Yes | No]</span>
+<span class="wa-k" style="color:var(--brand);font-weight:700">Amenities:</span> <span class="wa-v" style="color:#1f6fb2">AC x2, Balcony x1, Bed &amp; mattress x2, CCTV, Chimney, Cupboards x3, Elevator, Garden, Geyser x2, Gym, Laundry, Meals included, Microwave, Piped gas connection, Power backup, Refrigerator, RO water filter, Sofa, Washing machine, Wi-Fi</span>
+<span class="wa-k" style="color:var(--brand);font-weight:700">Video tour link:</span> <span class="wa-v" style="color:#1f6fb2">https://youtu.be/dQw4w9WgXcQ</span>
+<span class="wa-k" style="color:var(--brand);font-weight:700">Description:</span> <span class="wa-v" style="color:#1f6fb2">Well maintained 2 BHK in 2nd sector HSR, 5 mins walk to market. East facing, 24x7 water, covered parking.</span></pre>
+          <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:12px">
+            <button type="button" id="waSampleEdit" onclick="waToggleEditSample()" style="background:transparent;border:1.5px solid var(--border-2,#d0d0d0);color:var(--text,#222);border-radius:9px;padding:0 16px;height:36px;font-size:13px;font-weight:700;cursor:pointer">Edit</button>
+            <button type="button" id="waSampleCopy" onclick="waCopySample()" style="background:var(--brand);color:#fff;border:none;border-radius:9px;padding:0 20px;height:36px;font-size:13px;font-weight:700;cursor:pointer">Copy</button>
+            <button type="button" onclick="waCloseSample()" style="background:transparent;border:1.5px solid var(--border-2,#d0d0d0);color:var(--text,#222);border-radius:9px;padding:0 16px;height:36px;font-size:13px;font-weight:700;cursor:pointer">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <!-- ===== 1. BASIC INFORMATION ===== -->
     <div class="lm-section">📋 Basic Information</div>
@@ -14104,7 +14178,11 @@ function applyImportedProperty(p) {
 }
 
 function clearAddModalDraft() {
+  // Keep Status across the clear: resetListingForm() blanks it, which hides the
+  // form sections and the WhatsApp paste button.
+  const _keepType = document.getElementById('f-type').value;
   resetListingForm();
+  document.getElementById('f-type').value = _keepType;
   // resetListingForm() blanket-clears every input, including owner
   // name/phone/email — those should never actually be clearable since
   // they're locked to the signed-up account, so restore them right after.
@@ -18039,7 +18117,299 @@ async function watermarkImageFile(file) {
     img.src = url;
   });
 }
+/* ─── Paste WhatsApp message → auto-fill the Rent form ───────────────────────
+   Owner sends the "Key: value" template over WhatsApp; paste it into the box at
+   the top of the Rent form and every recognised key fills its field. Read-only /
+   disabled fields and the live-captured ones (address, pincode, lat/lng, owner
+   phone/email when locked to the account) are never overwritten. */
+function waPasteToggle(val) {
+  var box = document.getElementById('waPasteBox');
+  if (box) box.style.display = (!val || val === 'Rent' || val === 'For Rent') ? '' : 'none';
+}
+function waNorm(s) { return String(s == null ? '' : s).toLowerCase().replace(/[^a-z0-9]/g, ''); }
+
+var WA_KEY_MAP = {
+  listedby: 'f-listedBy',
+  propertyname: 'f-title', buildingname: 'f-title', title: 'f-title',
+  area: 'f-location', locality: 'f-location', city: 'f-city',
+  fulladdress: 'f-fullAddress', buildingaddress: 'f-fullAddress', pincode: 'f-pincode', pin: 'f-pincode',
+  googlemapslocationlink: 'f-currentLocationLink', googlemapslink: 'f-currentLocationLink',
+  locationlink: 'f-currentLocationLink', currentlocationlink: 'f-currentLocationLink', maplink: 'f-currentLocationLink',
+  ownername: 'f-ownerName', name: 'f-ownerName', phone: 'f-ownerPhone', phonenumber: 'f-ownerPhone', mobile: 'f-ownerPhone',
+  alternatenumber: 'f-ownerAltPhone', alternativenumber: 'f-ownerAltPhone', altnumber: 'f-ownerAltPhone', ownernumber: 'f-ownerAltPhone',
+  caretakernumber: 'f-ownerCaretakerPhone', caretakerphone: 'f-ownerCaretakerPhone',
+  email: 'f-ownerEmail', emailid: 'f-ownerEmail', preferredcontacttime: 'f-contactTime', contacttime: 'f-contactTime',
+  owneraddress: 'f-ownerAddress',
+  monthlyrent: 'f-rent', rent: 'f-rent', securitydeposit: 'f-deposit', deposit: 'f-deposit',
+  maintenance: 'f-maintenance', escalation: 'f-escalation', electricity: 'f-electricityIncluded', water: 'f-waterCharge',
+  pricenegotiable: 'f-negotiable', negotiable: 'f-negotiable',
+  propertytype: 'f-propertyType', bhk: 'f-bhk', floor: 'f-floor', flatno: 'f-flatNo', flatnumber: 'f-flatNo',
+  areasqft: 'f-area', sqft: 'f-area', builtuparea: 'f-area', bathrooms: 'f-baths', bathroom: 'f-baths', toilettype: 'f-toiletType',
+  furnishing: 'f-furnishing', kitchentype: 'f-kitchenType', facing: 'f-facing', ageofproperty: 'f-age', age: 'f-age',
+  bikeparking: 'f-bikepark', carparking: 'f-carpark',
+  tenantpreference: 'tenant', tenant: 'tenant', nooofpersonsallowed: 'f-maxPersons', nofpersonsallowed: 'f-maxPersons', noofpersonsallowed: 'f-maxPersons', personsallowed: 'f-maxPersons',
+  availablefrom: 'f-avail', noticeperiod: 'f-noticePeriod', contractterm: 'f-leaseDuration',
+  petsallowed: 'f-petsAllowed', nonvegallowed: 'f-nonVegAllowed',
+  amenities: 'amenities', videotourlink: 'f-videoUrl', videolink: 'f-videoUrl', description: 'f-desc'
+};
+var WA_LABELS = {
+  'f-listedBy': 'Listed by', 'f-title': 'Property name', 'f-location': 'Area', 'f-city': 'City', 'f-fullAddress': 'Full address', 'f-pincode': 'Pincode',
+  'f-currentLocationLink': 'Location link', 'f-ownerName': 'Owner name', 'f-ownerPhone': 'Phone', 'f-ownerAltPhone': 'Alternate number',
+  'f-ownerCaretakerPhone': 'Caretaker number', 'f-ownerEmail': 'Email', 'f-contactTime': 'Contact time', 'f-ownerAddress': 'Owner address',
+  'f-rent': 'Monthly rent', 'f-deposit': 'Security deposit', 'f-maintenance': 'Maintenance', 'f-escalation': 'Escalation',
+  'f-electricityIncluded': 'Electricity', 'f-waterCharge': 'Water', 'f-negotiable': 'Negotiable', 'f-propertyType': 'Property type',
+  'f-bhk': 'BHK', 'f-floor': 'Floor', 'f-flatNo': 'Flat no', 'f-area': 'Area sqft', 'f-baths': 'Bathrooms', 'f-toiletType': 'Toilet type',
+  'f-furnishing': 'Furnishing', 'f-kitchenType': 'Kitchen type', 'f-facing': 'Facing', 'f-age': 'Age', 'f-bikepark': 'Bike parking',
+  'f-carpark': 'Car parking', 'tenant': 'Tenant preference', 'f-maxPersons': 'No. of persons', 'f-avail': 'Available from',
+  'f-noticePeriod': 'Notice period', 'f-leaseDuration': 'Contract term', 'f-petsAllowed': 'Pets', 'f-nonVegAllowed': 'Non-veg',
+  'amenities': 'Amenities', 'f-videoUrl': 'Video link', 'f-desc': 'Description'
+};
+
+function waParseMessage(text) {
+  var out = {}, lastKey = null;
+  String(text || '').replace(/\r/g, '').split('\n').forEach(function (line) {
+    var clean = line.replace(/^[\s>\-•*·▪️✅☑️👉➡️]+/u, '');
+    var m = clean.match(/^([^:：\-–=]{2,40}?)\s*[:：=]\s*(.*)$/) || clean.match(/^([A-Za-z][A-Za-z .\/&()]{1,40}?)\s+[-–]\s+(.*)$/);
+    if (m) {
+      var k = WA_KEY_MAP[waNorm(m[1].replace(/\(.*?\)/g, ''))];
+      if (k) { lastKey = k; var rv = m[2].replace(/[*_~]/g, '').trim(); if (k !== 'f-desc') rv = rv.replace(/\s*\[[^\]]*\]\s*$/, ''); out[k] = (out[k] ? out[k] + ' ' : '') + rv; return; }
+    }
+    // continuation line (e.g. multi-line description / amenities)
+    if (lastKey && (lastKey === 'f-desc' || lastKey === 'amenities' || lastKey === 'f-ownerAddress') && line.trim()) {
+      out[lastKey] += (lastKey === 'amenities' ? ', ' : ' ') + line.replace(/^[\s\-•*]+/, '').replace(/[*_~]/g, '').trim();
+    }
+  });
+  return out;
+}
+
+function waNum(v) {
+  var s = String(v || '').toLowerCase().replace(/[₹,\s]|rs\.?|inr|\/-/g, '');
+  var m = s.match(/(\d+(?:\.\d+)?)(k|l|lac|lakh|lakhs)?/);
+  if (!m) return '';
+  var n = parseFloat(m[1]);
+  if (m[2] === 'k') n *= 1000; else if (m[2]) n *= 100000;
+  return String(Math.round(n));
+}
+function waDigits(v, len) { var d = String(v || '').replace(/\D/g, ''); return len ? d.slice(-len) : d; }
+
+// Pick the best <option> for a free-text answer. Returns true if one matched.
+function waSetSelect(el, raw) {
+  var r = String(raw || '').trim(); if (!r) return false;
+  var segs = r.split(/\s*[\/|]\s*/);
+  var rn = waNorm(r), opts = Array.prototype.slice.call(el.options).filter(function (o) { return o.value !== '' || o.text.trim() !== 'Select'; });
+  if (segs.length > 1 && segs.every(function (g) { return opts.some(function (op) { return waNorm(op.text) === waNorm(g); }); })) return false;
+  var best = null;
+  function pick(fn) { if (best) return; for (var i = 0; i < opts.length; i++) if (fn(opts[i], waNorm(opts[i].text), waNorm(opts[i].value))) { best = opts[i]; return; } }
+  pick(function (o, t, v) { return t === rn || (v && v === rn); });
+  pick(function (o, t) { return t && (t.indexOf(rn) === 0 || rn.indexOf(t) === 0) && Math.min(t.length, rn.length) >= 2; });
+  if (!best) { // longest option text contained in the answer
+    var c = opts.filter(function (o) { var t = waNorm(o.text); return t && rn.indexOf(t) !== -1; }).sort(function (a, b) { return waNorm(b.text).length - waNorm(a.text).length; });
+    if (c.length) best = c[0];
+  }
+  pick(function (o, t) { return t && rn.length >= 3 && t.indexOf(rn) !== -1; });
+  if (!best) return false;
+  el.value = best.value !== '' ? best.value : best.text;
+  return true;
+}
+
+function waDate(raw) {
+  var s = String(raw || '').trim().toLowerCase(), d = new Date(), pad = function (n) { return String(n).padStart(2, '0'); };
+  var iso = function (y, m, dd) { return y + '-' + pad(m) + '-' + pad(dd); };
+  if (/immediate|now|ready|asap|vacant/.test(s)) return iso(d.getFullYear(), d.getMonth() + 1, d.getDate());
+  var m = s.match(/(\d{4})-(\d{1,2})-(\d{1,2})/); if (m) return iso(+m[1], +m[2], +m[3]);
+  m = s.match(/(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})/);
+  if (m) { var y = +m[3]; if (y < 100) y += 2000; return iso(y, +m[2], +m[1]); }
+  var mons = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+  var mi = -1, dd = null, yy = null;
+  m = s.match(/(\d{1,2})(?:st|nd|rd|th)?\s*(?:of\s*)?([a-z]{3,9})\.?,?\s*(\d{4})?/);
+  if (m && (mi = mons.indexOf(m[2].slice(0, 3))) > -1) { dd = +m[1]; yy = m[3] ? +m[3] : null; }
+  else {
+    m = s.match(/([a-z]{3,9})\.?\s*(\d{1,2})(?:st|nd|rd|th)?,?\s*(\d{4})?/);
+    if (m && (mi = mons.indexOf(m[1].slice(0, 3))) > -1) { dd = +m[2]; yy = m[3] ? +m[3] : null; }
+  }
+  if (mi < 0 || !dd) return '';
+  if (!yy) { yy = d.getFullYear(); if (new Date(yy, mi, dd) < new Date(d.getFullYear(), d.getMonth(), d.getDate())) yy++; }
+  return iso(yy, mi + 1, dd);
+}
+
+var WA_AM_ALIASES = {
+  'am-ac': ['ac', 'airconditioner', 'airconditioning'], 'am-balcony': ['balcony'], 'am-bed': ['bed', 'bedmattress', 'bedandmattress', 'mattress', 'cot'],
+  'am-security': ['cctv', 'camera', 'security'], 'am-chimney': ['chimney'], 'am-wardrobe': ['cupboard', 'cupboards', 'wardrobe', 'wardrobes', 'almirah'],
+  'am-lift': ['lift', 'elevator'], 'am-garden': ['garden'], 'am-geyser': ['geyser', 'waterheater'], 'am-gym': ['gym'], 'am-laundry': ['laundry'],
+  'am-meals': ['meals', 'mealsincluded', 'food'], 'am-microwave': ['microwave', 'oven'], 'am-pipedgas': ['pipedgas', 'pipedgasconnection', 'gaspipeline', 'gasconnection', 'png'],
+  'am-power': ['powerbackup', 'generator', 'inverter', 'dg'], 'am-fridge': ['fridge', 'refrigerator'], 'am-ro': ['ro', 'rowaterfilter', 'waterpurifier', 'waterfilter', 'aquaguard'],
+  'am-sofa': ['sofa'], 'am-washing': ['washingmachine', 'washer'], 'am-wifi': ['wifi', 'internet', 'broadband']
+};
+
+function waApplyAmenities(raw, report) {
+  var extras = [], hit = 0;
+  String(raw || '').split(/[,;\n•|]+/).forEach(function (tok) {
+    var t = tok.trim(); if (!t) return;
+    var qty = '', q = t.match(/(?:[×x*]\s*(\d+))|(?:\((\d+)\))|(?:[-:]\s*(\d+)\s*$)|(?:^(\d+)\s+)|(?:\s(\d+)\s*$)/i);
+    if (q) { qty = q[1] || q[2] || q[3] || q[4] || q[5] || ''; t = t.replace(q[0], ' ').trim(); }
+    var n = waNorm(t), id = null;
+    Object.keys(WA_AM_ALIASES).some(function (k) { if (WA_AM_ALIASES[k].indexOf(n) !== -1) { id = k; return true; } });
+    var cb = id && document.getElementById(id);
+    if (cb) {
+      cb.checked = true; hit++;
+      var row = AM_LIST.filter(function (a) { return a[0] === id; })[0], u = row && row[2] && document.getElementById(row[2]);
+      if (u && qty) u.value = qty;
+    } else if (t) extras.push(tok.trim());
+  });
+  if (extras.length) { var ex = document.getElementById('f-amenities-extra'); if (ex) { ex.value = extras.join(', '); ex.dispatchEvent(new Event('input', { bubbles: true })); } }
+  if (typeof onAmCheck === 'function') onAmCheck();
+  if (typeof renderAmSelected === 'function') renderAmSelected();
+  if (hit || extras.length) report.filled.push('Amenities (' + (hit + extras.length) + ')');
+}
+
+function waApplyTenant(raw, report) {
+  var s = String(raw || '').toLowerCase(), want = [];
+  if (/\bany\b|anyone|all/.test(s)) want.push('tenant-any');
+  if (/famil/.test(s)) want.push('tenant-family');
+  if (/bachelor|single|boys|gents/.test(s)) want.push('tenant-bachelor');
+  if (/female|girl|women|ladies/.test(s)) want.push('tenant-female');
+  if (!want.length) { report.unmatched.push('Tenant preference'); return; }
+  TENANT_LIST.forEach(function (t) { var cb = document.getElementById(t[0]); if (cb) cb.checked = want.indexOf(t[0]) !== -1; });
+  onTenantCheck(); report.filled.push('Tenant preference');
+}
+
+function waSetStatus(st, kind, text) {
+  if (!st) return;
+  st.style.color = { ok: '#1e8449', warn: '#b9770e', err: '#c0392b' }[kind];
+  st.textContent = text;
+}
+
+function waApplyMessage() {
+  var ta = document.getElementById('waPasteText'), st = document.getElementById('waPasteStatus');
+  var parsed = waParseMessage(ta ? ta.value : '');
+  var keys = Object.keys(parsed), report = { filled: [], skipped: [], unmatched: [] };
+  if (!keys.length) { waSetStatus(st, 'err', 'No "Key: value" lines found. Paste the full message.'); return; }
+  var liveOnly = (typeof LIVE_ONLY_FIELD_IDS !== 'undefined') ? LIVE_ONLY_FIELD_IDS : [];
+  var phoneGrp = document.getElementById('f-ownerPhone-group'), phoneHidden = phoneGrp && phoneGrp.classList.contains('owner-phone-hidden');
+  var typeEl = document.getElementById('f-type');
+  if (typeEl && typeEl.value !== 'Rent' && !typeEl.disabled) { typeEl.value = 'Rent'; if (typeof onFTypeChange === 'function') onFTypeChange('Rent'); }
+
+  keys.forEach(function (id) {
+    var val = parsed[id], label = WA_LABELS[id] || id;
+    if (!val || /^(na|n\/a|nil|none|-|--)$/i.test(val.trim()) && id !== 'f-bikepark' && id !== 'f-carpark') return;
+    if (id === 'amenities') { waApplyAmenities(val, report); return; }
+    if (id === 'tenant') { waApplyTenant(val, report); return; }
+    var el = document.getElementById(id);
+    if (!el || el.readOnly || el.disabled || liveOnly.indexOf(id) !== -1 || (id === 'f-ownerPhone' && phoneHidden)) { report.skipped.push(label); return; }
+    var ok = true, v = val.trim();
+    if (id === 'f-rent' || id === 'f-deposit' || id === 'f-maintenance') { v = waNum(v); ok = !!v; if (ok) el.value = v; }
+    else if (id === 'f-escalation') { var e = String(v).match(/\d+(?:\.\d+)?/); ok = !!e; if (ok) el.value = e[0]; }
+    else if (id === 'f-ownerPhone' || id === 'f-ownerAltPhone' || id === 'f-ownerCaretakerPhone') { v = waDigits(v, 10); ok = v.length === 10; if (ok) el.value = v; }
+    else if (id === 'f-pincode') { var p = String(v).match(/\b\d{6}\b/); ok = !!p; if (ok) { el.value = p[0]; if (typeof pincodeManuallyEdited !== 'undefined') pincodeManuallyEdited = true; } }
+    else if (id === 'f-area') { v = waNum(v); ok = !!v; if (ok) { el.value = v; if (typeof formatAreaSqft === 'function') formatAreaSqft(el); } }
+    else if (id === 'f-maxPersons') { v = waDigits(v).slice(0, 2); ok = !!v; if (ok) el.value = v; }
+    else if (id === 'f-avail') { v = waDate(v); ok = !!v; if (ok) el.value = v; }
+    else if (id === 'f-currentLocationLink') { var u = String(v).match(/https?:\/\/\S+/); ok = !!u; if (ok) el.value = u[0]; }
+    else if (id === 'f-videoUrl') { var vu = String(v).match(/https?:\/\/\S+/); ok = !!vu; if (ok) el.value = vu[0]; }
+    else if (id === 'f-bikepark' || id === 'f-carpark') { var n = /^(no|none|nil|na|n\/a|-)$/i.test(v) ? '0' : (String(v).match(/\d/) || [/yes/i.test(v) ? '1' : ''])[0]; ok = n !== '' && waSetSelect(el, n); }
+    else if (id === 'f-floor') { var f = /ground|gf/i.test(v) ? '0' : (String(v).match(/\d+/) || [''])[0]; ok = f !== '' && waSetSelect(el, f); }
+    else if (id === 'f-baths') { var b = (String(v).match(/\d+/) || [''])[0]; ok = b !== '' && waSetSelect(el, +b >= 4 ? '4+' : b); }
+    else if (id === 'f-bhk') { var h = String(v).toLowerCase().replace(/\s/g, '').match(/(\d)\s*(bhk|rk)/); ok = waSetSelect(el, h ? h[1] + ' ' + h[2].toUpperCase() : v); }
+    else if (id === 'f-age') { var a = /new|under/i.test(v) ? 'New' : (function (n) { return n ? (n === '1' ? '1 yr' : n + ' yrs') : v; })((String(v).match(/\d+/) || [''])[0]); ok = waSetSelect(el, a); }
+    else if (id === 'f-leaseDuration') { var y = String(v).match(/(\d+)\s*(?:years?|yrs?)/i), mo = y ? (y[1] * 12) + ' Months' : v; ok = waSetSelect(el, mo); }
+    else if (id === 'f-propertyType') { ok = waSetSelect(el, /independent|house/i.test(v) ? 'House' : /flat|apartment/i.test(v) ? 'Apartment' : v); }
+    else if (el.tagName === 'SELECT') { ok = waSetSelect(el, v); }
+    else { el.value = v; }
+    if (!ok) { report.unmatched.push(label); return; }
+    el.dispatchEvent(new Event(el.tagName === 'SELECT' ? 'change' : 'input', { bubbles: true }));
+    report.filled.push(label);
+  });
+
+  var manual = report.skipped.filter(function (l) { return l !== 'Phone' && l !== 'Email'; });
+  waSetStatus(st, report.unmatched.length || manual.length ? 'warn' : 'ok',
+    '✓ ' + report.filled.length + ' filled' +
+    (report.unmatched.length ? ' · Check: ' + report.unmatched.join(', ') : '') +
+    (manual.length ? ' · Add manually: ' + manual.join(', ') : ''));
+  if (typeof showToast === 'function') showToast('Filled ' + report.filled.length + ' fields from message');
+  if (typeof saveListingDraftNow === 'function') { try { saveListingDraftNow(); } catch (e) {} }
+}
+var WA_DRAFT_KEY = 'hl_wa_paste_draft';
+function waSaveDraft() {
+  try {
+    var ta = document.getElementById('waPasteText'); if (!ta) return;
+    if (ta.value) localStorage.setItem(WA_DRAFT_KEY, ta.value); else localStorage.removeItem(WA_DRAFT_KEY);
+  } catch (e) {}
+}
+function waRestoreDraft() {
+  try {
+    var ta = document.getElementById('waPasteText'); if (!ta) return;
+    var v = localStorage.getItem(WA_DRAFT_KEY); if (v != null) ta.value = v;
+  } catch (e) {}
+}
+function waSetSampleEditing(on) {
+  var pre = document.getElementById('waSampleText'), b = document.getElementById('waSampleEdit'); if (!pre) return;
+  // Only the VALUES are editable — keys and the [option lists] stay locked.
+  pre.setAttribute('contenteditable', 'false');
+  var vals = pre.querySelectorAll('.wa-v');
+  Array.prototype.forEach.call(vals, function (v) { v.setAttribute('contenteditable', on ? 'true' : 'false'); v.setAttribute('spellcheck', 'false'); });
+  pre.classList.toggle('wa-editing', !!on);
+  pre.style.cursor = 'default';
+  pre.style.outline = on ? '2px solid #1e8449' : 'none';
+  if (b) b.textContent = on ? 'Done' : 'Edit';
+  if (on && vals.length) { vals[0].focus(); try { var r = document.createRange(); r.selectNodeContents(vals[0]); r.collapse(false); var s = window.getSelection(); s.removeAllRanges(); s.addRange(r); } catch (e) {} }
+}
+function waSampleKey(e) { if (e.key === 'Enter') e.preventDefault(); }   // one line per field
+function waSamplePaste(e) {
+  e.preventDefault();
+  var t = ((e.clipboardData || window.clipboardData).getData('text') || '').replace(/\s*[\r\n]+\s*/g, ' ');
+  document.execCommand('insertText', false, t);
+}
+function waToggleEditSample() {
+  var pre = document.getElementById('waSampleText'); if (!pre) return;
+  waSetSampleEditing(pre.getAttribute('contenteditable') !== 'true');
+}
+function waOpenSample() {
+  var m = document.getElementById('waSampleModal'); if (!m) return;
+  if (m.parentNode !== document.body) document.body.appendChild(m);
+  m.style.display = 'flex';
+}
+function waCloseSample() { waSetSampleEditing(false); var m = document.getElementById('waSampleModal'); if (m) m.style.display = 'none'; }
+function waCopySample() {
+  var pre = document.getElementById('waSampleText'), btn = document.getElementById('waSampleCopy'); if (!pre) return;
+  function done() { if (btn) { btn.textContent = 'Copied'; setTimeout(function () { btn.textContent = 'Copy'; }, 1500); } }
+  var txt = pre.innerText || pre.textContent;
+  try { navigator.clipboard.writeText(txt).then(done, fallback); } catch (e) { fallback(); }
+  function fallback() {
+    try { var r = document.createRange(); r.selectNodeContents(pre); var s = window.getSelection(); s.removeAllRanges(); s.addRange(r); document.execCommand('copy'); s.removeAllRanges(); done(); } catch (e) {}
+  }
+}
+function waOpenModal() {
+  var m = document.getElementById('waModal'); if (!m) return;
+  if (m.parentNode !== document.body) document.body.appendChild(m); // escape the form's scroll container
+  document.getElementById('waModalErr').textContent = '';
+  waRestoreDraft();
+  m.style.display = 'flex';
+  var ta = document.getElementById('waPasteText'); if (ta) ta.focus();
+}
+function waCloseModal() { var m = document.getElementById('waModal'); if (m) m.style.display = 'none'; }
+function waClearMsg() {
+  var ta = document.getElementById('waPasteText'); if (ta) { ta.value = ''; ta.focus(); }
+  try { localStorage.removeItem(WA_DRAFT_KEY); } catch (e) {}
+  document.getElementById('waModalErr').textContent = '';
+}
+function waConfirm() {
+  var o = { title: 'Fill the form?', message: 'Fill the listing form from this message? Matching fields will be replaced.', okText: 'Fill form', variant: 'info' };
+  if (typeof showConfirmDialog === 'function') return showConfirmDialog(o);
+  if (typeof showConfirmModal === 'function') return showConfirmModal(o);
+  return Promise.resolve(window.confirm(o.message));
+}
+async function waSubmitMsg() {
+  var ta = document.getElementById('waPasteText'), err = document.getElementById('waModalErr');
+  if (!ta || !ta.value.trim()) { err.textContent = 'Paste the message first.'; return; }
+  if (!Object.keys(waParseMessage(ta.value)).length) { err.textContent = 'No "Key: value" lines found. Check the message.'; return; }
+  err.textContent = '';
+  if (!(await waConfirm())) return;
+  waApplyMessage();
+  waCloseModal();
+}
+
 function onFTypeChange(val) {
+  waPasteToggle(val);
   const isPG = val === 'PG';
   const isLease = val === 'Lease';
   const isShortStay = val === 'ShortStay';
