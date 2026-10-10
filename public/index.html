@@ -1586,9 +1586,6 @@ main.tab-explore .empty-state{display:none !important}
 .preav-nav.next{right:12px}
 .preav-nav.hide{opacity:0;pointer-events:none}
 @media (hover:none),(max-width:700px){.preav-nav{display:none}}
-.preav-dots{display:none;justify-content:center;align-items:center;gap:6px;padding:2px 0 0}
-.preav-dot{width:6px;height:6px;border-radius:999px;background:rgba(20,16,17,.18);transition:width .22s,background .22s}
-.preav-dot.on{width:20px;background:var(--brand)}
 .preav-sub .s{display:none}
 @media (max-width:700px){
   /* Centered on mobile */
@@ -1606,7 +1603,6 @@ main.tab-explore .empty-state{display:none !important}
   .preav-body{padding-bottom:16px}
   .preav-grid{gap:12px;padding:4px 14px 12px;scroll-padding-left:14px}
   .preav-grid > .prop-card{flex-basis:82%;width:82%}
-  .preav-dots{display:flex}
 }
 
 /* ─── Festive Wish Modal (reusable — shows a greeting image on chosen dates) ─── */
@@ -9705,7 +9701,6 @@ function renderCards() {
         if (tok !== _renderToken) return; // a newer render superseded this one
         grid.insertAdjacentHTML('beforeend', items.slice(i, i + CHUNK).map(p => cardHTML(p, key !== 'promoted', undefined, key === 'upcoming')).join(''));
         observeCardImgs(grid);
-  document.getElementById('preavDots').innerHTML = items.map(function(){ return '<span class="preav-dot"></span>'; }).join('');
   grid.scrollLeft = 0;
   requestAnimationFrame(function(){ grid.scrollLeft = 0; preavSyncNav(); });
         i += CHUNK;
@@ -19315,7 +19310,6 @@ document.addEventListener('keydown',function(e){
       <button class="preav-nav prev hide" id="preavPrev" aria-label="Previous"><svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg></button>
       <div class="preav-grid" id="preavGrid"></div>
       <button class="preav-nav next" id="preavNext" aria-label="Next"><svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg></button>
-      <div class="preav-dots" id="preavDots" aria-hidden="true"></div>
     </div>
   </div>
 </div>
@@ -19354,21 +19348,7 @@ function closePreAvailModal() {
   ov.classList.remove('open');
   document.documentElement.classList.remove('preav-lock');
 }
-function preavSyncDots() {
-  var g = document.getElementById('preavGrid');
-  var dots = document.querySelectorAll('#preavDots .preav-dot');
-  var cards = g.children;
-  if (!dots.length || !cards.length) return;
-  var idx = 0, best = Infinity;
-  for (var i = 0; i < cards.length; i++) {
-    var d = Math.abs(cards[i].offsetLeft - g.scrollLeft - parseFloat(getComputedStyle(g).paddingLeft || 0));
-    if (d < best) { best = d; idx = i; }
-  }
-  if (g.scrollLeft >= g.scrollWidth - g.clientWidth - 4) idx = cards.length - 1;
-  for (var k = 0; k < dots.length; k++) dots[k].classList.toggle('on', k === idx);
-}
 function preavSyncNav() {
-  preavSyncDots();
   var g = document.getElementById('preavGrid');
   var max = g.scrollWidth - g.clientWidth - 4;
   document.getElementById('preavPrev').classList.toggle('hide', g.scrollLeft <= 4);
