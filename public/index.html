@@ -6358,7 +6358,7 @@ main.tab-explore .empty-state{display:none !important}
     <div id="listingFormSections">
 
     <!-- ===== PASTE WHATSAPP MESSAGE (Rent only) ===== -->
-    <div id="waPasteBox" style="margin-bottom:14px">
+    <div id="waPasteBox" style="margin-bottom:14px;display:none">
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
         <button type="button" onclick="waOpenModal()" style="background:var(--brand);color:#fff;border:none;border-radius:9px;padding:0 16px;height:36px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">📋 Paste WhatsApp message</button>
         <button type="button" onclick="waOpenSample()" style="background:transparent;color:var(--brand);border:1.5px solid var(--brand);border-radius:9px;padding:0 16px;height:36px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">📄 Sample message</button>
@@ -18125,7 +18125,8 @@ async function watermarkImageFile(file) {
    phone/email when locked to the account) are never overwritten. */
 function waPasteToggle(val) {
   var box = document.getElementById('waPasteBox');
-  if (box) box.style.display = (!val || val === 'Rent' || val === 'For Rent') ? '' : 'none';
+  // WhatsApp paste is an admin-only feature (admin.html) — always hidden for users.
+  if (box) box.style.display = 'none';
 }
 function waNorm(s) { return String(s == null ? '' : s).toLowerCase().replace(/[^a-z0-9]/g, ''); }
 
