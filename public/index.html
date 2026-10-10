@@ -19305,7 +19305,7 @@ document.addEventListener('keydown',function(e){
       <div class="preav-badge"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M10 21v-6h4v6"/></svg></div>
       <div class="preav-titles">
         <h2 class="preav-title">Today’s Listings<span class="preav-count" id="preavCount"></span></h2>
-        <p class="preav-sub"><span class="l">Fresh homes opening up soon — tap any card for full details</span><span class="s">Tap any card for full details</span></p>
+        <p class="preav-sub"><span class="l">New listings added today — tap any card for full details</span><span class="s">Tap any card for full details</span></p>
       </div>
       <button class="preav-close" id="preavClose" aria-label="Close">
         <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -19326,7 +19326,18 @@ function showPreAvailModal() {
   var q = new URLSearchParams(window.location.search);
   if (q.has('compare') || q.has('property') || q.has('charges')) return;
   if (/^\/property\/[a-fA-F0-9]{24}$/.test(window.location.pathname)) return;
-  var items = PROPERTIES.filter(function(p){ return sectionKeyFor(p) === 'rent' && isUpcomingRent(p); });
+  // Only listings created today — compared by calendar date only (time of day ignored), newest first.
+  function dayKey(v){
+    var d = new Date(v);
+    if (isNaN(d)) return '';
+    return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate();
+  }
+  var todayKey = dayKey(new Date());
+  var items = PROPERTIES.filter(function(p){
+    if (!p.createdAt || dayKey(p.createdAt) !== todayKey) return false;
+    if (typeof SHORT_STAY_ENABLED !== 'undefined' && !SHORT_STAY_ENABLED && pTypeLabel(p) === 'ShortStay') return false;
+    return true;
+  }).sort(function(a, b){ return new Date(b.createdAt) - new Date(a.createdAt); });
   if (!items.length) return;
   var ov = document.getElementById('preavOverlay');
   if (ov.classList.contains('open')) return;
