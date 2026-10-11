@@ -247,27 +247,38 @@ body{
 /* Honest Reviews + Partners: same floating bottom-right action stack as Properties */
 #reviewBulkToolbar .bulk-btn{width:auto!important;min-width:0!important;height:38px!important;flex-direction:row!important;gap:6px!important;padding:0 14px!important;white-space:nowrap}
 #partnerBulkToolbar .bulk-btn{width:auto!important;min-width:0!important;height:38px!important;flex-direction:row!important;gap:6px!important;padding:0 14px!important;white-space:nowrap}
+#brokerBulkToolbar .bulk-btn{width:auto!important;min-width:0!important;height:38px!important;flex-direction:row!important;gap:6px!important;padding:0 14px!important;white-space:nowrap}
 #reviewBulkToolbar .bulk-btn-label{font-size:0!important;line-height:0!important}
 #partnerBulkToolbar .bulk-btn-label{font-size:0!important;line-height:0!important}
+#brokerBulkToolbar .bulk-btn-label{font-size:0!important;line-height:0!important}
 #reviewBulkToolbar .bulk-btn-label::after{content:attr(data-mobile);font-size:.82rem;line-height:1.2;display:inline;font-weight:700}
 #partnerBulkToolbar .bulk-btn-label::after{content:attr(data-mobile);font-size:.82rem;line-height:1.2;display:inline;font-weight:700}
+#brokerBulkToolbar .bulk-btn-label::after{content:attr(data-mobile);font-size:.82rem;line-height:1.2;display:inline;font-weight:700}
 #reviewBulkToolbar{position:fixed!important;right:16px;bottom:16px;z-index:900;width:150px!important;max-width:none!important;flex-direction:column!important;align-items:stretch!important;gap:8px!important;padding:0!important;margin:0!important;background:transparent!important;border:none!important;box-shadow:none!important;overflow:visible!important}
 #partnerBulkToolbar{position:fixed!important;right:16px;bottom:16px;z-index:900;width:150px!important;max-width:none!important;flex-direction:column!important;align-items:stretch!important;gap:8px!important;padding:0!important;margin:0!important;background:transparent!important;border:none!important;box-shadow:none!important;overflow:visible!important}
+#brokerBulkToolbar{position:fixed!important;right:16px;bottom:16px;z-index:900;width:150px!important;max-width:none!important;flex-direction:column!important;align-items:stretch!important;gap:8px!important;padding:0!important;margin:0!important;background:transparent!important;border:none!important;box-shadow:none!important;overflow:visible!important}
 #reviewBulkToolbar .bulk-toolbar-left{display:flex;flex-direction:column!important;align-items:stretch!important;gap:8px!important;flex-wrap:nowrap!important;width:100%}
 #partnerBulkToolbar .bulk-toolbar-left{display:flex;flex-direction:column!important;align-items:stretch!important;gap:8px!important;flex-wrap:nowrap!important;width:100%}
+#brokerBulkToolbar .bulk-toolbar-left{display:flex;flex-direction:column!important;align-items:stretch!important;gap:8px!important;flex-wrap:nowrap!important;width:100%}
 #reviewBulkToolbar .bulk-btn{box-shadow:0 4px 14px rgba(0,0,0,.22);width:100%!important;justify-content:flex-start!important}
 #partnerBulkToolbar .bulk-btn{box-shadow:0 4px 14px rgba(0,0,0,.22);width:100%!important;justify-content:flex-start!important}
+#brokerBulkToolbar .bulk-btn{box-shadow:0 4px 14px rgba(0,0,0,.22);width:100%!important;justify-content:flex-start!important}
 @media(max-width:768px){
   #reviewBulkToolbar{width:auto!important;align-items:flex-end!important;right:14px;bottom:14px;gap:10px!important}
   #partnerBulkToolbar{width:auto!important;align-items:flex-end!important;right:14px;bottom:14px;gap:10px!important}
+  #brokerBulkToolbar{width:auto!important;align-items:flex-end!important;right:14px;bottom:14px;gap:10px!important}
   #reviewBulkToolbar .bulk-toolbar-left{width:auto!important;align-items:flex-end!important;gap:10px!important}
   #partnerBulkToolbar .bulk-toolbar-left{width:auto!important;align-items:flex-end!important;gap:10px!important}
+  #brokerBulkToolbar .bulk-toolbar-left{width:auto!important;align-items:flex-end!important;gap:10px!important}
   #reviewBulkToolbar .bulk-btn{position:relative;width:46px!important;min-width:46px!important;height:46px!important;padding:0!important;gap:0!important;justify-content:center!important;align-items:center!important;border-radius:50%!important;flex-direction:row!important}
   #partnerBulkToolbar .bulk-btn{position:relative;width:46px!important;min-width:46px!important;height:46px!important;padding:0!important;gap:0!important;justify-content:center!important;align-items:center!important;border-radius:50%!important;flex-direction:row!important}
+  #brokerBulkToolbar .bulk-btn{position:relative;width:46px!important;min-width:46px!important;height:46px!important;padding:0!important;gap:0!important;justify-content:center!important;align-items:center!important;border-radius:50%!important;flex-direction:row!important}
   #reviewBulkToolbar .bulk-btn i{font-size:1.05rem!important;margin:0!important}
   #partnerBulkToolbar .bulk-btn i{font-size:1.05rem!important;margin:0!important}
+  #brokerBulkToolbar .bulk-btn i{font-size:1.05rem!important;margin:0!important}
   #reviewBulkToolbar .bulk-btn .bulk-btn-label{display:none!important}
   #partnerBulkToolbar .bulk-btn .bulk-btn-label{display:none!important}
+  #brokerBulkToolbar .bulk-btn .bulk-btn-label{display:none!important}
 }
 /* Uniform column: every button same width, left-aligned, one under the other */
 #bulkToolbar{width:150px!important;align-items:stretch!important}
@@ -3749,6 +3760,11 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
       <span class="tab-btn-label" data-mobile="Partners">Partners</span>
       <span class="tab-count" id="tab-partners-count">—</span>
     </button>
+    <button class="tab-btn" id="tab-brokers" onclick="switchTab('brokers')">
+      <i class="fas fa-user-tie"></i>
+      <span class="tab-btn-label" data-mobile="Brokers">Brokers</span>
+      <span class="tab-count" id="tab-brokers-count">—</span>
+    </button>
     <button class="tab-btn" id="tab-appointments" onclick="switchTab('appointments')">
       <i class="fas fa-calendar-days"></i>
       <span class="tab-btn-label" data-mobile="Appts">Appointments</span>
@@ -4594,6 +4610,41 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
           </thead>
           <tbody>
             <tr><td colspan="7" class="empty-state"><i class="fas fa-circle-notch fa-spin"></i>Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- BROKERS PANEL -->
+  <div class="tab-panel" id="panel-brokers">
+    <div class="bulk-toolbar" id="brokerBulkToolbar">
+      <div class="bulk-toolbar-left">
+        <button class="bulk-btn" id="addBrokerBtn" onclick="openBrokerModal()" title="Add brokers" aria-label="Add brokers" style="background:var(--brand);color:#fff;border-color:var(--brand)">
+          <i class="fas fa-plus"></i> <span class="bulk-btn-label" data-mobile="Add">Add brokers</span>
+        </button>
+        <button class="bulk-btn" id="copyBrokersBtn" onclick="copyBrokers()" title="Copy all brokers as a message" aria-label="Copy all brokers as a message" style="background:#fff;color:var(--ink);border-color:var(--border)">
+          <i class="fas fa-copy"></i> <span class="bulk-btn-label" data-mobile="Copy">Copy message</span>
+        </button>
+        <button class="bulk-btn" id="shareBrokersBtn" onclick="shareBrokers()" title="Share all brokers on WhatsApp" aria-label="Share all brokers on WhatsApp" style="background:#25D366;color:#fff;border-color:#25D366">
+          <i class="fab fa-whatsapp"></i> <span class="bulk-btn-label" data-mobile="Share">Share brokers</span>
+        </button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="table-wrapper">
+        <table id="brokersTable" class="display nowrap" style="width:100%">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Location</th>
+              <th>Number</th>
+              <th>Added on</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td colspan="5" class="empty-state"><i class="fas fa-circle-notch fa-spin"></i>Loading...</td></tr>
           </tbody>
         </table>
       </div>
@@ -5549,7 +5600,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
 
 <script>
 
-let dataTable, propTable, apptTable, honestReviewsTable, userReviewsTable, partnersTable, referralsTable;
+let dataTable, propTable, apptTable, honestReviewsTable, userReviewsTable, partnersTable, brokersTable, referralsTable;
 
 
 const BASE = 'https://www.homeloop.in';
@@ -6523,6 +6574,9 @@ function switchTab(tab){
   if(tab === 'partners' && partnersTable){
     setTimeout(()=>{ partnersTable.columns.adjust().draw(false); }, 50);
   }
+  if(tab === 'brokers' && brokersTable){
+    setTimeout(()=>{ brokersTable.columns.adjust().draw(false); }, 50);
+  }
   if(tab === 'referrals' && referralsTable){
     setTimeout(()=>{ referralsTable.columns.adjust().draw(false); }, 50);
   }
@@ -6541,6 +6595,7 @@ const TAB_MODULE_MAP = {
   'user-reviews': 'userReviews',
   'referrals': 'referrals',
   'partners': 'partners',
+  'brokers': 'brokers',
   'appointments': 'appointments',
   'honest-reviews': 'reviews',
 };
@@ -6548,7 +6603,7 @@ const TAB_MODULE_MAP = {
 // icon used for that feature's own tab button in the main nav where one exists.
 const MODULE_ICONS = {
   visits: 'fa-globe', customers: 'fa-users', properties: 'fa-building',
-  appointments: 'fa-calendar-days', reviews: 'fa-video', userReviews: 'fa-star', partners: 'fa-handshake',
+  appointments: 'fa-calendar-days', reviews: 'fa-video', userReviews: 'fa-star', partners: 'fa-handshake', brokers: 'fa-user-tie',
   referrals: 'fa-share-nodes', payments: 'fa-credit-card',
   stats: 'fa-chart-line', notifications: 'fa-bell',
 };
@@ -6656,7 +6711,7 @@ async function loadAdminMe(){
     // (isSuperAdmin:true) before we knew the real permissions. Redraw any
     // table that's already been created so it re-renders with the answer
     // we just got, regardless of which one loaded first.
-    ['dataTable','propTable','apptTable','honestReviewsTable','userReviewsTable','partnersTable','referralsTable'].forEach(name => {
+    ['dataTable','propTable','apptTable','honestReviewsTable','userReviewsTable','partnersTable','brokersTable','referralsTable'].forEach(name => {
       const t = window[name];
       if(t && typeof t.draw === 'function'){
         try{ t.draw(false); } catch(e){}
@@ -6691,6 +6746,7 @@ function applyAdminAccessUI(){
       'properties':     '#panel-properties .btn-add-review, #panel-properties #addPropertyBtn',
       'honest-reviews': '#panel-honest-reviews #addHonestReviewBtn',
       'partners':       '#panel-partners #addPartnerBtn',
+      'brokers':        '#panel-brokers #addBrokerBtn',
     };
     const bulkDeleteBtnByPanel = {
       'user-reviews': '#urDeleteSelectedBtn',
@@ -9012,6 +9068,84 @@ window.saveHonestReview = async function(){
     errEl.classList.add('show');
   } finally {
     saveBtn.disabled = false;
+  }
+};
+
+/* ── BROKERS: ADD / DELETE ── */
+window.openBrokerModal = function(){
+  if(blockIfViewOnly('brokers')) return;
+  clearBrokerError();
+  document.getElementById('brokerFormLocation').value = '';
+  document.getElementById('brokerFormPhone').value = '';
+  document.getElementById('brokerModal').classList.add('open');
+  setTimeout(()=>document.getElementById('brokerFormLocation').focus(), 50);
+};
+
+window.closeBrokerModal = function(){
+  document.getElementById('brokerModal').classList.remove('open');
+};
+
+window.clearBrokerError = function(){
+  const errEl = document.getElementById('brokerFormError');
+  errEl.classList.remove('show'); errEl.textContent = '';
+  document.querySelectorAll('#brokerModal .bk-field').forEach(f => f.classList.remove('bk-invalid'));
+};
+
+window.saveBroker = async function(){
+  if(blockIfViewOnly('brokers')) return;
+  const errEl = document.getElementById('brokerFormError');
+  clearBrokerError();
+
+  const locInput   = document.getElementById('brokerFormLocation');
+  const phoneInput = document.getElementById('brokerFormPhone');
+  const location = locInput.value.trim();
+  const phone    = phoneInput.value.replace(/\D/g,'');
+
+  // Shows the message inside the modal and outlines the offending field in red.
+  const fail = (msg, input) => {
+    errEl.innerHTML = '<i class="fas fa-circle-exclamation"></i>' + escapeHtml(msg);
+    errEl.classList.add('show');
+    if(input){ input.closest('.bk-field').classList.add('bk-invalid'); input.focus(); }
+  };
+  if(!location) return fail('Location is required.', locInput);
+  if(!/^[6-9]\d{9}$/.test(phone)) return fail('Please enter a valid 10-digit mobile number.', phoneInput);
+
+  // Instant duplicate check against the brokers already loaded in the table.
+  const existing = brokersTable.rows().data().toArray().find(r => r.phone === phone);
+  if(existing) return fail('This number is already added (' + existing.location + ').', phoneInput);
+
+  const saveBtn = document.getElementById('brokerFormSaveBtn');
+  saveBtn.disabled = true;
+  try{
+    const res = await fetch(`${BASE}/api/admin/brokers`, {
+      method:'POST',
+      headers: authHeaders({'Content-Type':'application/json'}),
+      body: JSON.stringify({ location, phone })
+    });
+    const data = await res.json().catch(()=>({}));
+    if(!res.ok){
+      // The server is the final authority on duplicates (409), e.g. if another admin just added it.
+      return fail(data.error || data.message || 'Save failed', (res.status === 409 || data.duplicate) ? phoneInput : null);
+    }
+    closeBrokerModal();
+    brokersTable.ajax.reload(null, false);   // reload the table from the DB
+  } catch(err){
+    fail('Save failed. Please try again.');
+  } finally {
+    saveBtn.disabled = false;
+  }
+};
+
+window.deleteBroker = async function(id){
+  if(blockIfViewOnly('brokers')) return;
+  if(!await showConfirmModal({ title:'Delete this broker?', message:'This broker will be permanently removed.' })) return;
+  try{
+    const res = await fetch(`${BASE}/api/admin/brokers/${id}`, { method:'DELETE', headers: authHeaders() });
+    const data = await res.json().catch(()=>({}));
+    if(!res.ok){ alert(data.error || data.message || 'Delete failed'); return; }
+    brokersTable.ajax.reload(null, false);
+  } catch(err){
+    alert('Delete failed. Please try again.');
   }
 };
 
@@ -12665,6 +12799,61 @@ $(document).ready(function(){
   });
   initColumnToggle('partner');
   } catch(e){ console.error('Partners table failed to initialize:', e); }
+
+  /* ────────────────────────────────────
+     BROKERS TABLE
+  ──────────────────────────────────── */
+  try{
+  brokersTable = $('#brokersTable').DataTable({
+    ajax:{
+      url: BASE+'/api/admin/brokers',
+      beforeSend: function(xhr){ xhr.setRequestHeader('x-admin-key', ADMIN_KEY); },
+      error: function(xhr){ showTableLoadError('#brokersTable', xhr); },
+      dataSrc: function(res){
+        const brokers = (res && Array.isArray(res.brokers)) ? res.brokers : [];
+        document.getElementById('tab-brokers-count').innerText = brokers.length;
+        return brokers;
+      }
+    },
+    columns:[
+      /* 0 - Row number */
+      { data:null, orderable:false, className:'dt-body-center', render:(d,t,row,meta)=>{
+          if(t!=='display') return '';
+          return meta.row + meta.settings._iDisplayStart + 1;
+      }},
+      /* 1 - Location */
+      { data:'location', render:(d)=> escapeHtml(d||'--') },
+      /* 2 - Number */
+      { data:'phone', render:(d,t)=>{
+          if(t!=='display') return d||'';
+          return d ? `<a href="tel:${escapeHtml(d)}">${escapeHtml(d)}</a>` : '--';
+      }},
+      /* 3 - Added on (sorts on the raw timestamp) */
+      { data:'createdAt', render:(d,t)=>{
+          if(!d) return t==='display' ? '--' : 0;
+          if(t!=='display') return new Date(d).getTime();
+          return new Date(d).toLocaleString('en-IN',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:true});
+      }},
+      /* 4 - Action */
+      { data:null, orderable:false, render:(d,t,row)=>{
+          if(t!=='display') return '';
+          return `<div style="display:inline-flex;gap:6px;flex-wrap:nowrap;justify-content:center">
+            <span class="pact pact-delete"><button class="btn-view" onclick="deleteBroker('${row._id}')"><i class="fas fa-trash"></i><span class="btn-label"> Delete</span></button></span>
+          </div>`;
+      }}
+    ],
+    order:[[3,'desc']],
+    orderCellsTop:true,
+    dom:'rt<"bottom-controls"i>',
+    pageLength:-1,
+    scrollX:true,
+    language:{
+      emptyTable:'<div class="empty-state"><i class="fas fa-user-tie"></i>No brokers added yet</div>',
+      zeroRecords:'<div class="empty-state"><i class="fas fa-magnifying-glass"></i>No matching brokers</div>',
+      info:'Showing all _TOTAL_ brokers'
+    }
+  });
+  } catch(e){ console.error('Brokers table failed to initialize:', e); }
 
   /* ════════════════════════════════════
      REFERRALS TABLE (Refer & Earn register)
@@ -18367,6 +18556,83 @@ markRequiredLabels();
 
   </div>
 
+</div>
+
+<!-- BROKER ADD MODAL -->
+<style>
+#brokerModal .prop-modal{max-width:440px;border-radius:24px;overflow:hidden}
+#brokerModal .prop-modal-body{padding:6px 30px 28px}
+#brokerModal.open .prop-modal{animation:brokerPop .22s cubic-bezier(.2,.9,.3,1.2)}
+@keyframes brokerPop{from{opacity:0;transform:translateY(14px) scale(.97)}to{opacity:1;transform:none}}
+.bk-head{text-align:center;margin:4px 0 22px}
+.bk-badge{width:60px;height:60px;border-radius:18px;margin:0 auto 14px;display:flex;align-items:center;justify-content:center;
+  font-size:1.5rem;color:#fff;background:linear-gradient(135deg,var(--brand,#ea580c),#f59e0b);box-shadow:0 10px 24px rgba(234,88,12,.32)}
+.bk-title{font-size:1.45rem;font-weight:800;letter-spacing:-.02em;color:var(--ink)}
+.bk-sub{font-size:.84rem;color:var(--ink2);margin-top:4px}
+#brokerModal .hr-form-row{margin-bottom:18px}
+#brokerModal .hr-form-row>label{display:block;font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink2);margin-bottom:8px}
+.bk-field{display:flex;align-items:center;gap:0;background:var(--surface2,#f5f5f7);border:1.5px solid transparent;border-radius:14px;
+  transition:border-color .15s,box-shadow .15s,background .15s}
+.bk-field:hover{background:#efeff3}
+.bk-field:focus-within{background:#fff;border-color:var(--brand,#ea580c);box-shadow:0 0 0 4px rgba(234,88,12,.12)}
+.bk-field>i{width:46px;text-align:center;color:var(--ink2);font-size:.95rem;flex-shrink:0}
+.bk-field:focus-within>i{color:var(--brand,#ea580c)}
+.bk-field input{flex:1;min-width:0;border:0!important;outline:0!important;background:transparent!important;box-shadow:none!important;
+  padding:14px 14px 14px 0!important;font:inherit;font-size:1rem;font-weight:500;color:var(--ink)}
+.bk-field input::placeholder{color:#a0a3ad;font-weight:400}
+.bk-prefix{padding:0 12px 0 0;margin-right:12px;border-right:1.5px solid var(--border,#e4e4ea);font-weight:700;font-size:.92rem;color:var(--ink);
+  display:flex;align-items:center;align-self:stretch;gap:0}
+.bk-hint{font-size:.74rem;color:var(--ink2);margin-top:7px;padding-left:2px}
+#brokerModal .hr-form-error{background:rgba(220,38,38,.08);border-radius:10px;padding:10px 12px;margin-bottom:16px;font-size:.82rem;font-weight:600}
+#brokerModal .hr-modal-actions{margin-top:24px;gap:12px}
+#brokerModal .hr-modal-actions button{flex:1;padding:14px 18px;font-size:.92rem;border-radius:14px}
+#brokerModal .hr-btn-save{display:inline-flex;align-items:center;justify-content:center;gap:8px}
+#brokerModal .hr-btn-save:disabled::before{content:"";width:14px;height:14px;border-radius:50%;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;animation:bkspin .7s linear infinite}
+@keyframes bkspin{to{transform:rotate(360deg)}}
+.bk-field.bk-invalid{border-color:#dc2626;background:#fff;box-shadow:0 0 0 4px rgba(220,38,38,.10)}
+.bk-field.bk-invalid>i{color:#dc2626}
+#brokerModal .hr-form-error i{margin-right:6px}
+</style>
+<div class="prop-modal-wrap" id="brokerModal" onclick="if(event.target===this)closeBrokerModal()">
+  <div class="prop-modal">
+    <div class="prop-modal-close-row">
+      <button class="prop-modal-close-btn" onclick="closeBrokerModal()" aria-label="Close">&times;</button>
+    </div>
+    <div class="prop-modal-body">
+      <div class="bk-head">
+        <div class="bk-badge"><i class="fas fa-user-tie"></i></div>
+        <div class="bk-title">Add Broker</div>
+        <div class="bk-sub">Save the broker's area and contact number</div>
+      </div>
+
+      <div class="hr-form-error" id="brokerFormError"></div>
+
+      <div class="hr-form-row">
+        <label for="brokerFormLocation">Location</label>
+        <div class="bk-field">
+          <i class="fas fa-location-dot"></i>
+          <input type="text" id="brokerFormLocation" maxlength="120" placeholder="e.g. HSR Layout, Bengaluru" autocomplete="off"
+                 onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('brokerFormPhone').focus();}">
+        </div>
+      </div>
+
+      <div class="hr-form-row">
+        <label for="brokerFormPhone">Number</label>
+        <div class="bk-field">
+          <i class="fas fa-phone"></i>
+          <span class="bk-prefix">+91</span>
+          <input type="text" id="brokerFormPhone" maxlength="10" inputmode="numeric" placeholder="98765 43210" autocomplete="off"
+                 oninput="this.value=this.value.replace(/\D/g,'').slice(0,10);clearBrokerError()" onkeydown="if(event.key==='Enter')saveBroker()">
+        </div>
+        <div class="bk-hint">10-digit mobile number</div>
+      </div>
+
+      <div class="hr-modal-actions">
+        <button class="hr-btn-cancel" onclick="closeBrokerModal()">Cancel</button>
+        <button class="hr-btn-save" id="brokerFormSaveBtn" onclick="saveBroker()">Save broker</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- ═════════ PARTNER PHOTO CROP MODAL ═════════ -->

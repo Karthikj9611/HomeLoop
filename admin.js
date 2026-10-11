@@ -183,6 +183,7 @@ module.exports = function registerAdminRoutes(app, deps) {
     reviews:       'Honest Reviews',
     userReviews:   'Reviews',
     partners:      'Partners',
+    brokers:       'Brokers',
     referrals:     'Referrals',
     payments:      'Payments',
     stats:         'Visitor & Registration Stats',
@@ -2939,6 +2940,69 @@ self.addEventListener('notificationclick', event => {
     } catch (err) {
       console.error('POST /api/admin/reviews/bulk-delete error:', err.message);
       res.status(500).json({ error: 'Could not bulk delete reviews' });
+    }
+  });
+
+  // ── BROKERS ──
+  // Simple admin-managed list: a broker is just a Location + a 10-digit Number.
+  // Permission module key: 'brokers' (toggleable per sub-admin in Admin Access).
+  const BrokerSchema = new mongoose.Schema({
+    location:  { type: String, required: true, trim: true, maxlength: 120 },
+    phone:     { type: String, required: true, trim: true, unique: true }, // normalized 10-digit mobile; unique so a duplicate can never slip in, even from two simultaneous saves
+    createdAt: { type: Date, default: Date.now },
+  });
+  BrokerSchema.index({ createdAt: -1 });
+  const Broker = mongoose.models.Broker || mongoose.model('Broker', BrokerSchema, 'brokers');
+
+  // Same normalisation the signup flow uses: digits only, drop leading 0 / 91.
+  function normalizeBrokerPhone(raw) {
+    let d = String(raw || '').replace(/\D/g, '');
+    if (d.length > 10 && d.startsWith('0'))  d = d.slice(1);
+    if (d.length > 10 && d.startsWith('91')) d = d.slice(d.length - 10);
+    return d;
+  }
+
+  // GET /api/admin/brokers -- admin-only, newest first
+  app.get('/api/admin/brokers', requireAdmin, requireModule('brokers'), async (req, res) => {
+    try {
+      const brokers = await Broker.find({}).sort({ createdAt: -1 }).lean();
+      res.json({ brokers });
+    } catch (err) {
+      console.error('GET /api/admin/brokers error:', err.message);
+      res.status(500).json({ error: 'Could not load brokers' });
+    }
+  });
+
+  // POST /api/admin/brokers -- admin-only, add a broker
+  app.post('/api/admin/brokers', requireAdmin, requireModuleAction('brokers'), async (req, res) => {
+    try {
+      const { location, phone } = req.body || {};
+      const cleanLocation = String(location || '').trim();
+      const cleanPhone = normalizeBrokerPhone(phone);
+      if (!cleanLocation) return res.status(400).json({ error: 'Location is required' });
+      if (cleanLocation.length > 120) return res.status(400).json({ error: 'Location must be at most 120 characters' });
+      if (!/^[6-9]\d{9}$/.test(cleanPhone)) return res.status(400).json({ error: 'Please enter a valid 10-digit mobile number' });
+      const dup = await Broker.findOne({ phone: cleanPhone }).lean();
+      if (dup) return res.status(409).json({ error: `This number is already added (${dup.location}).`, duplicate: true });
+      const broker = await Broker.create({ location: cleanLocation, phone: cleanPhone });
+      res.status(201).json({ broker });
+    } catch (err) {
+      if (err && err.code === 11000) return res.status(409).json({ error: 'This number is already added.', duplicate: true }); // lost a race with another save
+      console.error('POST /api/admin/brokers error:', err.message);
+      res.status(500).json({ error: 'Could not save broker' });
+    }
+  });
+
+  // DELETE /api/admin/brokers/:id -- admin-only
+  app.delete('/api/admin/brokers/:id', requireAdmin, requireModuleAction('brokers'), async (req, res) => {
+    try {
+      if (!mongoose.Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ error: 'Invalid broker id' });
+      const deleted = await Broker.findByIdAndDelete(req.params.id);
+      if (!deleted) return res.status(404).json({ error: 'Broker not found' });
+      res.json({ message: 'Broker deleted' });
+    } catch (err) {
+      console.error('DELETE /api/admin/brokers/:id error:', err.message);
+      res.status(500).json({ error: 'Could not delete broker' });
     }
   });
 
