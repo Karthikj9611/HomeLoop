@@ -4623,10 +4623,10 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
         <button class="bulk-btn" id="addBrokerBtn" onclick="openBrokerModal()" title="Add brokers" aria-label="Add brokers" style="background:var(--brand);color:#fff;border-color:var(--brand)">
           <i class="fas fa-plus"></i> <span class="bulk-btn-label" data-mobile="Add">Add brokers</span>
         </button>
-        <button class="bulk-btn" id="copyBrokersBtn" onclick="copyBrokers()" title="Copy all brokers as a message" aria-label="Copy all brokers as a message" style="background:#fff;color:var(--ink);border-color:var(--border)">
+        <button class="bulk-btn" id="copyBrokersBtn" onclick="copyBrokers()" title="Copy selected brokers (or all if none selected) as a message" aria-label="Copy selected brokers as a message" style="background:#fff;color:var(--ink);border-color:var(--border)">
           <i class="fas fa-copy"></i> <span class="bulk-btn-label" data-mobile="Copy">Copy message</span>
         </button>
-        <button class="bulk-btn" id="shareBrokersBtn" onclick="shareBrokers()" title="Share all brokers on WhatsApp" aria-label="Share all brokers on WhatsApp" style="background:#25D366;color:#fff;border-color:#25D366">
+        <button class="bulk-btn" id="shareBrokersBtn" onclick="shareBrokers()" title="Share selected brokers (or all if none selected) on WhatsApp" aria-label="Share selected brokers on WhatsApp" style="background:#25D366;color:#fff;border-color:#25D366">
           <i class="fab fa-whatsapp"></i> <span class="bulk-btn-label" data-mobile="Share">Share brokers</span>
         </button>
       </div>
@@ -4636,6 +4636,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
         <table id="brokersTable" class="display nowrap" style="width:100%">
           <thead>
             <tr>
+              <th><input type="checkbox" id="brokerSelectAllCheckbox" title="Select all brokers" onchange="onBrokerSelectAllChange(this)"></th>
               <th>#</th>
               <th>Location</th>
               <th>Number</th>
@@ -4644,7 +4645,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
             </tr>
           </thead>
           <tbody>
-            <tr><td colspan="5" class="empty-state"><i class="fas fa-circle-notch fa-spin"></i>Loading...</td></tr>
+            <tr><td colspan="6" class="empty-state"><i class="fas fa-circle-notch fa-spin"></i>Loading...</td></tr>
           </tbody>
         </table>
       </div>
@@ -9071,12 +9072,21 @@ window.saveHonestReview = async function(){
   }
 };
 
-/* ── BROKERS: ADD / DELETE ── */
-window.openBrokerModal = function(){
+/* ── BROKERS: ADD / EDIT / DELETE ── */
+let _editingBrokerId = null;
+window.openBrokerModal = function(id){
   if(blockIfViewOnly('brokers')) return;
   clearBrokerError();
-  document.getElementById('brokerFormLocation').value = '';
-  document.getElementById('brokerFormPhone').value = '';
+  // called from the toolbar's onclick with no args (add) or with a broker id (edit)
+  const row = (typeof id === 'string' && id)
+    ? brokersTable.rows().data().toArray().find(r => r._id === id)
+    : null;
+  _editingBrokerId = row ? row._id : null;
+  document.getElementById('brokerFormLocation').value = row ? (row.location || '') : '';
+  document.getElementById('brokerFormPhone').value    = row ? (row.phone || '') : '';
+  document.getElementById('brokerModalTitle').textContent = row ? 'Edit Broker' : 'Add Broker';
+  document.getElementById('brokerModalSub').textContent   = row ? "Update the broker's area or contact number" : "Save the broker's area and contact number";
+  document.getElementById('brokerFormSaveBtn').textContent = row ? 'Update broker' : 'Save broker';
   document.getElementById('brokerModal').classList.add('open');
   setTimeout(()=>document.getElementById('brokerFormLocation').focus(), 50);
 };
@@ -9111,14 +9121,14 @@ window.saveBroker = async function(){
   if(!/^[6-9]\d{9}$/.test(phone)) return fail('Please enter a valid 10-digit mobile number.', phoneInput);
 
   // Instant duplicate check against the brokers already loaded in the table.
-  const existing = brokersTable.rows().data().toArray().find(r => r.phone === phone);
+  const existing = brokersTable.rows().data().toArray().find(r => r.phone === phone && r._id !== _editingBrokerId);
   if(existing) return fail('This number is already added (' + existing.location + ').', phoneInput);
 
   const saveBtn = document.getElementById('brokerFormSaveBtn');
   saveBtn.disabled = true;
   try{
-    const res = await fetch(`${BASE}/api/admin/brokers`, {
-      method:'POST',
+    const res = await fetch(`${BASE}/api/admin/brokers${_editingBrokerId ? '/' + _editingBrokerId : ''}`, {
+      method: _editingBrokerId ? 'PATCH' : 'POST',
       headers: authHeaders({'Content-Type':'application/json'}),
       body: JSON.stringify({ location, phone })
     });
@@ -9128,6 +9138,7 @@ window.saveBroker = async function(){
       return fail(data.error || data.message || 'Save failed', (res.status === 409 || data.duplicate) ? phoneInput : null);
     }
     closeBrokerModal();
+    if(typeof _adminToast === 'function') _adminToast(_editingBrokerId ? 'Broker updated' : 'Broker added');
     brokersTable.ajax.reload(null, false);   // reload the table from the DB
   } catch(err){
     fail('Save failed. Please try again.');
@@ -9143,19 +9154,68 @@ window.deleteBroker = async function(id){
     const res = await fetch(`${BASE}/api/admin/brokers/${id}`, { method:'DELETE', headers: authHeaders() });
     const data = await res.json().catch(()=>({}));
     if(!res.ok){ alert(data.error || data.message || 'Delete failed'); return; }
+    _selectedBrokerIds.delete(id);
     brokersTable.ajax.reload(null, false);
   } catch(err){
     alert('Delete failed. Please try again.');
   }
 };
 
-/* ── BROKERS: COPY / SHARE ALL ── */
+/* ── BROKERS: SELECTION + COPY / SHARE ── */
+const _selectedBrokerIds = new Set();
+
+window.onBrokerRowCheck = function(cb, id){
+  if(cb.checked) _selectedBrokerIds.add(id); else _selectedBrokerIds.delete(id);
+  updateBrokerSelectionUI();
+};
+
+window.onBrokerSelectAllChange = function(headerCb){
+  brokersTable.rows({search:'applied'}).data().toArray().forEach(r => {
+    if(headerCb.checked) _selectedBrokerIds.add(r._id); else _selectedBrokerIds.delete(r._id);
+  });
+  document.querySelectorAll('#brokersTable tbody .broker-row-check').forEach(cb => {
+    cb.checked = _selectedBrokerIds.has(cb.getAttribute('data-id'));
+  });
+  updateBrokerSelectionUI();
+};
+
+// Syncs row highlights, the header checkbox and the Copy/Share labels with the selection.
+window.updateBrokerSelectionUI = function(){
+  if(typeof brokersTable === 'undefined' || !brokersTable) return;
+  const rows = brokersTable.rows({search:'applied'}).data().toArray();
+  const selCount = rows.filter(r => _selectedBrokerIds.has(r._id)).length;
+  document.querySelectorAll('#brokersTable tbody .broker-row-check').forEach(cb => {
+    const on = _selectedBrokerIds.has(cb.getAttribute('data-id'));
+    cb.checked = on;
+    const tr = cb.closest('tr'); if(tr) tr.style.background = on ? 'rgba(37,211,102,.10)' : '';
+  });
+  const head = document.getElementById('brokerSelectAllCheckbox');
+  if(head){
+    head.checked = rows.length > 0 && selCount === rows.length;
+    head.indeterminate = selCount > 0 && selCount < rows.length;
+  }
+  const setLbl = (btnId, base) => {
+    const lbl = document.querySelector('#' + btnId + ' .bulk-btn-label');
+    if(!lbl) return;
+    const suffix = selCount ? ' (' + selCount + ')' : '';
+    lbl.textContent = base.long + suffix;
+    lbl.setAttribute('data-mobile', base.short + suffix);
+  };
+  setLbl('copyBrokersBtn',  {long:'Copy message',  short:'Copy'});
+  setLbl('shareBrokersBtn', {long:'Share brokers', short:'Share'});
+};
+
+// Selected brokers if any are ticked, otherwise every broker in the table.
 window.buildBrokersMessage = function(){
-  const rows = (typeof brokersTable !== 'undefined' && brokersTable) ? brokersTable.rows().data().toArray() : [];
-  const list = rows.filter(r => r && r.phone);
+  const all = (typeof brokersTable !== 'undefined' && brokersTable) ? brokersTable.rows({search:'applied', order:'applied'}).data().toArray() : [];
+  const picked = all.filter(r => _selectedBrokerIds.has(r._id));
+  const list = (picked.length ? picked : all).filter(r => r && r.phone);
   if(!list.length) return '';
-  const lines = list.map((r,i) => (i+1) + '. ' + r.phone + ' - ' + ((r.location||'').trim() || '--'));
-  return 'Other Platforms/Brokers/Agents numbers - they might help you find a home.\n\n' + lines.join('\n') + '\n\nShared by www.homeloop.in';
+  const lines = list.map(r => r.phone + ' - ' + ((r.location||'').trim() || '--'));
+  return 'Other Platforms/Brokers/Agents numbers - they might help you find a home.\n\n'
+    + lines.join('\n')
+    + '\n\nDisclaimer: These contacts are shared for convenience only. HomeLoop does not verify them and is not responsible for any fraud or loss. Please verify before making any payment.'
+    + '\n\nShared by www.homeloop.in';
 };
 
 window.copyBrokers = async function(){
@@ -12850,41 +12910,53 @@ $(document).ready(function(){
       dataSrc: function(res){
         const brokers = (res && Array.isArray(res.brokers)) ? res.brokers : [];
         document.getElementById('tab-brokers-count').innerText = brokers.length;
+        // drop selections for brokers that no longer exist (deleted / edited elsewhere)
+        const _ids = new Set(brokers.map(b => b._id));
+        Array.from(_selectedBrokerIds).forEach(id => { if(!_ids.has(id)) _selectedBrokerIds.delete(id); });
+        setTimeout(updateBrokerSelectionUI, 0);
         return brokers;
       }
     },
     columns:[
-      /* 0 - Row number */
+      /* 0 - Select checkbox */
+      { data:null, orderable:false, className:'dt-body-center', render:(d,t,row)=>{
+          if(t!=='display') return '';
+          const checked = _selectedBrokerIds.has(row._id) ? 'checked' : '';
+          return `<input type="checkbox" class="broker-row-check" data-id="${row._id}" onchange="onBrokerRowCheck(this,'${row._id}')" ${checked}>`;
+      }},
+      /* 1 - Row number */
       { data:null, orderable:false, className:'dt-body-center', render:(d,t,row,meta)=>{
           if(t!=='display') return '';
           return meta.row + meta.settings._iDisplayStart + 1;
       }},
-      /* 1 - Location */
+      /* 2 - Location */
       { data:'location', render:(d)=> escapeHtml(d||'--') },
-      /* 2 - Number */
+      /* 3 - Number */
       { data:'phone', render:(d,t)=>{
           if(t!=='display') return d||'';
           return d ? `<a href="tel:${escapeHtml(d)}">${escapeHtml(d)}</a>` : '--';
       }},
-      /* 3 - Added on (sorts on the raw timestamp) */
+      /* 4 - Added on (sorts on the raw timestamp) */
       { data:'createdAt', render:(d,t)=>{
           if(!d) return t==='display' ? '--' : 0;
           if(t!=='display') return new Date(d).getTime();
           return new Date(d).toLocaleString('en-IN',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:true});
       }},
-      /* 4 - Action */
+      /* 5 - Action */
       { data:null, orderable:false, render:(d,t,row)=>{
           if(t!=='display') return '';
           return `<div style="display:inline-flex;gap:6px;flex-wrap:nowrap;justify-content:center">
+            <span class="pact pact-edit"><button class="btn-view" title="Edit this broker" onclick="openBrokerModal('${row._id}')"><i class="fas fa-pen"></i><span class="btn-label"> Edit</span></button></span>
             <span class="pact pact-delete"><button class="btn-view" onclick="deleteBroker('${row._id}')"><i class="fas fa-trash"></i><span class="btn-label"> Delete</span></button></span>
           </div>`;
       }}
     ],
-    order:[[3,'desc']],
+    order:[[4,'desc']],
     orderCellsTop:true,
     dom:'rt<"bottom-controls"i>',
     pageLength:-1,
     scrollX:true,
+    drawCallback: function(){ updateBrokerSelectionUI(); },
     language:{
       emptyTable:'<div class="empty-state"><i class="fas fa-user-tie"></i>No brokers added yet</div>',
       zeroRecords:'<div class="empty-state"><i class="fas fa-magnifying-glass"></i>No matching brokers</div>',
@@ -18639,8 +18711,8 @@ markRequiredLabels();
     <div class="prop-modal-body">
       <div class="bk-head">
         <div class="bk-badge"><i class="fas fa-user-tie"></i></div>
-        <div class="bk-title">Add Broker</div>
-        <div class="bk-sub">Save the broker's area and contact number</div>
+        <div class="bk-title" id="brokerModalTitle">Add Broker</div>
+        <div class="bk-sub" id="brokerModalSub">Save the broker's area and contact number</div>
       </div>
 
       <div class="hr-form-error" id="brokerFormError"></div>

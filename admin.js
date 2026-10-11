@@ -2993,6 +2993,28 @@ self.addEventListener('notificationclick', event => {
     }
   });
 
+  // PATCH /api/admin/brokers/:id -- admin-only, edit a broker's location and/or number
+  app.patch('/api/admin/brokers/:id', requireAdmin, requireModuleAction('brokers'), async (req, res) => {
+    try {
+      if (!mongoose.Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ error: 'Invalid broker id' });
+      const { location, phone } = req.body || {};
+      const cleanLocation = String(location || '').trim();
+      const cleanPhone = normalizeBrokerPhone(phone);
+      if (!cleanLocation) return res.status(400).json({ error: 'Location is required' });
+      if (cleanLocation.length > 120) return res.status(400).json({ error: 'Location must be at most 120 characters' });
+      if (!/^[6-9]\d{9}$/.test(cleanPhone)) return res.status(400).json({ error: 'Please enter a valid 10-digit mobile number' });
+      const dup = await Broker.findOne({ phone: cleanPhone, _id: { $ne: req.params.id } }).lean();
+      if (dup) return res.status(409).json({ error: `This number is already added (${dup.location}).`, duplicate: true });
+      const broker = await Broker.findByIdAndUpdate(req.params.id, { location: cleanLocation, phone: cleanPhone }, { new: true, runValidators: true }).lean();
+      if (!broker) return res.status(404).json({ error: 'Broker not found' });
+      res.json({ broker });
+    } catch (err) {
+      if (err && err.code === 11000) return res.status(409).json({ error: 'This number is already added.', duplicate: true });
+      console.error('PATCH /api/admin/brokers/:id error:', err.message);
+      res.status(500).json({ error: 'Could not update broker' });
+    }
+  });
+
   // DELETE /api/admin/brokers/:id -- admin-only
   app.delete('/api/admin/brokers/:id', requireAdmin, requireModuleAction('brokers'), async (req, res) => {
     try {
