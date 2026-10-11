@@ -1511,6 +1511,10 @@ main.tab-explore .empty-state{display:none !important}
 .prop-action-btn:hover{border-color:var(--brand);color:var(--brand);background:var(--brand-light)}
 .prop-action-btn.prop-action-contact{border-color:var(--brand);color:var(--brand)}
 .prop-action-btn.prop-action-contact:hover{background:var(--brand-light)}
+.view-share-hdr{width:32px;height:32px;border-radius:50%;border:none;background:#fff;color:#25D366;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 3px 8px rgba(0,0,0,.25);transition:transform .15s}
+.view-share-hdr svg{width:18px;height:18px;fill:currentColor;stroke:none}
+.view-share-hdr:hover{transform:scale(1.08)}
+.add-modal:not(.view-mode) .view-share-hdr{display:none !important}
 .prop-action-btn.prop-action-whatsapp{color:#25D366;border-color:#bfe8cf}
 .prop-action-btn.prop-action-whatsapp svg{fill:currentColor;stroke:none}
 .prop-action-btn.prop-action-whatsapp:hover{background:#e8faef;border-color:#25D366;color:#1ebe5a}
@@ -6404,6 +6408,7 @@ main.tab-explore .empty-state{display:none !important}
         <div style="color:rgba(255,255,255,.85);font-size:12px;font-weight:600;margin-top:2px;display:none" id="addModalSubtitleText"></div>
       </div>
       <div style="display:flex;align-items:center;gap:10px">
+      <button type="button" id="viewShareHeaderBtn" class="view-share-hdr" aria-label="Share on WhatsApp" title="Share on WhatsApp" style="display:none"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.6 6.32A8.86 8.86 0 0 0 12.05 4C7.4 4 3.6 7.8 3.6 12.45c0 1.6.45 3.13 1.27 4.45L4 21l4.2-1.1a8.83 8.83 0 0 0 4.07.99h.01c4.65 0 8.45-3.8 8.45-8.45a8.4 8.4 0 0 0-2.93-5.62zM12.06 19.5a7.05 7.05 0 0 1-3.6-.99l-.26-.15-2.67.7.71-2.6-.17-.27a6.99 6.99 0 0 1-1.08-3.74c0-3.86 3.15-7 7.04-7 1.88 0 3.64.73 4.97 2.06a6.96 6.96 0 0 1 2.06 4.96c0 3.87-3.16 7.03-7 7.03zm3.86-5.27c-.21-.1-1.24-.62-1.43-.68-.19-.07-.33-.1-.47.1-.14.21-.54.68-.66.81-.12.14-.24.16-.45.05-.21-.1-.87-.32-1.66-1.03-.61-.55-1.03-1.22-1.15-1.43-.12-.21-.01-.32.1-.43.1-.1.21-.26.32-.39.1-.13.14-.21.21-.36.07-.14.04-.27-.02-.38-.07-.1-.62-1.49-.85-2.04-.18-.43-.36-.37-.5-.38h-.42c-.14 0-.38.05-.58.27-.21.21-.79.77-.79 1.88 0 1.1.81 2.18.92 2.33.12.14 1.58 2.42 3.83 3.3 1.9.75 2.28.6 2.7.56.42-.04 1.36-.55 1.55-1.09.19-.53.19-.98.13-1.08-.05-.1-.21-.16-.43-.27z"/></svg></button>
       <button type="button" id="clearFormBtn" onclick="confirmClearAddModalDraft()" style="background:transparent;border:1.5px solid rgba(255,255,255,.4);color:#fff;border-radius:16px;padding:0 12px;height:32px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">Clear form</button>
       <button class="modal-close" style="position:static;background:var(--brand);border:none;color:#fff;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;box-shadow:0 3px 8px rgba(0,0,0,.25);transition:background .15s,transform .15s" onmouseover="this.style.background='var(--brand-hover)';this.style.transform='scale(1.06)'" onmouseout="this.style.background='var(--brand)';this.style.transform='scale(1)'" onclick="closeAddModal()" aria-label="Close">
         <svg viewBox="0 0 24 24" aria-hidden="true" stroke="#fff" style="width:16px;height:16px;stroke-width:2.6;stroke:#fff !important"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -7114,6 +7119,12 @@ main.tab-explore .empty-state{display:none !important}
         <button class="modal-btn-primary" id="viewNavigateBtn" style="background:#4285F4;border-color:#4285F4;box-shadow:none">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l19-9-9 19-2-8-8-2z"/></svg>
           Navigate to Property
+        </button>
+      </div>
+      <div class="modal-actions-row" id="viewShareRow" style="margin-top:10px">
+        <button class="modal-btn-whatsapp" id="viewShareBtn">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.6 6.32A8.86 8.86 0 0 0 12.05 4C7.4 4 3.6 7.8 3.6 12.45c0 1.6.45 3.13 1.27 4.45L4 21l4.2-1.1a8.83 8.83 0 0 0 4.07.99h.01c4.65 0 8.45-3.8 8.45-8.45a8.4 8.4 0 0 0-2.93-5.62zM12.06 19.5a7.05 7.05 0 0 1-3.6-.99l-.26-.15-2.67.7.71-2.6-.17-.27a6.99 6.99 0 0 1-1.08-3.74c0-3.86 3.15-7 7.04-7 1.88 0 3.64.73 4.97 2.06a6.96 6.96 0 0 1 2.06 4.96c0 3.87-3.16 7.03-7 7.03zm3.86-5.27c-.21-.1-1.24-.62-1.43-.68-.19-.07-.33-.1-.47.1-.14.21-.54.68-.66.81-.12.14-.24.16-.45.05-.21-.1-.87-.32-1.66-1.03-.61-.55-1.03-1.22-1.15-1.43-.12-.21-.01-.32.1-.43.1-.1.21-.26.32-.39.1-.13.14-.21.21-.36.07-.14.04-.27-.02-.38-.07-.1-.62-1.49-.85-2.04-.18-.43-.36-.37-.5-.38h-.42c-.14 0-.38.05-.58.27-.21.21-.79.77-.79 1.88 0 1.1.81 2.18.92 2.33.12.14 1.58 2.42 3.83 3.3 1.9.75 2.28.6 2.7.56.42-.04 1.36-.55 1.55-1.09.19-.53.19-.98.13-1.08-.05-.1-.21-.16-.43-.27z"/></svg>
+          Share on WhatsApp
         </button>
       </div>
     </div>
@@ -12876,6 +12887,10 @@ function openDetailReal(id) {
   document.getElementById('viewScheduleBtn').onclick = () => openScheduleModal(p.id);
   document.getElementById('viewCallBtn').onclick = () => openCall(p.id);
   document.getElementById('viewWhatsappBtn').onclick = () => openWhatsApp(p.id);
+  document.getElementById('viewShareBtn').onclick = () => sharePropertyWhatsApp(p.id);
+  document.getElementById('viewShareHeaderBtn').onclick = () => sharePropertyWhatsApp(p.id);
+  document.getElementById('viewShareRow').style.display = isBookedProp(p) ? 'none' : '';
+  document.getElementById('viewShareHeaderBtn').style.display = isBookedProp(p) ? 'none' : 'flex';
   // Call button label: "Coordinator" when this listing's contact number is the fixed
   // in-house agent line (9035205230), "Owner" for any other number (i.e. the
   // owner entered their own number in the agentPhone field).
@@ -12964,7 +12979,7 @@ function openDetailReal(id) {
     document.getElementById('viewLocLinkRow').style.display = 'none';
     actionsRow1.style.display = [...actionsRow1.children].every(c => getComputedStyle(c).display === 'none') ? 'none' : '';
   }
-  const _footerHasContent = ['viewActionsRow', 'viewActionsRow2', 'viewOwnerMainRow', 'viewOwnerAltRow', 'viewNavigateRow', 'viewLocLinkRow']
+  const _footerHasContent = ['viewActionsRow', 'viewActionsRow2', 'viewOwnerMainRow', 'viewOwnerAltRow', 'viewNavigateRow', 'viewLocLinkRow', 'viewShareRow']
     .some(id => document.getElementById(id).style.display !== 'none');
   footerEl.style.display = _footerHasContent ? 'block' : 'none';
 
@@ -13651,6 +13666,20 @@ function openWhatsApp(propId) {
 /* ═══════════════════════════════════════════════
    ADD LISTING MODAL
 ═══════════════════════════════════════════════ */
+/* Share a property link (+ short summary) to any WhatsApp contact/group. Open to everyone: tenants and owners. */
+function sharePropertyWhatsApp(propId) {
+  const p = PROPERTIES.find(x => x.id === propId) || BOOKED_PROPERTIES.find(x => x.id === propId);
+  if (!p) return;
+  const type = pTypeLabel(p);
+  const bhk = String(p.property?.bhk || '').trim();
+  const rent = Number(p.price?.rent) || 0;
+  const priceTxt = rent ? fmtINR(rent) + (type === 'Sell' ? '' : (type === 'ShortStay' ? '/day' : '/month')) : '';
+  const summary = [p.propertyId, bhk, p.location?.area, priceTxt].filter(Boolean).join(' \u00b7 ');
+  const propertyUrl = `${window.location.origin}/property/${p.id}`;
+  const msg = `Check out this property on HomeLoop:\n${summary}\n${propertyUrl}`;
+  window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank', 'noopener');
+}
+
 function resetListingForm() {
   // Reset all standard inputs/selects/textareas inside the modal
   document.querySelectorAll('#addModal input:not([type="checkbox"]), #addModal select, #addModal textarea').forEach(el => { el.value = ''; });
@@ -19323,7 +19352,7 @@ function showPreAvailModal() {
   var q = new URLSearchParams(window.location.search);
   if (q.has('compare') || q.has('property') || q.has('charges')) return;
   if (/^\/property\/[a-fA-F0-9]{24}$/.test(window.location.pathname)) return;
-  // Only listings created today — compared by calendar date only (time of day ignored), newest first.
+  // Only listings created today — compared by calendar date only (time of day ignored), sorted by property ID ascending.
   function dayKey(v){
     var d = new Date(v);
     if (isNaN(d)) return '';
@@ -19334,7 +19363,13 @@ function showPreAvailModal() {
     if (!p.createdAt || dayKey(p.createdAt) !== todayKey) return false;
     if (typeof SHORT_STAY_ENABLED !== 'undefined' && !SHORT_STAY_ENABLED && pTypeLabel(p) === 'ShortStay') return false;
     return true;
-  }).sort(function(a, b){ return new Date(b.createdAt) - new Date(a.createdAt); });
+  }).sort(function(a, b){
+    // Property ID order, lowest to highest (numeric part of e.g. HDN156 -> 156).
+    var na = parseInt(String(a.propertyId || '').replace(/\D/g, ''), 10), nb = parseInt(String(b.propertyId || '').replace(/\D/g, ''), 10);
+    if (isNaN(na)) na = Infinity; if (isNaN(nb)) nb = Infinity;
+    if (na !== nb) return na < nb ? -1 : 1;
+    return String(a.propertyId || '').localeCompare(String(b.propertyId || ''));
+  });
   if (!items.length) return;
   var ov = document.getElementById('preavOverlay');
   if (ov.classList.contains('open')) return;
