@@ -9149,6 +9149,44 @@ window.deleteBroker = async function(id){
   }
 };
 
+/* ── BROKERS: COPY / SHARE ALL ── */
+window.buildBrokersMessage = function(){
+  const rows = (typeof brokersTable !== 'undefined' && brokersTable) ? brokersTable.rows().data().toArray() : [];
+  const list = rows.filter(r => r && r.phone);
+  if(!list.length) return '';
+  const lines = list.map((r,i) => (i+1) + '. ' + r.phone + ' - ' + ((r.location||'').trim() || '--'));
+  return 'Other Platforms/Brokers/Agents numbers - they might help you find a home.\n\n' + lines.join('\n');
+};
+
+window.copyBrokers = async function(){
+  const msg = buildBrokersMessage();
+  if(!msg){ alert('No brokers to copy.'); return; }
+  let ok = false;
+  try{
+    if(navigator.clipboard && navigator.clipboard.writeText){ await navigator.clipboard.writeText(msg); ok = true; }
+  } catch(e){ /* fall through to legacy copy */ }
+  if(!ok){
+    try{
+      const ta = document.createElement('textarea');
+      ta.value = msg;
+      ta.setAttribute('readonly','');
+      ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0;';
+      document.body.appendChild(ta);
+      ta.focus(); ta.select(); ta.setSelectionRange(0, msg.length);
+      ok = document.execCommand('copy');
+      document.body.removeChild(ta);
+    } catch(e){ ok = false; }
+  }
+  if(ok){ if(typeof _adminToast === 'function') _adminToast('Brokers copied!'); }
+  else alert('Copy failed. Please try again.');
+};
+
+window.shareBrokers = function(){
+  const msg = buildBrokersMessage();
+  if(!msg){ alert('No brokers to share.'); return; }
+  window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
+};
+
 /* ── PARTNERS: SELECTION & BULK DELETE ── */
 const _selectedPartnerIds = new Set();
 
