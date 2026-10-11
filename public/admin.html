@@ -9214,8 +9214,7 @@ window.buildBrokersMessage = function(){
   const lines = list.map(r => r.phone + ' - ' + ((r.location||'').trim() || '--'));
   return 'Other Platforms/Brokers/Agents numbers - they might help you find a home.\n\n'
     + lines.join('\n')
-    + '\n\nDisclaimer: These contacts are shared for convenience only. HomeLoop does not verify them and is not responsible for any fraud or loss. Please verify before making any payment.'
-    + '\n\nShared by www.homeloop.in';
+    + '\n\nDisclaimer: These contacts are shared for convenience only. HomeLoop does not verify them and is not responsible for any fraud or loss. Please verify before making any payment.';
 };
 
 window.copyBrokers = async function(){
