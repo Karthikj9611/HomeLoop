@@ -1179,8 +1179,8 @@ main.tab-explore .empty-state{display:none !important}
 .prop-grid.promo-slider::-webkit-scrollbar{display:none}
 /* An empty slider (no cards) must take up no space — its own padding was adding ~14px between the banner and the first section header on the Promoted tab. */
 .prop-grid.promo-slider:empty{display:none}
-.prop-grid.promo-slider,[id$="BookedGrid"]{will-change:scroll-position;overscroll-behavior-x:contain}
-.prop-grid.promo-slider > .prop-card,[id$="BookedGrid"] > .prop-card{translate:var(--gfrac,0px) 0}
+.prop-grid.promo-slider,[id$="BookedGrid"],#recentlyViewedStrip{will-change:scroll-position;overscroll-behavior-x:contain}
+.prop-grid.promo-slider > .prop-card,[id$="BookedGrid"] > .prop-card,#recentlyViewedStrip > .prop-card,#recentlyViewedStrip > .rv-card{translate:var(--gfrac,0px) 0}
 .prop-grid.promo-slider > .prop-card{flex:0 0 var(--promo-card-w, calc((100% - 48px) / 4));width:var(--promo-card-w, auto);min-width:0;scroll-snap-align:start}
 /* Fallbacks only (used until JS measures the real Rent grid track): flex-basis % is already
    relative to the content box, so the container padding must NOT be subtracted again. */
@@ -2007,6 +2007,9 @@ main.tab-explore .empty-state{display:none !important}
 }
 [id$="BookedGrid"]::-webkit-scrollbar{height:6px}
 [id$="BookedGrid"]::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+/* Viewed + Booked strips auto-slide / swipe — no visible scrollbar needed. */
+.recently-viewed-strip,[id$="BookedGrid"],#recentlyViewedStrip{scrollbar-width:none !important;-ms-overflow-style:none}
+.recently-viewed-strip::-webkit-scrollbar,[id$="BookedGrid"]::-webkit-scrollbar,#recentlyViewedStrip::-webkit-scrollbar{display:none !important;width:0;height:0}
 [id$="BookedGrid"] .prop-card{flex:0 0 var(--rv-card-w, 220px)}
 /* Viewed strip uses a visibly smaller/compact version of the standard card —
    shorter image, tighter body padding, and genuinely smaller badges (real
@@ -9243,6 +9246,8 @@ function renderRecentlyViewed() {
   strip.innerHTML = ids.map(id => recentlyViewedCardHTML(recentlyViewedData[id])).join('');
   observeCardImgs(strip);
   requestAnimationFrame(syncRecentlyViewedCardWidth);
+  // Viewed slides exactly like Booked (glide to end, dwell, glide back; hover/touch holds it).
+  requestAnimationFrame(() => { if (typeof setupBookedSliders === 'function') setupBookedSliders(); });
 }
 // Keeps Recently Viewed cards sized relative to the real property cards
 // currently on screen (the property grid is fluid — auto-fill(minmax(260px,1fr))
@@ -9524,7 +9529,7 @@ function bookedFrame(ts) {
   const dt = _bookedLast ? Math.min(ts - _bookedLast, 50) : 16;
   _bookedLast = ts;
   let active = 0;
-  document.querySelectorAll('[id$="BookedGrid"], #upcomingGrid.promo-slider').forEach(grid => {
+  document.querySelectorAll('[id$="BookedGrid"], #upcomingGrid.promo-slider, #recentlyViewedStrip').forEach(grid => {
     const st = _bookedSl.get(grid);
     if (!st || grid.style.display === 'none' || grid.classList.contains('list-view') || !grid.firstElementChild) return;
     active++;
@@ -9553,7 +9558,7 @@ function setupUpcomingSlider() {
   if (on) setupBookedSliders();
 }
 function setupBookedSliders() {
-  document.querySelectorAll('[id$="BookedGrid"], #upcomingGrid.promo-slider').forEach(grid => {
+  document.querySelectorAll('[id$="BookedGrid"], #upcomingGrid.promo-slider, #recentlyViewedStrip').forEach(grid => {
     if (!_bookedSl.has(grid)) {
       const st = { pos: 0, dir: 1, dwellUntil: 0, paused: false, resume: null };
       _bookedSl.set(grid, st);
