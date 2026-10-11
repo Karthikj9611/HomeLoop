@@ -9155,7 +9155,7 @@ window.buildBrokersMessage = function(){
   const list = rows.filter(r => r && r.phone);
   if(!list.length) return '';
   const lines = list.map((r,i) => (i+1) + '. ' + r.phone + ' - ' + ((r.location||'').trim() || '--'));
-  return 'Other Platforms/Brokers/Agents numbers - they might help you find a home.\n\n' + lines.join('\n');
+  return 'Other Platforms/Brokers/Agents numbers - they might help you find a home.\n\n' + lines.join('\n') + '\n\nShared by www.homeloop.in';
 };
 
 window.copyBrokers = async function(){
