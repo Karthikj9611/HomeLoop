@@ -13676,7 +13676,7 @@ function sharePropertyWhatsApp(propId) {
   const priceTxt = rent ? fmtINR(rent) + (type === 'Sell' ? '' : (type === 'ShortStay' ? '/day' : '/month')) : '';
   const summary = [p.propertyId, bhk, p.location?.area, priceTxt].filter(Boolean).join(' \u00b7 ');
   const propertyUrl = `${window.location.origin}/property/${p.id}`;
-  const msg = `Check out this property on HomeLoop:\n${summary}\n${propertyUrl}`;
+  const msg = `Interested in this property.\n${summary}\n${propertyUrl}`;
   window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank', 'noopener');
 }
 
