@@ -1146,12 +1146,12 @@ self.addEventListener('notificationclick', event => {
     const plan = pickCurrentPlan(user.subscriptions, now);
     const curFrom = user.subscriptionFrom || user.subscriptionAt || null;
     const curTo = user.subscriptionTo || null;
-    const isTenant = (user.accountType || 'customer') !== 'owner' && !user.isBlocked;
+    const isTenant = (user.accountType || 'customer') === 'customer' && !user.isBlocked;
     if (!plan) {
       // No plans left → clear the mirror. If a plan was running, switch Public call off (as the expiry sweep would).
       const wasRunning = !!(curFrom && curTo && new Date(curFrom) <= now && new Date(curTo) > now);
       const upd = { subscriptionAt: null, subscriptionFrom: null, subscriptionTo: null, subscriptionBhk: '', subscriptionFilter: null, subscriptionExpiryHandled: false, subscriptionStartHandled: false };
-      if (wasRunning && (user.accountType || 'customer') !== 'owner') upd.publicCall = false;
+      if (wasRunning && (user.accountType || 'customer') === 'customer') upd.publicCall = false;
       return User.findByIdAndUpdate(id, upd, { new: true }).lean();
     }
     const same = curFrom && curTo && +new Date(curFrom) === +new Date(plan.from) && +new Date(curTo) === +new Date(plan.to);
@@ -1165,7 +1165,7 @@ self.addEventListener('notificationclick', event => {
     const running = new Date(plan.from) <= now && new Date(plan.to) > now;
     if (running) {
       if (isTenant) { upd.publicCall = true; upd.subscriptionStartHandled = true; }   // already running → Public call ON now
-    } else if (curTo && new Date(curTo) <= now && !user.subscriptionExpiryHandled && (user.accountType || 'customer') !== 'owner') {
+    } else if (curTo && new Date(curTo) <= now && !user.subscriptionExpiryHandled && (user.accountType || 'customer') === 'customer') {
       upd.publicCall = false;   // previous plan ended before the expiry sweep ran, next one hasn't started
     }
     return User.findByIdAndUpdate(id, upd, { new: true }).lean();
@@ -1333,7 +1333,7 @@ self.addEventListener('notificationclick', event => {
         subscriptionFrom: { $ne: null, $lte: now },
         subscriptionTo:   { $ne: null, $gt: now },
         subscriptionStartHandled: { $ne: true },
-        accountType: { $ne: 'owner' },
+        accountType: { $nin: ['owner', 'broker'] },
         isBlocked: { $ne: true },
       }).select('_id').lean();
       for (const { _id } of due) {
@@ -1366,7 +1366,7 @@ self.addEventListener('notificationclick', event => {
       let mobile = String(b.mobile || '').replace(/\D/g, '');
       if (mobile.length > 10 && mobile.startsWith('0'))  mobile = mobile.slice(1);
       if (mobile.length > 10 && mobile.startsWith('91')) mobile = mobile.slice(-10);
-      const accountType = b.accountType === 'owner' ? 'owner' : 'customer';
+      const accountType = (b.accountType === 'owner' || b.accountType === 'broker') ? b.accountType : 'customer';
 
       if (!firstName) return res.status(400).json({ message: 'First name is required.' });
       if (!/^\d{10}$/.test(mobile)) return res.status(400).json({ message: 'Enter a valid 10-digit mobile number.' });
@@ -1628,7 +1628,8 @@ self.addEventListener('notificationclick', event => {
     const tenants = [], owners = [];
     byUser.forEach((meta, uid) => {
       const u = userMap[uid];
-      const accountType = (u ? u.accountType : meta.snapType) === 'owner' ? 'owner' : 'customer';
+      const _rawType = (u ? u.accountType : meta.snapType);
+      const accountType = (_rawType === 'owner' || _rawType === 'broker') ? 'owner' : 'customer';
       const row = {
         _id:           uid,
         userId:        u ? (u.userId || '') : '',
@@ -1710,7 +1711,7 @@ self.addEventListener('notificationclick', event => {
       const reason = String((req.body && req.body.reason) || '').trim();
       const user = await findUserByMobileOrId(req.params.mobile);
       if (!user) return res.status(404).json({ message: 'Customer not found' });
-      const allowed = user.accountType === 'owner' ? OWNER_REASONS : TENANT_REASONS;
+      const allowed = (user.accountType === 'owner' || user.accountType === 'broker') ? OWNER_REASONS : TENANT_REASONS;
       if (reason && !allowed.includes(reason)) return res.status(400).json({ message: 'Invalid reason' });
       user.reason = reason;
       await user.save();
@@ -3458,7 +3459,7 @@ self.addEventListener('notificationclick', event => {
                 name: u.name || [u.firstName, u.lastName].filter(Boolean).join(' ').trim(),
                 mobile: u.mobile || '',
                 email: u.email || '',
-                accountType: u.accountType === 'owner' ? 'owner' : 'customer',
+                accountType: (u.accountType === 'owner' || u.accountType === 'broker') ? 'owner' : 'customer',
                 propertiesViewed: viewedBy.get(String(u._id)) || 0,
               } : { removed: true })
             : null,
