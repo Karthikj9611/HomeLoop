@@ -544,6 +544,12 @@ ul{list-style:none}
 .filter-dd-bar.tab-promoted .fd-pg,
 .filter-dd-bar.tab-promoted .fd-shortstay,
 .filter-dd-bar.tab-promoted .fd-sell{display:inline-flex}
+/* Broker crosses all listing types (agent-listed), same full filter set as Promoted */
+.filter-dd-bar.tab-broker .fd-rent,
+.filter-dd-bar.tab-broker .fd-lease,
+.filter-dd-bar.tab-broker .fd-pg,
+.filter-dd-bar.tab-broker .fd-shortstay,
+.filter-dd-bar.tab-broker .fd-sell{display:inline-flex}
 .sort-modal{
   position:fixed;inset:0;z-index:200;
   display:none;align-items:flex-end;justify-content:center;
@@ -5038,9 +5044,13 @@ main.tab-explore .empty-state{display:none !important}
       <span class="nav-tab-icon">📜</span>
       Lease
     </div>
-    <div class="nav-tab" data-tab="Sell" role="tab" onclick="switchTab(this)" tabindex="0">
+    <div class="nav-tab" data-tab="Sell" role="tab" onclick="switchTab(this)" tabindex="0" style="display:none"><!-- SELL_ENABLED -->
       <span class="nav-tab-icon">🏷️</span>
       Sell
+    </div>
+    <div class="nav-tab" data-tab="Broker" role="tab" onclick="switchTab(this)" tabindex="0">
+      <span class="nav-tab-icon">👨‍💼</span>
+      Rental Brokers
     </div>
     <div class="nav-tab" data-tab="PG" role="tab" onclick="switchTab(this)" tabindex="0" style="display:none">
       <span class="nav-tab-icon">🛏️</span>
@@ -5919,7 +5929,8 @@ main.tab-explore .empty-state{display:none !important}
         <li><span onclick="document.querySelector('.nav-tab[data-tab=&quot;Promoted&quot;]').click(); window.scrollTo({top:0,behavior:'smooth'})">Promoted</span></li>
         <li><span onclick="document.querySelector('.nav-tab[data-tab=&quot;Rent&quot;]').click(); window.scrollTo({top:0,behavior:'smooth'})">Rent</span></li>
         <li><span onclick="document.querySelector('.nav-tab[data-tab=&quot;Lease&quot;]').click(); window.scrollTo({top:0,behavior:'smooth'})">Lease</span></li>
-        <li><span onclick="document.querySelector('.nav-tab[data-tab=&quot;Sell&quot;]').click(); window.scrollTo({top:0,behavior:'smooth'})">Sell</span></li>
+        <li style="display:none"><span onclick="document.querySelector('.nav-tab[data-tab=&quot;Sell&quot;]').click(); window.scrollTo({top:0,behavior:'smooth'})">Sell</span></li>
+        <li><span onclick="document.querySelector('.nav-tab[data-tab=&quot;Broker&quot;]').click(); window.scrollTo({top:0,behavior:'smooth'})">Rental Brokers</span></li>
       </ul>
     </div>
 
@@ -6066,7 +6077,7 @@ main.tab-explore .empty-state{display:none !important}
     </div>
     <svg class="fab-picker-chevron" viewBox="0 0 24 24" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
   </div>
-  <div class="fab-picker-item" role="menuitem" onclick="selectFabType('Sell')">
+  <div class="fab-picker-item" role="menuitem" onclick="selectFabType('Sell')" style="display:none">
     <span class="fab-picker-icon fpi-sell"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1v22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span>
     <div class="fab-picker-text">
       <div class="fab-picker-label">List Property for Sale</div>
@@ -6107,9 +6118,13 @@ main.tab-explore .empty-state{display:none !important}
     <span class="bottom-tab-icon">📜</span>
     Lease
   </div>
-  <div class="bottom-tab" data-tab="Sell" onclick="switchTabMobile(this)">
+  <div class="bottom-tab" data-tab="Sell" onclick="switchTabMobile(this)" style="display:none"><!-- SELL_ENABLED -->
     <span class="bottom-tab-icon">🏷️</span>
     Sell
+  </div>
+  <div class="bottom-tab" data-tab="Broker" onclick="switchTabMobile(this)">
+    <span class="bottom-tab-icon">👨‍💼</span>
+    Rental Brokers
   </div>
   <div class="bottom-tab" data-tab="PG" onclick="switchTabMobile(this)" style="display:none">
     <span class="bottom-tab-icon">🛏️</span>
@@ -6443,13 +6458,13 @@ main.tab-explore .empty-state{display:none !important}
       <div class="form-group" id="f-typeWrap">
         <label class="form-label">Status <span style="color:var(--brand)">*</span></label>
         <select class="form-select" id="f-type" onchange="onFTypeChange(this.value)">
-          <option value="Rent">Rent</option><option value="Lease">Lease</option><option value="PG">PG / Co-living</option><option value="ShortStay">Short Stay (Per Day)</option><option value="Sell">Sell</option>
+          <option value="Rent">Rent</option><option value="Lease">Lease</option><option value="PG">PG / Co-living</option><option value="ShortStay">Short Stay (Per Day)</option><option value="Sell" hidden>Sell</option>
         </select>
       </div>
       <div class="form-group">
         <label class="form-label">Listed by</label>
-        <select class="form-select" id="f-listedBy">
-          <option>Owner</option><option>Agent</option><option>Builder</option>
+        <select class="form-select" id="f-listedBy" onchange="updateBrokerageFields()">
+          <option>Owner</option><option>Agent</option><option>Broker</option><option>Builder</option>
         </select>
       </div>
     </div>
@@ -6604,6 +6619,34 @@ main.tab-explore .empty-state{display:none !important}
 	  <div class="form-group" id="f-negotiableWrap">
         <label class="form-label">Price negotiable</label>
         <select class="form-select" id="f-negotiable"><option value="">Select</option><option value="yes">Yes</option><option value="no">No</option></select>
+      </div>
+    </div>
+    </div>
+
+    <!-- ===== 4b. BROKERAGE (only when Listed by = Broker) ===== -->
+    <div id="f-brokerageBlock" style="display:none">
+    <div class="lm-section">🤝 Brokerage</div>
+    <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
+      <div class="form-group" id="f-brokerageWrap">
+        <label class="form-label">Brokerage fee</label>
+        <select class="form-select" id="f-brokerage" onchange="onBrokerageChange()">
+          <option value="">Select</option>
+          <option value="1 Day rent">1 Day rent</option>
+          <option value="7 Days rent">7 Days rent</option>
+          <option value="10 Days rent">10 Days rent</option>
+          <option value="15 Days rent">15 Days rent</option>
+          <option value="20 Days rent">20 Days rent</option>
+          <option value="1 Month rent">1 Month rent</option>
+          <option value="25% of rent">25% of rent</option>
+          <option value="50% of rent">50% of rent</option>
+          <option value="75% of rent">75% of rent</option>
+          <option value="100% of rent">100% of rent</option>
+          <option value="Fixed amount">Fixed amount</option>
+        </select>
+      </div>
+      <div class="form-group" id="f-brokerageAmountWrap" style="display:none">
+        <label class="form-label">Brokerage amount (₹)</label>
+        <input class="form-input" type="number" id="f-brokerageAmount" min="0">
       </div>
     </div>
     </div>
@@ -7564,6 +7607,49 @@ main.tab-explore .empty-state{display:none !important}
     </div>
   </div>
 
+</div>
+
+<!-- ─── Broker info modal (shown when the Broker tab is opened) ─── -->
+<div class="add-modal-overlay" id="brokerInfoModal" role="dialog" aria-modal="true" aria-label="About broker listings" onclick="if(event.target===this)closeBrokerInfoModal()">
+  <div class="add-modal" style="width:min(400px,calc(100vw - 24px));max-width:400px;min-width:0;padding:0;overflow:hidden;border-radius:20px">
+    <div style="padding:14px 16px;background:linear-gradient(135deg,var(--brand),#a3142f);color:#fff;position:relative;display:flex;align-items:center;gap:10px">
+      <div style="flex:0 0 34px;height:34px;border-radius:10px;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:18px">👨‍💼</div>
+      <div style="min-width:0;padding-right:30px">
+        <div style="font-size:16px;font-weight:800;letter-spacing:-.01em;line-height:1.2">Rental Broker listings</div>
+        <div style="font-size:11.5px;opacity:.9;margin-top:2px">Know who you're dealing with.</div>
+      </div>
+      <button class="modal-close" onclick="closeBrokerInfoModal()" aria-label="Close" style="position:absolute;top:10px;right:10px;width:28px;height:28px;background:rgba(255,255,255,.2);border-color:transparent">
+        <svg viewBox="0 0 24 24" aria-hidden="true" style="width:13px;height:13px;stroke:#fff"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div style="padding:12px 14px 14px;display:flex;flex-direction:column;gap:6px;max-height:calc(100vh - 200px);overflow-y:auto">
+      <div style="display:flex;gap:10px;align-items:center;padding:8px 10px;border-radius:12px;background:var(--bg-2)">
+        <div style="flex:0 0 30px;height:30px;border-radius:9px;background:var(--brand-light);display:flex;align-items:center;justify-content:center;font-size:15px">🏘️</div>
+        <div style="min-width:0"><div style="font-weight:700;font-size:13px;color:var(--text);line-height:1.25">Local brokers &amp; agents</div><div style="font-size:11.5px;color:var(--text-2);line-height:1.35;margin-top:1px">From neighbourhood brokers and other platforms.</div></div>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center;padding:8px 10px;border-radius:12px;background:var(--bg-2)">
+        <div style="flex:0 0 30px;height:30px;border-radius:9px;background:var(--brand-light);display:flex;align-items:center;justify-content:center;font-size:15px">🏢</div>
+        <div style="min-width:0"><div style="font-weight:700;font-size:13px;color:var(--text);line-height:1.25">Maintained buildings</div><div style="font-size:11.5px;color:var(--text-2);line-height:1.35;margin-top:1px">Includes buildings the broker manages.</div></div>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center;padding:8px 10px;border-radius:12px;background:var(--bg-2)">
+        <div style="flex:0 0 30px;height:30px;border-radius:9px;background:var(--brand-light);display:flex;align-items:center;justify-content:center;font-size:15px">💸</div>
+        <div style="min-width:0"><div style="font-weight:700;font-size:13px;color:var(--text);line-height:1.25">Their own commission</div><div style="font-size:11.5px;color:var(--text-2);line-height:1.35;margin-top:1px">Set by them, shown on each listing.</div></div>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center;padding:8px 10px;border-radius:12px;background:var(--bg-2)">
+        <div style="flex:0 0 30px;height:30px;border-radius:9px;background:var(--brand-light);display:flex;align-items:center;justify-content:center;font-size:15px">💧</div>
+        <div style="min-width:0"><div style="font-weight:700;font-size:13px;color:var(--text);line-height:1.25">Check the basics</div><div style="font-size:11.5px;color:var(--text-2);line-height:1.35;margin-top:1px">Water (Kaveri/borewell), power backup, parking.</div></div>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center;padding:8px 10px;border-radius:12px;background:var(--bg-2)">
+        <div style="flex:0 0 30px;height:30px;border-radius:9px;background:var(--brand-light);display:flex;align-items:center;justify-content:center;font-size:15px">📝</div>
+        <div style="min-width:0"><div style="font-weight:700;font-size:13px;color:var(--text);line-height:1.25">Get it in writing</div><div style="font-size:11.5px;color:var(--text-2);line-height:1.35;margin-top:1px">Rent agreement and receipts for payments.</div></div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:flex-start;padding:8px 10px;border-radius:12px;background:#fff6e5;border:1px solid #f3dca8;color:#6b4a00;font-size:11px;line-height:1.4">
+        <span style="font-size:13px;line-height:1.2">⚠️</span>
+        <span><b>Disclaimer:</b> HomeLoop is not responsible for any issues with these brokers, their listings or their commission.</span>
+      </div>
+      <button class="form-submit" style="width:100%;margin-top:4px;padding:10px 0;font-size:13.5px" onclick="closeBrokerInfoModal()">Got it</button>
+    </div>
+  </div>
 </div>
 
 <!-- ─── Notifications Modal ─────────────────────── -->
@@ -9234,7 +9320,7 @@ function renderRecentlyViewed() {
     // No live data left (listing removed) — filters can't be evaluated
     // without it, so fall back to the old tab/type-only match rather than
     // dropping the entry outright.
-    if (currentTab === 'Promoted' || currentTab === 'Verified') return false;
+    if (currentTab === 'Promoted' || currentTab === 'Verified' || currentTab === 'Broker') return false;
     const type = rv.type || pTypeLabel({});
     return type === currentTab;
   });
@@ -9392,6 +9478,7 @@ const TAB_EMPTY_LABEL = {
   PG: 'PG listings',
   ShortStay: 'short stay listings',
   Sell: 'listings for sale',
+  Broker: 'broker listings',
   All: 'listings',
 };
 
@@ -9404,6 +9491,7 @@ const TAB_EMPTY_LABEL = {
 function tabRawCount(tab) {
   return PROPERTIES.filter(p => {
     if (!SHORT_STAY_ENABLED && pTypeLabel(p) === 'ShortStay') return false;
+    if (!SELL_ENABLED && pTypeLabel(p) === 'Sell') return false;
     if (!PG_ENABLED && pTypeLabel(p) === 'PG') return false;
     return matchesTab(p, tab);
   }).length;
@@ -9642,7 +9730,7 @@ function renderCards() {
     (rankOf(a.promotedPriority) - rankOf(b.promotedPriority)) ||
     (propertyListedAt(b) - propertyListedAt(a));
 
-  const promoted = currentTab === 'Promoted' ? [] : list.filter(p => p.promoted && !(currentTab === 'Rent' && isUpcomingRent(p))).sort(byPromotedPriority);
+  const promoted = (currentTab === 'Promoted' || currentTab === 'Broker') ? [] : list.filter(p => p.promoted && !(currentTab === 'Rent' && isUpcomingRent(p))).sort(byPromotedPriority);
   // On a single-type tab (Rent/Lease/PG/ShortStay), `list` is already
   // scoped to just that type, so the "promoted" and typed buckets below
   // would otherwise be drawing from the exact same set — showing every
@@ -9778,6 +9866,8 @@ function renderBookedSections(fsIn) {
   const booked = (_filterActive || searchQuery) ? [] : getFiltered(BOOKED_PROPERTIES, _fsB); // search also hides Booked
   if (currentTab === 'Promoted') {
     groups.promoted = booked.filter(p => p.promoted);
+  } else if (currentTab === 'Broker') {
+    groups.promoted = booked.filter(p => p.basic?.listedBy === 'Broker');
   } else if (currentTab === 'Rent') {
     groups.rent = booked.filter(p => sectionKeyFor(p) === 'rent');
   } else if (currentTab === 'Lease') {
@@ -9903,7 +9993,7 @@ function paginationHTML(section, page, total) {
 
 function sectionItems(section) {
   const list = getFiltered();
-  if (section === 'promoted') return list.filter(p => p.promoted && !(currentTab === 'Rent' && isUpcomingRent(p)));
+  if (section === 'promoted') return currentTab === 'Broker' ? [] : list.filter(p => p.promoted && !(currentTab === 'Rent' && isUpcomingRent(p)));
   const dedupe = ['Rent', 'Lease', 'PG', 'ShortStay', 'Sell'].includes(currentTab);
   if (section === 'upcoming') return upcomingActive() ? list.filter(p => sectionKeyFor(p) === 'rent' && isUpcomingRent(p)) : [];
   if (section === 'rent' && upcomingActive()) return list.filter(p => (!dedupe || !p.promoted) && sectionKeyFor(p) === 'rent' && !isUpcomingRent(p));
@@ -10421,6 +10511,7 @@ function matchesTab(p, tab) {
   if (tab === 'All') return true;
   if (tab === 'Promoted') return !!p.promoted;
   if (tab === 'Verified') return !!p.verified;
+  if (tab === 'Broker') return p.basic?.listedBy === 'Broker';
   return pTypeLabel(p) === tab;
 }
 
@@ -11318,7 +11409,7 @@ function updateAllOnlySections() {
   const resultsCountEl = document.querySelector('.results-count');
   const adBannerEl = document.getElementById('adBanner');
   if (rh) {
-    const promoTab = ['Promoted', 'Rent', 'Lease', 'Sell'].includes(currentTab);
+    const promoTab = ['Promoted', 'Rent', 'Lease', 'Sell', 'Broker'].includes(currentTab);
     rh.style.display = promoTab ? '' : 'none';
     if (resultsCountEl) resultsCountEl.style.display = show ? '' : 'none';
     if (adBannerEl) adBannerEl.style.display = promoTab ? '' : 'none';
@@ -11366,6 +11457,7 @@ function switchTab(el) {
   renderBookedSections(); // re-filter the already-fetched BOOKED_PROPERTIES for the new tab
   renderRecentlyViewed();
   renderShortlistPanel();
+  if (currentTab === 'Broker') openBrokerInfoModal();
 }
 
 function switchTabMobile(el) {
@@ -11382,6 +11474,7 @@ function switchTabMobile(el) {
   renderBookedSections(); // re-filter the already-fetched BOOKED_PROPERTIES for the new tab
   renderRecentlyViewed();
   renderShortlistPanel();
+  if (currentTab === 'Broker') openBrokerInfoModal();
 }
 
 function syncMobileTab() {
@@ -11850,7 +11943,7 @@ function buildFilterOptions() {
 function syncFdBar() {
   const bar = document.getElementById('filterDdBar');
   if (!bar) return;
-  bar.classList.remove('tab-all','tab-rent','tab-lease','tab-pg','tab-promoted','tab-shortstay','tab-sell');
+  bar.classList.remove('tab-all','tab-rent','tab-lease','tab-pg','tab-promoted','tab-shortstay','tab-sell','tab-broker');
   bar.classList.add('tab-' + currentTab.toLowerCase());
 }
 
@@ -12308,7 +12401,8 @@ function restoreFilterStateBeforeBuild() {
   const _tabUsable = !saved.tab || (
     !!document.querySelector(`.nav-tab[data-tab="${saved.tab}"]`) &&
     !(saved.tab === 'PG' && !PG_ENABLED) &&
-    !(saved.tab === 'ShortStay' && !SHORT_STAY_ENABLED)
+    !(saved.tab === 'ShortStay' && !SHORT_STAY_ENABLED) &&
+    !(saved.tab === 'Sell' && !SELL_ENABLED)
   );
   if (!_tabUsable) {
     try { localStorage.removeItem(filterStateKey()); } catch (e) {}
@@ -12460,6 +12554,13 @@ function fdPriceNum(v) {
 // flips.
 const SHORT_STAY_ENABLED = false;
 
+// Sell is hidden site-wide for now (temporary): nav/bottom tab, footer link,
+// FAB "List Sell Property" option, form type option, and Sell listings are
+// excluded from every list. Data model, filters and form code are untouched —
+// set to true and remove the inline display:none / hidden on those elements
+// (search for SELL_ENABLED) to bring it back.
+const SELL_ENABLED = false;
+
 // PG is on ice for now too, same pattern as Short Stay above (Sell has taken
 // its spot in the main nav) — flip this back to true (and re-show the nav
 // tab / bottom tab / FAB option / menu item below) to bring it back. Nothing
@@ -12476,6 +12577,7 @@ function getFiltered(source = PROPERTIES, fsIn) {
 
   let list = source.filter(p => {
     if (!SHORT_STAY_ENABLED && pTypeLabel(p) === 'ShortStay') return false;
+    if (!SELL_ENABLED && pTypeLabel(p) === 'Sell') return false;
     if (!PG_ENABLED && pTypeLabel(p) === 'PG') return false;
     if (!matchesTab(p, currentTab)) return false;
     // NOTE: pType was previously used further down (Rent/Lease/PG-specific
@@ -13068,6 +13170,7 @@ function buildDetailTable(p) {
       kv('Electricity included', price.electricity),
       kv('Water charge', price.water),
       kv('Negotiable', price.negotiable),
+      kv('Brokerage fee', price.brokerage === 'Fixed amount' && price.brokerageAmount != null ? fmtRupee(price.brokerageAmount) : price.brokerage),
     ]);
   }
 
@@ -14067,6 +14170,9 @@ function applyImportedProperty(p) {
     sv('f-negotiable', (price.negotiable || '').toLowerCase() === 'yes' ? 'yes' : (price.negotiable || '').toLowerCase() === 'no' ? 'no' : '');
     onMaintenanceChange();
   }
+  sv('f-brokerage', price.brokerage);
+  sv('f-brokerageAmount', price.brokerageAmount);
+  updateBrokerageFields();
 
   // Property details
   if (!isPG && !isShortStay) {
@@ -16222,6 +16328,20 @@ async function markAllNotifsRead() {
     updateNotifChrome(0);
   } catch (err) { /* best-effort */ }
 }
+function openBrokerInfoModal() {
+  const m = document.getElementById('brokerInfoModal');
+  if (!m || m.classList.contains('open')) return;
+  m.classList.add('open');
+  lockBodyScroll();
+}
+function closeBrokerInfoModal() {
+  const m = document.getElementById('brokerInfoModal');
+  if (!m || !m.classList.contains('open')) return;
+  m.classList.remove('open');
+  unlockBodyScroll();
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeBrokerInfoModal(); });
+
 function closeNotifModal() {
   document.getElementById('notifModal').classList.remove('open');
   unlockBodyScroll();
@@ -18134,7 +18254,22 @@ async function watermarkImageFile(file) {
     img.src = url;
   });
 }
+/* Brokerage fee block — shown only when "Listed by" = Broker. Broker listings
+   are stored in their own collection server-side (see modelForStatus). */
+function updateBrokerageFields() {
+  const lb = document.getElementById('f-listedBy');
+  const blk = document.getElementById('f-brokerageBlock');
+  if (blk) blk.style.display = (lb && lb.value === 'Broker') ? '' : 'none';
+  onBrokerageChange();
+}
+function onBrokerageChange() {
+  const sel = document.getElementById('f-brokerage');
+  const blk = document.getElementById('f-brokerageBlock');
+  const w = document.getElementById('f-brokerageAmountWrap');
+  if (w) w.style.display = (blk && blk.style.display !== 'none' && sel && sel.value === 'Fixed amount') ? '' : 'none';
+}
 function onFTypeChange(val) {
+  updateBrokerageFields();
   const isPG = val === 'PG';
   const isLease = val === 'Lease';
   const isShortStay = val === 'ShortStay';
@@ -18802,6 +18937,11 @@ function submitListing() {
                     : gv('f-negotiable').toLowerCase() === 'no'  ? 'No'
                     : null,
       }),
+      // Broker listings only: brokerage fee option (+ amount when "Fixed amount").
+      ...(document.getElementById('f-listedBy').value === 'Broker' ? {
+        brokerage:       gv('f-brokerage') || null,
+        brokerageAmount: gv('f-brokerage') === 'Fixed amount' ? (parseInt(gv('f-brokerageAmount')) || null) : null,
+      } : {}),
     },
     ...(isPG ? {} : {
       property: {

@@ -916,6 +916,8 @@ const PriceSchema = new mongoose.Schema({
   electricity:  { type: String }, // Not collected for PG, Short Stay, or Lease listings — no default, so it's omitted entirely instead of appearing as null
   water:        { type: String }, // Not collected for PG, Short Stay, or Lease listings — no default, so it's omitted entirely instead of appearing as null
   negotiable:   { type: String }, // 'Yes' | 'No' | not collected for Lease — no default, so it's omitted entirely instead of appearing as null
+  brokerage:       { type: String }, // Broker listings only ("Listed by" = Broker): '1 Month rent' | '15 Days rent' | '50% of rent' | '25% of rent' | 'Fixed amount' — no default, omitted for everyone else
+  brokerageAmount: { type: Number }, // Broker listings only, and only when brokerage === 'Fixed amount' (₹)
 }, { _id: false });
 
 const PropertyDetailsSchema = new mongoose.Schema({
@@ -1147,13 +1149,17 @@ const Rent       = mongoose.model('Rent',       buildListingSchema(), 'rent');
 const Lease      = mongoose.model('Lease',      buildListingSchema(), 'lease');
 const Pg         = mongoose.model('Pg',         buildListingSchema(), 'pg');
 const HourlyStay = mongoose.model('HourlyStay', buildListingSchema(), 'hourlyStay');
+// Listings posted with basic.listedBy === 'Broker' live in their own collection,
+// whatever their status (Rent/Lease/PG/Sale) — see modelForStatus below.
+const Broker     = mongoose.model('Broker',     buildListingSchema(), 'broker');
 
 // Keyed by the same names used for VisitRequest.propertyType (refPath target).
-const LISTING_MODELS = { Rent, Lease, Pg, HourlyStay };
+const LISTING_MODELS = { Rent, Lease, Pg, HourlyStay, Broker };
 const LISTING_MODEL_LIST = Object.values(LISTING_MODELS);
 
 // A listing's basic.status decides which collection it belongs in.
-function modelForStatus(status) {
+function modelForStatus(status, listedBy) {
+  if (listedBy === 'Broker')   return Broker; // broker-listed → separate collection, regardless of status
   if (status === 'Lease')      return Lease;
   if (status === 'PG')         return Pg;
   if (status === 'Short Stay') return HourlyStay;
@@ -1239,7 +1245,7 @@ async function deleteListingById(id) {
 // just being saved in place. Re-creates it in the target collection with the
 // same _id and deletes the original; returns the (possibly new) document.
 async function moveListingIfNeeded(doc, currentModel) {
-  const targetModel = modelForStatus(doc.basic && doc.basic.status);
+  const targetModel = modelForStatus(doc.basic && doc.basic.status, doc.basic && doc.basic.listedBy);
   if (targetModel === currentModel) {
     await doc.save();
     return doc;
@@ -1258,7 +1264,7 @@ const VisitRequestSchema = new mongoose.Schema({
   propertyId:   { type: mongoose.Schema.Types.ObjectId, refPath: 'propertyType', required: true, index: true },
   // Which of the three listing collections propertyId points into — stamped
   // at creation (see POST /api/visits) so populate() can resolve it dynamically.
-  propertyType: { type: String, enum: ['Rent', 'Lease', 'Pg', 'HourlyStay'], default: 'Rent' },
+  propertyType: { type: String, enum: ['Rent', 'Lease', 'Pg', 'HourlyStay', 'Broker'], default: 'Rent' },
   userId:       { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null, index: true },
   userReadableId: { type: String, default: null, index: true }, // human-readable User.userId (e.g. USER-000001), stamped at creation for admin readability — same pattern as UserSession.userId
   visitorName:  { type: String, required: true, trim: true },
@@ -1584,6 +1590,10 @@ function findMissingRequiredFields(fields, status) {
   if ((fields.basic || {}).listedBy === 'Agent') {
     required.push(['owner.agentPhone', 'Agent phone number'], ['owner.agentArea', 'Agent service area']);
   }
+  if ((fields.basic || {}).listedBy === 'Broker') {
+    required.push(['price.brokerage', 'Brokerage fee']);
+    if ((fields.price || {}).brokerage === 'Fixed amount') required.push(['price.brokerageAmount', 'Brokerage amount']);
+  }
   const missing = required.filter(([path]) => isEmptyValue(getPath(fields, path)));
   const labels = missing.map(([, label]) => label);
   const images = (fields.media || {}).images;
@@ -1657,7 +1667,7 @@ app.post('/api/properties', listingLimiter, requireUser, requireOwner, requireVe
     const displayPrice = formatPrice(fields.price.rent, status);
     const propertyId = await nextPropertyId();
 
-    const ListingModel = modelForStatus(status); // Rent, Lease, Pg, or HourlyStay — decided by basic.status
+    const ListingModel = modelForStatus(status, (fields.basic || {}).listedBy); // Rent, Lease, Pg, HourlyStay, or Broker — decided by basic.status / basic.listedBy
     const prop = new ListingModel({
       propertyId,
       userId:         req.userId || null, // links the listing to its creator when logged in
@@ -1813,7 +1823,7 @@ app.get('/api/properties', attachUserIfPresent, async (req, res) => {
     // collection to query. Otherwise we need to fan out to all four and
     // merge, since listings now live in separate rent/lease/pg/hourlyStay collections.
     const modelsToQuery = (status && typeof status === 'string')
-      ? [modelForStatus(status)]
+      ? [modelForStatus(status), Broker]
       : LISTING_MODEL_LIST;
 
     const docArrays = await Promise.all(
@@ -2583,6 +2593,12 @@ app.put('/api/user/listings/:id', listingWriteLimiter, requireUser, async (req, 
     } else if (effectiveStatus === 'Short Stay') {
       prop.terms = undefined;
       prop.rules = undefined;
+    }
+
+    const effectiveListedBy = (fields.basic && fields.basic.listedBy) || (prop.basic || {}).listedBy;
+    if (effectiveListedBy !== 'Broker' && prop.price) {
+      prop.price.brokerage = undefined;
+      prop.price.brokerageAmount = undefined;
     }
 
     const savedDoc = await moveListingIfNeeded(prop, currentModel);

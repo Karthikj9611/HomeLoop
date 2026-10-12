@@ -2694,6 +2694,13 @@ self.addEventListener('notificationclick', event => {
       if (validationError) return res.status(400).json({ message: validationError });
 
       fields.basic = Object.assign({ status: 'For Rent', listedBy: 'Owner' }, fields.basic);
+      if (fields.basic.listedBy === 'Broker') {
+        if (!fields.price.brokerage) return res.status(400).json({ message: 'Brokerage fee is required for Broker listings.' });
+        if (fields.price.brokerage === 'Fixed amount' && !fields.price.brokerageAmount) return res.status(400).json({ message: 'Brokerage amount is required when brokerage is a Fixed amount.' });
+      } else {
+        delete fields.price.brokerage;
+        delete fields.price.brokerageAmount;
+      }
       fields.media.displayPrice = undefined; // not part of media; computed separately below
 
       const status = fields.basic.status;
@@ -2719,7 +2726,7 @@ self.addEventListener('notificationclick', event => {
       const displayPrice = formatPrice(fields.price.rent, status);
       const propertyId = await nextPropertyId();
 
-      const ListingModel = modelForStatus(status);
+      const ListingModel = modelForStatus(status, fields.basic.listedBy); // Broker-listed → separate 'broker' collection
       const prop = new ListingModel({
         propertyId,
         userId:         null, // admin-created listing — no owner User account behind it
@@ -2784,6 +2791,16 @@ self.addEventListener('notificationclick', event => {
       } else if (effectiveStatus === 'Short Stay') {
         prop.terms = undefined;
         prop.rules = undefined;
+      }
+
+      const effectiveListedBy = (fields.basic && fields.basic.listedBy) || (prop.basic || {}).listedBy;
+      if (effectiveListedBy === 'Broker') {
+        const pr = prop.price || {};
+        if (!pr.brokerage) return res.status(400).json({ message: 'Brokerage fee is required for Broker listings.' });
+        if (pr.brokerage === 'Fixed amount' && !pr.brokerageAmount) return res.status(400).json({ message: 'Brokerage amount is required when brokerage is a Fixed amount.' });
+      } else if (prop.price) {
+        prop.price.brokerage = undefined;
+        prop.price.brokerageAmount = undefined;
       }
 
       const savedDoc = await moveListingIfNeeded(prop, currentModel);
@@ -2952,7 +2969,8 @@ self.addEventListener('notificationclick', event => {
     createdAt: { type: Date, default: Date.now },
   });
   BrokerSchema.index({ createdAt: -1 });
-  const Broker = mongoose.models.Broker || mongoose.model('Broker', BrokerSchema, 'brokers');
+  // Named BrokerContact (not 'Broker') — server.js already registers a 'Broker' LISTING model on the 'broker' collection.
+  const BrokerContact = mongoose.models.BrokerContact || mongoose.model('BrokerContact', BrokerSchema, 'brokers');
 
   // Same normalisation the signup flow uses: digits only, drop leading 0 / 91.
   function normalizeBrokerPhone(raw) {
@@ -2965,7 +2983,7 @@ self.addEventListener('notificationclick', event => {
   // GET /api/admin/brokers -- admin-only, newest first
   app.get('/api/admin/brokers', requireAdmin, requireModule('brokers'), async (req, res) => {
     try {
-      const brokers = await Broker.find({}).sort({ createdAt: -1 }).lean();
+      const brokers = await BrokerContact.find({}).sort({ createdAt: -1 }).lean();
       res.json({ brokers });
     } catch (err) {
       console.error('GET /api/admin/brokers error:', err.message);
@@ -2982,9 +3000,9 @@ self.addEventListener('notificationclick', event => {
       if (!cleanLocation) return res.status(400).json({ error: 'Location is required' });
       if (cleanLocation.length > 120) return res.status(400).json({ error: 'Location must be at most 120 characters' });
       if (!/^[6-9]\d{9}$/.test(cleanPhone)) return res.status(400).json({ error: 'Please enter a valid 10-digit mobile number' });
-      const dup = await Broker.findOne({ phone: cleanPhone }).lean();
+      const dup = await BrokerContact.findOne({ phone: cleanPhone }).lean();
       if (dup) return res.status(409).json({ error: `This number is already added (${dup.location}).`, duplicate: true });
-      const broker = await Broker.create({ location: cleanLocation, phone: cleanPhone });
+      const broker = await BrokerContact.create({ location: cleanLocation, phone: cleanPhone });
       res.status(201).json({ broker });
     } catch (err) {
       if (err && err.code === 11000) return res.status(409).json({ error: 'This number is already added.', duplicate: true }); // lost a race with another save
@@ -3003,9 +3021,9 @@ self.addEventListener('notificationclick', event => {
       if (!cleanLocation) return res.status(400).json({ error: 'Location is required' });
       if (cleanLocation.length > 120) return res.status(400).json({ error: 'Location must be at most 120 characters' });
       if (!/^[6-9]\d{9}$/.test(cleanPhone)) return res.status(400).json({ error: 'Please enter a valid 10-digit mobile number' });
-      const dup = await Broker.findOne({ phone: cleanPhone, _id: { $ne: req.params.id } }).lean();
+      const dup = await BrokerContact.findOne({ phone: cleanPhone, _id: { $ne: req.params.id } }).lean();
       if (dup) return res.status(409).json({ error: `This number is already added (${dup.location}).`, duplicate: true });
-      const broker = await Broker.findByIdAndUpdate(req.params.id, { location: cleanLocation, phone: cleanPhone }, { new: true, runValidators: true }).lean();
+      const broker = await BrokerContact.findByIdAndUpdate(req.params.id, { location: cleanLocation, phone: cleanPhone }, { new: true, runValidators: true }).lean();
       if (!broker) return res.status(404).json({ error: 'Broker not found' });
       res.json({ broker });
     } catch (err) {
@@ -3019,7 +3037,7 @@ self.addEventListener('notificationclick', event => {
   app.delete('/api/admin/brokers/:id', requireAdmin, requireModuleAction('brokers'), async (req, res) => {
     try {
       if (!mongoose.Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ error: 'Invalid broker id' });
-      const deleted = await Broker.findByIdAndDelete(req.params.id);
+      const deleted = await BrokerContact.findByIdAndDelete(req.params.id);
       if (!deleted) return res.status(404).json({ error: 'Broker not found' });
       res.json({ message: 'Broker deleted' });
     } catch (err) {

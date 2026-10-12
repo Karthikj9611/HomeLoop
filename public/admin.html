@@ -4947,8 +4947,8 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
       </div>
       <div class="form-group">
         <label class="form-label">Listed by</label>
-        <select class="form-select" id="f-listedBy">
-          <option>Owner</option><option>Agent</option><option>Builder</option>
+        <select class="form-select" id="f-listedBy" onchange="updateBrokerageFields()">
+          <option>Owner</option><option>Agent</option><option>Broker</option><option>Builder</option>
         </select>
       </div>
     </div>
@@ -5078,6 +5078,34 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
             <input class="form-input" type="text" id="f-agentArea" value="Prashanth B, Singasandra" />
           </div>
         </div>
+      </div>
+    </div>
+    </div>
+
+    <!-- ===== 4b. BROKERAGE (only when Listed by = Broker) ===== -->
+    <div id="f-brokerageBlock" style="display:none">
+    <div class="lm-section">🤝 Brokerage</div>
+    <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
+      <div class="form-group" id="f-brokerageWrap">
+        <label class="form-label">Brokerage fee <span style="color:var(--brand)">*</span></label>
+        <select class="form-select" id="f-brokerage" onchange="onBrokerageChange()">
+          <option value="">Select</option>
+          <option value="1 Day rent">1 Day rent</option>
+          <option value="7 Days rent">7 Days rent</option>
+          <option value="10 Days rent">10 Days rent</option>
+          <option value="15 Days rent">15 Days rent</option>
+          <option value="20 Days rent">20 Days rent</option>
+          <option value="1 Month rent">1 Month rent</option>
+          <option value="25% of rent">25% of rent</option>
+          <option value="50% of rent">50% of rent</option>
+          <option value="75% of rent">75% of rent</option>
+          <option value="100% of rent">100% of rent</option>
+          <option value="Fixed amount">Fixed amount</option>
+        </select>
+      </div>
+      <div class="form-group" id="f-brokerageAmountWrap" style="display:none">
+        <label class="form-label">Brokerage amount (₹) <span style="color:var(--brand)">*</span></label>
+        <input class="form-input" type="number" id="f-brokerageAmount" min="0">
       </div>
     </div>
     </div>
@@ -16569,6 +16597,9 @@ function applyImportedProperty(p) {
     sv('f-negotiable', (price.negotiable || '').toLowerCase() === 'yes' ? 'yes' : (price.negotiable || '').toLowerCase() === 'no' ? 'no' : '');
     onMaintenanceChange();
   }
+  sv('f-brokerage', price.brokerage);
+  sv('f-brokerageAmount', price.brokerageAmount);
+  updateBrokerageFields();
 
   if (!isPG && !isShortStay) {
     sv('f-propertyType', property.type);
@@ -17001,7 +17032,22 @@ async function waSubmitMsg() {
   waCloseModal();
 }
 
+/* Brokerage fee block — shown only when "Listed by" = Broker. Broker listings
+   are stored in their own collection server-side (see modelForStatus). */
+function updateBrokerageFields() {
+  const lb = document.getElementById('f-listedBy');
+  const blk = document.getElementById('f-brokerageBlock');
+  if (blk) blk.style.display = (lb && lb.value === 'Broker') ? '' : 'none';
+  onBrokerageChange();
+}
+function onBrokerageChange() {
+  const sel = document.getElementById('f-brokerage');
+  const blk = document.getElementById('f-brokerageBlock');
+  const w = document.getElementById('f-brokerageAmountWrap');
+  if (w) w.style.display = (blk && blk.style.display !== 'none' && sel && sel.value === 'Fixed amount') ? '' : 'none';
+}
 function onFTypeChange(val) {
+  updateBrokerageFields();
   waPasteToggle(val);
   const isPG = val === 'PG';
   const isLease = val === 'Lease';
@@ -18073,6 +18119,10 @@ async function adminSubmitListing() {
     alert('Enter a valid 10-digit agent phone number starting with 6, 7, 8 or 9');
     return;
   }
+  if (document.getElementById('f-listedBy').value === 'Broker') {
+    if (!gv('f-brokerage')) { _adminToast('Brokerage fee is required'); document.getElementById('f-brokerage').focus(); return; }
+    if (gv('f-brokerage') === 'Fixed amount' && !(parseInt(gv('f-brokerageAmount')) > 0)) { _adminToast('Brokerage amount is required'); document.getElementById('f-brokerageAmount').focus(); return; }
+  }
   if (ownerPhone) {
     const dupe = findDuplicateOwnerPhoneListing(ownerPhone, editingPropertyId);
     if (dupe) {
@@ -18257,6 +18307,11 @@ async function adminSubmitListing() {
       overlooking:     gv('f-sellOverlooking') || null,
     } : {},
   };
+  // Broker listings only: brokerage fee option (+ amount when "Fixed amount").
+  if (newProp.basic.listedBy === 'Broker') {
+    newProp.price.brokerage = gv('f-brokerage') || null;
+    newProp.price.brokerageAmount = gv('f-brokerage') === 'Fixed amount' ? (parseInt(gv('f-brokerageAmount')) || null) : null;
+  }
 
   const isNew = !editingPropertyId;
   const okListing = await showConfirmModal({
