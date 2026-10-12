@@ -11227,7 +11227,6 @@ function renderCompareTable() {
     { label: 'Lift', get: p => yn(pHasLift(p)) },
     { label: 'Car park', get: p => (parseInt(p.property?.car ?? p.pg?.car, 10) || 0) > 0 ? `${parseInt(p.property?.car ?? p.pg?.car, 10)}` : 'No' },
     { label: 'Bike park', get: p => (parseInt(p.property?.bike ?? p.pg?.bike, 10) || 0) > 0 ? `${parseInt(p.property?.bike ?? p.pg?.bike, 10)}` : 'No' },
-    { label: 'Available from', get: p => { const v = p.property?.available ?? p.pg?.available; return v ? formatDateDisplay(v) : '—'; } },
 
     section('Terms'),
     { label: 'Notice period', get: p => dash(p.terms?.notice) },
@@ -13223,10 +13222,8 @@ function buildDetailTable(p) {
 
   section('📋 Basic Information', 'sec-listing-info', [
     kv('Status', status),
-    // Listed date (when the property was first posted) — visible to all.
-    kv('Listed on', p.createdAt ? formatDateDisplay(p.createdAt) : null),
-    // 'Available from' — visible to all (PG listings keep theirs under pg.available).
-    kv('Available from', formatDateDisplay(isPG ? pg.available : property.available)),
+    // 'Available from' — shown only for pre-available listings.
+    (sectionKeyFor(p) === 'rent' && isUpcomingRent(p)) ? kv('Available from', formatDateDisplay(isPG ? pg.available : property.available)) : null,
   ]);
 
   section('📍 Location', 'sec-listing-info', [
