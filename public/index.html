@@ -7837,10 +7837,49 @@ main.tab-explore .empty-state{display:none !important}
         <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7"/><path d="M4 10v10h16V10"/></svg>
         Owners
       </button>
+      <button type="button" class="charges-audience-tab" id="chargesTabBtn-broker" role="tab" onclick="switchChargesAudience('broker')">
+        <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        Brokers
+      </button>
       <button type="button" class="charges-audience-tab" id="chargesTabBtn-notice" role="tab" onclick="switchChargesAudience('notice')">
         <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>
         Notice
       </button>
+    </div>
+
+    <!-- Broker charges (tab) -->
+    <div id="chargesBrokerPanel" style="display:none">
+      <div class="plan-panel plan-direct open" id="planBrokerDirect">
+<button type="button" class="plan-toggle" aria-expanded="true" onclick="togglePlan('planBrokerDirect')">
+<div class="charges-audience-head">
+        <div class="charges-audience-icon"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+        <div class="charges-audience-name">Broker Listing</div></div>
+<svg class="plan-chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+</button>
+<div class="plan-body"><div class="plan-body-inner">
+      <div class="charges-mini-grid" style="grid-template-columns:repeat(2,1fr)">
+        <div class="charges-mini-card">
+          <div class="charges-mini-label">Make listing live directly</div>
+          <div class="charges-mini-amount">₹1,000</div>
+          <div class="charges-mini-example">Flat fee per listing</div>
+        </div>
+        <div class="charges-mini-card">
+          <div class="charges-mini-label">Live for</div>
+          <div class="charges-mini-amount">1 Month</div>
+          <div class="charges-mini-example">From the date listed</div>
+        </div>
+      </div>
+      <div class="charges-includes">
+        <div class="charges-include-item"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><span>Your property goes live directly after the ₹1,000 payment</span></div>
+        <div class="charges-include-item"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><span>Stays live for 1 month from the date it is listed</span></div>
+        <div class="charges-include-item"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><span>Tenants can contact you directly</span></div>
+        <div class="charges-include-item"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><span>Shown in the Brokers tab for tenants to see</span></div>
+      </div>
+      <div class="svc-price-note charges-refer-note"><strong>Note:</strong> After <b>1 month</b> the listing goes off. To keep it live, <b>pay ₹1,000 again</b>.</div>
+<a class="charges-call-btn" href="tel:9035205230"><svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.8 19.8 0 0 1 1.61 3.4 2 2 0 0 1 3.59 1.22h3a2 2 0 0 1 2 1.72 12.8 12.8 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 8.78a16 16 0 0 0 6.29 6.29l1.14-1.14a2 2 0 0 1 2.11-.45 12.8 12.8 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>9035205230</a>
+</div></div>
+      </div>
+      <button class="charges-contact-link" onclick="closeChargesModal(); openHelpModal();">Got a question? Contact us</button>
     </div>
 
     <!-- Payment Safety Notice (tab) -->
@@ -16601,7 +16640,7 @@ function showChargesModal(tab) {
   // A tab opened from a shared link (?charges=...) is always shown to whoever opens it, read-only if it isn't their audience.
   document.getElementById('chargesTabBtn-tenant').style.display = (!user || isTenant || tab === 'tenant') ? '' : 'none';
   document.getElementById('chargesTabBtn-owner').style.display  = (!user || isOwner  || tab === 'owner')  ? '' : 'none';
-  var _want = (tab === 'tenant' || tab === 'owner' || tab === 'notice') ? tab : (isOwner ? 'owner' : 'tenant');
+  var _want = (tab === 'tenant' || tab === 'owner' || tab === 'broker' || tab === 'notice') ? tab : (isOwner ? 'owner' : 'tenant');
   switchChargesAudience(_want);
   document.getElementById('chargesModal').classList.add('open');
   lockBodyScroll();
@@ -16618,7 +16657,7 @@ var _chargesTab = 'tenant';
 function shareChargesLink() {
   var tab = _chargesTab || 'tenant';
   var url = window.location.origin + '/?charges=' + tab;
-  var titles = { tenant: 'Our Charges', owner: 'Our Charges', notice: 'Payment Safety Notice' };
+  var titles = { tenant: 'Our Charges', owner: 'Our Charges', broker: 'Our Charges', notice: 'Payment Safety Notice' };
   var title = (titles[tab] || 'Our Charges') + ' - HomeLoop';
   if (navigator.share) {
     navigator.share({ title: title, text: title, url: url }).catch(function () {});
@@ -16650,7 +16689,7 @@ function switchChargesAudience(which) {
   const user = getLoggedInUser();
   const isOwner = !!user && user.accountType === 'owner';
   const isTenant = !!user && user.accountType !== 'owner';
-  ['tenant', 'owner', 'notice'].forEach(k => {
+  ['tenant', 'owner', 'broker', 'notice'].forEach(k => {
     document.getElementById('chargesTabBtn-' + k).classList.toggle('active', k === which);
   });
   ['tenant', 'owner'].forEach(k => {
@@ -16659,7 +16698,8 @@ function switchChargesAudience(which) {
   document.getElementById('chargesTenantView').style.display = (isTenant && which === 'tenant') ? '' : 'none';
   document.getElementById('chargesOwnerView').style.display  = (isOwner  && which === 'owner')  ? '' : 'none';
   // Guest view doubles as the read-only view for anyone looking at an audience that isn't theirs (e.g. an owner opening the Tenants tab).
-  document.getElementById('chargesGuestView').style.display  = (which !== 'notice' && !(isTenant && which === 'tenant') && !(isOwner && which === 'owner')) ? '' : 'none';
+  document.getElementById('chargesGuestView').style.display  = (which !== 'notice' && which !== 'broker' && !(isTenant && which === 'tenant') && !(isOwner && which === 'owner')) ? '' : 'none';
+  document.getElementById('chargesBrokerPanel').style.display = which === 'broker' ? '' : 'none';
   document.getElementById('chargesNoticePanel').style.display = which === 'notice' ? '' : 'none';
   const box = document.getElementById('chargesModalBox');
   if (box) box.scrollTop = 0;
@@ -17723,9 +17763,9 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     renderBookedSections();
     renderRecentlyViewed();
-    // ── Deep-link: auto-open the charges modal (?charges=tenant|owner|notice) ──
+    // ── Deep-link: auto-open the charges modal (?charges=tenant|owner|broker|notice) ──
     const _chParam = new URLSearchParams(window.location.search).get('charges');
-    if (_chParam && ['tenant', 'owner', 'notice'].includes(_chParam)) openChargesModal(_chParam);
+    if (_chParam && ['tenant', 'owner', 'broker', 'notice'].includes(_chParam)) openChargesModal(_chParam);
 
     if (!ok) return;
     initNearbyLocation(); // ask for location once listings are in, so "Near me first" has data to sort
