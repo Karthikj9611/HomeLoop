@@ -9605,7 +9605,7 @@ function setEmptyStateContent() {
 // touch / manual scroll holds it; users can swipe left or right any time and
 // it picks up from wherever they left it.
 // Tabs where the Promoted / Pre-available rows slide (every tab that shows them).
-function promoSliderTab() { return currentTab === 'Rent' || currentTab === 'Promoted' || currentTab === 'All'; }
+function promoSliderTab() { return currentTab === 'Rent' || currentTab === 'Promoted' || currentTab === 'All' || currentTab === 'Broker'; }
 let _promoRAF = null, _promoPos = 0, _promoDir = 1, _promoPaused = false, _promoLast = 0, _promoDwellUntil = 0, _promoResume = null, _promoRamp = 0;
 const PROMO_SPEED = 0.04; // pixels per millisecond (~40px/s) — gentle and steady
 // Shared easing so every slider (Promoted / Pre-available / Booked) starts, stops
@@ -9796,7 +9796,8 @@ function renderCards() {
     (rankOf(a.promotedPriority) - rankOf(b.promotedPriority)) ||
     (propertyListedAt(b) - propertyListedAt(a));
 
-  const promoted = (currentTab === 'Promoted' || currentTab === 'Broker') ? [] : list.filter(p => p.promoted && !(currentTab === 'Rent' && isUpcomingRent(p))).sort(byPromotedPriority);
+  // Brokers tab: promoted broker listings go in the Promoted strip (one horizontal line) only.
+  const promoted = currentTab === 'Promoted' ? [] : list.filter(p => p.promoted && !(currentTab === 'Rent' && isUpcomingRent(p))).sort(byPromotedPriority);
   // On a single-type tab (Rent/Lease/PG/ShortStay), `list` is already
   // scoped to just that type, so the "promoted" and typed buckets below
   // would otherwise be drawing from the exact same set — showing every
@@ -9804,7 +9805,7 @@ function renderCards() {
   // All, `list` spans multiple types and showing a promoted
   // property in both the highlights section and its type section is
   // intentional (that's what makes that view comprehensive).
-  const dedupe = ['Rent', 'Lease', 'PG', 'ShortStay', 'Sell'].includes(currentTab);
+  const dedupe = ['Rent', 'Lease', 'PG', 'ShortStay', 'Sell', 'Broker'].includes(currentTab);
   const groups = {
     promoted,
     rent:      list.filter(p => (!dedupe || !p.promoted) && sectionKeyFor(p) === 'rent' && !(upcomingActive() && isUpcomingRent(p))),
@@ -9859,7 +9860,7 @@ function renderCards() {
     divider.style.display = '';
     document.getElementById(key + 'Count').textContent = items.length;
 
-    if (noPagination) {
+    if (noPagination || (currentTab === 'Broker' && key === 'promoted')) {
       // Long lists: paint the first screenful immediately, stream the rest in
       // small chunks over the next frames so filtering feels instant.
       const FIRST = 24, CHUNK = 40;
@@ -10059,8 +10060,8 @@ function paginationHTML(section, page, total) {
 
 function sectionItems(section) {
   const list = getFiltered();
-  if (section === 'promoted') return currentTab === 'Broker' ? [] : list.filter(p => p.promoted && !(currentTab === 'Rent' && isUpcomingRent(p)));
-  const dedupe = ['Rent', 'Lease', 'PG', 'ShortStay', 'Sell'].includes(currentTab);
+  if (section === 'promoted') return list.filter(p => p.promoted && !(currentTab === 'Rent' && isUpcomingRent(p)));
+  const dedupe = ['Rent', 'Lease', 'PG', 'ShortStay', 'Sell', 'Broker'].includes(currentTab);
   if (section === 'upcoming') return upcomingActive() ? list.filter(p => sectionKeyFor(p) === 'rent' && isUpcomingRent(p)) : [];
   if (section === 'rent' && upcomingActive()) return list.filter(p => (!dedupe || !p.promoted) && sectionKeyFor(p) === 'rent' && !isUpcomingRent(p));
   return list.filter(p => (!dedupe || !p.promoted) && sectionKeyFor(p) === section);
@@ -10574,6 +10575,9 @@ function pTypeLabel(p) {
    centralises the special-casing so every tab-filtered list (cards,
    recently-viewed, shortlist panel) stays in sync. */
 function matchesTab(p, tab) {
+  // Broker listings (promoted, booked or not) live ONLY in the Brokers tab —
+  // hidden from Explore/All, Promoted, Rent, Lease, PG, Sell, etc.
+  if (tab !== 'Broker' && p.basic?.listedBy === 'Broker') return false;
   if (tab === 'All') return true;
   if (tab === 'Promoted') return !!p.promoted;
   if (tab === 'Verified') return !!p.verified;
@@ -19599,6 +19603,7 @@ function showPreAvailModal() {
   var todayKey = dayKey(new Date());
   var items = PROPERTIES.filter(function(p){
     if (!p.createdAt || dayKey(p.createdAt) !== todayKey) return false;
+    if (p.basic?.listedBy === 'Broker') return false; // broker listings show only in the Brokers tab
     if (typeof SHORT_STAY_ENABLED !== 'undefined' && !SHORT_STAY_ENABLED && pTypeLabel(p) === 'ShortStay') return false;
     return true;
   }).sort(function(a, b){
