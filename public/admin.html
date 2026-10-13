@@ -3231,44 +3231,6 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
   .add-modal.share-links-modal-box,.add-modal.notif-modal-box,.add-modal.compare-modal-box{max-width:100%}
   .confirm-card{max-width:380px}
 }
-
-/* ── CUSTOMERS TABLE: merged cells + More menu ── */
-.cust-viewbar{display:flex;align-items:center;gap:10px;margin:0 0 10px;padding:0 4px}
-.cust-viewbar label{font-size:.78rem;font-weight:700;color:var(--ink2);display:inline-flex;align-items:center;gap:6px}
-.cust-viewbar select{padding:8px 14px;border-radius:99px;border:1.5px solid var(--border);background:var(--surface);color:var(--ink);font:inherit;font-size:.82rem;font-weight:700;cursor:pointer}
-.cust-cell{display:flex;flex-direction:column;align-items:center;gap:5px;padding:4px 0}
-.cust-cell-top{display:flex;align-items:center;justify-content:center;gap:8px}
-.cust-cell-tags{display:flex;gap:6px;align-items:center;justify-content:center}
-.cust-cell-contact{display:flex;flex-direction:column;align-items:center;gap:3px}
-.cust-cell-id{font-size:.68rem;color:#94a3b8}
-.cust-blocked-tag{background:#fee2e2;color:#b91c1c}
-.cust-activity{display:inline-flex;align-items:center;gap:8px;flex-wrap:nowrap}
-.cust-stat{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:999px;background:#f1f5f9;color:#475569;font-size:.8rem;font-weight:700}
-.cust-stat i{font-size:.75rem}
-.cust-notes{display:flex;flex-direction:column;gap:8px;align-items:stretch}
-.cust-notes-filter{display:flex;flex-direction:column;gap:4px}
-
-.cust-sel{display:flex;flex-direction:column;align-items:center;gap:6px}
-.cust-sn{font-size:.72rem;color:#94a3b8;font-weight:700}
-#bookingTable .remark-cell,#bookingTable .remark-cell.remark-cell-empty{width:280px;min-width:280px;max-width:280px}
-
-.cust-type-bar{margin-bottom:12px}
-.cust-type-pick{position:relative;gap:8px;cursor:pointer}
-.cust-type-pick select{appearance:none;-webkit-appearance:none;background:transparent;border:0;outline:0;font:inherit;font-weight:700;color:inherit;cursor:pointer;flex:1;min-width:0;padding:0 18px 0 2px}
-.cust-type-pick select option{color:#111;background:#fff}
-.cust-type-caret{position:absolute;right:16px;font-size:.7rem !important;pointer-events:none;opacity:.7}
-
-.cust-actions{display:inline-flex;flex-wrap:nowrap;gap:6px;justify-content:center;align-items:center;white-space:nowrap}
-.cust-actions .btn-label{display:none}
-.cust-actions .pact-publiccall{display:inline-flex;align-items:center;flex-shrink:0}
-
-/* Customers: Reason / Add Remark / Remark stacked in one clean column */
-#bookingTable .cust-notes{align-items:stretch;gap:8px}
-#bookingTable .remark-cell,#bookingTable .remark-cell.remark-cell-empty{width:100%;min-width:260px;max-width:320px}
-#bookingTable .remark-subgrid,#bookingTable .remark-subgrid-empty{display:flex;flex-direction:column;align-items:stretch;flex-wrap:nowrap;gap:8px}
-#bookingTable .remark-subgrid .remark-add-btn,#bookingTable .remark-subgrid-empty .remark-add-btn{order:1;width:100%;justify-content:center;margin-top:0}
-#bookingTable .remark-subgrid .remark-input-panel{order:2;flex:0 0 auto;width:100%}
-#bookingTable .remark-subgrid .remark-dd,#bookingTable .remark-subgrid-empty .remark-empty{order:3;flex:0 0 auto;width:100%;min-width:0;box-sizing:border-box}
 </style>
 </head>
 <body>
@@ -3821,52 +3783,39 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
   <!-- ══ CUSTOMERS PANEL ══ -->
   <div class="tab-panel" id="panel-customers">
     <!-- Account-type sub-tabs: Tenants / Owners -->
-    <div class="cat-tab-bar tab-lvl-2 cust-type-bar" id="custTypeBar">
-      <label class="cat-tab-btn cust-type-pick" for="custTypeSelect" title="Pick which kind of account to list">
-        <i class="fas fa-users"></i><span>Show</span>
-        <select id="custTypeSelect" onchange="switchCustType(this.value)">
-          <option value="all">All people</option>
-          <option value="customer">Tenants</option>
-          <option value="owner">Owners</option>
-          <option value="broker">Brokers</option>
-          <option value="propowner">Listing Owners</option>
-        </select>
-        <i class="fas fa-chevron-down cust-type-caret"></i>
-      </label>
-    </div>
-    <div class="cat-tab-bar tab-lvl-2 po-hidden" id="custTypeTabs">
-      <button class="cat-tab-btn" data-type="all" title="Every account on the platform" onclick="switchCustType('all')">
+    <div class="cat-tab-bar tab-lvl-2" id="custTypeTabs">
+      <button class="cat-tab-btn" data-type="all" onclick="switchCustType('all')">
         <i class="fas fa-users"></i><span class="cat-tab-btn-label" data-mobile="All">All</span><span class="cat-count" id="cust-type-count-all">—</span>
       </button>
-      <button class="cat-tab-btn" data-type="owner" title="People who signed up to list their own property" onclick="switchCustType('owner')">
+      <button class="cat-tab-btn" data-type="owner" onclick="switchCustType('owner')">
         <i class="fas fa-house-user"></i><span class="cat-tab-btn-label" data-mobile="Owners">Owners</span><span class="cat-count" id="cust-type-count-owner">—</span>
       </button>
-      <button class="cat-tab-btn" data-type="broker" title="Agents who list properties for others" onclick="switchCustType('broker')">
+      <button class="cat-tab-btn" data-type="broker" onclick="switchCustType('broker')">
         <i class="fas fa-user-tie"></i><span class="cat-tab-btn-label" data-mobile="Brokers">Brokers</span><span class="cat-count" id="cust-type-count-broker">—</span>
       </button>
-      <button class="cat-tab-btn" data-type="customer" title="People looking for a home to rent" onclick="switchCustType('customer')">
+      <button class="cat-tab-btn" data-type="customer" onclick="switchCustType('customer')">
         <i class="fas fa-user"></i><span class="cat-tab-btn-label" data-mobile="Tenants">Tenants</span><span class="cat-count" id="cust-type-count-customer">—</span>
       </button>
-      <button class="cat-tab-btn" data-type="propowner" onclick="switchCustType('propowner')" title="Owner phone numbers taken from listed properties, for calling and follow-up">
-        <i class="fas fa-building-user"></i><span class="cat-tab-btn-label" data-mobile="Prop. Owners">Listing Owners</span><span class="cat-count" id="cust-type-count-propowner">—</span>
+      <button class="cat-tab-btn" data-type="propowner" onclick="switchCustType('propowner')" title="Owners taken from the Properties section">
+        <i class="fas fa-building-user"></i><span class="cat-tab-btn-label" data-mobile="Prop. Owners">Property Owners</span><span class="cat-count" id="cust-type-count-propowner">—</span>
       </button>
     </div>
     <!-- Status sub-sub tabs (below the account-type tabs): Active / Lost Leads / Rented / Subscription / All -->
     <div class="cat-tab-bar tab-lvl-3" id="custStatusTabs">
-      <button class="cat-tab-btn" data-status="all" title="Everyone in this group, whatever their status" onclick="switchCustStatus('all')">
+      <button class="cat-tab-btn" data-status="all" onclick="switchCustStatus('all')">
         <i class="fas fa-layer-group"></i><span class="cat-tab-btn-label" data-mobile="All">All</span><span class="cat-count" id="cust-status-count-all">—</span>
       </button>
-      <button class="cat-tab-btn" data-status="active" title="Still searching or listing; no outcome yet" onclick="switchCustStatus('active')">
+      <button class="cat-tab-btn" data-status="active" onclick="switchCustStatus('active')">
         <i class="fas fa-user-check"></i><span class="cat-tab-btn-label" data-mobile="Active">Active</span><span class="cat-count" id="cust-status-count-active">—</span>
       </button>
-      <button class="cat-tab-btn" data-status="subscription" title="Tenants with a paid plan" onclick="switchCustStatus('subscription')">
+      <button class="cat-tab-btn" data-status="subscription" onclick="switchCustStatus('subscription')">
         <i class="fas fa-crown"></i><span class="cat-tab-btn-label" data-mobile="Subscription">Subscription</span><span class="cat-count" id="cust-status-count-subscription">—</span>
       </button>
-      <button class="cat-tab-btn" data-status="rented" title="Found a home through us" onclick="switchCustStatus('rented')">
-        <i class="fas fa-handshake"></i><span class="cat-tab-btn-label" data-mobile="Rented">Rented</span><span class="cat-count" id="cust-status-count-rented">—</span>
+      <button class="cat-tab-btn" data-status="rented" onclick="switchCustStatus('rented')">
+        <i class="fas fa-handshake"></i><span class="cat-tab-btn-label" data-mobile="Rented">Rented Through Us</span><span class="cat-count" id="cust-status-count-rented">—</span>
       </button>
-      <button class="cat-tab-btn" data-status="leads" title="Not interested, found elsewhere, spam or outside our area" onclick="switchCustStatus('leads')">
-        <i class="fas fa-bullseye"></i><span class="cat-tab-btn-label" data-mobile="Lost Leads">Lost</span><span class="cat-count" id="cust-status-count-leads">—</span>
+      <button class="cat-tab-btn" data-status="leads" onclick="switchCustStatus('leads')">
+        <i class="fas fa-bullseye"></i><span class="cat-tab-btn-label" data-mobile="Lost Leads">Lost Leads</span><span class="cat-count" id="cust-status-count-leads">—</span>
       </button>
     </div>
     <!-- Property Owners status sub-tabs (shown only on the Property Owners tab) -->
@@ -3977,15 +3926,32 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
           <thead>
             <tr>
               <th><input type="checkbox" class="cust-select-all-checkbox" id="custSelectAllCheckbox" onchange="onCustSelectAllChange(this)"></th>
-              <th title="Name, joined date, account type, phone, email and user ID">Customer</th>
-              <th title="Properties listed, visit requests and views">Activity</th>
+              <th>S.No</th>
+              <th>Customer</th>
+              <th>Type</th>
+              <th>User ID</th>
+              <th>Phone</th>
+              <th>Email</th>
+              <th>Listings</th>
+              <th>Visits</th>
+              <th>Views</th>
               <th>Registered</th>
-              <th title="Why they are active, rented or lost, plus your remarks">Reason &amp; Remarks</th>
+              <th>Reason</th>
+              <th>Remarks</th>
               <th>Action</th>
             </tr>
             <tr class="col-filter-row">
               <th></th>
-              <th><div class="cust-notes-filter"><input type="text" class="col-filter-input" data-filter-key="search" placeholder="Name, phone, email, ID…" oninput="onCustColumnFilter('search', this.value, this)"><div class="col-date-range">
+              <th></th>
+              <th><input type="text" class="col-filter-input" data-filter-key="name" placeholder="Search…" oninput="onCustColumnFilter('name', this.value, this)"></th>
+              <th></th>
+              <th><input type="text" class="col-filter-input" data-filter-key="userId" placeholder="Search…" oninput="onCustColumnFilter('userId', this.value, this)"></th>
+              <th><input type="text" class="col-filter-input" data-filter-key="mobile" placeholder="Search…" oninput="onCustColumnFilter('mobile', this.value, this)"></th>
+              <th><input type="text" class="col-filter-input" data-filter-key="email" placeholder="Search…" oninput="onCustColumnFilter('email', this.value, this)"></th>
+              <th><input type="text" class="col-filter-input" data-filter-key="listings" placeholder="e.g. 3" oninput="onCustColumnFilter('listings', this.value, this)"></th>
+              <th><input type="text" class="col-filter-input" data-filter-key="visits" placeholder="e.g. 0" oninput="onCustColumnFilter('visits', this.value, this)"></th>
+              <th><input type="text" class="col-filter-input" data-filter-key="views" placeholder="e.g. 0" oninput="onCustColumnFilter('views', this.value, this)"></th>
+              <th><div class="col-date-range">
                 <select class="date-preset-select" onchange="applyDatePreset(this,'onCustRegisteredRangeFilter')">
                   <option value="">Presets</option>
                   <option value="today">Today</option>
@@ -3995,15 +3961,14 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
                 </select>
                 <input type="date" data-filter-key="registeredStart" title="From" onchange="onCustRegisteredRangeFilter('start', this.value, this)">
                 <input type="date" data-filter-key="registeredEnd" title="To" onchange="onCustRegisteredRangeFilter('end', this.value, this)">
-              </div></div></th>
-              <th><select class="col-filter-select" data-filter-key="activity" onchange="onCustColumnFilter('activity', this.value, this)"><option value="">All</option><option value="listed">Has listings</option><option value="visits">Has visit requests</option><option value="views">Has views</option><option value="none">No activity</option></select></th>
-              <th></th>
-              <th><div class="cust-notes-filter"><select class="col-filter-select" data-filter-key="reason" onchange="onCustColumnFilter('reason', this.value, this)"><option value="">All</option><option value="Not interested">Not interested</option><option value="Found elsewhere">Found elsewhere</option><option value="Spam / fake">Spam / fake</option><option value="Not serviceable location">Not serviceable location</option><option value="Not reachable">Not reachable</option><option value="Verification pending">Verification pending</option><option value="Duplicate account">Duplicate account</option><option value="Wants to delist">Wants to delist</option><option value="Rent expectation high">Rent expectation high</option><option value="Agent / broker">Agent / broker</option><option value="Callback">Callback</option><option value="Not answered">Not answered</option><option value="Switched off">Switched off</option><option value="Shifted through us">Shifted through us</option></select><input type="text" class="col-filter-input" data-filter-key="remarks" placeholder="Search remarks…" oninput="onCustColumnFilter('remarks', this.value, this)"></div></th>
+              </div></th>
+              <th><select class="col-filter-select" data-filter-key="reason" onchange="onCustColumnFilter('reason', this.value, this)"><option value="">All</option><option value="Not interested">Not interested</option><option value="Found elsewhere">Found elsewhere</option><option value="Spam / fake">Spam / fake</option><option value="Not serviceable location">Not serviceable location</option><option value="Not reachable">Not reachable</option><option value="Verification pending">Verification pending</option><option value="Duplicate account">Duplicate account</option><option value="Wants to delist">Wants to delist</option><option value="Rent expectation high">Rent expectation high</option><option value="Agent / broker">Agent / broker</option><option value="Callback">Callback</option><option value="Not answered">Not answered</option><option value="Switched off">Switched off</option><option value="Shifted through us">Shifted through us</option></select></th>
+              <th><input type="text" class="col-filter-input" data-filter-key="remarks" placeholder="Search…" oninput="onCustColumnFilter('remarks', this.value, this)"></th>
               <th></th>
             </tr>
           </thead>
           <tbody>
-            <tr><td colspan="5" class="empty-state"><i class="fas fa-circle-notch fa-spin"></i>Loading…</td></tr>
+            <tr><td colspan="14" class="empty-state"><i class="fas fa-circle-notch fa-spin"></i>Loading…</td></tr>
           </tbody>
         </table>
       </div>
@@ -5877,7 +5842,7 @@ async function doLogin(){
 function alignThreeRowsAsColumns(){
   // every tab row in the admin: main bar + the sub-tab bar of each panel
   var bars = [document.querySelector('.tab-bar'), document.getElementById('propCatTabs'),
-              document.getElementById('custTypeBar'), document.getElementById('custTypeTabs'), document.getElementById('custStatusTabs'), document.getElementById('poStatusTabs'), document.getElementById('visitsCatTabs')].filter(Boolean);
+              document.getElementById('custTypeTabs'), document.getElementById('custStatusTabs'), document.getElementById('poStatusTabs'), document.getElementById('visitsCatTabs')].filter(Boolean);
   if(!bars.length) return;
   // clear any old inline sizing from earlier versions of this function
   bars.forEach(function(bar){
@@ -7537,7 +7502,7 @@ function reconcileDateRange(container, filterObj, startKey, endKey){
   }
 }
 
-const _custColumnFilters = { search:'', activity:'', name:'', userId:'', mobile:'', email:'', accountType:'', listings:'', visits:'', views:'', registeredStart:'', registeredEnd:'', remarks:'', reason:'' };
+const _custColumnFilters = { name:'', userId:'', mobile:'', email:'', accountType:'', listings:'', visits:'', views:'', registeredStart:'', registeredEnd:'', remarks:'', reason:'' };
 const CUST_FILTER_STORAGE_KEY = 'rip_admin_custFilters';
 loadFilterState(CUST_FILTER_STORAGE_KEY, _custColumnFilters);
 _custColumnFilters.accountType = ''; // type is now chosen via the Tenants / Owners sub-tabs
@@ -7584,17 +7549,6 @@ function syncCustTabActive(){
   document.querySelectorAll('#custStatusTabs .cat-tab-btn').forEach(btn=>{
     btn.classList.toggle('active', btn.getAttribute('data-status') === _custStatusTab);
   });
-  syncCustTypeSelect();
-}
-function syncCustTypeSelect(){
-  const sel = document.getElementById('custTypeSelect'); if(!sel) return;
-  const names = {all:'All people', customer:'Tenants', owner:'Owners', broker:'Brokers', propowner:'Listing Owners'};
-  Array.from(sel.options).forEach(o=>{
-    const c = document.getElementById('cust-type-count-'+o.value);
-    const n = c ? (c.textContent||'').trim() : '';
-    o.textContent = names[o.value] + (n && n !== '—' ? ' (' + n + ')' : '');
-  });
-  sel.value = _custTypeTab;
 }
 window.switchCustType = function(type){
   _custTypeTab = type;
@@ -7867,28 +7821,6 @@ window.setPropOwnersData = async function(props){
   if(_custTypeTab === 'propowner'){ try{ _propOwnersTable.columns.adjust(); }catch(e){} }
 };
 
-/* Customers "More" menu: Subscription / Force logout / Block / Reset views / Public call / Delete live in one popup per row. */
-function closeCustMore(){ document.querySelectorAll('.cust-more-menu.open').forEach(m=>m.classList.remove('open')); }
-window.toggleCustMore = function(btn, ev){
-  if(ev) ev.stopPropagation();
-  const menu = btn.parentElement.querySelector('.cust-more-menu'); if(!menu) return;
-  const wasOpen = menu.classList.contains('open');
-  closeCustMore();
-  if(wasOpen) return;
-  menu.classList.add('open');
-  const r = btn.getBoundingClientRect(), mw = menu.offsetWidth, mh = menu.offsetHeight;
-  let left = Math.min(Math.max(8, r.right - mw), window.innerWidth - mw - 8);
-  let top = r.bottom + 6; if(top + mh > window.innerHeight - 8) top = Math.max(8, r.top - mh - 6);
-  menu.style.left = left + 'px'; menu.style.top = top + 'px';
-};
-document.addEventListener('click', function(e){
-  if(!e.target.closest('.cust-more')) { closeCustMore(); return; }
-  if(e.target.closest('.cust-more-menu button')) setTimeout(closeCustMore, 0);
-});
-document.addEventListener('keydown', function(e){ if(e.key === 'Escape') closeCustMore(); });
-window.addEventListener('resize', closeCustMore);
-window.addEventListener('scroll', closeCustMore, true);
-
 window.clearCustFilters = function(){
   clearFiltersGeneric('bookingTable_wrapper', _custColumnFilters, dataTable, CUST_FILTER_STORAGE_KEY, 'custFilterBadge', 'custFilterCount', 'custClearFiltersBtn');
 };
@@ -7923,17 +7855,6 @@ $.fn.dataTable.ext.search.push(function(settings, data, dataIndex){
   if(_custStatusTab !== 'all' && custRowStatus(row) !== _custStatusTab) return false;
   const contains = (val, needle) => String(val||'').toLowerCase().includes(needle.toLowerCase());
   const fullName = row.name || ((row.firstName||'')+' '+(row.lastName||'')).trim();
-  if(cf.search){
-    const q = cf.search;
-    if(!(contains(fullName,q) || contains(row.mobile,q) || contains(row.email,q) || contains(row.userId,q))) return false;
-  }
-  if(cf.activity){
-    const _l = row.listingsCount ?? 0, _v = row.visitsCount ?? 0, _w = (row.viewsCount ?? 0) + (row.propertiesViewed ?? 0);
-    if(cf.activity === 'listed' && !(_l > 0)) return false;
-    if(cf.activity === 'visits' && !(_v > 0)) return false;
-    if(cf.activity === 'views' && !(_w > 0)) return false;
-    if(cf.activity === 'none' && (_l || _v || _w)) return false;
-  }
   if(cf.name && !contains(fullName, cf.name)) return false;
   if(cf.userId && !contains(row.userId, cf.userId)) return false;
   if(cf.mobile && !contains(row.mobile, cf.mobile)) return false;
@@ -11804,47 +11725,56 @@ $(document).ready(function(){
       }
     },
     columns:[
-      /* 0 – Select checkbox + S.No in ONE cell */
+      /* 0 – Select checkbox */
       { data:null, orderable:false, className:'dt-body-center', render:(d,t,row)=>{
           if(t!=='display') return '';
           const id = row.mobile || row._id;
           const checked = _selectedCustIds.has(id) ? 'checked' : '';
-          return `<div class="cust-sel"><input type="checkbox" class="cust-row-check" data-id="${id}" onchange="onCustRowCheck(this,'${id}')" ${checked}><span class="cust-sn"></span></div>`;
+          return `<input type="checkbox" class="cust-row-check" data-id="${id}" onchange="onCustRowCheck(this,'${id}')" ${checked}>`;
       }},
-      /* 1 – Customer: name + joined date + verified + account type + phone + email + user ID in ONE cell */
-      { data:null, render:(d,t,row)=>{
-          const fullName = ((row.firstName||'')+' '+(row.lastName||'')).trim() || row.name || '';
-          if(t!=='display') return [fullName, row.mobile, row.email, row.userId].filter(Boolean).join(' ');
-          return `<div class="cust-cell">
-            <div class="cust-cell-top">${renderName(row)}</div>
-            <div class="cust-cell-tags">${accountTypeBadge(row.accountType||'customer')}${row.isBlocked ? '<span class="status-badge cust-blocked-tag">Blocked</span>' : ''}</div>
-            <div class="cust-cell-contact">${renderPhone(row)}${renderEmail(row)}</div>
-            <div class="cust-cell-id">${row.createdAt ? '<i class="far fa-calendar-alt"></i> Joined ' + fmtDateDMY(new Date(row.createdAt)) : ''}${row.userId ? ' · ID: ' + escapeHtml(row.userId) : ''}</div>
-          </div>`;
-      }},
-      /* 2 – Activity: properties listed + visit requests + views in ONE cell */
+      /* 1 – S.No (serial number) */
+      { data:null, orderable:false, className:'dt-body-center', render:(d,t,row,meta)=> String(meta.row+1) },
+      /* 2 – Customer name */
+      { data:null, render:(d,t,row)=> t==='display' ? renderName(row) : ((row.firstName||'')+' '+(row.lastName||'')).trim() },
+      /* 3 – Type (customer looking for a home, or property owner) */
+      { data:'accountType', render:(d,t)=> t==='display' ? accountTypeBadge(d||'customer') : (d||'customer') },
+      /* 4 – User ID */
+      { data:'userId', render:(d)=> escapeHtml(d||'—') },
+      /* 5 – Phone */
+      { data:null, render:(d,t,row)=>{ if(t==='display') return renderPhone(row); return plainPhone(row); }},
+      /* 6 – Email */
+      { data:null, render:(d,t,row)=>{ if(t==='display') return renderEmail(row); return plainEmail(row); }},
+      /* 7 – Property Listings (count) */
+      { data:'listingsCount', className:'dt-body-center', render:(d)=> String(d ?? 0) },
+      /* 8 – Visit Requests (count) */
+      { data:'visitsCount', className:'dt-body-center', render:(d)=> String(d ?? 0) },
+      /* 9 – Views (total views on their listings + listings they have viewed) */
       { data:null, className:'dt-body-center', render:(d,t,row)=>{
-          const l = row.listingsCount ?? 0, v = row.visitsCount ?? 0, seen = row.propertiesViewed ?? 0, onMine = row.viewsCount ?? 0, vw = onMine + seen;
-          if(t!=='display') return (t==='sort' || t==='type') ? (l+v+vw) : (l+' listed, '+v+' visit requests, '+vw+' views');
-          const tip = onMine + ' views on their listings + ' + seen + ' listings viewed by them';
-          const key = escapeHtml(String(row.mobile || row._id));
-          const viewsHtml = seen > 0
-            ? `<button type="button" class="views-badge" title="${tip} — click to see which properties" data-key="${key}" onclick="openViewedPropsModal(this.dataset.key)"><i class="fas fa-eye"></i><span>${vw}</span></button>`
-            : `<span class="views-badge static" title="${tip}"><i class="fas fa-eye"></i><span>${vw}</span></span>`;
-          return `<div class="cust-activity"><span class="cust-stat" title="Properties listed"><i class="fas fa-building"></i>${l}</span><span class="cust-stat" title="Visit requests"><i class="fas fa-calendar-check"></i>${v}</span>${viewsHtml}</div>`;
+          const total = (row.viewsCount ?? 0) + (row.propertiesViewed ?? 0);
+          if(t!=='display') return total;
+          const tip = (row.viewsCount ?? 0) + ' views on their listings + ' + (row.propertiesViewed ?? 0) + ' listings viewed by them';
+          const key = String(row.mobile || row._id).replace(/'/g,"\\'");
+          if((row.propertiesViewed ?? 0) > 0)
+            return '<button type="button" class="views-badge" title="'+tip+' — click to see which properties" onclick="openViewedPropsModal(\''+key+'\')"><i class="fas fa-eye"></i><span>'+total+'</span></button>';
+          return '<span class="views-badge static" title="'+tip+'"><i class="fas fa-eye"></i><span>'+total+'</span></span>';
       }},
-      /* 3 – Registered: hidden, kept only for sorting (newest first) and the date filter */
-      { data:'createdAt', visible:false, render:(d,t)=>{
+      /* 10 – Registered */
+      { data:'createdAt', render:(d,t)=>{
           if(t==='display') return formatDateTime(d);
           if(t==='export') return plainDateTime(d);
           return d||'—';
       }},
-      /* 4 – Reason & Remarks in ONE cell */
-      { data:null, orderable:false, render:(d,t,row)=>{
-          if(t==='display') return `<div class="cust-notes">${reasonCellHtml(row.mobile||row._id, row.reason, 'customer', row.accountType)}${remarkCellHtml(row.mobile||row._id, row.remarks, 'customer')}</div>`;
-          return [row.reason||'', flattenRemarks(row.remarks||[])].filter(Boolean).join(' · ');
+      /* 11 – Reason */
+      { data:'reason', orderable:false, render:(d,t,row)=>{
+          if(t==='display') return reasonCellHtml(row.mobile||row._id, d, 'customer', row.accountType);
+          return d||'';
       }},
-      /* 5 – Action: every action button shown directly in the column */
+      /* 12 – Remarks */
+      { data:'remarks', orderable:false, render:(d,t,row)=>{
+          if(t==='display') return remarkCellHtml(row.mobile||row._id, d, 'customer');
+          return d||'';
+      }},
+      /* 13 – Action */
       { 
 		  data:null, 
 		  orderable:false, 
@@ -11855,7 +11785,9 @@ $(document).ready(function(){
 			const isVerified = !!row.isVerified;
 
 			return `
-			  <div class="cust-actions">
+			  <div style="display:inline-flex;gap:6px;flex-wrap:nowrap;justify-content:center;align-items:center;white-space:nowrap">
+
+				<span class="pact pact-verified">${verifiedBadge(isVerified, row._id)}</span>
 
 				<span class="pact pact-view"><button class="btn-view btn-action-view" onclick="openCustomerModal('${row.mobile || row._id}')">
 				  <i class="fas fa-eye"></i><span class="btn-label"> View</span>
@@ -11868,8 +11800,6 @@ $(document).ready(function(){
 				<span class="pact pact-edit"><button class="btn-view btn-action-edit" onclick="openCustomerEditModal('${row.mobile || row._id}')" title="Edit this customer's details">
 				  <i class="fas fa-pen"></i><span class="btn-label"> Edit</span>
 				</button></span>
-
-<span class="pact pact-verified">${verifiedBadge(isVerified, row._id)}</span>
 
 				${(row.accountType === 'owner' || row.accountType === 'broker') ? '' : `<span class="pact pact-subscription"><button class="btn-view btn-action-sub${(row.subscriptionFrom || row.subscriptionAt) ? ' is-set' : ''}" onclick="openSubscriptionModal('${row.mobile || row._id}')" title="${(row.subscriptionFrom || row.subscriptionAt) ? 'Subscribed: ' + plainDateTime(row.subscriptionFrom || row.subscriptionAt) + (row.subscriptionTo ? ' → ' + plainDateTime(row.subscriptionTo) : '') + ((row.subscriptions || []).length > 1 ? '  (' + row.subscriptions.length + ' subscriptions — click to view / add)' : '  (click to add another)') : 'Set subscription From – To'}">
 				  <i class="fas fa-calendar-check"></i><span class="btn-label"> Subscription</span>
@@ -11901,7 +11831,7 @@ $(document).ready(function(){
 		  }
 		}
     ],
-    order:[[3,'desc']],
+    order:[[10,'desc']],
     orderCellsTop:true,
     pageLength:-1,
     scrollX:true,
@@ -11919,7 +11849,7 @@ $(document).ready(function(){
         title: function(){ return 'Customer_Leads_' + new Date().toLocaleDateString('en-GB') + (_selectedCustIds.size ? '_Selected' : ''); },
         exportOptions:{
           rows: custExportRowSelector,
-          columns: function(idx){ return idx!==0 && idx!==4 && idx!==5 && (idx===3 || dataTable.column(idx).visible()); },
+          columns: function(idx){ return idx!==0 && idx!==12 && idx!==13 && dataTable.column(idx).visible(); },
           orthogonal:'export', stripHtml:true,
           format:{ body:function(data){ return typeof data === "string" ? data.replace(/<[^>]*>/g,"").trim() : data; } }
         }
@@ -11929,7 +11859,7 @@ $(document).ready(function(){
         title: function(){ return 'Customer_Leads_' + new Date().toLocaleDateString('en-GB') + (_selectedCustIds.size ? '_Selected' : ''); },
         exportOptions:{
           rows: custExportRowSelector,
-          columns: function(idx){ return idx!==0 && idx!==4 && idx!==5 && (idx===3 || dataTable.column(idx).visible()); },
+          columns: function(idx){ return idx!==0 && idx!==12 && idx!==13 && dataTable.column(idx).visible(); },
           orthogonal:'export', stripHtml:true,
           format:{ body:function(data){ return typeof data === "string" ? data.replace(/<[^>]*>/g,"").trim() : data; } }
         }
@@ -11959,7 +11889,7 @@ $(document).ready(function(){
             // Checkbox(0) has no printable value; Remarks(12) and Action(13)
             // are never printed to PDF; everything else follows whatever
             // the Columns toggle currently shows.
-            return idx!==0 && idx!==4 && idx!==5 && (idx===3 || dataTable.column(idx).visible());
+            return idx!==0 && idx!==12 && idx!==13 && dataTable.column(idx).visible();
           }
         },
         customize:function(doc){
@@ -11988,7 +11918,7 @@ $(document).ready(function(){
       try{ syncCustSelectionUI(); }catch(e){ /* table not fully initialized yet */ }
       try{
         var _api = this.api(), _n = 1;
-        _api.column(0, {order:'applied', search:'applied'}).nodes().each(function(cell){ var sn = cell.querySelector('.cust-sn'); if(sn) sn.textContent = String(_n++); });
+        _api.column(1, {order:'applied', search:'applied'}).nodes().each(function(cell){ cell.innerHTML = String(_n++); });
       }catch(e){}
     }
   });
@@ -14613,10 +14543,12 @@ const COL_TOGGLE_CONFIGS = {
   cust: {
     getTable: ()=>dataTable,
     cols: [
-      {idx:2, label:'Activity'}, {idx:4, label:'Reason & Remarks'}
+      {idx:3, label:'Type'}, {idx:4, label:'User ID'}, {idx:5, label:'Phone'},
+      {idx:6, label:'Email'}, {idx:7, label:'Property Listings'}, {idx:8, label:'Visit Requests'},
+      {idx:9, label:'Views'}, {idx:10, label:'Registered'}, {idx:11, label:'Reason'}, {idx:12, label:'Remarks'}
     ],
     menuId:'custColToggleMenu', btnId:'custColToggleBtn', wrapId:'custColToggleWrap',
-    storageKey:'rip_admin_custColVisibility_v3',
+    storageKey:'rip_admin_custColVisibility',
     tableSel:'#bookingTable', actionStorageKey:'rip_admin_custActionVisibility_v1',
     actions:[
       {key:'verified',     label:'Verified badge'},
@@ -14751,7 +14683,7 @@ window.onColActionGroupToggle = function(tab, inputEl){
 // (which shifts whenever a column is hidden) back to the original index.
 function custExportColumnIndices(){
   const idxs=[];
-  for(let i=0;i<=5;i++){ if(i!==0 && i!==4 && i!==5 && (i===3 || dataTable.column(i).visible())) idxs.push(i); }
+  for(let i=0;i<=13;i++){ if(i!==0 && i!==12 && i!==13 && dataTable.column(i).visible()) idxs.push(i); }
   return idxs;
 }
 function apptExportColumnIndices(){
