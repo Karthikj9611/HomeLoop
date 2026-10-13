@@ -3261,6 +3261,14 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
 .cust-actions{display:inline-flex;flex-wrap:nowrap;gap:6px;justify-content:center;align-items:center;white-space:nowrap}
 .cust-actions .btn-label{display:none}
 .cust-actions .pact-publiccall{display:inline-flex;align-items:center;flex-shrink:0}
+
+/* Customers: Reason / Add Remark / Remark stacked in one clean column */
+#bookingTable .cust-notes{align-items:stretch;gap:8px}
+#bookingTable .remark-cell,#bookingTable .remark-cell.remark-cell-empty{width:100%;min-width:260px;max-width:320px}
+#bookingTable .remark-subgrid,#bookingTable .remark-subgrid-empty{display:flex;flex-direction:column;align-items:stretch;flex-wrap:nowrap;gap:8px}
+#bookingTable .remark-subgrid .remark-add-btn,#bookingTable .remark-subgrid-empty .remark-add-btn{order:1;width:100%;justify-content:center;margin-top:0}
+#bookingTable .remark-subgrid .remark-input-panel{order:2;flex:0 0 auto;width:100%}
+#bookingTable .remark-subgrid .remark-dd,#bookingTable .remark-subgrid-empty .remark-empty{order:3;flex:0 0 auto;width:100%;min-width:0;box-sizing:border-box}
 </style>
 </head>
 <body>
