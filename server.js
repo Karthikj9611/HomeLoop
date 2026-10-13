@@ -2037,6 +2037,8 @@ app.post('/api/properties/:id/view', viewLimiter, attachUserIfPresent, async (re
       try {
         const viewer = await User.findById(req.userId).select('name profilePhoto accountType').lean();
         if (viewer) {
+          // findOneAndUpdate returns the PRE-update doc by default, so `prev` tells us when this
+          // user last opened this listing — used below to count a first view of the day.
           const doUpsert = () => PropertyViewer.findOneAndUpdate(
             { propertyId: req.params.id, userId: req.userId },
             {
@@ -2050,13 +2052,20 @@ app.post('/api/properties/:id/view', viewLimiter, attachUserIfPresent, async (re
             },
             { upsert: true }
           );
+          let prev = null;
           try {
-            await doUpsert();
+            prev = await doUpsert();
           } catch (e) {
             // Two requests from the same user racing each other can both try to
             // insert; the unique index rejects the loser with E11000. The row
             // now exists, so just retry once as a plain update — never a 2nd row.
-            if (e && e.code === 11000) await doUpsert(); else throw e;
+            if (e && e.code === 11000) prev = await doUpsert(); else throw e;
+          }
+          // A repeat view (already counted in the all-time `views`) still counts toward TODAY's
+          // total the first time this user opens this listing on a given day, so the daily
+          // number matches the "Today's property views" popup (which lists by last-viewed date).
+          if (!isNewView && (!prev || !prev.lastViewedAt || dateStrInTz(new Date(prev.lastViewedAt)) !== todayStr())) {
+            await bumpDailyStat('propertyView');
           }
         }
       } catch (viewerErr) {

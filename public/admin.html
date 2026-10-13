@@ -8571,7 +8571,6 @@ async function loadTotalVisits(){
     setPanelNotice('panel-visits', '');
     const n = typeof data.totalVisits === 'number' ? data.totalVisits : 0;
     document.getElementById('totalVisitsBigNum').innerText = n;
-    document.getElementById('cat-count-visits-total').innerText = n;
     document.getElementById('tab-visits-count').innerText = n;
   } catch(err){ console.error('loadTotalVisits error:', err); }
 }
@@ -8611,7 +8610,7 @@ async function loadTotalUsers(){
 }
 
 /* ── DAILY VISITS / USERS REGISTERED (today's count, big-stat-card style) ── */
-const DAILY_STAT_LABELS = { visit:{ countEl:'cat-count-visits-daily', bigNumEl:'dailyVisitsBigNum', label:'Daily Visits' },
+const DAILY_STAT_LABELS = { visit:{ countEl:'cat-count-visits-total', bigNumEl:'dailyVisitsBigNum', label:'Daily Visits' },
                              registration:{ countEl:'cat-count-visits-users', bigNumEl:'registeredUsersBigNum', label:'Users Registered' },
                              propertyView:{ countEl:'cat-count-visits-propviews', bigNumEl:'todayPropertyViewsBigNum', label:'Property Views' } };
 
@@ -8625,6 +8624,7 @@ async function loadDailyStat(type){
     const n = typeof data.today === 'number' ? data.today : 0;
     const bigNumEl = document.getElementById(meta.bigNumEl);
     if(bigNumEl) bigNumEl.innerText = n;
+    // Tab badges show TODAY's count only.
     const countEl = document.getElementById(meta.countEl);
     if(countEl) countEl.innerText = n;
   } catch(err){ console.error(`loadDailyStat(${type}) error:`, err); }

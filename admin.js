@@ -3510,12 +3510,30 @@ self.addEventListener('notificationclick', event => {
       const todayDate = todayStr();
       const todayDoc = allDays.find(d => d.date === todayDate);
 
+      // Property views: derive "today" from the real view records (same source as the
+      // "Today's property views" popup) so it also covers views recorded before the daily
+      // counter existed or that were repeat views. Never lower than the stored daily count.
+      let liveToday = null;
+      if (req.params.type === 'propertyView') {
+        const since = new Date(Date.now() - 36 * 60 * 60 * 1000); // wide window, exact day filtered below
+        const [viewerRows, viewRows] = await Promise.all([
+          PropertyViewer.find({ lastViewedAt: { $gte: since } }).select('lastViewedAt').lean(),
+          PropertyView.find({ createdAt: { $gte: since } }).select('fingerprint createdAt').lean(),
+        ]);
+        const isToday = (d) => d && dateStrInTz(new Date(d)) === todayDate;
+        // Logged-in views = one PropertyViewer row per user per listing (last viewed today).
+        // Guest views = PropertyView rows with a device fingerprint (the 'user:' rows mirror the
+        // PropertyViewer ones, so they are skipped to avoid double counting).
+        liveToday = viewerRows.filter(v => isToday(v.lastViewedAt)).length
+                  + viewRows.filter(v => !String(v.fingerprint || '').startsWith('user:') && isToday(v.createdAt)).length;
+      }
+
       const month = (req.query.month || '').toString();
       const monthOk = /^\d{4}-\d{2}$/.test(month);
       const days = monthOk ? allDays.filter(d => d.date.startsWith(month)) : allDays;
       const monthTotal = monthOk ? days.reduce((sum, d) => sum + (d.count || 0), 0) : null;
 
-      res.json({ days, total, today: todayDoc ? todayDoc.count : 0, todayDate, month: monthOk ? month : null, monthTotal });
+      res.json({ days, total, today: Math.max(todayDoc ? todayDoc.count : 0, liveToday || 0), todayDate, month: monthOk ? month : null, monthTotal });
     } catch (err) {
       console.error('GET /api/admin/daily-stats error:', err.message);
       res.status(500).json({ message: 'Error fetching daily stats' });
