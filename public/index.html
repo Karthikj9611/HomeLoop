@@ -10307,7 +10307,7 @@ function lockPanelHtml() {
 }
 function showPlansFromSwipe() {
   const u = getLoggedInUser();
-  openChargesModal(u && (u.accountType === 'owner' || u.accountType === 'broker') ? 'owner' : 'tenant');
+  openChargesModal(u && u.accountType === 'broker' ? 'broker' : u && u.accountType === 'owner' ? 'owner' : 'tenant');
 }
 function slideSwipe(uid, dir) {
   const c = document.getElementById(uid);
@@ -13859,13 +13859,8 @@ function openWhatsApp(propId) {
 function sharePropertyWhatsApp(propId) {
   const p = PROPERTIES.find(x => x.id === propId) || BOOKED_PROPERTIES.find(x => x.id === propId);
   if (!p) return;
-  const type = pTypeLabel(p);
-  const bhk = String(p.property?.bhk || '').trim();
-  const rent = Number(p.price?.rent) || 0;
-  const priceTxt = rent ? fmtINR(rent) + (type === 'Sell' ? '' : (type === 'ShortStay' ? '/day' : '/month')) : '';
-  const summary = [p.propertyId, bhk, p.location?.area, priceTxt].filter(Boolean).join(' \u00b7 ');
   const propertyUrl = `${window.location.origin}/property/${p.id}`;
-  const msg = `Interested in this property.\n${summary}\n${propertyUrl}`;
+  const msg = `Interested in this property.\n${p.propertyId} - ${propertyUrl}`;
   window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank', 'noopener');
 }
 
@@ -16650,7 +16645,7 @@ function shareToTenantWhatsApp(tenantPhone, tenantName) {
   const greeting = tenantName ? `Hi ${tenantName}! 🏠` : '🏠 Hey!';
   const text = `${greeting}
 
-Find verified Rentals, PGs, Leases, Short Stays, and more—all in one place.
+Find verified Rentals
 ${website}`;
   window.open(`https://wa.me/91${tenantPhone}?text=${encodeURIComponent(text)}`, '_blank');
 }
@@ -16677,7 +16672,7 @@ function shareReferralCode(tenantName) {
   const greeting = tenantName ? `Hi ${tenantName}! 🏠` : '🏠 Looking for a home?';
   const text = `${greeting}
 
-Find verified Rentals, PGs, Leases, Short Stays, and more—all in one place.`;
+Find verified Rentals`;
 
   if (navigator.share) {
     navigator.share({
@@ -16695,20 +16690,28 @@ Find verified Rentals, PGs, Leases, Short Stays, and more—all in one place.`;
 /* ═══════════════════════════════════════════════
    HELP & SUPPORT MODAL
 ═══════════════════════════════════════════════ */
-function openChargesModal(tab) {
-  showChargesModal(tab);
+function openChargesModal(tab, fromLink) {
+  showChargesModal(tab, fromLink);
 }
-function showChargesModal(tab) {
+function showChargesModal(tab, fromLink) {
   const user = getLoggedInUser();
-  const isOwner = !!user && (user.accountType === 'owner' || user.accountType === 'broker');
-  const isTenant = !!user && (user.accountType !== 'owner' && user.accountType !== 'broker');
-  // Tab bar: guests see Tenants + Owners; signed-in users see only their own audience. Notice is always available.
-  // Tabs follow the login: tenants share Tenants + Notice, owners share Owners + Notice, guests see all.
-  // A tab opened from a shared link (?charges=...) is always shown to whoever opens it, read-only if it isn't their audience.
-  document.getElementById('chargesTabBtn-tenant').style.display = (!user || isTenant || tab === 'tenant') ? '' : 'none';
-  document.getElementById('chargesTabBtn-owner').style.display  = (!user || isOwner  || tab === 'owner')  ? '' : 'none';
-  var _want = (tab === 'tenant' || tab === 'owner' || tab === 'broker' || tab === 'notice') ? tab : (isOwner ? 'owner' : 'tenant');
-  switchChargesAudience(_want);
+  const acct = !user ? null : (user.accountType === 'broker' ? 'broker' : user.accountType === 'owner' ? 'owner' : 'tenant');
+  // Which tabs this viewer sees:
+  //  - opened from a shared link (?charges=...): only the shared audience (Notice rides along with Tenants)
+  //  - logged-in tenant: Tenants + Notice | owner: Owners only | broker: Brokers only
+  //  - guest (no link): everything
+  let visible;
+  if (fromLink && tab) visible = (tab === 'notice' || tab === 'tenant') ? ['tenant', 'notice'] : [tab];
+  else if (acct === 'tenant') visible = ['tenant', 'notice'];
+  else if (acct === 'owner')  visible = ['owner'];
+  else if (acct === 'broker') visible = ['broker'];
+  else visible = ['tenant', 'owner', 'broker', 'notice'];
+  ['tenant', 'owner', 'broker', 'notice'].forEach(k => {
+    document.getElementById('chargesTabBtn-' + k).style.display = visible.includes(k) ? '' : 'none';
+  });
+  const bar = document.getElementById('chargesTabs');
+  if (bar) bar.style.display = visible.length > 1 ? '' : 'none';
+  switchChargesAudience(tab && visible.includes(tab) ? tab : visible[0]);
   document.getElementById('chargesModal').classList.add('open');
   lockBodyScroll();
 }
@@ -16723,9 +16726,12 @@ function closeChargesModal() {
 var _chargesTab = 'tenant';
 function shareChargesLink() {
   var tab = _chargesTab || 'tenant';
+  // A signed-in sharer always sends their own audience's charges (tenants may also send the Notice tab).
+  var _u = getLoggedInUser();
+  if (_u) tab = _u.accountType === 'broker' ? 'broker' : _u.accountType === 'owner' ? 'owner' : (tab === 'notice' ? 'notice' : 'tenant');
   var url = window.location.origin + '/?charges=' + tab;
-  var titles = { tenant: 'Our Charges', owner: 'Our Charges', broker: 'Our Charges', notice: 'Payment Safety Notice' };
-  var title = (titles[tab] || 'Our Charges') + ' - HomeLoop';
+  var titles = { tenant: 'Direct Plan & Managed Plan', owner: 'Direct Plan & Managed Plan', broker: 'Direct Plan & Managed Plan', notice: 'Payment Safety Notice' };
+  var title = (titles[tab] || 'Direct Plan & Managed Plan') + ' - HomeLoop';
   if (navigator.share) {
     navigator.share({ title: title, text: title, url: url }).catch(function () {});
   } else if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -17823,7 +17829,7 @@ document.addEventListener('DOMContentLoaded', function() {
     renderRecentlyViewed();
     // ── Deep-link: auto-open the charges modal (?charges=tenant|owner|broker|notice) ──
     const _chParam = new URLSearchParams(window.location.search).get('charges');
-    if (_chParam && ['tenant', 'owner', 'broker', 'notice'].includes(_chParam)) openChargesModal(_chParam);
+    if (_chParam && ['tenant', 'owner', 'broker', 'notice'].includes(_chParam)) openChargesModal(_chParam, true);
 
     if (!ok) return;
     initNearbyLocation(); // ask for location once listings are in, so "Near me first" has data to sort
