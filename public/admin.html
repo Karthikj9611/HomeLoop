@@ -6760,6 +6760,7 @@ async function loadAdminMe(){
 
 function applyAdminAccessUI(){
   applyButtonAccess();
+  if(typeof applySuperAdminPdf === 'function') applySuperAdminPdf();
   const isSuper = !!CURRENT_ADMIN.isSuperAdmin;
   const modules = CURRENT_ADMIN.modules || {};
   const actions = CURRENT_ADMIN.actions || {};
@@ -15881,6 +15882,7 @@ function renderSiteVisitors(){
           ? '<button type="button" class="sv-chip trv-btn" data-uid="' + _adminModalEsc(u._id) + '" data-name="' + _adminModalEsc(name) + '" onclick="openRegViews(this)" title="Show properties viewed"><i class="fas fa-eye"></i>' + nv + ' viewed<i class="fas fa-chevron-right trv-caret"></i></button>'
           : '<span class="sv-chip trv-none"><i class="fas fa-eye-slash"></i>No views yet</span>');
       }
+      if(v.visitCount > 1) chips.push('<span class="sv-chip"><i class="fas fa-repeat"></i>' + v.visitCount + (_svScope === 'today' ? ' visits' : ' devices') + '</span>');
       const first = _svWhen(v.visitedAt), last = _svWhen(v.lastSeenAt);
       if(first) chips.push('<span class="sv-chip t1"><i class="fas fa-arrow-right-to-bracket"></i>' + (_svScope === 'today' ? 'First visit ' : 'First seen ') + _adminModalEsc(first) + '</span>');
       if(last && last !== first) chips.push('<span class="sv-chip t2"><i class="fas fa-clock"></i>Last seen ' + _adminModalEsc(last) + '</span>');
@@ -15915,7 +15917,23 @@ async function openSiteVisitorsModal(scope){
     if(token !== _svToken || !modal.classList.contains('open')) return;
     const all = Array.isArray(data.visitors) ? data.visitors : [];
     const out = { tenants: [], owners: [], guests: [], total: data.total || all.length, shown: all.length, truncated: !!data.truncated };
+    // One card per logged-in user: the same account seen on several devices is
+    // merged into a single row that carries the visit count. Guests have no
+    // identity, so they stay one row per device.
+    const byUser = new Map(), merged = [];
     all.forEach(v => {
+      const uid = v.user && !v.user.removed && v.user._id;
+      if(!uid){ merged.push(v); return; }
+      const m = byUser.get(uid);
+      if(!m){ const c = Object.assign({}, v, { visitCount: 1 }); byUser.set(uid, c); merged.push(c); return; }
+      m.visitCount++;
+      if(v.visitedAt  && (!m.visitedAt  || new Date(v.visitedAt)  < new Date(m.visitedAt)))  m.visitedAt  = v.visitedAt;
+      if(v.lastSeenAt && (!m.lastSeenAt || new Date(v.lastSeenAt) > new Date(m.lastSeenAt))) m.lastSeenAt = v.lastSeenAt;
+      if(v.isNew) m.isNew = true;
+    });
+    const dupes = all.length - merged.length;
+    out.total = Math.max(0, out.total - dupes); out.shown = merged.length;
+    merged.forEach(v => {
       if(!v.user) out.guests.push(v);
       else if(v.user.accountType === 'owner' || v.user.accountType === 'broker') out.owners.push(v);
       else out.tenants.push(v);   // deleted accounts (user.removed) land here, shown as "Deleted user"
@@ -18930,6 +18948,165 @@ markRequiredLabels();
   </div>
 
 </div>
+
+<script>
+/* ══════════════════════════════════════════════════════════════════
+   SUPER ADMIN — PDF export on every tab
+   • Customers / Properties / Appointments already have a PDF button
+     (shipped disabled) -> enabled here for the super admin only.
+   • Honest Reviews, Reviews, Partners, Brokers, Referrals get a PDF
+     button (same look as the other tabs) — super admin only.
+   • Visits gets a summary PDF (stat cards + daily visits table).
+   Sub-admins never see / can't use these. Fails closed until
+   /api/admin/me has confirmed who is signed in.
+   ══════════════════════════════════════════════════════════════════ */
+(function(){
+  var made = {};
+
+  function isSuper(){
+    return !!(CURRENT_ADMIN && CURRENT_ADMIN.email && CURRENT_ADMIN.isSuperAdmin);
+  }
+
+  function clean(d){
+    return String(d == null ? '' : d)
+      .replace(/<br\s*\/?>|<\/div>|<\/p>|<\/li>/gi, ' ')
+      .replace(/<[^>]*>/g, '')
+      .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"').replace(/&#0?39;/g, "'").replace(/&nbsp;/g, ' ')
+      .replace(/\s+/g, ' ').trim();
+  }
+
+  function selectedSet(cfg){
+    try { var s = cfg.sel && cfg.sel(); return (s && s.size) ? s : null; } catch(e){ return null; }
+  }
+
+  var TABLES = [
+    { key:'honest',   get:function(){ return honestReviewsTable; }, host:'#reviewBulkToolbar .bulk-toolbar-left',  title:'Honest_Reviews', sel:function(){ return _selectedReviewIds; } },
+    { key:'userrev',  get:function(){ return userReviewsTable; },   host:'#urBulkToolbar .bulk-toolbar-left',      title:'Reviews',        sel:function(){ return _selectedUrIds; } },
+    { key:'partners', get:function(){ return partnersTable; },      host:'#partnerBulkToolbar .bulk-toolbar-left', title:'Partners',       sel:function(){ return _selectedPartnerIds; } },
+    { key:'brokers',  get:function(){ return brokersTable; },       host:'#brokerBulkToolbar .bulk-toolbar-left',  title:'Brokers',        sel:function(){ return _selectedBrokerIds; } },
+    { key:'referrals',get:function(){ return referralsTable; },     host:'#panel-referrals .card-header-left',     title:'Referrals' }
+  ];
+
+  function buildTablePdf(cfg){
+    if(made[cfg.key]) return;
+    var tbl; try { tbl = cfg.get(); } catch(e){ return; }
+    if(!tbl || typeof tbl.column !== 'function') return;
+    var host = document.querySelector(cfg.host);
+    if(!host || !$.fn.dataTable.Buttons) return;
+
+    var inst = new $.fn.dataTable.Buttons(tbl, { buttons:[{
+      extend:'pdfHtml5',
+      text:'<i class="fas fa-file-pdf"></i> <span class="bulk-btn-label" data-mobile="PDF">PDF</span>',
+      orientation:'landscape', pageSize:'A4',
+      title:function(){
+        return cfg.title + '_' + new Date().toLocaleDateString('en-GB') + (selectedSet(cfg) ? '_Selected' : '');
+      },
+      // Rows: ticked rows if any are selected, otherwise whatever the filters currently show.
+      action:function(e, dt, node, config){
+        var s = selectedSet(cfg);
+        config.exportOptions.rows = s
+          ? function(idx, data){ return !!(data && s.has(data._id)); }
+          : { search:'applied', order:'applied' };
+        $.fn.dataTable.ext.buttons.pdfHtml5.action.call(this, e, dt, node, config);
+      },
+      exportOptions:{
+        orthogonal:'export',
+        // Skip the checkbox column (no header text) and Action; follow the Columns toggle.
+        columns:function(idx){
+          var h = clean($(tbl.column(idx).header()).text());
+          return h !== '' && h !== 'Action' && tbl.column(idx).visible();
+        },
+        format:{ body:function(d){ return clean(d); }, header:function(d){ return clean(d); } }
+      },
+      customize:function(doc){
+        doc.styles.tableHeader = { fillColor:'#0c0d10', color:'white', bold:true, fontSize:10, alignment:'center' };
+        doc.defaultStyle = { fontSize:9, color:'#0c0d10' };
+        doc.pageMargins = [20, 24, 20, 24];
+        var tb = doc.content[doc.content.length - 1].table;
+        if(tb && tb.body && tb.body[0]){
+          tb.widths = [];
+          for(var i = 0; i < tb.body[0].length; i++) tb.widths.push('*');
+        }
+      }
+    }]});
+
+    var $c = $(inst.container());
+    $c.prependTo(host);
+    made[cfg.key] = $c;
+  }
+
+  /* ── Visits tab: summary PDF ── */
+  function visitsPdf(){
+    if(!isSuper() || !window.pdfMake) return;
+    var g = function(id){ var e = document.getElementById(id); return e ? e.textContent.trim() : '—'; };
+    var rows = [[{ text:'Date', style:'th' }, { text:'Visits', style:'th' }]];
+    document.querySelectorAll('#visitsMonthTbody tr').forEach(function(tr){
+      var c = tr.querySelectorAll('td');
+      if(c.length >= 2) rows.push([c[0].textContent.trim(), c[1].textContent.trim()]);
+    });
+    var month = (document.getElementById('visitsMonthPicker') || {}).value || '';
+    var stamp = new Date().toLocaleDateString('en-GB');
+    pdfMake.createPdf({
+      pageSize:'A4', pageMargins:[30, 30, 30, 30],
+      defaultStyle:{ fontSize:10 },
+      styles:{ th:{ fillColor:'#0c0d10', color:'white', bold:true, alignment:'center' } },
+      content:[
+        { text:'Visits & Registrations', fontSize:16, bold:true, margin:[0, 0, 0, 4] },
+        { text:'Generated ' + new Date().toLocaleString('en-GB'), fontSize:8, color:'#666', margin:[0, 0, 0, 12] },
+        { table:{ widths:['*', 'auto'], body:[
+            ['All-time website visits', g('totalVisitsBigNum')],
+            ["Today's site visits", g('dailyVisitsBigNum')],
+            ['Total registered users', g('totalUsersBigNum')],
+            ["Today's registrations", g('registeredUsersBigNum')],
+            ["Today's property views", g('todayPropertyViewsBigNum')]
+          ] }, layout:'lightHorizontalLines', margin:[0, 0, 0, 16] },
+        { text:'Daily visits' + (month ? ' — ' + month : '') + '   (total this month: ' + g('visitsMonthTotal') + ')', bold:true, margin:[0, 0, 0, 6] },
+        { table:{ headerRows:1, widths:['*', 'auto'], body:rows }, layout:'lightHorizontalLines' }
+      ]
+    }).download('Visits_' + stamp + '.pdf');
+  }
+  window.visitsPdf = visitsPdf;
+
+  function buildVisitsBtn(){
+    if(made.visits) return;
+    var picker = document.getElementById('visitsMonthPicker');
+    if(!picker || !picker.parentElement) return;
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'bulk-btn';
+    btn.id = 'visitsPdfBtn';
+    btn.title = 'Download visits summary as PDF';
+    btn.innerHTML = '<i class="fas fa-file-pdf"></i> <span class="bulk-btn-label" data-mobile="PDF">PDF</span>';
+    btn.onclick = visitsPdf;
+    picker.parentElement.appendChild(btn);
+    made.visits = $(btn);
+  }
+
+  /* ── Apply (idempotent; safe to call any number of times) ── */
+  window.applySuperAdminPdf = function(){
+    var sup = isSuper();
+    if(sup){ TABLES.forEach(buildTablePdf); buildVisitsBtn(); }
+    Object.keys(made).forEach(function(k){ made[k].css('display', sup ? '' : 'none'); });
+
+    // Existing (shipped-disabled) PDF buttons: Customers, Properties, Appointments.
+    [function(){ return dataTable; }, function(){ return propTable; }, function(){ return apptTable; }]
+      .forEach(function(getT){
+        try {
+          var t = getT();
+          if(t && typeof t.buttons === 'function'){
+            var b = t.buttons('.buttons-pdf');
+            if(b.length) b.enable(sup);
+          }
+        } catch(e){}
+      });
+  };
+
+  // Tables initialise asynchronously and can finish before or after /api/admin/me.
+  $(document).on('init.dt', function(){ setTimeout(window.applySuperAdminPdf, 0); });
+  $(function(){ setTimeout(window.applySuperAdminPdf, 800); });
+})();
+</script>
 
 </body>
 </html>
