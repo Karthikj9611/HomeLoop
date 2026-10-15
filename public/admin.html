@@ -3792,9 +3792,6 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
   <div class="tab-panel" id="panel-customers">
     <!-- Account-type sub-tabs: Tenants / Owners -->
     <div class="cat-tab-bar tab-lvl-2" id="custTypeTabs">
-      <button class="cat-tab-btn" data-type="all" onclick="switchCustType('all')">
-        <i class="fas fa-users"></i><span class="cat-tab-btn-label" data-mobile="All">All</span><span class="cat-count" id="cust-type-count-all">—</span>
-      </button>
       <button class="cat-tab-btn" data-type="owner" onclick="switchCustType('owner')">
         <i class="fas fa-house-user"></i><span class="cat-tab-btn-label" data-mobile="Owners">Owners</span><span class="cat-count" id="cust-type-count-owner">—</span>
       </button>
@@ -7496,8 +7493,8 @@ let _custStatusTab = 'active';   // status: active | leads | rented | subscripti
 try{
   const t = localStorage.getItem('kr_admin_custType');
   const st = localStorage.getItem('kr_admin_custStatus');
-  if(t === 'customer' || t === 'owner' || t === 'broker' || t === 'all' || t === 'propowner') _custTypeTab = t;
-  else if(t === 'leads' || t === 'rented' || t === 'subscription'){ _custTypeTab = 'all'; _custStatusTab = t; } // migrate old saved tab
+  if(t === 'customer' || t === 'owner' || t === 'broker' || t === 'propowner') _custTypeTab = t;
+  else if(t === 'leads' || t === 'rented' || t === 'subscription'){ _custTypeTab = 'customer'; _custStatusTab = t; } // migrate old saved tab
   if(st === 'active' || st === 'leads' || st === 'rented' || st === 'subscription' || st === 'all') _custStatusTab = st;
 }catch(e){}
 
@@ -7524,9 +7521,11 @@ function custRowType(r){ return (r && r.accountType === 'owner') ? 'owner' : (r 
 function syncCustTabActive(){
   // Owners don't need subscriptions: hide the Subscription status tab on the Owners tab
   const _hideSub = _custTypeTab === 'owner' || _custTypeTab === 'broker';
-  if(_hideSub && _custStatusTab === 'subscription'){ _custStatusTab = 'active'; try{ localStorage.setItem('kr_admin_custStatus','active'); }catch(e){} if(typeof dataTable !== 'undefined' && dataTable) dataTable.draw(); }
+  if(_hideSub && (_custStatusTab === 'subscription' || _custStatusTab === 'rented' || _custStatusTab === 'leads')){ _custStatusTab = 'active'; try{ localStorage.setItem('kr_admin_custStatus','active'); }catch(e){} if(typeof dataTable !== 'undefined' && dataTable) dataTable.draw(); }
   const _subBtn = document.querySelector('#custStatusTabs .cat-tab-btn[data-status="subscription"]');
   if(_subBtn) _subBtn.classList.toggle('po-hidden', _hideSub);
+  // Owners / Brokers: also hide "Rented Through Us" and "Lost Leads"
+  ['rented','leads'].forEach(function(k){ var b = document.querySelector('#custStatusTabs .cat-tab-btn[data-status="'+k+'"]'); if(b) b.classList.toggle('po-hidden', _hideSub); });
   document.querySelectorAll('#custTypeTabs .cat-tab-btn').forEach(btn=>{
     btn.classList.toggle('active', btn.getAttribute('data-type') === _custTypeTab);
   });
