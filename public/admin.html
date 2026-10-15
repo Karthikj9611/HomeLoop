@@ -19162,7 +19162,29 @@ markRequiredLabels();
     return (app === 'business' ? 'whatsapp-business' : 'whatsapp') + '://send?' + qs;
   }
 
-  var pending = [], sheet = null, lastApp = null, lastAt = 0;
+  var KEY = 'hl_wa_app';
+  function getPref() { try { var v = localStorage.getItem(KEY); return v === 'normal' || v === 'business' ? v : null; } catch (e) { return null; } }
+  function setPref(v) { try { if (v) localStorage.setItem(KEY, v); else localStorage.removeItem(KEY); } catch (e) {} }
+
+  var pending = [], sheet = null, lastApp = null, lastAt = 0, toast = null, toastT = null;
+
+  // Small note shown when a remembered app is used, so the choice can be changed.
+  function showToast(app) {
+    injectCss();
+    if (toast && toast.parentNode) toast.parentNode.removeChild(toast);
+    clearTimeout(toastT);
+    toast = document.createElement('div'); toast.id = 'hlWaToast';
+    toast.innerHTML = '<span>Opening ' + (app === 'business' ? 'WhatsApp Business' : 'WhatsApp') + '</span><button type="button">Change</button>';
+    toast.querySelector('button').onclick = function () {
+      setPref(null); lastApp = null;
+      toast.firstChild.textContent = "OK — you'll be asked next time";
+      toast.querySelector('button').style.display = 'none';
+      toastT = setTimeout(hideToast, 2500);
+    };
+    document.body.appendChild(toast);
+    toastT = setTimeout(hideToast, 4000);
+  }
+  function hideToast() { if (toast && toast.parentNode) toast.parentNode.removeChild(toast); toast = null; }
 
   function injectCss() {
     if (document.getElementById('hlWaChooserCss')) return;
@@ -19176,6 +19198,10 @@ markRequiredLabels();
       '#hlWaChooser .hlwa-n{background:#25D366}' +
       '#hlWaChooser .hlwa-b{background:#128C7E}' +
       '#hlWaChooser .hlwa-c{background:transparent;color:#6b7280;justify-content:center;margin:0;font-weight:600}' +
+      '#hlWaChooser label{display:flex;align-items:center;gap:8px;font-size:13px;color:#6b7280;margin:2px 2px 12px;cursor:pointer}' +
+      '#hlWaChooser input{width:16px;height:16px;margin:0}' +
+      '#hlWaToast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));z-index:2147483001;background:#111;color:#fff;border-radius:999px;padding:9px 10px 9px 16px;font-size:13px;display:flex;align-items:center;gap:12px;box-shadow:0 4px 16px rgba(0,0,0,.3)}' +
+      '#hlWaToast button{background:#25D366;color:#fff;border:0;border-radius:999px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer}' +
       '@media (prefers-color-scheme:dark){#hlWaChooser .hlwa-card{background:#1f2125;color:#f3f4f6}#hlWaChooser .hlwa-s,#hlWaChooser .hlwa-c{color:#9ca3af}}' +
       '@media (min-width:600px){#hlWaChooser{align-items:center}#hlWaChooser .hlwa-card{border-radius:18px}}';
     document.head.appendChild(s);
@@ -19184,6 +19210,8 @@ markRequiredLabels();
 
   function closeSheet() { if (sheet && sheet.parentNode) sheet.parentNode.removeChild(sheet); sheet = null; }
   function choose(app) {
+    var rem = sheet && sheet.querySelector('#hlWaRemember');
+    if (rem && rem.checked) setPref(app);
     lastApp = app; lastAt = Date.now();
     var list = pending.splice(0); closeSheet();
     list.forEach(function (u, i) { setTimeout(function () { nav(build(app, u)); }, i * 400); });
@@ -19198,6 +19226,7 @@ markRequiredLabels();
       '<div class="hlwa-card"><p class="hlwa-t">Share via which app?</p><p class="hlwa-s">Pick the WhatsApp you want to send from.</p>' +
       '<button type="button" class="hlwa-n" data-app="normal">' + ICON + 'WhatsApp</button>' +
       '<button type="button" class="hlwa-b" data-app="business">' + ICON + 'WhatsApp Business</button>' +
+      '<label><input type="checkbox" id="hlWaRemember"> Remember my choice (don\'t ask again)</label>' +
       '<button type="button" class="hlwa-c" data-app="">Cancel</button></div>';
     sheet.addEventListener('click', function (e) {
       var b = e.target.closest && e.target.closest('button');
@@ -19208,6 +19237,8 @@ markRequiredLabels();
   }
 
   function route(u) {
+    var pref = getPref();
+    if (pref && !sheet) { nav(build(pref, u)); showToast(pref); return; }
     // A batch (e.g. owner + alternate number) is asked about once, not per link.
     if (lastApp && Date.now() - lastAt < 15000 && !sheet) { nav(build(lastApp, u)); return; }
     pending.push(u);
