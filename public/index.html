@@ -13854,8 +13854,36 @@ function sharePropertyWhatsApp(propId) {
   const p = PROPERTIES.find(x => x.id === propId) || BOOKED_PROPERTIES.find(x => x.id === propId);
   if (!p) return;
   const propertyUrl = `${window.location.origin}/property/${p.id}`;
-  const msg = `Interested in this property.\n${p.propertyId} - ${propertyUrl}`;
-  window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank', 'noopener');
+  // Friendly "look at this" message for friends / family / groups (not an enquiry to an owner).
+  const status = p.basic?.status || 'For Rent';
+  const isSell = status === 'For Sale', isShort = status === 'Short Stay';
+  const prop = p.property || {}, pgd = p.pg || {}, ss = p.shortStay || {};
+  const ptype = prop.type || pgd.type || ss.type || '';
+  const bhk = (status === 'PG' || isShort) ? '' : (prop.bhk || '');
+  const title = [bhk, ptype].filter(Boolean).join(' ') || 'Property';
+  const area = (p.location?.area || '').trim(), city = (p.location?.city || '').trim();
+  const where = [area, city].filter(Boolean).join(', ');
+  const rent = Number(p.price?.rent) || 0, dep = Number(p.price?.deposit) || 0;
+  const unit = isSell ? '' : isShort ? '/day' : '/month';
+  const rentLine = rent ? `${fmtRupee(rent)}${unit}` : '';
+  const depLine = (dep && !isSell) ? `Deposit ${fmtRupee(dep)}` : '';
+  const furn = prop.furnish ?? pgd.furnish ?? ss.furnish ?? '';
+  const sqft = String(prop.area || '').replace(/\s*sqft\s*$/i, '').trim();
+  const furnLine = furn ? `${furn}${/furnish/i.test(furn) ? '' : ' furnished'}` : '';
+  const sqftLine = sqft ? `${sqft} sqft` : '';
+  const lines = [
+    `${title} ${isSell ? 'for sale' : isShort ? 'for short stay' : status === 'PG' ? '(PG)' : 'for rent'}`,
+    where ? where : null,
+    rentLine || null,
+    depLine || null,
+    furnLine || null,
+    sqftLine || null,
+    `ID: ${p.propertyId}`,
+    '',
+    'Have a look — photos & full details here:',
+    propertyUrl
+  ].filter(l => l !== null);
+  window.open('https://wa.me/?text=' + encodeURIComponent(lines.join('\n')), '_blank', 'noopener');
 }
 
 function resetListingForm() {
