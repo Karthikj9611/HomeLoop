@@ -11460,6 +11460,13 @@ function updateAllOnlySections() {
   // Show only on "All"
   if (urbanAware) urbanAware.style.display = (show && hasHonestReviews) ? '' : 'none';
   if (reviewsSection) reviewsSection.style.display = show ? '' : 'none';
+  // Review tab: nothing sits above "Add a Review" (unless UrbanAware is showing),
+  // so drop the section's top padding/border to remove the gap under the header.
+  if (reviewsSection) {
+    const noneAbove = show && !(urbanAware && urbanAware.style.display !== 'none');
+    reviewsSection.style.paddingTop = noneAbove ? '0' : '';
+    reviewsSection.style.borderTop = noneAbove ? '0' : '';
+  }
   if (premiumServices) premiumServices.style.display = 'none'; // Premium Services hidden
 
   // Hide Promoted, Rent, Lease, PG, Sell and the Booked bucket when "All" is
