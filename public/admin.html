@@ -3792,14 +3792,14 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
   <div class="tab-panel" id="panel-customers">
     <!-- Account-type sub-tabs: Tenants / Owners -->
     <div class="cat-tab-bar tab-lvl-2" id="custTypeTabs">
+      <button class="cat-tab-btn" data-type="customer" onclick="switchCustType('customer')">
+        <i class="fas fa-user"></i><span class="cat-tab-btn-label" data-mobile="Tenants">Tenants</span><span class="cat-count" id="cust-type-count-customer">—</span>
+      </button>
       <button class="cat-tab-btn" data-type="owner" onclick="switchCustType('owner')">
         <i class="fas fa-house-user"></i><span class="cat-tab-btn-label" data-mobile="Owners">Owners</span><span class="cat-count" id="cust-type-count-owner">—</span>
       </button>
       <button class="cat-tab-btn" data-type="broker" onclick="switchCustType('broker')">
         <i class="fas fa-user-tie"></i><span class="cat-tab-btn-label" data-mobile="Brokers">Brokers</span><span class="cat-count" id="cust-type-count-broker">—</span>
-      </button>
-      <button class="cat-tab-btn" data-type="customer" onclick="switchCustType('customer')">
-        <i class="fas fa-user"></i><span class="cat-tab-btn-label" data-mobile="Tenants">Tenants</span><span class="cat-count" id="cust-type-count-customer">—</span>
       </button>
       <button class="cat-tab-btn" data-type="propowner" onclick="switchCustType('propowner')" title="Owners taken from the Properties section">
         <i class="fas fa-building-user"></i><span class="cat-tab-btn-label" data-mobile="Prop. Owners">Property Owners</span><span class="cat-count" id="cust-type-count-propowner">—</span>
