@@ -4827,35 +4827,10 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
          sense to show read-only. -->
     <div id="listingFormSections">
 
-    <!-- ===== 0. IMPORT EXISTING DATA (file upload or pasted JSON) ===== -->
-    <div class="lm-section" id="importSectionHeader" style="cursor:pointer;display:flex;align-items:center;justify-content:space-between" onclick="toggleImportPanel()">
-      <span>📥 Import property data (optional)</span>
-      <span id="importPanelToggleTxt" style="font-size:12px;color:var(--brand);font-weight:700">Show</span>
-    </div>
-    <div id="importPanelBody" style="display:none;background:var(--bg-2,#f7f7f9);border:1px dashed var(--border-2,#ddd);border-radius:12px;padding:14px;margin-bottom:6px">
-      <div style="font-size:12.5px;color:var(--text-2);margin-bottom:10px">
-        Already have the property details somewhere — a JSON export, a database record, an old listing doc? Upload the file or paste it below and the form fields will be filled in automatically. You can still review and edit everything before submitting.
-      </div>
-      <div class="form-row" style="grid-template-columns:1fr 1fr;align-items:end">
-        <div class="form-group">
-          <label class="form-label">Upload a file (.json / .txt)</label>
-          <input class="form-input" type="file" id="f-importFile" accept=".json,.txt,application/json,text/plain" onchange="handleImportFile(this)" />
-        </div>
-        <div class="form-group">
-          <button type="button" class="form-submit" style="margin:0;height:40px" onclick="applyPastedImportText()">Autofill form from pasted text</button>
-        </div>
-      </div>
-      <div class="form-group">
-        <label class="form-label">…or paste JSON / database text here</label>
-        <textarea class="form-input" id="f-importText" rows="6" style="resize:vertical;font-family:monospace;font-size:12px"></textarea>
-      </div>
-      <div id="importStatusMsg" style="font-size:12px;min-height:16px;margin-top:2px"></div>
-    </div>
-
     <!-- ===== PASTE WHATSAPP MESSAGE (Rent only) ===== -->
     <div id="waPasteBox" style="margin-bottom:14px">
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-        <button type="button" onclick="waOpenModal()" style="background:var(--brand);color:#fff;border:none;border-radius:9px;padding:0 16px;height:36px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">📋 Paste WhatsApp message</button>
+        <button type="button" onclick="waOpenModal()" style="background:var(--brand);color:#fff;border:none;border-radius:9px;padding:0 16px;height:36px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">📋 Paste filled message</button>
         <button type="button" onclick="waOpenSample()" style="background:transparent;color:var(--brand);border:1.5px solid var(--brand);border-radius:9px;padding:0 16px;height:36px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">📄 Sample message</button>
         <span id="waPasteStatus" style="font-size:12px;font-weight:600;flex:1;min-width:140px"></span>
       </div>
@@ -4865,7 +4840,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
             <div style="font-size:16px;font-weight:800">Paste WhatsApp message</div>
             <button type="button" onclick="waCloseModal()" aria-label="Close" style="background:var(--brand);color:#fff;border:none;border-radius:50%;width:30px;height:30px;font-size:16px;line-height:1;cursor:pointer">✕</button>
           </div>
-          <textarea class="form-input" id="waPasteText" rows="11" oninput="waSaveDraft()" style="width:100%;resize:vertical;color:var(--text,#222)" placeholder="Paste the owner's message here"></textarea>
+          <div style="position:relative;width:100%"><pre id="waPasteHl" aria-hidden="true" style="position:absolute;inset:0;pointer-events:none;overflow:hidden;background:var(--bg-2,#f7f7f9);color:var(--text,#222);font:13px/1.5 ui-monospace,Menlo,Consolas,monospace;padding:12px;border:1.5px solid var(--border-2,#d0d0d0);border-radius:10px;box-sizing:border-box;white-space:pre-wrap;word-break:break-word;overflow-y:scroll;margin:0;width:100%;border-color:transparent"></pre><textarea id="waPasteText" rows="11" oninput="waSaveDraft();waHlRender('waPasteText','waPasteHl')" spellcheck="false" placeholder="Paste the owner's message here" onscroll="waHlRender('waPasteText','waPasteHl')" style="position:relative;display:block;resize:vertical;background:transparent;color:transparent;caret-color:var(--text,#222);font:13px/1.5 ui-monospace,Menlo,Consolas,monospace;padding:12px;border:1.5px solid var(--border-2,#d0d0d0);border-radius:10px;box-sizing:border-box;white-space:pre-wrap;word-break:break-word;overflow-y:scroll;margin:0;width:100%;"></textarea></div>
           <div id="waModalErr" style="font-size:12px;font-weight:600;color:#c0392b;min-height:16px;margin-top:6px"></div>
           <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px;flex-wrap:wrap">
             <button type="button" onclick="waClearMsg()" style="background:transparent;border:1.5px solid var(--border-2,#d0d0d0);color:var(--text,#222);border-radius:9px;padding:0 16px;height:36px;font-size:13px;font-weight:700;cursor:pointer">Clear</button>
@@ -4933,9 +4908,8 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
 <span class="wa-k" style="color:var(--brand);font-weight:700">Video tour link:</span> <span class="wa-v" style="color:#1f6fb2">https://youtu.be/dQw4w9WgXcQ</span>
 <span class="wa-k" style="color:var(--brand);font-weight:700">Description:</span> <span class="wa-v" style="color:#1f6fb2">Well maintained 2 BHK in 2nd sector HSR, 5 mins walk to market. East facing, 24x7 water, covered parking.</span></pre>
           <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:12px">
-            <button type="button" id="waSampleEdit" onclick="waToggleEditSample()" style="background:transparent;border:1.5px solid var(--border-2,#d0d0d0);color:var(--text,#222);border-radius:9px;padding:0 16px;height:36px;font-size:13px;font-weight:700;cursor:pointer">Edit</button>
             <button type="button" id="waSampleCopy" onclick="waCopySample()" style="background:var(--brand);color:#fff;border:none;border-radius:9px;padding:0 20px;height:36px;font-size:13px;font-weight:700;cursor:pointer">Copy</button>
-            <button type="button" onclick="waCloseSample()" style="background:transparent;border:1.5px solid var(--border-2,#d0d0d0);color:var(--text,#222);border-radius:9px;padding:0 16px;height:36px;font-size:13px;font-weight:700;cursor:pointer">Close</button>
+            <button type="button" id="waSampleShare" onclick="waShareSample()" style="background:#25D366;color:#fff;border:none;border-radius:9px;padding:0 16px;height:36px;font-size:13px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.5 14.4c-.3-.1-1.7-.8-2-.9-.3-.1-.5-.1-.7.1-.2.3-.8.9-.9 1.1-.2.2-.3.2-.6.1-1.7-.8-2.8-1.5-3.9-3.4-.3-.5.3-.5.8-1.6.1-.2 0-.4 0-.5-.1-.1-.7-1.6-.9-2.2-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.5s1.1 2.9 1.2 3.1c.1.2 2.100 3.200 5.100 4.500 1.900.8 2.600.9 3.500.7.600-.1 1.700-.7 2-1.400.2-.7.2-1.300.2-1.400-.1-.1-.3-.2-.6-.3zM12 2a10 10 0 0 0-8.600 15.100L2 22l5-1.300A10 10 0 1 0 12 2z"/></svg>Share</button>
           </div>
         </div>
       </div>
@@ -16750,7 +16724,7 @@ function applyImportedProperty(p) {
    phone/email when locked to the account) are never overwritten. */
 function waPasteToggle(val) {
   var box = document.getElementById('waPasteBox');
-  if (box) box.style.display = (val === 'Rent' || val === 'For Rent') ? '' : 'none';
+  if (box) box.style.display = (!val || val === 'Rent' || val === 'For Rent') ? '' : 'none';
 }
 function waNorm(s) { return String(s == null ? '' : s).toLowerCase().replace(/[^a-z0-9]/g, ''); }
 
@@ -17017,6 +16991,16 @@ function waOpenSample() {
   m.style.display = 'flex';
 }
 function waCloseSample() { waSetSampleEditing(false); var m = document.getElementById('waSampleModal'); if (m) m.style.display = 'none'; }
+function waShareSample() {
+  var pre = document.getElementById('waSampleText'); if (!pre) return;
+  // Plain "Key: value" lines only — one per line, no [option hints], no blank lines.
+  var txt = (pre.innerText || pre.textContent || '').replace(/\r\n?/g, '\n').split('\n')
+    .map(function (l) { return l.replace(/\s*\[[^\]]*\]\s*$/, '').replace(/\s+/g, ' ').trim(); })
+    .filter(function (l) { return l; }).join('\n');
+  var url = 'https://wa.me/?text=' + encodeURIComponent(txt);
+  if (url.length > 7000) { waCopySample(); url = 'https://wa.me/'; if (typeof showToast === 'function') showToast('Message copied — paste it in WhatsApp'); }
+  window.open(url, '_blank', 'noopener');
+}
 function waCopySample() {
   var pre = document.getElementById('waSampleText'), btn = document.getElementById('waSampleCopy'); if (!pre) return;
   function done() { if (btn) { btn.textContent = 'Copied'; setTimeout(function () { btn.textContent = 'Copy'; }, 1500); } }
@@ -17026,17 +17010,35 @@ function waCopySample() {
     try { var r = document.createRange(); r.selectNodeContents(pre); var s = window.getSelection(); s.removeAllRanges(); s.addRange(r); document.execCommand('copy'); s.removeAllRanges(); done(); } catch (e) {}
   }
 }
+
+/* Colour-coded paste box: a highlighted mirror <pre> sits behind a transparent-text textarea. */
+function waHlRender(taId, preId) {
+  var ta = document.getElementById(taId), pre = document.getElementById(preId); if (!ta || !pre) return;
+  function esc(t) { return t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+  var html = String(ta.value).replace(/\r\n?/g, '\n').split('\n').map(function (line) {
+    var m = line.match(/^(\s*[^:\n]{1,60}:)(.*)$/);
+    if (!m) return esc(line);
+    var val = m[2], hint = '', h = val.match(/^(.*?)(\s*\[[^\]]*\]\s*)$/);
+    if (h) { val = h[1]; hint = h[2]; }
+    return '<span style="color:var(--brand,#e0364f);font-weight:700">' + esc(m[1]) + '</span>' +
+      '<span style="color:#1f6fb2">' + esc(val) + '</span>' +
+      (hint ? '<span style="color:#8a8a8a">' + esc(hint) + '</span>' : '');
+  }).join('\n');
+  pre.innerHTML = html + '\n';
+  pre.scrollTop = ta.scrollTop;
+}
 function waOpenModal() {
   var m = document.getElementById('waModal'); if (!m) return;
   if (m.parentNode !== document.body) document.body.appendChild(m); // escape the form's scroll container
   document.getElementById('waModalErr').textContent = '';
   waRestoreDraft();
   m.style.display = 'flex';
+  waHlRender('waPasteText','waPasteHl');
   var ta = document.getElementById('waPasteText'); if (ta) ta.focus();
 }
 function waCloseModal() { var m = document.getElementById('waModal'); if (m) m.style.display = 'none'; }
 function waClearMsg() {
-  var ta = document.getElementById('waPasteText'); if (ta) { ta.value = ''; ta.focus(); }
+  var ta = document.getElementById('waPasteText'); if (ta) { ta.value = ''; ta.focus(); waHlRender('waPasteText','waPasteHl'); }
   try { localStorage.removeItem(WA_DRAFT_KEY); } catch (e) {}
   document.getElementById('waModalErr').textContent = '';
 }
