@@ -281,6 +281,8 @@ body{
   #partnerBulkToolbar .bulk-btn .bulk-btn-label{display:none!important}
   #brokerBulkToolbar .bulk-btn .bulk-btn-label{display:none!important}
 }
+/* Selection-only actions: stay hidden until JS clears .sel-hide (beats mobile display:inline-flex!important) */
+#bulkToolbar .bulk-btn.sel-hide{display:none!important}
 /* Uniform column: every button same width, left-aligned, one under the other */
 #bulkToolbar{width:150px!important;align-items:stretch!important}
 #bulkToolbar .bulk-toolbar-left,#bulkToolbar .bulk-toolbar-right{width:100%;align-items:stretch!important}
@@ -4034,16 +4036,16 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
         <button class="bulk-btn" id="addPropertyBtn" onclick="openAdminAddPropertyModal()" title="Add property" aria-label="Add property" style="background:var(--brand);color:#fff;border-color:var(--brand)">
           <i class="fas fa-plus"></i> <span class="bulk-btn-label" data-mobile="Add">Add Property</span>
         </button>
-        <button class="bulk-btn" id="bulkCompareBtn" style="display:none;background:var(--brand);color:#fff;border-color:var(--brand)" onclick="openAdminCompareModal()" title="Compare the selected properties and share the link with a customer">
+        <button class="bulk-btn sel-hide" id="bulkCompareBtn" style="display:none;background:var(--brand);color:#fff;border-color:var(--brand)" onclick="openAdminCompareModal()" title="Compare the selected properties and share the link with a customer">
           <i class="fas fa-code-compare"></i> <span class="bulk-btn-label" data-mobile="Compare">Compare - </span><span id="bulkCompareCount">0</span>
         </button>
-        <button class="bulk-btn" id="bulkShareTenantBtn" style="display:none;background:#0ea5e9;color:#fff;border-color:#0ea5e9" onclick="shareSelectedToTenant()" title="Send the view links of all selected properties to a tenant on WhatsApp">
+        <button class="bulk-btn sel-hide" id="bulkShareTenantBtn" style="display:none;background:#0ea5e9;color:#fff;border-color:#0ea5e9" onclick="shareSelectedToTenant()" title="Send the view links of all selected properties to a tenant on WhatsApp">
           <i class="fas fa-paper-plane"></i> <span class="bulk-btn-label" data-mobile="Tenant">Share to Tenant - </span><span id="bulkShareTenantCount">0</span>
         </button>
-        <button class="bulk-btn" id="bulkShareLinksBtn" style="display:none;background:#25D366;color:#fff;border-color:#25D366" onclick="shareSelectedLinksToNumber()" title="Share links for all selected properties to a WhatsApp number you enter">
+        <button class="bulk-btn sel-hide" id="bulkShareLinksBtn" style="display:none;background:#25D366;color:#fff;border-color:#25D366" onclick="shareSelectedLinksToNumber()" title="Share links for all selected properties to a WhatsApp number you enter">
           <i class="fab fa-whatsapp"></i> <span class="bulk-btn-label" data-mobile="Share">Share Links - </span><span id="bulkShareLinksCount">0</span>
         </button>
-        <button class="bulk-btn" id="bulkCheckAvailabilityBtn" style="display:none;background:#7c3aed;color:#fff;border-color:#7c3aed" onclick="checkAvailabilityWithOwners()" title="Review and send a WhatsApp availability check to each selected property's owner (alt number only)">
+        <button class="bulk-btn sel-hide" id="bulkCheckAvailabilityBtn" style="display:none;background:#7c3aed;color:#fff;border-color:#7c3aed" onclick="checkAvailabilityWithOwners()" title="Review and send a WhatsApp availability check to each selected property's owner (alt number only)">
           <i class="fab fa-whatsapp"></i> <span class="bulk-btn-label" data-mobile="Check">Check Availability - </span><span id="bulkCheckAvailabilityCount">0</span>
         </button>
         <span id="addPropertyDivider" style="width:1px;align-self:stretch;background:var(--border,#ddd);margin:2px 4px;flex-shrink:0"></span>
@@ -10988,7 +10990,7 @@ function updateBulkToolbarUI(){
   const cmpBtn = document.getElementById('bulkCompareBtn');
   const cmpCountEl = document.getElementById('bulkCompareCount');
   if (cmpBtn){
-    cmpBtn.style.display = n >= 2 ? 'inline-flex' : 'none';
+    cmpBtn.style.display = n >= 2 ? 'inline-flex' : 'none'; cmpBtn.classList.toggle('sel-hide', !(n >= 2));
     if (cmpCountEl) cmpCountEl.textContent = Math.min(n, ADMIN_COMPARE_MAX);
   }
 
@@ -10998,13 +11000,13 @@ function updateBulkToolbarUI(){
   const shareTenantBtn = document.getElementById('bulkShareTenantBtn');
   const shareTenantCountEl = document.getElementById('bulkShareTenantCount');
   if (shareTenantBtn){
-    shareTenantBtn.style.display = n >= 1 ? 'inline-flex' : 'none';
+    shareTenantBtn.style.display = n >= 1 ? 'inline-flex' : 'none'; shareTenantBtn.classList.toggle('sel-hide', !(n >= 1));
     if (shareTenantCountEl) shareTenantCountEl.textContent = n;
   }
   const shareLinksBtn = document.getElementById('bulkShareLinksBtn');
   const shareLinksCountEl = document.getElementById('bulkShareLinksCount');
   if (shareLinksBtn){
-    shareLinksBtn.style.display = n >= 1 ? 'inline-flex' : 'none';
+    shareLinksBtn.style.display = n >= 1 ? 'inline-flex' : 'none'; shareLinksBtn.classList.toggle('sel-hide', !(n >= 1));
     if (shareLinksCountEl) shareLinksCountEl.textContent = n;
   }
 
@@ -11015,7 +11017,7 @@ function updateBulkToolbarUI(){
   const checkAvailBtn = document.getElementById('bulkCheckAvailabilityBtn');
   const checkAvailCountEl = document.getElementById('bulkCheckAvailabilityCount');
   if (checkAvailBtn){
-    checkAvailBtn.style.display = n >= 1 ? 'inline-flex' : 'none';
+    checkAvailBtn.style.display = n >= 1 ? 'inline-flex' : 'none'; checkAvailBtn.classList.toggle('sel-hide', !(n >= 1));
     if (checkAvailCountEl) checkAvailCountEl.textContent = n;
   }
   // If the modal is already open and the selection changed underneath it
