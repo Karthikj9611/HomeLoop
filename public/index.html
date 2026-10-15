@@ -19848,5 +19848,105 @@ document.addEventListener('keydown', function(e){ if (e.key === 'Escape') closeP
 })();
 </script>
 
+<script>
+/* ══ WhatsApp app chooser (WhatsApp vs WhatsApp Business) ══════════════════
+   On Android / iOS, every wa.me link and window.open('https://wa.me/…') in the
+   page first asks which app to use. Desktop is untouched (one app only).
+   Android → intent:// with package com.whatsapp or com.whatsapp.w4b
+             (falls back to the normal wa.me link if the app isn't installed)
+   iOS     → whatsapp:// or whatsapp-business://                              */
+(function () {
+  if (window.__hlWaChooser) return; window.__hlWaChooser = true;
+  var ua = navigator.userAgent || '';
+  var isAndroid = /Android/i.test(ua);
+  var isIOS = /iPhone|iPad|iPod/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  if (!isAndroid && !isIOS) return;
+
+  var realOpen = window.open.bind(window);
+  var WA_RE = /^https?:\/\/(wa\.me\/|api\.whatsapp\.com\/send|web\.whatsapp\.com\/send)/i;
+  var nav = function (u) { (window.__hlWaNav || function (x) { window.location.href = x; })(u); };
+
+  function parse(u) {
+    try {
+      var a = new URL(u), phone, text = a.searchParams.get('text') || '';
+      phone = /(^|\.)wa\.me$/i.test(a.hostname) ? a.pathname.replace(/\D/g, '') : (a.searchParams.get('phone') || '').replace(/\D/g, '');
+      return { phone: phone, text: text };
+    } catch (e) { return { phone: '', text: '' }; }
+  }
+  function build(app, u) {
+    var p = parse(u), q = [];
+    if (p.phone) q.push('phone=' + p.phone);
+    if (p.text) q.push('text=' + encodeURIComponent(p.text));
+    var qs = q.join('&');
+    if (isAndroid) {
+      var pkg = app === 'business' ? 'com.whatsapp.w4b' : 'com.whatsapp';
+      return 'intent://send/?' + qs + '#Intent;scheme=whatsapp;package=' + pkg + ';S.browser_fallback_url=' + encodeURIComponent(u) + ';end';
+    }
+    return (app === 'business' ? 'whatsapp-business' : 'whatsapp') + '://send?' + qs;
+  }
+
+  var pending = [], sheet = null, lastApp = null, lastAt = 0;
+
+  function injectCss() {
+    if (document.getElementById('hlWaChooserCss')) return;
+    var s = document.createElement('style'); s.id = 'hlWaChooserCss';
+    s.textContent =
+      '#hlWaChooser{position:fixed;inset:0;z-index:2147483000;background:rgba(0,0,0,.5);display:flex;align-items:flex-end;justify-content:center;padding:0}' +
+      '#hlWaChooser .hlwa-card{width:100%;max-width:420px;background:#fff;color:#111;border-radius:18px 18px 0 0;padding:18px 18px calc(18px + env(safe-area-inset-bottom,0px));box-shadow:0 -8px 30px rgba(0,0,0,.25);font-family:inherit}' +
+      '#hlWaChooser .hlwa-t{font-size:16px;font-weight:800;margin:0 0 4px}' +
+      '#hlWaChooser .hlwa-s{font-size:12.5px;color:#6b7280;margin:0 0 14px}' +
+      '#hlWaChooser button{display:flex;align-items:center;gap:10px;width:100%;border:0;border-radius:12px;padding:13px 16px;font-size:15px;font-weight:700;cursor:pointer;margin-bottom:10px;color:#fff;font-family:inherit}' +
+      '#hlWaChooser .hlwa-n{background:#25D366}' +
+      '#hlWaChooser .hlwa-b{background:#128C7E}' +
+      '#hlWaChooser .hlwa-c{background:transparent;color:#6b7280;justify-content:center;margin:0;font-weight:600}' +
+      '@media (prefers-color-scheme:dark){#hlWaChooser .hlwa-card{background:#1f2125;color:#f3f4f6}#hlWaChooser .hlwa-s,#hlWaChooser .hlwa-c{color:#9ca3af}}' +
+      '@media (min-width:600px){#hlWaChooser{align-items:center}#hlWaChooser .hlwa-card{border-radius:18px}}';
+    document.head.appendChild(s);
+  }
+  var ICON = '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.5 14.4c-.3-.1-1.7-.8-2-.9-.3-.1-.5-.1-.7.1-.2.3-.8.9-.9 1.1-.2.2-.3.2-.6.1-1.7-.8-2.8-1.5-3.9-3.4-.3-.5.3-.5.8-1.6.1-.2 0-.4 0-.5-.1-.1-.7-1.6-.9-2.2-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.5s1.1 2.9 1.2 3.1c.1.2 2.1 3.2 5.1 4.5 1.9.8 2.6.9 3.5.7.6-.1 1.7-.7 2-1.4.2-.7.2-1.3.2-1.4-.1-.1-.3-.2-.6-.3zM12 2a10 10 0 0 0-8.6 15.100L2 22l5-1.300A10 10 0 1 0 12 2z"/></svg>';
+
+  function closeSheet() { if (sheet && sheet.parentNode) sheet.parentNode.removeChild(sheet); sheet = null; }
+  function choose(app) {
+    lastApp = app; lastAt = Date.now();
+    var list = pending.splice(0); closeSheet();
+    list.forEach(function (u, i) { setTimeout(function () { nav(build(app, u)); }, i * 400); });
+  }
+  function cancel() { pending.length = 0; closeSheet(); }
+
+  function showSheet() {
+    injectCss();
+    sheet = document.createElement('div'); sheet.id = 'hlWaChooser';
+    sheet.setAttribute('role', 'dialog'); sheet.setAttribute('aria-modal', 'true'); sheet.setAttribute('aria-label', 'Choose WhatsApp app');
+    sheet.innerHTML =
+      '<div class="hlwa-card"><p class="hlwa-t">Share via which app?</p><p class="hlwa-s">Pick the WhatsApp you want to send from.</p>' +
+      '<button type="button" class="hlwa-n" data-app="normal">' + ICON + 'WhatsApp</button>' +
+      '<button type="button" class="hlwa-b" data-app="business">' + ICON + 'WhatsApp Business</button>' +
+      '<button type="button" class="hlwa-c" data-app="">Cancel</button></div>';
+    sheet.addEventListener('click', function (e) {
+      var b = e.target.closest && e.target.closest('button');
+      if (b) { b.getAttribute('data-app') ? choose(b.getAttribute('data-app')) : cancel(); }
+      else if (e.target === sheet) cancel();
+    });
+    document.body.appendChild(sheet);
+  }
+
+  function route(u) {
+    // A batch (e.g. owner + alternate number) is asked about once, not per link.
+    if (lastApp && Date.now() - lastAt < 15000 && !sheet) { nav(build(lastApp, u)); return; }
+    pending.push(u);
+    if (!sheet) showSheet();
+  }
+
+  window.open = function (u) {
+    if (typeof u === 'string' && WA_RE.test(u)) { route(u); return null; }
+    return realOpen.apply(window, arguments);
+  };
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('a[href]');
+    if (!a || !WA_RE.test(a.href)) return;
+    e.preventDefault(); route(a.href);
+  }, true);
+})();
+</script>
 </body>
 </html>
