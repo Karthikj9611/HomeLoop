@@ -243,6 +243,7 @@ body{
 #bulkToolbar #addPropertyDivider{display:none!important}
 #bulkToolbar .bulk-btn{box-shadow:0 4px 14px rgba(0,0,0,.22)}
 #recalcDistanceBtn{background:var(--surface,#fff)}
+#bulkToolbar .fab-toggle-btn{display:none}
 
 /* Honest Reviews + Partners: same floating bottom-right action stack as Properties */
 #reviewBulkToolbar .bulk-btn{width:auto!important;min-width:0!important;height:38px!important;flex-direction:row!important;gap:6px!important;padding:0 14px!important;white-space:nowrap}
@@ -290,6 +291,11 @@ body{
   #bulkToolbar .bulk-toolbar-left,#bulkToolbar .bulk-toolbar-right{width:auto!important;align-items:flex-end!important;gap:10px!important}
   #bulkToolbar .bulk-btn{position:relative;width:46px!important;min-width:46px!important;height:46px!important;padding:0!important;gap:0!important;justify-content:center!important;align-items:center!important;border-radius:50%!important;flex-direction:row!important}
   #bulkToolbar .bulk-btn i{font-size:1.05rem!important;margin:0!important}
+  /* Collapsible action stack: only the arrow shows until tapped */
+  #bulkToolbar:not(.fab-open) .bulk-toolbar-left,#bulkToolbar:not(.fab-open) .bulk-toolbar-right{display:none!important}
+  #bulkToolbar .fab-toggle-btn{display:flex!important;background:var(--surface,#fff);cursor:pointer}
+  #bulkToolbar .fab-toggle-btn i{transition:transform .2s}
+  #bulkToolbar.fab-open .fab-toggle-btn i{transform:rotate(180deg)}
   #bulkToolbar .bulk-btn .bulk-btn-label{display:none!important}
   #bulkCompareCount,#bulkShareTenantCount,#bulkShareLinksCount,#bulkCheckAvailabilityCount{
     position:absolute;top:-6px;right:-6px;min-width:20px;height:20px;padding:0 5px;box-sizing:border-box;
@@ -4053,6 +4059,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
           <i class="fas fa-location-crosshairs"></i> <span class="bulk-btn-label" data-mobile="Recalc">Recalculate Distance</span>
         </button>
       </div>
+      <button type="button" id="fabToggleBtn" class="bulk-btn fab-toggle-btn" onclick="toggleFabStack()" aria-label="Show actions" aria-expanded="false" title="Show actions"><i class="fas fa-chevron-up"></i></button>
     </div>
     <div class="card">
       <div class="card-header" id="propGridHeader">
@@ -17366,6 +17373,11 @@ function onSellPropertyTypeChange() {
    Lets admin skip manual entry by handing over an existing JSON export /
    database document, which gets parsed and fed into the same
    applyImportedProperty() used to prefill the View/Edit form. ═══════════════════════════════════════════════ */
+function toggleFabStack() {
+  var t = document.getElementById('bulkToolbar'), b = document.getElementById('fabToggleBtn'); if (!t) return;
+  var open = t.classList.toggle('fab-open');
+  if (b) { b.setAttribute('aria-expanded', open ? 'true' : 'false'); b.setAttribute('aria-label', open ? 'Hide actions' : 'Show actions'); b.title = open ? 'Hide actions' : 'Show actions'; }
+}
 function toggleImportPanel() {
   const body = document.getElementById('importPanelBody');
   const txt = document.getElementById('importPanelToggleTxt');
