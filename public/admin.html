@@ -17001,9 +17001,11 @@ function waOpenSample() {
 function waCloseSample() { waSetSampleEditing(false); var m = document.getElementById('waSampleModal'); if (m) m.style.display = 'none'; }
 function waShareSample() {
   var pre = document.getElementById('waSampleText'); if (!pre) return;
-  // Plain "Key: value" lines only — one per line, no [option hints], no blank lines.
-  var txt = (pre.innerText || pre.textContent || '').replace(/\r\n?/g, '\n').split('\n')
-    .map(function (l) { return l.replace(/\s*\[[^\]]*\]\s*$/, '').replace(/\s+/g, ' ').trim(); })
+  // Keys only: "Listed by:" — no sample values, no [option lists]. One per line, no blank lines.
+  var clone = pre.cloneNode(true);
+  Array.prototype.forEach.call(clone.querySelectorAll('.wa-v, .wa-o'), function (v) { v.parentNode.removeChild(v); });
+  var txt = (clone.textContent || '').replace(/\r\n?/g, '\n').split('\n')
+    .map(function (l) { return l.replace(/\s+/g, ' ').trim(); })
     .filter(function (l) { return l; }).join('\n');
   var url = 'https://wa.me/?text=' + encodeURIComponent(txt);
   if (url.length > 7000) { waCopySample(); url = 'https://wa.me/'; if (typeof showToast === 'function') showToast('Message copied — paste it in WhatsApp'); }
