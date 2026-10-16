@@ -7714,50 +7714,26 @@ main.tab-explore .empty-state{display:none !important}
 
     <div class="refer-hero">
       <div class="refer-hero-badge">₹1,000</div>
-      <div class="refer-hero-title">For every tenant you refer.</div>
-      <div class="refer-hero-sub">Invite a tenant to <span class="brandname">Home<span class="bn-accent">Loop</span></span>. You earn the reward only when they take our Managed Plan — not for the Direct Plan.</div>
-    </div>
-
-    <div class="refer-points">
-      <div class="refer-point">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-7 9 7"/><path d="M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9"/></svg>
-        <span>They pick a plan or rent with us</span>
-      </div>
-      <div class="refer-point">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9 12h6M10 9h2.5a1.75 1.75 0 1 1 0 3.5H10l4 3.5"/></svg>
-        <span>You earn ₹1,000</span>
-      </div>
+      <div class="refer-hero-title">For every tenant you refer</div>
+      <div class="refer-hero-sub">Paid when they take our Managed Plan.</div>
     </div>
 
     <span id="referCodeText" style="display:none">HOMELOOP-GUEST24</span>
+    <!-- Referrer details come from the logged-in account (login is required). -->
+    <input type="hidden" id="refer-name" />
+    <input type="hidden" id="refer-phone" />
 
-    <div class="refer-required-hint" style="font-size:12px;color:var(--text-2);margin-bottom:12px">Add the tenant's number to send the invite straight to their WhatsApp — or leave it blank and share the link with anyone. Filling in both sets of details also registers the referral so you get credit for the reward.</div>
-
-    <div class="form-row">
-      <div class="form-group">
-        <label class="form-label">Your name</label>
-        <input class="form-input" type="text" id="refer-name" />
-        <div class="identity-locked-hint" id="refer-name-hint" style="display:none">Auto-filled from your account</div>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Your phone</label>
-        <input class="form-input" type="tel" id="refer-phone" inputmode="numeric" maxlength="10" oninput="sanitizeMobileInput(this)" />
-        <div class="identity-locked-hint" id="refer-phone-hint" style="display:none">Auto-filled</div>
-      </div>
+    <div class="form-group">
+      <label class="form-label">Tenant's name</label>
+      <input class="form-input" type="text" id="refer-tenant-name" />
     </div>
-    <div class="form-row">
-      <div class="form-group">
-        <label class="form-label">Tenant's name</label>
-        <input class="form-input" type="text" id="refer-tenant-name" />
-      </div>
-      <div class="form-group">
-        <label class="form-label">Tenant's phone</label>
-        <div class="input-icon-wrap">
-          <input class="form-input" type="tel" id="refer-tenant-phone" inputmode="numeric" maxlength="10" oninput="sanitizeMobileInput(this)" />
-          <button type="button" class="contact-pick-btn" onclick="pickContactFromDevice('refer-tenant-phone','refer-tenant-name')" title="Pick from contacts">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-          </button>
-        </div>
+    <div class="form-group">
+      <label class="form-label">Tenant's phone</label>
+      <div class="input-icon-wrap">
+        <input class="form-input" type="tel" id="refer-tenant-phone" inputmode="numeric" maxlength="10" oninput="sanitizeMobileInput(this)" />
+        <button type="button" class="contact-pick-btn" onclick="pickContactFromDevice('refer-tenant-phone','refer-tenant-name')" title="Pick from contacts">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        </button>
       </div>
     </div>
     <button class="form-submit" id="referSubmitBtn" onclick="inviteAndRegisterReferral()">Share invite link</button>
@@ -16516,22 +16492,13 @@ function closeNotifModal() {
 ═══════════════════════════════════════════════ */
 function openReferModal() {
   const user = getLoggedInUser();
+  // Login is mandatory — referrals are credited to the account.
+  if (!user) { showToast('Please log in to refer a tenant', 'warning'); openAuthModal(); return; }
   const preloadName = (user && `${user.firstName || ''} ${user.lastName || ''}`.trim()) || (user && user.name) || '';
   document.getElementById('refer-name').value = preloadName;
   document.getElementById('refer-phone').value = (user && user.mobile) || '';
   document.getElementById('refer-tenant-name').value = '';
   document.getElementById('refer-tenant-phone').value = '';
-  // Lock the referrer's own identity to the logged-in account, same pattern
-  // as the Schedule a Visit modal, only when logged in — guests fill both
-  // their own and the tenant's fields in themselves.
-  ['refer-name', 'refer-phone'].forEach(id => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.readOnly = !!user;
-    el.classList.toggle('identity-locked', !!user);
-    const hint = document.getElementById(id + '-hint');
-    if (hint) hint.style.display = user ? '' : 'none';
-  });
   document.getElementById('referModal').classList.add('open');
   lockBodyScroll();
 }
@@ -16552,10 +16519,15 @@ function closeReferModal() {
 let _pendingReferralShare = null;
 
 async function inviteAndRegisterReferral() {
+  if (!getLoggedInUser()) { closeReferModal(); showToast('Please log in to refer a tenant', 'warning'); openAuthModal(); return; }
   const referrerName  = document.getElementById('refer-name').value.trim();
   const referrerPhone = document.getElementById('refer-phone').value.trim();
   const tenantName    = document.getElementById('refer-tenant-name').value.trim();
   const tenantPhone   = document.getElementById('refer-tenant-phone').value.trim();
+
+  // Both tenant details are required so every referral is registered.
+  if (!tenantName) { showToast("Enter the tenant's name", 'warning'); return; }
+  if (!isValidIndianMobile(tenantPhone)) { showToast("Enter a valid 10-digit tenant phone", 'warning'); return; }
 
   // Catch the common case immediately, without a round trip — both fields
   // are already digit-only via sanitizeMobileInput, so a plain compare works.
