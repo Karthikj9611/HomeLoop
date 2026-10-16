@@ -2134,6 +2134,16 @@ main.tab-explore .empty-state{display:none !important}
    panel instead of sitting in one grid cell at the top. */
 .panel-list:has(.panel-empty){display:flex;flex-direction:column;align-items:stretch;align-content:normal}
 
+/* Shortlist: message the agent about all visible shortlisted properties at once */
+.panel-enquire{flex-shrink:0;padding:12px 20px calc(12px + env(safe-area-inset-bottom));border-top:1px solid var(--border);background:var(--bg);box-shadow:0 -4px 16px rgba(0,0,0,.06)}
+.panel-enquire[hidden],.panel-enquire-agents[hidden]{display:none}
+.panel-enquire-btn{width:100%;display:flex;align-items:center;justify-content:center;gap:8px;padding:12px 16px;border:none;border-radius:12px;background:#25d366;color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit}
+.panel-enquire-btn:hover{filter:brightness(.95)}
+.panel-enquire-agents{margin-top:10px;display:flex;flex-direction:column;gap:8px}
+.panel-enquire-agent{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--text)}
+.panel-enquire-agent:hover{border-color:#25d366}
+.panel-enquire-agent span{color:var(--text-3);font-weight:500}
+
 /* ─── FAB ──────────────────────────────────────── */
 .fab{
   position:fixed;bottom:24px;right:24px;z-index:150;
@@ -8638,6 +8648,10 @@ main.tab-explore .empty-state{display:none !important}
   <div class="panel-list" id="panelList">
     <div class="panel-empty">No shortlisted properties yet.<br>Tap the ♥ on any listing to save it.</div>
   </div>
+  <div class="panel-enquire" id="panelEnquire" hidden>
+    <button class="panel-enquire-btn" id="panelEnquireBtn" onclick="enquireShortlistAtOnce()"></button>
+    <div class="panel-enquire-agents" id="panelEnquireAgents" hidden></div>
+  </div>
 </aside>
 
 <!-- ─── Toast / Alert ─────────────────────────────── -->
@@ -10951,6 +10965,63 @@ function updateShortlistCount() {
   // sync with whatever the current tab filter actually shows (see below).
 }
 
+/* ─── Enquire about all shortlisted properties at once ───
+   One WhatsApp message per agent (listings with the same agent are bundled
+   into a single message). Several agents → pick which chat to open next,
+   because browsers only allow one popup per tap. */
+function _shortlistEnquiryGroups() {
+  const ids = [...shortlisted].filter(id => {
+    const p = shortlistedData[id];
+    return p && matchesTab(p, currentTab) && !isBookedProp(p);
+  });
+  const groups = {};
+  ids.forEach(id => {
+    const p = shortlistedData[id];
+    const raw = String(p.owner?.agentPhone || '').replace(/\D/g, '');
+    if (!raw) return;
+    const phone = raw.length === 10 ? '91' + raw : raw;
+    (groups[phone] = groups[phone] || []).push(p);
+  });
+  return { total: ids.length, groups };
+}
+const ENQUIRE_MIN = 1, ENQUIRE_MAX = 6;
+function updateShortlistEnquire() {
+  const box = document.getElementById('panelEnquire');
+  if (!box) return;
+  const { total } = _shortlistEnquiryGroups();
+  const btn = document.getElementById('panelEnquireBtn');
+  document.getElementById('panelEnquireAgents').hidden = true;
+  box.hidden = total < 1;
+  const ok = total >= ENQUIRE_MIN && total <= ENQUIRE_MAX;
+  btn.disabled = !ok;
+  btn.style.opacity = ok ? '' : '.55';
+  btn.style.cursor = ok ? '' : 'not-allowed';
+  btn.textContent = ok ? (total === 1 ? 'Message agent' : `Message agent (${total})`)
+    : total < ENQUIRE_MIN ? 'Shortlist a property' : `Select up to ${ENQUIRE_MAX} properties`;
+  btn.style.background = ok ? '' : '#9aa0a6';
+}
+function _openAgentEnquiry(phone) {
+  const props = _shortlistEnquiryGroups().groups[phone];
+  if (!props || !props.length) return;
+  const one = props.length === 1;
+  const lines = props.map((p, i) => `${one ? '' : (i + 1) + '. '}${p.propertyId} - ${window.location.origin}/property/${p.id}`);
+  const msg = `Hello, I'm interested in the following ${one ? 'property' : 'properties'} on HomeLoop. Could you please confirm if ${one ? 'it is' : 'they are'} still available?\n\n${lines.join('\n')}\n\nThank you.`;
+  window.open('https://wa.me/' + phone + '?text=' + encodeURIComponent(msg), '_blank', 'noopener');
+}
+function enquireShortlistAtOnce() {
+  const { total, groups } = _shortlistEnquiryGroups();
+  if (total < ENQUIRE_MIN || total > ENQUIRE_MAX) { showToast(`Select up to ${ENQUIRE_MAX} properties`, 'warning'); return; }
+  const phones = Object.keys(groups);
+  if (!phones.length) { showToast('No agent phone number added for these listings', 'warning'); return; }
+  if (phones.length === 1) { _openAgentEnquiry(phones[0]); return; }
+  const wrap = document.getElementById('panelEnquireAgents');
+  wrap.innerHTML = phones.map(ph => {
+    const n = groups[ph].length;
+    return `<button class="panel-enquire-agent" onclick="_openAgentEnquiry('${ph}')">Agent +${ph.slice(0,2)} ${ph.slice(2,7)} ${ph.slice(7)} <span>${n} propert${n>1?'ies':'y'}</span></button>`;
+  }).join('');
+  wrap.hidden = false;
+}
+
 function renderShortlistPanel() {
   const list = document.getElementById('panelList');
   const ids = [...shortlisted].filter(id => {
@@ -10961,6 +11032,7 @@ function renderShortlistPanel() {
   // never disagrees with the list below it (e.g. "Shortlisted (2)" while only
   // 1 Lease card is shown because the other saved item is a Rent listing).
   document.getElementById('panelCount').textContent = ids.length;
+  updateShortlistEnquire();
   if (ids.length === 0) {
     list.innerHTML = shortlisted.size === 0
       ? '<div class="panel-empty">No shortlisted properties yet.<br>Tap ♥ on any listing to save it.</div>'
