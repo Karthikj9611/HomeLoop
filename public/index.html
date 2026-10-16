@@ -599,6 +599,8 @@ ul{list-style:none}
    empty-state gap sitting between the filter bar and it. */
 main.tab-explore{padding-bottom:0}
 main.tab-explore .empty-state{display:none !important}
+/* Promoted/Rent/Lease/Broker: no banner above the grid, so tighten the first section divider (e.g. "Booked") up against the filter bar. */
+.main.no-top-gap .section-divider{padding-top:6px}
 .results-header{padding:0 20px}
 .results-header{
   display:flex;align-items:center;justify-content:space-between;
@@ -11463,8 +11465,10 @@ function updateAllOnlySections() {
   // Review tab: nothing sits above "Add a Review" (unless UrbanAware is showing),
   // so drop the section's top padding/border to remove the gap under the header.
   if (reviewsSection) {
+    // The ad banner now sits above "Add a Review", so keep a small gap under it
+    // (instead of 0) and still drop the divider line.
     const noneAbove = show && !(urbanAware && urbanAware.style.display !== 'none');
-    reviewsSection.style.paddingTop = noneAbove ? '0' : '';
+    reviewsSection.style.paddingTop = noneAbove ? '12px' : '';
     reviewsSection.style.borderTop = noneAbove ? '0' : '';
   }
   if (premiumServices) premiumServices.style.display = 'none'; // Premium Services hidden
@@ -11493,12 +11497,22 @@ function updateAllOnlySections() {
   const resultsCountEl = document.querySelector('.results-count');
   const adBannerEl = document.getElementById('adBanner');
   if (rh) {
-    const promoTab = ['Promoted', 'Rent', 'Lease', 'Sell', 'Broker'].includes(currentTab);
-    rh.style.display = promoTab ? '' : 'none';
+    // Ad banner shows only on the Review ('All') and Sell tabs — Promoted, Rent,
+    // Lease and Broker no longer show it. Those tabs keep their normal top
+    // padding (they still hold the property grid) but the header is hidden.
+    const adTab = ['All', 'Sell'].includes(currentTab);
+    const gridTab = ['Promoted', 'Rent', 'Lease', 'Broker'].includes(currentTab);
+    rh.style.display = adTab ? '' : 'none';
     if (resultsCountEl) resultsCountEl.style.display = show ? '' : 'none';
-    if (adBannerEl) adBannerEl.style.display = promoTab ? '' : 'none';
+    if (adBannerEl) adBannerEl.style.display = adTab ? '' : 'none';
     const mainEl2 = document.getElementById('mainContent');
-    if (mainEl2) mainEl2.style.paddingTop = promoTab ? '' : '0';
+    if (mainEl2) {
+      // No banner on the grid tabs any more, so drop the leftover top padding
+      // (and the first divider's top padding via .no-top-gap) to close the gap
+      // under the filter bar.
+      mainEl2.style.paddingTop = adTab ? '' : '0';
+      mainEl2.classList.toggle('no-top-gap', gridTab);
+    }
   }
 
 
