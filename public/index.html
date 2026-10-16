@@ -2137,6 +2137,7 @@ main.tab-explore .empty-state{display:none !important}
 /* Shortlist: message the agent about all visible shortlisted properties at once */
 .panel-enquire{flex-shrink:0;padding:12px 20px calc(12px + env(safe-area-inset-bottom));border-top:1px solid var(--border);background:var(--bg);box-shadow:0 -4px 16px rgba(0,0,0,.06)}
 .panel-enquire[hidden],.panel-enquire-agents[hidden]{display:none}
+.panel-enquire-hint{font-size:12px;line-height:1.4;color:var(--text-3);text-align:center;margin-bottom:8px}
 .panel-enquire-btn{width:100%;display:flex;align-items:center;justify-content:center;gap:8px;padding:12px 16px;border:none;border-radius:12px;background:#25d366;color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit}
 .panel-enquire-btn:hover{filter:brightness(.95)}
 .panel-enquire-agents{margin-top:10px;display:flex;flex-direction:column;gap:8px}
@@ -8649,6 +8650,7 @@ main.tab-explore .empty-state{display:none !important}
     <div class="panel-empty">No shortlisted properties yet.<br>Tap the ♥ on any listing to save it.</div>
   </div>
   <div class="panel-enquire" id="panelEnquire" hidden>
+    <div class="panel-enquire-hint">Tap ♥ on up to 6 listings, then enquire once to confirm availability with the coordinator.</div>
     <button class="panel-enquire-btn" id="panelEnquireBtn" onclick="enquireShortlistAtOnce()"></button>
     <div class="panel-enquire-agents" id="panelEnquireAgents" hidden></div>
   </div>
@@ -10996,7 +10998,7 @@ function updateShortlistEnquire() {
   btn.disabled = !ok;
   btn.style.opacity = ok ? '' : '.55';
   btn.style.cursor = ok ? '' : 'not-allowed';
-  btn.textContent = ok ? (total === 1 ? 'Message agent' : `Message agent (${total})`)
+  btn.textContent = ok ? (total === 1 ? 'Enquire' : `Enquire (${total})`)
     : total < ENQUIRE_MIN ? 'Shortlist a property' : `Select up to ${ENQUIRE_MAX} properties`;
   btn.style.background = ok ? '' : '#9aa0a6';
 }
@@ -11012,12 +11014,12 @@ function enquireShortlistAtOnce() {
   const { total, groups } = _shortlistEnquiryGroups();
   if (total < ENQUIRE_MIN || total > ENQUIRE_MAX) { showToast(`Select up to ${ENQUIRE_MAX} properties`, 'warning'); return; }
   const phones = Object.keys(groups);
-  if (!phones.length) { showToast('No agent phone number added for these listings', 'warning'); return; }
+  if (!phones.length) { showToast('No coordinator phone number added for these listings', 'warning'); return; }
   if (phones.length === 1) { _openAgentEnquiry(phones[0]); return; }
   const wrap = document.getElementById('panelEnquireAgents');
   wrap.innerHTML = phones.map(ph => {
     const n = groups[ph].length;
-    return `<button class="panel-enquire-agent" onclick="_openAgentEnquiry('${ph}')">Agent +${ph.slice(0,2)} ${ph.slice(2,7)} ${ph.slice(7)} <span>${n} propert${n>1?'ies':'y'}</span></button>`;
+    return `<button class="panel-enquire-agent" onclick="_openAgentEnquiry('${ph}')">Coordinator +${ph.slice(0,2)} ${ph.slice(2,7)} ${ph.slice(7)} <span>${n} propert${n>1?'ies':'y'}</span></button>`;
   }).join('');
   wrap.hidden = false;
 }
