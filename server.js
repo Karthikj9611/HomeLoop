@@ -174,10 +174,11 @@ const UserSchema = new mongoose.Schema({
       carCounts: { type: [String], default: [] },              // optional: allowed car-parking counts ('0'..'4'); [] = no filter
       budgetMin: { type: Number, default: null },              // optional: monthly rent range (price.rent)
       budgetMax: { type: Number, default: null },
+      propertyIds: { type: [String], default: [] },            // optional: direct access to these listings (Property.propertyId, e.g. QWR001), in addition to the filters above
     }],
     default: [],
   },
-  // Mirror of the CURRENT plan's filters — { bhks, areas, bikeCounts, carCounts, budgetMin, budgetMax } (see GET /api/properties).
+  // Mirror of the CURRENT plan's filters — { bhks, areas, bikeCounts, carCounts, budgetMin, budgetMax, propertyIds } (see GET /api/properties).
   subscriptionFilter: { type: mongoose.Schema.Types.Mixed, default: null },
   // Admin "Block" (Customers grid): blocked accounts are logged out everywhere and refused at login.
   isBlocked: { type: Boolean, default: false, index: true },
@@ -1780,23 +1781,33 @@ app.get('/api/properties', attachUserIfPresent, async (req, res) => {
     if (_viewerPublicCall && _viewerSub) {
       const _esc = (x) => String(x).trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       const _bhkList = _viewerBhk ? _viewerBhk.split(',').map(x => x.trim()).filter(Boolean) : [];
+      const _subCond = {};   // plan filters; combined with the direct property IDs below
       if (_bhkList.length) {
-        filter['property.bhk'] = new RegExp('^\\s*(?:' + _bhkList.map(b => _esc(b).replace(/\s+/g, '\\s*')).join('|') + ')\\s*$', 'i');
+        _subCond['property.bhk'] = new RegExp('^\\s*(?:' + _bhkList.map(b => _esc(b).replace(/\s+/g, '\\s*')).join('|') + ')\\s*$', 'i');
       }
       const _areas = (_viewerSub.areas || []).map(a => String(a).trim()).filter(Boolean);
-      if (_areas.length) filter['location.area'] = { $in: _areas.map(a => new RegExp('^\\s*' + _esc(a).replace(/\s+/g, '\\s+') + '\\s*$', 'i')) };
+      if (_areas.length) _subCond['location.area'] = { $in: _areas.map(a => new RegExp('^\\s*' + _esc(a).replace(/\s+/g, '\\s+') + '\\s*$', 'i')) };
       // parking counts are stored as strings ('0'..'4'); each selected count is allowed. Legacy plans (bike/car true) = any parking.
       const _cnt = (a) => (Array.isArray(a) ? a : []).map(x => String(x).trim()).filter(x => /^[0-4]$/.test(x));
       const _bikeC = _cnt(_viewerSub.bikeCounts), _carC = _cnt(_viewerSub.carCounts);
-      if (_bikeC.length) filter['property.bike'] = { $in: _bikeC };
-      else if (_viewerSub.bike) filter['property.bike'] = { $exists: true, $nin: ['0', ''] };
-      if (_carC.length) filter['property.car'] = { $in: _carC };
-      else if (_viewerSub.car) filter['property.car'] = { $exists: true, $nin: ['0', ''] };
+      if (_bikeC.length) _subCond['property.bike'] = { $in: _bikeC };
+      else if (_viewerSub.bike) _subCond['property.bike'] = { $exists: true, $nin: ['0', ''] };
+      if (_carC.length) _subCond['property.car'] = { $in: _carC };
+      else if (_viewerSub.car) _subCond['property.car'] = { $exists: true, $nin: ['0', ''] };
       const _bMin = Number(_viewerSub.budgetMin), _bMax = Number(_viewerSub.budgetMax);
       const _rent = {};
       if (_viewerSub.budgetMin != null && _viewerSub.budgetMin !== '' && isFinite(_bMin)) _rent.$gte = _bMin;
       if (_viewerSub.budgetMax != null && _viewerSub.budgetMax !== '' && isFinite(_bMax)) _rent.$lte = _bMax;
-      if (Object.keys(_rent).length) filter['price.rent'] = _rent;
+      if (Object.keys(_rent).length) _subCond['price.rent'] = _rent;
+      // Direct access: listings whose propertyId is on the plan are ALWAYS included (still only verified / not booked / not blocked).
+      // With other filters set → filters OR ids; with only ids → just those listings.
+      const _pids = [...new Set((Array.isArray(_viewerSub.propertyIds) ? _viewerSub.propertyIds : []).map(x => String(x).trim().toUpperCase()).filter(Boolean))];
+      if (_pids.length) {
+        const _byId = { propertyId: { $in: _pids } };
+        filter.$and = (filter.$and || []).concat([Object.keys(_subCond).length ? { $or: [_subCond, _byId] } : _byId]);
+      } else {
+        Object.assign(filter, _subCond);
+      }
     }
 
     if (q && typeof q === 'string') {

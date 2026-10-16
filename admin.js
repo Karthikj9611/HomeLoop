@@ -1126,6 +1126,7 @@ self.addEventListener('notificationclick', event => {
   const planFilter = (p) => ({
     bhks: planBhks(p), areas: p.areas || [], bikeCounts: planCounts(p, 'bike'), carCounts: planCounts(p, 'car'),
     budgetMin: p.budgetMin == null ? null : p.budgetMin, budgetMax: p.budgetMax == null ? null : p.budgetMax,
+    propertyIds: p.propertyIds || [],
   });
   const sameFilter = (x, y) => JSON.stringify(x || {}) === JSON.stringify(y || {});
   const subPlanOut = (p) => Object.assign({ _id: p._id, from: p.from, to: p.to, bhk: planBhks(p)[0] || '' }, planFilter(p));
@@ -1179,6 +1180,28 @@ self.addEventListener('notificationclick', event => {
   });
   const fmtPlanDate = (d) => new Date(d).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Kolkata' });
 
+  // ── GET /api/admin/listing-ids — all available (verified, unbooked, unblocked) listings: options for the subscription "Property IDs" field ──
+  app.get('/api/admin/listing-ids', requireAdmin, async (req, res) => {
+    try {
+      const lists = await Promise.all(LISTING_MODEL_LIST.map(M =>
+        M.find({ verified: true, booked: { $ne: true }, blocked: { $ne: true }, propertyId: { $exists: true, $ne: '' } })
+          .select('propertyId location.area property.bhk basic.status').lean()));
+      const seen = new Set();
+      const items = lists.flat().filter(d => d.propertyId && !seen.has(d.propertyId) && seen.add(d.propertyId)).map(d => ({
+        id: String(d.propertyId).toUpperCase(),
+        area: (d.location && d.location.area) || '',
+        bhk: (d.property && d.property.bhk) || '',
+        status: (d.basic && d.basic.status) || '',
+      }))
+        // order by the numeric part at the end (001 → 500…), ignoring the 3 random letters
+        .sort((a, b) => (parseInt((a.id.match(/(\d+)$/) || [0, 0])[1], 10) - parseInt((b.id.match(/(\d+)$/) || [0, 0])[1], 10)) || a.id.localeCompare(b.id));
+      res.json({ items });
+    } catch (err) {
+      console.error('GET /api/admin/listing-ids error:', err);
+      res.status(500).json({ message: 'Error loading property ids' });
+    }
+  });
+
   // ── GET /api/admin/listing-areas — distinct listing areas (suggestions for the subscription "Areas" field) ──
   app.get('/api/admin/listing-areas', requireAdmin, async (req, res) => {
     try {
@@ -1210,7 +1233,15 @@ self.addEventListener('notificationclick', event => {
       let bhksVal = Array.isArray(body.subscriptionBhks) ? body.subscriptionBhks
                   : (body.subscriptionBhk ? [body.subscriptionBhk] : []);
       bhksVal = [...new Set(bhksVal.map(x => String(x).trim()).filter(Boolean))];
-      if (!bhksVal.length) return res.status(400).json({ message: 'Select at least one BHK' });
+      // Direct property access: listing IDs like QWR001 (case-insensitive). Each must exist.
+      const propertyIdsVal = [...new Set((Array.isArray(body.subscriptionPropertyIds) ? body.subscriptionPropertyIds : []).map(x => String(x).trim().toUpperCase()).filter(Boolean))].slice(0, 200);
+      if (propertyIdsVal.some(x => !/^[A-Z0-9-]{3,20}$/.test(x))) return res.status(400).json({ message: 'Invalid property ID format' });
+      if (!bhksVal.length && !propertyIdsVal.length) return res.status(400).json({ message: 'Select at least one BHK or add Property IDs' });
+      if (propertyIdsVal.length) {
+        const found = (await Promise.all(LISTING_MODEL_LIST.map(M => M.find({ propertyId: { $in: propertyIdsVal } }).select('propertyId').lean()))).flat().map(d => String(d.propertyId).toUpperCase());
+        const missing = propertyIdsVal.filter(x => !found.includes(x));
+        if (missing.length) return res.status(400).json({ message: 'Property ID not found: ' + missing.join(', ') });
+      }
       if (bhksVal.some(b => !SUB_BHK_LIST.includes(b))) return res.status(400).json({ message: 'Invalid BHK' });
       const areasVal = [...new Set((Array.isArray(body.subscriptionAreas) ? body.subscriptionAreas : []).map(x => String(x).trim().slice(0, 80)).filter(Boolean))].slice(0, 50);
       const cleanCounts = (v) => [...new Set((Array.isArray(v) ? v : []).map(x => String(x).trim()).filter(Boolean))];
@@ -1220,7 +1251,7 @@ self.addEventListener('notificationclick', event => {
       const budgetMinVal = num(body.subscriptionBudgetMin), budgetMaxVal = num(body.subscriptionBudgetMax);
       if ((budgetMinVal !== null && (!isFinite(budgetMinVal) || budgetMinVal < 0)) || (budgetMaxVal !== null && (!isFinite(budgetMaxVal) || budgetMaxVal < 0))) return res.status(400).json({ message: 'Invalid budget' });
       if (budgetMinVal !== null && budgetMaxVal !== null && budgetMaxVal < budgetMinVal) return res.status(400).json({ message: 'Max budget must be at least the min budget' });
-      const planFields = { bhk: bhksVal[0] || '', bhks: bhksVal, areas: areasVal, bike: bikeCounts.length > 0, car: carCounts.length > 0, bikeCounts, carCounts, budgetMin: budgetMinVal, budgetMax: budgetMaxVal };
+      const planFields = { bhk: bhksVal[0] || '', bhks: bhksVal, areas: areasVal, bike: bikeCounts.length > 0, car: carCounts.length > 0, bikeCounts, carCounts, budgetMin: budgetMinVal, budgetMax: budgetMaxVal, propertyIds: propertyIdsVal };
       const subId = body.subscriptionId ? String(body.subscriptionId) : '';
       if (subId && !mongoose.Types.ObjectId.isValid(subId)) return res.status(400).json({ message: 'Invalid subscription id' });
 

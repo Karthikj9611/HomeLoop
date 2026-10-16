@@ -3523,7 +3523,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
           </div>
         </div>
         <div class="form-group" id="subGrpBhk">
-          <label class="form-label">BHK<span class="sub-req">*</span></label>
+          <label class="form-label">BHK</label>
           <div class="msel" id="subBhkSel"></div>
         </div>
         <div class="form-group">
@@ -3544,6 +3544,10 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
             <input class="form-input" type="number" min="0" step="500" inputmode="numeric" id="subscriptionBudgetMin" placeholder="Min" />
             <input class="form-input" type="number" min="0" step="500" inputmode="numeric" id="subscriptionBudgetMax" placeholder="Max" />
           </div>
+        </div>
+        <div class="form-group" id="subGrpProps">
+          <label class="form-label">Direct property access (Property IDs)</label>
+          <div class="msel" id="subPropSel"></div>
         </div>
       </div>
       </div>
@@ -8016,6 +8020,7 @@ window.openSubscriptionModal = function(key){
   subResetForm();                       // always a blank form: saving ADDS another plan
   subRenderPlans();
   subLoadAreaSuggestions();
+  subLoadPropertyIds();
   document.getElementById('subscriptionModal').classList.add('open');
   lockBodyScroll();
 };
@@ -8045,7 +8050,7 @@ function subMsel(rootId, opts){
   root.innerHTML = '<button type="button" class="msel-btn"><span class="msel-val"></span><span class="msel-caret"></span></button><div class="msel-menu"></div>';
   const btn = root.querySelector('.msel-btn'), val = root.querySelector('.msel-val'), menu = root.querySelector('.msel-menu');
   let q = '';
-  const label = v => (options.find(o => o.v === v) || { l: v }).l;
+  const label = v => opts.tagValue ? v : (options.find(o => o.v === v) || { l: v }).l;
   function paintBtn(){
     val.innerHTML = sel.length
       ? sel.map(v => `<span class="msel-tag">${esc(label(v))}<b data-rm="${esc(v)}" title="Remove">&times;</b></span>`).join('')
@@ -8053,14 +8058,14 @@ function subMsel(rootId, opts){
   }
   function paintMenu(){
     const list = options.filter(o => !q || o.l.toLowerCase().includes(q.toLowerCase()));
-    let html = opts.search ? `<input type="text" class="msel-search" placeholder="${opts.custom ? 'Search or type a new area, press Enter' : 'Search'}" value="${esc(q)}">` : '';
+    let html = opts.search ? `<input type="text" class="msel-search" placeholder="${opts.searchPlaceholder || (opts.custom ? 'Search or type a new area, press Enter' : 'Search')}" value="${esc(q)}">` : '';
     // "Select all" (acts on the options currently listed, so it respects the search box)
     if(list.length > 1){
       const allOn = list.every(o => sel.includes(o.v));
       html += `<div class="msel-opt msel-all${allOn ? ' on' : ''}" data-all="1"><i></i>Select all</div>`;
     }
     html += list.length ? list.map(o => `<div class="msel-opt${sel.includes(o.v) ? ' on' : ''}" data-v="${esc(o.v)}"><i></i>${esc(o.l)}</div>`).join('')
-                        : `<div class="msel-empty">${opts.custom && q ? 'Press Enter to add \u201c' + esc(q) + '\u201d' : 'No options'}</div>`;
+                        : `<div class="msel-empty">${opts.custom && q ? 'Press Enter to add \u201c' + esc(q) + '\u201d' : esc(opts.emptyText || 'No options')}</div>`;
     const keepScroll = menu.scrollTop;
     menu.innerHTML = html;
     menu.scrollTop = keepScroll;
@@ -8112,7 +8117,19 @@ const _subAreaSel = subMsel('subAreaSel', { placeholder: 'All areas', options: [
 const _subParkOpts = ['0','1','2','3','4'].map(v => ({ v, l: v }));   // same values as the listing form's parking dropdowns
 const _subBikeSel = subMsel('subBikeSel', { placeholder: 'Any', options: _subParkOpts });
 const _subCarSel  = subMsel('subCarSel',  { placeholder: 'Any', options: _subParkOpts });
+const _subPropSel = subMsel('subPropSel', { placeholder: 'Select properties', searchPlaceholder: 'Search by ID, area or BHK', emptyText: 'No available properties', options: [], search: true, tagValue: true });
 let _subAreasLoaded = false;
+function subLoadPropertyIds(){
+  fetch(`${BASE}/api/admin/listing-ids`, { headers: authHeaders() })
+    .then(r => r.ok ? r.json() : null)
+    .then(d => {
+      if(!d || !d.items) return;
+      const opts = d.items.map(x => ({ v: x.id, l: [x.id, x.area, x.bhk].filter(Boolean).join(' \u00b7 ') }));
+      _subPropSel.get().forEach(v => { if(!opts.some(o => o.v === v)) opts.push({ v, l: v + ' (not available)' }); });   // already-saved IDs that are booked / unverified now
+      _subPropSel.setOptions(opts);
+    })
+    .catch(() => {});
+}
 function subLoadAreaSuggestions(){
   if(_subAreasLoaded) return;
   _subAreasLoaded = true;
@@ -8136,11 +8153,16 @@ function subFillFilters(p){
   _subCarSel.set((p.carCounts && p.carCounts.length) ? p.carCounts : (p.car ? legacy : []));
   document.getElementById('subscriptionBudgetMin').value = p.budgetMin == null ? '' : p.budgetMin;
   document.getElementById('subscriptionBudgetMax').value = p.budgetMax == null ? '' : p.budgetMax;
+  const pi = p.propertyIds || [];
+  pi.forEach(x => _subPropSel.add(x));
+  _subPropSel.set(pi);
 }
 // "2 BHK, 3 BHK homes · Indiranagar, HSR (+1) · Bike + Car parking · ₹15,000–₹30,000"
 function subPlanSummary(p){
   const bhks = (p.bhks && p.bhks.length) ? p.bhks : (p.bhk ? [p.bhk] : []);
-  const parts = [bhks.length ? bhks.join(', ') + ' homes only' : 'All BHKs'];
+  const pids = p.propertyIds || [];
+  const parts = [bhks.length ? bhks.join(', ') + ' homes only' : (pids.length ? 'No BHK filter' : 'All BHKs')];
+  if(pids.length) parts.push('Direct: ' + (pids.length > 3 ? pids.slice(0,3).join(', ') + ' (+' + (pids.length - 3) + ')' : pids.join(', ')));
   const ar = p.areas || [];
   if(ar.length) parts.push(ar.length > 2 ? ar.slice(0,2).join(', ') + ' (+' + (ar.length - 2) + ')' : ar.join(', '));
   const bc = p.bikeCounts || [], cc = p.carCounts || [];
@@ -8282,7 +8304,7 @@ function subValidate(){
   if(!toTxt) errs.push(['subGrpTo', 'End date & time is required']);
   else if(!to) errs.push(['subGrpTo', 'Use dd-mm-yyyy hh:mm AM/PM']);
   else if(from && to <= from) errs.push(['subGrpTo', 'End must be after the start']);
-  if(!_subBhkSel.get().length) errs.push(['subGrpBhk', 'Select at least one BHK']);
+  if(!_subBhkSel.get().length && !_subPropSel.get().length) errs.push(['subGrpBhk', 'Select at least one BHK or add Property IDs']);
   const bMin = document.getElementById('subscriptionBudgetMin').value.trim();
   const bMax = document.getElementById('subscriptionBudgetMax').value.trim();
   if((bMin !== '' && !(Number(bMin) >= 0)) || (bMax !== '' && !(Number(bMax) >= 0))) errs.push(['subGrpBudget', 'Budget must be a positive number']);
@@ -8318,7 +8340,8 @@ window.saveSubscription = async function(){
       subscriptionBikeCounts: _subBikeSel.get(),
       subscriptionCarCounts: _subCarSel.get(),
       subscriptionBudgetMin: bMin === '' ? null : Number(bMin),
-      subscriptionBudgetMax: bMax === '' ? null : Number(bMax) })
+      subscriptionBudgetMax: bMax === '' ? null : Number(bMax),
+      subscriptionPropertyIds: _subPropSel.get().map(x => x.trim().toUpperCase()) })
   });
   const data = await res.json().catch(()=>({}));
   if(res.ok){
