@@ -2132,7 +2132,7 @@ main.tab-explore .empty-state{display:none !important}
 
 /* Empty state: drop the grid so the single message can center in the full
    panel instead of sitting in one grid cell at the top. */
-.panel-list:has(.panel-empty){display:flex;flex-direction:column}
+.panel-list:has(.panel-empty){display:flex;flex-direction:column;align-items:stretch;align-content:normal}
 
 /* ─── FAB ──────────────────────────────────────── */
 .fab{
@@ -2148,13 +2148,13 @@ main.tab-explore .empty-state{display:none !important}
 .fab svg{width:16px;height:16px;stroke:#fff;fill:none;stroke-width:2}
 
 @media(max-width:640px){
-  /* The bottom-nav has 6 equal-width tabs (flex:1); "Shortlist" is the last
-     one, so its center sits at 11/12 of the viewport width. Align the FAB
+  /* The bottom-nav has 6 equal-width tabs (flex:1); "Shortlist" is the first
+     one, so its center sits at 1/12 of the viewport width. Align the FAB
      to that same x-position (instead of a fixed right offset) so it sits
      straight above the Shortlist tab. */
   .fab{
     right:auto;
-    left:calc(100% * 11 / 12);
+    left:calc(100% * 1 / 12);
     transform:translateX(-50%);
     bottom:calc(56px + env(safe-area-inset-bottom) + 20px);
   }
@@ -4677,7 +4677,7 @@ main.tab-explore .empty-state{display:none !important}
      so .panel-empty's flex:1 + centering actually works — a lone item in
      a grid only fills one cell (content-sized), not the full width/height,
      which is what threw the centering off. */
-  .panel-list:has(.panel-empty){display:flex;flex-direction:column}
+  .panel-list:has(.panel-empty){display:flex;flex-direction:column;align-items:stretch;align-content:normal}
   /* 140px wasn't tall enough once the call icon became a permanent 5th
      (sometimes 6th, with promoted/verified) member of the floating badge
      stack — it was spilling past the image again and sitting on top of
@@ -6139,6 +6139,13 @@ main.tab-explore .empty-state{display:none !important}
 
 <!-- ─── Mobile bottom nav ────────────────────────── -->
 <nav class="bottom-nav" aria-label="Main navigation">
+  <div class="bottom-tab" onclick="toggleShortlistPanel()">
+    <span class="bottom-tab-icon-wrap">
+      <span class="bottom-tab-icon">❤️</span>
+      <span class="bottom-tab-badge" id="bottomTabShortlistCount">0</span>
+    </span>
+    Shortlist
+  </div>
   
   <div class="bottom-tab" data-tab="Promoted" onclick="switchTabMobile(this)">
     <span class="bottom-tab-icon">⭐</span>
@@ -6167,13 +6174,6 @@ main.tab-explore .empty-state{display:none !important}
   <div class="bottom-tab" data-tab="All" onclick="switchTabMobile(this)">
     <span class="bottom-tab-icon">⭐</span>
     Review
-  </div>
-  <div class="bottom-tab" onclick="toggleShortlistPanel()">
-    <span class="bottom-tab-icon-wrap">
-      <span class="bottom-tab-icon">❤️</span>
-      <span class="bottom-tab-badge" id="bottomTabShortlistCount">0</span>
-    </span>
-    Shortlist
   </div>
 </nav>
 
