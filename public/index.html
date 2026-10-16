@@ -8634,7 +8634,7 @@ main.tab-explore .empty-state{display:none !important}
       <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
       List PG Property
     </div>
-    <div class="menu-item" id="menuListSell" onclick="toggleMenuPanel(); openAddModal('Sell');">
+    <div class="menu-item" id="menuListSell" onclick="toggleMenuPanel(); openAddModal('Sell');" style="display:none"><!-- SELL_ENABLED -->
       <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
       List Property for Sale
     </div>
@@ -14797,8 +14797,10 @@ function updateAdBannerAudience() {
 function updateListPropertyVisibility(user) {
   const canList = !user || (user.accountType === 'owner' || user.accountType === 'broker');
   const display = canList ? '' : 'none';
-  ['fabAdd', 'fabInlineAdd', 'menuManageLabel', 'menuListRent', 'menuListLease', 'menuListSell']  /* menuListPG intentionally excluded: PG listing stays hidden (see PG_ENABLED) */
+  ['fabAdd', 'fabInlineAdd', 'menuManageLabel', 'menuListRent', 'menuListLease']  /* menuListPG / menuListSell intentionally excluded: stay hidden (see PG_ENABLED / SELL_ENABLED) */
     .forEach(id => { const el = document.getElementById(id); if (el) el.style.display = display; });
+  const _sellMenu = document.getElementById('menuListSell');
+  if (_sellMenu) _sellMenu.style.display = (SELL_ENABLED && canList) ? '' : 'none';
   // resultsHeader/adBanner visibility depends on both owner status and the
   // active tab (see updateAllOnlySections), so defer to that instead of
   // setting them here — avoids this function stomping the per-tab decision
@@ -15535,7 +15537,7 @@ function renderMyListings() {
         </div>
       </div>
       <div class="profile-mini-actions">
-        <button class="profile-mini-icon-btn" title="Duplicate — start a new listing pre-filled with these details" onclick="event.stopPropagation();openEditRestrictedModal('clone', '${esc(p.propertyId||'')}')">
+        <button class="profile-mini-icon-btn" title="Duplicate — start a new listing pre-filled with these details" onclick="event.stopPropagation();cloneMyListing('${p.id}', '${esc(p.propertyId||'')}')">
           <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
         </button>
         <button class="profile-mini-icon-btn" title="Edit" onclick="event.stopPropagation();openEditRestrictedModal('listing', '${esc(p.propertyId||'')}')">
@@ -16217,6 +16219,17 @@ function closeEditListingFull() {
    identity fields are re-locked to the logged-in account afterward, same
    as any other new listing.
 ═══════════════════════════════════════════════ */
+// Owners, brokers and agents can duplicate their own listings straight into a
+// pre-filled "List your property" form; any other account type still gets
+// the "contact support" message.
+function canCloneListings() {
+  const u = getLoggedInUser();
+  return !!u && ['owner', 'broker', 'agent'].includes(u.accountType);
+}
+function cloneMyListing(id, propertyLabel) {
+  if (!canCloneListings()) { openEditRestrictedModal('clone', propertyLabel); return; }
+  openCloneListingFull(id);
+}
 function openCloneListingFull(id) {
   const p = MY_LISTINGS_CACHE.find(x => x.id === id);
   if (!p) { showToast('Could not find that listing', 'error'); return; }
