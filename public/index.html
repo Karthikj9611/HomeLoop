@@ -14624,6 +14624,13 @@ async function refreshVerificationStatus() {
     localStorage.setItem('homeloop_user', JSON.stringify(fresh));
     checkPlanExpired(data);
     checkPlanActivated(data);
+    // Plan added / edited (e.g. property IDs changed) / started / ended while this page is open → reload the listings.
+    // (If the activated / expired popup is showing, its OK button reloads the page instead.)
+    const prevSig = window._subSig; window._subSig = data.subscriptionSig || '';
+    if (prevSig !== undefined && prevSig !== window._subSig) {
+      const popupOpen = ['planActivatedModal', 'planExpiredModal'].some(id => { const m = document.getElementById(id); return m && m.classList.contains('open'); });
+      if (!popupOpen) { try { fetchProperties(true); } catch (e) {} }
+    }
   } catch (err) { /* best-effort */ }
 }
 // Subscription-activated popup. Shown once per plan period (keyed by subscriptionFrom, so a
@@ -17729,11 +17736,13 @@ async function fetchProperties(renderAfter = true) {
   if (pgGrid) pgGrid.innerHTML = '';
   if (promotedGrid) promotedGrid.innerHTML = '';
   try {
-    const res = await fetch('/api/properties', { headers: userAuthHeaders() });
+    // cache:'no-store' — the server sends a 30s private cache for non-subscribed responses, which could hand back the
+    // pre-plan (unrestricted) list right when the plan starts.
+    const res = await fetch('/api/properties', { headers: userAuthHeaders(), cache: 'no-store' });
     if (!res.ok) throw new Error('Server returned ' + res.status);
     const data = await res.json();
     syncViewedWithSubscription(data.subscriptionFrom, data.subscriptionTo); // reset "Viewed" at plan start and at plan end
-    if (data.properties && data.properties.length > 0) {
+    if (data.properties && (data.properties.length > 0 || data.subscriptionFrom)) {   // a subscribed viewer with an empty result must still replace the old list
       PROPERTIES = data.properties;
       // One-time migration: backfill shortlistedData for ids saved before
       // the full-object storage existed, so old shortlists keep working.
@@ -19536,6 +19545,7 @@ renderRecentlyViewed();
 updateNavAuth();
 refreshVerificationStatus(); // silent — keeps cached isVerified from going stale between logins
 setInterval(refreshVerificationStatus, 60 * 1000); // also lets the plan-expired popup appear without a reload
+document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') refreshVerificationStatus(); });   // background tabs pause timers
 loadHonestReviews();
 markRequiredLabels();
 document.getElementById('addModal').addEventListener('input', function(e){

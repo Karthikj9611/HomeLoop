@@ -657,6 +657,12 @@ app.get('/api/user/me', requireUser, async (req, res) => {
         && (user.subscriptionFrom || user.subscriptionAt) && user.subscriptionTo
         && new Date(user.subscriptionFrom || user.subscriptionAt) <= new Date()
         && new Date(user.subscriptionTo) > new Date()),
+      // Changes whenever the effective plan changes (dates, filters, selected property IDs, running/not) — the page compares it on its
+      // 60s poll and reloads the listings when it differs, so plan edits / starts / ends show up without a manual refresh.
+      subscriptionSig: crypto.createHash('md5').update(JSON.stringify([
+        user.subscriptionFrom || user.subscriptionAt || null, user.subscriptionTo || null, !!user.publicCall, user.subscriptionFilter || null,
+        !!((user.subscriptionFrom || user.subscriptionAt) && user.subscriptionTo && new Date(user.subscriptionFrom || user.subscriptionAt) <= new Date() && new Date(user.subscriptionTo) > new Date()),
+      ])).digest('hex'),
       createdAt: user.createdAt,
     });
   } catch (err) {
