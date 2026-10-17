@@ -3135,12 +3135,15 @@ main.tab-explore .empty-state{display:none !important}
   background:var(--bg-2,#f4f4f6);cursor:not-allowed;
 }
 .identity-locked-hint{font-size:11px;color:var(--text-3);margin-top:2px}
+#addModal .identity-locked-hint,#addModal .img-hint{display:none!important}
 
 /* Owner phone is filled from the logged-in account and never shown. !important so resetFieldVisibility()/hideEmptyViewFields() can't re-show it. */
 
 .form-group.owner-phone-hidden{display:none !important}
 /* Lat/Lng and Google Maps link are auto-filled and never edited by hand, so they stay hidden. !important so resetFieldVisibility()/hideEmptyViewFields() can't re-show them. */
 .form-group.auto-hidden{display:none !important}
+#f-locStatus:empty{display:none}
+#f-agentFields{display:none!important}
 .add-modal.view-mode input:disabled,
 .add-modal.view-mode select:disabled,
 .add-modal.view-mode textarea:disabled{
@@ -6437,31 +6440,6 @@ main.tab-explore .empty-state{display:none !important}
   </div>
 </div>
 
-<!-- ─── Current Location Link help modal ─────────────────────────────────
-     Lives outside #addModal on purpose: resetListingForm() blanks every input
-     inside #addModal, and this modal's paste box must not be affected. -->
-<div class="add-modal-overlay" id="locHelpModal" role="dialog" aria-modal="true" aria-label="How to get a location link" onclick="if(event.target===this)closeLocHelp()" style="z-index:420">
-  <div class="add-modal" style="max-width:440px;padding:22px 22px 20px">
-    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px">
-      <div style="font-size:15px;font-weight:700;color:var(--text);line-height:1.4">Here's how to get a shareable Google Maps location link:</div>
-      <button type="button" onclick="closeLocHelp()" aria-label="Close" style="flex-shrink:0;background:var(--brand);border:none;color:#fff;border-radius:50%;width:30px;height:30px;font-size:18px;line-height:1;cursor:pointer">&times;</button>
-    </div>
-    <div style="font-size:13px;font-weight:700;color:var(--text);margin:14px 0 6px">Google Maps (Android / iPhone)</div>
-    <ol style="margin:0 0 14px 18px;padding:0;font-size:13px;color:var(--text-2);line-height:1.7">
-      <li>Open Google Maps. Tap the blue dot (your current location) or search for your building's location.</li>
-      <li>Tap <b>Share</b> (or <b>Share your location</b>), then <b>Copy link</b>.</li>
-    </ol>
-    <a href="https://maps.google.com" target="_blank" rel="noopener" style="display:inline-block;margin-bottom:14px;font-size:12.5px;font-weight:700;color:var(--brand);text-decoration:underline">Open Google Maps</a>
-    <label for="locHelpInput" style="display:block;font-size:12px;font-weight:700;color:var(--text);margin-bottom:5px">Paste the copied link here</label>
-    <div style="display:flex;gap:7px">
-      <input type="url" id="locHelpInput" class="form-input" inputmode="url" autocomplete="off" placeholder="https://maps.app.goo.gl/..." style="flex:1;min-width:0" oninput="this.value=this.value.trim();document.getElementById('locHelpErr').textContent=''" />
-      <button type="button" onclick="pasteLocHelp()" style="flex-shrink:0;padding:0 12px;border-radius:9px;border:1.5px solid var(--text);background:var(--bg);color:var(--text);font-size:12px;font-weight:700;cursor:pointer">Paste</button>
-    </div>
-    <div id="locHelpErr" style="font-size:11.5px;color:#d93025;min-height:15px;margin-top:4px"></div>
-    <button type="button" class="form-submit" onclick="applyLocHelp()" style="margin-top:8px;width:100%">Use this link</button>
-  </div>
-</div>
-
 <!-- ─── Add Listing Modal (List Your Property) ───────────────────────── -->
 <div class="add-modal-overlay" id="addModal" role="dialog" aria-modal="true" aria-label="Add property listing">
   <div class="add-modal" id="addModalBox" style="max-width:860px;padding:0;overflow:hidden;display:flex;flex-direction:column;max-height:92vh">
@@ -6507,9 +6485,9 @@ main.tab-explore .empty-state{display:none !important}
         </select>
       </div>
       <div class="form-group">
-        <label class="form-label">Listed by</label>
+        <label class="form-label">Listed By</label>
         <select class="form-select" id="f-listedBy" onchange="updateBrokerageFields()">
-          <option>Owner</option><option>Agent</option><option>Broker</option><option>Builder</option>
+          <option>Owner</option><option>Agent</option><option>Broker</option>
         </select>
       </div>
     </div>
@@ -6517,15 +6495,31 @@ main.tab-explore .empty-state{display:none !important}
 
     <input type="hidden" id="f-latitude"/><input type="hidden" id="f-longitude"/>
 
-    <!-- ===== 2/3. OWNER DETAILS (incl. Location) ===== -->
+    <!-- ===== 2/3. PROPERTY LOCATION + OWNER DETAILS ===== -->
     <div id="ownerDetailsSection">
-    <div class="lm-section">👤 Owner Details</div>
+    <div class="lm-section">📍 Property Location</div>
     <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
-	<div class="form-group">
-      <label class="form-label">Property name</label>
+      <div class="form-group" style="grid-column:1 / -1">
+      <label class="form-label">Property Name</label>
       <input class="form-input" type="text" id="f-title" autocapitalize="words" onblur="capitalizeWordsInput(this)" oninput="capitalizeWordsInput(this)" />
     </div>
-	  <div class="form-group">
+      <div class="form-group" id="fullAddressGroup" style="grid-column:1 / -1">
+        <label class="form-label">Building Live Address</label>
+        <div style="display:flex;gap:7px;align-items:stretch">
+          <textarea class="form-input" id="f-fullAddress" autocapitalize="words" rows="1" style="flex:1;min-width:0;resize:none;overflow:hidden" oninput="capitalizeWordsInput(this); onFullAddressInput(this.value)" onblur="capitalizeWordsInput(this); onFullAddressBlur(this.value)"></textarea>
+          <button type="button" onclick="fCaptureLocation()" class="loc-act-btn" aria-label="Capture live location" title="Capture live location" style="display:inline-flex;align-items:center;justify-content:center;gap:6px;flex-shrink:0;min-width:110px;padding:0 12px;border-radius:9px;border:1.5px solid var(--text);background:var(--bg);color:var(--text);font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M1 12h4M19 12h4"/></svg><span id="f-locBtnTxt" class="loc-btn-txt">Live</span></button>
+        </div>
+        <div id="f-locStatus" style="font-size:11px;color:var(--text-2);min-height:14px;margin-top:2px"></div>
+      </div>
+      <div class="form-group auto-hidden" id="latLngGroup">
+        <label class="form-label">Latitude / Longitude</label>
+        <input class="form-input" type="text" id="f-latLngDisplay" readonly />
+      </div>
+      <div class="form-group auto-hidden" id="mapsLinkGroup">
+        <label class="form-label">Google Maps Link</label>
+        <input class="form-input" type="url" id="f-googleMapsLink" />
+      </div>
+      <div class="form-group">
         <label class="form-label">Area <span style="color:var(--brand)">*</span></label>
         <input class="form-input" type="text" id="f-location" autocapitalize="words" oninput="capitalizeWordsInput(this)" onblur="capitalizeWordsInput(this)" />
       </div>
@@ -6533,48 +6527,27 @@ main.tab-explore .empty-state{display:none !important}
         <label class="form-label">City</label>
         <input class="form-input" type="text" id="f-city" autocapitalize="words" onblur="capitalizeWordsInput(this)" oninput="capitalizeWordsInput(this)" value="Bangalore" />
       </div>
-      <div class="form-group" id="fullAddressGroup" style="grid-column:span 2">
-        <label class="form-label">Building Live Address</label>
-        <div style="display:flex;gap:7px;align-items:stretch">
-          <textarea class="form-input" id="f-fullAddress" autocapitalize="words" rows="1" style="flex:1;min-width:0;resize:none;overflow:hidden" oninput="capitalizeWordsInput(this); onFullAddressInput(this.value)" onblur="capitalizeWordsInput(this); onFullAddressBlur(this.value)"></textarea>
-          <button type="button" onclick="fCaptureLocation()"
-            style="flex-shrink:0;padding:9px 12px;border-radius:9px;border:1.5px solid var(--text);background:var(--bg);color:var(--text);font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;white-space:nowrap;height:40px;margin-top:1px">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M1 12h4M19 12h4"/></svg>
-            <span id="f-locBtnTxt">Live</span>
-          </button>
-        </div>
-        <div id="f-locStatus" style="font-size:11px;color:var(--text-2);min-height:14px;margin-top:2px">Tap Live to fill from your current location, or type the address</div>
-      </div>
       <div class="form-group" id="pincodeGroup">
         <label class="form-label">Pincode</label>
-        <input class="form-input" type="text" id="f-pincode" inputmode="numeric" maxlength="6" placeholder="e.g. 560034" oninput="onPincodeInput(this)"/>
-        <div style="font-size:11px;color:var(--text-2);margin-top:2px">Auto-filled from the address · edit if it's wrong</div>
-      </div>
-      <div class="form-group auto-hidden" id="latLngGroup">
-        <label class="form-label">Latitude / Longitude (auto)</label>
-        <input class="form-input" type="text" id="f-latLngDisplay" readonly />
-      </div>
-      <div class="form-group auto-hidden" id="mapsLinkGroup">
-        <label class="form-label">Google Maps link (optional)</label>
-        <input class="form-input" type="url" id="f-googleMapsLink" />
-        <div style="font-size:11px;color:var(--text-2);margin-top:2px">Auto-filled from your location · replace it if you have a more exact link</div>
+        <input class="form-input" type="text" id="f-pincode" inputmode="numeric" maxlength="6" oninput="onPincodeInput(this)"/>
       </div>
       <div class="form-group" id="currentLocGroup" style="grid-column:1 / -1">
-        <label class="form-label">Current location link <span style="color:var(--brand)">*</span></label>
+        <label class="form-label">Building Location Link <span style="color:var(--brand)">*</span></label>
         <div style="display:flex;gap:7px;align-items:stretch">
-          <input class="form-input" style="flex:1;min-width:0" type="url" id="f-currentLocationLink" inputmode="url" autocomplete="off" placeholder="Tap to add your location link" onfocus="if(!this.value.trim()){this.blur();openLocHelp();}" onclick="if(!this.value.trim()){this.blur();openLocHelp();}" oninput="this.value=this.value.trim()" />
-          <button type="button" onclick="openCurrentLocLink()" class="loc-act-btn" aria-label="Open in Google Maps" title="Open in Google Maps" style="display:inline-flex;align-items:center;justify-content:center;gap:6px;flex-shrink:0;padding:0 12px;border-radius:9px;border:1.5px solid var(--text);background:var(--bg);color:var(--text);font-size:12px;font-weight:700;cursor:pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg><span class="loc-btn-txt">Navigate</span></button>
-          <button type="button" onclick="copyCurrentLocLink()" class="loc-act-btn" aria-label="Copy link" title="Copy link" style="display:inline-flex;align-items:center;justify-content:center;gap:6px;flex-shrink:0;padding:0 12px;border-radius:9px;border:1.5px solid var(--text);background:var(--bg);color:var(--text);font-size:12px;font-weight:700;cursor:pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><span class="loc-btn-txt">Copy</span></button>
+          <input class="form-input" style="flex:1;min-width:0" type="url" id="f-currentLocationLink" inputmode="url" autocomplete="off" oninput="this.value=this.value.trim()" />
+          <button type="button" onclick="openCurrentLocLink()" class="loc-act-btn" aria-label="Open in Google Maps" title="Open in Google Maps" style="display:inline-flex;align-items:center;justify-content:center;gap:6px;flex-shrink:0;min-width:110px;padding:0 12px;border-radius:9px;border:1.5px solid var(--text);background:var(--bg);color:var(--text);font-size:12px;font-weight:700;cursor:pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg><span class="loc-btn-txt">Navigate</span></button>
         </div>
-        <div style="font-size:11px;color:var(--text-2);margin-top:2px"><a href="#" onclick="openLocHelp();return false" style="color:var(--brand);font-weight:700;text-decoration:underline">How to get it</a></div>
       </div>
+    </div>
+    <div class="lm-section">👤 Owner Details</div>
+    <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
       <div class="form-group">
-        <label class="form-label">Owner name <span style="color:var(--brand)">*</span></label>
+        <label class="form-label">Owner Name <span style="color:var(--brand)">*</span></label>
         <input class="form-input" type="text" id="f-ownerName" autocapitalize="words" onblur="capitalizeWordsInput(this)" oninput="capitalizeWordsInput(this)"/>
         <div class="identity-locked-hint" id="f-ownerName-hint" style="display:none">Auto-filled from your account</div>
       </div>
       <div class="form-group owner-phone-hidden" id="f-ownerPhone-group">
-        <label class="form-label">Phone number <span style="color:var(--brand)">*</span></label>
+        <label class="form-label">Phone Number <span style="color:var(--brand)">*</span></label>
         <div class="input-icon-wrap">
           <input class="form-input" type="tel" id="f-ownerPhone" inputmode="numeric" maxlength="10" oninput="sanitizeMobileInput(this)"/>
           <button type="button" class="contact-pick-btn" id="f-ownerPhone-pickBtn" onclick="pickContactFromDevice('f-ownerPhone','f-ownerName')" title="Pick from contacts">
@@ -6584,7 +6557,7 @@ main.tab-explore .empty-state{display:none !important}
         <div class="identity-locked-hint" id="f-ownerPhone-hint" style="display:none">Auto-filled from your account</div>
       </div>
       <div class="form-group">
-        <label class="form-label">Owner number</label>
+        <label class="form-label">Owner Number</label>
         <div class="input-icon-wrap">
           <input class="form-input" type="tel" id="f-ownerAltPhone" inputmode="numeric" maxlength="10" oninput="sanitizeMobileInput(this)"/>
           <button type="button" class="contact-pick-btn" onclick="pickContactFromDevice('f-ownerAltPhone')" title="Pick from contacts">
@@ -6593,7 +6566,7 @@ main.tab-explore .empty-state{display:none !important}
         </div>
       </div>
       <div class="form-group">
-        <label class="form-label">Caretaker number (optional)</label>
+        <label class="form-label">Caretaker Number</label>
         <div class="input-icon-wrap">
           <input class="form-input" type="tel" id="f-ownerCaretakerPhone" inputmode="numeric" maxlength="10" oninput="sanitizeMobileInput(this)"/>
           <button type="button" class="contact-pick-btn" onclick="pickContactFromDevice('f-ownerCaretakerPhone')" title="Pick from contacts">
@@ -6602,34 +6575,31 @@ main.tab-explore .empty-state{display:none !important}
         </div>
       </div>
       <div class="form-group">
-        <label class="form-label">Email (optional)</label>
+        <label class="form-label">Email</label>
         <input class="form-input" type="email" id="f-ownerEmail"/>
         <div class="identity-locked-hint" id="f-ownerEmail-hint" style="display:none">Auto-filled from your account</div>
       </div>
       <div class="form-group">
-        <label class="form-label">Preferred contact time</label>
+        <label class="form-label">Preferred Contact Time</label>
         <select class="form-select" id="f-contactTime"><option>Any</option><option>Morning (10am - 1pm)</option><option>Afternoon (1pm - 5pm)</option><option>Evening (6pm - 9pm)</option></select>
       </div>
-      <div class="form-group" style="grid-column:span 3">
-        <label class="form-label">Owner address (optional)</label>
-        <div style="display:flex;align-items:center;gap:5px;font-weight:400;font-size:12px;color:var(--text-2);margin:2px 0 6px">
-          <input type="checkbox" id="f-sameAsBuildingAddress" onchange="toggleSameAsBuildingAddress(this)" style="width:auto;margin:0" />
-          <label for="f-sameAsBuildingAddress" style="font-weight:400;cursor:pointer">Same as building live address</label>
-        </div>
-        <textarea class="form-input" id="f-ownerAddress" autocapitalize="words" onblur="capitalizeWordsInput(this)" oninput="capitalizeWordsInput(this)" rows="2" style="resize:vertical"></textarea>
+      <div class="form-group">
+        <label class="form-label">Owner Location Same As Building?</label>
+        <select class="form-select" id="f-sameAsBuildingAddress" onchange="toggleSameAsBuildingAddress(this)" ><option value="Yes">Yes</option><option value="No">No</option></select>
+        <input type="hidden" id="f-ownerAddress" />
       </div>
       <!-- Agent-only fields — shown when Listed by = Agent -->
       <div id="f-agentFields" style="grid-column:span 3">
         <div class="form-row" style="grid-template-columns:1fr 1fr;margin-top:4px">
           <div class="form-group">
-            <label class="form-label">Agent phone number</label>
+            <label class="form-label">Agent Phone Number</label>
             <div class="input-icon-wrap">
               <input class="form-input identity-locked" type="tel" id="f-agentPhone" inputmode="numeric" maxlength="10" value="9035205230" readonly />
             </div>
             <div class="identity-locked-hint">Fixed agent contact number</div>
           </div>
           <div class="form-group">
-            <label class="form-label">Agent service area</label>
+            <label class="form-label">Agent Service Area</label>
             <input class="form-input identity-locked" type="text" id="f-agentArea" value="Prashanth B, Singasandra" readonly />
             <div class="identity-locked-hint">Fixed agent service area</div>
           </div>
@@ -6642,17 +6612,17 @@ main.tab-explore .empty-state{display:none !important}
     <div id="addPricingSection">
     <div class="lm-section">💰 Pricing</div>
     <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
-      <div class="form-group"><label class="form-label" id="f-rentLabel">Monthly rent (₹) <span style="color:var(--brand)">*</span></label><input class="form-input" type="number" id="f-rent" min="0" max="9999999" oninput="updateSellPricePerSqft()" /></div>
+      <div class="form-group"><label class="form-label" id="f-rentLabel">Monthly Rent <span style="color:var(--brand)">*</span></label><input class="form-input" type="number" id="f-rent" min="0" max="9999999" oninput="updateSellPricePerSqft()" /></div>
       <!-- Sell-only, read-only, auto-computed from price ÷ area (same live
            sanity-check nudge 99acres shows sellers while pricing a resale).
            readOnly → excluded from the required-field system automatically. -->
       <div class="form-group" id="f-pricePerSqftWrap" style="display:none">
-        <label class="form-label">Price per sqft (auto)</label>
+        <label class="form-label">Price Per Sqft</label>
         <input class="form-input" type="text" id="f-pricePerSqft" readonly />
       </div>
-      <div class="form-group" id="f-depositWrap"><label class="form-label">Security deposit (₹) <span style="color:var(--brand)">*</span></label><input class="form-input" type="number" id="f-deposit" min="0" max="9999999" /></div>
-      <div class="form-group" id="f-maintenanceWrap"><label class="form-label">Maintenance (₹/ Month)</label><input class="form-input" type="number" id="f-maintenance" oninput="onMaintenanceChange()" /></div>
-      <div class="form-group" id="f-escalationWrap"><label class="form-label">Escalation (%)</label><input class="form-input" type="number" step="0.5" id="f-escalation" /></div>
+      <div class="form-group" id="f-depositWrap"><label class="form-label">Security Deposit <span style="color:var(--brand)">*</span></label><input class="form-input" type="number" id="f-deposit" min="0" max="9999999" /></div>
+      <div class="form-group" id="f-maintenanceWrap"><label class="form-label">Maintenance</label><input class="form-input" type="number" id="f-maintenance" oninput="onMaintenanceChange()" /></div>
+      <div class="form-group" id="f-escalationWrap"><label class="form-label">Escalation</label><input class="form-input" type="number" step="0.5" id="f-escalation" /></div>
       <div class="form-group" id="f-electricityWrap">
         <label class="form-label">Electricity</label>
         <select class="form-select" id="f-electricityIncluded"><option>Included</option><option>Separate</option><option>Shared meter</option></select>
@@ -6662,8 +6632,8 @@ main.tab-explore .empty-state{display:none !important}
         <select class="form-select" id="f-waterCharge"><option>Included</option><option>Separate</option><option>Tanker</option><option>Kaveri</option><option>Borewell</option></select>
       </div>
 	  <div class="form-group" id="f-negotiableWrap">
-        <label class="form-label">Price negotiable</label>
-        <select class="form-select" id="f-negotiable"><option value="">Select</option><option value="yes">Yes</option><option value="no">No</option></select>
+        <label class="form-label">Price Negotiable</label>
+        <select class="form-select" id="f-negotiable"><option value=""></option><option value="yes">Yes</option><option value="no">No</option></select>
       </div>
     </div>
     </div>
@@ -6673,9 +6643,9 @@ main.tab-explore .empty-state{display:none !important}
     <div class="lm-section">🤝 Brokerage</div>
     <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
       <div class="form-group" id="f-brokerageWrap">
-        <label class="form-label">Brokerage fee</label>
+        <label class="form-label">Brokerage Fee</label>
         <select class="form-select" id="f-brokerage" onchange="onBrokerageChange()">
-          <option value="">Select</option>
+          <option value=""></option>
           <option value="1 Day rent">1 Day rent</option>
           <option value="7 Days rent">7 Days rent</option>
           <option value="10 Days rent">10 Days rent</option>
@@ -6690,7 +6660,7 @@ main.tab-explore .empty-state{display:none !important}
         </select>
       </div>
       <div class="form-group" id="f-brokerageAmountWrap" style="display:none">
-        <label class="form-label">Brokerage amount (₹)</label>
+        <label class="form-label">Brokerage Amount</label>
         <input class="form-input" type="number" id="f-brokerageAmount" min="0">
       </div>
     </div>
@@ -6701,7 +6671,7 @@ main.tab-explore .empty-state{display:none !important}
     <div class="lm-section">🏢 Property Details</div>
     <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
       <div class="form-group">
-        <label class="form-label">Property type</label>
+        <label class="form-label">Property Type</label>
         <select class="form-select" id="f-propertyType" onchange="onSellPropertyTypeChange()">
           <option>Apartment</option><option>House</option><option>Standalone</option><option>Villa</option><option>Studio</option><option>Duplex</option><option>Penthouse</option><option>Bungalow</option><option>Loft</option><option>Cottage</option><option>Farmhouse</option><option>PG</option><option>Hostel</option><option>Homestay</option><option>Plot / Land</option>
         </select>
@@ -6730,16 +6700,16 @@ main.tab-explore .empty-state{display:none !important}
       <div class="form-group" id="f-floorWrap">
         <label class="form-label">Floor</label>
         <select class="form-select" id="f-floor">
-          <option value="">Select</option>
+          <option value=""></option>
           <option>0</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option>9</option>
         </select>
       </div>
       <div class="form-group" id="f-flatNoWrap">
-        <label class="form-label">Flat number (optional)</label>
-        <input class="form-input" type="text" id="f-flatNo" maxlength="20" placeholder="e.g. A-304" autocomplete="off" />
+        <label class="form-label">Flat Number</label>
+        <input class="form-input" type="text" id="f-flatNo" maxlength="20" autocomplete="off" />
       </div>
       <div class="form-group">
-        <label class="form-label" id="f-areaLabel">Area (sqft)</label>
+        <label class="form-label" id="f-areaLabel">Area (Sqft)</label>
         <input class="form-input" type="text" inputmode="numeric" id="f-area" onfocus="stripAreaSqft(this)" onblur="formatAreaSqft(this)" oninput="updateSellPricePerSqft()" />
       </div>
       <!-- Sell-only: clarifies which area figure was just entered above —
@@ -6748,8 +6718,8 @@ main.tab-explore .empty-state{display:none !important}
            (toggled in onFTypeChange); hidden again for Plot/Land, where the
            distinction doesn't apply. -->
       <div class="form-group" id="f-areaTypeWrap" style="display:none">
-        <label class="form-label">Area type</label>
-        <select class="form-select" id="f-areaType"><option value="">Select</option><option>Carpet Area</option><option>Super Built-up Area</option><option>Built-up Area</option></select>
+        <label class="form-label">Area Type</label>
+        <select class="form-select" id="f-areaType"><option value=""></option><option>Carpet Area</option><option>Super Built-up Area</option><option>Built-up Area</option></select>
       </div>
       <div class="form-group" id="f-bathsWrap">
         <label class="form-label">Bathrooms</label>
@@ -6766,8 +6736,8 @@ main.tab-explore .empty-state{display:none !important}
         </select>
       </div>
       <div class="form-group" id="f-kitchenTypeWrap">
-        <label class="form-label">Kitchen type</label>
-        <select class="form-select" id="f-kitchenType"><option value="">Select</option><option>Straight Kitchen</option><option>Parallel Kitchen</option><option>L-Shaped Kitchen</option><option>U-Shaped Kitchen</option><option>Open Kitchen</option><option>Closed Kitchen</option><option>Island Kitchen</option><option>Modular Kitchen</option></select>
+        <label class="form-label">Kitchen Type</label>
+        <select class="form-select" id="f-kitchenType"><option value=""></option><option>Straight Kitchen</option><option>Parallel Kitchen</option><option>L-Shaped Kitchen</option><option>U-Shaped Kitchen</option><option>Open Kitchen</option><option>Closed Kitchen</option><option>Island Kitchen</option><option>Modular Kitchen</option></select>
       </div>
       <div class="form-group">
         <label class="form-label">Facing</label>
@@ -6776,16 +6746,16 @@ main.tab-explore .empty-state{display:none !important}
         </select>
       </div>
       <div class="form-group" id="f-ageWrap">
-        <label class="form-label">Age of property</label>
+        <label class="form-label">Age Of Property</label>
         <select class="form-select" id="f-age">
-          <option value="">Select</option><option>New</option><option>1 yr</option><option>2 yrs</option><option>3 yrs</option><option>4 yrs</option><option>5 yrs</option><option>6 yrs</option><option>7 yrs</option><option>8 yrs</option><option>9 yrs</option><option>10 yrs</option><option>11 yrs</option><option>12 yrs</option><option>13 yrs</option><option>14 yrs</option><option>15 yrs</option><option>16 yrs</option><option>17 yrs</option><option>18 yrs</option><option>19 yrs</option><option>20 yrs</option>
+          <option value=""></option><option>New</option><option>1 yr</option><option>2 yrs</option><option>3 yrs</option><option>4 yrs</option><option>5 yrs</option><option>6 yrs</option><option>7 yrs</option><option>8 yrs</option><option>9 yrs</option><option>10 yrs</option><option>11 yrs</option><option>12 yrs</option><option>13 yrs</option><option>14 yrs</option><option>15 yrs</option><option>16 yrs</option><option>17 yrs</option><option>18 yrs</option><option>19 yrs</option><option>20 yrs</option>
         </select>
       </div>
       <div class="form-group" id="tenantFormGroup">
-        <label class="form-label">Tenant preference <span style="color:var(--brand)">*</span></label>
+        <label class="form-label">Tenant Preference <span style="color:var(--brand)">*</span></label>
         <div class="am-dd" id="tenantDropdown">
           <button type="button" class="am-dd-trigger" onclick="toggleTenantDropdown(event)">
-            <span><span class="am-dd-count" id="tenantDdCount" style="display:none">0</span><span id="tenantDdLabel">Choose tenant preference…</span></span>
+            <span><span class="am-dd-count" id="tenantDdCount" style="display:none">0</span><span id="tenantDdLabel"></span></span>
             <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
           </button>
           <div class="am-dd-panel" id="tenantDdPanel">
@@ -6800,11 +6770,11 @@ main.tab-explore .empty-state{display:none !important}
         <input type="hidden" id="f-tenant" />
       </div>
       <div class="form-group" id="maxPersonsFormGroup">
-        <label class="form-label">No. of persons allowed</label>
-        <input class="form-input" type="number" id="f-maxPersons" min="1" max="50" step="1" inputmode="numeric" placeholder="e.g. 4" oninput="if(this.value!==''){this.value=this.value.replace(/\D/g,'').slice(0,2)}" />
+        <label class="form-label">No. Of Persons Allowed</label>
+        <input class="form-input" type="number" id="f-maxPersons" min="1" max="50" step="1" inputmode="numeric" oninput="if(this.value!==''){this.value=this.value.replace(/\D/g,'').slice(0,2)}" />
       </div>
       <div class="form-group" id="f-availWrap">
-        <label class="form-label">Available from</label>
+        <label class="form-label">Available From</label>
         <input class="form-input" type="date" id="f-avail" />
       </div>
     </div>
@@ -6817,13 +6787,13 @@ main.tab-explore .empty-state{display:none !important}
     <div id="addRentSection">
       <div class="lm-section">📅 Availability &amp; Terms</div>
       <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
-        <div class="form-group"><label class="form-label">Notice period</label><select class="form-select" id="f-noticePeriod"><option value="">Select</option><option>15 Days</option><option>1 Month</option><option>2 Months</option><option selected>3 Months</option></select></div>
+        <div class="form-group"><label class="form-label">Notice Period</label><select class="form-select" id="f-noticePeriod"><option value=""></option><option>15 Days</option><option>1 Month</option><option>2 Months</option><option selected>3 Months</option></select></div>
         <div class="form-group"><label class="form-label">Contract Term</label><select class="form-select" id="f-leaseDuration"><option value="">Any</option><option>6 Months</option><option>11 Months</option><option selected>12 Months</option><option>24 Months</option><option>36 Months</option><option>48 Months</option><option>48+ Months</option></select></div>
       </div>
       <div class="lm-section">⚖️ Tenant Rules</div>
       <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
-        <div class="form-group"><label class="form-label">Pets allowed</label><select class="form-select" id="f-petsAllowed"><option value="">Select</option><option>Yes</option><option selected>No</option><option>Restricted</option></select></div>
-        <div class="form-group"><label class="form-label">Non-veg allowed</label><select class="form-select" id="f-nonVegAllowed"><option value="">Select</option><option selected>Yes</option><option>No</option></select></div>
+        <div class="form-group"><label class="form-label">Pets Allowed</label><select class="form-select" id="f-petsAllowed"><option value=""></option><option>Yes</option><option selected>No</option><option>Restricted</option></select></div>
+        <div class="form-group"><label class="form-label">Non-Veg Allowed</label><select class="form-select" id="f-nonVegAllowed"><option value=""></option><option selected>Yes</option><option>No</option></select></div>
       </div>
     </div>
 
@@ -6831,21 +6801,21 @@ main.tab-explore .empty-state{display:none !important}
     <div id="addLeaseSection" style="display:none">
       <div class="lm-section">💼 Lease Pricing</div>
       <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
-        <div class="form-group"><label class="form-label">Lease amount (₹) <span style="color:var(--brand)">*</span></label><input class="form-input" type="number" id="f-leaseAmount" /></div>
-        <div class="form-group"><label class="form-label">Maintenance (₹/ Month)</label><input class="form-input" type="number" id="f-leaseMaintenance" /></div>
+        <div class="form-group"><label class="form-label">Lease Amount <span style="color:var(--brand)">*</span></label><input class="form-input" type="number" id="f-leaseAmount" /></div>
+        <div class="form-group"><label class="form-label">Maintenance</label><input class="form-input" type="number" id="f-leaseMaintenance" /></div>
       </div>
       <div class="lm-section">📋 Lease Terms</div>
       <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
-        <div class="form-group"><label class="form-label">Contract Term</label><select class="form-select" id="f-leaseDurationVal"><option value="">Select</option><option>1 Year</option><option selected>2 Years</option><option>3 Years</option><option>5 Years</option><option>9 Years</option><option>15 Years</option><option>30 Years</option></select></div>
-        <div class="form-group"><label class="form-label">Lease type</label><select class="form-select" id="f-leaseType"><option value="">Select</option><option>Residential</option><option>Commercial</option><option>Industrial</option><option>Mixed Use</option></select></div>
-        <div class="form-group"><label class="form-label">Lock-in period</label><select class="form-select" id="f-lockInPeriod"><option value="">None</option><option>1 Year</option><option>2 Years</option><option>3 Years</option></select></div>
-        <div class="form-group"><label class="form-label">Available from</label><input class="form-input" type="date" id="f-leaseAvailableFrom" /></div>
-        <div class="form-group"><label class="form-label">Notice period</label><select class="form-select" id="f-leaseNoticePeriod"><option value="">Select</option><option>1 Month</option><option>2 Months</option><option selected>3 Months</option></select></div>
+        <div class="form-group"><label class="form-label">Contract Term</label><select class="form-select" id="f-leaseDurationVal"><option value=""></option><option>1 Year</option><option selected>2 Years</option><option>3 Years</option><option>5 Years</option><option>9 Years</option><option>15 Years</option><option>30 Years</option></select></div>
+        <div class="form-group"><label class="form-label">Lease Type</label><select class="form-select" id="f-leaseType"><option value=""></option><option>Residential</option><option>Commercial</option><option>Industrial</option><option>Mixed Use</option></select></div>
+        <div class="form-group"><label class="form-label">Lock-In Period</label><select class="form-select" id="f-lockInPeriod"><option value="">None</option><option>1 Year</option><option>2 Years</option><option>3 Years</option></select></div>
+        <div class="form-group"><label class="form-label">Available From</label><input class="form-input" type="date" id="f-leaseAvailableFrom" /></div>
+        <div class="form-group"><label class="form-label">Notice Period</label><select class="form-select" id="f-leaseNoticePeriod"><option value=""></option><option>1 Month</option><option>2 Months</option><option selected>3 Months</option></select></div>
       </div>
       <div class="lm-section">⚖️ House Rules</div>
       <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
-        <div class="form-group"><label class="form-label">Pets allowed</label><select class="form-select" id="f-leasePets"><option value="">Select</option><option>Yes</option><option selected>No</option></select></div>
-        <div class="form-group"><label class="form-label">Non-veg allowed</label><select class="form-select" id="f-leaseNonVeg"><option value="">Select</option><option selected>Yes</option><option>No</option></select></div>
+        <div class="form-group"><label class="form-label">Pets Allowed</label><select class="form-select" id="f-leasePets"><option value=""></option><option>Yes</option><option selected>No</option></select></div>
+        <div class="form-group"><label class="form-label">Non-Veg Allowed</label><select class="form-select" id="f-leaseNonVeg"><option value=""></option><option selected>Yes</option><option>No</option></select></div>
       </div>
     </div>
 
@@ -6854,21 +6824,21 @@ main.tab-explore .empty-state{display:none !important}
       <div class="lm-section">🛏 Room Details</div>
       <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
         <div class="form-group">
-          <label class="form-label">Property type</label>
+          <label class="form-label">Property Type</label>
           <select class="form-select" id="f-pgPropertyType"><option>Apartment</option><option>Independent House</option><option>Villa</option><option>Studio</option></select>
         </div>
         <div class="form-group">
-          <label class="form-label">Gender preference</label>
+          <label class="form-label">Gender Preference</label>
           <select class="form-select" id="f-pgGender"><option>Any</option><option>Boys</option><option>Girls</option><option>Co-ed</option></select>
         </div>
         <div class="form-group">
-          <label class="form-label">Room type</label>
+          <label class="form-label">Room Type</label>
           <select class="form-select" id="f-pgRoomType"><option>Single</option><option>Double Sharing</option><option>Triple Sharing</option><option>Dormitory</option></select>
         </div>
-        <div class="form-group"><label class="form-label">Attached bathroom</label><select class="form-select" id="f-pgBathroom"><option>Yes</option><option>Shared</option></select></div>
+        <div class="form-group"><label class="form-label">Attached Bathroom</label><select class="form-select" id="f-pgBathroom"><option>Yes</option><option>Shared</option></select></div>
         <div class="form-group"><label class="form-label">Toilet Type</label><select class="form-select" id="f-pgToiletType"><option>Western</option><option>Indian</option><option>Both</option></select></div>
-        <div class="form-group"><label class="form-label">Occupancy available</label><input class="form-input" type="number" id="f-pgOccupancy" /></div>
-        <div class="form-group"><label class="form-label">Room furnishing</label><select class="form-select" id="f-pgRoomFurnishing"><option value="">Select</option><option>Fully Furnished</option><option>Semi-Furnished</option><option>Unfurnished</option></select></div>
+        <div class="form-group"><label class="form-label">Occupancy Available</label><input class="form-input" type="number" id="f-pgOccupancy" /></div>
+        <div class="form-group"><label class="form-label">Room Furnishing</label><select class="form-select" id="f-pgRoomFurnishing"><option value=""></option><option>Fully Furnished</option><option>Semi-Furnished</option><option>Unfurnished</option></select></div>
         <div class="form-group">
           <label class="form-label">Bike Parking</label>
           <select class="form-select" id="f-pgBikePark">
@@ -6884,19 +6854,19 @@ main.tab-explore .empty-state{display:none !important}
       </div>
       <div class="lm-section">📅 Availability &amp; Terms</div>
       <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
-        <div class="form-group"><label class="form-label">Available from</label><input class="form-input" type="date" id="f-pgAvailableFrom" /></div>
-        <div class="form-group"><label class="form-label">Notice period</label><select class="form-select" id="f-pgNotice"><option value="">Select</option><option selected>15 Days</option><option>1 Month</option><option>2 Months</option><option>3 Months</option></select></div>
-        <div class="form-group"><label class="form-label">Security deposit (₹)</label><input class="form-input" type="number" id="f-pgDeposit" min="0" /></div>
+        <div class="form-group"><label class="form-label">Available From</label><input class="form-input" type="date" id="f-pgAvailableFrom" /></div>
+        <div class="form-group"><label class="form-label">Notice Period</label><select class="form-select" id="f-pgNotice"><option value=""></option><option selected>15 Days</option><option>1 Month</option><option>2 Months</option><option>3 Months</option></select></div>
+        <div class="form-group"><label class="form-label">Security Deposit</label><input class="form-input" type="number" id="f-pgDeposit" min="0" /></div>
       </div>
       <div class="lm-section">🍽 Meals &amp; Policies</div>
       <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
         <div class="form-group">
-          <label class="form-label">Meals included</label>
-          <select class="form-select" id="f-pgMeals"><option value="">Select</option><option>No Meals</option><option>Breakfast Only</option><option>Dinner Only</option><option>Lunch + Dinner</option><option selected>All 3 Meals</option><option>On Request</option></select>
+          <label class="form-label">Meals Included</label>
+          <select class="form-select" id="f-pgMeals"><option value=""></option><option>No Meals</option><option>Breakfast Only</option><option>Dinner Only</option><option>Lunch + Dinner</option><option selected>All 3 Meals</option><option>On Request</option></select>
         </div>
-        <div class="form-group"><label class="form-label">Food type</label><select class="form-select" id="f-pgFoodType"><option value="">Select</option><option>Veg Only</option><option>Veg + Non-veg</option></select></div>
-        <div class="form-group"><label class="form-label">Gate closing time</label><select class="form-select" id="f-pgGateTime"><option value="">No Curfew</option><option>9 PM</option><option>10 PM</option><option>11 PM</option></select></div>
-        <div class="form-group"><label class="form-label">Visitor policy</label><select class="form-select" id="f-pgVisitorPolicy"><option value="">Select</option><option>Allowed</option><option>Lobby Only</option><option>Not Allowed</option></select></div>
+        <div class="form-group"><label class="form-label">Food Type</label><select class="form-select" id="f-pgFoodType"><option value=""></option><option>Veg Only</option><option>Veg + Non-veg</option></select></div>
+        <div class="form-group"><label class="form-label">Gate Closing Time</label><select class="form-select" id="f-pgGateTime"><option value="">No Curfew</option><option>9 PM</option><option>10 PM</option><option>11 PM</option></select></div>
+        <div class="form-group"><label class="form-label">Visitor Policy</label><select class="form-select" id="f-pgVisitorPolicy"><option value=""></option><option>Allowed</option><option>Lobby Only</option><option>Not Allowed</option></select></div>
       </div>
     </div>
 
@@ -6905,16 +6875,16 @@ main.tab-explore .empty-state{display:none !important}
       <div class="lm-section">🛎 Room &amp; Booking</div>
       <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
         <div class="form-group">
-          <label class="form-label">Property type</label>
+          <label class="form-label">Property Type</label>
           <select class="form-select" id="f-ssPropertyType"><option>Apartment</option><option>Independent House</option><option>Villa</option><option>Studio</option></select>
         </div>
         <div class="form-group">
-          <label class="form-label">Room type</label>
+          <label class="form-label">Room Type</label>
           <select class="form-select" id="f-ssRoomType"><option>Single</option><option>Double</option><option>Deluxe</option><option>Suite</option></select>
         </div>
-        <div class="form-group"><label class="form-label">Available 24 hours</label><select class="form-select" id="f-ss24hrs"><option value="">Select</option><option>Yes</option><option>No</option></select></div>
-        <div class="form-group"><label class="form-label">Free cancellation window</label><select class="form-select" id="f-ssCancellation"><option value="">Select</option><option>No Cancellation</option><option>Free Till Check-in</option><option>24 Hours Before</option><option>48 Hours Before</option></select></div>
-        <div class="form-group"><label class="form-label">Room furnishing</label><select class="form-select" id="f-ssFurnish"><option value="">Select</option><option>Fully Furnished</option><option>Semi-Furnished</option><option>Unfurnished</option></select></div>
+        <div class="form-group"><label class="form-label">Available 24 Hours</label><select class="form-select" id="f-ss24hrs"><option value=""></option><option>Yes</option><option>No</option></select></div>
+        <div class="form-group"><label class="form-label">Free Cancellation Window</label><select class="form-select" id="f-ssCancellation"><option value=""></option><option>No Cancellation</option><option>Free Till Check-in</option><option>24 Hours Before</option><option>48 Hours Before</option></select></div>
+        <div class="form-group"><label class="form-label">Room Furnishing</label><select class="form-select" id="f-ssFurnish"><option value=""></option><option>Fully Furnished</option><option>Semi-Furnished</option><option>Unfurnished</option></select></div>
         <div class="form-group">
           <label class="form-label">Bike Parking</label>
           <select class="form-select" id="f-ssBikePark">
@@ -6930,7 +6900,7 @@ main.tab-explore .empty-state{display:none !important}
       </div>
       <div class="lm-section">🪪 Guest Policy</div>
       <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
-        <div class="form-group"><label class="form-label">Unmarried couples allowed</label><select class="form-select" id="f-ssCouples"><option value="">Select</option><option>Yes</option><option>No</option></select></div>
+        <div class="form-group"><label class="form-label">Unmarried Couples Allowed</label><select class="form-select" id="f-ssCouples"><option value=""></option><option>Yes</option><option>No</option></select></div>
       </div>
     </div>
 
@@ -6942,35 +6912,35 @@ main.tab-explore .empty-state{display:none !important}
       <div class="lm-section">🏷️ Sale Details</div>
       <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
         <div class="form-group" id="f-sellTotalFloorsWrap">
-          <label class="form-label">Total floors in building</label>
+          <label class="form-label">Total Floors In Building</label>
           <select class="form-select" id="f-sellTotalFloors">
-            <option value="">Select</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option>9</option><option>10</option><option>10+</option>
+            <option value=""></option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option>9</option><option>10</option><option>10+</option>
           </select>
         </div>
         <div class="form-group" id="f-sellBalconiesWrap">
           <label class="form-label">Balconies</label>
-          <select class="form-select" id="f-sellBalconies"><option value="">Select</option><option>0</option><option>1</option><option>2</option><option>3</option><option>4+</option></select>
+          <select class="form-select" id="f-sellBalconies"><option value=""></option><option>0</option><option>1</option><option>2</option><option>3</option><option>4+</option></select>
         </div>
         <div class="form-group">
-          <label class="form-label">Ownership type</label>
+          <label class="form-label">Ownership Type</label>
           <select class="form-select" id="f-sellOwnership">
-            <option value="">Select</option><option>Freehold</option><option>Leasehold</option><option>Co-operative Society</option><option>Power of Attorney</option>
+            <option value=""></option><option>Freehold</option><option>Leasehold</option><option>Co-operative Society</option><option>Power of Attorney</option>
           </select>
         </div>
         <div class="form-group">
-          <label class="form-label">Possession status</label>
-          <select class="form-select" id="f-sellPossession"><option value="">Select</option><option>Ready to Move</option><option>Under Construction</option></select>
+          <label class="form-label">Possession Status</label>
+          <select class="form-select" id="f-sellPossession"><option value=""></option><option>Ready to Move</option><option>Under Construction</option></select>
         </div>
         <div class="form-group">
-          <label class="form-label">Possession date (optional)</label>
+          <label class="form-label">Possession Date</label>
           <input class="form-input" type="date" id="f-sellPossessionDate" />
         </div>
         <div class="form-group">
-          <label class="form-label">RERA registered</label>
-          <select class="form-select" id="f-sellRera"><option value="">Select</option><option>Yes</option><option>No</option></select>
+          <label class="form-label">RERA Registered</label>
+          <select class="form-select" id="f-sellRera"><option value=""></option><option>Yes</option><option>No</option></select>
         </div>
         <div class="form-group">
-          <label class="form-label">RERA ID (optional)</label>
+          <label class="form-label">RERA ID</label>
           <input class="form-input" type="text" id="f-sellReraId" maxlength="50" />
         </div>
       </div>
@@ -6985,32 +6955,32 @@ main.tab-explore .empty-state{display:none !important}
       <div class="lm-section">🏛️ Legal &amp; Ownership Details</div>
       <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
         <div class="form-group">
-          <label class="form-label">Khata type</label>
-          <select class="form-select" id="f-sellKhataType"><option value="">Select</option><option>A Khata</option><option>B Khata</option><option>Not Applicable</option></select>
+          <label class="form-label">Khata Type</label>
+          <select class="form-select" id="f-sellKhataType"><option value=""></option><option>A Khata</option><option>B Khata</option><option>Not Applicable</option></select>
         </div>
         <div class="form-group">
-          <label class="form-label">Property tax paid up to date (optional)</label>
-          <select class="form-select" id="f-sellTaxPaid"><option value="">Select</option><option>Yes</option><option>No</option></select>
+          <label class="form-label">Property Tax Paid Up To Date</label>
+          <select class="form-select" id="f-sellTaxPaid"><option value=""></option><option>Yes</option><option>No</option></select>
         </div>
         <div class="form-group">
-          <label class="form-label">Loan status</label>
-          <select class="form-select" id="f-sellLoanStatus"><option value="">Select</option><option>Free &amp; Clear (No Loan)</option><option>Home Loan Cleared Before Sale</option><option>Bank Loan Pending / To Be Transferred</option></select>
+          <label class="form-label">Loan Status</label>
+          <select class="form-select" id="f-sellLoanStatus"><option value=""></option><option>Free &amp; Clear (No Loan)</option><option>Home Loan Cleared Before Sale</option><option>Bank Loan Pending / To Be Transferred</option></select>
         </div>
         <div class="form-group" id="f-sellOcAvailableWrap">
-          <label class="form-label">Occupancy Certificate (OC) available (optional)</label>
-          <select class="form-select" id="f-sellOcAvailable"><option value="">Select</option><option>Yes</option><option>No</option></select>
+          <label class="form-label">Occupancy Certificate (OC) Available</label>
+          <select class="form-select" id="f-sellOcAvailable"><option value=""></option><option>Yes</option><option>No</option></select>
         </div>
         <div class="form-group" id="f-sellCcAvailableWrap">
-          <label class="form-label">Completion Certificate (CC) available (optional)</label>
-          <select class="form-select" id="f-sellCcAvailable"><option value="">Select</option><option>Yes</option><option>No</option></select>
+          <label class="form-label">Completion Certificate (CC) Available</label>
+          <select class="form-select" id="f-sellCcAvailable"><option value=""></option><option>Yes</option><option>No</option></select>
         </div>
         <div class="form-group">
-          <label class="form-label">Number of previous owners (optional)</label>
-          <select class="form-select" id="f-sellPreviousOwners"><option value="">Select</option><option>0 (First Owner)</option><option>1</option><option>2</option><option>3+</option></select>
+          <label class="form-label">Number Of Previous Owners</label>
+          <select class="form-select" id="f-sellPreviousOwners"><option value=""></option><option>0 (First Owner)</option><option>1</option><option>2</option><option>3+</option></select>
         </div>
         <div class="form-group" style="grid-column:span 2">
-          <label class="form-label">Society / Project name (optional)</label>
-          <input class="form-input" type="text" id="f-sellProjectName" autocapitalize="words" onblur="capitalizeWordsInput(this)" oninput="capitalizeWordsInput(this)" maxlength="120" placeholder="e.g. Prestige Shantiniketan" />
+          <label class="form-label">Society / Project Name</label>
+          <input class="form-input" type="text" id="f-sellProjectName" autocapitalize="words" onblur="capitalizeWordsInput(this)" oninput="capitalizeWordsInput(this)" maxlength="120" />
         </div>
       </div>
 
@@ -7021,34 +6991,34 @@ main.tab-explore .empty-state{display:none !important}
       <div class="lm-section">🧱 Structure &amp; Site Details</div>
       <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
         <div class="form-group" id="f-sellFlooringWrap">
-          <label class="form-label">Flooring type (optional)</label>
-          <select class="form-select" id="f-sellFlooring"><option value="">Select</option><option>Vitrified Tiles</option><option>Marble</option><option>Wooden</option><option>Cement</option><option>Mosaic</option></select>
+          <label class="form-label">Flooring Type</label>
+          <select class="form-select" id="f-sellFlooring"><option value=""></option><option>Vitrified Tiles</option><option>Marble</option><option>Wooden</option><option>Cement</option><option>Mosaic</option></select>
         </div>
         <div class="form-group">
-          <label class="form-label">Water source (optional)</label>
-          <select class="form-select" id="f-sellWaterSource"><option value="">Select</option><option>Corporation</option><option>Borewell</option><option>Both</option></select>
+          <label class="form-label">Water Source</label>
+          <select class="form-select" id="f-sellWaterSource"><option value=""></option><option>Corporation</option><option>Borewell</option><option>Both</option></select>
         </div>
         <div class="form-group">
-          <label class="form-label">Boundary wall (optional)</label>
-          <select class="form-select" id="f-sellBoundaryWall"><option value="">Select</option><option>Full</option><option>Partial</option><option>None</option></select>
+          <label class="form-label">Boundary Wall</label>
+          <select class="form-select" id="f-sellBoundaryWall"><option value=""></option><option>Full</option><option>Partial</option><option>None</option></select>
         </div>
         <div class="form-group">
-          <label class="form-label">Width of facing road, ft (optional)</label>
+          <label class="form-label">Width Of Facing Road, Ft</label>
           <input class="form-input" type="number" min="0" id="f-sellRoadWidth" />
         </div>
         <div class="form-group">
-          <label class="form-label">Number of open sides (optional)</label>
-          <select class="form-select" id="f-sellOpenSides"><option value="">Select</option><option>1</option><option>2</option><option>3</option><option>4</option></select>
+          <label class="form-label">Number Of Open Sides</label>
+          <select class="form-select" id="f-sellOpenSides"><option value=""></option><option>1</option><option>2</option><option>3</option><option>4</option></select>
         </div>
         <div class="form-group">
-          <label class="form-label">Corner property (optional)</label>
-          <select class="form-select" id="f-sellCornerProperty"><option value="">Select</option><option>Yes</option><option>No</option></select>
+          <label class="form-label">Corner Property</label>
+          <select class="form-select" id="f-sellCornerProperty"><option value=""></option><option>Yes</option><option>No</option></select>
         </div>
         <div class="form-group" style="grid-column:span 3" id="overlookingFormGroup">
-          <label class="form-label">Overlooking (optional)</label>
+          <label class="form-label">Overlooking</label>
           <div class="am-dd" id="overlookingDropdown">
             <button type="button" class="am-dd-trigger" onclick="toggleOverlookingDropdown(event)">
-              <span><span class="am-dd-count" id="overlookingDdCount" style="display:none">0</span><span id="overlookingDdLabel">Choose what it overlooks…</span></span>
+              <span><span class="am-dd-count" id="overlookingDdCount" style="display:none">0</span><span id="overlookingDdLabel"></span></span>
               <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
             </button>
             <div class="am-dd-panel" id="overlookingDdPanel">
@@ -7069,10 +7039,10 @@ main.tab-explore .empty-state{display:none !important}
     <div id="addAmenitiesSection">
     <div class="lm-section">✨ Amenities</div>
     <div class="form-group" id="amSelectFormGroup">
-      <label class="form-label">Select amenities</label>
+      <label class="form-label">Select Amenities</label>
       <div class="am-dd" id="amDropdown">
         <button type="button" class="am-dd-trigger" onclick="toggleAmDropdown(event)">
-          <span><span class="am-dd-count" id="amDdCount" style="display:none">0</span><span id="amDdLabel">Choose amenities…</span></span>
+          <span><span class="am-dd-count" id="amDdCount" style="display:none">0</span><span id="amDdLabel"></span></span>
           <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
         </button>
         <div class="am-dd-panel" id="amDdPanel">
@@ -7106,13 +7076,13 @@ main.tab-explore .empty-state{display:none !important}
       </div>
     </div>
     <div class="form-group">
-      <label class="form-label">Selected amenities</label>
+      <label class="form-label">Selected Amenities</label>
       <div class="am-selected-box" id="amSelectedBox">
         <span class="am-selected-empty" id="amSelectedEmpty">No amenities selected yet</span>
       </div>
     </div>
     <div class="form-group">
-      <label class="form-label">Additional amenities (comma-separated)</label>
+      <label class="form-label">Additional Amenities</label>
       <input class="form-input" type="text" id="f-amenities-extra" autocapitalize="words" onblur="capitalizeWordsInput(this)" oninput="capitalizeWordsInput(this)"/>
     </div>
     </div>
@@ -7122,11 +7092,11 @@ main.tab-explore .empty-state{display:none !important}
     <div id="mediaSection">
     <div class="lm-section" id="mediaSectionHeader">📸 Media &amp; Description</div>
     <div class="form-group" id="videoUrlGroup">
-      <label class="form-label">Video tour URL</label>
+      <label class="form-label">Video Tour URL</label>
       <input class="form-input" type="url" id="f-videoUrl" />
     </div>
     <div class="form-group" id="imgFormGroup">
-      <label class="form-label">Property images (optional)</label>
+      <label class="form-label">Property Images</label>
       <div class="img-row" id="imgAddControls">
         <div class="img-btns">
           <button type="button" class="img-btn-sec" onclick="document.getElementById('f-imgFileInput').click()">📁 Upload</button>
@@ -7140,7 +7110,7 @@ main.tab-explore .empty-state{display:none !important}
       <div class="img-hint" id="fImgOrderHint" style="display:none">Drag to reorder — first photo is the cover image shown on cards.</div>
     </div>
     <div class="form-group">
-      <label class="form-label">Description (optional)</label>
+      <label class="form-label">Description</label>
       <textarea class="form-input" id="f-desc" autocapitalize="sentences" onblur="capitalizeSentencesInput(this)" oninput="capitalizeSentencesInput(this)" rows="3" style="resize:vertical"></textarea>
     </div>
     </div>
@@ -13994,7 +13964,7 @@ function resetListingForm() {
   // Building Live Address is captured, rather than starting blank. The
   // owner can still uncheck it to enter a different address by hand.
   const sameAddrChk = document.getElementById('f-sameAsBuildingAddress');
-  if (sameAddrChk) sameAddrChk.checked = true;
+  if (sameAddrChk) sameAddrChk.value = 'Yes';
   // The "Same as building live address" checkbox above was just unchecked by
   // the loop — make sure Owner address goes back to editable with it.
   applySameAsBuildingAddressState();
@@ -14082,9 +14052,9 @@ const LIVE_ONLY_FIELD_IDS = ['f-fullAddress', 'f-pincode', 'f-latitude', 'f-long
 function clearLiveOnlyFields() {
   LIVE_ONLY_FIELD_IDS.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   const chk = document.getElementById('f-sameAsBuildingAddress');
-  if (chk && chk.checked) { chk.checked = false; const oa = document.getElementById('f-ownerAddress'); if (oa) oa.value = ''; applySameAsBuildingAddressState(); }
+  if (chk && chk.value === 'Yes') { chk.value = 'No'; const oa = document.getElementById('f-ownerAddress'); if (oa) oa.value = ''; applySameAsBuildingAddressState(); }
   const btnTxt = document.getElementById('f-locBtnTxt'); if (btnTxt) btnTxt.textContent = 'Live';
-  const st = document.getElementById('f-locStatus'); if (st) st.textContent = 'Tap Live to fill from your current location, or type the address';
+  const st = document.getElementById('f-locStatus'); if (st) st.textContent = '';
   pincodeManuallyEdited = false;
 }
 let _draftSaveTimer = null;
@@ -14161,15 +14131,17 @@ function applySameAsBuildingAddressState() {
   const chk = document.getElementById('f-sameAsBuildingAddress');
   const ownerAddr = document.getElementById('f-ownerAddress');
   if (!chk || !ownerAddr) return;
-  ownerAddr.readOnly = chk.checked;
-  ownerAddr.classList.toggle('identity-locked', chk.checked);
+  const same = chk.value === 'Yes';
+  ownerAddr.readOnly = same;
+  ownerAddr.classList.toggle('identity-locked', same);
+  ownerAddr.style.display = same ? 'none' : '';   // Yes: address comes from the building live address; No: type a different one
 }
 function toggleSameAsBuildingAddress(checkbox) {
   const ownerAddr = document.getElementById('f-ownerAddress');
   const buildingAddr = document.getElementById('f-fullAddress');
   if (!ownerAddr) return;
-  if (checkbox.checked) {
-    // Checked: pull in the current building live address.
+  if (checkbox.value === 'Yes') {
+    // Yes: pull in the current building live address.
     if (buildingAddr) ownerAddr.value = buildingAddr.value.trim();
   } else {
     // Unchecked: clear it out rather than leaving the copied-in address
@@ -14179,39 +14151,43 @@ function toggleSameAsBuildingAddress(checkbox) {
   }
   applySameAsBuildingAddressState();
 }
+// "Available from" dates: default to today (change it if needed) and don't
+// allow past dates in the picker. New listings (isNew) get today filled in
+// when empty or already in the past; when editing an existing listing only
+// the minimum is applied, so a saved date is never silently overwritten.
+function applyAvailableFromDates(isNew) {
+  const d = new Date();
+  const today = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  ['f-avail', 'f-leaseAvailableFrom', 'f-pgAvailableFrom'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.min = today;
+    if (isNew && (!el.value || el.value < today)) el.value = today;
+  });
+}
 function lockIdentityFieldsForNewListing() {
   const user = getLoggedInUser();
   if (!user) return;
   const fullName = `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.name || '';
 
-  // Owner name and phone are prefilled from the account for convenience
-  // but stay editable — a listing is often posted on someone else's
-  // behalf (a broker, a family member), so neither should be locked to
-  // whoever is logged in. Email remains locked since it's the verified
-  // contact identity tied to the account.
+  // Owner name and email are prefilled from the account for convenience but
+  // stay editable — a listing is often posted on someone else's behalf (a
+  // broker, a family member), so neither should be locked to whoever is
+  // logged in.
   const prefillOnly = [
-    ['f-ownerName', fullName]
+    ['f-ownerName', fullName],
+    ['f-ownerEmail', user.email || '']
   ];
   prefillOnly.forEach(([id, val]) => {
     const el = document.getElementById(id);
-    if (el && !el.value.trim()) el.value = val;
+    if (!el) return;
+    if (!el.value.trim()) el.value = val;
+    el.readOnly = false;
+    el.classList.remove('identity-locked');
   });
   // Owner phone field is hidden: it always carries the logged-in number.
   const phoneEl = document.getElementById('f-ownerPhone');
   if (phoneEl) phoneEl.value = String(user.mobile || '').replace(/\D/g, '').slice(-10);
-
-  const fields = [
-    ['f-ownerEmail', user.email || '']
-  ];
-  fields.forEach(([id, val]) => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.value = val;
-    el.readOnly = true;
-    el.classList.add('identity-locked');
-    const hint = document.getElementById(id + '-hint');
-    if (hint) hint.style.display = '';
-  });
 }
 function unlockIdentityFieldsForEdit() {
   ['f-ownerName', 'f-ownerPhone', 'f-ownerEmail'].forEach(id => {
@@ -14253,6 +14229,7 @@ function openAddModal(presetType) {
   // a restored draft — so the listing's contact identity can't drift from
   // the signed-up account, and lock the fields so it can't be edited away.
   lockIdentityFieldsForNewListing();
+  applyAvailableFromDates(true);
   lockListedByToAccount();
   applySameAsBuildingAddressState();
   document.getElementById('addModal').classList.add('open');
@@ -14321,6 +14298,7 @@ function applyImportedProperty(p) {
   sv('f-ownerCaretakerPhone', owner.caretakerPhone);
   sv('f-contactTime', owner.contactTime);
   sv('f-ownerAddress', owner.address);
+  { const _sa = document.getElementById('f-sameAsBuildingAddress'); if (_sa) { _sa.value = (owner.address && owner.address === location.address) ? 'Yes' : 'No'; applySameAsBuildingAddressState(); } }
   // Agent contact is fixed/non-editable — always show the fixed value
   // rather than whatever happens to be stored on this listing.
   sv('f-agentPhone', '9035205230');
@@ -14484,6 +14462,7 @@ function clearAddModalDraft() {
   // name/phone/email — those should never actually be clearable since
   // they're locked to the signed-up account, so restore them right after.
   lockIdentityFieldsForNewListing();
+  applyAvailableFromDates(true);
   lockListedByToAccount(); // brokers: back to Broker; owners: re-enabled
   clearListingDraft();
   onFTypeChange(document.getElementById('f-type').value);
@@ -16204,6 +16183,7 @@ function openEditListingFull(id) {
   resetListingForm();
   unlockIdentityFieldsForEdit();
   applyImportedProperty(p);
+  applyAvailableFromDates(false);
   onFTypeChange(document.getElementById('f-type').value);
   snapshotListingForm();
 
@@ -16291,6 +16271,7 @@ function openCloneListingFull(id) {
   // logged-in account and re-locked, exactly like starting any other new
   // listing.
   lockIdentityFieldsForNewListing();
+  applyAvailableFromDates(true);
   onFTypeChange(document.getElementById('f-type').value);
 
   // Unlike editing, the type is free to change — this is a brand-new,
@@ -17373,7 +17354,7 @@ function renderAmSelected() {
     });
   }
 
-  ddLabel.textContent = selected.length ? selected.length + ' selected' : 'Choose amenities…';
+  ddLabel.textContent = selected.length ? selected.length + ' selected' : '';
   ddCount.style.display = selected.length ? '' : 'none';
   ddCount.textContent = selected.length;
 }
@@ -17414,7 +17395,7 @@ function renderTenantSelected() {
   const selected = TENANT_LIST.filter(([id]) => document.getElementById(id).checked).map(([, name]) => name);
 
   hidden.value = selected.join(', ');
-  label.textContent = selected.length ? selected.join(', ') : 'Choose tenant preference…';
+  label.textContent = selected.length ? selected.join(', ') : '';
   count.style.display = selected.length ? '' : 'none';
   count.textContent = selected.length;
 }
@@ -17456,7 +17437,7 @@ function renderOverlookingSelected() {
   const selected = OVERLOOKING_LIST.filter(([id]) => document.getElementById(id).checked).map(([, name]) => name);
 
   hidden.value = selected.join(', ');
-  label.textContent = selected.length ? selected.join(', ') : 'Choose what it overlooks…';
+  label.textContent = selected.length ? selected.join(', ') : '';
   count.style.display = selected.length ? '' : 'none';
   count.textContent = selected.length;
 }
@@ -18520,11 +18501,11 @@ function onFTypeChange(val) {
   const maxPersonsGroup = document.getElementById('maxPersonsFormGroup');
   if (maxPersonsGroup) maxPersonsGroup.style.display = isSell ? 'none' : '';
   const lbl = document.getElementById('f-rentLabel');
-  if (lbl) lbl.innerHTML = (val === 'For Rent' || val === 'Rent') ? 'Monthly rent (₹) <span style="color:var(--brand)">*</span>'
-    : isLease ? 'Token rent (₹) <span style="color:var(--brand)">*</span>'
-    : isShortStay ? 'Per day rate (₹) <span style="color:var(--brand)">*</span>'
-    : isSell ? 'Expected price (₹) <span style="color:var(--brand)">*</span>'
-    : 'Monthly charge (₹) <span style="color:var(--brand)">*</span>';
+  if (lbl) lbl.innerHTML = (val === 'For Rent' || val === 'Rent') ? 'Monthly Rent <span style="color:var(--brand)">*</span>'
+    : isLease ? 'Token Rent <span style="color:var(--brand)">*</span>'
+    : isShortStay ? 'Per Day Rate <span style="color:var(--brand)">*</span>'
+    : isSell ? 'Expected Price <span style="color:var(--brand)">*</span>'
+    : 'Monthly Charge <span style="color:var(--brand)">*</span>';
   // Area-type clarifier and the auto price-per-sqft nudge only make sense
   // once there's a sale price and an area to divide it by.
   document.getElementById('f-areaTypeWrap').style.display = isSell ? '' : 'none';
@@ -18572,7 +18553,7 @@ function onSellPropertyTypeChange() {
     if (el) el.style.display = isLand ? 'none' : '';
   });
   const areaLbl = document.getElementById('f-areaLabel');
-  if (areaLbl) areaLbl.textContent = isLand ? 'Plot area (sqft)' : 'Area (sqft)';
+  if (areaLbl) areaLbl.textContent = isLand ? 'Plot Area (Sqft)' : 'Area (Sqft)';
 }
 
 function stripAreaSqft(el) {
@@ -18622,7 +18603,7 @@ function onFullAddressInput(value) {
   // Keep Owner address mirrored while "Same as building live address" is
   // checked, same as the auto-capture path in fCaptureLocation.
   const sameChk = document.getElementById('f-sameAsBuildingAddress');
-  if (sameChk && sameChk.checked) {
+  if (sameChk && sameChk.value === 'Yes') {
     const ownerAddr = document.getElementById('f-ownerAddress');
     if (ownerAddr) ownerAddr.value = value;
   }
@@ -18708,7 +18689,7 @@ function fCaptureLocation() {
         status.textContent = 'Address captured · Enter Location / Area manually';
         // Keep Owner address in sync if "Same as building live address" is checked
         const sameChk = document.getElementById('f-sameAsBuildingAddress');
-        if (sameChk && sameChk.checked) {
+        if (sameChk && sameChk.value === 'Yes') {
           const ownerAddr = document.getElementById('f-ownerAddress');
           if (ownerAddr) ownerAddr.value = d.display_name || '';
         }
@@ -18807,48 +18788,9 @@ function isGoogleMapsShareLink(v) {
 }
 function openCurrentLocLink() {
   const v = (document.getElementById('f-currentLocationLink').value || '').trim();
-  if (!v) { openLocHelp(); return; }
+  if (!v) { document.getElementById('f-currentLocationLink').focus(); showToast('Paste your location link first', 'info'); return; }
   if (!isGoogleMapsShareLink(v)) return;   // http(s) only
   window.open(v, '_blank', 'noopener');     // opens in Google Maps (app on phones) without leaving the form
-}
-function copyCurrentLocLink() {
-  const el = document.getElementById('f-currentLocationLink');
-  const v = (el.value || '').trim();
-  if (!v) { openLocHelp(); return; }
-  const done = () => showToast('Link copied', 'success');
-  const fallback = () => { el.focus(); el.select(); el.setSelectionRange(0, v.length); try { document.execCommand('copy'); done(); } catch (e) {} };
-  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(v).then(done).catch(fallback); else fallback();
-}
-function openLocHelp() {
-  const m = document.getElementById('locHelpModal');
-  const inp = document.getElementById('locHelpInput');
-  document.getElementById('locHelpErr').textContent = '';
-  inp.value = document.getElementById('f-currentLocationLink').value || '';
-  m.classList.add('open');
-}
-function closeLocHelp() {
-  document.getElementById('locHelpModal').classList.remove('open');
-}
-function pasteLocHelp() {
-  const inp = document.getElementById('locHelpInput');
-  if (!navigator.clipboard || !navigator.clipboard.readText) {
-    inp.focus();
-    showToast('Long-press the box and choose Paste', 'info');
-    return;
-  }
-  navigator.clipboard.readText().then(t => { inp.value = (t || '').trim(); })
-    .catch(() => { inp.focus(); showToast('Long-press the box and choose Paste', 'info'); });
-}
-function applyLocHelp() {
-  const v = document.getElementById('locHelpInput').value.trim();
-  const err = document.getElementById('locHelpErr');
-  if (!v) { err.textContent = 'Paste the link you copied from Google Maps.'; return; }
-  if (!isGoogleMapsShareLink(v)) { err.textContent = 'Paste a valid link (starting with https://).'; return; }
-  const f = document.getElementById('f-currentLocationLink');
-  f.value = v;
-  const g = f.closest('.form-group');
-  if (g) { g.classList.remove('has-error'); const m = g.querySelector('.field-error-text'); if (m) m.remove(); }
-  closeLocHelp();
 }
 
 // ── Review & confirm before the final submit ─────────────────────────
@@ -19116,7 +19058,7 @@ function submitListing() {
       altPhone:     gv('f-ownerAltPhone') || null,
       caretakerPhone: gv('f-ownerCaretakerPhone') || '',
       contactTime:  gv('f-contactTime') || null,
-      address:      gv('f-ownerAddress') || null,
+      address:      ((document.getElementById('f-sameAsBuildingAddress') || {}).value === 'Yes' ? gv('f-fullAddress') : gv('f-ownerAddress')) || null,
       agentPhone:   gv('f-agentPhone') || null,
       agentArea:    gv('f-agentArea') || null,
     },

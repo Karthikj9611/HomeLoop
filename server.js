@@ -1196,7 +1196,13 @@ async function getUserOwnershipFilter(userId) {
   if (mongoose.Types.ObjectId.isValid(userId)) {
     const user = await User.findById(userId).select('mobile').lean();
     const mobile = user && user.mobile ? normalizeMobile(user.mobile) : '';
-    if (mobile) or.push({ 'owner.phone': mobile }, { 'owner.altPhone': mobile });
+    if (mobile) {
+      // Match the login number against the owner's main number, alt number and (for brokers)
+      // agent number, tolerating stored formatting such as "+91 98765 43210", "098765-43210" or
+      // "98765 43210" by comparing digits only (optional 91/0 prefix, any separators between digits).
+      const digitRx = new RegExp('^\\D*(?:(?:91|0)\\D*)?' + mobile.split('').join('\\D*') + '\\D*$');
+      or.push({ 'owner.phone': digitRx }, { 'owner.altPhone': digitRx }, { 'owner.agentPhone': digitRx });
+    }
   }
   return { $or: or };
 }
