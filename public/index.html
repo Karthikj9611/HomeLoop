@@ -6584,9 +6584,8 @@ main.tab-explore .empty-state{display:none !important}
         <select class="form-select" id="f-contactTime"><option>Any</option><option>Morning (10am - 1pm)</option><option>Afternoon (1pm - 5pm)</option><option>Evening (6pm - 9pm)</option></select>
       </div>
       <div class="form-group">
-        <label class="form-label">Owner Location Same As Building?</label>
-        <select class="form-select" id="f-sameAsBuildingAddress" onchange="toggleSameAsBuildingAddress(this)" ><option value="Yes">Yes</option><option value="No">No</option></select>
-        <input type="hidden" id="f-ownerAddress" />
+        <label class="form-label">Owner Staying In Same Building?</label>
+        <select class="form-select" id="f-sameAsBuildingAddress"><option value="Yes">Yes</option><option value="No">No</option></select>
       </div>
       <!-- Agent-only fields — shown when Listed by = Agent -->
       <div id="f-agentFields" style="grid-column:span 3">
@@ -13958,16 +13957,9 @@ function resetListingForm() {
   if (waterReset) waterReset.disabled = false;
   // Uncheck all checkboxes (amenities + misc toggles)
   document.querySelectorAll('#addModal input[type="checkbox"]').forEach(el => { el.checked = false; });
-  // For a brand-new listing, default "Same as building live address" back
-  // to checked — most owners live at the property they're listing, so
-  // Owner address should auto-fill (and stay locked/readonly) once the
-  // Building Live Address is captured, rather than starting blank. The
-  // owner can still uncheck it to enter a different address by hand.
+  // Brand-new listing: "Owner staying in same building?" defaults to Yes.
   const sameAddrChk = document.getElementById('f-sameAsBuildingAddress');
   if (sameAddrChk) sameAddrChk.value = 'Yes';
-  // The "Same as building live address" checkbox above was just unchecked by
-  // the loop — make sure Owner address goes back to editable with it.
-  applySameAsBuildingAddressState();
   // Clear amenity unit qty fields and re-render
   amClearAll();
   // Reset tenant preference dropdown label/hidden value (checkboxes were
@@ -14051,8 +14043,6 @@ const LISTING_DRAFT_KEY = 'homeloop_listing_draft_v1';
 const LIVE_ONLY_FIELD_IDS = ['f-fullAddress', 'f-pincode', 'f-latitude', 'f-longitude', 'f-latLngDisplay', 'f-googleMapsLink'];
 function clearLiveOnlyFields() {
   LIVE_ONLY_FIELD_IDS.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
-  const chk = document.getElementById('f-sameAsBuildingAddress');
-  if (chk && chk.value === 'Yes') { chk.value = 'No'; const oa = document.getElementById('f-ownerAddress'); if (oa) oa.value = ''; applySameAsBuildingAddressState(); }
   const btnTxt = document.getElementById('f-locBtnTxt'); if (btnTxt) btnTxt.textContent = 'Live';
   const st = document.getElementById('f-locStatus'); if (st) st.textContent = '';
   pincodeManuallyEdited = false;
@@ -14123,34 +14113,6 @@ function selectFabType(type) {
 // was signed up with. Only used for a brand-new listing (openAddModal);
 // editing an existing listing (openEditListingFull) leaves these editable
 // since a listing's saved contact can differ from the editor's own account.
-// "Same as building live address" checkbox next to Owner address — when
-// checked, copies the auto-captured Building Live Address in and locks the
-// field (readonly) so it can't quietly drift out of sync; unchecking frees
-// it back up for a different owner address.
-function applySameAsBuildingAddressState() {
-  const chk = document.getElementById('f-sameAsBuildingAddress');
-  const ownerAddr = document.getElementById('f-ownerAddress');
-  if (!chk || !ownerAddr) return;
-  const same = chk.value === 'Yes';
-  ownerAddr.readOnly = same;
-  ownerAddr.classList.toggle('identity-locked', same);
-  ownerAddr.style.display = same ? 'none' : '';   // Yes: address comes from the building live address; No: type a different one
-}
-function toggleSameAsBuildingAddress(checkbox) {
-  const ownerAddr = document.getElementById('f-ownerAddress');
-  const buildingAddr = document.getElementById('f-fullAddress');
-  if (!ownerAddr) return;
-  if (checkbox.value === 'Yes') {
-    // Yes: pull in the current building live address.
-    if (buildingAddr) ownerAddr.value = buildingAddr.value.trim();
-  } else {
-    // Unchecked: clear it out rather than leaving the copied-in address
-    // sitting there editable — it's no longer "the same as", so it
-    // shouldn't look like it still is.
-    ownerAddr.value = '';
-  }
-  applySameAsBuildingAddressState();
-}
 // "Available from" dates: default to today (change it if needed) and don't
 // allow past dates in the picker. New listings (isNew) get today filled in
 // when empty or already in the past; when editing an existing listing only
@@ -14231,7 +14193,6 @@ function openAddModal(presetType) {
   lockIdentityFieldsForNewListing();
   applyAvailableFromDates(true);
   lockListedByToAccount();
-  applySameAsBuildingAddressState();
   document.getElementById('addModal').classList.add('open');
   lockBodyScroll();
   onFTypeChange(document.getElementById('f-type').value);
@@ -14297,8 +14258,8 @@ function applyImportedProperty(p) {
   sv('f-ownerAltPhone', owner.altPhone);
   sv('f-ownerCaretakerPhone', owner.caretakerPhone);
   sv('f-contactTime', owner.contactTime);
-  sv('f-ownerAddress', owner.address);
-  { const _sa = document.getElementById('f-sameAsBuildingAddress'); if (_sa) { _sa.value = (owner.address && owner.address === location.address) ? 'Yes' : 'No'; applySameAsBuildingAddressState(); } }
+  // Older listings stored an address instead of the Yes/No flag — same address as the building means Yes.
+  { const _sa = document.getElementById('f-sameAsBuildingAddress'); if (_sa) _sa.value = owner.sameAsBuilding || ((owner.address && owner.address === location.address) ? 'Yes' : 'No'); }
   // Agent contact is fixed/non-editable — always show the fixed value
   // rather than whatever happens to be stored on this listing.
   sv('f-agentPhone', '9035205230');
@@ -18600,13 +18561,6 @@ function onFullAddressInput(value) {
     const guess = extractPincodeFromAddress(value);
     if (guess) document.getElementById('f-pincode').value = guess;
   }
-  // Keep Owner address mirrored while "Same as building live address" is
-  // checked, same as the auto-capture path in fCaptureLocation.
-  const sameChk = document.getElementById('f-sameAsBuildingAddress');
-  if (sameChk && sameChk.value === 'Yes') {
-    const ownerAddr = document.getElementById('f-ownerAddress');
-    if (ownerAddr) ownerAddr.value = value;
-  }
   // Re-resolve lat/lng (and the Google Maps link) from the address text
   // itself whenever the person hand-edits it — debounced so we're not
   // firing a geocode call on every keystroke.
@@ -18687,12 +18641,6 @@ function fCaptureLocation() {
         pincodeManuallyEdited = false; // fresh capture — a prior manual edit no longer applies
         document.getElementById('f-pincode').value = (d.address && d.address.postcode) || extractPincodeFromAddress(d.display_name);
         status.textContent = 'Address captured · Enter Location / Area manually';
-        // Keep Owner address in sync if "Same as building live address" is checked
-        const sameChk = document.getElementById('f-sameAsBuildingAddress');
-        if (sameChk && sameChk.value === 'Yes') {
-          const ownerAddr = document.getElementById('f-ownerAddress');
-          if (ownerAddr) ownerAddr.value = d.display_name || '';
-        }
       }).catch(() => { status.textContent = 'Coordinates saved.'; });
   }, function() { btnTxt.textContent = 'Live'; status.textContent = 'Permission denied.'; });
 }
@@ -19058,7 +19006,7 @@ function submitListing() {
       altPhone:     gv('f-ownerAltPhone') || null,
       caretakerPhone: gv('f-ownerCaretakerPhone') || '',
       contactTime:  gv('f-contactTime') || null,
-      address:      ((document.getElementById('f-sameAsBuildingAddress') || {}).value === 'Yes' ? gv('f-fullAddress') : gv('f-ownerAddress')) || null,
+      sameAsBuilding: gv('f-sameAsBuildingAddress') || 'Yes',
       agentPhone:   gv('f-agentPhone') || null,
       agentArea:    gv('f-agentArea') || null,
     },

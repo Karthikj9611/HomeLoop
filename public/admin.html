@@ -4886,7 +4886,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
 <span class="wa-k" style="color:var(--brand);font-weight:700">Caretaker number:</span> <span class="wa-v" style="color:#1f6fb2">9900112233</span>
 <span class="wa-k" style="color:var(--brand);font-weight:700">Email:</span> <span class="wa-v" style="color:#1f6fb2">ramesh.kumar@gmail.com</span>
 <span class="wa-k" style="color:var(--brand);font-weight:700">Preferred contact time:</span> <span class="wa-v" style="color:#1f6fb2">Evening</span><span class="wa-o" style="color:#8a8a8a"> [Any | Morning | Afternoon | Evening]</span>
-<span class="wa-k" style="color:var(--brand);font-weight:700">Owner address:</span> <span class="wa-v" style="color:#1f6fb2">12, 5th Cross, Jayanagar 4th Block, Bangalore 560011</span>
+<span class="wa-k" style="color:var(--brand);font-weight:700">Owner staying in same building:</span> <span class="wa-v" style="color:#1f6fb2">Yes</span><span class="wa-o" style="color:#8a8a8a"> [Yes | No]</span>
 <span class="wa-k" style="color:var(--brand);font-weight:700">Monthly rent:</span> <span class="wa-v" style="color:#1f6fb2">28000</span>
 <span class="wa-k" style="color:var(--brand);font-weight:700">Security deposit:</span> <span class="wa-v" style="color:#1f6fb2">150000</span>
 <span class="wa-k" style="color:var(--brand);font-weight:700">Maintenance:</span> <span class="wa-v" style="color:#1f6fb2">2500</span>
@@ -4964,14 +4964,14 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
       <div class="form-group" id="fullAddressGroup" style="grid-column:span 2">
         <label class="form-label">Building Live Address</label>
         <div style="display:flex;gap:7px;align-items:stretch">
-          <textarea class="form-input" id="f-fullAddress" autocapitalize="words" rows="1" readonly style="flex:1;min-width:0;resize:none;overflow:hidden;background:var(--bg-2,#f5f5f5)" oninput="capitalizeWordsInput(this); onFullAddressInput(this.value)" onblur="capitalizeWordsInput(this)"></textarea>
+          <textarea class="form-input" id="f-fullAddress" autocapitalize="words" rows="1" style="flex:1;min-width:0;resize:none;overflow:hidden" oninput="capitalizeWordsInput(this); onFullAddressInput(this.value)" onfocus="this.dataset.focusVal=this.value" onblur="capitalizeWordsInput(this); if(this.dataset.focusVal!==this.value) onFullAddressBlur(this.value)"></textarea>
           <button type="button" onclick="fCaptureLocation()"
             style="flex-shrink:0;padding:9px 12px;border-radius:9px;border:1.5px solid var(--text);background:var(--bg);color:var(--text);font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;white-space:nowrap;height:40px;margin-top:1px">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M1 12h4M19 12h4"/></svg>
             <span id="f-locBtnTxt">Live</span>
           </button>
         </div>
-        <div id="f-locStatus" style="font-size:11px;color:var(--text-2);min-height:14px;margin-top:2px">Address can only be captured with the Live button</div>
+        <div id="f-locStatus" style="font-size:11px;color:var(--text-2);min-height:14px;margin-top:2px"></div>
       </div>
       <div class="form-group" id="pincodeGroup">
         <label class="form-label">Pincode</label>
@@ -5039,13 +5039,9 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
         <label class="form-label">Preferred contact time</label>
         <select class="form-select" id="f-contactTime"><option>Any</option><option>Morning (10am - 1pm)</option><option>Afternoon (1pm - 5pm)</option><option>Evening (6pm - 9pm)</option></select>
       </div>
-      <div class="form-group" style="grid-column:span 3">
-        <label class="form-label">Owner address (optional)</label>
-        <div style="display:flex;align-items:center;gap:5px;font-weight:400;font-size:12px;color:var(--text-2);margin:2px 0 6px">
-          <input type="checkbox" id="f-sameAsBuildingAddress" onchange="toggleSameAsBuildingAddress(this)" style="width:auto;margin:0" />
-          <label for="f-sameAsBuildingAddress" style="font-weight:400;cursor:pointer">Same as building live address</label>
-        </div>
-        <textarea class="form-input" id="f-ownerAddress" autocapitalize="words" onblur="capitalizeWordsInput(this)" oninput="capitalizeWordsInput(this)" rows="2" style="resize:vertical"></textarea>
+      <div class="form-group">
+        <label class="form-label">Owner staying in same building?</label>
+        <select class="form-select" id="f-sameAsBuildingAddress"><option value="Yes">Yes</option><option value="No">No</option></select>
       </div>
       <!-- Agent-only fields — shown when Listed by = Agent.
            Unlike index.html (where these are fixed to the platform's own
@@ -5621,8 +5617,8 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
 let dataTable, propTable, apptTable, honestReviewsTable, userReviewsTable, partnersTable, brokersTable, referralsTable;
 
 
-const BASE = 'https://www.homeloop.in';
-//const BASE = 'http://localhost:5000';
+//const BASE = 'https://www.homeloop.in';
+const BASE = 'http://localhost:5000';
 
 
 /* ── ADMIN KEY – set after login ──
@@ -16158,7 +16154,6 @@ function applyListingFormState(state) {
   if (typeEl) onFTypeChange(typeEl.value);
   if (typeof renderAmSelected === 'function') renderAmSelected();
   if (typeof renderTenantSelected === 'function') renderTenantSelected();
-  if (typeof applySameAsBuildingAddressState === 'function') applySameAsBuildingAddressState();
 }
 function saveListingDraftNow() {
   if (editingPropertyId || _cloningListing) return; // edit-mode / clones aren't covered — see comment above
@@ -16256,16 +16251,30 @@ function resetListingForm() {
   if (leaseDurLease) leaseDurLease.value = '2 Years';
   const cityField = document.getElementById('f-city');
   if (cityField) cityField.value = 'Bangalore';
+  const agentPhoneField = document.getElementById('f-agentPhone');
+  const agentAreaField = document.getElementById('f-agentArea');
+  if (agentPhoneField) agentPhoneField.value = '9035205230';
+  if (agentAreaField) agentAreaField.value = 'Prashanth B, Singasandra';
+  const petsRent = document.getElementById('f-petsAllowed');
+  const nonVegRent = document.getElementById('f-nonVegAllowed');
+  const petsLease = document.getElementById('f-leasePets');
+  const nonVegLease = document.getElementById('f-leaseNonVeg');
+  if (petsRent) petsRent.value = 'No';
+  if (nonVegRent) nonVegRent.value = 'Yes';
+  if (petsLease) petsLease.value = 'No';
+  if (nonVegLease) nonVegLease.value = 'Yes';
   const elecReset = document.getElementById('f-electricityIncluded');
   const waterReset = document.getElementById('f-waterCharge');
   if (elecReset) elecReset.disabled = false;
   if (waterReset) waterReset.disabled = false;
   document.querySelectorAll('#addModal input[type="checkbox"]').forEach(el => { el.checked = false; });
+  // New listing: "Owner staying in same building?" defaults to Yes, as on index.html.
+  const sameAddrChk = document.getElementById('f-sameAsBuildingAddress');
+  if (sameAddrChk) sameAddrChk.value = 'Yes';
   amClearAll();
   if (typeof renderTenantSelected === 'function') renderTenantSelected();
   if (typeof renderOverlookingSelected === 'function') renderOverlookingSelected();
   if (typeof updateSellPricePerSqft === 'function') updateSellPricePerSqft();
-  if (typeof applySameAsBuildingAddressState === 'function') applySameAsBuildingAddressState();
   pincodeManuallyEdited = false;
   const importBody = document.getElementById('importPanelBody');
   const importTxt = document.getElementById('importPanelToggleTxt');
@@ -16608,7 +16617,8 @@ function applyImportedProperty(p) {
   sv('f-ownerAltPhone', owner.altPhone);
   sv('f-ownerCaretakerPhone', owner.caretakerPhone);
   sv('f-contactTime', owner.contactTime);
-  sv('f-ownerAddress', owner.address);
+  // Older listings stored an address instead of the Yes/No flag — same address as the building means Yes.
+  { const _sa = document.getElementById('f-sameAsBuildingAddress'); if (_sa) _sa.value = owner.sameAsBuilding || ((owner.address && owner.address === (location || {}).address) ? 'Yes' : 'No'); }
   sv('f-agentPhone', owner.agentPhone);
   sv('f-agentArea', owner.agentArea);
 
@@ -16770,7 +16780,7 @@ var WA_KEY_MAP = {
   alternatenumber: 'f-ownerAltPhone', alternativenumber: 'f-ownerAltPhone', altnumber: 'f-ownerAltPhone', ownernumber: 'f-ownerAltPhone',
   caretakernumber: 'f-ownerCaretakerPhone', caretakerphone: 'f-ownerCaretakerPhone',
   email: 'f-ownerEmail', emailid: 'f-ownerEmail', preferredcontacttime: 'f-contactTime', contacttime: 'f-contactTime',
-  owneraddress: 'f-ownerAddress',
+  ownerstayinginsamebuilding: 'f-sameAsBuildingAddress', ownerstaysinsamebuilding: 'f-sameAsBuildingAddress', ownerinsamebuilding: 'f-sameAsBuildingAddress', sameasbuilding: 'f-sameAsBuildingAddress',
   monthlyrent: 'f-rent', rent: 'f-rent', securitydeposit: 'f-deposit', deposit: 'f-deposit',
   maintenance: 'f-maintenance', escalation: 'f-escalation', electricity: 'f-electricityIncluded', water: 'f-waterCharge',
   pricenegotiable: 'f-negotiable', negotiable: 'f-negotiable',
@@ -16786,7 +16796,7 @@ var WA_KEY_MAP = {
 var WA_LABELS = {
   'f-listedBy': 'Listed by', 'f-title': 'Property name', 'f-location': 'Area', 'f-city': 'City', 'f-fullAddress': 'Full address', 'f-pincode': 'Pincode',
   'f-currentLocationLink': 'Location link', 'f-ownerName': 'Owner name', 'f-ownerPhone': 'Phone', 'f-ownerAltPhone': 'Alternate number',
-  'f-ownerCaretakerPhone': 'Caretaker number', 'f-ownerEmail': 'Email', 'f-contactTime': 'Contact time', 'f-ownerAddress': 'Owner address',
+  'f-ownerCaretakerPhone': 'Caretaker number', 'f-ownerEmail': 'Email', 'f-contactTime': 'Contact time', 'f-sameAsBuildingAddress': 'Owner in same building',
   'f-rent': 'Monthly rent', 'f-deposit': 'Security deposit', 'f-maintenance': 'Maintenance', 'f-escalation': 'Escalation',
   'f-electricityIncluded': 'Electricity', 'f-waterCharge': 'Water', 'f-negotiable': 'Negotiable', 'f-propertyType': 'Property type',
   'f-bhk': 'BHK', 'f-floor': 'Floor', 'f-flatNo': 'Flat no', 'f-area': 'Area sqft', 'f-baths': 'Bathrooms', 'f-toiletType': 'Toilet type',
@@ -16806,7 +16816,7 @@ function waParseMessage(text) {
       if (k) { lastKey = k; var rv = m[2].replace(/[*_~]/g, '').trim(); if (k !== 'f-desc') rv = rv.replace(/\s*\[[^\]]*\]\s*$/, ''); out[k] = (out[k] ? out[k] + ' ' : '') + rv; return; }
     }
     // continuation line (e.g. multi-line description / amenities)
-    if (lastKey && (lastKey === 'f-desc' || lastKey === 'amenities' || lastKey === 'f-ownerAddress') && line.trim()) {
+    if (lastKey && (lastKey === 'f-desc' || lastKey === 'amenities') && line.trim()) {
       out[lastKey] += (lastKey === 'amenities' ? ', ' : ' ') + line.replace(/^[\s\-•*]+/, '').replace(/[*_~]/g, '').trim();
     }
   });
@@ -17180,20 +17190,8 @@ function formatFloorOrdinal(el) {
   el.value = n + suffix;
 }
 function onMaintenanceChange() {
-  const maint = parseFloat(document.getElementById('f-maintenance').value) || 0;
-  const elec = document.getElementById('f-electricityIncluded');
-  const water = document.getElementById('f-waterCharge');
-  if (_cloningListing) {   // cloned listing: keep the copied values and leave both fields editable
-    elec.disabled = false; water.disabled = false;
-    return;
-  }
-  if (maint > 0) {
-    elec.value = 'Included'; elec.disabled = true;
-    water.value = 'Included'; water.disabled = true;
-  } else {
-    elec.disabled = false;
-    water.disabled = false;
-  }
+  // Electricity and water charges are independent of maintenance — the
+  // user picks these themselves regardless of what's entered here.
 }
 // Pulls a 6-digit Indian pincode out of a free-text address string, e.g.
 // "...Koramangala, Bengaluru, Karnataka 560034, India" -> "560034".
@@ -17224,9 +17222,50 @@ function capitalizeSentencesInput(el) {
   try { el.setSelectionRange(s, e); } catch (_) {}
 }
 function onFullAddressInput(value) {
-  if (pincodeManuallyEdited) return;
-  const guess = extractPincodeFromAddress(value);
-  if (guess) document.getElementById('f-pincode').value = guess;
+  if (!pincodeManuallyEdited) {
+    const guess = extractPincodeFromAddress(value);
+    if (guess) document.getElementById('f-pincode').value = guess;
+  }
+  // Re-resolve lat/lng (and the Google Maps link) from the address text itself
+  // whenever it's hand-edited — debounced so we don't geocode on every keystroke.
+  clearTimeout(addressGeocodeTimer);
+  addressGeocodeTimer = setTimeout(() => geocodeAddressText(value), 900);
+}
+
+// Matches only a link this form generated itself from raw coordinates — avoids
+// clobbering a link that was deliberately pasted/customised.
+const AUTO_MAPS_LINK_RE = /^https:\/\/www\.google\.com\/maps\?q=-?\d+(\.\d+)?,-?\d+(\.\d+)?$/;
+
+// Fires when leaving the address field — skips the debounce so the edit lands immediately.
+function onFullAddressBlur(value) {
+  clearTimeout(addressGeocodeTimer);
+  geocodeAddressText(value);
+}
+
+let addressGeocodeTimer = null;
+function geocodeAddressText(value) {
+  const trimmed = String(value || '').trim();
+  const status = document.getElementById('f-locStatus');
+  if (trimmed.length < 8) return; // too short/likely mid-typing to bother geocoding
+  if (status) status.textContent = 'Updating coordinates from address...';
+  fetch('https://nominatim.openstreetmap.org/search?q=' + encodeURIComponent(trimmed) + '&format=json&limit=1&accept-language=en')
+    .then(r => r.json())
+    .then(results => {
+      if (!results || !results.length) {
+        if (status) status.textContent = 'Could not match address to a location.';
+        return;
+      }
+      const lat = parseFloat(results[0].lat), lon = parseFloat(results[0].lon);
+      document.getElementById('f-latitude').value = lat;
+      document.getElementById('f-longitude').value = lon;
+      document.getElementById('f-latLngDisplay').value = lat.toFixed(6) + '° N, ' + lon.toFixed(6) + '° E';
+      const mapsLinkEl = document.getElementById('f-googleMapsLink');
+      if (mapsLinkEl && (!mapsLinkEl.value || AUTO_MAPS_LINK_RE.test(mapsLinkEl.value))) {
+        mapsLinkEl.value = 'https://www.google.com/maps?q=' + lat + ',' + lon;
+      }
+      if (status) status.textContent = 'Coordinates updated from edited address.';
+    })
+    .catch(() => { if (status) status.textContent = 'Coordinate lookup failed.'; });
 }
 
 function onPincodeInput(el) {
@@ -17271,29 +17310,8 @@ function fCaptureLocation() {
         pincodeManuallyEdited = false; // fresh capture — a prior manual edit no longer applies
         document.getElementById('f-pincode').value = (d.address && d.address.postcode) || extractPincodeFromAddress(d.display_name);
         status.textContent = 'Address captured · Enter Location / Area manually';
-        const sameChk = document.getElementById('f-sameAsBuildingAddress');
-        if (sameChk && sameChk.checked) {
-          const ownerAddr = document.getElementById('f-ownerAddress');
-          if (ownerAddr) ownerAddr.value = d.display_name || '';
-        }
       }).catch(() => { status.textContent = 'Coordinates saved.'; });
   }, function() { btnTxt.textContent = 'Live'; status.textContent = 'Permission denied.'; });
-}
-
-/* ── "Same as building live address" (Owner address) ── */
-function applySameAsBuildingAddressState() {
-  const chk = document.getElementById('f-sameAsBuildingAddress');
-  const ownerAddr = document.getElementById('f-ownerAddress');
-  if (!chk || !ownerAddr) return;
-  ownerAddr.readOnly = chk.checked;
-  ownerAddr.classList.toggle('identity-locked', chk.checked);
-}
-function toggleSameAsBuildingAddress(checkbox) {
-  const ownerAddr = document.getElementById('f-ownerAddress');
-  const buildingAddr = document.getElementById('f-fullAddress');
-  if (!ownerAddr) return;
-  if (checkbox.checked && buildingAddr) ownerAddr.value = buildingAddr.value.trim();
-  applySameAsBuildingAddressState();
 }
 
 /* ── Tenant preference multi-select dropdown (mirrors amenities pattern) ── */
@@ -18055,11 +18073,6 @@ function validateListingForm() {
       if (!firstErrorEl) firstErrorEl = titleEl;
     }
   }
-  const liveAddr = document.getElementById('f-fullAddress');
-  if (liveAddr && !editingPropertyId && isFieldVisible(liveAddr) && !liveAddr.value.trim()) {
-    setGroupError(liveAddr.closest('.form-group'), 'Tap Live to capture the building address');
-    if (!firstErrorEl) firstErrorEl = liveAddr;
-  }
   const curLoc = document.getElementById('f-currentLocationLink');
   if (curLoc && isFieldVisible(curLoc) && curLoc.value.trim() && !isGoogleMapsShareLink(curLoc.value)) {
     setGroupError(curLoc.closest('.form-group'), 'Enter a valid link (starting with https://)');
@@ -18069,6 +18082,12 @@ function validateListingForm() {
   if (imgGroup && isFieldVisible(imgGroup) && (!Array.isArray(fImages) || fImages.length === 0)) {
     setGroupError(imgGroup, 'Please add at least one property image');
     if (!firstErrorEl) firstErrorEl = imgGroup;
+  }
+  // Tenant preference — at least one option must be selected
+  const tenantGroup = document.getElementById('tenantFormGroup');
+  if (tenantGroup && isFieldVisible(tenantGroup) && !document.getElementById('f-tenant').value.trim()) {
+    setGroupError(tenantGroup, 'Tenant preference is required');
+    if (!firstErrorEl) firstErrorEl = tenantGroup;
   }
   return firstErrorEl;
 }
@@ -18244,7 +18263,7 @@ async function adminSubmitListing() {
       altPhone:     gv('f-ownerAltPhone') || null,
       caretakerPhone: gv('f-ownerCaretakerPhone') || '',
       contactTime:  gv('f-contactTime') || null,
-      address:      gv('f-ownerAddress') || null,
+      sameAsBuilding: gv('f-sameAsBuildingAddress') || 'Yes',
       agentPhone:   gv('f-agentPhone') || null,
       agentArea:    gv('f-agentArea') || null,
     },

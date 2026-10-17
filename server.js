@@ -917,7 +917,8 @@ const OwnerSchema = new mongoose.Schema({
   altPhone:     { type: String, default: '' },
   caretakerPhone: { type: String, default: '' }, // optional caretaker number (admin form) — private, never sent to the public site
   contactTime:  { type: String, default: '' },
-  address:      { type: String, default: '' },
+  address:      { type: String, default: '' }, // legacy — older listings stored the owner's address; new ones only store sameAsBuilding
+  sameAsBuilding: { type: String, default: null }, // 'Yes' | 'No' — owner staying in the same building as the listing (no address captured)
   agentPhone:   { type: String, default: '' },
   agentArea:    { type: String, default: '' },
 }, { _id: false });
@@ -1462,6 +1463,10 @@ function validatePropertyFields(fields) {
       !/^[^\s@"'<>\\]+@[^\s@"'<>\\]+\.[^\s@"'<>\\]+$/.test(String(email).trim()))
     return `Invalid email address in field 'owner.email'.`;
 
+  const sameAsBuilding = (fields.owner || {}).sameAsBuilding;
+  if (sameAsBuilding !== undefined && sameAsBuilding !== null && sameAsBuilding !== '' && !['Yes', 'No'].includes(sameAsBuilding))
+    return `Field 'owner.sameAsBuilding' must be Yes or No.`;
+
   const caretaker = (fields.owner || {}).caretakerPhone;
   if (caretaker && String(caretaker).trim() && !/^[6-9]\d{9}$/.test(String(caretaker).trim()))
     return `Field 'owner.caretakerPhone' must be a valid 10-digit mobile number.`;
@@ -1516,7 +1521,7 @@ const BASE_REQUIRED_FIELDS = [
   ['owner.phone',       'Owner phone number'],
   ['owner.email',       'Owner email'],
   ['owner.contactTime', 'Preferred contact time'],
-  ['owner.address',     'Owner address'],
+  ['owner.sameAsBuilding', 'Owner staying in same building'],
 ];  // NOTE: media.desc (Description) is intentionally NOT required
 
 // Extra fields required only for the listing types whose form section
@@ -1839,7 +1844,7 @@ app.get('/api/properties', attachUserIfPresent, async (req, res) => {
       // owner.propertyName excluded too (client-side search no longer matches on
       // it — search now matches area/BHK only). owner.agentPhone is kept for
       // Call/WhatsApp.
-      '-owner.name -owner.propertyName -owner.email -owner.contactTime -owner.address -owner.agentArea -owner.caretakerPhone ' +
+      '-owner.name -owner.propertyName -owner.email -owner.contactTime -owner.address -owner.sameAsBuilding -owner.agentArea -owner.caretakerPhone ' +
       // Location detail that's likewise only used to fill the always-hidden
       // full-address/lat-lng/Google-Maps-link form groups.
       // NOTE: location.address is intentionally *not* excluded at the query
