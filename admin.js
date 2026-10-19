@@ -553,6 +553,14 @@ module.exports = function registerAdminRoutes(app, deps) {
     next();
   }
 
+  // Every "reset" (visit/user/property-view counters, per-customer views) is for the super admin only.
+  function requireSuperAdminReset(req, res, next) {
+    if (!req.isSuperAdmin) {
+      return res.status(403).json({ message: 'Only the super admin can reset counts.' });
+    }
+    next();
+  }
+
   // ── GET /api/admin/sub-admins — list every ADMIN_EMAIL_2/_3/... account
   // and its current feature access, for the "Admin Access" tab. ──
   app.get('/api/admin/sub-admins', requireAdmin, requireSuperAdmin, async (req, res) => {
@@ -1499,7 +1507,7 @@ self.addEventListener('notificationclick', event => {
   //      listings are deleted, so visitors can register fresh views afterwards.
   // Only rows belonging to this user / their listings are touched; DailyStat
   // (historical per-day totals) is left alone. Safe to call on an account with no views.
-  app.delete('/api/users/:id/views', requireAdmin, requireModuleAction('customers'), requireButton('customers', 'resetviews'), async (req, res) => {
+  app.delete('/api/users/:id/views', requireAdmin, requireSuperAdminReset, requireModuleAction('customers'), requireButton('customers', 'resetviews'), async (req, res) => {
     try {
       const { id } = req.params;
       if (!mongoose.Types.ObjectId.isValid(id)) return res.status(400).json({ message: 'Invalid user id' });
@@ -2536,7 +2544,7 @@ self.addEventListener('notificationclick', event => {
   // These are shared collections (every listing's rows live in them), so only
   // this property's own rows are deleted — the collections themselves aren't
   // dropped here (see reset-all below for that).
-  app.patch('/api/properties/:id/views/reset', requireAdmin, requireModuleAction('properties'), async (req, res) => {
+  app.patch('/api/properties/:id/views/reset', requireAdmin, requireSuperAdminReset, requireModuleAction('properties'), async (req, res) => {
     try {
       const prop = await updateListingById(req.params.id, { views: 0 }, { new: true });
       if (!prop) return res.status(404).json({ message: 'Property not found' });
@@ -2556,7 +2564,7 @@ self.addEventListener('notificationclick', event => {
   // dedup collections are emptied (every row deleted, indexes kept intact —
   // see emptyCollection above) so every visitor's/user's view history across
   // every listing is wiped clean.
-  app.post('/api/properties/views/reset-all', requireAdmin, requireModuleAction('properties'), async (req, res) => {
+  app.post('/api/properties/views/reset-all', requireAdmin, requireSuperAdminReset, requireModuleAction('properties'), async (req, res) => {
     try {
       const results = await Promise.all(LISTING_MODEL_LIST.map(M => M.updateMany({}, { $set: { views: 0 } })));
       const modifiedCount = results.reduce((sum, r) => sum + (r.modifiedCount || 0), 0);
@@ -3472,7 +3480,7 @@ self.addEventListener('notificationclick', event => {
   // emptyCollection above), so a device/browser that was already counted
   // before the reset can be counted again afterwards instead of staying
   // invisible to a counter that now reads 0.
-  app.post('/api/admin/total-visits/reset', requireAdmin, requireAnyModuleAction('stats', 'visits'), async (req, res) => {
+  app.post('/api/admin/total-visits/reset', requireAdmin, requireSuperAdminReset, requireAnyModuleAction('stats', 'visits'), async (req, res) => {
     try {
       await SiteStat.deleteOne({ key: 'totalVisits' });
       await emptyCollection(Visitor);
@@ -3658,7 +3666,7 @@ self.addEventListener('notificationclick', event => {
   });
 
   // PATCH /api/admin/daily-stats/:type/:date/clear — reset one day's count to 0, keep the row.
-  app.patch('/api/admin/daily-stats/:type/:date/clear', requireAdmin, requireDailyStatModuleAction, async (req, res) => {
+  app.patch('/api/admin/daily-stats/:type/:date/clear', requireAdmin, requireSuperAdminReset, requireDailyStatModuleAction, async (req, res) => {
     try {
       if (!checkDailyStatType(req, res)) return;
       const date = req.params.date === 'today' ? todayStr() : req.params.date;
@@ -3675,7 +3683,7 @@ self.addEventListener('notificationclick', event => {
   });
 
   // DELETE /api/admin/daily-stats/:type/:date — remove that day's row entirely.
-  app.delete('/api/admin/daily-stats/:type/:date', requireAdmin, requireDailyStatModuleAction, async (req, res) => {
+  app.delete('/api/admin/daily-stats/:type/:date', requireAdmin, requireSuperAdminReset, requireDailyStatModuleAction, async (req, res) => {
     try {
       if (!checkDailyStatType(req, res)) return;
       await DailyStat.deleteOne({ type: req.params.type, date: req.params.date });
@@ -3697,7 +3705,7 @@ self.addEventListener('notificationclick', event => {
   //   - 'registration'   → has no dedup collection, and its rows are kept (at
   //                        count 0) rather than deleted, since this endpoint
   //                        is only meant to wipe visit/view tracking data.
-  app.post('/api/admin/daily-stats/:type/clear-all', requireAdmin, requireDailyStatModuleAction, async (req, res) => {
+  app.post('/api/admin/daily-stats/:type/clear-all', requireAdmin, requireSuperAdminReset, requireDailyStatModuleAction, async (req, res) => {
     try {
       if (!checkDailyStatType(req, res)) return;
       const { type } = req.params;

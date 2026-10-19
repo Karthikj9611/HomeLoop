@@ -6762,6 +6762,7 @@ async function loadAdminMe(){
 
 function applyAdminAccessUI(){
   applyButtonAccess();
+  if(typeof window.applyVisitsResetAccess === 'function') window.applyVisitsResetAccess();
   if(typeof applySuperAdminPdf === 'function') applySuperAdminPdf();
   const isSuper = !!CURRENT_ADMIN.isSuperAdmin;
   const modules = CURRENT_ADMIN.modules || {};
@@ -8492,7 +8493,13 @@ window.toggleBlockUser = async function(id, blocked){
    Clears this tenant's/owner's view history: listings they've opened AND views
    received on their own listings (view counters + dedup/"viewed by" rows in the DB). */
 /* The customer-row "Reset views" button is disabled (greyed out, not clickable) by default. Set to false to enable it again. */
-window.DISABLE_RESET_VIEWS_BTN = true;
+/* Every reset button/action is enabled for the SUPER ADMIN only (sub-admins see them greyed out, and the server
+   rejects them too). The DISABLE_* flags below are live getters so every existing check keeps working. */
+/* Fails closed: CURRENT_ADMIN.email is only filled in once /api/admin/me has confirmed who is logged in, so until then
+   (or if that call fails) resets stay disabled. */
+window.canReset = function(){ return typeof CURRENT_ADMIN !== 'undefined' && !!CURRENT_ADMIN.email && !!CURRENT_ADMIN.isSuperAdmin; };
+var canReset = window.canReset;
+Object.defineProperty(window, 'DISABLE_RESET_VIEWS_BTN', { configurable:true, get:function(){ return !window.canReset(); } });
 window.resetUserViews = async function(id){
   if(window.DISABLE_RESET_VIEWS_BTN) return;
   if(blockIfViewOnly('customers')) return;
@@ -8602,11 +8609,20 @@ async function loadTotalVisits(){
   } catch(err){ console.error('loadTotalVisits error:', err); }
 }
 
-/* Visits tab: every "Reset Count" / "Reset All" / "Reset All Views" button is disabled (greyed out, not clickable)
-   for everyone, super admin included. Set to false to enable them again. */
-window.DISABLE_VISITS_RESET_BTNS = true;
+/* Visits tab: every "Reset Count" / "Reset All" / "Reset All Views" button is enabled for the super admin only;
+   for sub-admins they stay greyed out (not clickable). */
+Object.defineProperty(window, 'DISABLE_VISITS_RESET_BTNS', { configurable:true, get:function(){ return !window.canReset(); } });
 (function(){
-  function apply(){ document.querySelectorAll('.visits-reset-btn').forEach(function(b){ b.disabled = !!window.DISABLE_VISITS_RESET_BTNS; }); }
+  function apply(){
+    var off = !!window.DISABLE_VISITS_RESET_BTNS;
+    document.querySelectorAll('.visits-reset-btn').forEach(function(b){
+      if(b.dataset.origTitle === undefined) b.dataset.origTitle = b.getAttribute('title') || '';
+      b.disabled = off;
+      if(off) b.title = 'Only the super admin can reset counts';
+      else if(b.dataset.origTitle) b.title = b.dataset.origTitle; else b.removeAttribute('title');
+    });
+  }
+  window.applyVisitsResetAccess = apply;
   apply();
   document.addEventListener('DOMContentLoaded', apply);
 })();
@@ -10969,7 +10985,7 @@ document.getElementById('checkAvailabilityModal').addEventListener('click', func
 
 /* ── PROPERTY VIEWS: INDIVIDUAL & RESET-ALL ── */
 window.resetPropertyViews = async function(id, btnEl){
-  return; // per-listing views reset is disabled
+  if(!window.canReset()) return;
   if(blockIfViewOnly('properties')) return;
   const ok = await showConfirmModal({ title:'Reset views?', message:"This listing's view count will be set back to 0. This cannot be undone.", okText:'Reset' });
   if(!ok) return;
@@ -12205,7 +12221,7 @@ $(document).ready(function(){
           const count = d==null?'0':escapeHtml(String(d));
           const pid = escapeHtml(row.propertyId||'');
           return `<span class="views-cell"><button type="button" class="views-badge" title="See who viewed this listing" onclick="openPropertyViewersModal('${row._id}','${pid}')"><i class="fas fa-eye"></i><span>${count}</span></button>
-            <button class="btn-reset-views" title="Reset views is disabled" disabled aria-disabled="true"><i class="fas fa-rotate-left"></i></button></span>`;
+            <button class="btn-reset-views" title="${canReset()?'Reset this listing\'s views to 0':'Only the super admin can reset views'}" onclick="event.stopPropagation();resetPropertyViews('${row._id}', this)" ${canReset()?'':'disabled aria-disabled="true"'}><i class="fas fa-rotate-left"></i></button></span>`;
       }},
       /* 37 – Photos (count) */
       { data:null, orderable:false, visible:false, className:'dt-body-center', render:(d,t,row)=>{
