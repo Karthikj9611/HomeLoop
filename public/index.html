@@ -10965,7 +10965,7 @@ function updateShortlistEnquire() {
 function buildEnquiryMessage(props) {
   const one = props.length === 1;
   const lines = props.map((p, i) => `${one ? '' : (i + 1) + '. '}${p.propertyId} - ${window.location.origin}/property/${p.id}`);
-  return `Hello, I'm interested in the following ${one ? 'property' : 'properties'} on HomeLoop.\n\n${lines.join('\n')}\n\nThank you.`;
+  return `Hello, I'm interested in the following ${one ? 'property' : 'properties'} on HomeLoop.\n\n${lines.join('\n')}`;
 }
 function _openAgentEnquiry(phone) {
   const props = _shortlistEnquiryGroups().groups[phone];
