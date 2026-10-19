@@ -8395,7 +8395,7 @@ main.tab-explore .empty-state{display:none !important}
           <div class="about-founder-avatar">KR</div>
           <div class="about-founder-info">
             <div class="about-founder-name-row">
-              <span class="about-founder-name">Karthik Reddy</span>
+              <span class="about-founder-name">Karthik</span>
             </div>
             <div class="about-founder-bio">B.E. in Mechanical Engineering</div>
           </div>
@@ -8457,9 +8457,9 @@ main.tab-explore .empty-state{display:none !important}
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
         </div>
         <div style="flex:1;min-width:0">
-          <div class="about-office-name">Samruddhi Sanzio</div>
+          <div class="about-office-name" style="display:none">Samruddhi Sanzio</div>
           <div class="about-office-addr">AECS Layout - A Block, AECS Layout, Singasandra, Bengaluru, Karnataka 560068</div>
-          <a class="about-phone-link" href="https://share.google/4gGEfUWWVpNKtsK2g" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>Get Directions</a>
+          <a class="about-phone-link" style="display:none" href="https://share.google/4gGEfUWWVpNKtsK2g" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>Get Directions</a>
         </div>
       </div>
     </div>
@@ -19848,5 +19848,97 @@ document.addEventListener('keydown', function(e){ if (e.key === 'Escape') closeP
 </script>
 
 
+<!-- ══ Site notice: upgrade in progress ══ -->
+<style>
+#hlNotice{position:fixed;inset:0;z-index:2147482000;display:none;align-items:center;justify-content:center;padding:16px;background:rgba(10,12,20,.6);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);opacity:0;transition:opacity .25s ease}
+#hlNotice.show{display:flex}
+#hlNotice.in{opacity:1}
+#hlNotice .hln-card{position:relative;display:flex;flex-direction:column;width:100%;max-width:400px;max-height:calc(100vh - 32px);max-height:calc(100dvh - 32px);background:#fff;color:#111827;border-radius:24px;overflow:hidden;box-shadow:0 30px 70px rgba(0,0,0,.35);transform:translateY(16px) scale(.97);transition:transform .35s cubic-bezier(.2,.8,.2,1);font-family:'Inter',system-ui,sans-serif}
+#hlNotice.in .hln-card{transform:none}
+#hlNotice .hln-hero{position:relative;flex:0 0 auto;padding:22px 22px 20px;color:#fff;background:radial-gradient(120% 140% at 100% 0%,rgba(255,255,255,.22) 0%,rgba(255,255,255,0) 55%),linear-gradient(135deg,var(--brand,#E03A52) 0%,#b3243a 100%);overflow:hidden}
+#hlNotice .hln-hero::after{content:"";position:absolute;right:-40px;bottom:-60px;width:160px;height:160px;border-radius:50%;background:rgba(255,255,255,.1)}
+#hlNotice .hln-pill{display:inline-flex;align-items:center;gap:7px;padding:5px 11px;border-radius:99px;background:rgba(255,255,255,.18);font-size:10.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase}
+#hlNotice .hln-dot{width:7px;height:7px;border-radius:50%;background:#fff;animation:hlnPulse 1.8s ease-in-out infinite}
+@keyframes hlnPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.7)}}
+#hlNotice h2{position:relative;z-index:1;margin:12px 0 4px;font-size:23px;font-weight:800;letter-spacing:-.02em;line-height:1.2}
+#hlNotice .hln-lead{position:relative;z-index:1;margin:0;font-size:13.5px;line-height:1.45;color:rgba(255,255,255,.88)}
+#hlNotice .hln-x{position:absolute;top:12px;right:12px;z-index:2;width:30px;height:30px;border:0;border-radius:50%;background:rgba(255,255,255,.2);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s}
+#hlNotice .hln-x:hover{background:rgba(255,255,255,.35)}
+#hlNotice .hln-x svg{width:14px;height:14px}
+#hlNotice .hln-body{flex:1 1 auto;min-height:0;overflow-y:auto;padding:16px 18px 18px}
+#hlNotice ul{list-style:none;margin:0 0 16px;padding:0;display:flex;flex-direction:column;gap:2px}
+#hlNotice li{display:flex;gap:13px;align-items:flex-start;padding:12px 4px}
+#hlNotice li + li{border-top:1px solid #f0f1f4}
+#hlNotice .hln-ic{flex:0 0 auto;width:38px;height:38px;border-radius:12px;background:var(--brand-light,#fef0f2);color:var(--brand,#E03A52);display:flex;align-items:center;justify-content:center}
+#hlNotice .hln-ic svg{width:19px;height:19px}
+#hlNotice li b{display:block;font-size:14px;font-weight:700;line-height:1.3}
+#hlNotice li span{display:block;margin-top:1px;font-size:12.5px;line-height:1.4;color:#6b7280}
+#hlNotice .hln-btn{width:100%;border:0;border-radius:14px;padding:13px 16px;font-size:14.5px;font-weight:700;color:#fff;cursor:pointer;background:linear-gradient(135deg,var(--brand,#E03A52),#c72e43);box-shadow:0 8px 20px -6px rgba(224,58,82,.55);transition:transform .1s ease,box-shadow .15s ease}
+#hlNotice .hln-btn:hover{box-shadow:0 10px 24px -6px rgba(224,58,82,.7)}
+#hlNotice .hln-btn:active{transform:scale(.98)}
+#hlNotice .hln-foot{margin:11px 0 0;text-align:center;font-size:11.5px;color:#9ca3af}
+@media (prefers-color-scheme:dark){
+  #hlNotice .hln-card{background:#1b1d22;color:#f3f4f6}
+  #hlNotice li + li{border-color:#2a2d34}
+  #hlNotice .hln-ic{background:rgba(224,58,82,.16)}
+  #hlNotice li span{color:#9ca3af}
+}
+@media (max-width:480px){#hlNotice{align-items:flex-end;padding:0}#hlNotice .hln-card{max-width:none;border-radius:24px 24px 0 0;max-height:92vh;max-height:92dvh}#hlNotice .hln-body{padding-bottom:calc(18px + env(safe-area-inset-bottom,0px))}}
+@media (max-height:620px){#hlNotice .hln-hero{padding:16px 20px 14px}#hlNotice h2{font-size:20px;margin-top:8px}#hlNotice .hln-lead{font-size:12.5px}#hlNotice li{padding:7px 4px}#hlNotice .hln-ic{width:32px;height:32px}}
+@media (prefers-reduced-motion:reduce){#hlNotice,#hlNotice .hln-card{transition:none}#hlNotice .hln-dot{animation:none}}
+</style>
+<div id="hlNotice" role="dialog" aria-modal="true" aria-labelledby="hlNoticeTitle" aria-describedby="hlNoticeLead">
+  <div class="hln-card">
+    <div class="hln-hero">
+      <button type="button" class="hln-x" id="hlNoticeX" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+      <span class="hln-pill"><i class="hln-dot"></i>Upgrade in progress</span>
+      <h2 id="hlNoticeTitle">We’re upgrading HomeLoop</h2>
+      <p class="hln-lead" id="hlNoticeLead">We’re working on a better experience for you. Here’s what’s happening right now.</p>
+    </div>
+    <div class="hln-body">
+      <ul>
+        <li>
+          <div class="hln-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 4.6L18.5 9l-4.6 1.9L12 15.5l-1.9-4.6L5.5 9l4.6-1.4z"/><path d="M19 15l.8 1.9 1.7.7-1.7.7L19 20l-.8-1.7-1.7-.7 1.7-.7z"/></svg></div>
+          <div><b>New features coming</b><span>The website is being upgraded with new features and improvements to make finding and listing homes easier.</span></div>
+        </li>
+        <li>
+          <div class="hln-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/></svg></div>
+          <div><b>Play Store app in development</b><span>Our Android app is being built and will be announced soon.</span></div>
+        </li>
+        <li>
+          <div class="hln-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg></div>
+          <div><b>No new listings until year end</b><span>We are not accepting any new property listings until the end of this year. All existing listings remain available to browse.</span></div>
+        </li>
+      </ul>
+      <button type="button" class="hln-btn" id="hlNoticeOk">Continue to website</button>
+      <p class="hln-foot">Thank you for your patience and support.</p>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  var el=document.getElementById('hlNotice'); if(!el) return;
+  var ok=document.getElementById('hlNoticeOk'), x=document.getElementById('hlNoticeX'), prevFocus=null;
+  function open(){
+    prevFocus=document.activeElement;
+    el.classList.add('show'); document.body.style.overflow='hidden';
+    requestAnimationFrame(function(){ el.classList.add('in'); });
+    setTimeout(function(){ ok.focus(); },50);
+  }
+  function close(){
+    el.classList.remove('in'); document.body.style.overflow='';
+    setTimeout(function(){ el.classList.remove('show'); },250);
+    if(prevFocus&&prevFocus.focus) try{ prevFocus.focus(); }catch(e){}
+  }
+  ok.addEventListener('click',close); x.addEventListener('click',close);
+  el.addEventListener('click',function(e){ if(e.target===el) close(); });
+  document.addEventListener('keydown',function(e){
+    if(!el.classList.contains('show')) return;
+    if(e.key==='Escape') close();
+    if(e.key==='Tab'){ var f=[x,ok], i=f.indexOf(document.activeElement); e.preventDefault(); f[(i+(e.shiftKey?-1:1)+f.length)%f.length].focus(); }
+  });
+  { if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',function(){ setTimeout(open,400); }); else setTimeout(open,400); }
+})();
+</script>
 </body>
 </html>
