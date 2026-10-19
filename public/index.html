@@ -6488,13 +6488,13 @@ main.tab-explore .empty-state{display:none !important}
       <div class="form-group" id="f-typeWrap">
         <label class="form-label">Status <span style="color:var(--brand)">*</span></label>
         <select class="form-select" id="f-type" onchange="onFTypeChange(this.value)">
-          <option value="Rent">Rent</option><option value="Lease">Lease</option><option value="PG">PG / Co-living</option><option value="ShortStay">Short Stay (Per Day)</option><option value="Sell" hidden>Sell</option>
+          <option value="Lease">Lease</option><option value="PG">PG / Co-living</option><option selected value="Rent">Rent</option><option value="Sell" hidden>Sell</option><option value="ShortStay">Short Stay (Per Day)</option>
         </select>
       </div>
       <div class="form-group">
         <label class="form-label">Listed By</label>
         <select class="form-select" id="f-listedBy" onchange="updateBrokerageFields()">
-          <option>Owner</option><option>Agent</option><option>Broker</option>
+          <option>Agent</option><option>Broker</option><option selected>Owner</option>
         </select>
       </div>
     </div>
@@ -6592,7 +6592,7 @@ main.tab-explore .empty-state{display:none !important}
       </div>
       <div class="form-group">
         <label class="form-label">Owner Staying In Same Building?</label>
-        <select class="form-select" id="f-sameAsBuildingAddress"><option value="Yes">Yes</option><option value="No">No</option></select>
+        <select class="form-select" id="f-sameAsBuildingAddress"><option value="No">No</option><option selected value="Yes">Yes</option></select>
       </div>
       <!-- Agent-only fields — shown when Listed by = Agent -->
       <div id="f-agentFields" style="grid-column:span 3">
@@ -6635,11 +6635,11 @@ main.tab-explore .empty-state{display:none !important}
       </div>
       <div class="form-group" id="f-waterWrap">
         <label class="form-label">Water</label>
-        <select class="form-select" id="f-waterCharge"><option>Included</option><option>Separate</option><option>Tanker</option><option>Kaveri</option><option>Borewell</option></select>
+        <select class="form-select" id="f-waterCharge"><option>Borewell</option><option selected>Included</option><option>Kaveri</option><option>Separate</option><option>Tanker</option></select>
       </div>
 	  <div class="form-group" id="f-negotiableWrap">
         <label class="form-label">Price Negotiable</label>
-        <select class="form-select" id="f-negotiable"><option value=""></option><option value="yes">Yes</option><option value="no">No</option></select>
+        <select class="form-select" id="f-negotiable"><option value=""></option><option value="no">No</option><option value="yes">Yes</option></select>
       </div>
     </div>
     </div>
@@ -6679,7 +6679,7 @@ main.tab-explore .empty-state{display:none !important}
       <div class="form-group">
         <label class="form-label">Property Type</label>
         <select class="form-select" id="f-propertyType" onchange="onSellPropertyTypeChange()">
-          <option>Apartment</option><option>House</option><option>Standalone</option><option>Villa</option><option>Studio</option><option>Duplex</option><option>Penthouse</option><option>Bungalow</option><option>Loft</option><option>Cottage</option><option>Farmhouse</option><option>PG</option><option>Hostel</option><option>Homestay</option><option>Plot / Land</option>
+          <option>Apartment</option><option>Bungalow</option><option>Duplex</option><option>House</option><option>Loft</option><option>Penthouse</option><option>Standalone</option><option>Studio</option><option>Villa</option>
         </select>
       </div>
       <div class="form-group" id="f-bhkWrap">
@@ -6725,7 +6725,7 @@ main.tab-explore .empty-state{display:none !important}
            distinction doesn't apply. -->
       <div class="form-group" id="f-areaTypeWrap" style="display:none">
         <label class="form-label">Area Type</label>
-        <select class="form-select" id="f-areaType"><option value=""></option><option>Carpet Area</option><option>Super Built-up Area</option><option>Built-up Area</option></select>
+        <select class="form-select" id="f-areaType"><option value=""></option><option>Built-up Area</option><option>Carpet Area</option><option>Super Built-up Area</option></select>
       </div>
       <div class="form-group" id="f-bathsWrap">
         <label class="form-label">Bathrooms</label>
@@ -6733,22 +6733,22 @@ main.tab-explore .empty-state{display:none !important}
       </div>
       <div class="form-group" id="f-toiletTypeWrap">
         <label class="form-label">Toilet Type</label>
-        <select class="form-select" id="f-toiletType"><option>Western</option><option>Indian</option><option>Both</option></select>
+        <select class="form-select" id="f-toiletType"><option>Both</option><option>Indian</option><option selected>Western</option></select>
       </div>
       <div class="form-group" id="f-furnishingWrap">
         <label class="form-label">Furnishing</label>
         <select class="form-select" id="f-furnishing">
-          <option>Fully</option><option>Semi</option><option>Basic</option>
+          <option>Basic</option><option selected>Fully</option><option>Semi</option>
         </select>
       </div>
       <div class="form-group" id="f-kitchenTypeWrap">
         <label class="form-label">Kitchen Type</label>
-        <select class="form-select" id="f-kitchenType"><option value=""></option><option>Straight Kitchen</option><option>Parallel Kitchen</option><option>L-Shaped Kitchen</option><option>U-Shaped Kitchen</option><option>Open Kitchen</option><option>Closed Kitchen</option><option>Island Kitchen</option><option>Modular Kitchen</option></select>
+        <select class="form-select" id="f-kitchenType"><option value=""></option><option>Closed Kitchen</option><option>Island Kitchen</option><option>L-Shaped Kitchen</option><option>Modular Kitchen</option><option>Open Kitchen</option><option>Parallel Kitchen</option><option>Straight Kitchen</option><option>U-Shaped Kitchen</option></select>
       </div>
       <div class="form-group">
         <label class="form-label">Facing</label>
         <select class="form-select" id="f-facing">
-          <option>North</option><option>South</option><option>East</option><option>West</option><option>North-East</option><option>North-West</option><option>South-East</option><option>South-West</option>
+          <option>East</option><option selected>North</option><option>North-East</option><option>North-West</option><option>South</option><option>South-East</option><option>South-West</option><option>West</option>
         </select>
       </div>
       <div class="form-group" id="f-ageWrap">
@@ -6798,8 +6798,8 @@ main.tab-explore .empty-state{display:none !important}
       </div>
       <div class="lm-section">⚖️ Tenant Rules</div>
       <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
-        <div class="form-group"><label class="form-label">Pets Allowed</label><select class="form-select" id="f-petsAllowed"><option value=""></option><option>Yes</option><option selected>No</option><option>Restricted</option></select></div>
-        <div class="form-group"><label class="form-label">Non-Veg Allowed</label><select class="form-select" id="f-nonVegAllowed"><option value=""></option><option selected>Yes</option><option>No</option></select></div>
+        <div class="form-group"><label class="form-label">Pets Allowed</label><select class="form-select" id="f-petsAllowed"><option value=""></option><option selected>No</option><option>Restricted</option><option>Yes</option></select></div>
+        <div class="form-group"><label class="form-label">Non-Veg Allowed</label><select class="form-select" id="f-nonVegAllowed"><option value=""></option><option>No</option><option selected>Yes</option></select></div>
       </div>
     </div>
 
@@ -6813,15 +6813,15 @@ main.tab-explore .empty-state{display:none !important}
       <div class="lm-section">📋 Lease Terms</div>
       <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
         <div class="form-group"><label class="form-label">Contract Term</label><select class="form-select" id="f-leaseDurationVal"><option value=""></option><option>1 Year</option><option selected>2 Years</option><option>3 Years</option><option>5 Years</option><option>9 Years</option><option>15 Years</option><option>30 Years</option></select></div>
-        <div class="form-group"><label class="form-label">Lease Type</label><select class="form-select" id="f-leaseType"><option value=""></option><option>Residential</option><option>Commercial</option><option>Industrial</option><option>Mixed Use</option></select></div>
+        <div class="form-group"><label class="form-label">Lease Type</label><select class="form-select" id="f-leaseType"><option value=""></option><option>Commercial</option><option>Industrial</option><option>Mixed Use</option><option>Residential</option></select></div>
         <div class="form-group"><label class="form-label">Lock-In Period</label><select class="form-select" id="f-lockInPeriod"><option value="">None</option><option>1 Year</option><option>2 Years</option><option>3 Years</option></select></div>
         <div class="form-group"><label class="form-label">Available From</label><input class="form-input" type="date" id="f-leaseAvailableFrom" /></div>
         <div class="form-group"><label class="form-label">Notice Period</label><select class="form-select" id="f-leaseNoticePeriod"><option value=""></option><option>1 Month</option><option>2 Months</option><option selected>3 Months</option></select></div>
       </div>
       <div class="lm-section">⚖️ House Rules</div>
       <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
-        <div class="form-group"><label class="form-label">Pets Allowed</label><select class="form-select" id="f-leasePets"><option value=""></option><option>Yes</option><option selected>No</option></select></div>
-        <div class="form-group"><label class="form-label">Non-Veg Allowed</label><select class="form-select" id="f-leaseNonVeg"><option value=""></option><option selected>Yes</option><option>No</option></select></div>
+        <div class="form-group"><label class="form-label">Pets Allowed</label><select class="form-select" id="f-leasePets"><option value=""></option><option selected>No</option><option>Yes</option></select></div>
+        <div class="form-group"><label class="form-label">Non-Veg Allowed</label><select class="form-select" id="f-leaseNonVeg"><option value=""></option><option>No</option><option selected>Yes</option></select></div>
       </div>
     </div>
 
@@ -6831,18 +6831,18 @@ main.tab-explore .empty-state{display:none !important}
       <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
         <div class="form-group">
           <label class="form-label">Property Type</label>
-          <select class="form-select" id="f-pgPropertyType"><option>Apartment</option><option>Independent House</option><option>Villa</option><option>Studio</option></select>
+          <select class="form-select" id="f-pgPropertyType"><option>Apartment</option><option>Independent House</option><option>Studio</option><option>Villa</option></select>
         </div>
         <div class="form-group">
           <label class="form-label">Gender Preference</label>
-          <select class="form-select" id="f-pgGender"><option>Any</option><option>Boys</option><option>Girls</option><option>Co-ed</option></select>
+          <select class="form-select" id="f-pgGender"><option>Any</option><option>Boys</option><option>Co-ed</option><option>Girls</option></select>
         </div>
         <div class="form-group">
           <label class="form-label">Room Type</label>
-          <select class="form-select" id="f-pgRoomType"><option>Single</option><option>Double Sharing</option><option>Triple Sharing</option><option>Dormitory</option></select>
+          <select class="form-select" id="f-pgRoomType"><option>Dormitory</option><option>Double Sharing</option><option selected>Single</option><option>Triple Sharing</option></select>
         </div>
-        <div class="form-group"><label class="form-label">Attached Bathroom</label><select class="form-select" id="f-pgBathroom"><option>Yes</option><option>Shared</option></select></div>
-        <div class="form-group"><label class="form-label">Toilet Type</label><select class="form-select" id="f-pgToiletType"><option>Western</option><option>Indian</option><option>Both</option></select></div>
+        <div class="form-group"><label class="form-label">Attached Bathroom</label><select class="form-select" id="f-pgBathroom"><option>Shared</option><option selected>Yes</option></select></div>
+        <div class="form-group"><label class="form-label">Toilet Type</label><select class="form-select" id="f-pgToiletType"><option>Both</option><option>Indian</option><option selected>Western</option></select></div>
         <div class="form-group"><label class="form-label">Occupancy Available</label><input class="form-input" type="number" id="f-pgOccupancy" /></div>
         <div class="form-group"><label class="form-label">Room Furnishing</label><select class="form-select" id="f-pgRoomFurnishing"><option value=""></option><option>Fully Furnished</option><option>Semi-Furnished</option><option>Unfurnished</option></select></div>
         <div class="form-group">
@@ -6868,9 +6868,9 @@ main.tab-explore .empty-state{display:none !important}
       <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
         <div class="form-group">
           <label class="form-label">Meals Included</label>
-          <select class="form-select" id="f-pgMeals"><option value=""></option><option>No Meals</option><option>Breakfast Only</option><option>Dinner Only</option><option>Lunch + Dinner</option><option selected>All 3 Meals</option><option>On Request</option></select>
+          <select class="form-select" id="f-pgMeals"><option value=""></option><option selected>All 3 Meals</option><option>Breakfast Only</option><option>Dinner Only</option><option>Lunch + Dinner</option><option>No Meals</option><option>On Request</option></select>
         </div>
-        <div class="form-group"><label class="form-label">Food Type</label><select class="form-select" id="f-pgFoodType"><option value=""></option><option>Veg Only</option><option>Veg + Non-veg</option></select></div>
+        <div class="form-group"><label class="form-label">Food Type</label><select class="form-select" id="f-pgFoodType"><option value=""></option><option>Veg + Non-veg</option><option>Veg Only</option></select></div>
         <div class="form-group"><label class="form-label">Gate Closing Time</label><select class="form-select" id="f-pgGateTime"><option value="">No Curfew</option><option>9 PM</option><option>10 PM</option><option>11 PM</option></select></div>
         <div class="form-group"><label class="form-label">Visitor Policy</label><select class="form-select" id="f-pgVisitorPolicy"><option value=""></option><option>Allowed</option><option>Lobby Only</option><option>Not Allowed</option></select></div>
       </div>
@@ -6882,14 +6882,14 @@ main.tab-explore .empty-state{display:none !important}
       <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
         <div class="form-group">
           <label class="form-label">Property Type</label>
-          <select class="form-select" id="f-ssPropertyType"><option>Apartment</option><option>Independent House</option><option>Villa</option><option>Studio</option></select>
+          <select class="form-select" id="f-ssPropertyType"><option>Apartment</option><option>Independent House</option><option>Studio</option><option>Villa</option></select>
         </div>
         <div class="form-group">
           <label class="form-label">Room Type</label>
-          <select class="form-select" id="f-ssRoomType"><option>Single</option><option>Double</option><option>Deluxe</option><option>Suite</option></select>
+          <select class="form-select" id="f-ssRoomType"><option>Deluxe</option><option>Double</option><option selected>Single</option><option>Suite</option></select>
         </div>
-        <div class="form-group"><label class="form-label">Available 24 Hours</label><select class="form-select" id="f-ss24hrs"><option value=""></option><option>Yes</option><option>No</option></select></div>
-        <div class="form-group"><label class="form-label">Free Cancellation Window</label><select class="form-select" id="f-ssCancellation"><option value=""></option><option>No Cancellation</option><option>Free Till Check-in</option><option>24 Hours Before</option><option>48 Hours Before</option></select></div>
+        <div class="form-group"><label class="form-label">Available 24 Hours</label><select class="form-select" id="f-ss24hrs"><option value=""></option><option>No</option><option>Yes</option></select></div>
+        <div class="form-group"><label class="form-label">Free Cancellation Window</label><select class="form-select" id="f-ssCancellation"><option value=""></option><option>24 Hours Before</option><option>48 Hours Before</option><option>Free Till Check-in</option><option>No Cancellation</option></select></div>
         <div class="form-group"><label class="form-label">Room Furnishing</label><select class="form-select" id="f-ssFurnish"><option value=""></option><option>Fully Furnished</option><option>Semi-Furnished</option><option>Unfurnished</option></select></div>
         <div class="form-group">
           <label class="form-label">Bike Parking</label>
@@ -6906,7 +6906,7 @@ main.tab-explore .empty-state{display:none !important}
       </div>
       <div class="lm-section">🪪 Guest Policy</div>
       <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
-        <div class="form-group"><label class="form-label">Unmarried Couples Allowed</label><select class="form-select" id="f-ssCouples"><option value=""></option><option>Yes</option><option>No</option></select></div>
+        <div class="form-group"><label class="form-label">Unmarried Couples Allowed</label><select class="form-select" id="f-ssCouples"><option value=""></option><option>No</option><option>Yes</option></select></div>
       </div>
     </div>
 
@@ -6930,7 +6930,7 @@ main.tab-explore .empty-state{display:none !important}
         <div class="form-group">
           <label class="form-label">Ownership Type</label>
           <select class="form-select" id="f-sellOwnership">
-            <option value=""></option><option>Freehold</option><option>Leasehold</option><option>Co-operative Society</option><option>Power of Attorney</option>
+            <option value=""></option><option>Co-operative Society</option><option>Freehold</option><option>Leasehold</option><option>Power of Attorney</option>
           </select>
         </div>
         <div class="form-group">
@@ -6943,7 +6943,7 @@ main.tab-explore .empty-state{display:none !important}
         </div>
         <div class="form-group">
           <label class="form-label">RERA Registered</label>
-          <select class="form-select" id="f-sellRera"><option value=""></option><option>Yes</option><option>No</option></select>
+          <select class="form-select" id="f-sellRera"><option value=""></option><option>No</option><option>Yes</option></select>
         </div>
         <div class="form-group">
           <label class="form-label">RERA ID</label>
