@@ -408,6 +408,20 @@ table.dataTable thead tr.col-filter-row th{
   background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path d='M0 0l5 6 5-6z' fill='%238a6820'/></svg>");
   background-repeat:no-repeat;background-position:right 8px center;padding-right:22px;
 }
+.ref-status-select{
+  width:auto!important;min-width:118px;box-sizing:border-box;
+  padding:5px 26px 5px 10px;border:1.3px solid var(--border);border-radius:7px;
+  font-family:'Inter',sans-serif;font-size:0.76rem;font-weight:600;
+  color:var(--ink);background-color:#fff;cursor:pointer;outline:none;
+  appearance:none;-webkit-appearance:none;text-overflow:clip;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path d='M0 0l5 6 5-6z' fill='%238a6820'/></svg>");
+  background-repeat:no-repeat;background-position:right 9px center;
+}
+.ref-status-select:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(184,144,60,0.12)}
+.ref-status-select[data-status="Pending"]{background-color:#fff7e0;color:#8a6820}
+.ref-status-select[data-status="Rewarded"]{background-color:#e6f7ee;color:#157a4a}
+.ref-status-select[data-status="Rejected"]{background-color:#fdeaea;color:#c0392b}
+.ref-status-select:disabled{opacity:.6;cursor:wait}
 .col-date-range{display:flex;flex-direction:row;align-items:center;gap:4px;min-width:290px;
   padding:4px;border:1px solid var(--border);border-radius:9px;background:rgba(0,0,0,0.015);
 }
@@ -4582,7 +4596,17 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
               <th><select class="col-filter-select" data-gcf-key="userReview" onchange="onGcfFilter('userReview',2,this.value,this)"><option value="">All</option><option value="Owner">Owner</option><option value="Tenant">Tenant</option></select></th>
               <th><select class="col-filter-select" data-gcf-key="userReview" onchange="onGcfFilter('userReview',3,this.value,this)"><option value="">All</option><option value="5">5 stars</option><option value="4">4 stars</option><option value="3">3 stars</option><option value="2">2 stars</option><option value="1">1 star</option></select></th>
               <th><input type="text" class="col-filter-input" data-gcf-key="userReview" placeholder="Search…" oninput="onGcfFilter('userReview',4,this.value,this)"></th>
-              <th><div class="col-date-range"><input type="date" data-gcf-key="userReview" title="From" onchange="onGcfDate('userReview',5,'start',this.value,this)"><input type="date" data-gcf-key="userReview" title="To" onchange="onGcfDate('userReview',5,'end',this.value,this)"></div></th>
+              <th><div class="col-date-range">
+                <select class="date-preset-select" data-gcf-key="userReview" onchange="applyDatePreset(this,'onUserReviewDateRange')">
+                  <option value="">Presets</option>
+                  <option value="today">Today</option>
+                  <option value="week">This Week</option>
+                  <option value="month">This Month</option>
+                  <option value="last30">Last 30 Days</option>
+                </select>
+                <input type="date" data-gcf-key="userReview" title="From" onchange="onGcfDate('userReview',5,'start',this.value,this)">
+                <input type="date" data-gcf-key="userReview" title="To" onchange="onGcfDate('userReview',5,'end',this.value,this)">
+              </div></th>
               <th></th>
             </tr>
           </thead>
@@ -4725,7 +4749,17 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
               <th><input type="text" class="col-filter-input" data-gcf-key="referral" placeholder="Search…" oninput="onGcfFilter('referral',3,this.value,this)"></th>
               <th><input type="text" class="col-filter-input" data-gcf-key="referral" placeholder="Search…" oninput="onGcfFilter('referral',4,this.value,this)"></th>
               <th><select class="col-filter-select" data-gcf-key="referral" onchange="onGcfFilter('referral',5,this.value,this)"><option value="">All</option><option value="Pending">Pending</option><option value="Rewarded">Rewarded</option><option value="Rejected">Rejected</option></select></th>
-              <th><div class="col-date-range"><input type="date" data-gcf-key="referral" title="From" onchange="onGcfDate('referral',6,'start',this.value,this)"><input type="date" data-gcf-key="referral" title="To" onchange="onGcfDate('referral',6,'end',this.value,this)"></div></th>
+              <th><div class="col-date-range">
+                <select class="date-preset-select" data-gcf-key="referral" onchange="applyDatePreset(this,'onReferralDateRange')">
+                  <option value="">Presets</option>
+                  <option value="today">Today</option>
+                  <option value="week">This Week</option>
+                  <option value="month">This Month</option>
+                  <option value="last30">Last 30 Days</option>
+                </select>
+                <input type="date" data-gcf-key="referral" title="From" onchange="onGcfDate('referral',6,'start',this.value,this)">
+                <input type="date" data-gcf-key="referral" title="To" onchange="onGcfDate('referral',6,'end',this.value,this)">
+              </div></th>
               <th></th>
             </tr>
           </thead>
@@ -8051,10 +8085,10 @@ window.openSubscriptionModal = function(key){
 let _subscriptionCacheKey = null;
 let _subscriptionEditId = null;
 function subPlans(){ const c = _customerCache[_subscriptionCacheKey]; return (c && c.subscriptions) || []; }
-// "04 Oct 2026, 1:55 pm"
+// "04-10-2026 1:55 PM"
 function subNice(v){
   const d = new Date(v);
-  return d.toLocaleString('en-IN', { day:'2-digit', month:'short', year:'numeric', hour:'numeric', minute:'2-digit', hour12:true });
+  return fmtDateDMY(d) + ' ' + fmtTimeHM(d);
 }
 // "3 min", "5 hours", "2 days"
 function subDuration(f, t){
@@ -9512,7 +9546,7 @@ window.setReferralStatus = async function(id, status, selectEl){
     if(selectEl && prevValue) selectEl.value = prevValue;
     return;
   }
-  if(selectEl) selectEl.disabled = true;
+  if(selectEl){ selectEl.disabled = true; selectEl.setAttribute('data-status', status); }
   try{
     const res = await fetch(`${BASE}/api/admin/referrals/${id}/status`, {
       method:'PATCH',
@@ -9521,13 +9555,13 @@ window.setReferralStatus = async function(id, status, selectEl){
     });
     const data = await res.json().catch(()=>({}));
     if(!res.ok){
-      if(selectEl && prevValue) selectEl.value = prevValue;
+      if(selectEl && prevValue){ selectEl.value = prevValue; selectEl.setAttribute('data-status', prevValue); }
       alert(data.message || 'Failed to update status');
       return;
     }
     referralsTable.ajax.reload(null, false);
   } catch(err){
-    if(selectEl && prevValue) selectEl.value = prevValue;
+    if(selectEl && prevValue){ selectEl.value = prevValue; selectEl.setAttribute('data-status', prevValue); }
     alert('Failed to update status');
   } finally {
     if(selectEl) selectEl.disabled = false;
@@ -12341,7 +12375,7 @@ $(document).ready(function(){
           if(t === 'sort' || t === 'type') return v;
           const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(v);
           if(!m) return t === 'display' ? '—' : '';
-          const txt = new Date(+m[1], +m[2]-1, +m[3]).toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' });
+          const txt = m[3] + '-' + m[2] + '-' + m[1];
           return t === 'display' ? `<span style="font-weight:600;white-space:nowrap">${txt}</span>` : txt;
       }},
       /* 51 – Action (orderable purely so setOfficeLocation() above can sort
@@ -13118,7 +13152,7 @@ $(document).ready(function(){
       { data:'createdAt', render:(d,t)=>{
           if(!d) return t==='display' ? '--' : 0;
           if(t!=='display') return new Date(d).getTime();
-          return new Date(d).toLocaleString('en-IN',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:true});
+          return formatDateTime(d);
       }},
       /* 5 - Action */
       { data:null, orderable:false, render:(d,t,row)=>{
@@ -13174,7 +13208,7 @@ $(document).ready(function(){
       { data:'status', className:'dt-body-center', render:(d,t,row)=>{
           if(t!=='display') return d||'';
           const status = d || 'Pending';
-          return `<select class="col-filter-select" data-prev="${status}" onchange="setReferralStatus('${row._id}', this.value, this)">
+          return `<select class="ref-status-select" data-status="${status}" data-prev="${status}" onchange="setReferralStatus('${row._id}', this.value, this)">
             <option value="Pending" ${status==='Pending'?'selected':''}>Pending</option>
             <option value="Rewarded" ${status==='Rewarded'?'selected':''}>Rewarded</option>
             <option value="Rejected" ${status==='Rejected'?'selected':''}>Rejected</option>
@@ -13185,7 +13219,7 @@ $(document).ready(function(){
           if(!d) return '—';
           const dt = new Date(d);
           if(t!=='display') return dt.getTime();
-          return dt.toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' }) + ' · ' + dt.toLocaleTimeString('en-US', { hour:'2-digit', minute:'2-digit' });
+          return formatDateTime(d);
       }},
       /* 7 – Action */
       { data:null, orderable:false, render:(d,t,row)=>{
@@ -13259,6 +13293,8 @@ window.onGcfDate = function(key, col, which, value, el){
   t.draw();
   _gcfRefresh(key);
 };
+window.onUserReviewDateRange = function(which, value, el){ onGcfDate('userReview', 5, which, value, el); };
+window.onReferralDateRange = function(which, value, el){ onGcfDate('referral', 6, which, value, el); };
 window.clearGcf = function(key){
   const c = _GCF[key], t = c && c.table();
   if(!t) return;
@@ -13829,13 +13865,13 @@ function parseFlexibleDate(input){
 function formatDateDisplay(input, withTime = false){
   const d = parseFlexibleDate(input);
   if (isNaN(d)) return typeof input === 'string' ? input : '';
-  const datePart = `${d.getDate()} ${d.toLocaleDateString('en-IN', { month: 'short' })} ${d.getFullYear()}`;
+  const datePart = fmtDateDMY(d);
   if (!withTime) return datePart;
   let hours = d.getHours();
   const minutes = String(d.getMinutes()).padStart(2, '0');
   const ampm = hours >= 12 ? 'PM' : 'AM';
   hours = hours % 12; if (hours === 0) hours = 12;
-  return `${datePart} · ${hours}:${minutes} ${ampm}`;
+  return `${datePart} ${hours}:${minutes} ${ampm}`;
 }
 function availableDateInfo(available){
   if (!available) return null;
