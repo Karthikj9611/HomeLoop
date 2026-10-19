@@ -4991,7 +4991,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
         </select>
       </div>
       <div class="form-group">
-        <label class="form-label">Listed by</label>
+        <label class="form-label">Listed By</label>
         <select class="form-select" id="f-listedBy" onchange="updateBrokerageFields()">
           <option>Owner</option><option>Agent</option><option>Broker</option><option>Builder</option>
         </select>
@@ -5003,21 +5003,13 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
 
     <!-- ===== 2/3. OWNER DETAILS (incl. Location) ===== -->
     <div id="ownerDetailsSection">
-    <div class="lm-section">👤 Owner Details</div>
+        <div class="lm-section">📍 Property Location</div>
     <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
-	<div class="form-group">
-      <label class="form-label">Property name</label>
+<div class="form-group" style="grid-column:1 / -1">
+      <label class="form-label">Property Name</label>
       <input class="form-input" type="text" id="f-title" autocapitalize="words" onblur="capitalizeWordsInput(this)" oninput="capitalizeWordsInput(this)" />
     </div>
-	  <div class="form-group">
-        <label class="form-label">Area <span style="color:var(--brand)">*</span></label>
-        <input class="form-input" type="text" id="f-location" autocapitalize="words" onblur="capitalizeWordsInput(this)" oninput="capitalizeWordsInput(this)" />
-      </div>
-      <div class="form-group">
-        <label class="form-label">City</label>
-        <input class="form-input" type="text" id="f-city" autocapitalize="words" onblur="capitalizeWordsInput(this)" oninput="capitalizeWordsInput(this)" value="Bangalore" />
-      </div>
-      <div class="form-group" id="fullAddressGroup" style="grid-column:span 2">
+<div class="form-group" id="fullAddressGroup" style="grid-column:1 / -1">
         <label class="form-label">Building Live Address</label>
         <div style="display:flex;gap:7px;align-items:stretch">
           <textarea class="form-input" id="f-fullAddress" autocapitalize="words" rows="1" style="flex:1;min-width:0;resize:none;overflow:hidden" oninput="capitalizeWordsInput(this); onFullAddressInput(this.value)" onfocus="this.dataset.focusVal=this.value" onblur="capitalizeWordsInput(this); if(this.dataset.focusVal!==this.value) onFullAddressBlur(this.value)"></textarea>
@@ -5029,23 +5021,31 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
         </div>
         <div id="f-locStatus" style="font-size:11px;color:var(--text-2);min-height:14px;margin-top:2px"></div>
       </div>
-      <div class="form-group" id="pincodeGroup">
-        <label class="form-label">Pincode</label>
-        <input class="form-input" type="text" id="f-pincode" inputmode="numeric" maxlength="6" placeholder="e.g. 560034" oninput="onPincodeInput(this)"/>
-        <div style="font-size:11px;color:var(--text-2);margin-top:2px">Auto-filled from the address · edit if it's wrong</div>
-      </div>
-      <div class="form-group" id="latLngGroup">
+<div class="form-group" id="latLngGroup">
         <label class="form-label">Latitude / Longitude</label>
         <input class="form-input" type="text" id="f-latLngDisplay" placeholder="e.g. 12.345678, 77.123456" oninput="onLatLngDisplayInput(this.value)" />
         <div style="font-size:11px;color:var(--text-2);margin-top:2px">Auto-filled by Live · edit directly if you need to correct it</div>
       </div>
-      <div class="form-group" id="mapsLinkGroup">
-        <label class="form-label">Google Maps link (optional)</label>
+<div class="form-group" id="mapsLinkGroup">
+        <label class="form-label">Google Maps Link</label>
         <input class="form-input" type="url" id="f-googleMapsLink" />
         <div style="font-size:11px;color:var(--text-2);margin-top:2px">Auto-filled from your location · replace it if you have a more exact link</div>
       </div>
-      <div class="form-group" id="currentLocGroup">
-        <label class="form-label">Current location link <span style="color:var(--brand)">*</span></label>
+<div class="form-group">
+        <label class="form-label">Area <span style="color:var(--brand)">*</span></label>
+        <input class="form-input" type="text" id="f-location" autocapitalize="words" onblur="capitalizeWordsInput(this)" oninput="capitalizeWordsInput(this)" />
+      </div>
+<div class="form-group">
+        <label class="form-label">City</label>
+        <input class="form-input" type="text" id="f-city" autocapitalize="words" onblur="capitalizeWordsInput(this)" oninput="capitalizeWordsInput(this)" value="Bangalore" />
+      </div>
+<div class="form-group" id="pincodeGroup">
+        <label class="form-label">Pincode</label>
+        <input class="form-input" type="text" id="f-pincode" inputmode="numeric" maxlength="6" placeholder="e.g. 560034" oninput="onPincodeInput(this)"/>
+        <div style="font-size:11px;color:var(--text-2);margin-top:2px">Auto-filled from the address · edit if it's wrong</div>
+      </div>
+<div class="form-group" style="grid-column:1 / -1" id="currentLocGroup">
+        <label class="form-label">Building Location Link <span style="color:var(--brand)">*</span></label>
         <div style="display:flex;gap:7px;align-items:stretch">
           <input class="form-input" style="flex:1;min-width:0" type="url" id="f-currentLocationLink" inputmode="url" autocomplete="off" placeholder="Tap to add location link" onfocus="if(!this.value.trim()){this.blur();openLocHelp();}" onclick="if(!this.value.trim()){this.blur();openLocHelp();}" oninput="this.value=this.value.trim()" />
           <button type="button" onclick="openCurrentLocLink()" class="loc-act-btn" aria-label="Open in Google Maps" title="Open in Google Maps" style="display:inline-flex;align-items:center;justify-content:center;gap:6px;flex-shrink:0;padding:0 12px;border-radius:9px;border:1.5px solid var(--text);background:var(--bg);color:var(--text);font-size:12px;font-weight:700;cursor:pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg><span class="loc-btn-txt">Navigate</span></button>
@@ -5053,13 +5053,16 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
         </div>
         <div style="font-size:11px;color:var(--text-2);margin-top:2px"><a href="#" onclick="openLocHelp();return false" style="color:var(--brand);font-weight:700;text-decoration:underline">How to get it</a></div>
       </div>
+    </div>
+<div class="lm-section">👤 Owner Details</div>
+    <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
       <div class="form-group">
-        <label class="form-label">Owner name <span style="color:var(--brand)">*</span></label>
+        <label class="form-label">Owner Name <span style="color:var(--brand)">*</span></label>
         <input class="form-input" type="text" id="f-ownerName" autocapitalize="words" onblur="capitalizeWordsInput(this)" oninput="capitalizeWordsInput(this)"/>
         <div class="identity-locked-hint" id="f-ownerName-hint" style="display:none">Auto-filled from your account</div>
       </div>
       <div class="form-group">
-        <label class="form-label">Phone number <span style="color:var(--brand)">*</span></label>
+        <label class="form-label">Phone Number <span style="color:var(--brand)">*</span></label>
         <div class="input-icon-wrap">
           <input class="form-input" type="tel" id="f-ownerPhone" inputmode="numeric" maxlength="10" oninput="sanitizeMobileInput(this)"/>
           <button type="button" class="contact-pick-btn" id="f-ownerPhone-pickBtn" onclick="pickContactFromDevice('f-ownerPhone','f-ownerName')" title="Pick from contacts">
@@ -5069,7 +5072,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
         <div class="identity-locked-hint" id="f-ownerPhone-hint" style="display:none">Auto-filled from your account</div>
       </div>
       <div class="form-group">
-        <label class="form-label">Alternate number</label>
+        <label class="form-label">Owner Number</label>
         <div class="input-icon-wrap">
           <input class="form-input" type="tel" id="f-ownerAltPhone" inputmode="numeric" maxlength="10" oninput="sanitizeMobileInput(this)"/>
           <button type="button" class="contact-pick-btn" onclick="pickContactFromDevice('f-ownerAltPhone')" title="Pick from contacts">
@@ -5078,7 +5081,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
         </div>
       </div>
       <div class="form-group">
-        <label class="form-label">Caretaker number (optional)</label>
+        <label class="form-label">Caretaker Number</label>
         <div class="input-icon-wrap">
           <input class="form-input" type="tel" id="f-ownerCaretakerPhone" inputmode="numeric" maxlength="10" oninput="sanitizeMobileInput(this)"/>
           <button type="button" class="contact-pick-btn" onclick="pickContactFromDevice('f-ownerCaretakerPhone')" title="Pick from contacts">
@@ -5087,16 +5090,16 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
         </div>
       </div>
       <div class="form-group">
-        <label class="form-label">Email (optional)</label>
+        <label class="form-label">Email</label>
         <input class="form-input" type="email" id="f-ownerEmail"/>
         <div class="identity-locked-hint" id="f-ownerEmail-hint" style="display:none">Auto-filled from your account</div>
       </div>
       <div class="form-group">
-        <label class="form-label">Preferred contact time</label>
+        <label class="form-label">Preferred Contact Time</label>
         <select class="form-select" id="f-contactTime"><option>Any</option><option>Morning (10am - 1pm)</option><option>Afternoon (1pm - 5pm)</option><option>Evening (6pm - 9pm)</option></select>
       </div>
       <div class="form-group">
-        <label class="form-label">Owner staying in same building?</label>
+        <label class="form-label">Owner Staying In Same Building?</label>
         <select class="form-select" id="f-sameAsBuildingAddress"><option value="Yes">Yes</option><option value="No">No</option></select>
       </div>
       <!-- Agent-only fields — shown when Listed by = Agent.
@@ -5106,7 +5109,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
       <div id="f-agentFields" style="grid-column:span 3">
         <div class="form-row" style="grid-template-columns:1fr 1fr;margin-top:4px">
           <div class="form-group">
-            <label class="form-label">Agent phone number</label>
+            <label class="form-label">Agent Phone Number</label>
             <div class="input-icon-wrap">
               <input class="form-input" type="tel" id="f-agentPhone" inputmode="numeric" maxlength="10" value="9035205230" oninput="sanitizeMobileInput(this)"/>
               <button type="button" class="contact-pick-btn" id="f-agentPhone-pickBtn" onclick="pickContactFromDevice('f-agentPhone')" title="Pick from contacts">
@@ -5115,7 +5118,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
             </div>
           </div>
           <div class="form-group">
-            <label class="form-label">Agent service area</label>
+            <label class="form-label">Agent Service Area</label>
             <input class="form-input" type="text" id="f-agentArea" value="Prashanth B, Singasandra" />
           </div>
         </div>
@@ -5128,7 +5131,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
     <div class="lm-section">🤝 Brokerage</div>
     <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
       <div class="form-group" id="f-brokerageWrap">
-        <label class="form-label">Brokerage fee <span style="color:var(--brand)">*</span></label>
+        <label class="form-label">Brokerage Fee <span style="color:var(--brand)">*</span></label>
         <select class="form-select" id="f-brokerage" onchange="onBrokerageChange()">
           <option value="">Select</option>
           <option value="1 Day rent">1 Day rent</option>
@@ -5145,7 +5148,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
         </select>
       </div>
       <div class="form-group" id="f-brokerageAmountWrap" style="display:none">
-        <label class="form-label">Brokerage amount (₹) <span style="color:var(--brand)">*</span></label>
+        <label class="form-label">Brokerage Amount <span style="color:var(--brand)">*</span></label>
         <input class="form-input" type="number" id="f-brokerageAmount" min="0">
       </div>
     </div>
@@ -5155,14 +5158,14 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
     <div id="addPricingSection">
     <div class="lm-section">💰 Pricing</div>
     <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
-      <div class="form-group"><label class="form-label" id="f-rentLabel">Monthly rent (₹) <span style="color:var(--brand)">*</span></label><input class="form-input" type="number" id="f-rent" min="0" max="9999999" oninput="updateSellPricePerSqft()" /></div>
+      <div class="form-group"><label class="form-label" id="f-rentLabel">Monthly Rent <span style="color:var(--brand)">*</span></label><input class="form-input" type="number" id="f-rent" min="0" max="9999999" oninput="updateSellPricePerSqft()" /></div>
       <div class="form-group" id="f-pricePerSqftWrap" style="display:none">
-        <label class="form-label">Price per sqft (auto)</label>
+        <label class="form-label">Price Per Sqft</label>
         <input class="form-input" type="text" id="f-pricePerSqft" readonly />
       </div>
-      <div class="form-group" id="f-depositWrap"><label class="form-label">Security deposit (₹) <span style="color:var(--brand)">*</span></label><input class="form-input" type="number" id="f-deposit" min="0" max="9999999" /></div>
-      <div class="form-group" id="f-maintenanceWrap"><label class="form-label">Maintenance (₹/ Month)</label><input class="form-input" type="number" id="f-maintenance" oninput="onMaintenanceChange()" /></div>
-      <div class="form-group" id="f-escalationWrap"><label class="form-label">Escalation (%)</label><input class="form-input" type="number" step="0.5" id="f-escalation" /></div>
+      <div class="form-group" id="f-depositWrap"><label class="form-label">Security Deposit <span style="color:var(--brand)">*</span></label><input class="form-input" type="number" id="f-deposit" min="0" max="9999999" /></div>
+      <div class="form-group" id="f-maintenanceWrap"><label class="form-label">Maintenance</label><input class="form-input" type="number" id="f-maintenance" oninput="onMaintenanceChange()" /></div>
+      <div class="form-group" id="f-escalationWrap"><label class="form-label">Escalation</label><input class="form-input" type="number" step="0.5" id="f-escalation" /></div>
       <div class="form-group" id="f-electricityWrap">
         <label class="form-label">Electricity</label>
         <select class="form-select" id="f-electricityIncluded"><option>Included</option><option>Separate</option><option>Shared meter</option></select>
@@ -5172,7 +5175,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
         <select class="form-select" id="f-waterCharge"><option>Included</option><option>Separate</option><option>Tanker</option><option>Kaveri</option><option>Borewell</option></select>
       </div>
 	  <div class="form-group" id="f-negotiableWrap">
-        <label class="form-label">Price negotiable</label>
+        <label class="form-label">Price Negotiable</label>
         <select class="form-select" id="f-negotiable"><option value="">Select</option><option value="yes">Yes</option><option value="no">No</option></select>
       </div>
     </div>
@@ -5183,7 +5186,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
     <div class="lm-section">🏢 Property Details</div>
     <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
       <div class="form-group">
-        <label class="form-label">Property type</label>
+        <label class="form-label">Property Type</label>
         <select class="form-select" id="f-propertyType" onchange="onSellPropertyTypeChange()">
           <option>Apartment</option><option>House</option><option>Standalone</option><option>Villa</option><option>Studio</option><option>Duplex</option><option>Penthouse</option><option>Bungalow</option><option>Loft</option><option>Cottage</option><option>Farmhouse</option><option>PG</option><option>Hostel</option><option>Homestay</option><option>Plot / Land</option>
         </select>
@@ -5217,15 +5220,15 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
         </select>
       </div>
       <div class="form-group" id="f-flatNoWrap">
-        <label class="form-label">Flat number (optional)</label>
+        <label class="form-label">Flat Number</label>
         <input class="form-input" type="text" id="f-flatNo" maxlength="20" placeholder="e.g. A-304" autocomplete="off" />
       </div>
       <div class="form-group">
-        <label class="form-label" id="f-areaLabel">Area (sqft)</label>
+        <label class="form-label" id="f-areaLabel">Area (Sqft)</label>
         <input class="form-input" type="text" inputmode="numeric" id="f-area" onfocus="stripAreaSqft(this)" onblur="formatAreaSqft(this)" oninput="updateSellPricePerSqft()" />
       </div>
       <div class="form-group" id="f-areaTypeWrap" style="display:none">
-        <label class="form-label">Area type</label>
+        <label class="form-label">Area Type</label>
         <select class="form-select" id="f-areaType"><option value="">Select</option><option>Carpet Area</option><option>Super Built-up Area</option><option>Built-up Area</option></select>
       </div>
       <div class="form-group" id="f-bathsWrap">
@@ -5243,7 +5246,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
         </select>
       </div>
       <div class="form-group" id="f-kitchenTypeWrap">
-        <label class="form-label">Kitchen type</label>
+        <label class="form-label">Kitchen Type</label>
         <select class="form-select" id="f-kitchenType"><option value="">Select</option><option>Straight Kitchen</option><option>Parallel Kitchen</option><option>L-Shaped Kitchen</option><option>U-Shaped Kitchen</option><option>Open Kitchen</option><option>Closed Kitchen</option><option>Island Kitchen</option><option>Modular Kitchen</option></select>
       </div>
       <div class="form-group">
@@ -5253,13 +5256,13 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
         </select>
       </div>
       <div class="form-group" id="f-ageWrap">
-        <label class="form-label">Age of property</label>
+        <label class="form-label">Age Of Property</label>
         <select class="form-select" id="f-age">
           <option value="">Select</option><option>New</option><option>1 yr</option><option>2 yrs</option><option>3 yrs</option><option>4 yrs</option><option>5 yrs</option><option>6 yrs</option><option>7 yrs</option><option>8 yrs</option><option>9 yrs</option><option>10 yrs</option><option>11 yrs</option><option>12 yrs</option><option>13 yrs</option><option>14 yrs</option><option>15 yrs</option><option>16 yrs</option><option>17 yrs</option><option>18 yrs</option><option>19 yrs</option><option>20 yrs</option>
         </select>
       </div>
       <div class="form-group" id="tenantFormGroup">
-        <label class="form-label">Tenant preference <span style="color:var(--brand)">*</span></label>
+        <label class="form-label">Tenant Preference <span style="color:var(--brand)">*</span></label>
         <div class="am-dd" id="tenantDropdown">
           <button type="button" class="am-dd-trigger" onclick="toggleTenantDropdown(event)">
             <span><span class="am-dd-count" id="tenantDdCount" style="display:none">0</span><span id="tenantDdLabel">Choose tenant preference…</span></span>
@@ -5277,30 +5280,28 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
         <input type="hidden" id="f-tenant" />
       </div>
       <div class="form-group" id="maxPersonsFormGroup">
-        <label class="form-label">No. of persons allowed</label>
+        <label class="form-label">No. Of Persons Allowed</label>
         <input class="form-input" type="number" id="f-maxPersons" min="1" max="50" step="1" inputmode="numeric" placeholder="e.g. 4" oninput="if(this.value!==''){this.value=this.value.replace(/\D/g,'').slice(0,2)}" />
       </div>
       <div class="form-group" id="f-availWrap">
-        <label class="form-label">Available from</label>
+        <label class="form-label">Available From</label>
         <input class="form-input" type="date" id="f-avail" />
       </div>
     </div>
     </div>
-
-
     <!-- ===== 6. STATUS-SPECIFIC SECTIONS ===== -->
 
     <!-- FOR RENT extras -->
     <div id="addRentSection">
       <div class="lm-section">📅 Availability &amp; Terms</div>
       <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
-        <div class="form-group"><label class="form-label">Notice period</label><select class="form-select" id="f-noticePeriod"><option value="">Select</option><option>15 Days</option><option>1 Month</option><option>2 Months</option><option selected>3 Months</option></select></div>
+        <div class="form-group"><label class="form-label">Notice Period</label><select class="form-select" id="f-noticePeriod"><option value="">Select</option><option>15 Days</option><option>1 Month</option><option>2 Months</option><option selected>3 Months</option></select></div>
         <div class="form-group"><label class="form-label">Contract Term</label><select class="form-select" id="f-leaseDuration"><option value="">Any</option><option>6 Months</option><option>11 Months</option><option selected>12 Months</option><option>24 Months</option><option>36 Months</option><option>48 Months</option><option>48+ Months</option></select></div>
       </div>
       <div class="lm-section">⚖️ Tenant Rules</div>
       <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
-        <div class="form-group"><label class="form-label">Pets allowed</label><select class="form-select" id="f-petsAllowed"><option value="">Select</option><option>Yes</option><option selected>No</option><option>Restricted</option></select></div>
-        <div class="form-group"><label class="form-label">Non-veg allowed</label><select class="form-select" id="f-nonVegAllowed"><option value="">Select</option><option selected>Yes</option><option>No</option></select></div>
+        <div class="form-group"><label class="form-label">Pets Allowed</label><select class="form-select" id="f-petsAllowed"><option value="">Select</option><option>Yes</option><option selected>No</option><option>Restricted</option></select></div>
+        <div class="form-group"><label class="form-label">Non-Veg Allowed</label><select class="form-select" id="f-nonVegAllowed"><option value="">Select</option><option selected>Yes</option><option>No</option></select></div>
       </div>
     </div>
 
@@ -5308,21 +5309,21 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
     <div id="addLeaseSection" style="display:none">
       <div class="lm-section">💼 Lease Pricing</div>
       <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
-        <div class="form-group"><label class="form-label">Lease amount (₹) <span style="color:var(--brand)">*</span></label><input class="form-input" type="number" id="f-leaseAmount" /></div>
-        <div class="form-group"><label class="form-label">Maintenance (₹/ Month)</label><input class="form-input" type="number" id="f-leaseMaintenance" /></div>
+        <div class="form-group"><label class="form-label">Lease Amount <span style="color:var(--brand)">*</span></label><input class="form-input" type="number" id="f-leaseAmount" /></div>
+        <div class="form-group"><label class="form-label">Maintenance</label><input class="form-input" type="number" id="f-leaseMaintenance" /></div>
       </div>
       <div class="lm-section">📋 Lease Terms</div>
       <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
         <div class="form-group"><label class="form-label">Contract Term</label><select class="form-select" id="f-leaseDurationVal"><option value="">Select</option><option>1 Year</option><option selected>2 Years</option><option>3 Years</option><option>5 Years</option><option>9 Years</option><option>15 Years</option><option>30 Years</option></select></div>
-        <div class="form-group"><label class="form-label">Lease type</label><select class="form-select" id="f-leaseType"><option value="">Select</option><option>Residential</option><option>Commercial</option><option>Industrial</option><option>Mixed Use</option></select></div>
-        <div class="form-group"><label class="form-label">Lock-in period</label><select class="form-select" id="f-lockInPeriod"><option value="">None</option><option>1 Year</option><option>2 Years</option><option>3 Years</option></select></div>
-        <div class="form-group"><label class="form-label">Available from</label><input class="form-input" type="date" id="f-leaseAvailableFrom" /></div>
-        <div class="form-group"><label class="form-label">Notice period</label><select class="form-select" id="f-leaseNoticePeriod"><option value="">Select</option><option>1 Month</option><option>2 Months</option><option selected>3 Months</option></select></div>
+        <div class="form-group"><label class="form-label">Lease Type</label><select class="form-select" id="f-leaseType"><option value="">Select</option><option>Residential</option><option>Commercial</option><option>Industrial</option><option>Mixed Use</option></select></div>
+        <div class="form-group"><label class="form-label">Lock-In Period</label><select class="form-select" id="f-lockInPeriod"><option value="">None</option><option>1 Year</option><option>2 Years</option><option>3 Years</option></select></div>
+        <div class="form-group"><label class="form-label">Available From</label><input class="form-input" type="date" id="f-leaseAvailableFrom" /></div>
+        <div class="form-group"><label class="form-label">Notice Period</label><select class="form-select" id="f-leaseNoticePeriod"><option value="">Select</option><option>1 Month</option><option>2 Months</option><option selected>3 Months</option></select></div>
       </div>
       <div class="lm-section">⚖️ House Rules</div>
       <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
-        <div class="form-group"><label class="form-label">Pets allowed</label><select class="form-select" id="f-leasePets"><option value="">Select</option><option>Yes</option><option selected>No</option></select></div>
-        <div class="form-group"><label class="form-label">Non-veg allowed</label><select class="form-select" id="f-leaseNonVeg"><option value="">Select</option><option selected>Yes</option><option>No</option></select></div>
+        <div class="form-group"><label class="form-label">Pets Allowed</label><select class="form-select" id="f-leasePets"><option value="">Select</option><option>Yes</option><option selected>No</option></select></div>
+        <div class="form-group"><label class="form-label">Non-Veg Allowed</label><select class="form-select" id="f-leaseNonVeg"><option value="">Select</option><option selected>Yes</option><option>No</option></select></div>
       </div>
     </div>
 
@@ -5331,7 +5332,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
       <div class="lm-section">🏷️ Sale Details</div>
       <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
         <div class="form-group" id="f-sellTotalFloorsWrap">
-          <label class="form-label">Total floors in building</label>
+          <label class="form-label">Total Floors In Building</label>
           <select class="form-select" id="f-sellTotalFloors">
             <option value="">Select</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option>9</option><option>10</option><option>10+</option>
           </select>
@@ -5341,25 +5342,25 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
           <select class="form-select" id="f-sellBalconies"><option value="">Select</option><option>0</option><option>1</option><option>2</option><option>3</option><option>4+</option></select>
         </div>
         <div class="form-group">
-          <label class="form-label">Ownership type</label>
+          <label class="form-label">Ownership Type</label>
           <select class="form-select" id="f-sellOwnership">
             <option value="">Select</option><option>Freehold</option><option>Leasehold</option><option>Co-operative Society</option><option>Power of Attorney</option>
           </select>
         </div>
         <div class="form-group">
-          <label class="form-label">Possession status</label>
+          <label class="form-label">Possession Status</label>
           <select class="form-select" id="f-sellPossession"><option value="">Select</option><option>Ready to Move</option><option>Under Construction</option></select>
         </div>
         <div class="form-group">
-          <label class="form-label">Possession date (optional)</label>
+          <label class="form-label">Possession Date</label>
           <input class="form-input" type="date" id="f-sellPossessionDate" />
         </div>
         <div class="form-group">
-          <label class="form-label">RERA registered</label>
+          <label class="form-label">RERA Registered</label>
           <select class="form-select" id="f-sellRera"><option value="">Select</option><option>Yes</option><option>No</option></select>
         </div>
         <div class="form-group">
-          <label class="form-label">RERA ID (optional)</label>
+          <label class="form-label">RERA ID</label>
           <input class="form-input" type="text" id="f-sellReraId" maxlength="50" />
         </div>
       </div>
@@ -5367,31 +5368,31 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
       <div class="lm-section">🏛️ Legal &amp; Ownership Details</div>
       <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
         <div class="form-group">
-          <label class="form-label">Khata type</label>
+          <label class="form-label">Khata Type</label>
           <select class="form-select" id="f-sellKhataType"><option value="">Select</option><option>A Khata</option><option>B Khata</option><option>Not Applicable</option></select>
         </div>
         <div class="form-group">
-          <label class="form-label">Property tax paid up to date (optional)</label>
+          <label class="form-label">Property Tax Paid Up To Date</label>
           <select class="form-select" id="f-sellTaxPaid"><option value="">Select</option><option>Yes</option><option>No</option></select>
         </div>
         <div class="form-group">
-          <label class="form-label">Loan status</label>
+          <label class="form-label">Loan Status</label>
           <select class="form-select" id="f-sellLoanStatus"><option value="">Select</option><option>Free &amp; Clear (No Loan)</option><option>Home Loan Cleared Before Sale</option><option>Bank Loan Pending / To Be Transferred</option></select>
         </div>
         <div class="form-group" id="f-sellOcAvailableWrap">
-          <label class="form-label">Occupancy Certificate (OC) available (optional)</label>
+          <label class="form-label">Occupancy Certificate (OC) Available</label>
           <select class="form-select" id="f-sellOcAvailable"><option value="">Select</option><option>Yes</option><option>No</option></select>
         </div>
         <div class="form-group" id="f-sellCcAvailableWrap">
-          <label class="form-label">Completion Certificate (CC) available (optional)</label>
+          <label class="form-label">Completion Certificate (CC) Available</label>
           <select class="form-select" id="f-sellCcAvailable"><option value="">Select</option><option>Yes</option><option>No</option></select>
         </div>
         <div class="form-group">
-          <label class="form-label">Number of previous owners (optional)</label>
+          <label class="form-label">Number Of Previous Owners</label>
           <select class="form-select" id="f-sellPreviousOwners"><option value="">Select</option><option>0 (First Owner)</option><option>1</option><option>2</option><option>3+</option></select>
         </div>
         <div class="form-group" style="grid-column:span 2">
-          <label class="form-label">Society / Project name (optional)</label>
+          <label class="form-label">Society / Project Name</label>
           <input class="form-input" type="text" id="f-sellProjectName" autocapitalize="words" onblur="capitalizeWordsInput(this)" oninput="capitalizeWordsInput(this)" maxlength="120" placeholder="e.g. Prestige Shantiniketan" />
         </div>
       </div>
@@ -5399,31 +5400,31 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
       <div class="lm-section">🧱 Structure &amp; Site Details</div>
       <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
         <div class="form-group" id="f-sellFlooringWrap">
-          <label class="form-label">Flooring type (optional)</label>
+          <label class="form-label">Flooring Type</label>
           <select class="form-select" id="f-sellFlooring"><option value="">Select</option><option>Vitrified Tiles</option><option>Marble</option><option>Wooden</option><option>Cement</option><option>Mosaic</option></select>
         </div>
         <div class="form-group">
-          <label class="form-label">Water source (optional)</label>
+          <label class="form-label">Water Source</label>
           <select class="form-select" id="f-sellWaterSource"><option value="">Select</option><option>Corporation</option><option>Borewell</option><option>Both</option></select>
         </div>
         <div class="form-group">
-          <label class="form-label">Boundary wall (optional)</label>
+          <label class="form-label">Boundary Wall</label>
           <select class="form-select" id="f-sellBoundaryWall"><option value="">Select</option><option>Full</option><option>Partial</option><option>None</option></select>
         </div>
         <div class="form-group">
-          <label class="form-label">Width of facing road, ft (optional)</label>
+          <label class="form-label">Width Of Facing Road, Ft</label>
           <input class="form-input" type="number" min="0" id="f-sellRoadWidth" />
         </div>
         <div class="form-group">
-          <label class="form-label">Number of open sides (optional)</label>
+          <label class="form-label">Number Of Open Sides</label>
           <select class="form-select" id="f-sellOpenSides"><option value="">Select</option><option>1</option><option>2</option><option>3</option><option>4</option></select>
         </div>
         <div class="form-group">
-          <label class="form-label">Corner property (optional)</label>
+          <label class="form-label">Corner Property</label>
           <select class="form-select" id="f-sellCornerProperty"><option value="">Select</option><option>Yes</option><option>No</option></select>
         </div>
         <div class="form-group" style="grid-column:span 3" id="overlookingFormGroup">
-          <label class="form-label">Overlooking (optional)</label>
+          <label class="form-label">Overlooking</label>
           <div class="am-dd" id="overlookingDropdown">
             <button type="button" class="am-dd-trigger" onclick="toggleOverlookingDropdown(event)">
               <span><span class="am-dd-count" id="overlookingDdCount" style="display:none">0</span><span id="overlookingDdLabel">Choose what it overlooks…</span></span>
@@ -5448,21 +5449,21 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
       <div class="lm-section">🛏 Room Details</div>
       <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
         <div class="form-group">
-          <label class="form-label">Property type</label>
+          <label class="form-label">Property Type</label>
           <select class="form-select" id="f-pgPropertyType"><option>Apartment</option><option>Independent House</option><option>Villa</option><option>Studio</option></select>
         </div>
         <div class="form-group">
-          <label class="form-label">Gender preference</label>
+          <label class="form-label">Gender Preference</label>
           <select class="form-select" id="f-pgGender"><option>Any</option><option>Boys</option><option>Girls</option><option>Co-ed</option></select>
         </div>
         <div class="form-group">
-          <label class="form-label">Room type</label>
+          <label class="form-label">Room Type</label>
           <select class="form-select" id="f-pgRoomType"><option>Single</option><option>Double Sharing</option><option>Triple Sharing</option><option>Dormitory</option></select>
         </div>
-        <div class="form-group"><label class="form-label">Attached bathroom</label><select class="form-select" id="f-pgBathroom"><option>Yes</option><option>Shared</option></select></div>
+        <div class="form-group"><label class="form-label">Attached Bathroom</label><select class="form-select" id="f-pgBathroom"><option>Yes</option><option>Shared</option></select></div>
         <div class="form-group"><label class="form-label">Toilet Type</label><select class="form-select" id="f-pgToiletType"><option>Western</option><option>Indian</option><option>Both</option></select></div>
-        <div class="form-group"><label class="form-label">Occupancy available</label><input class="form-input" type="number" id="f-pgOccupancy" /></div>
-        <div class="form-group"><label class="form-label">Room furnishing</label><select class="form-select" id="f-pgRoomFurnishing"><option value="">Select</option><option>Fully Furnished</option><option>Semi-Furnished</option><option>Unfurnished</option></select></div>
+        <div class="form-group"><label class="form-label">Occupancy Available</label><input class="form-input" type="number" id="f-pgOccupancy" /></div>
+        <div class="form-group"><label class="form-label">Room Furnishing</label><select class="form-select" id="f-pgRoomFurnishing"><option value="">Select</option><option>Fully Furnished</option><option>Semi-Furnished</option><option>Unfurnished</option></select></div>
         <div class="form-group">
           <label class="form-label">Bike Parking</label>
           <select class="form-select" id="f-pgBikePark">
@@ -5478,19 +5479,19 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
       </div>
       <div class="lm-section">📅 Availability &amp; Terms</div>
       <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
-        <div class="form-group"><label class="form-label">Available from</label><input class="form-input" type="date" id="f-pgAvailableFrom" /></div>
-        <div class="form-group"><label class="form-label">Notice period</label><select class="form-select" id="f-pgNotice"><option value="">Select</option><option selected>15 Days</option><option>1 Month</option><option>2 Months</option><option>3 Months</option></select></div>
-        <div class="form-group"><label class="form-label">Security deposit (₹)</label><input class="form-input" type="number" id="f-pgDeposit" min="0" /></div>
+        <div class="form-group"><label class="form-label">Available From</label><input class="form-input" type="date" id="f-pgAvailableFrom" /></div>
+        <div class="form-group"><label class="form-label">Notice Period</label><select class="form-select" id="f-pgNotice"><option value="">Select</option><option selected>15 Days</option><option>1 Month</option><option>2 Months</option><option>3 Months</option></select></div>
+        <div class="form-group"><label class="form-label">Security Deposit</label><input class="form-input" type="number" id="f-pgDeposit" min="0" /></div>
       </div>
       <div class="lm-section">🍽 Meals &amp; Policies</div>
       <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
         <div class="form-group">
-          <label class="form-label">Meals included</label>
+          <label class="form-label">Meals Included</label>
           <select class="form-select" id="f-pgMeals"><option value="">Select</option><option>No Meals</option><option>Breakfast Only</option><option>Dinner Only</option><option>Lunch + Dinner</option><option selected>All 3 Meals</option><option>On Request</option></select>
         </div>
-        <div class="form-group"><label class="form-label">Food type</label><select class="form-select" id="f-pgFoodType"><option value="">Select</option><option>Veg Only</option><option>Veg + Non-veg</option></select></div>
-        <div class="form-group"><label class="form-label">Gate closing time</label><select class="form-select" id="f-pgGateTime"><option value="">No Curfew</option><option>9 PM</option><option>10 PM</option><option>11 PM</option></select></div>
-        <div class="form-group"><label class="form-label">Visitor policy</label><select class="form-select" id="f-pgVisitorPolicy"><option value="">Select</option><option>Allowed</option><option>Lobby Only</option><option>Not Allowed</option></select></div>
+        <div class="form-group"><label class="form-label">Food Type</label><select class="form-select" id="f-pgFoodType"><option value="">Select</option><option>Veg Only</option><option>Veg + Non-veg</option></select></div>
+        <div class="form-group"><label class="form-label">Gate Closing Time</label><select class="form-select" id="f-pgGateTime"><option value="">No Curfew</option><option>9 PM</option><option>10 PM</option><option>11 PM</option></select></div>
+        <div class="form-group"><label class="form-label">Visitor Policy</label><select class="form-select" id="f-pgVisitorPolicy"><option value="">Select</option><option>Allowed</option><option>Lobby Only</option><option>Not Allowed</option></select></div>
       </div>
     </div>
 
@@ -5499,16 +5500,16 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
       <div class="lm-section">🛎 Room &amp; Booking</div>
       <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
         <div class="form-group">
-          <label class="form-label">Property type</label>
+          <label class="form-label">Property Type</label>
           <select class="form-select" id="f-ssPropertyType"><option>Apartment</option><option>Independent House</option><option>Villa</option><option>Studio</option></select>
         </div>
         <div class="form-group">
-          <label class="form-label">Room type</label>
+          <label class="form-label">Room Type</label>
           <select class="form-select" id="f-ssRoomType"><option>Single</option><option>Double</option><option>Deluxe</option><option>Suite</option></select>
         </div>
-        <div class="form-group"><label class="form-label">Available 24 hours</label><select class="form-select" id="f-ss24hrs"><option value="">Select</option><option>Yes</option><option>No</option></select></div>
-        <div class="form-group"><label class="form-label">Free cancellation window</label><select class="form-select" id="f-ssCancellation"><option value="">Select</option><option>No Cancellation</option><option>Free Till Check-in</option><option>24 Hours Before</option><option>48 Hours Before</option></select></div>
-        <div class="form-group"><label class="form-label">Room furnishing</label><select class="form-select" id="f-ssFurnish"><option value="">Select</option><option>Fully Furnished</option><option>Semi-Furnished</option><option>Unfurnished</option></select></div>
+        <div class="form-group"><label class="form-label">Available 24 Hours</label><select class="form-select" id="f-ss24hrs"><option value="">Select</option><option>Yes</option><option>No</option></select></div>
+        <div class="form-group"><label class="form-label">Free Cancellation Window</label><select class="form-select" id="f-ssCancellation"><option value="">Select</option><option>No Cancellation</option><option>Free Till Check-in</option><option>24 Hours Before</option><option>48 Hours Before</option></select></div>
+        <div class="form-group"><label class="form-label">Room Furnishing</label><select class="form-select" id="f-ssFurnish"><option value="">Select</option><option>Fully Furnished</option><option>Semi-Furnished</option><option>Unfurnished</option></select></div>
         <div class="form-group">
           <label class="form-label">Bike Parking</label>
           <select class="form-select" id="f-ssBikePark">
@@ -5524,7 +5525,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
       </div>
       <div class="lm-section">🪪 Guest Policy</div>
       <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
-        <div class="form-group"><label class="form-label">Unmarried couples allowed</label><select class="form-select" id="f-ssCouples"><option value="">Select</option><option>Yes</option><option>No</option></select></div>
+        <div class="form-group"><label class="form-label">Unmarried Couples Allowed</label><select class="form-select" id="f-ssCouples"><option value="">Select</option><option>Yes</option><option>No</option></select></div>
       </div>
     </div>
 
@@ -5532,7 +5533,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
     <div id="addAmenitiesSection">
     <div class="lm-section">✨ Amenities</div>
     <div class="form-group" id="amSelectFormGroup">
-      <label class="form-label">Select amenities</label>
+      <label class="form-label">Select Amenities</label>
       <div class="am-dd" id="amDropdown">
         <button type="button" class="am-dd-trigger" onclick="toggleAmDropdown(event)">
           <span><span class="am-dd-count" id="amDdCount" style="display:none">0</span><span id="amDdLabel">Choose amenities…</span></span>
@@ -5569,27 +5570,25 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
       </div>
     </div>
     <div class="form-group">
-      <label class="form-label">Selected amenities</label>
+      <label class="form-label">Selected Amenities</label>
       <div class="am-selected-box" id="amSelectedBox">
         <span class="am-selected-empty" id="amSelectedEmpty">No amenities selected yet</span>
       </div>
     </div>
     <div class="form-group">
-      <label class="form-label">Additional amenities (comma-separated)</label>
+      <label class="form-label">Additional Amenities</label>
       <input class="form-input" type="text" id="f-amenities-extra" autocapitalize="words" onblur="capitalizeWordsInput(this)" oninput="capitalizeWordsInput(this)"/>
     </div>
     </div>
-
-
     <!-- ===== 8. MEDIA & DESCRIPTION ===== -->
     <div id="mediaSection">
     <div class="lm-section" id="mediaSectionHeader">📸 Media &amp; Description</div>
     <div class="form-group" id="videoUrlGroup">
-      <label class="form-label">Video tour URL</label>
+      <label class="form-label">Video Tour URL</label>
       <input class="form-input" type="url" id="f-videoUrl" />
     </div>
     <div class="form-group" id="imgFormGroup">
-      <label class="form-label">Property images</label>
+      <label class="form-label">Property Images</label>
       <div class="img-row" id="imgAddControls">
         <div class="img-btns">
           <button type="button" class="img-btn-sec" onclick="document.getElementById('f-imgFileInput').click()">📁 Upload</button>
@@ -5603,7 +5602,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
       <div class="img-hint" id="fImgOrderHint" style="display:none">Drag to reorder — first photo is the cover image shown on cards.</div>
     </div>
     <div class="form-group">
-      <label class="form-label">Description (optional)</label>
+      <label class="form-label">Description</label>
       <textarea class="form-input" id="f-desc" autocapitalize="sentences" onblur="capitalizeSentencesInput(this)" oninput="capitalizeSentencesInput(this)" rows="3" style="resize:vertical"></textarea>
     </div>
     </div>
@@ -17339,7 +17338,7 @@ function onFTypeChange(val) {
   const maxPersonsGroup = document.getElementById('maxPersonsFormGroup');
   if (maxPersonsGroup) maxPersonsGroup.style.display = isSell ? 'none' : '';
   const lbl = document.getElementById('f-rentLabel');
-  if (lbl) lbl.innerHTML = (val === 'For Rent' || val === 'Rent') ? 'Monthly rent (₹) <span style="color:var(--brand)">*</span>'
+  if (lbl) lbl.innerHTML = (val === 'For Rent' || val === 'Rent') ? 'Monthly Rent <span style="color:var(--brand)">*</span>'
     : isLease ? 'Token rent (₹) <span style="color:var(--brand)">*</span>'
     : isShortStay ? 'Per day rate (₹) <span style="color:var(--brand)">*</span>'
     : isSell ? 'Expected price (₹) <span style="color:var(--brand)">*</span>'
@@ -17597,7 +17596,7 @@ function onSellPropertyTypeChange() {
     if (el) el.style.display = isLand ? 'none' : '';
   });
   const areaLbl = document.getElementById('f-areaLabel');
-  if (areaLbl) areaLbl.textContent = isLand ? 'Plot area (sqft)' : 'Area (sqft)';
+  if (areaLbl) areaLbl.textContent = isLand ? 'Plot Area (Sqft)' : 'Area (Sqft)';
 }
 
 /* ═══════════════════════════════════════════════
@@ -17984,7 +17983,7 @@ const OPTIONAL_FIELD_IDS = new Set([
   'f-latitude', 'f-longitude', 'f-latLngDisplay',
   'f-imgFileInput', 'f-imgCameraInput',
   'f-amenities-extra', 'f-desc',   // description is optional (same as index.html)
-  'f-ownerAltPhone', 'f-ownerCaretakerPhone', 'f-videoUrl', 'f-age', 'f-area',
+  'f-ownerCaretakerPhone', 'f-videoUrl', 'f-age', 'f-area',
   'f-areaType', 'f-maxPersons', 'f-kitchenType',   // optional
   'f-maintenance', 'f-leaseMaintenance',
   'f-sellPossessionDate', 'f-sellReraId', 'f-pricePerSqft',
@@ -18376,8 +18375,8 @@ async function adminSubmitListing() {
     return;
   }
   const ownerAltPhone = gv('f-ownerAltPhone');
-  if (ownerAltPhone && !isValidIndianMobile(ownerAltPhone)) {
-    alert('Enter a valid 10-digit alternate number starting with 6, 7, 8 or 9');
+  if (!ownerAltPhone || !isValidIndianMobile(ownerAltPhone)) {
+    alert('Enter a valid 10-digit owner number starting with 6, 7, 8 or 9');
     return;
   }
   const ownerCaretakerPhone = gv('f-ownerCaretakerPhone');
