@@ -293,15 +293,19 @@ body{
 @media(max-width:768px){
   #bulkToolbar{width:auto!important;align-items:flex-end!important;right:14px;bottom:14px;gap:10px!important}
   #bulkToolbar .bulk-toolbar-left,#bulkToolbar .bulk-toolbar-right{width:auto!important;align-items:flex-end!important;gap:10px!important}
-  #bulkToolbar .bulk-btn{position:relative;width:46px!important;min-width:46px!important;height:46px!important;padding:0!important;gap:0!important;justify-content:center!important;align-items:center!important;border-radius:50%!important;flex-direction:row!important}
+  #bulkToolbar .bulk-btn{position:relative;width:auto!important;min-width:0!important;height:42px!important;padding:0 16px 0 13px!important;gap:8px!important;justify-content:flex-start!important;align-items:center!important;border-radius:999px!important;flex-direction:row!important;white-space:nowrap}
   #bulkToolbar .bulk-btn i{font-size:1.05rem!important;margin:0!important}
   /* Collapsible action stack: only the arrow shows until tapped */
   #bulkToolbar:not(.fab-open) .bulk-toolbar-left,#bulkToolbar:not(.fab-open) .bulk-toolbar-right{display:none!important}
   #bulkToolbar .fab-toggle-btn{display:flex!important;background:var(--surface,#fff);cursor:pointer}
   #bulkToolbar .fab-toggle-btn i{transition:transform .2s}
   #bulkToolbar.fab-open .fab-toggle-btn i{transform:rotate(180deg)}
-  #bulkToolbar .bulk-btn .bulk-btn-label{display:none!important}
-  #bulkCompareCount,#bulkShareTenantCount,#bulkShareLinksCount,#bulkCheckAvailabilityCount{
+  /* One-word name next to each icon (from the button's data-short attribute) */
+  #bulkToolbar .bulk-btn .bulk-btn-label{display:inline!important;font-size:0!important;line-height:0!important}
+  #bulkToolbar .bulk-btn .bulk-btn-label::after{content:attr(data-short);font-size:.82rem;line-height:1.2;display:inline;font-weight:700}
+  /* The expand/collapse arrow stays a plain round button */
+  #bulkToolbar .bulk-btn.fab-toggle-btn{width:42px!important;min-width:42px!important;height:42px!important;padding:0!important;gap:0!important;justify-content:center!important;border-radius:50%!important}
+  #bulkCompareCount,#bulkShareTenantCount,#bulkShareLinksCount,#bulkCheckAvailabilityCount,#bulkToolbar .bulkFlagCount{
     position:absolute;top:-6px;right:-6px;min-width:20px;height:20px;padding:0 5px;box-sizing:border-box;
     display:flex;align-items:center;justify-content:center;
     border-radius:10px;background:var(--ink,#1f2937);color:#fff;border:2px solid #fff;
@@ -4041,43 +4045,43 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
     <div class="bulk-toolbar bulk-toolbar-spaced" id="bulkToolbar">
       <div class="bulk-toolbar-left">
         <button class="bulk-btn" id="addPropertyBtn" onclick="openAdminAddPropertyModal()" title="Add property" aria-label="Add property" style="background:var(--brand);color:#fff;border-color:var(--brand)">
-          <i class="fas fa-plus"></i> <span class="bulk-btn-label" data-mobile="Add Property">Add Property</span>
+          <i class="fas fa-plus"></i> <span class="bulk-btn-label" data-mobile="Add Property" data-short="Add">Add Property</span>
         </button>
         <button class="bulk-btn sel-hide" id="bulkCompareBtn" style="display:none;background:var(--brand);color:#fff;border-color:var(--brand)" onclick="openAdminCompareModal()" title="Compare the selected properties and share the link with a customer">
-          <i class="fas fa-code-compare"></i> <span class="bulk-btn-label" data-mobile="Compare Properties">Compare Properties</span><span id="bulkCompareCount">0</span>
+          <i class="fas fa-code-compare"></i> <span class="bulk-btn-label" data-mobile="Compare Properties" data-short="Compare">Compare Properties</span><span id="bulkCompareCount">0</span>
         </button>
         <button class="bulk-btn sel-hide" id="bulkShareTenantBtn" style="display:none;background:#0ea5e9;color:#fff;border-color:#0ea5e9" onclick="shareSelectedToTenant()" title="Send the view links of all selected properties to a tenant on WhatsApp">
-          <i class="fas fa-paper-plane"></i> <span class="bulk-btn-label" data-mobile="Share to Tenant">Share to Tenant</span><span id="bulkShareTenantCount">0</span>
+          <i class="fas fa-paper-plane"></i> <span class="bulk-btn-label" data-mobile="Share to Tenant" data-short="Tenant">Share to Tenant</span><span id="bulkShareTenantCount">0</span>
         </button>
         <button class="bulk-btn sel-hide" id="bulkShareLinksBtn" style="display:none;background:#25D366;color:#fff;border-color:#25D366" onclick="shareSelectedLinksToNumber()" title="Share links for all selected properties to a WhatsApp number you enter">
-          <i class="fab fa-whatsapp"></i> <span class="bulk-btn-label" data-mobile="Share Links">Share Links</span><span id="bulkShareLinksCount">0</span>
+          <i class="fab fa-whatsapp"></i> <span class="bulk-btn-label" data-mobile="Share Links" data-short="Share">Share Links</span><span id="bulkShareLinksCount">0</span>
         </button>
         <button class="bulk-btn sel-hide" id="bulkCheckAvailabilityBtn" style="display:none;background:#7c3aed;color:#fff;border-color:#7c3aed" onclick="checkAvailabilityWithOwners()" title="Review and send a WhatsApp availability check to each selected property's owner (alt number only)">
-          <i class="fab fa-whatsapp"></i> <span class="bulk-btn-label" data-mobile="Check Availability">Check Availability</span><span id="bulkCheckAvailabilityCount">0</span>
+          <i class="fab fa-whatsapp"></i> <span class="bulk-btn-label" data-mobile="Check Availability" data-short="Check">Check Availability</span><span id="bulkCheckAvailabilityCount">0</span>
         </button>
         <span id="addPropertyDivider" style="width:1px;align-self:stretch;background:var(--border,#ddd);margin:2px 4px;flex-shrink:0"></span>
         <button type="button" class="bulk-selected-count" id="bulkSelectedCount" style="display:none" onclick="clearPropSelection()" title="Clear selection">
           <i class="fas fa-check-circle bulk-selected-icon"></i> <span id="bulkSelectedNum" class="bulk-selected-num">0</span><span class="bulk-btn-label" data-mobile="Selected"> selected</span> <span class="bulk-selected-clear-x">X</span>
         </button>
         <button type="button" class="bulk-btn sel-hide" id="bulkFlagPromotedBtn" style="display:none;background:#ea580c;color:#fff;border-color:#ea580c" onclick="openBulkFlagModal('promoted')" title="Turn promoted ON/OFF for all selected properties">
-          <i class="fas fa-toggle-on"></i> <span class="bulk-btn-label" data-mobile="Set Promoted">Set Promoted</span><span class="bulkFlagCount">0</span>
+          <i class="fas fa-toggle-on"></i> <span class="bulk-btn-label" data-mobile="Set Promoted" data-short="Promote">Set Promoted</span><span class="bulkFlagCount">0</span>
         </button>
         <button type="button" class="bulk-btn sel-hide" id="bulkFlagVerifiedBtn" style="display:none;background:#059669;color:#fff;border-color:#059669" onclick="openBulkFlagModal('verified')" title="Turn verified ON/OFF for all selected properties">
-          <i class="fas fa-toggle-on"></i> <span class="bulk-btn-label" data-mobile="Set Verified">Set Verified</span><span class="bulkFlagCount">0</span>
+          <i class="fas fa-toggle-on"></i> <span class="bulk-btn-label" data-mobile="Set Verified" data-short="Verify">Set Verified</span><span class="bulkFlagCount">0</span>
         </button>
         <button type="button" class="bulk-btn sel-hide" id="bulkFlagBookedBtn" style="display:none;background:#6366f1;color:#fff;border-color:#6366f1" onclick="openBulkFlagModal('booked')" title="Turn booked ON/OFF for all selected properties">
-          <i class="fas fa-toggle-on"></i> <span class="bulk-btn-label" data-mobile="Set Booked">Set Booked</span><span class="bulkFlagCount">0</span>
+          <i class="fas fa-toggle-on"></i> <span class="bulk-btn-label" data-mobile="Set Booked" data-short="Booked">Set Booked</span><span class="bulkFlagCount">0</span>
         </button>
         <button type="button" class="bulk-btn sel-hide" id="bulkFlagPublicCallBtn" style="display:none;background:#0891b2;color:#fff;border-color:#0891b2" onclick="openBulkFlagModal('publicCall')" title="Turn Public call ON/OFF for all selected properties">
-          <i class="fas fa-phone"></i> <span class="bulk-btn-label" data-mobile="Set Public Call">Set Public Call</span><span class="bulkFlagCount">0</span>
+          <i class="fas fa-phone"></i> <span class="bulk-btn-label" data-mobile="Set Public Call" data-short="Call">Set Public Call</span><span class="bulkFlagCount">0</span>
         </button>
         <button type="button" class="bulk-btn bulk-btn-danger" id="bulkDeleteSelectedBtn" style="display:none" onclick="deleteSelectedProperties()">
-          <i class="fas fa-trash"></i> <span class="bulk-btn-label" data-mobile="Delete">Delete (<span id="bulkDeleteCount">0</span>)</span>
+          <i class="fas fa-trash"></i> <span class="bulk-btn-label" data-mobile="Delete" data-short="Delete">Delete (<span id="bulkDeleteCount">0</span>)</span>
         </button>
       </div>
       <div class="bulk-toolbar-right">
         <button class="bulk-btn" id="recalcDistanceBtn" onclick="recalculateUserLocation()" title="Re-fetch your current location and recalculate the distance shown on every Directions button">
-          <i class="fas fa-location-crosshairs"></i> <span class="bulk-btn-label" data-mobile="Recalculate Distance">Recalculate Distance</span>
+          <i class="fas fa-location-crosshairs"></i> <span class="bulk-btn-label" data-mobile="Recalculate Distance" data-short="Distance">Recalculate Distance</span>
         </button>
       </div>
       <button type="button" id="fabToggleBtn" class="bulk-btn fab-toggle-btn" onclick="toggleFabStack()" aria-label="Show actions" aria-expanded="false" title="Show actions"><i class="fas fa-chevron-up"></i></button>
