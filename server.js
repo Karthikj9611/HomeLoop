@@ -1519,7 +1519,6 @@ const BASE_REQUIRED_FIELDS = [
   ['location.currentLocationLink', 'Current location link'],
   ['owner.name',        'Owner name'],
   ['owner.phone',       'Owner phone number'],
-  ['owner.email',       'Owner email'],
   ['owner.contactTime', 'Preferred contact time'],
   ['owner.sameAsBuilding', 'Owner staying in same building'],
 ];  // NOTE: media.desc (Description) is intentionally NOT required

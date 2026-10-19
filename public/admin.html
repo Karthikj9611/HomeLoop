@@ -2329,6 +2329,7 @@ body.pact-hide-booking #propertyTable .pact-booking{display:none!important}
   box-shadow:0 1px 2px rgba(224,58,82,.4),inset 0 1px 2px rgba(0,0,0,.25);
 }
 .contact-pick-btn svg{width:15px;height:15px;filter:drop-shadow(0 1px 0.5px rgba(0,0,0,.15))}
+
 .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 @media (max-width:640px){
   /* Post Property and View Property share this form — keep every row to
@@ -4815,29 +4816,6 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
   </div>
 </div>
 
-<!-- ─── Current Location Link help modal (outside #addModal so form resets never touch it) ─── -->
-<div class="add-modal-overlay" id="locHelpModal" role="dialog" aria-modal="true" aria-label="How to get a location link" onclick="if(event.target===this)closeLocHelp()" style="z-index:1000">
-  <div class="add-modal" style="max-width:440px;padding:22px 22px 20px">
-    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px">
-      <div style="font-size:15px;font-weight:700;color:var(--text);line-height:1.4">Here's how to get a shareable Google Maps location link:</div>
-      <button type="button" onclick="closeLocHelp()" aria-label="Close" style="flex-shrink:0;background:var(--brand);border:none;color:#fff;border-radius:50%;width:30px;height:30px;font-size:18px;line-height:1;cursor:pointer">&times;</button>
-    </div>
-    <div style="font-size:13px;font-weight:700;color:var(--text);margin:14px 0 6px">Google Maps (Android / iPhone)</div>
-    <ol style="margin:0 0 14px 18px;padding:0;font-size:13px;color:var(--text-2);line-height:1.7">
-      <li>Open Google Maps. Tap the blue dot (your current location) or search for your building's location.</li>
-      <li>Tap <b>Share</b> (or <b>Share your location</b>), then <b>Copy link</b>.</li>
-    </ol>
-    <a href="https://maps.google.com" target="_blank" rel="noopener" style="display:inline-block;margin-bottom:14px;font-size:12.5px;font-weight:700;color:var(--brand);text-decoration:underline">Open Google Maps</a>
-    <label for="locHelpInput" style="display:block;font-size:12px;font-weight:700;color:var(--text);margin-bottom:5px">Paste the copied link here</label>
-    <div style="display:flex;gap:7px">
-      <input type="url" id="locHelpInput" class="form-input" inputmode="url" autocomplete="off" placeholder="https://maps.app.goo.gl/..." style="flex:1;min-width:0" oninput="this.value=this.value.trim();document.getElementById('locHelpErr').textContent=''" />
-      <button type="button" onclick="pasteLocHelp()" style="flex-shrink:0;padding:0 12px;border-radius:9px;border:1.5px solid var(--text);background:var(--bg);color:var(--text);font-size:12px;font-weight:700;cursor:pointer">Paste</button>
-    </div>
-    <div id="locHelpErr" style="font-size:11.5px;color:#d93025;min-height:15px;margin-top:4px"></div>
-    <button type="button" class="form-submit" onclick="applyLocHelp()" style="margin-top:8px;width:100%">Use this link</button>
-  </div>
-</div>
-
 <!-- ─── Property EDIT modal — ported from index.html's "List your property"
      form (openEditListingFull/applyImportedProperty/submitListing), so
      admin edits every field exactly the way the property owner would.
@@ -4987,13 +4965,13 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
       <div class="form-group" id="f-typeWrap">
         <label class="form-label">Status <span style="color:var(--brand)">*</span></label>
         <select class="form-select" id="f-type" onchange="onFTypeChange(this.value)">
-          <option value="Rent">Rent</option><option value="Lease">Lease</option><option value="PG">PG / Co-living</option><option value="ShortStay">Short Stay (Per Day)</option><option value="Sell">Sell</option>
+          <option value="Lease">Lease</option><option selected value="Rent">Rent</option><option value="Sell">Sell</option>
         </select>
       </div>
       <div class="form-group">
         <label class="form-label">Listed By</label>
         <select class="form-select" id="f-listedBy" onchange="updateBrokerageFields()">
-          <option>Owner</option><option>Agent</option><option>Broker</option><option>Builder</option>
+          <option>Agent</option><option>Broker</option><option selected>Owner</option>
         </select>
       </div>
     </div>
@@ -5023,13 +5001,11 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
       </div>
 <div class="form-group" id="latLngGroup">
         <label class="form-label">Latitude / Longitude</label>
-        <input class="form-input" type="text" id="f-latLngDisplay" placeholder="e.g. 12.345678, 77.123456" oninput="onLatLngDisplayInput(this.value)" />
-        <div style="font-size:11px;color:var(--text-2);margin-top:2px">Auto-filled by Live · edit directly if you need to correct it</div>
+        <input class="form-input" type="text" id="f-latLngDisplay" oninput="onLatLngDisplayInput(this.value)" />
       </div>
 <div class="form-group" id="mapsLinkGroup">
         <label class="form-label">Google Maps Link</label>
         <input class="form-input" type="url" id="f-googleMapsLink" />
-        <div style="font-size:11px;color:var(--text-2);margin-top:2px">Auto-filled from your location · replace it if you have a more exact link</div>
       </div>
 <div class="form-group">
         <label class="form-label">Area <span style="color:var(--brand)">*</span></label>
@@ -5041,17 +5017,16 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
       </div>
 <div class="form-group" id="pincodeGroup">
         <label class="form-label">Pincode</label>
-        <input class="form-input" type="text" id="f-pincode" inputmode="numeric" maxlength="6" placeholder="e.g. 560034" oninput="onPincodeInput(this)"/>
-        <div style="font-size:11px;color:var(--text-2);margin-top:2px">Auto-filled from the address · edit if it's wrong</div>
+        <input class="form-input" type="text" id="f-pincode" inputmode="numeric" maxlength="6" oninput="onPincodeInput(this)"/>
       </div>
 <div class="form-group" style="grid-column:1 / -1" id="currentLocGroup">
         <label class="form-label">Building Location Link <span style="color:var(--brand)">*</span></label>
         <div style="display:flex;gap:7px;align-items:stretch">
-          <input class="form-input" style="flex:1;min-width:0" type="url" id="f-currentLocationLink" inputmode="url" autocomplete="off" placeholder="Tap to add location link" onfocus="if(!this.value.trim()){this.blur();openLocHelp();}" onclick="if(!this.value.trim()){this.blur();openLocHelp();}" oninput="this.value=this.value.trim()" />
-          <button type="button" onclick="openCurrentLocLink()" class="loc-act-btn" aria-label="Open in Google Maps" title="Open in Google Maps" style="display:inline-flex;align-items:center;justify-content:center;gap:6px;flex-shrink:0;padding:0 12px;border-radius:9px;border:1.5px solid var(--text);background:var(--bg);color:var(--text);font-size:12px;font-weight:700;cursor:pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg><span class="loc-btn-txt">Navigate</span></button>
-          <button type="button" onclick="copyCurrentLocLink()" class="loc-act-btn" aria-label="Copy link" title="Copy link" style="display:inline-flex;align-items:center;justify-content:center;gap:6px;flex-shrink:0;padding:0 12px;border-radius:9px;border:1.5px solid var(--text);background:var(--bg);color:var(--text);font-size:12px;font-weight:700;cursor:pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><span class="loc-btn-txt">Copy</span></button>
+          <input class="form-input" style="flex:1;min-width:0" type="url" id="f-currentLocationLink" inputmode="url" autocomplete="off" oninput="this.value=this.value.trim()" />
+          <button type="button" onclick="window.open('https://www.google.com/maps','_blank','noopener')" class="loc-act-btn" aria-label="Open Google Maps" title="Open Google Maps" style="display:inline-flex;align-items:center;justify-content:center;gap:6px;flex-shrink:0;padding:0 12px;border-radius:9px;border:1.5px solid var(--text);background:var(--bg);color:var(--text);font-size:12px;font-weight:700;cursor:pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg><span class="loc-btn-txt">Open Google Maps</span></button>
+          <button type="button" onclick="openCurrentLocLink()" class="loc-act-btn" aria-label="Open in Google Maps" title="Open in Google Maps" style="display:inline-flex;align-items:center;justify-content:center;gap:6px;flex-shrink:0;min-width:110px;padding:0 12px;border-radius:9px;border:1.5px solid var(--text);background:var(--bg);color:var(--text);font-size:12px;font-weight:700;cursor:pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg><span class="loc-btn-txt">Navigate</span></button>
+          
         </div>
-        <div style="font-size:11px;color:var(--text-2);margin-top:2px"><a href="#" onclick="openLocHelp();return false" style="color:var(--brand);font-weight:700;text-decoration:underline">How to get it</a></div>
       </div>
     </div>
 <div class="lm-section">👤 Owner Details</div>
@@ -5061,7 +5036,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
         <input class="form-input" type="text" id="f-ownerName" autocapitalize="words" onblur="capitalizeWordsInput(this)" oninput="capitalizeWordsInput(this)"/>
         <div class="identity-locked-hint" id="f-ownerName-hint" style="display:none">Auto-filled from your account</div>
       </div>
-      <div class="form-group">
+      <div class="form-group" id="f-ownerPhone-group">
         <label class="form-label">Phone Number <span style="color:var(--brand)">*</span></label>
         <div class="input-icon-wrap">
           <input class="form-input" type="tel" id="f-ownerPhone" inputmode="numeric" maxlength="10" oninput="sanitizeMobileInput(this)"/>
@@ -5100,7 +5075,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
       </div>
       <div class="form-group">
         <label class="form-label">Owner Staying In Same Building?</label>
-        <select class="form-select" id="f-sameAsBuildingAddress"><option value="Yes">Yes</option><option value="No">No</option></select>
+        <select class="form-select" id="f-sameAsBuildingAddress"><option value="No">No</option><option selected value="Yes">Yes</option></select>
       </div>
       <!-- Agent-only fields — shown when Listed by = Agent.
            Unlike index.html (where these are fixed to the platform's own
@@ -5131,9 +5106,9 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
     <div class="lm-section">🤝 Brokerage</div>
     <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
       <div class="form-group" id="f-brokerageWrap">
-        <label class="form-label">Brokerage Fee <span style="color:var(--brand)">*</span></label>
+        <label class="form-label">Brokerage Fee</label>
         <select class="form-select" id="f-brokerage" onchange="onBrokerageChange()">
-          <option value="">Select</option>
+          <option value=""></option>
           <option value="1 Day rent">1 Day rent</option>
           <option value="7 Days rent">7 Days rent</option>
           <option value="10 Days rent">10 Days rent</option>
@@ -5148,7 +5123,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
         </select>
       </div>
       <div class="form-group" id="f-brokerageAmountWrap" style="display:none">
-        <label class="form-label">Brokerage Amount <span style="color:var(--brand)">*</span></label>
+        <label class="form-label">Brokerage Amount</label>
         <input class="form-input" type="number" id="f-brokerageAmount" min="0">
       </div>
     </div>
@@ -5172,11 +5147,11 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
       </div>
       <div class="form-group" id="f-waterWrap">
         <label class="form-label">Water</label>
-        <select class="form-select" id="f-waterCharge"><option>Included</option><option>Separate</option><option>Tanker</option><option>Kaveri</option><option>Borewell</option></select>
+        <select class="form-select" id="f-waterCharge"><option>Borewell</option><option selected>Included</option><option>Kaveri</option><option>Separate</option><option>Tanker</option></select>
       </div>
 	  <div class="form-group" id="f-negotiableWrap">
         <label class="form-label">Price Negotiable</label>
-        <select class="form-select" id="f-negotiable"><option value="">Select</option><option value="yes">Yes</option><option value="no">No</option></select>
+        <select class="form-select" id="f-negotiable"><option value=""></option><option value="no">No</option><option value="yes">Yes</option></select>
       </div>
     </div>
     </div>
@@ -5188,7 +5163,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
       <div class="form-group">
         <label class="form-label">Property Type</label>
         <select class="form-select" id="f-propertyType" onchange="onSellPropertyTypeChange()">
-          <option>Apartment</option><option>House</option><option>Standalone</option><option>Villa</option><option>Studio</option><option>Duplex</option><option>Penthouse</option><option>Bungalow</option><option>Loft</option><option>Cottage</option><option>Farmhouse</option><option>PG</option><option>Hostel</option><option>Homestay</option><option>Plot / Land</option>
+          <option>Apartment</option><option>Bungalow</option><option>Duplex</option><option>House</option><option>Loft</option><option>Penthouse</option><option>Standalone</option><option>Studio</option><option>Villa</option>
         </select>
       </div>
       <div class="form-group" id="f-bhkWrap">
@@ -5215,13 +5190,13 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
       <div class="form-group" id="f-floorWrap">
         <label class="form-label">Floor</label>
         <select class="form-select" id="f-floor">
-          <option value="">Select</option>
+          <option value=""></option>
           <option>0</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option>9</option>
         </select>
       </div>
       <div class="form-group" id="f-flatNoWrap">
         <label class="form-label">Flat Number</label>
-        <input class="form-input" type="text" id="f-flatNo" maxlength="20" placeholder="e.g. A-304" autocomplete="off" />
+        <input class="form-input" type="text" id="f-flatNo" maxlength="20" autocomplete="off" />
       </div>
       <div class="form-group">
         <label class="form-label" id="f-areaLabel">Area (Sqft)</label>
@@ -5229,7 +5204,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
       </div>
       <div class="form-group" id="f-areaTypeWrap" style="display:none">
         <label class="form-label">Area Type</label>
-        <select class="form-select" id="f-areaType"><option value="">Select</option><option>Carpet Area</option><option>Super Built-up Area</option><option>Built-up Area</option></select>
+        <select class="form-select" id="f-areaType"><option value=""></option><option>Built-up Area</option><option>Carpet Area</option><option>Super Built-up Area</option></select>
       </div>
       <div class="form-group" id="f-bathsWrap">
         <label class="form-label">Bathrooms</label>
@@ -5237,28 +5212,28 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
       </div>
       <div class="form-group" id="f-toiletTypeWrap">
         <label class="form-label">Toilet Type</label>
-        <select class="form-select" id="f-toiletType"><option>Western</option><option>Indian</option><option>Both</option></select>
+        <select class="form-select" id="f-toiletType"><option>Both</option><option>Indian</option><option selected>Western</option></select>
       </div>
       <div class="form-group" id="f-furnishingWrap">
         <label class="form-label">Furnishing</label>
         <select class="form-select" id="f-furnishing">
-          <option>Fully</option><option>Semi</option><option>Basic</option>
+          <option>Basic</option><option selected>Fully</option><option>Semi</option>
         </select>
       </div>
       <div class="form-group" id="f-kitchenTypeWrap">
         <label class="form-label">Kitchen Type</label>
-        <select class="form-select" id="f-kitchenType"><option value="">Select</option><option>Straight Kitchen</option><option>Parallel Kitchen</option><option>L-Shaped Kitchen</option><option>U-Shaped Kitchen</option><option>Open Kitchen</option><option>Closed Kitchen</option><option>Island Kitchen</option><option>Modular Kitchen</option></select>
+        <select class="form-select" id="f-kitchenType"><option value=""></option><option>Closed Kitchen</option><option>Island Kitchen</option><option>L-Shaped Kitchen</option><option>Modular Kitchen</option><option>Open Kitchen</option><option>Parallel Kitchen</option><option>Straight Kitchen</option><option>U-Shaped Kitchen</option></select>
       </div>
       <div class="form-group">
         <label class="form-label">Facing</label>
         <select class="form-select" id="f-facing">
-          <option>North</option><option>South</option><option>East</option><option>West</option><option>North-East</option><option>North-West</option><option>South-East</option><option>South-West</option>
+          <option>East</option><option selected>North</option><option>North-East</option><option>North-West</option><option>South</option><option>South-East</option><option>South-West</option><option>West</option>
         </select>
       </div>
       <div class="form-group" id="f-ageWrap">
         <label class="form-label">Age Of Property</label>
         <select class="form-select" id="f-age">
-          <option value="">Select</option><option>New</option><option>1 yr</option><option>2 yrs</option><option>3 yrs</option><option>4 yrs</option><option>5 yrs</option><option>6 yrs</option><option>7 yrs</option><option>8 yrs</option><option>9 yrs</option><option>10 yrs</option><option>11 yrs</option><option>12 yrs</option><option>13 yrs</option><option>14 yrs</option><option>15 yrs</option><option>16 yrs</option><option>17 yrs</option><option>18 yrs</option><option>19 yrs</option><option>20 yrs</option>
+          <option value=""></option><option>New</option><option>1 yr</option><option>2 yrs</option><option>3 yrs</option><option>4 yrs</option><option>5 yrs</option><option>6 yrs</option><option>7 yrs</option><option>8 yrs</option><option>9 yrs</option><option>10 yrs</option><option>11 yrs</option><option>12 yrs</option><option>13 yrs</option><option>14 yrs</option><option>15 yrs</option><option>16 yrs</option><option>17 yrs</option><option>18 yrs</option><option>19 yrs</option><option>20 yrs</option>
         </select>
       </div>
       <div class="form-group" id="tenantFormGroup">
@@ -5281,7 +5256,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
       </div>
       <div class="form-group" id="maxPersonsFormGroup">
         <label class="form-label">No. Of Persons Allowed</label>
-        <input class="form-input" type="number" id="f-maxPersons" min="1" max="50" step="1" inputmode="numeric" placeholder="e.g. 4" oninput="if(this.value!==''){this.value=this.value.replace(/\D/g,'').slice(0,2)}" />
+        <input class="form-input" type="number" id="f-maxPersons" min="1" max="50" step="1" inputmode="numeric" oninput="if(this.value!==''){this.value=this.value.replace(/\D/g,'').slice(0,2)}" />
       </div>
       <div class="form-group" id="f-availWrap">
         <label class="form-label">Available From</label>
@@ -5295,13 +5270,13 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
     <div id="addRentSection">
       <div class="lm-section">📅 Availability &amp; Terms</div>
       <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
-        <div class="form-group"><label class="form-label">Notice Period</label><select class="form-select" id="f-noticePeriod"><option value="">Select</option><option>15 Days</option><option>1 Month</option><option>2 Months</option><option selected>3 Months</option></select></div>
+        <div class="form-group"><label class="form-label">Notice Period</label><select class="form-select" id="f-noticePeriod"><option value=""></option><option>15 Days</option><option>1 Month</option><option>2 Months</option><option selected>3 Months</option></select></div>
         <div class="form-group"><label class="form-label">Contract Term</label><select class="form-select" id="f-leaseDuration"><option value="">Any</option><option>6 Months</option><option>11 Months</option><option selected>12 Months</option><option>24 Months</option><option>36 Months</option><option>48 Months</option><option>48+ Months</option></select></div>
       </div>
       <div class="lm-section">⚖️ Tenant Rules</div>
       <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
-        <div class="form-group"><label class="form-label">Pets Allowed</label><select class="form-select" id="f-petsAllowed"><option value="">Select</option><option>Yes</option><option selected>No</option><option>Restricted</option></select></div>
-        <div class="form-group"><label class="form-label">Non-Veg Allowed</label><select class="form-select" id="f-nonVegAllowed"><option value="">Select</option><option selected>Yes</option><option>No</option></select></div>
+        <div class="form-group"><label class="form-label">Pets Allowed</label><select class="form-select" id="f-petsAllowed"><option value=""></option><option selected>No</option><option>Restricted</option><option>Yes</option></select></div>
+        <div class="form-group"><label class="form-label">Non-Veg Allowed</label><select class="form-select" id="f-nonVegAllowed"><option value=""></option><option>No</option><option selected>Yes</option></select></div>
       </div>
     </div>
 
@@ -5314,16 +5289,16 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
       </div>
       <div class="lm-section">📋 Lease Terms</div>
       <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
-        <div class="form-group"><label class="form-label">Contract Term</label><select class="form-select" id="f-leaseDurationVal"><option value="">Select</option><option>1 Year</option><option selected>2 Years</option><option>3 Years</option><option>5 Years</option><option>9 Years</option><option>15 Years</option><option>30 Years</option></select></div>
-        <div class="form-group"><label class="form-label">Lease Type</label><select class="form-select" id="f-leaseType"><option value="">Select</option><option>Residential</option><option>Commercial</option><option>Industrial</option><option>Mixed Use</option></select></div>
+        <div class="form-group"><label class="form-label">Contract Term</label><select class="form-select" id="f-leaseDurationVal"><option value=""></option><option>1 Year</option><option selected>2 Years</option><option>3 Years</option><option>5 Years</option><option>9 Years</option><option>15 Years</option><option>30 Years</option></select></div>
+        <div class="form-group"><label class="form-label">Lease Type</label><select class="form-select" id="f-leaseType"><option value=""></option><option>Commercial</option><option>Industrial</option><option>Mixed Use</option><option>Residential</option></select></div>
         <div class="form-group"><label class="form-label">Lock-In Period</label><select class="form-select" id="f-lockInPeriod"><option value="">None</option><option>1 Year</option><option>2 Years</option><option>3 Years</option></select></div>
         <div class="form-group"><label class="form-label">Available From</label><input class="form-input" type="date" id="f-leaseAvailableFrom" /></div>
-        <div class="form-group"><label class="form-label">Notice Period</label><select class="form-select" id="f-leaseNoticePeriod"><option value="">Select</option><option>1 Month</option><option>2 Months</option><option selected>3 Months</option></select></div>
+        <div class="form-group"><label class="form-label">Notice Period</label><select class="form-select" id="f-leaseNoticePeriod"><option value=""></option><option>1 Month</option><option>2 Months</option><option selected>3 Months</option></select></div>
       </div>
       <div class="lm-section">⚖️ House Rules</div>
       <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
-        <div class="form-group"><label class="form-label">Pets Allowed</label><select class="form-select" id="f-leasePets"><option value="">Select</option><option>Yes</option><option selected>No</option></select></div>
-        <div class="form-group"><label class="form-label">Non-Veg Allowed</label><select class="form-select" id="f-leaseNonVeg"><option value="">Select</option><option selected>Yes</option><option>No</option></select></div>
+        <div class="form-group"><label class="form-label">Pets Allowed</label><select class="form-select" id="f-leasePets"><option value=""></option><option selected>No</option><option>Yes</option></select></div>
+        <div class="form-group"><label class="form-label">Non-Veg Allowed</label><select class="form-select" id="f-leaseNonVeg"><option value=""></option><option>No</option><option selected>Yes</option></select></div>
       </div>
     </div>
 
@@ -5334,22 +5309,22 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
         <div class="form-group" id="f-sellTotalFloorsWrap">
           <label class="form-label">Total Floors In Building</label>
           <select class="form-select" id="f-sellTotalFloors">
-            <option value="">Select</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option>9</option><option>10</option><option>10+</option>
+            <option value=""></option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option>9</option><option>10</option><option>10+</option>
           </select>
         </div>
         <div class="form-group" id="f-sellBalconiesWrap">
           <label class="form-label">Balconies</label>
-          <select class="form-select" id="f-sellBalconies"><option value="">Select</option><option>0</option><option>1</option><option>2</option><option>3</option><option>4+</option></select>
+          <select class="form-select" id="f-sellBalconies"><option value=""></option><option>0</option><option>1</option><option>2</option><option>3</option><option>4+</option></select>
         </div>
         <div class="form-group">
           <label class="form-label">Ownership Type</label>
           <select class="form-select" id="f-sellOwnership">
-            <option value="">Select</option><option>Freehold</option><option>Leasehold</option><option>Co-operative Society</option><option>Power of Attorney</option>
+            <option value=""></option><option>Co-operative Society</option><option>Freehold</option><option>Leasehold</option><option>Power of Attorney</option>
           </select>
         </div>
         <div class="form-group">
           <label class="form-label">Possession Status</label>
-          <select class="form-select" id="f-sellPossession"><option value="">Select</option><option>Ready to Move</option><option>Under Construction</option></select>
+          <select class="form-select" id="f-sellPossession"><option value=""></option><option>Ready to Move</option><option>Under Construction</option></select>
         </div>
         <div class="form-group">
           <label class="form-label">Possession Date</label>
@@ -5357,7 +5332,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
         </div>
         <div class="form-group">
           <label class="form-label">RERA Registered</label>
-          <select class="form-select" id="f-sellRera"><option value="">Select</option><option>Yes</option><option>No</option></select>
+          <select class="form-select" id="f-sellRera"><option value=""></option><option>No</option><option>Yes</option></select>
         </div>
         <div class="form-group">
           <label class="form-label">RERA ID</label>
@@ -5450,18 +5425,18 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
       <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
         <div class="form-group">
           <label class="form-label">Property Type</label>
-          <select class="form-select" id="f-pgPropertyType"><option>Apartment</option><option>Independent House</option><option>Villa</option><option>Studio</option></select>
+          <select class="form-select" id="f-pgPropertyType"><option>Apartment</option><option>Independent House</option><option>Studio</option><option>Villa</option></select>
         </div>
         <div class="form-group">
           <label class="form-label">Gender Preference</label>
-          <select class="form-select" id="f-pgGender"><option>Any</option><option>Boys</option><option>Girls</option><option>Co-ed</option></select>
+          <select class="form-select" id="f-pgGender"><option>Any</option><option>Boys</option><option>Co-ed</option><option>Girls</option></select>
         </div>
         <div class="form-group">
           <label class="form-label">Room Type</label>
-          <select class="form-select" id="f-pgRoomType"><option>Single</option><option>Double Sharing</option><option>Triple Sharing</option><option>Dormitory</option></select>
+          <select class="form-select" id="f-pgRoomType"><option>Dormitory</option><option>Double Sharing</option><option selected>Single</option><option>Triple Sharing</option></select>
         </div>
-        <div class="form-group"><label class="form-label">Attached Bathroom</label><select class="form-select" id="f-pgBathroom"><option>Yes</option><option>Shared</option></select></div>
-        <div class="form-group"><label class="form-label">Toilet Type</label><select class="form-select" id="f-pgToiletType"><option>Western</option><option>Indian</option><option>Both</option></select></div>
+        <div class="form-group"><label class="form-label">Attached Bathroom</label><select class="form-select" id="f-pgBathroom"><option>Shared</option><option selected>Yes</option></select></div>
+        <div class="form-group"><label class="form-label">Toilet Type</label><select class="form-select" id="f-pgToiletType"><option>Both</option><option>Indian</option><option selected>Western</option></select></div>
         <div class="form-group"><label class="form-label">Occupancy Available</label><input class="form-input" type="number" id="f-pgOccupancy" /></div>
         <div class="form-group"><label class="form-label">Room Furnishing</label><select class="form-select" id="f-pgRoomFurnishing"><option value="">Select</option><option>Fully Furnished</option><option>Semi-Furnished</option><option>Unfurnished</option></select></div>
         <div class="form-group">
@@ -5487,9 +5462,9 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
       <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
         <div class="form-group">
           <label class="form-label">Meals Included</label>
-          <select class="form-select" id="f-pgMeals"><option value="">Select</option><option>No Meals</option><option>Breakfast Only</option><option>Dinner Only</option><option>Lunch + Dinner</option><option selected>All 3 Meals</option><option>On Request</option></select>
+          <select class="form-select" id="f-pgMeals"><option value="">Select</option><option selected>All 3 Meals</option><option>Breakfast Only</option><option>Dinner Only</option><option>Lunch + Dinner</option><option>No Meals</option><option>On Request</option></select>
         </div>
-        <div class="form-group"><label class="form-label">Food Type</label><select class="form-select" id="f-pgFoodType"><option value="">Select</option><option>Veg Only</option><option>Veg + Non-veg</option></select></div>
+        <div class="form-group"><label class="form-label">Food Type</label><select class="form-select" id="f-pgFoodType"><option value="">Select</option><option>Veg + Non-veg</option><option>Veg Only</option></select></div>
         <div class="form-group"><label class="form-label">Gate Closing Time</label><select class="form-select" id="f-pgGateTime"><option value="">No Curfew</option><option>9 PM</option><option>10 PM</option><option>11 PM</option></select></div>
         <div class="form-group"><label class="form-label">Visitor Policy</label><select class="form-select" id="f-pgVisitorPolicy"><option value="">Select</option><option>Allowed</option><option>Lobby Only</option><option>Not Allowed</option></select></div>
       </div>
@@ -5501,14 +5476,14 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
       <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
         <div class="form-group">
           <label class="form-label">Property Type</label>
-          <select class="form-select" id="f-ssPropertyType"><option>Apartment</option><option>Independent House</option><option>Villa</option><option>Studio</option></select>
+          <select class="form-select" id="f-ssPropertyType"><option>Apartment</option><option>Independent House</option><option>Studio</option><option>Villa</option></select>
         </div>
         <div class="form-group">
           <label class="form-label">Room Type</label>
-          <select class="form-select" id="f-ssRoomType"><option>Single</option><option>Double</option><option>Deluxe</option><option>Suite</option></select>
+          <select class="form-select" id="f-ssRoomType"><option>Deluxe</option><option>Double</option><option selected>Single</option><option>Suite</option></select>
         </div>
-        <div class="form-group"><label class="form-label">Available 24 Hours</label><select class="form-select" id="f-ss24hrs"><option value="">Select</option><option>Yes</option><option>No</option></select></div>
-        <div class="form-group"><label class="form-label">Free Cancellation Window</label><select class="form-select" id="f-ssCancellation"><option value="">Select</option><option>No Cancellation</option><option>Free Till Check-in</option><option>24 Hours Before</option><option>48 Hours Before</option></select></div>
+        <div class="form-group"><label class="form-label">Available 24 Hours</label><select class="form-select" id="f-ss24hrs"><option value="">Select</option><option>No</option><option>Yes</option></select></div>
+        <div class="form-group"><label class="form-label">Free Cancellation Window</label><select class="form-select" id="f-ssCancellation"><option value="">Select</option><option>24 Hours Before</option><option>48 Hours Before</option><option>Free Till Check-in</option><option>No Cancellation</option></select></div>
         <div class="form-group"><label class="form-label">Room Furnishing</label><select class="form-select" id="f-ssFurnish"><option value="">Select</option><option>Fully Furnished</option><option>Semi-Furnished</option><option>Unfurnished</option></select></div>
         <div class="form-group">
           <label class="form-label">Bike Parking</label>
@@ -5525,7 +5500,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
       </div>
       <div class="lm-section">🪪 Guest Policy</div>
       <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
-        <div class="form-group"><label class="form-label">Unmarried Couples Allowed</label><select class="form-select" id="f-ssCouples"><option value="">Select</option><option>Yes</option><option>No</option></select></div>
+        <div class="form-group"><label class="form-label">Unmarried Couples Allowed</label><select class="form-select" id="f-ssCouples"><option value="">Select</option><option>No</option><option>Yes</option></select></div>
       </div>
     </div>
 
@@ -16494,6 +16469,9 @@ function openAdminAddPropertyModal() {
   editingPropertyId = null;
   _adminModalFromPO = false; _cloningListing = false;
   resetListingForm();
+  // New listing: "Available From" defaults to today (admin can still pick any date).
+  { const _d = new Date(), _today = _d.getFullYear() + '-' + String(_d.getMonth() + 1).padStart(2, '0') + '-' + String(_d.getDate()).padStart(2, '0');
+    ['f-avail', 'f-leaseAvailableFrom', 'f-pgAvailableFrom'].forEach(id => { const el = document.getElementById(id); if (el) el.value = _today; }); }
   onFTypeChange(document.getElementById('f-type').value);
 
   document.getElementById('addModalBox').classList.remove('view-mode');
@@ -17983,7 +17961,7 @@ const OPTIONAL_FIELD_IDS = new Set([
   'f-latitude', 'f-longitude', 'f-latLngDisplay',
   'f-imgFileInput', 'f-imgCameraInput',
   'f-amenities-extra', 'f-desc',   // description is optional (same as index.html)
-  'f-ownerCaretakerPhone', 'f-videoUrl', 'f-age', 'f-area',
+  'f-ownerCaretakerPhone', 'f-ownerEmail', 'f-videoUrl', 'f-age', 'f-area',
   'f-areaType', 'f-maxPersons', 'f-kitchenType',   // optional
   'f-maintenance', 'f-leaseMaintenance',
   'f-sellPossessionDate', 'f-sellReraId', 'f-pricePerSqft',
@@ -18067,40 +18045,9 @@ function isGoogleMapsShareLink(v) {
 }
 function openCurrentLocLink() {
   const v = (document.getElementById('f-currentLocationLink').value || '').trim();
-  if (!v) { openLocHelp(); return; }
+  if (!v) { document.getElementById('f-currentLocationLink').focus(); _adminToast('Paste your location link first'); return; }
   if (!isGoogleMapsShareLink(v)) return;   // http(s) only
   window.open(v, '_blank', 'noopener');     // opens in Google Maps (app on phones) without leaving the form
-}
-function copyCurrentLocLink() {
-  const el = document.getElementById('f-currentLocationLink');
-  const v = (el.value || '').trim();
-  if (!v) { openLocHelp(); return; }
-  const done = () => _adminToast('Link copied');
-  const fallback = () => { el.focus(); el.select(); el.setSelectionRange(0, v.length); try { document.execCommand('copy'); done(); } catch (e) {} };
-  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(v).then(done).catch(fallback); else fallback();
-}
-function openLocHelp() {
-  document.getElementById('locHelpErr').textContent = '';
-  document.getElementById('locHelpInput').value = document.getElementById('f-currentLocationLink').value || '';
-  document.getElementById('locHelpModal').classList.add('open');
-}
-function closeLocHelp() { document.getElementById('locHelpModal').classList.remove('open'); }
-function pasteLocHelp() {
-  const inp = document.getElementById('locHelpInput');
-  const fallback = () => { inp.focus(); _adminToast('Long-press the box and choose Paste'); };
-  if (!navigator.clipboard || !navigator.clipboard.readText) return fallback();
-  navigator.clipboard.readText().then(t => { inp.value = (t || '').trim(); }).catch(fallback);
-}
-function applyLocHelp() {
-  const v = document.getElementById('locHelpInput').value.trim();
-  const err = document.getElementById('locHelpErr');
-  if (!v) { err.textContent = 'Paste the link copied from Google Maps.'; return; }
-  if (!isGoogleMapsShareLink(v)) { err.textContent = 'Paste a valid link (starting with https://).'; return; }
-  const f = document.getElementById('f-currentLocationLink');
-  f.value = v;
-  const g = f.closest('.form-group');
-  if (g) { g.classList.remove('has-error'); const m = g.querySelector('.field-error-text'); if (m) m.remove(); }
-  closeLocHelp();
 }
 
 // ── Review & confirm before the final submit ─────────────────────────
@@ -18388,10 +18335,6 @@ async function adminSubmitListing() {
   if (agentPhone && !isValidIndianMobile(agentPhone)) {
     alert('Enter a valid 10-digit agent phone number starting with 6, 7, 8 or 9');
     return;
-  }
-  if (document.getElementById('f-listedBy').value === 'Broker') {
-    if (!gv('f-brokerage')) { _adminToast('Brokerage fee is required'); document.getElementById('f-brokerage').focus(); return; }
-    if (gv('f-brokerage') === 'Fixed amount' && !(parseInt(gv('f-brokerageAmount')) > 0)) { _adminToast('Brokerage amount is required'); document.getElementById('f-brokerageAmount').focus(); return; }
   }
   if (ownerPhone) {
     const dupe = findDuplicateOwnerPhoneListing(ownerPhone, editingPropertyId);

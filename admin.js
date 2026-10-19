@@ -2820,10 +2820,7 @@ self.addEventListener('notificationclick', event => {
       if (validationError) return res.status(400).json({ message: validationError });
 
       fields.basic = Object.assign({ status: 'For Rent', listedBy: 'Owner' }, fields.basic);
-      if (fields.basic.listedBy === 'Broker') {
-        if (!fields.price.brokerage) return res.status(400).json({ message: 'Brokerage fee is required for Broker listings.' });
-        if (fields.price.brokerage === 'Fixed amount' && !fields.price.brokerageAmount) return res.status(400).json({ message: 'Brokerage amount is required when brokerage is a Fixed amount.' });
-      } else {
+      if (fields.basic.listedBy !== 'Broker') {
         delete fields.price.brokerage;
         delete fields.price.brokerageAmount;
       }
@@ -2920,11 +2917,7 @@ self.addEventListener('notificationclick', event => {
       }
 
       const effectiveListedBy = (fields.basic && fields.basic.listedBy) || (prop.basic || {}).listedBy;
-      if (effectiveListedBy === 'Broker') {
-        const pr = prop.price || {};
-        if (!pr.brokerage) return res.status(400).json({ message: 'Brokerage fee is required for Broker listings.' });
-        if (pr.brokerage === 'Fixed amount' && !pr.brokerageAmount) return res.status(400).json({ message: 'Brokerage amount is required when brokerage is a Fixed amount.' });
-      } else if (prop.price) {
+      if (effectiveListedBy !== 'Broker' && prop.price) {
         prop.price.brokerage = undefined;
         prop.price.brokerageAmount = undefined;
       }

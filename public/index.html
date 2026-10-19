@@ -6488,7 +6488,7 @@ main.tab-explore .empty-state{display:none !important}
       <div class="form-group" id="f-typeWrap">
         <label class="form-label">Status <span style="color:var(--brand)">*</span></label>
         <select class="form-select" id="f-type" onchange="onFTypeChange(this.value)">
-          <option value="Lease">Lease</option><option value="PG">PG / Co-living</option><option selected value="Rent">Rent</option><option value="Sell" hidden>Sell</option><option value="ShortStay">Short Stay (Per Day)</option>
+          <option value="Lease">Lease</option><option selected value="Rent">Rent</option><option value="Sell" hidden>Sell</option>
         </select>
       </div>
       <div class="form-group">
@@ -6542,6 +6542,7 @@ main.tab-explore .empty-state{display:none !important}
         <label class="form-label">Building Location Link <span style="color:var(--brand)">*</span></label>
         <div style="display:flex;gap:7px;align-items:stretch">
           <input class="form-input" style="flex:1;min-width:0" type="url" id="f-currentLocationLink" inputmode="url" autocomplete="off" oninput="this.value=this.value.trim()" />
+          <button type="button" onclick="window.open('https://www.google.com/maps','_blank','noopener')" class="loc-act-btn" aria-label="Open Google Maps" title="Open Google Maps" style="display:inline-flex;align-items:center;justify-content:center;gap:6px;flex-shrink:0;padding:0 12px;border-radius:9px;border:1.5px solid var(--text);background:var(--bg);color:var(--text);font-size:12px;font-weight:700;cursor:pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg><span class="loc-btn-txt">Open Google Maps</span></button>
           <button type="button" onclick="openCurrentLocLink()" class="loc-act-btn" aria-label="Open in Google Maps" title="Open in Google Maps" style="display:inline-flex;align-items:center;justify-content:center;gap:6px;flex-shrink:0;min-width:110px;padding:0 12px;border-radius:9px;border:1.5px solid var(--text);background:var(--bg);color:var(--text);font-size:12px;font-weight:700;cursor:pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg><span class="loc-btn-txt">Navigate</span></button>
         </div>
       </div>
@@ -18647,7 +18648,7 @@ const OPTIONAL_FIELD_IDS = new Set([
   'f-imgFileInput', 'f-imgCameraInput',
   'f-amenities-extra', 'f-desc',   // description is optional
   'f-videoUrl', 'f-age', 'f-area',
-  'f-ownerCaretakerPhone', 'f-areaType', 'f-maxPersons', 'f-kitchenType',   // optional
+  'f-ownerCaretakerPhone', 'f-ownerEmail', 'f-areaType', 'f-maxPersons', 'f-kitchenType',   // optional
   'f-maintenance', 'f-leaseMaintenance',
   'f-sellPossessionDate', 'f-sellReraId', 'f-pricePerSqft',
   // Sell-only trust/detail fields kept optional — same reasoning as
