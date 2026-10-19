@@ -2454,6 +2454,44 @@ self.addEventListener('notificationclick', event => {
     }
   });
 
+  // ── POST /api/properties/bulk-public-call (admin: Public call ON/OFF for many listings) ──
+  // Body: { ids: [...], publicCall: bool }. Same per-listing rule as the single
+  // toggle: ON enables each flag whose number is on file; listings with no
+  // number at all are skipped and counted. OFF clears both flags.
+  app.post('/api/properties/bulk-public-call', requireAdmin, requireModuleAction('properties'), requireButton('properties', 'publiccall'), async (req, res) => {
+    try {
+      const { ids, publicCall } = req.body || {};
+      if (!Array.isArray(ids) || !ids.length) return res.status(400).json({ message: 'ids must be a non-empty array' });
+      if (typeof publicCall !== 'boolean') return res.status(400).json({ message: 'publicCall must be a boolean' });
+      const validIds = ids.filter(id => mongoose.Types.ObjectId.isValid(id));
+      if (!validIds.length) return res.status(400).json({ message: 'No valid property ids provided' });
+
+      let updated = 0, skipped = 0;
+      if (!publicCall) {
+        const results = await Promise.all(LISTING_MODEL_LIST.map(M =>
+          M.updateMany({ _id: { $in: validIds } }, { $set: { ownerPhoneCall: false, ownerDirectCall: false } })));
+        updated = results.reduce((s, r) => s + (r.matchedCount != null ? r.matchedCount : r.n || 0), 0);
+      } else {
+        for (const M of LISTING_MODEL_LIST) {
+          const docs = await M.find({ _id: { $in: validIds } }).select('owner').lean();
+          const ops = [];
+          for (const d of docs) {
+            const owner = d.owner || {};
+            const hasMain = !!String(owner.phone || '').trim();
+            const hasAlt  = !!String(owner.altPhone || '').trim();
+            if (!hasMain && !hasAlt) { skipped++; continue; }
+            ops.push({ updateOne: { filter: { _id: d._id }, update: { $set: { ownerPhoneCall: hasMain, ownerDirectCall: hasAlt } } } });
+          }
+          if (ops.length) { await M.bulkWrite(ops); updated += ops.length; }
+        }
+      }
+      res.json({ message: `${updated} propert${updated === 1 ? 'y' : 'ies'} updated` + (skipped ? `, ${skipped} skipped (no owner number)` : ''), updated, skipped });
+    } catch (err) {
+      console.error('POST /api/properties/bulk-public-call error:', err);
+      res.status(500).json({ message: 'Error updating public call' });
+    }
+  });
+
   // ── PATCH /api/properties/:id/booked (admin: toggle booked flag) ──
   // Once true, the listing is excluded from GET /api/properties (see the
   // `booked: { $ne: true }` filter there) and disappears from the public site,
@@ -2681,6 +2719,54 @@ self.addEventListener('notificationclick', event => {
       return res.status(400).json({ message: err.message });
     }
     next(err);
+  });
+
+  // ── POST /api/properties/bulk-flags (admin: set promoted/verified/booked on many listings at once) ──
+  // Body: { ids: [...], changes: { promoted?: bool, verified?: bool, booked?: bool } }
+  // Only the flags present in `changes` are touched. Owners are notified only
+  // on the false -> true verified transition, same as the single toggle.
+  app.post('/api/properties/bulk-flags', requireAdmin, requireModuleAction('properties'), async (req, res) => {
+    try {
+      const { ids, changes } = req.body || {};
+      if (!Array.isArray(ids) || !ids.length) return res.status(400).json({ message: 'ids must be a non-empty array' });
+      const update = {};
+      for (const f of ['promoted', 'verified', 'booked']) {
+        if (changes && changes[f] !== undefined) {
+          if (typeof changes[f] !== 'boolean') return res.status(400).json({ message: f + ' must be a boolean' });
+          update[f] = changes[f];
+        }
+      }
+      if (!Object.keys(update).length) return res.status(400).json({ message: 'No changes provided' });
+      const validIds = ids.filter(id => mongoose.Types.ObjectId.isValid(id));
+      if (!validIds.length) return res.status(400).json({ message: 'No valid property ids provided' });
+
+      // Snapshot listings that are about to become verified so we can notify them afterwards.
+      let toNotify = [];
+      if (update.verified === true) {
+        const found = await Promise.all(LISTING_MODEL_LIST.map(M =>
+          M.find({ _id: { $in: validIds }, verified: { $ne: true }, userId: { $exists: true, $ne: null } }).lean()));
+        toNotify = found.flat();
+      }
+
+      const results = await Promise.all(LISTING_MODEL_LIST.map(M => M.updateMany({ _id: { $in: validIds } }, { $set: update })));
+      const matched = results.reduce((s, r) => s + (r.matchedCount != null ? r.matchedCount : r.n || 0), 0);
+
+      for (const prop of toNotify) {
+        try {
+          await notifyUser(prop.userId, {
+            type: 'property_verified',
+            title: 'Listing verified',
+            message: `Your ${prop.basic && prop.basic.status} listing "${prop.owner && prop.owner.propertyName}" in ${prop.location && prop.location.area} is now verified and live for everyone to see.`,
+            meta: { propertyId: prop.propertyId, mongoId: String(prop._id) },
+          });
+        } catch (e) { console.error('bulk-flags notify error:', e); }
+      }
+
+      res.json({ message: `${matched} propert${matched === 1 ? 'y' : 'ies'} updated`, matched, changes: update });
+    } catch (err) {
+      console.error('POST /api/properties/bulk-flags error:', err);
+      res.status(500).json({ message: 'Error updating properties' });
+    }
   });
 
   // ── POST /api/properties/bulk-delete (admin: delete many properties at once) ──

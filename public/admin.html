@@ -236,7 +236,6 @@ body{
 #bulkToolbar .bulk-btn{width:auto!important;min-width:0!important;height:38px!important;flex-direction:row!important;gap:6px!important;padding:0 14px!important;white-space:nowrap}
 #bulkToolbar .bulk-btn-label{font-size:0!important;line-height:0!important}
 #bulkToolbar .bulk-btn-label::after{content:attr(data-mobile);font-size:.82rem;line-height:1.2;display:inline;font-weight:700}
-#bulkCompareBtn .bulk-btn-label::after,#bulkShareTenantBtn .bulk-btn-label::after,#bulkShareLinksBtn .bulk-btn-label::after,#bulkCheckAvailabilityBtn .bulk-btn-label::after{content:attr(data-mobile) " - "!important}
 /* Property actions: floating vertical stack, bottom-right */
 #bulkToolbar{position:fixed!important;right:16px;bottom:16px;z-index:900;width:auto!important;max-width:none!important;flex-direction:column!important;align-items:flex-end!important;gap:8px!important;padding:0!important;margin:0!important;background:transparent!important;border:none!important;box-shadow:none!important;overflow:visible!important}
 #bulkToolbar .bulk-toolbar-left,#bulkToolbar .bulk-toolbar-right{flex-direction:column!important;align-items:flex-end!important;gap:8px!important;flex-wrap:nowrap!important}
@@ -284,9 +283,12 @@ body{
 /* Selection-only actions: stay hidden until JS clears .sel-hide (beats mobile display:inline-flex!important) */
 #bulkToolbar .bulk-btn.sel-hide{display:none!important}
 /* Uniform column: every button same width, left-aligned, one under the other */
-#bulkToolbar{width:150px!important;align-items:stretch!important}
+#bulkToolbar{width:max-content!important;min-width:150px;max-width:calc(100vw - 32px)!important;align-items:stretch!important}
 #bulkToolbar .bulk-toolbar-left,#bulkToolbar .bulk-toolbar-right{width:100%;align-items:stretch!important}
 #bulkToolbar .bulk-btn{width:100%!important;justify-content:flex-start!important}
+@media(min-width:769px){
+  #bulkToolbar .bulk-btn > span[id$="Count"],#bulkToolbar .bulk-btn > .bulkFlagCount{margin-left:auto;padding-left:12px;font-weight:700}
+}
 /* Mobile: icon-only floating stack, selection count as a badge on the icon's top-right */
 @media(max-width:768px){
   #bulkToolbar{width:auto!important;align-items:flex-end!important;right:14px;bottom:14px;gap:10px!important}
@@ -4035,23 +4037,35 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
     <div class="bulk-toolbar bulk-toolbar-spaced" id="bulkToolbar">
       <div class="bulk-toolbar-left">
         <button class="bulk-btn" id="addPropertyBtn" onclick="openAdminAddPropertyModal()" title="Add property" aria-label="Add property" style="background:var(--brand);color:#fff;border-color:var(--brand)">
-          <i class="fas fa-plus"></i> <span class="bulk-btn-label" data-mobile="Add">Add Property</span>
+          <i class="fas fa-plus"></i> <span class="bulk-btn-label" data-mobile="Add Property">Add Property</span>
         </button>
         <button class="bulk-btn sel-hide" id="bulkCompareBtn" style="display:none;background:var(--brand);color:#fff;border-color:var(--brand)" onclick="openAdminCompareModal()" title="Compare the selected properties and share the link with a customer">
-          <i class="fas fa-code-compare"></i> <span class="bulk-btn-label" data-mobile="Compare">Compare - </span><span id="bulkCompareCount">0</span>
+          <i class="fas fa-code-compare"></i> <span class="bulk-btn-label" data-mobile="Compare Properties">Compare Properties</span><span id="bulkCompareCount">0</span>
         </button>
         <button class="bulk-btn sel-hide" id="bulkShareTenantBtn" style="display:none;background:#0ea5e9;color:#fff;border-color:#0ea5e9" onclick="shareSelectedToTenant()" title="Send the view links of all selected properties to a tenant on WhatsApp">
-          <i class="fas fa-paper-plane"></i> <span class="bulk-btn-label" data-mobile="Tenant">Share to Tenant - </span><span id="bulkShareTenantCount">0</span>
+          <i class="fas fa-paper-plane"></i> <span class="bulk-btn-label" data-mobile="Share to Tenant">Share to Tenant</span><span id="bulkShareTenantCount">0</span>
         </button>
         <button class="bulk-btn sel-hide" id="bulkShareLinksBtn" style="display:none;background:#25D366;color:#fff;border-color:#25D366" onclick="shareSelectedLinksToNumber()" title="Share links for all selected properties to a WhatsApp number you enter">
-          <i class="fab fa-whatsapp"></i> <span class="bulk-btn-label" data-mobile="Share">Share Links - </span><span id="bulkShareLinksCount">0</span>
+          <i class="fab fa-whatsapp"></i> <span class="bulk-btn-label" data-mobile="Share Links">Share Links</span><span id="bulkShareLinksCount">0</span>
         </button>
         <button class="bulk-btn sel-hide" id="bulkCheckAvailabilityBtn" style="display:none;background:#7c3aed;color:#fff;border-color:#7c3aed" onclick="checkAvailabilityWithOwners()" title="Review and send a WhatsApp availability check to each selected property's owner (alt number only)">
-          <i class="fab fa-whatsapp"></i> <span class="bulk-btn-label" data-mobile="Check">Check Availability - </span><span id="bulkCheckAvailabilityCount">0</span>
+          <i class="fab fa-whatsapp"></i> <span class="bulk-btn-label" data-mobile="Check Availability">Check Availability</span><span id="bulkCheckAvailabilityCount">0</span>
         </button>
         <span id="addPropertyDivider" style="width:1px;align-self:stretch;background:var(--border,#ddd);margin:2px 4px;flex-shrink:0"></span>
         <button type="button" class="bulk-selected-count" id="bulkSelectedCount" style="display:none" onclick="clearPropSelection()" title="Clear selection">
           <i class="fas fa-check-circle bulk-selected-icon"></i> <span id="bulkSelectedNum" class="bulk-selected-num">0</span><span class="bulk-btn-label" data-mobile="Selected"> selected</span> <span class="bulk-selected-clear-x">X</span>
+        </button>
+        <button type="button" class="bulk-btn sel-hide" id="bulkFlagPromotedBtn" style="display:none;background:#ea580c;color:#fff;border-color:#ea580c" onclick="openBulkFlagModal('promoted')" title="Turn promoted ON/OFF for all selected properties">
+          <i class="fas fa-toggle-on"></i> <span class="bulk-btn-label" data-mobile="Set Promoted">Set Promoted</span><span class="bulkFlagCount">0</span>
+        </button>
+        <button type="button" class="bulk-btn sel-hide" id="bulkFlagVerifiedBtn" style="display:none;background:#059669;color:#fff;border-color:#059669" onclick="openBulkFlagModal('verified')" title="Turn verified ON/OFF for all selected properties">
+          <i class="fas fa-toggle-on"></i> <span class="bulk-btn-label" data-mobile="Set Verified">Set Verified</span><span class="bulkFlagCount">0</span>
+        </button>
+        <button type="button" class="bulk-btn sel-hide" id="bulkFlagBookedBtn" style="display:none;background:#6366f1;color:#fff;border-color:#6366f1" onclick="openBulkFlagModal('booked')" title="Turn booked ON/OFF for all selected properties">
+          <i class="fas fa-toggle-on"></i> <span class="bulk-btn-label" data-mobile="Set Booked">Set Booked</span><span class="bulkFlagCount">0</span>
+        </button>
+        <button type="button" class="bulk-btn sel-hide" id="bulkFlagPublicCallBtn" style="display:none;background:#0891b2;color:#fff;border-color:#0891b2" onclick="openBulkFlagModal('publicCall')" title="Turn Public call ON/OFF for all selected properties">
+          <i class="fas fa-phone"></i> <span class="bulk-btn-label" data-mobile="Set Public Call">Set Public Call</span><span class="bulkFlagCount">0</span>
         </button>
         <button type="button" class="bulk-btn bulk-btn-danger" id="bulkDeleteSelectedBtn" style="display:none" onclick="deleteSelectedProperties()">
           <i class="fas fa-trash"></i> <span class="bulk-btn-label" data-mobile="Delete">Delete (<span id="bulkDeleteCount">0</span>)</span>
@@ -4059,7 +4073,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
       </div>
       <div class="bulk-toolbar-right">
         <button class="bulk-btn" id="recalcDistanceBtn" onclick="recalculateUserLocation()" title="Re-fetch your current location and recalculate the distance shown on every Directions button">
-          <i class="fas fa-location-crosshairs"></i> <span class="bulk-btn-label" data-mobile="Recalc">Recalculate Distance</span>
+          <i class="fas fa-location-crosshairs"></i> <span class="bulk-btn-label" data-mobile="Recalculate Distance">Recalculate Distance</span>
         </button>
       </div>
       <button type="button" id="fabToggleBtn" class="bulk-btn fab-toggle-btn" onclick="toggleFabStack()" aria-label="Show actions" aria-expanded="false" title="Show actions"><i class="fas fa-chevron-up"></i></button>
@@ -10122,6 +10136,79 @@ window.togglePropFlag = async function(id, field, checkboxEl){
   }
 };
 
+/* ── BULK UPDATE (one flag at a time): Promoted, Verified or Booked ──
+   Each toolbar button updates only its own flag for every selected row.
+   Reuses _selectedPropIds (same set as Compare / Share / Delete). */
+window.openBulkFlagModal = function(field){
+  if(blockIfViewOnly('properties')) return;
+  const ids = Array.from(_selectedPropIds);
+  if(!ids.length) return;
+  const isPC = field === 'publicCall';
+  const label = isPC ? 'public call' : (PROP_FLAG_LABELS[field] || field);
+  const n = ids.length, noun = n === 1 ? 'property' : 'properties';
+  const old = document.getElementById('bulkFlagsOverlay'); if(old) old.remove();
+  const ov = document.createElement('div');
+  ov.id = 'bulkFlagsOverlay';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100000;display:flex;align-items:center;justify-content:center;padding:16px';
+  const codes = ids.map(id => ((_adminPropCache[id] || {}).propertyId || '—'));
+  const chips = codes.map(c => `<span style="display:inline-block;padding:3px 10px;margin:3px;border-radius:999px;background:#fff3e8;color:#9a3412;font-weight:600;font-size:13px">${escapeHtml(c)}</span>`).join('');
+  ov.innerHTML = `<div style="background:#fff;border-radius:14px;padding:22px;width:100%;max-width:380px;box-shadow:0 20px 50px rgba(0,0,0,.3);text-align:center">
+      <h3 style="margin:0 0 6px;text-transform:capitalize;text-align:center">Bulk ${label}</h3>
+      <div style="color:#666;font-size:14px;margin-bottom:10px;text-align:center">Set "${label}" for ${n} selected ${noun}.</div>
+      <div style="max-height:140px;overflow-y:auto;margin-bottom:10px;text-align:center">${chips}</div>
+      <div id="bulkFlagsErr" style="color:#dc2626;font-size:13px;min-height:18px;text-align:center"></div>
+      <div style="display:flex;gap:10px;margin-top:6px">
+        <button type="button" class="bulk-btn" id="bulkFlagOn"  style="flex:1;justify-content:center;background:#059669;color:#fff;border-color:#059669">Turn ON</button>
+        <button type="button" class="bulk-btn" id="bulkFlagOff" style="flex:1;justify-content:center;background:#dc2626;color:#fff;border-color:#dc2626">Turn OFF</button>
+      </div>
+      <div style="text-align:center;margin-top:12px"><button type="button" class="bulk-btn" id="bulkFlagsCancel" style="margin:0 auto">Cancel</button></div>
+    </div>`;
+  document.body.appendChild(ov);
+  const close = () => ov.remove();
+  ov.addEventListener('click', e => { if(e.target === ov) close(); });
+  document.getElementById('bulkFlagsCancel').onclick = close;
+  const run = async function(desired){
+    const errEl = document.getElementById('bulkFlagsErr');
+    ov.style.display = 'none';   // confirm modal sits at a lower z-index; hide this one while it's up
+    const ok = await showConfirmModal({
+      title: `Turn ${desired ? 'ON' : 'OFF'} "${label}" for ${n} ${noun}?`,
+      message: `This will set "${label}" to ${desired ? 'ON' : 'OFF'} for all ${n} selected.`,
+      okText: desired ? 'Turn on' : 'Turn off',
+      variant: 'info'
+    });
+    if(!ok){ ov.style.display = 'flex'; return; }
+    const on = document.getElementById('bulkFlagOn'), off = document.getElementById('bulkFlagOff');
+    on.disabled = off.disabled = true;
+    try{
+      const res = await fetch(`${BASE}/api/properties/${isPC ? 'bulk-public-call' : 'bulk-flags'}`, {
+        method: 'POST',
+        headers: authHeaders({'Content-Type':'application/json'}),
+        body: JSON.stringify(isPC ? { ids, publicCall: desired } : { ids, changes: { [field]: desired } })
+      });
+      const data = await res.json().catch(()=>({}));
+      if(!res.ok){ errEl.textContent = data.message || 'Bulk update failed'; on.disabled = off.disabled = false; return; }
+      if(isPC && data.skipped) alert(data.message);
+      const idSet = new Set(ids);
+      if(!isPC){
+        ids.forEach(id => { if(_adminPropCache[id]) _adminPropCache[id][field] = desired; });
+        propTable.rows().every(function(){
+          const rd = this.data();
+          if(rd && idSet.has(rd._id)) rd[field] = desired;
+        });
+      }
+      updatePropCategoryCounts(propTable.rows().data().toArray());
+      propTable.draw(false);
+      close();
+      propTable.ajax.reload(null, false);
+    } catch(err){
+      errEl.textContent = 'Network error. Please try again.';
+      on.disabled = off.disabled = false;
+    }
+  };
+  document.getElementById('bulkFlagOn').onclick  = () => run(true);
+  document.getElementById('bulkFlagOff').onclick = () => run(false);
+};
+
 /* ── PUBLIC CALL (one toggle per property) ──
    Drives both underlying flags together: ownerPhoneCall (owner number) and
    ownerDirectCall (alt number). Only flags whose number exists are sent. */
@@ -11002,6 +11089,13 @@ function updateBulkToolbarUI(){
   if (show && _selAllBlocksDelete(syncPropSelectAllCheckbox, 'prop-select-all-checkbox', n)){ if (delBtn) delBtn.style.display = 'none'; if (countEl) countEl.style.display = 'none'; }
   numEl.textContent = n;
   if (delCountEl) delCountEl.textContent = n;
+
+  ['Promoted','Verified','Booked','PublicCall'].forEach(F => {
+    const fb = document.getElementById('bulkFlag' + F + 'Btn');
+    if (!fb) return;
+    fb.style.display = n >= 1 ? 'inline-flex' : 'none'; fb.classList.toggle('sel-hide', !(n >= 1));
+    const fc = fb.querySelector('.bulkFlagCount'); if (fc) fc.textContent = n;
+  });
 
   // Compare Selected — only makes sense with 2+ properties picked (same
   // ADMIN_COMPARE_MAX ceiling as index.html's customer-facing compare).
