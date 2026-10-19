@@ -3883,7 +3883,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
             </tr>
             <tr class="col-filter-row">
               <th></th>
-              <th><input type="text" class="col-filter-input" data-filter-key="propertyId" placeholder="Search…" oninput="onPOColumnFilter('propertyId', this.value, this)"></th>
+              <th><input type="text" class="col-filter-input" data-filter-key="propertyId" placeholder="Search…" title="Search one or more IDs - separate with comma or space (e.g. FHE007, PEH011)" oninput="onPOColumnFilter('propertyId', this.value, this)"></th>
               <th><input type="text" class="col-filter-input" data-filter-key="number" placeholder="Search…" oninput="onPOColumnFilter('number', this.value, this)"></th>
               <th><input type="text" class="col-filter-input" data-filter-key="alt" placeholder="Search…" oninput="onPOColumnFilter('alt', this.value, this)"></th>
               <th><input type="text" class="col-filter-input" data-filter-key="loc" placeholder="Search…" oninput="onPOColumnFilter('loc', this.value, this)"></th>
@@ -3954,11 +3954,11 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
             <tr class="col-filter-row">
               <th></th>
               <th></th>
-              <th><input type="text" class="col-filter-input" data-filter-key="name" placeholder="Search…" oninput="onCustColumnFilter('name', this.value, this)"></th>
+              <th><input type="text" class="col-filter-input" data-filter-key="name" placeholder="Search…" title="Search one or more names - separate with comma (e.g. Ravi, Anita)" oninput="onCustColumnFilter('name', this.value, this)"></th>
               <th></th>
-              <th><input type="text" class="col-filter-input" data-filter-key="userId" placeholder="Search…" oninput="onCustColumnFilter('userId', this.value, this)"></th>
-              <th><input type="text" class="col-filter-input" data-filter-key="mobile" placeholder="Search…" oninput="onCustColumnFilter('mobile', this.value, this)"></th>
-              <th><input type="text" class="col-filter-input" data-filter-key="email" placeholder="Search…" oninput="onCustColumnFilter('email', this.value, this)"></th>
+              <th><input type="text" class="col-filter-input" data-filter-key="userId" placeholder="Search…" title="Search one or more IDs - separate with comma or space" oninput="onCustColumnFilter('userId', this.value, this)"></th>
+              <th><input type="text" class="col-filter-input" data-filter-key="mobile" placeholder="Search…" title="Search one or more numbers - separate with comma or space" oninput="onCustColumnFilter('mobile', this.value, this)"></th>
+              <th><input type="text" class="col-filter-input" data-filter-key="email" placeholder="Search…" title="Search one or more emails - separate with comma or space" oninput="onCustColumnFilter('email', this.value, this)"></th>
               <th><input type="text" class="col-filter-input" data-filter-key="listings" placeholder="e.g. 3" oninput="onCustColumnFilter('listings', this.value, this)"></th>
               <th><input type="text" class="col-filter-input" data-filter-key="visits" placeholder="e.g. 0" oninput="onCustColumnFilter('visits', this.value, this)"></th>
               <th><input type="text" class="col-filter-input" data-filter-key="views" placeholder="e.g. 0" oninput="onCustColumnFilter('views', this.value, this)"></th>
@@ -4151,7 +4151,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
             </tr>
             <tr class="col-filter-row">
               <th class="col-sticky-1"></th>
-              <th class="col-sno"><input type="text" class="col-filter-input" data-filter-key="propertyId" placeholder="Search…" oninput="onPropColumnFilter('propertyId', this.value, this)"></th>
+              <th class="col-sno"><input type="text" class="col-filter-input" data-filter-key="propertyId" placeholder="Search…" title="Search one or more IDs - separate with comma or space (e.g. FHE007, PEH011)" oninput="onPropColumnFilter('propertyId', this.value, this)"></th>
               <th class="col-sticky-2"><input type="text" class="col-filter-input" data-filter-key="title" placeholder="Search…" oninput="onPropColumnFilter('title', this.value, this)"></th>
               <th><select class="col-filter-select" data-filter-key="promoted" onchange="onPropColumnFilter('promoted', this.value, this)"><option value="">All</option><option value="yes">Yes</option><option value="no">No</option></select></th>
               <th><select class="col-filter-select" data-filter-key="verified" onchange="onPropColumnFilter('verified', this.value, this)"><option value="">All</option><option value="yes">Yes</option><option value="no">No</option></select></th>
@@ -4284,7 +4284,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
               <th><input type="text" class="col-filter-input" data-filter-key="email" placeholder="Search…" oninput="onApptColumnFilter('email', this.value, this)"></th>
               <th><input type="text" class="col-filter-input" data-filter-key="propertyName" placeholder="Search…" oninput="onApptColumnFilter('propertyName', this.value, this)"></th>
               <th><input type="text" class="col-filter-input" data-filter-key="propertyArea" placeholder="Search…" oninput="onApptColumnFilter('propertyArea', this.value, this)"></th>
-              <th><input type="text" class="col-filter-input" data-filter-key="propertyId" placeholder="Search…" oninput="onApptColumnFilter('propertyId', this.value, this)"></th>
+              <th><input type="text" class="col-filter-input" data-filter-key="propertyId" placeholder="Search…" title="Search one or more IDs - separate with comma or space (e.g. FHE007, PEH011)" oninput="onApptColumnFilter('propertyId', this.value, this)"></th>
               <th>
                 <select class="col-filter-select" data-filter-key="purpose" onchange="onApptColumnFilter('purpose', this.value, this)">
                   <option value="">All</option>
@@ -7692,7 +7692,7 @@ $.fn.dataTable.ext.search.push(function(settings, data, dataIndex){
   if(!_poMatchesStatus(r, _poStatusTab)) return false;
   const cf = _poColumnFilters;
   const has = (val, needle) => String(val||'').toLowerCase().includes(needle.toLowerCase());
-  if(cf.propertyId && !has(r.propertyId, cf.propertyId)) return false;
+  if(cf.propertyId && !cf.propertyId.split(/[\s,;]+/).filter(Boolean).some(t => has(r.propertyId, t))) return false;
   if(cf.number && !has(r.number, cf.number)) return false;
   if(cf.alt && !has(r.alt, cf.alt)) return false;
   if(cf.loc && !has(r.loc, cf.loc)) return false;
@@ -7851,11 +7851,14 @@ $.fn.dataTable.ext.search.push(function(settings, data, dataIndex){
   if(_custTypeTab !== 'all' && custRowType(row) !== _custTypeTab) return false;
   if(_custStatusTab !== 'all' && custRowStatus(row) !== _custStatusTab) return false;
   const contains = (val, needle) => String(val||'').toLowerCase().includes(needle.toLowerCase());
+  // Multi-value search: a row matches if it matches ANY term. ID-like columns split on comma/space/semicolon;
+  // Name splits on comma/semicolon only so a full name containing a space still works.
+  const containsAny = (val, needle, sep) => { const t = needle.split(sep).map(s => s.trim()).filter(Boolean); return !t.length || t.some(x => contains(val, x)); };
   const fullName = row.name || ((row.firstName||'')+' '+(row.lastName||'')).trim();
-  if(cf.name && !contains(fullName, cf.name)) return false;
-  if(cf.userId && !contains(row.userId, cf.userId)) return false;
-  if(cf.mobile && !contains(row.mobile, cf.mobile)) return false;
-  if(cf.email && !contains(row.email, cf.email)) return false;
+  if(cf.name && !containsAny(fullName, cf.name, /[,;]+/)) return false;
+  if(cf.userId && !containsAny(row.userId, cf.userId, /[\s,;]+/)) return false;
+  if(cf.mobile && !containsAny(row.mobile, cf.mobile, /[\s,;]+/)) return false;
+  if(cf.email && !containsAny(row.email, cf.email, /[\s,;]+/)) return false;
   if(cf.accountType && (row.accountType||'customer') !== cf.accountType) return false;
   if(cf.listings && !contains(row.listingsCount ?? 0, cf.listings)) return false;
   if(cf.visits && !contains(row.visitsCount ?? 0, cf.visits)) return false;
@@ -15049,7 +15052,11 @@ $.fn.dataTable.ext.search.push(function(settings, data, dataIndex){
   if(cf.ssCouplesAllowed && !contains(row.ssCouplesAllowed, cf.ssCouplesAllowed)) return false;
   if(cf.visitCount && !contains(row.visitCount, cf.visitCount)) return false;
   if(cf.views && !contains(row.views, cf.views)) return false;
-  if(cf.propertyId && !contains(row.propertyId, cf.propertyId)) return false;
+  if(cf.propertyId){
+    // Multiple IDs: separate with comma, space, semicolon or new line; a row matches if it matches ANY of them.
+    const idTerms = cf.propertyId.split(/[\s,;]+/).filter(Boolean);
+    if(!idTerms.some(t => contains(row.propertyId, t))) return false;
+  }
   if(cf.promotedPriority && !contains(row.full && row.full.promotedPriority, cf.promotedPriority)) return false;
   if(cf.userId && !contains(row.userId, cf.userId)) return false;
   if(cf.listedOnStart || cf.listedOnEnd){
@@ -15252,7 +15259,7 @@ $.fn.dataTable.ext.search.push(function(settings, data, dataIndex){
   if(cf.email && !contains(row.email, cf.email)) return false;
   if(cf.propertyName && !contains(row.propertyName, cf.propertyName)) return false;
   if(cf.propertyArea && !contains(row.propertyArea, cf.propertyArea)) return false;
-  if(cf.propertyId && !contains(row.propertyId, cf.propertyId)) return false;
+  if(cf.propertyId && !cf.propertyId.split(/[\s,;]+/).filter(Boolean).some(t => contains(row.propertyId, t))) return false;
   if(cf.purpose && (row.purpose||'') !== cf.purpose) return false;
   if(cf.dateStart || cf.dateEnd){
     if(!row.date) return false;
