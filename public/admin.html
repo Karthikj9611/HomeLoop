@@ -3016,6 +3016,9 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
   transition:border-color 0.18s,background 0.18s;
 }
 .login-field input:focus{border-color:var(--gold);background:#fff}
+.pw-wrap{position:relative}.pw-wrap input{padding-right:46px}
+.pw-toggle{position:absolute;top:0;right:0;height:100%;width:44px;border:0;background:none;color:var(--ink2);cursor:pointer;font-size:0.95rem;display:flex;align-items:center;justify-content:center}
+.pw-toggle:hover{color:var(--gold)}
 .login-error{
   font-size:0.78rem;color:var(--red);font-weight:600;
   min-height:20px;margin-bottom:12px;
@@ -3264,8 +3267,9 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
     </div>
     <div class="login-field">
       <label for="loginPassword">Password</label>
-      <input type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password" maxlength="256"
+      <div class="pw-wrap"><input type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password" maxlength="256"
         onkeydown="if(event.key==='Enter')doLogin()"/>
+      <button type="button" class="pw-toggle" id="pwToggle" aria-label="Show password" aria-pressed="false" onclick="togglePw()"><i class="fas fa-eye"></i></button></div>
     </div>
     <div class="login-error" id="loginError"></div>
     <button class="login-btn" id="loginBtn" onclick="doLogin()">Sign In</button>
@@ -19399,5 +19403,6 @@ markRequiredLabels();
   }, true);
 })();
 </script>
+<script>function togglePw(){var i=document.getElementById('loginPassword'),b=document.getElementById('pwToggle'),show=i.type==='password';i.type=show?'text':'password';b.setAttribute('aria-pressed',show);b.setAttribute('aria-label',show?'Hide password':'Show password');b.firstElementChild.className=show?'fas fa-eye-slash':'fas fa-eye';i.focus()}</script>
 </body>
 </html>
