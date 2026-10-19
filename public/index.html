@@ -19850,68 +19850,84 @@ document.addEventListener('keydown', function(e){ if (e.key === 'Escape') closeP
 
 <!-- ══ Site notice: upgrade in progress ══ -->
 <style>
-#hlNotice{position:fixed;top:0;left:0;right:0;bottom:0;width:100%;height:100%;box-sizing:border-box;z-index:2147482000;display:none;place-items:center;padding:16px;margin:0;background:rgba(10,12,20,.6);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);opacity:0;transition:opacity .25s ease}
+#hlNotice{position:fixed;top:0;left:0;right:0;bottom:0;width:100%;height:100%;box-sizing:border-box;z-index:2147482000;display:none;place-items:center;padding:16px;margin:0;background:radial-gradient(60% 50% at 20% 20%,rgba(139,92,246,.35),transparent 70%),radial-gradient(60% 50% at 80% 80%,rgba(224,58,82,.35),transparent 70%),rgba(10,12,22,.68);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);opacity:0;transition:opacity .25s ease}
 #hlNotice.show{display:grid}
 #hlNotice.in{opacity:1}
-#hlNotice .hln-card{position:relative;display:flex;flex-direction:column;box-sizing:border-box;width:100%;max-width:400px;margin:auto;max-height:calc(100vh - 32px);max-height:calc(100dvh - 32px);background:#fff;color:#111827;border-radius:24px;overflow:hidden;box-shadow:0 30px 70px rgba(0,0,0,.35);transform:translateY(16px) scale(.97);transition:transform .35s cubic-bezier(.2,.8,.2,1);font-family:'Inter',system-ui,sans-serif}
+#hlNotice .hln-card{position:relative;display:flex;flex-direction:column;box-sizing:border-box;width:100%;max-width:410px;margin:auto;max-height:calc(100vh - 32px);max-height:calc(100dvh - 32px);background:#fff;color:#111827;border-radius:26px;overflow:hidden;box-shadow:0 0 0 1px rgba(255,255,255,.25),0 32px 80px rgba(20,10,50,.45);transform:translateY(18px) scale(.96);transition:transform .4s cubic-bezier(.2,.9,.25,1.1);font-family:'Inter',system-ui,sans-serif}
 #hlNotice.in .hln-card{transform:none}
-#hlNotice .hln-hero{position:relative;flex:0 0 auto;padding:22px 22px 20px;color:#fff;background:radial-gradient(120% 140% at 100% 0%,rgba(255,255,255,.22) 0%,rgba(255,255,255,0) 55%),linear-gradient(135deg,var(--brand,#E03A52) 0%,#b3243a 100%);overflow:hidden}
-#hlNotice .hln-hero::after{content:"";position:absolute;right:-40px;bottom:-60px;width:160px;height:160px;border-radius:50%;background:rgba(255,255,255,.1)}
-#hlNotice .hln-pill{display:inline-flex;align-items:center;gap:7px;padding:5px 11px;border-radius:99px;background:rgba(255,255,255,.18);font-size:10.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase}
-#hlNotice .hln-dot{width:7px;height:7px;border-radius:50%;background:#fff;animation:hlnPulse 1.8s ease-in-out infinite}
-@keyframes hlnPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.7)}}
-#hlNotice h2{position:relative;z-index:1;margin:12px 0 4px;font-size:23px;font-weight:800;letter-spacing:-.02em;line-height:1.2}
-#hlNotice .hln-lead{position:relative;z-index:1;margin:0;font-size:13.5px;line-height:1.45;color:rgba(255,255,255,.88)}
-#hlNotice .hln-x{position:absolute;top:12px;right:12px;z-index:2;width:30px;height:30px;border:0;border-radius:50%;background:rgba(255,255,255,.2);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s}
-#hlNotice .hln-x:hover{background:rgba(255,255,255,.35)}
+#hlNotice .hln-hero{position:relative;flex:0 0 auto;padding:20px 22px 18px;color:#fff;overflow:hidden;background:linear-gradient(125deg,#ff6a5c 0%,#e03a52 38%,#b02a8f 72%,#6d4cff 100%)}
+#hlNotice .hln-blob{position:absolute;border-radius:50%;filter:blur(28px);opacity:.55;pointer-events:none}
+#hlNotice .hln-b1{width:150px;height:150px;right:-40px;top:-50px;background:#ffd36b;animation:hlnFloat 7s ease-in-out infinite}
+#hlNotice .hln-b2{width:130px;height:130px;left:-40px;bottom:-60px;background:#7c5cff;animation:hlnFloat 9s ease-in-out infinite reverse}
+@keyframes hlnFloat{0%,100%{transform:translate(0,0)}50%{transform:translate(14px,10px)}}
+#hlNotice .hln-pill{position:relative;z-index:1;display:inline-flex;align-items:center;gap:7px;padding:5px 11px;border-radius:99px;background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.28);font-size:10.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase}
+#hlNotice .hln-dot{width:7px;height:7px;border-radius:50%;background:#7CFFB2;box-shadow:0 0 0 0 rgba(124,255,178,.7);animation:hlnPulse 1.8s ease-out infinite}
+@keyframes hlnPulse{0%{box-shadow:0 0 0 0 rgba(124,255,178,.7)}100%{box-shadow:0 0 0 8px rgba(124,255,178,0)}}
+#hlNotice h2{position:relative;z-index:1;margin:11px 0 4px;font-size:23px;font-weight:800;letter-spacing:-.02em;line-height:1.2}
+#hlNotice .hln-lead{position:relative;z-index:1;margin:0;font-size:13px;line-height:1.45;color:rgba(255,255,255,.92)}
+#hlNotice .hln-prog{position:relative;z-index:1;height:5px;margin-top:14px;border-radius:99px;background:rgba(255,255,255,.25);overflow:hidden}
+#hlNotice .hln-prog i{display:block;height:100%;width:62%;border-radius:99px;background:linear-gradient(90deg,#fff,#ffe9a8);background-size:200% 100%;animation:hlnBar 2.4s linear infinite}
+@keyframes hlnBar{0%{background-position:200% 0}100%{background-position:-200% 0}}
+#hlNotice .hln-x{position:absolute;top:12px;right:12px;z-index:2;width:30px;height:30px;border:0;border-radius:50%;background:rgba(255,255,255,.22);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s,transform .15s}
+#hlNotice .hln-x:hover{background:rgba(255,255,255,.38);transform:rotate(90deg)}
 #hlNotice .hln-x svg{width:14px;height:14px}
-#hlNotice .hln-body{flex:1 1 auto;min-height:0;overflow-y:auto;padding:16px 18px 18px}
-#hlNotice ul{list-style:none;margin:0 0 16px;padding:0;display:flex;flex-direction:column;gap:2px}
-#hlNotice li{display:flex;gap:13px;align-items:flex-start;padding:12px 4px}
-#hlNotice li + li{border-top:1px solid #f0f1f4}
-#hlNotice .hln-ic{flex:0 0 auto;width:38px;height:38px;border-radius:12px;background:var(--brand-light,#fef0f2);color:var(--brand,#E03A52);display:flex;align-items:center;justify-content:center}
+#hlNotice .hln-body{flex:1 1 auto;min-height:0;overflow-y:auto;padding:14px 16px 16px;background:linear-gradient(180deg,#faf8ff 0%,#fff 60%)}
+#hlNotice ul{list-style:none;margin:0 0 14px;padding:0;display:flex;flex-direction:column;gap:9px}
+#hlNotice li{--c1:#7c5cff;--c2:#a78bfa;--t:rgba(124,92,255,.08);--tb:rgba(124,92,255,.18);display:flex;gap:12px;align-items:flex-start;padding:11px 12px;border-radius:16px;background:var(--t);border:1px solid var(--tb);opacity:0;transform:translateY(8px)}
+#hlNotice.in li{animation:hlnRise .45s cubic-bezier(.2,.8,.2,1) forwards}
+#hlNotice.in li:nth-child(1){animation-delay:.12s}#hlNotice.in li:nth-child(2){animation-delay:.2s}#hlNotice.in li:nth-child(3){animation-delay:.28s}
+@keyframes hlnRise{to{opacity:1;transform:none}}
+#hlNotice li.g{--c1:#10b981;--c2:#34d399;--t:rgba(16,185,129,.08);--tb:rgba(16,185,129,.2)}
+#hlNotice li.a{--c1:#f59e0b;--c2:#fbbf24;--t:rgba(245,158,11,.1);--tb:rgba(245,158,11,.25)}
+#hlNotice .hln-ic{flex:0 0 auto;width:38px;height:38px;border-radius:12px;background:linear-gradient(135deg,var(--c1),var(--c2));color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 14px -4px var(--c1)}
 #hlNotice .hln-ic svg{width:19px;height:19px}
-#hlNotice li b{display:block;font-size:14px;font-weight:700;line-height:1.3}
-#hlNotice li span{display:block;margin-top:1px;font-size:12.5px;line-height:1.4;color:#6b7280}
-#hlNotice .hln-btn{width:100%;border:0;border-radius:14px;padding:13px 16px;font-size:14.5px;font-weight:700;color:#fff;cursor:pointer;background:linear-gradient(135deg,var(--brand,#E03A52),#c72e43);box-shadow:0 8px 20px -6px rgba(224,58,82,.55);transition:transform .1s ease,box-shadow .15s ease}
-#hlNotice .hln-btn:hover{box-shadow:0 10px 24px -6px rgba(224,58,82,.7)}
+#hlNotice .hln-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+#hlNotice li b{font-size:13.5px;font-weight:700;line-height:1.3}
+#hlNotice .hln-tag{font-size:9.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;padding:2px 7px;border-radius:99px;color:var(--c1);background:#fff;border:1px solid var(--tb)}
+#hlNotice li span.hln-d{display:block;margin-top:2px;font-size:12px;line-height:1.45;color:#5b6472}
+#hlNotice .hln-btn{position:relative;overflow:hidden;width:100%;border:0;border-radius:14px;padding:13px 16px;font-size:14.5px;font-weight:700;color:#fff;cursor:pointer;background:linear-gradient(120deg,#e03a52,#b02a8f 60%,#6d4cff);box-shadow:0 10px 24px -8px rgba(176,42,143,.7);transition:transform .1s ease,box-shadow .15s ease}
+#hlNotice .hln-btn::after{content:"";position:absolute;top:0;left:-60%;width:40%;height:100%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.35),transparent);transform:skewX(-20deg);transition:left .6s ease}
+#hlNotice .hln-btn:hover::after{left:130%}
+#hlNotice .hln-btn:hover{box-shadow:0 12px 28px -8px rgba(176,42,143,.85)}
 #hlNotice .hln-btn:active{transform:scale(.98)}
-#hlNotice .hln-foot{margin:11px 0 0;text-align:center;font-size:11.5px;color:#9ca3af}
+#hlNotice .hln-foot{margin:10px 0 0;text-align:center;font-size:11.5px;color:#9ca3af}
 @media (prefers-color-scheme:dark){
-  #hlNotice .hln-card{background:#1b1d22;color:#f3f4f6}
-  #hlNotice li + li{border-color:#2a2d34}
-  #hlNotice .hln-ic{background:rgba(224,58,82,.16)}
-  #hlNotice li span{color:#9ca3af}
+  #hlNotice .hln-card{background:#16171d;color:#f3f4f6}
+  #hlNotice .hln-body{background:linear-gradient(180deg,#1b1a26 0%,#16171d 60%)}
+  #hlNotice li span.hln-d{color:#a3a9b5}
+  #hlNotice .hln-tag{background:#16171d}
 }
 @media (max-width:480px){#hlNotice{padding:14px}#hlNotice .hln-card{max-height:calc(100vh - 28px);max-height:calc(100dvh - 28px)}}
-@media (max-height:620px){#hlNotice .hln-hero{padding:16px 20px 14px}#hlNotice h2{font-size:20px;margin-top:8px}#hlNotice .hln-lead{font-size:12.5px}#hlNotice li{padding:7px 4px}#hlNotice .hln-ic{width:32px;height:32px}}
-@media (prefers-reduced-motion:reduce){#hlNotice,#hlNotice .hln-card{transition:none}#hlNotice .hln-dot{animation:none}}
+@media (max-height:640px){#hlNotice .hln-hero{padding:14px 20px 13px}#hlNotice h2{font-size:20px;margin-top:8px}#hlNotice .hln-lead{font-size:12.5px}#hlNotice .hln-prog{margin-top:10px}#hlNotice .hln-body{padding:12px 14px 14px}#hlNotice ul{gap:7px;margin-bottom:12px}#hlNotice li{padding:9px 10px}#hlNotice .hln-ic{width:34px;height:34px}#hlNotice .hln-btn{padding:11px 14px}#hlNotice .hln-foot{margin-top:8px}}
+@media (prefers-reduced-motion:reduce){#hlNotice,#hlNotice .hln-card{transition:none}#hlNotice .hln-dot,#hlNotice .hln-blob,#hlNotice .hln-prog i{animation:none}#hlNotice li{opacity:1;transform:none;animation:none!important}}
 </style>
 <div id="hlNotice" role="dialog" aria-modal="true" aria-labelledby="hlNoticeTitle" aria-describedby="hlNoticeLead">
   <div class="hln-card">
     <div class="hln-hero">
+      <i class="hln-blob hln-b1"></i><i class="hln-blob hln-b2"></i>
       <button type="button" class="hln-x" id="hlNoticeX" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
       <span class="hln-pill"><i class="hln-dot"></i>Upgrade in progress</span>
       <h2 id="hlNoticeTitle">We’re upgrading HomeLoop</h2>
-      <p class="hln-lead" id="hlNoticeLead">We’re working on a better experience for you. Here’s what’s happening right now.</p>
+      <p class="hln-lead" id="hlNoticeLead">We’re improving HomeLoop to serve you better. Here’s a quick update on what’s changing.</p>
+      <div class="hln-prog" aria-hidden="true"><i></i></div>
     </div>
     <div class="hln-body">
       <ul>
         <li>
-          <div class="hln-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 4.6L18.5 9l-4.6 1.9L12 15.5l-1.9-4.6L5.5 9l4.6-1.4z"/><path d="M19 15l.8 1.9 1.7.7-1.7.7L19 20l-.8-1.7-1.7-.7 1.7-.7z"/></svg></div>
-          <div><b>New features coming</b><span>The website is being upgraded with new features and improvements to make finding and listing homes easier.</span></div>
+          <div class="hln-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 4.6L18.5 9l-4.6 1.9L12 15.5l-1.9-4.6L5.5 9l4.6-1.4z"/><path d="M19 15l.8 1.9 1.7.7-1.7.7L19 20l-.8-1.7-1.7-.7 1.7-.7z"/></svg></div>
+          <div><div class="hln-row"><b>Platform enhancements underway</b><em class="hln-tag" style="font-style:normal">In progress</em></div><span class="hln-d">We’re rolling out new features and improvements to make searching for and listing properties simpler.</span></div>
         </li>
-        <li>
-          <div class="hln-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/></svg></div>
-          <div><b>Play Store app in development</b><span>Our Android app is being built and will be announced soon.</span></div>
+        <li class="g">
+          <div class="hln-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/></svg></div>
+          <div><div class="hln-row"><b>Android app coming soon</b><em class="hln-tag" style="font-style:normal">Coming soon</em></div><span class="hln-d">Our Play Store app is currently in development. We’ll announce its launch shortly.</span></div>
         </li>
-        <li>
-          <div class="hln-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg></div>
-          <div><b>No new listings until year end</b><span>We are not accepting any new property listings until the end of this year. All existing listings remain available to browse.</span></div>
+        <li class="a">
+          <div class="hln-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg></div>
+          <div><div class="hln-row"><b>New listings paused until year end</b><em class="hln-tag" style="font-style:normal">Paused</em></div><span class="hln-d">We are not accepting new property listings until the end of this year. All existing listings remain available to browse.</span></div>
         </li>
       </ul>
       <button type="button" class="hln-btn" id="hlNoticeOk">Continue to website</button>
-      <p class="hln-foot">Thank you for your patience and support.</p>
+      <p class="hln-foot">Thank you for your patience and continued support.</p>
     </div>
   </div>
 </div>
