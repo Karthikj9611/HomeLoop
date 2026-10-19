@@ -10953,12 +10953,17 @@ function updateShortlistEnquire() {
     : total < ENQUIRE_MIN ? 'Shortlist a property' : `Select up to ${ENQUIRE_MAX} properties`;
   btn.style.background = ok ? '' : '#9aa0a6';
 }
+/* Single enquiry message used everywhere a tenant contacts an owner/agent on WhatsApp
+   (property view "Interested" buttons + shortlist "Enquire"). */
+function buildEnquiryMessage(props) {
+  const one = props.length === 1;
+  const lines = props.map((p, i) => `${one ? '' : (i + 1) + '. '}${p.propertyId} - ${window.location.origin}/property/${p.id}`);
+  return `Hello, I'm interested in the following ${one ? 'property' : 'properties'} on HomeLoop.\n\n${lines.join('\n')}\n\nThank you.`;
+}
 function _openAgentEnquiry(phone) {
   const props = _shortlistEnquiryGroups().groups[phone];
   if (!props || !props.length) return;
-  const one = props.length === 1;
-  const lines = props.map((p, i) => `${one ? '' : (i + 1) + '. '}${p.propertyId} - ${window.location.origin}/property/${p.id}`);
-  const msg = `Hello, I'm interested in the following ${one ? 'property' : 'properties'} on HomeLoop. Could you please confirm if ${one ? 'it is' : 'they are'} still available?\n\n${lines.join('\n')}\n\nThank you.`;
+  const msg = buildEnquiryMessage(props);
   window.open('https://wa.me/' + phone + '?text=' + encodeURIComponent(msg), '_blank', 'noopener');
 }
 function enquireShortlistAtOnce() {
@@ -13845,8 +13850,7 @@ function openOwnerWhatsApp(propId, which) {
     return;
   }
   const phone = raw.length === 10 ? '91' + raw : raw;
-  const propertyUrl = `${window.location.origin}/property/${p.id}`;
-  const msg = `Interested in this property. Still available?\n${p.propertyId} - ${propertyUrl}`;
+  const msg = buildEnquiryMessage([p]);
   window.open(isOwnerViewer() ? 'https://wa.me/' + phone : 'https://wa.me/' + phone + '?text=' + encodeURIComponent(msg), '_blank', 'noopener');
 }
 
@@ -13862,8 +13866,7 @@ function openWhatsApp(propId) {
     return;
   }
   const phone = rawPhone.length === 10 ? '91' + rawPhone : rawPhone;
-  const propertyUrl = `${window.location.origin}/property/${p.id}`;
-  const msg = `Interested in this property. Still available?\n${p.propertyId} - ${propertyUrl}`;
+  const msg = buildEnquiryMessage([p]);
   // Logged-in owner accounts get a blank chat with the agent — no prefilled
   // "Interested in this property" text (that wording is for tenants).
   const url = isOwnerViewer()
@@ -13880,36 +13883,17 @@ function sharePropertyWhatsApp(propId) {
   const p = PROPERTIES.find(x => x.id === propId) || BOOKED_PROPERTIES.find(x => x.id === propId);
   if (!p) return;
   const propertyUrl = `${window.location.origin}/property/${p.id}`;
-  // Friendly "look at this" message for friends / family / groups (not an enquiry to an owner).
+  // Short "look at this" message for friends / family / groups (not an enquiry to an owner).
   const status = p.basic?.status || 'For Rent';
-  const isSell = status === 'For Sale', isShort = status === 'Short Stay';
+  const isSell = status === 'For Sale', isShort = status === 'Short Stay', isPG = status === 'PG';
   const prop = p.property || {}, pgd = p.pg || {}, ss = p.shortStay || {};
   const ptype = prop.type || pgd.type || ss.type || '';
-  const bhk = (status === 'PG' || isShort) ? '' : (prop.bhk || '');
-  const title = [bhk, ptype].filter(Boolean).join(' ') || 'Property';
-  const area = (p.location?.area || '').trim(), city = (p.location?.city || '').trim();
-  const where = [area, city].filter(Boolean).join(', ');
-  const rent = Number(p.price?.rent) || 0, dep = Number(p.price?.deposit) || 0;
-  const unit = isSell ? '' : isShort ? '/day' : '/month';
-  const rentLine = rent ? `${fmtRupee(rent)}${unit}` : '';
-  const depLine = (dep && !isSell) ? `Deposit ${fmtRupee(dep)}` : '';
-  const furn = prop.furnish ?? pgd.furnish ?? ss.furnish ?? '';
-  const sqft = String(prop.area || '').replace(/\s*sqft\s*$/i, '').trim();
-  const furnLine = furn ? `${furn}${/furnish/i.test(furn) ? '' : ' furnished'}` : '';
-  const sqftLine = sqft ? `${sqft} sqft` : '';
-  const lines = [
-    `${title} ${isSell ? 'for sale' : isShort ? 'for short stay' : status === 'PG' ? '(PG)' : 'for rent'}`,
-    where ? where : null,
-    rentLine || null,
-    depLine || null,
-    furnLine || null,
-    sqftLine || null,
-    `ID: ${p.propertyId}`,
-    '',
-    'Have a look — photos & full details here:',
-    propertyUrl
-  ].filter(l => l !== null);
-  window.open('https://wa.me/?text=' + encodeURIComponent(lines.join('\n')), '_blank', 'noopener');
+  const bhk = (isPG || isShort) ? '' : (prop.bhk || '');
+  const title = bhk || ptype || 'Property';
+  const kind = isSell ? 'for sale' : isShort ? 'for short stay' : isPG ? 'PG' : 'for rent';
+  const area = (p.location?.area || '').trim();
+  const msg = `${title} ${kind}${area ? ', ' + area : ''}\n${propertyUrl}`;
+  window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank', 'noopener');
 }
 
 function resetListingForm() {
@@ -16688,13 +16672,15 @@ function shareAnywayAfterSelfReferral() {
 
 // Opens a WhatsApp chat pre-filled with the invite, addressed directly to
 // the tenant's number (assumes India, +91 — matches isValidIndianMobile).
+// Single invite message used by both the direct WhatsApp invite and the
+// native share sheet / clipboard invite.
+const INVITE_WEBSITE = "https://homeloop.in";
+function buildInviteMessage(tenantName) {
+  const greeting = tenantName ? `Hi ${tenantName}! 🏠` : '🏠 Looking for a home?';
+  return `${greeting}\n\nFind verified Rentals\n${INVITE_WEBSITE}`;
+}
 function shareToTenantWhatsApp(tenantPhone, tenantName) {
-  const website = "https://homeloop.in";
-  const greeting = tenantName ? `Hi ${tenantName}! 🏠` : '🏠 Hey!';
-  const text = `${greeting}
-
-Find verified Rentals
-${website}`;
+  const text = buildInviteMessage(tenantName);
   window.open(`https://wa.me/91${tenantPhone}?text=${encodeURIComponent(text)}`, '_blank');
 }
 function copyVideoLink(url) {
@@ -16715,21 +16701,17 @@ function copyReferralCode() {
   }
 }
 function shareReferralCode(tenantName) {
-  const website = "https://homeloop.in";
-
-  const greeting = tenantName ? `Hi ${tenantName}! 🏠` : '🏠 Looking for a home?';
-  const text = `${greeting}
-
-Find verified Rentals`;
+  const text = buildInviteMessage(tenantName);
 
   if (navigator.share) {
+    // The link is already inside the message text, so it isn't passed as a
+    // separate url (that would show it twice on most targets).
     navigator.share({
       title: "HomeLoop",
-      text: text,
-      url: website
+      text: text
     }).catch(() => {});
   } else {
-    navigator.clipboard.writeText(`${text}\n${website}`).then(() => {
+    navigator.clipboard.writeText(text).then(() => {
       showToast("Website link copied!");
     });
   }
