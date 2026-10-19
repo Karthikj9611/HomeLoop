@@ -3639,13 +3639,15 @@ self.addEventListener('notificationclick', event => {
       // "Today's property views" popup) so it also covers views recorded before the daily
       // counter existed or that were repeat views. Never lower than the stored daily count.
       let liveToday = null;
+      let resetAt = null; // set by the today-only reset; views before this moment no longer count for today
       if (req.params.type === 'propertyView') {
         const since = new Date(Date.now() - 36 * 60 * 60 * 1000); // wide window, exact day filtered below
         const [viewerRows, viewRows] = await Promise.all([
           PropertyViewer.find({ lastViewedAt: { $gte: since } }).select('lastViewedAt').lean(),
           PropertyView.find({ createdAt: { $gte: since } }).select('fingerprint createdAt').lean(),
         ]);
-        const isToday = (d) => d && dateStrInTz(new Date(d)) === todayDate;
+        resetAt = (todayDoc && todayDoc.resetAt) ? new Date(todayDoc.resetAt) : null;
+        const isToday = (d) => d && dateStrInTz(new Date(d)) === todayDate && (!resetAt || new Date(d) > resetAt);
         // Logged-in views = one PropertyViewer row per user per listing (last viewed today).
         // Guest views = PropertyView rows with a device fingerprint (the 'user:' rows mirror the
         // PropertyViewer ones, so they are skipped to avoid double counting).
@@ -3658,7 +3660,7 @@ self.addEventListener('notificationclick', event => {
       const days = monthOk ? allDays.filter(d => d.date.startsWith(month)) : allDays;
       const monthTotal = monthOk ? days.reduce((sum, d) => sum + (d.count || 0), 0) : null;
 
-      res.json({ days, total, today: Math.max(todayDoc ? todayDoc.count : 0, liveToday || 0), todayDate, month: monthOk ? month : null, monthTotal });
+      res.json({ days, total, today: Math.max(todayDoc ? todayDoc.count : 0, liveToday || 0), todayDate, resetAt: resetAt ? resetAt.toISOString() : null, month: monthOk ? month : null, monthTotal });
     } catch (err) {
       console.error('GET /api/admin/daily-stats error:', err.message);
       res.status(500).json({ message: 'Error fetching daily stats' });
@@ -3675,6 +3677,11 @@ self.addEventListener('notificationclick', event => {
         { $set: { count: 0 } },
         { new: true, upsert: true }
       );
+      // Property views: "today" is also derived from the real view records, so remember when today was reset and
+      // ignore anything older (nothing is deleted — history and per-listing counts stay intact).
+      if (req.params.type === 'propertyView' && date === todayStr()) {
+        await DailyStat.collection.updateOne({ type: req.params.type, date }, { $set: { resetAt: new Date() } });
+      }
       res.json({ message: 'Count cleared', day: doc });
     } catch (err) {
       console.error('PATCH /api/admin/daily-stats/:type/:date/clear error:', err.message);

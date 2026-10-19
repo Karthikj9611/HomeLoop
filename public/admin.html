@@ -4390,7 +4390,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
             <div class="stat-card-big-num" id="dailyVisitsBigNum">—</div>
             <div class="stat-card-big-label">Today's site visits</div>
             <div class="stat-card-big-actions">
-              <button class="bulk-btn bulk-btn-outline-danger visits-reset-btn" onclick="resetDailyStat('visit')">
+              <button class="bulk-btn bulk-btn-outline-danger visits-reset-btn" onclick="resetTodayStat('visit')" title="Reset only today's count">
                 <i class="fas fa-eraser"></i> Reset Count
               </button>
             </div>
@@ -4413,7 +4413,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
             <div style="display:flex;align-items:center;gap:12px">
               <div style="font-weight:700;color:var(--ink3);font-size:0.84rem">Total this month: <span id="visitsMonthTotal">—</span></div>
               <button class="bulk-btn bulk-btn-outline-danger visits-reset-btn" onclick="resetDailyStat('visit')" title="Reset every day's visit count, across all months">
-                <i class="fas fa-eraser"></i> Reset All
+                <i class="fas fa-eraser"></i> Reset All Days
               </button>
             </div>
           </div>
@@ -4440,7 +4440,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
             <div class="stat-card-big-num" id="registeredUsersBigNum">—</div>
             <div class="stat-card-big-label">Today's registrations</div>
             <div class="stat-card-big-actions">
-              <button class="bulk-btn bulk-btn-outline-danger visits-reset-btn" onclick="resetDailyStat('registration')">
+              <button class="bulk-btn bulk-btn-outline-danger visits-reset-btn" onclick="resetTodayStat('registration')" title="Reset only today's count">
                 <i class="fas fa-eraser"></i> Reset Count
               </button>
             </div>
@@ -4463,7 +4463,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
             <div class="stat-card-big-num" id="todayPropertyViewsBigNum">—</div>
             <div class="stat-card-big-label">Today's property views</div>
             <div class="stat-card-big-actions">
-              <button class="bulk-btn bulk-btn-outline-danger visits-reset-btn" onclick="resetDailyStat('propertyView')">
+              <button class="bulk-btn bulk-btn-outline-danger visits-reset-btn" onclick="resetTodayStat('propertyView')" title="Reset only today's count">
                 <i class="fas fa-eraser"></i> Reset Count
               </button>
               <button class="bulk-btn bulk-btn-outline-danger visits-reset-btn" id="resetAllViewsBtn" onclick="resetAllViews()" title="Reset every listing's view count to 0">
@@ -8683,9 +8683,9 @@ window.resetDailyStat = async function(type){
   if(blockIfViewOnly(...(DAILY_STAT_TYPE_MODULES[type] || []))) return;
   const meta = DAILY_STAT_LABELS[type];
   const message = type === 'visit'
-    ? 'Every day\'s count — today and every past month — will be set back to 0, and every visitor will be forgotten, so a device that already counted before will count again next time it visits. This cannot be undone.'
-    : 'Every day\'s count — today and every past month — will be set back to 0. This cannot be undone.';
-  const ok = await showConfirmModal({ title:`Reset ${meta.label}?`, message, okText:'Reset all' });
+    ? 'This clears the visit count of EVERY day in EVERY month, not just today, and forgets all visitors, so devices that already counted will count again. To reset only today, use "Reset Count" on the Today\'s site visits card. This cannot be undone.'
+    : 'This clears the count of EVERY day in EVERY month, not just today. This cannot be undone.';
+  const ok = await showConfirmModal({ title:`Reset ALL days of ${meta.label}?`, message, okText:'Reset all days' });
   if(!ok) return;
   try{
     const res = await fetch(`${BASE}/api/admin/daily-stats/${type}/clear-all`, { method:'POST', headers: authHeaders() });
@@ -8694,6 +8694,28 @@ window.resetDailyStat = async function(type){
     loadDailyStat(type);
     if(type === 'visit') loadVisitsMonth(_visitsMonth);
   } catch(err){ alert(`Failed to reset ${meta.label.toLowerCase()}. Please try again.`); }
+};
+
+/* Reset ONLY today's count for a daily stat (visit / registration). Earlier days and the all-time totals are untouched.
+   Super admin only (same gate as every other reset). Uses PATCH /api/admin/daily-stats/:type/today/clear. */
+window.resetTodayStat = async function(type){
+  if(window.DISABLE_VISITS_RESET_BTNS) return;
+  if(blockIfViewOnly(...(DAILY_STAT_TYPE_MODULES[type] || []))) return;
+  const meta = DAILY_STAT_LABELS[type];
+  const what = type === 'visit' ? "today's site visits" : type === 'propertyView' ? "today's property views" : "today's registrations";
+  const ok = await showConfirmModal({
+    title: `Reset ${what}?`,
+    message: `Only today's count will be set back to 0. Earlier days and the all-time total are not changed.`,
+    okText: 'Reset today'
+  });
+  if(!ok) return;
+  try{
+    const res = await fetch(`${BASE}/api/admin/daily-stats/${type}/today/clear`, { method:'PATCH', headers: authHeaders() });
+    const data = await res.json().catch(()=>({}));
+    if(!res.ok){ alert(data.message || `Failed to reset ${what}`); return; }
+    loadDailyStat(type);
+    if(type === 'visit') loadVisitsMonth(_visitsMonth);
+  } catch(err){ alert(`Failed to reset ${what}. Please try again.`); }
 };
 
 /* ── DAILY VISITS: monthly view ── */
@@ -15888,7 +15910,12 @@ async function openTodayPropertyViewsModal(){
     const allProps = await pres.json();
     if(!stillOpen()) return;
     const props = (Array.isArray(allProps) ? allProps : []).filter(x => x && x._id && Number(x.views || 0) > 0);
-    const t0 = new Date(); t0.setHours(0,0,0,0);
+    let t0 = new Date(); t0.setHours(0,0,0,0);
+    try{ // views before the last "Reset Count" today no longer count
+      const rr = await fetch(BASE + '/api/admin/daily-stats/propertyView', { headers: authHeaders() });
+      const rd = rr.ok ? await rr.json() : null;
+      if(rd && rd.resetAt){ const ra = new Date(rd.resetAt); if(ra > t0) t0 = ra; }
+    }catch(_){}
     const acc = { tenants: new Map(), owners: new Map(), guests: new Map() };
     let done = 0, failed = 0, idx = 0, gAnon = 0;
     const add = (kind, key, u, item) => {
