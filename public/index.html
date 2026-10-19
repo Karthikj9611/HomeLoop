@@ -19850,10 +19850,10 @@ document.addEventListener('keydown', function(e){ if (e.key === 'Escape') closeP
 
 <!-- ══ Site notice: upgrade in progress ══ -->
 <style>
-#hlNotice{position:fixed;inset:0;z-index:2147482000;display:none;align-items:center;justify-content:center;padding:16px;background:rgba(10,12,20,.6);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);opacity:0;transition:opacity .25s ease}
-#hlNotice.show{display:flex}
+#hlNotice{position:fixed;top:0;left:0;right:0;bottom:0;width:100%;height:100%;box-sizing:border-box;z-index:2147482000;display:none;place-items:center;padding:16px;margin:0;background:rgba(10,12,20,.6);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);opacity:0;transition:opacity .25s ease}
+#hlNotice.show{display:grid}
 #hlNotice.in{opacity:1}
-#hlNotice .hln-card{position:relative;display:flex;flex-direction:column;width:100%;max-width:400px;max-height:calc(100vh - 32px);max-height:calc(100dvh - 32px);background:#fff;color:#111827;border-radius:24px;overflow:hidden;box-shadow:0 30px 70px rgba(0,0,0,.35);transform:translateY(16px) scale(.97);transition:transform .35s cubic-bezier(.2,.8,.2,1);font-family:'Inter',system-ui,sans-serif}
+#hlNotice .hln-card{position:relative;display:flex;flex-direction:column;box-sizing:border-box;width:100%;max-width:400px;margin:auto;max-height:calc(100vh - 32px);max-height:calc(100dvh - 32px);background:#fff;color:#111827;border-radius:24px;overflow:hidden;box-shadow:0 30px 70px rgba(0,0,0,.35);transform:translateY(16px) scale(.97);transition:transform .35s cubic-bezier(.2,.8,.2,1);font-family:'Inter',system-ui,sans-serif}
 #hlNotice.in .hln-card{transform:none}
 #hlNotice .hln-hero{position:relative;flex:0 0 auto;padding:22px 22px 20px;color:#fff;background:radial-gradient(120% 140% at 100% 0%,rgba(255,255,255,.22) 0%,rgba(255,255,255,0) 55%),linear-gradient(135deg,var(--brand,#E03A52) 0%,#b3243a 100%);overflow:hidden}
 #hlNotice .hln-hero::after{content:"";position:absolute;right:-40px;bottom:-60px;width:160px;height:160px;border-radius:50%;background:rgba(255,255,255,.1)}
@@ -19883,7 +19883,7 @@ document.addEventListener('keydown', function(e){ if (e.key === 'Escape') closeP
   #hlNotice .hln-ic{background:rgba(224,58,82,.16)}
   #hlNotice li span{color:#9ca3af}
 }
-@media (max-width:480px){#hlNotice{align-items:flex-end;padding:0}#hlNotice .hln-card{max-width:none;border-radius:24px 24px 0 0;max-height:92vh;max-height:92dvh}#hlNotice .hln-body{padding-bottom:calc(18px + env(safe-area-inset-bottom,0px))}}
+@media (max-width:480px){#hlNotice{padding:14px}#hlNotice .hln-card{max-height:calc(100vh - 28px);max-height:calc(100dvh - 28px)}}
 @media (max-height:620px){#hlNotice .hln-hero{padding:16px 20px 14px}#hlNotice h2{font-size:20px;margin-top:8px}#hlNotice .hln-lead{font-size:12.5px}#hlNotice li{padding:7px 4px}#hlNotice .hln-ic{width:32px;height:32px}}
 @media (prefers-reduced-motion:reduce){#hlNotice,#hlNotice .hln-card{transition:none}#hlNotice .hln-dot{animation:none}}
 </style>
