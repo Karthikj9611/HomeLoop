@@ -305,7 +305,7 @@ body{
   #bulkToolbar .bulk-btn .bulk-btn-label::after{content:attr(data-short);font-size:.82rem;line-height:1.2;display:inline;font-weight:700}
   /* The expand/collapse arrow stays a plain round button */
   #bulkToolbar .bulk-btn.fab-toggle-btn{width:42px!important;min-width:42px!important;height:42px!important;padding:0!important;gap:0!important;justify-content:center!important;border-radius:50%!important}
-  #bulkCompareCount,#bulkShareTenantCount,#bulkShareLinksCount,#bulkCheckAvailabilityCount,#bulkToolbar .bulkFlagCount{
+  #bulkCompareCount,#bulkShareTenantCount,#bulkShareLinksCount,#bulkCheckAvailabilityCount,#bulkDownloadZipCount,#bulkToolbar .bulkFlagCount{
     position:absolute;top:-6px;right:-6px;min-width:20px;height:20px;padding:0 5px;box-sizing:border-box;
     display:flex;align-items:center;justify-content:center;
     border-radius:10px;background:var(--ink,#1f2937);color:#fff;border:2px solid #fff;
@@ -4073,6 +4073,9 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
         </button>
         <button class="bulk-btn sel-hide" id="bulkCheckAvailabilityBtn" style="display:none;background:#7c3aed;color:#fff;border-color:#7c3aed" onclick="checkAvailabilityWithOwners()" title="Review and send a WhatsApp availability check to each selected property's owner (alt number only)">
           <i class="fab fa-whatsapp"></i> <span class="bulk-btn-label" data-mobile="Check Availability" data-short="Check">Check Availability</span><span id="bulkCheckAvailabilityCount">0</span>
+        </button>
+        <button class="bulk-btn sel-hide" id="bulkDownloadZipBtn" style="display:none;background:#334155;color:#fff;border-color:#334155" onclick="downloadSelectedPropertiesZip()" title="Download photos + data (.txt) of all selected properties as one zip">
+          <i class="fas fa-file-zipper"></i> <span class="bulk-btn-label" data-mobile="Download Zip" data-short="Zip">Download Zip</span><span id="bulkDownloadZipCount">0</span>
         </button>
         <span id="addPropertyDivider" style="width:1px;align-self:stretch;background:var(--border,#ddd);margin:2px 4px;flex-shrink:0"></span>
         <button type="button" class="bulk-selected-count" id="bulkSelectedCount" style="display:none" onclick="clearPropSelection()" title="Clear selection">
@@ -11194,6 +11197,12 @@ function updateBulkToolbarUI(){
     checkAvailBtn.style.display = n >= 1 ? 'inline-flex' : 'none'; checkAvailBtn.classList.toggle('sel-hide', !(n >= 1));
     if (checkAvailCountEl) checkAvailCountEl.textContent = n;
   }
+  const dlZipBtn = document.getElementById('bulkDownloadZipBtn');
+  const dlZipCountEl = document.getElementById('bulkDownloadZipCount');
+  if (dlZipBtn && !dlZipBtn.dataset.busy){
+    dlZipBtn.style.display = n >= 1 ? 'inline-flex' : 'none'; dlZipBtn.classList.toggle('sel-hide', !(n >= 1));
+    if (dlZipCountEl) dlZipCountEl.textContent = n;
+  }
   // If the modal is already open and the selection changed underneath it
   // (row unchecked while modal was up), keep the table in sync live.
   if (document.getElementById('adminCompareModal').classList.contains('open')){
@@ -11201,6 +11210,66 @@ function updateBulkToolbarUI(){
     else renderAdminCompareTable();
   }
 }
+
+/* Download Zip (bulk): one zip for every selected property —
+   <ID>/<ID>_01.ext … + <ID>/<ID>.txt per property. */
+window.downloadSelectedPropertiesZip = async function(){
+  const btn = document.getElementById('bulkDownloadZipBtn');
+  const cnt = document.getElementById('bulkDownloadZipCount');
+  if (!btn || btn.dataset.busy) return;
+  const rows = Array.from(_selectedPropIds).map(id => _adminPropCache[id]).filter(Boolean);
+  if (!rows.length){ alert('No selected properties are loaded yet.'); return; }
+  const pad = n => String(n).padStart(2, '0');
+  const extOf = (blob, url) => {
+    const m = { 'image/jpeg':'jpg','image/png':'png','image/webp':'webp','image/gif':'gif','image/avif':'avif' }[blob.type];
+    if (m) return m;
+    const u = (String(url).split('?')[0].match(/\.([a-z0-9]{2,4})$/i) || [])[1];
+    return u ? u.toLowerCase() : 'webp';
+  };
+  const jobs = [];
+  const zip = new JSZip();
+  const used = {};
+  rows.forEach(row => {
+    let pid = String(row.propertyId || row._id || 'property').replace(/[\\/:*?"<>|]/g, '_');
+    if (used[pid]) pid += '_' + (++used[pid]); else used[pid] = 1;
+    const folder = zip.folder(pid);
+    try{ folder.file(pid + '.txt', buildPropertyDataText(row)); }catch(e){}
+    (Array.isArray(row.images) ? row.images : []).filter(Boolean).forEach((u, i) => jobs.push({ folder, pid, u, i }));
+  });
+  btn.dataset.busy = '1'; btn.style.opacity = '.75'; btn.style.pointerEvents = 'none';
+  let done = 0, failed = 0;
+  const tick = () => { if (cnt) cnt.textContent = Math.round(done / Math.max(jobs.length, 1) * 100) + '%'; };
+  tick();
+  try{
+    let next = 0;
+    const worker = async () => {
+      while (next < jobs.length){
+        const j = jobs[next++];
+        try{
+          const r = await fetch(j.u);
+          if (!r.ok) throw new Error('bad');
+          const b = await r.blob();
+          j.folder.file(j.pid + '_' + pad(j.i + 1) + '.' + extOf(b, j.u), b);
+        }catch(e){ failed++; }
+        done++; tick();
+      }
+    };
+    await Promise.all(Array.from({ length: Math.min(6, jobs.length) }, worker));
+    const out = await zip.generateAsync({ type:'blob', compression:'STORE' });
+    const d = new Date(), stamp = d.getFullYear() + pad(d.getMonth() + 1) + pad(d.getDate());
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(out);
+    a.download = 'Properties_' + rows.length + '_' + stamp + '.zip';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 8000);
+    if (failed) alert(failed + ' photo(s) could not be downloaded and were skipped.');
+  } catch(err){
+    alert('Could not build the zip. Try a smaller selection.');
+  } finally {
+    delete btn.dataset.busy; btn.style.opacity = ''; btn.style.pointerEvents = '';
+    updateBulkToolbarUI();
+  }
+};
 
 window.clearPropSelection = function(){
   _selectedPropIds.clear();
