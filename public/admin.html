@@ -11253,7 +11253,7 @@ window.downloadSelectedPropertiesZip = async function(){
     if (used[pid]) pid += '_' + (++used[pid]); else used[pid] = 1;
     const folder = zip.folder(pid);
     try{ folder.file(pid + '.txt', buildPropertyDataText(row)); }catch(e){}
-    (Array.isArray(row.images) ? row.images : []).filter(Boolean).forEach((u, i) => jobs.push({ folder, pid, u, i }));
+    _propImageUrls(row).forEach((u, i) => jobs.push({ folder, pid, u, i }));
   });
   btn.dataset.busy = '1'; btn.style.opacity = '.75'; btn.style.pointerEvents = 'none';
   let done = 0, failed = 0;
@@ -11264,12 +11264,17 @@ window.downloadSelectedPropertiesZip = async function(){
     const worker = async () => {
       while (next < jobs.length){
         const j = jobs[next++];
-        try{
-          const r = await fetch(j.u);
-          if (!r.ok) throw new Error('bad');
-          const b = await r.blob();
-          j.folder.file(j.pid + '_' + pad(j.i + 1) + '.' + extOf(b, j.u), b);
-        }catch(e){ failed++; }
+        let ok = false;
+        for (let attempt = 0; attempt < 2 && !ok; attempt++){
+          try{
+            const r = await fetch(j.u);
+            if (!r.ok) throw new Error('bad');
+            const b = await r.blob();
+            j.folder.file(j.pid + '_' + pad(j.i + 1) + '.' + extOf(b, j.u), b);
+            ok = true;
+          }catch(e){}
+        }
+        if (!ok) failed++;
         done++; tick();
       }
     };
@@ -11281,7 +11286,8 @@ window.downloadSelectedPropertiesZip = async function(){
     a.download = 'Properties_' + rows.length + '_' + stamp + '.zip';
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(a.href), 8000);
-    if (failed) alert(failed + ' photo(s) could not be downloaded and were skipped.');
+    if (!jobs.length) alert('No photos were found for the selected properties — only the text files were zipped.');
+    else if (failed) alert(failed + ' of ' + jobs.length + ' photo(s) could not be downloaded and were skipped.');
   } catch(err){
     alert('Could not build the zip. Try a smaller selection.');
   } finally {
@@ -14249,6 +14255,16 @@ function _renderAdminLightbox(){
     ? _adminLightboxImgs.map((url, i) => `<div class="lightbox-thumb${i===_adminLightboxIdx?' active':''}" style="background-image:url('${safeUrl(url)}')" onclick="_adminLightboxGo(${i})"></div>`).join('')
     : '';
 }
+// Every photo URL of a property: the row's flattened list plus media.images of
+// the full document (whichever has them), de-duplicated, in order.
+function _propImageUrls(row){
+  const out = [], seen = {};
+  const add = u => { if (typeof u === 'string' && u.trim() && !seen[u]){ seen[u] = 1; out.push(u.trim()); } };
+  (Array.isArray(row && row.images) ? row.images : []).forEach(add);
+  const m = row && row.full && row.full.media;
+  (m && Array.isArray(m.images) ? m.images : []).forEach(add);
+  return out;
+}
 /* Property data as a plain .txt, laid out like the listing form:
    "Label: value", one per line, in form order, empty fields skipped.
    Fields are read from row.full (basic/location/owner/price/property/
@@ -14396,7 +14412,7 @@ async function downloadPropertyZip(id, btn){
   const row = _adminPropCache[id || editingPropertyId];
   if (!row) return;
   const pid = row.propertyId || 'property';
-  const urls = (Array.isArray(row.images) ? row.images : []).filter(Boolean);
+  const urls = _propImageUrls(row);
   const pad = n => String(n).padStart(2, '0');
   const extOf = (blob, url) => {
     const m = { 'image/jpeg':'jpg','image/png':'png','image/webp':'webp','image/gif':'gif','image/avif':'avif' }[blob.type];
