@@ -288,6 +288,13 @@ body{
 #bulkToolbar .bulk-btn{width:100%!important;justify-content:flex-start!important}
 @media(min-width:769px){
   #bulkToolbar .bulk-btn > span[id$="Count"],#bulkToolbar .bulk-btn > .bulkFlagCount{margin-left:auto;padding-left:12px;font-weight:700}
+  /* Desktop: stack is open by default; the arrow collapses / expands it */
+  #bulkToolbar .fab-toggle-btn{display:flex!important;background:var(--surface,#fff);cursor:pointer;align-self:flex-end}
+  #bulkToolbar .bulk-btn.fab-toggle-btn{width:42px!important;min-width:42px!important;height:42px!important;padding:0!important;gap:0!important;justify-content:center!important;border-radius:50%!important}
+  #bulkToolbar .fab-toggle-btn i{transition:transform .2s}
+  #bulkToolbar:not(.fab-collapsed) .fab-toggle-btn i{transform:rotate(180deg)}
+  #bulkToolbar.fab-collapsed{min-width:0}
+  #bulkToolbar.fab-collapsed .bulk-toolbar-left,#bulkToolbar.fab-collapsed .bulk-toolbar-right{display:none!important}
 }
 /* Mobile: icon-only floating stack, selection count as a badge on the icon's top-right */
 @media(max-width:768px){
@@ -311,6 +318,18 @@ body{
     border-radius:10px;background:var(--ink,#1f2937);color:#fff;border:2px solid #fff;
     font-size:.64rem;font-weight:800;line-height:1;box-shadow:0 1px 4px rgba(0,0,0,.3);pointer-events:none
   }
+}
+/* Compact action stack (desktop + mobile): shorter buttons, tighter gaps, so the whole stack fits on screen */
+#bulkToolbar{gap:5px!important}
+#bulkToolbar .bulk-toolbar-left,#bulkToolbar .bulk-toolbar-right{gap:5px!important}
+#bulkToolbar .bulk-btn{height:30px!important;padding-top:0!important;padding-bottom:0!important}
+#bulkToolbar .bulk-btn i{font-size:.85rem!important}
+#bulkToolbar .bulk-btn .bulk-btn-label::after{font-size:.76rem!important}
+#bulkToolbar .bulk-btn.fab-toggle-btn{width:32px!important;min-width:32px!important;height:32px!important;padding:0!important}
+@media(max-width:768px){
+  #bulkToolbar,#bulkToolbar .bulk-toolbar-left,#bulkToolbar .bulk-toolbar-right{gap:5px!important}
+  #bulkToolbar .bulk-btn{height:30px!important;padding-top:0!important;padding-bottom:0!important}
+  #bulkToolbar .bulk-btn.fab-toggle-btn{width:32px!important;min-width:32px!important;height:32px!important}
 }
 /* "n selected" pill removed everywhere */
 #custSelectedCount,#bulkSelectedCount,#apptSelectedCount,#reviewSelectedCount,#urSelectedCount,#partnerSelectedCount{display:none!important}
@@ -17847,9 +17866,18 @@ function onSellPropertyTypeChange() {
    applyImportedProperty() used to prefill the View/Edit form. ═══════════════════════════════════════════════ */
 function toggleFabStack() {
   var t = document.getElementById('bulkToolbar'), b = document.getElementById('fabToggleBtn'); if (!t) return;
-  var open = t.classList.toggle('fab-open');
+  var open = window.matchMedia('(min-width:769px)').matches
+    ? !t.classList.toggle('fab-collapsed')   // desktop: open unless collapsed
+    : t.classList.toggle('fab-open');        // mobile: closed unless opened
   if (b) { b.setAttribute('aria-expanded', open ? 'true' : 'false'); b.setAttribute('aria-label', open ? 'Hide actions' : 'Show actions'); b.title = open ? 'Hide actions' : 'Show actions'; }
 }
+function syncFabAria() {
+  var t = document.getElementById('bulkToolbar'), b = document.getElementById('fabToggleBtn'); if (!t || !b) return;
+  var open = window.matchMedia('(min-width:769px)').matches ? !t.classList.contains('fab-collapsed') : t.classList.contains('fab-open');
+  b.setAttribute('aria-expanded', open ? 'true' : 'false'); b.setAttribute('aria-label', open ? 'Hide actions' : 'Show actions'); b.title = open ? 'Hide actions' : 'Show actions';
+}
+syncFabAria();
+window.addEventListener('resize', syncFabAria);
 function toggleImportPanel() {
   const body = document.getElementById('importPanelBody');
   const txt = document.getElementById('importPanelToggleTxt');
