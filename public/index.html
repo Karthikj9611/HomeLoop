@@ -20219,6 +20219,30 @@ document.addEventListener('keydown', function(e){ if (e.key === 'Escape') closeP
 #hlNotice .hln-btn:focus-visible,#hlNotice .hln-x:focus-visible{outline:2px solid #5b8def;outline-offset:3px}
 @media (max-width:480px){#hlNotice{padding:16px}#hlNotice .hln-card{padding:40px 22px 24px;border-radius:24px}#hlNotice h2{font-size:21px}#hlNotice .hln-d{font-size:15px}}
 @media (prefers-reduced-motion:reduce){#hlNotice,#hlNotice .hln-card{transition:none}#hlNotice .hln-tag i{animation:none}}
+
+/* ═══ Calm modal theme — same soft look as the Filters modal ═══
+   Soft rose → lilac → periwinkle tint, frosted overlay, rounded corners, white fields.
+   Delete this whole block to revert. */
+:root{--calm-grad:linear-gradient(160deg,#fff0f3 0%,#fdf0f7 45%,#eef1ff 100%);--calm-line:rgba(224,58,82,.14);--calm-shadow:0 24px 64px -12px rgba(90,40,70,.28),0 6px 18px rgba(90,40,70,.10)}
+.modal-overlay,.add-modal-overlay,.preav-overlay,.wish-modal-overlay,#confirmOverlay{background:rgba(30,20,35,.42) !important;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.sort-backdrop{background:rgba(30,20,35,.38);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
+.modal,.add-modal,.confirm-card,.sort-sheet,.preav-modal{background:var(--calm-grad);border:1px solid rgba(255,255,255,.7);box-shadow:var(--calm-shadow)}
+.modal{border-radius:22px}
+.add-modal{border-radius:22px}
+.confirm-card{border-radius:22px}
+.sort-sheet{border-radius:22px 22px 0 0}
+.sort-option{border-bottom-color:var(--calm-line)}
+.sort-handle{background:rgba(224,58,82,.25)}
+.modal-divider,.modal-contact-row+.modal-contact-row{border-color:var(--calm-line);background-color:var(--calm-line)}
+.modal-contact-row+.modal-contact-row{background-color:transparent}
+.modal-field,.modal-factstrip,.modal-contact-card,.modal-amenity{background:rgba(255,255,255,.78);border-color:rgba(224,58,82,.10)}
+.modal-link-card{background:rgba(255,255,255,.85)}
+.form-input,.add-modal input:not([type=checkbox]):not([type=radio]):not([type=range]),.add-modal select,.add-modal textarea{background:#fff;border-color:rgba(224,58,82,.16);border-radius:12px;transition:border-color .15s,box-shadow .15s}
+.form-input:focus,.add-modal input:focus,.add-modal select:focus,.add-modal textarea:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 4px rgba(224,58,82,.10)}
+.modal-btn-primary,.confirm-ok-btn:not(.info){border-radius:12px;box-shadow:0 6px 16px -6px rgba(224,58,82,.55)}
+.modal-btn-secondary,.confirm-cancel-btn{border-radius:12px;background:#fff;border:1px solid var(--border-2)}
+.modal-close,.wish-modal-close{box-shadow:0 2px 10px rgba(224,58,82,.30)}
+.confirm-card .confirm-icon{background:#fff;box-shadow:0 2px 10px rgba(224,58,82,.15)}
 </style>
 <div id="hlNotice" role="dialog" aria-modal="true" aria-labelledby="hlNoticeTitle" aria-describedby="hlNoticeLead">
   <div class="hln-card">
