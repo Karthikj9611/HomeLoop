@@ -85,7 +85,7 @@
   --shadow-md:0 4px 16px rgba(0,0,0,.10);
   --nav-h:64px;
   --filter-h:52px;
-  --qmb-h:50px;
+  --qmb-h:56px;   /* same height as the bottom nav */
   --search-h:64px;
 }
 html{scroll-behavior:smooth;overflow-x:hidden;width:100%}
@@ -508,10 +508,15 @@ ul{list-style:none}
 }
 .qmb-item{
   display:flex;flex-direction:column;align-items:center;justify-content:center;
-  gap:3px;padding:8px 0;font-size:10px;font-weight:500;color:var(--text-2);cursor:pointer;
+  gap:3px;padding:0;font-size:10px;font-weight:500;color:var(--text-3);cursor:pointer;
   white-space:nowrap;position:relative;
 }
-.qmb-icon{font-size:21px;line-height:1;filter:drop-shadow(0 1px 1.5px rgba(0,0,0,.18))}
+/* same icon slot as .bottom-tab-icon (38x26, 20px glyph) so top + bottom rows line up exactly */
+.qmb-icon{
+  font-size:20px;line-height:1;filter:drop-shadow(0 1px 1.5px rgba(0,0,0,.18));
+  display:flex;align-items:center;justify-content:center;
+  width:38px;height:26px;border-radius:99px;
+}
 .qmb-icon-photo{filter:none}
 .qmb-icon-photo img{
   width:24px;height:24px;border-radius:50%;object-fit:cover;display:block;
@@ -528,10 +533,11 @@ ul{list-style:none}
 }
 .qmb-item:active{color:var(--brand)}
 .qmb-badge{
-  position:absolute;top:2px;right:14px;
+  position:absolute;top:3px;right:calc(50% - 26px);
   background:var(--brand);color:#fff;border-radius:99px;
   font-size:9px;font-weight:700;min-width:14px;height:14px;
   display:flex;align-items:center;justify-content:center;padding:0 3px;
+  box-shadow:0 0 0 1.5px var(--bg);
 }
 
 /* Tab-aware dropdown button visibility */
@@ -2228,6 +2234,19 @@ main.tab-explore .empty-state{display:none !important}
 .fm-nav,.fm-sub-ico{background:#fff;box-shadow:0 1px 4px rgba(224,58,82,.12)}
 .fm-sec{border-bottom-color:rgba(224,58,82,.12)}
 .fm-foot{background:rgba(255,255,255,.85);backdrop-filter:blur(6px);border-top-color:rgba(224,58,82,.14)}
+/* red header band, like the site's other red-accent surfaces */
+.fm-head{background:linear-gradient(135deg,var(--brand) 0%,var(--brand-hover) 100%);border-bottom:none}
+.fm-title,.fm-sub-name{color:#fff}
+.fm-sub-pos{color:rgba(255,255,255,.8)}
+.fm-count{background:#fff;color:var(--brand)}
+.fm-head .fm-close{background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.18)}
+.fm-head .fm-close:hover{background:#fff;transform:scale(1.08)}
+.fm-head .fm-close svg{stroke:var(--brand)}
+.fm-head .fm-nav{background:rgba(255,255,255,.22);box-shadow:none}
+.fm-head .fm-navbtn{color:#fff}
+.fm-head .fm-navbtn:hover{background:#fff;color:var(--brand)}
+.fm-head .fm-sub-ico{background:#fff}
+.fm-head .fm-close:focus-visible,.fm-head .fm-navbtn:focus-visible{outline-color:rgba(255,255,255,.8)}
 /* Options modal (opens on top when a filter row is clicked) */
 .fm-sub{z-index:2200}
 .fm-sub .fm-box{max-width:480px;max-height:min(80vh,640px)}
@@ -2248,6 +2267,13 @@ main.tab-explore .empty-state{display:none !important}
 @media(max-width:640px){
   /* Mobile: same exact-centre dialog (no bottom sheet) */
   .fm-overlay{padding:12px}
+  /* Filters list: two filters per row on mobile too */
+  .fm-body{padding:4px 14px;display:grid;grid-template-columns:1fr 1fr;column-gap:14px;align-items:start;align-content:start}
+  .fm-sec-head{gap:8px;font-size:13px;padding:12px 0}
+  .fm-sec-icon{font-size:18px}
+  .fm-sec-label{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .fm-sec-chev{width:12px;height:12px;flex-shrink:0}
+  .fm-sub .fm-body{display:block;padding:12px 14px}
   .fm-box{max-width:none;max-height:calc(100vh - 24px);max-height:calc(100dvh - 24px)}
 }
 
@@ -4884,6 +4910,21 @@ main.tab-explore .empty-state{display:none !important}
     transform:translateY(-3px) scale(1.08);
     filter:drop-shadow(0 1px 2px rgba(0,0,0,.3));
   }
+  /* Centre "+" tab: raised rainbow circle that pokes above the bar */
+  .bottom-tab-add{color:var(--text-2);font-weight:600;overflow:visible}
+  .bottom-add-btn{
+    width:46px;height:46px;border-radius:50%;margin-top:-22px;
+    display:flex;align-items:center;justify-content:center;
+    background:linear-gradient(135deg,#ff3b30,#ff9500,#ffcc00,#34c759,#00c7be,#007aff,#af52de,#ff2d92,#ff3b30);
+    background-size:300% 300%;animation:fabRainbow 6s linear infinite;
+    border:4px solid var(--bg);box-shadow:0 4px 14px rgba(120,80,200,.4);
+    box-sizing:border-box;
+  }
+  .bottom-add-btn svg{width:20px;height:20px;stroke:#fff;fill:none;stroke-width:2.8;stroke-linecap:round}
+  .bottom-tab-add:active .bottom-add-btn{transform:scale(.94)}
+  @media(prefers-reduced-motion:reduce){.bottom-add-btn{animation:none}}
+  /* the floating + is replaced by the centre tab above */
+  .fab{display:none!important}
   .bottom-tab-icon-wrap{position:relative;display:inline-flex}
   .bottom-tab-badge{
     position:absolute;top:-4px;right:-7px;
@@ -6351,6 +6392,10 @@ main.tab-explore .empty-state{display:none !important}
   <div class="bottom-tab active" data-tab="Rent" onclick="switchTabMobile(this)">
     <span class="bottom-tab-icon">🔑</span>
     Rent
+  </div>
+  <div class="bottom-tab bottom-tab-add" id="bottomTabAdd" onclick="openFabPicker()" role="button" aria-label="List your property">
+    <span class="bottom-add-btn"><svg viewBox="0 0 24 24" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>
+    List
   </div>
   <div class="bottom-tab" data-tab="Lease" onclick="switchTabMobile(this)">
     <span class="bottom-tab-icon">📜</span>
@@ -15079,7 +15124,7 @@ function updateAdBannerAudience() {
 function updateListPropertyVisibility(user) {
   const canList = !user || (user.accountType === 'owner' || user.accountType === 'broker');
   const display = canList ? '' : 'none';
-  ['fabAdd', 'fabInlineAdd', 'menuManageLabel', 'menuListRent', 'menuListLease']  /* menuListPG / menuListSell intentionally excluded: stay hidden (see PG_ENABLED / SELL_ENABLED) */
+  ['fabAdd', 'bottomTabAdd', 'fabInlineAdd', 'menuManageLabel', 'menuListRent', 'menuListLease']  /* menuListPG / menuListSell intentionally excluded: stay hidden (see PG_ENABLED / SELL_ENABLED) */
     .forEach(id => { const el = document.getElementById(id); if (el) el.style.display = display; });
   const _sellMenu = document.getElementById('menuListSell');
   if (_sellMenu) _sellMenu.style.display = (SELL_ENABLED && canList) ? '' : 'none';
@@ -20152,78 +20197,38 @@ document.addEventListener('keydown', function(e){ if (e.key === 'Escape') closeP
 
 <!-- ══ Site notice: upgrade in progress ══ -->
 <style>
-#hlNotice{position:fixed;top:0;left:0;right:0;bottom:0;width:100%;height:100%;box-sizing:border-box;z-index:2147482000;display:none;place-items:center;padding:16px;margin:0;background:radial-gradient(60% 50% at 20% 20%,rgba(139,92,246,.35),transparent 70%),radial-gradient(60% 50% at 80% 80%,rgba(224,58,82,.35),transparent 70%),rgba(10,12,22,.68);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);opacity:0;transition:opacity .25s ease}
+#hlNotice{position:fixed;top:0;left:0;right:0;bottom:0;width:100%;height:100%;box-sizing:border-box;z-index:2147482000;display:none;place-items:center;padding:20px;margin:0;background:rgba(36,44,60,.38);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);opacity:0;transition:opacity .35s ease}
 #hlNotice.show{display:grid}
 #hlNotice.in{opacity:1}
-#hlNotice .hln-card{position:relative;display:flex;flex-direction:column;box-sizing:border-box;width:100%;max-width:410px;margin:auto;max-height:calc(100vh - 32px);max-height:calc(100dvh - 32px);background:#fff;color:#111827;border-radius:26px;overflow:hidden;box-shadow:0 0 0 1px rgba(255,255,255,.25),0 32px 80px rgba(20,10,50,.45);transform:translateY(18px) scale(.96);transition:transform .4s cubic-bezier(.2,.9,.25,1.1);font-family:'Inter',system-ui,sans-serif}
+#hlNotice .hln-card{position:relative;box-sizing:border-box;width:100%;max-width:400px;margin:auto;max-height:calc(100vh - 40px);max-height:calc(100dvh - 40px);overflow:auto;padding:44px 30px 30px;text-align:center;color:#2b3340;border-radius:28px;background:linear-gradient(180deg,#f3f8ff 0%,#fff 42%);box-shadow:0 24px 60px rgba(30,41,59,.22),0 2px 6px rgba(30,41,59,.06);transform:translateY(10px) scale(.985);transition:transform .45s cubic-bezier(.2,.8,.2,1)}
 #hlNotice.in .hln-card{transform:none}
-#hlNotice .hln-hero{position:relative;flex:0 0 auto;padding:20px 22px 18px;color:#fff;overflow:hidden;background:linear-gradient(125deg,#ff6a5c 0%,#e03a52 38%,#b02a8f 72%,#6d4cff 100%)}
-#hlNotice .hln-blob{position:absolute;border-radius:50%;filter:blur(28px);opacity:.55;pointer-events:none}
-#hlNotice .hln-b1{width:150px;height:150px;right:-40px;top:-50px;background:#ffd36b;animation:hlnFloat 7s ease-in-out infinite}
-#hlNotice .hln-b2{width:130px;height:130px;left:-40px;bottom:-60px;background:#7c5cff;animation:hlnFloat 9s ease-in-out infinite reverse}
-@keyframes hlnFloat{0%,100%{transform:translate(0,0)}50%{transform:translate(14px,10px)}}
-#hlNotice .hln-pill{position:relative;z-index:1;display:inline-flex;align-items:center;gap:7px;padding:5px 11px;border-radius:99px;background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.28);font-size:10.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase}
-#hlNotice .hln-dot{width:7px;height:7px;border-radius:50%;background:#7CFFB2;box-shadow:0 0 0 0 rgba(124,255,178,.7);animation:hlnPulse 1.8s ease-out infinite}
-@keyframes hlnPulse{0%{box-shadow:0 0 0 0 rgba(124,255,178,.7)}100%{box-shadow:0 0 0 8px rgba(124,255,178,0)}}
-#hlNotice h2{position:relative;z-index:1;margin:11px 0 4px;font-size:23px;font-weight:800;letter-spacing:-.02em;line-height:1.2}
-#hlNotice .hln-lead{position:relative;z-index:1;margin:0;font-size:13px;line-height:1.45;color:rgba(255,255,255,.92)}
-#hlNotice .hln-prog{position:relative;z-index:1;height:5px;margin-top:14px;border-radius:99px;background:rgba(255,255,255,.25);overflow:hidden}
-#hlNotice .hln-prog i{display:block;height:100%;width:62%;border-radius:99px;background:linear-gradient(90deg,#fff,#ffe9a8);background-size:200% 100%;animation:hlnBar 2.4s linear infinite}
-@keyframes hlnBar{0%{background-position:200% 0}100%{background-position:-200% 0}}
-#hlNotice .hln-x{position:absolute;top:12px;right:12px;z-index:2;width:30px;height:30px;border:0;border-radius:50%;background:rgba(255,255,255,.22);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s,transform .15s}
-#hlNotice .hln-x:hover{background:rgba(255,255,255,.38);transform:rotate(90deg)}
-#hlNotice .hln-x svg{width:14px;height:14px}
-#hlNotice .hln-body{flex:1 1 auto;min-height:0;overflow-y:auto;padding:14px 16px 16px;background:linear-gradient(180deg,#faf8ff 0%,#fff 60%)}
-#hlNotice ul{list-style:none;margin:0 0 14px;padding:0;display:flex;flex-direction:column;gap:9px}
-#hlNotice li{--c1:#7c5cff;--c2:#a78bfa;--t:rgba(124,92,255,.08);--tb:rgba(124,92,255,.18);display:flex;gap:12px;align-items:flex-start;padding:11px 12px;border-radius:16px;background:var(--t);border:1px solid var(--tb);opacity:0;transform:translateY(8px)}
-#hlNotice.in li{animation:hlnRise .45s cubic-bezier(.2,.8,.2,1) forwards}
-#hlNotice.in li:nth-child(1){animation-delay:.12s}#hlNotice.in li:nth-child(2){animation-delay:.2s}#hlNotice.in li:nth-child(3){animation-delay:.28s}
-@keyframes hlnRise{to{opacity:1;transform:none}}
-#hlNotice li.g{--c1:#10b981;--c2:#34d399;--t:rgba(16,185,129,.08);--tb:rgba(16,185,129,.2)}
-#hlNotice li.a{--c1:#f59e0b;--c2:#fbbf24;--t:rgba(245,158,11,.1);--tb:rgba(245,158,11,.25)}
-#hlNotice .hln-ic{flex:0 0 auto;width:38px;height:38px;border-radius:12px;background:linear-gradient(135deg,var(--c1),var(--c2));color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 14px -4px var(--c1)}
-#hlNotice .hln-ic svg{width:19px;height:19px}
-#hlNotice .hln-row{display:flex;align-items:center;gap:8px;flex-wrap:nowrap}#hlNotice .hln-row b{min-width:0}#hlNotice .hln-tag{white-space:nowrap;flex-shrink:0}
-#hlNotice li b{font-size:13.5px;font-weight:700;line-height:1.3}
-#hlNotice .hln-tag{font-size:9.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;padding:2px 7px;border-radius:99px;color:var(--c1);background:#fff;border:1px solid var(--tb)}
-#hlNotice li span.hln-d{display:block;margin-top:2px;font-size:12px;line-height:1.45;color:#5b6472}
-#hlNotice .hln-btn{position:relative;overflow:hidden;width:100%;border:0;border-radius:12px;padding:13px 16px;font-size:14.5px;font-weight:600;color:#fff;cursor:pointer;background:#d6334b;box-shadow:0 1px 2px rgba(17,24,39,.12);transition:background .15s ease,transform .1s ease;outline:none}
-#hlNotice .hln-btn:hover{background:#c02a41}#hlNotice .hln-btn:focus-visible{box-shadow:0 0 0 3px rgba(214,51,75,.3)}
+#hlNotice .hln-x{position:absolute;top:14px;right:14px;width:34px;height:34px;display:grid;place-items:center;border:none;border-radius:50%;background:rgba(100,116,139,.1);color:#64748b;cursor:pointer;transition:background .15s,color .15s}
+#hlNotice .hln-x:hover{background:rgba(100,116,139,.18);color:#334155}
+#hlNotice .hln-x svg{width:16px;height:16px}
+#hlNotice .hln-ic{width:68px;height:68px;margin:0 auto 20px;border-radius:50%;display:grid;place-items:center;color:#5b8def;background:linear-gradient(145deg,#e8f1ff,#dff5ee);box-shadow:0 0 0 8px rgba(91,141,239,.07)}
+#hlNotice .hln-ic svg{width:30px;height:30px}
+#hlNotice .hln-label{display:block;margin-bottom:8px;font-size:11.5px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#8a96a8}
+#hlNotice h2{margin:0 0 12px;font-size:23px;line-height:1.3;font-weight:650;letter-spacing:-.01em;color:#1f2937}
+#hlNotice .hln-d{margin:0 auto;max-width:320px;font-size:15.5px;line-height:1.75;color:#5f6b7c}
+#hlNotice .hln-tag{display:inline-flex;align-items:center;gap:7px;margin:20px 0 26px;padding:7px 14px;border-radius:99px;font-size:13px;font-weight:600;color:#3f7d62;background:#e8f6ef}
+#hlNotice .hln-tag i{width:7px;height:7px;border-radius:50%;background:#5cb88c;animation:hlnBreathe 2.8s ease-in-out infinite}
+@keyframes hlnBreathe{0%,100%{opacity:.45;transform:scale(.85)}50%{opacity:1;transform:scale(1.1)}}
+#hlNotice .hln-btn{display:block;width:100%;padding:14px 18px;border:none;border-radius:14px;font:inherit;font-size:15.5px;font-weight:600;color:#fff;background:#e03a52;cursor:pointer;box-shadow:0 6px 16px rgba(224,58,82,.22);transition:background .15s,transform .15s,box-shadow .15s}
+#hlNotice .hln-btn:hover{background:#c72e43;box-shadow:0 8px 20px rgba(224,58,82,.28)}
 #hlNotice .hln-btn:active{transform:scale(.98)}
-#hlNotice .hln-foot{margin:10px 0 0;text-align:center;font-size:12px;color:#6b7280}
-@media (prefers-color-scheme:dark){
-  #hlNotice .hln-card{background:#16171d;color:#f3f4f6}
-  #hlNotice .hln-body{background:linear-gradient(180deg,#1b1a26 0%,#16171d 60%)}
-  #hlNotice li span.hln-d{color:#a3a9b5}
-  #hlNotice .hln-tag{background:#16171d}
-  #hlNotice .hln-foot{color:#9ca3af}
-}
-@media (max-width:480px){#hlNotice{padding:14px}#hlNotice .hln-card{max-height:calc(100vh - 28px);max-height:calc(100dvh - 28px)}}
-@media (max-height:640px){#hlNotice .hln-hero{padding:14px 20px 13px}#hlNotice h2{font-size:20px;margin-top:8px}#hlNotice .hln-lead{font-size:12.5px}#hlNotice .hln-prog{margin-top:10px}#hlNotice .hln-body{padding:12px 14px 14px}#hlNotice ul{gap:7px;margin-bottom:12px}#hlNotice li{padding:9px 10px}#hlNotice .hln-ic{width:34px;height:34px}#hlNotice .hln-btn{padding:11px 14px}#hlNotice .hln-foot{margin-top:8px}}
-@media (prefers-reduced-motion:reduce){#hlNotice,#hlNotice .hln-card{transition:none}#hlNotice .hln-dot,#hlNotice .hln-blob,#hlNotice .hln-prog i{animation:none}#hlNotice li{opacity:1;transform:none;animation:none!important}}
+#hlNotice .hln-btn:focus-visible,#hlNotice .hln-x:focus-visible{outline:2px solid #5b8def;outline-offset:3px}
+@media (max-width:480px){#hlNotice{padding:16px}#hlNotice .hln-card{padding:40px 22px 24px;border-radius:24px}#hlNotice h2{font-size:21px}#hlNotice .hln-d{font-size:15px}}
+@media (prefers-reduced-motion:reduce){#hlNotice,#hlNotice .hln-card{transition:none}#hlNotice .hln-tag i{animation:none}}
 </style>
 <div id="hlNotice" role="dialog" aria-modal="true" aria-labelledby="hlNoticeTitle" aria-describedby="hlNoticeLead">
   <div class="hln-card">
-    <div class="hln-hero">
-      <i class="hln-blob hln-b1"></i><i class="hln-blob hln-b2"></i>
-      <button type="button" class="hln-x" id="hlNoticeX" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
-      <span class="hln-pill">Service notice</span>
-      <h2 id="hlNoticeTitle">We’re upgrading HomeLoop</h2>
-      <p class="hln-lead" id="hlNoticeLead">We’re improving HomeLoop to serve you better. Here’s a quick update on what’s changing.</p>
-    </div>
-    <div class="hln-body">
-      <ul>
-        <li class="a">
-          <div class="hln-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg></div>
-          <div><div class="hln-row"><b>New listings paused until year end</b><em class="hln-tag" style="font-style:normal">Paused</em></div><span class="hln-d">We are not listing or accepting new properties until the end of this year. We’ll be back and active from 1 January 2027. All existing listings remain available to browse.</span></div>
-        </li>
-        <li>
-          <div class="hln-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 4.6L18.5 9l-4.6 1.9L12 15.5l-1.9-4.6L5.5 9l4.6-1.4z"/><path d="M19 15l.8 1.9 1.7.7-1.7.7L19 20l-.8-1.7-1.7-.7 1.7-.7z"/></svg></div>
-          <div><div class="hln-row"><b>Platform enhancements</b><em class="hln-tag" style="font-style:normal">In progress</em></div><span class="hln-d">We’re rolling out new features and enhancements, including smarter search filters, faster performance, a simpler listing flow, improved security and a refreshed design.</span></div>
-        </li>
-      </ul>
-      <button type="button" class="hln-btn" id="hlNoticeOk">Continue to website</button>
-    </div>
+    <button type="button" class="hln-x" id="hlNoticeX" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    <div class="hln-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 4.6L18.5 9l-4.6 1.9L12 15.5l-1.9-4.6L5.5 9l4.6-1.4z"/><path d="M19 15l.8 1.9 1.7.7-1.7.7L19 20l-.8-1.7-1.7-.7 1.7-.7z"/></svg></div>
+    <span class="hln-label">Service notice</span>
+    <h2 id="hlNoticeTitle">We’re upgrading HomeLoop</h2>
+    <p class="hln-d" id="hlNoticeLead">We’re building new features to serve you better, so new listings are paused for a few days. Thank you for your patience.</p>
+    <span class="hln-tag"><i></i>Paused for a few days</span>
+    <button type="button" class="hln-btn" id="hlNoticeOk">Continue to website</button>
   </div>
 </div>
 <script>
