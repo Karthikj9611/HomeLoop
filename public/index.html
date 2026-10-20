@@ -2187,6 +2187,70 @@ main.tab-explore .empty-state{display:none !important}
   .fab svg{width:16px;height:16px;stroke-width:2}
 }
 
+/* ─── Filters modal (opens when the filter bar is tapped) ─── */
+.fm-overlay{position:fixed;top:0;left:0;right:0;bottom:0;width:100%;height:100%;z-index:2100;background:rgba(20,15,20,.45);backdrop-filter:blur(2px);display:none;align-items:center;justify-content:center;padding:16px;box-sizing:border-box}
+.fm-overlay.open{display:flex}
+.fm-box{background:var(--bg);border-radius:16px;box-shadow:0 16px 48px rgba(0,0,0,.25);width:100%;max-width:560px;max-height:min(80vh,720px);display:flex;flex-direction:column;overflow:hidden;margin:auto}
+.fm-head{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border);flex-shrink:0}
+.fm-title{font-size:16px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:8px}
+.fm-count{background:var(--brand);color:#fff;border-radius:99px;font-size:11px;font-weight:700;padding:1px 7px;display:none}
+.fm-count.show{display:inline-block}
+.fm-body{overflow-y:auto;padding:4px 16px;flex:1;-webkit-overflow-scrolling:touch}
+.fm-sec{border-bottom:1px solid var(--border)}
+.fm-sec-head{width:100%;display:flex;align-items:center;gap:10px;padding:13px 0;background:none;border:none;font:inherit;font-size:14px;font-weight:600;color:var(--text);cursor:pointer;text-align:left}
+.fm-sec-head:hover .fm-sec-label{color:var(--brand)}
+.fm-sec-icon{font-size:20px;line-height:1}
+.fm-sec-label{flex:1}
+.fm-sec-badge{background:var(--brand);color:#fff;border-radius:99px;font-size:10px;font-weight:700;padding:1px 6px;min-width:16px;text-align:center;display:none}
+.fm-sec-badge.show{display:inline-block}
+.fm-sec-chev{width:14px;height:14px;stroke:var(--text-3);fill:none;stroke-width:2}
+/* header controls: one size, one gap, SVG icons so everything centres exactly */
+.fm-head{gap:12px}
+.fm-close,.fm-navbtn{display:inline-flex;align-items:center;justify-content:center;padding:0;flex-shrink:0;cursor:pointer;border:none;transition:background .12s,color .12s,transform .12s}
+.fm-close{width:36px;height:36px;border-radius:50%;background:var(--brand);box-shadow:0 2px 8px rgba(224,58,82,.3)}
+.fm-close:hover{background:var(--brand-hover);transform:scale(1.06)}
+.fm-close svg{width:16px;height:16px;stroke:#fff;fill:none;stroke-width:2.5;stroke-linecap:round}
+.fm-nav{display:flex;align-items:center;gap:2px;padding:3px;border-radius:999px;background:var(--brand-light);flex-shrink:0}
+.fm-navbtn{width:32px;height:32px;border-radius:50%;background:transparent;color:var(--brand)}
+.fm-navbtn:hover{background:var(--brand);color:#fff}
+.fm-navbtn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+.fm-close:focus,.fm-navbtn:focus{outline:none}
+.fm-close:focus-visible,.fm-navbtn:focus-visible{outline:2px solid rgba(224,58,82,.45);outline-offset:2px}
+.fm-sub-title{flex:1;min-width:0;display:flex;align-items:center;gap:12px}
+.fm-sub-ico{width:40px;height:40px;border-radius:12px;background:var(--brand-light);display:flex;align-items:center;justify-content:center;font-size:22px;line-height:1;flex-shrink:0}
+.fm-sub-txt{display:flex;flex-direction:column;min-width:0;line-height:1.2}
+.fm-sub-name{font-size:16px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fm-sub-pos{font-size:12px;font-weight:500;color:var(--text-3);margin-top:2px}
+.fm-clear,.fm-done{height:46px;padding:0 16px;display:flex;align-items:center;justify-content:center}
+/* soft tinted background so the modals aren't plain white; option rows stay white cards on top */
+.fm-box{background:linear-gradient(160deg,#fff0f3 0%,#fdf0f7 45%,#eef1ff 100%)}
+.fm-head{border-bottom-color:rgba(224,58,82,.14)}
+.fm-nav,.fm-sub-ico{background:#fff;box-shadow:0 1px 4px rgba(224,58,82,.12)}
+.fm-sec{border-bottom-color:rgba(224,58,82,.12)}
+.fm-foot{background:rgba(255,255,255,.85);backdrop-filter:blur(6px);border-top-color:rgba(224,58,82,.14)}
+/* Options modal (opens on top when a filter row is clicked) */
+.fm-sub{z-index:2200}
+.fm-sub .fm-box{max-width:480px;max-height:min(80vh,640px)}
+.fm-sub .fm-body{display:block;padding:12px 18px}
+/* the real filter popover is moved in here, so state/badges stay in sync */
+.fm-sub .fd-pop{position:static;display:flex;width:auto;min-width:0;max-width:none;max-height:none;box-shadow:none;border:none;padding:0;animation:none;background:transparent}
+.fm-sub .fd-pop-label,.fm-sub .fd-pop-footer{display:none}
+.fm-sub .fd-opts{max-height:min(46vh,380px)}
+.fm-foot{display:flex;gap:10px;padding:12px 16px calc(12px + env(safe-area-inset-bottom));border-top:1px solid var(--border);flex-shrink:0}
+.fm-clear{flex:1 1 0;padding:11px 16px;border-radius:10px;border:1px solid var(--border-2);background:var(--bg);color:var(--text-2);font:inherit;font-size:14px;font-weight:600;cursor:pointer}
+.fm-done{flex:1 1 0;padding:11px 16px;border-radius:10px;border:none;background:var(--brand);color:#fff;font:inherit;font-size:14px;font-weight:700;cursor:pointer}
+.fm-done:hover{background:var(--brand-hover)}
+/* Desktop: wider modal, filter sections laid out two per row */
+@media(min-width:641px){
+  .fm-box{max-width:960px;max-height:min(86vh,820px)}
+  .fm-body{padding:4px 24px;display:grid;grid-template-columns:1fr 1fr;column-gap:36px;align-items:start;align-content:start}
+}
+@media(max-width:640px){
+  /* Mobile: same exact-centre dialog (no bottom sheet) */
+  .fm-overlay{padding:12px}
+  .fm-box{max-width:none;max-height:calc(100vh - 24px);max-height:calc(100dvh - 24px)}
+}
+
 /* ─── FAB add-type picker (opens above the FAB) ─────────── */
 .fab-picker-backdrop{position:fixed;inset:0;z-index:240;background:rgba(20,15,20,.28);backdrop-filter:blur(2px);display:none}
 .fab-picker-backdrop.open{display:block}
@@ -6178,6 +6242,42 @@ main.tab-explore .empty-state{display:none !important}
 </div>
 
 <!-- ─── Add-type picker: choose which kind of listing to create ─── -->
+<!-- ─── Filters modal ───────────────────────────── -->
+<div class="fm-overlay" id="filtersModal" role="dialog" aria-modal="true" aria-label="Filters" onclick="if(event.target===this)closeFiltersModal()">
+  <div class="fm-box">
+    <div class="fm-head">
+      <div class="fm-title">Filters <span class="fm-count" id="fmCount"></span></div>
+      <button class="fm-close" type="button" onclick="closeFiltersModal()" aria-label="Close filters"><svg viewBox="0 0 24 24" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg></button>
+    </div>
+    <div class="fm-body" id="fmBody"></div>
+    <div class="fm-foot">
+      <button class="fm-clear" type="button" onclick="clearFilters();fmUpdateCounts()">Clear all</button>
+      <button class="fm-done" type="button" onclick="closeFiltersModal()">Show results</button>
+    </div>
+  </div>
+</div>
+
+<div class="fm-overlay fm-sub" id="fmSubModal" role="dialog" aria-modal="true" aria-label="Filter options" onclick="if(event.target===this)closeFmSub()">
+  <div class="fm-box">
+    <div class="fm-head">
+      <div class="fm-sub-title">
+        <span class="fm-sub-ico" id="fmSubIcon"></span>
+        <span class="fm-sub-txt"><span class="fm-sub-name" id="fmSubName"></span><span class="fm-sub-pos" id="fmSubPos"></span></span>
+      </div>
+      <div class="fm-nav">
+        <button class="fm-navbtn" type="button" onclick="fmSubGo(-1)" aria-label="Previous filter"><svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg></button>
+        <button class="fm-navbtn" type="button" onclick="fmSubGo(1)" aria-label="Next filter"><svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg></button>
+      </div>
+      <button class="fm-close" type="button" onclick="closeFmSub()" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg></button>
+    </div>
+    <div class="fm-body" id="fmSubBody"></div>
+    <div class="fm-foot">
+      <button class="fm-clear" type="button" onclick="fmSubClear()">Clear</button>
+      <button class="fm-done" type="button" onclick="closeFmSub()">Apply</button>
+    </div>
+  </div>
+</div>
+
 <div class="fab-picker-backdrop" id="fabPickerBackdrop" onclick="closeFabPicker()"></div>
 <div class="fab-picker" id="fabPicker" role="menu" aria-label="Choose listing type">
   <div class="fab-picker-header">
@@ -12478,6 +12578,145 @@ function fmtLeaseDur(s) {
   if (m) return m[1] + m[2] + ' Mo';
   return s;
 }
+
+/* ═══════════════════════════════════════════════
+   FILTERS MODAL — tapping/clicking the filter bar opens one modal listing
+   every filter for the current tab. Clicking a row opens an options modal
+   for that filter. The real popover element (#fdp-*) is moved into the
+   options modal (not copied), so selections, badges and persistence all
+   keep working. Closing the main modal switches the bar to its normal
+   dropdown behaviour until the user clicks somewhere outside it.
+   ═══════════════════════════════════════════════ */
+let _fmNormalMode = false;
+let _fmRows = [];
+let _fmSub = null;   // { id, pop }
+function fmCountFor(pop) {
+  if (!pop) return 0;
+  const n = pop.querySelectorAll('.fp-opt.sel').length;
+  const hasRange = Array.from(pop.querySelectorAll('input.fd-range-input')).some(i => i.value !== '');
+  return n + (hasRange ? 1 : 0);
+}
+function fmUpdateCounts() {
+  let total = 0;
+  _fmRows.forEach(r => {
+    const n = fmCountFor(r.pop);
+    total += n;
+    r.badge.textContent = n;
+    r.badge.classList.toggle('show', n > 0);
+  });
+  const c = document.getElementById('fmCount');
+  if (c) { c.textContent = total; c.classList.toggle('show', total > 0); }
+}
+function openFiltersModal() {
+  const modal = document.getElementById('filtersModal');
+  const body = document.getElementById('fmBody');
+  if (!modal || !body) return;
+  closeAllFd();
+  body.innerHTML = '';
+  _fmRows = [];
+  document.querySelectorAll('#filterDdBar .fd-btn').forEach(btn => {
+    if (getComputedStyle(btn).display === 'none') return;      // not part of this tab
+    const id = btn.id.replace(/^fdb-/, '');
+    const pop = document.getElementById('fdp-' + id);
+    if (!pop) return;
+    const icon = btn.querySelector('.fd-icon'), label = btn.querySelector('.fd-label');
+    const sec = document.createElement('div'); sec.className = 'fm-sec';
+    const head = document.createElement('button'); head.type = 'button'; head.className = 'fm-sec-head';
+    head.innerHTML = '<span class="fm-sec-icon"></span><span class="fm-sec-label"></span><span class="fm-sec-badge"></span>'
+      + '<svg class="fm-sec-chev" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>';
+    head.querySelector('.fm-sec-icon').textContent = icon ? icon.textContent : '';
+    head.querySelector('.fm-sec-label').textContent = label ? label.textContent : id;
+    head.onclick = () => openFmSub(id);
+    sec.appendChild(head); body.appendChild(sec);
+    _fmRows.push({ id, pop, badge: head.querySelector('.fm-sec-badge'), title: label ? label.textContent : id, icon: icon ? icon.textContent : '' });
+  });
+  fmUpdateCounts();
+  modal.classList.add('open');
+  lockBodyScroll();
+  body.scrollTop = 0;
+}
+function openFmSub(id) {
+  const row = _fmRows.find(r => r.id === id);
+  const sub = document.getElementById('fmSubModal'), body = document.getElementById('fmSubBody');
+  if (!row || !sub || !body) return;
+  if (id === 'propertyIdFilter' && typeof fdRefreshPropertyIdOpts === 'function') fdRefreshPropertyIdOpts();
+  body.innerHTML = '';
+  body.appendChild(row.pop);
+  document.getElementById('fmSubIcon').textContent = row.icon || '';
+  document.getElementById('fmSubName').textContent = row.title;
+  document.getElementById('fmSubPos').textContent = (_fmRows.indexOf(row) + 1) + ' of ' + _fmRows.length;
+  _fmSub = { id, pop: row.pop };
+  sub.classList.add('open');
+  body.scrollTop = 0;
+}
+function _fmSubRestore() {
+  if (!_fmSub) return;
+  document.body.appendChild(_fmSub.pop);      // same home toggleFd uses
+  document.getElementById('fmSubBody').innerHTML = '';
+  if (FD_RANGE_IDS.includes(_fmSub.id)) refreshFdRangeBtn(_fmSub.id, true); else refreshFdBtn(_fmSub.id);
+  _fmSub = null;
+  fmUpdateCounts();
+  renderFiltersSoon();
+}
+function closeFmSub() {
+  const sub = document.getElementById('fmSubModal');
+  if (!sub || !_fmSub) return;
+  _fmSubRestore();
+  sub.classList.remove('open');
+}
+/* ‹ / › : jump to the previous / next filter's options (wraps around) */
+function fmSubGo(dir) {
+  if (!_fmSub || !_fmRows.length) return;
+  const i = _fmRows.findIndex(r => r.id === _fmSub.id);
+  const next = _fmRows[(i + dir + _fmRows.length) % _fmRows.length];
+  _fmSubRestore();
+  openFmSub(next.id);
+}
+function fmSubClear() {
+  if (!_fmSub) return;
+  if (FD_RANGE_IDS.includes(_fmSub.id)) clearFdRange(_fmSub.id); else clearFd(_fmSub.id);
+  fmUpdateCounts();
+}
+function closeFiltersModal() {
+  closeFmSub();
+  const modal = document.getElementById('filtersModal');
+  if (!modal || !modal.classList.contains('open')) return;
+  document.getElementById('fmBody').innerHTML = '';
+  _fmRows = [];
+  modal.classList.remove('open');
+  unlockBodyScroll();
+  _fmNormalMode = true;   // "or just close it and use the normal filters"
+  Object.keys(FD_GROUPS).forEach(id => refreshFdBtn(id));
+  FD_RANGE_IDS.forEach(id => refreshFdRangeBtn(id, true));
+}
+/* Capture phase: runs before a chip's own onclick, so the first tap on the
+   bar opens the modal instead of a dropdown. */
+(function () {
+  const bar = document.getElementById('filterDdBar');
+  if (!bar) return;
+  bar.addEventListener('click', function (e) {
+    if (_fmNormalMode) return;
+    if (e.target.closest('.fd-bar-right')) return;               // "Clear all" keeps working
+    e.preventDefault(); e.stopPropagation();
+    openFiltersModal();
+  }, true);
+})();
+/* Any click outside the bar / dropdowns / modals re-arms the modal for next time. */
+document.addEventListener('click', function (e) {
+  if (!e.target.closest('.filter-dd-bar') && !e.target.closest('.fd-pop') && !e.target.closest('.fm-overlay')) _fmNormalMode = false;
+});
+document.addEventListener('keydown', function (e) {
+  if (_fmSub && (e.key === 'ArrowLeft' || e.key === 'ArrowRight') && !(e.target && e.target.closest && e.target.closest('input,textarea'))) {
+    fmSubGo(e.key === 'ArrowLeft' ? -1 : 1); return;
+  }
+  if (e.key !== 'Escape') return;
+  if (_fmSub) closeFmSub(); else closeFiltersModal();
+});
+(function () {
+  const body = document.getElementById('fmSubBody');
+  if (!body) return;
+  ['click', 'input'].forEach(t => body.addEventListener(t, () => setTimeout(fmUpdateCounts, 0)));
+})();
 
 /* Close dropdowns on outside click */
 document.addEventListener('click', function(e) {
