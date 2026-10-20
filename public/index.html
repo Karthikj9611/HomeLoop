@@ -20243,14 +20243,57 @@ document.addEventListener('keydown', function(e){ if (e.key === 'Escape') closeP
 .modal-btn-secondary,.confirm-cancel-btn{border-radius:12px;background:#fff;border:1px solid var(--border-2)}
 .modal-close,.wish-modal-close{box-shadow:0 2px 10px rgba(224,58,82,.30)}
 .confirm-card .confirm-icon{background:#fff;box-shadow:0 2px 10px rgba(224,58,82,.15)}
+
+/* Service notice polish: no stray focus ring, calmer button, tighter spacing so it fits without scrolling */
+#hlNotice .hln-card{outline:none;padding:40px 28px 32px;scrollbar-width:none}
+#hlNotice .hln-card::-webkit-scrollbar{display:none}
+#hlNotice .hln-ic{width:58px;height:58px;margin-bottom:16px}
+#hlNotice .hln-ic svg{width:26px;height:26px}
+#hlNotice .hln-tag{margin:16px 0 22px}
+#hlNotice .hln-btn{background:linear-gradient(135deg,#5b8def,#4a78d8);box-shadow:0 8px 18px -6px rgba(74,120,216,.55)}
+#hlNotice .hln-btn:hover{background:linear-gradient(135deg,#4f82e6,#3f6dcc);box-shadow:0 10px 22px -6px rgba(74,120,216,.6)}
+#hlNotice .hln-btn:focus:not(:focus-visible){outline:none}
+@media (max-width:480px){#hlNotice .hln-card{padding:36px 20px 28px}}
+
+/* Service notice enhancements: soft glow, floating icon, gentle entrance, arrow button */
+#hlNotice .hln-card{background:radial-gradient(120% 60% at 50% 0%,#e9f1ff 0%,rgba(233,241,255,0) 70%),linear-gradient(180deg,#f6faff 0%,#fff 55%);border:1px solid rgba(91,141,239,.14);box-shadow:0 30px 70px -20px rgba(40,60,110,.35),0 4px 14px rgba(40,60,110,.08)}
+#hlNotice .hln-ic{position:relative;animation:hlnFloat 5s ease-in-out infinite;box-shadow:0 0 0 8px rgba(91,141,239,.07),0 0 0 18px rgba(91,141,239,.04),0 12px 28px -8px rgba(91,141,239,.35)}
+#hlNotice .hln-ic svg{animation:hlnTwinkle 3.2s ease-in-out infinite}
+#hlNotice h2{text-wrap:balance;font-weight:700}
+#hlNotice .hln-d{text-wrap:pretty}
+#hlNotice .hln-tag{border:1px solid rgba(92,184,140,.28)}
+#hlNotice .hln-btn{display:flex;align-items:center;justify-content:center;gap:8px}
+#hlNotice .hln-btn::after{content:"→";font-size:17px;line-height:1;transition:transform .2s}
+#hlNotice .hln-btn:hover{transform:translateY(-1px)}
+#hlNotice .hln-btn:hover::after{transform:translateX(4px)}
+#hlNotice .hln-x:hover{transform:rotate(90deg)}
+#hlNotice .hln-x{transition:background .15s,color .15s,transform .25s}
+@keyframes hlnFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+@keyframes hlnTwinkle{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.75;transform:scale(1.08)}}
+@media (prefers-reduced-motion:reduce){#hlNotice .hln-ic,#hlNotice .hln-ic svg{animation:none}#hlNotice .hln-btn:hover,#hlNotice .hln-x:hover{transform:none}}
+
+/* Service notice → matched to the site's modals (same tint, red accents, buttons) */
+#hlNotice{background:rgba(30,20,35,.42);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+#hlNotice .hln-card{background:var(--calm-grad);border:1px solid rgba(255,255,255,.7);border-radius:22px;box-shadow:var(--calm-shadow)}
+#hlNotice .hln-x{background:var(--brand);color:#fff;box-shadow:0 2px 10px rgba(224,58,82,.30)}
+#hlNotice .hln-x:hover{background:var(--brand-hover);color:#fff}
+#hlNotice .hln-ic{color:var(--brand);background:#fff;box-shadow:0 0 0 8px rgba(224,58,82,.07),0 0 0 18px rgba(224,58,82,.04),0 12px 28px -8px rgba(224,58,82,.30)}
+#hlNotice .hln-label{color:var(--brand);opacity:.85}
+#hlNotice h2{color:var(--text)}
+#hlNotice .hln-d{color:var(--text-2)}
+#hlNotice .hln-tag{color:var(--brand-hover);background:#fff;border:1px solid rgba(224,58,82,.18);box-shadow:0 1px 4px rgba(224,58,82,.10)}
+#hlNotice .hln-tag i{background:var(--brand)}
+#hlNotice .hln-btn,#hlNotice .hln-btn:hover{border-radius:12px;background:var(--brand);box-shadow:0 6px 16px -6px rgba(224,58,82,.55)}
+#hlNotice .hln-btn:hover{background:var(--brand-hover)}
+#hlNotice .hln-btn:focus-visible,#hlNotice .hln-x:focus-visible{outline-color:rgba(224,58,82,.45)}
 </style>
 <div id="hlNotice" role="dialog" aria-modal="true" aria-labelledby="hlNoticeTitle" aria-describedby="hlNoticeLead">
-  <div class="hln-card">
+  <div class="hln-card" id="hlNoticeCard" tabindex="-1">
     <button type="button" class="hln-x" id="hlNoticeX" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
     <div class="hln-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 4.6L18.5 9l-4.6 1.9L12 15.5l-1.9-4.6L5.5 9l4.6-1.4z"/><path d="M19 15l.8 1.9 1.7.7-1.7.7L19 20l-.8-1.7-1.7-.7 1.7-.7z"/></svg></div>
     <span class="hln-label">Service notice</span>
     <h2 id="hlNoticeTitle">We’re upgrading HomeLoop</h2>
-    <p class="hln-d" id="hlNoticeLead">We’re building new features to serve you better, so new listings are paused for a few days. Thank you for your patience.</p>
+    <p class="hln-d" id="hlNoticeLead">We’re building new features and improving existing ones to serve you better. Adding new properties is paused for a few days. Thank you for your patience.</p>
     <span class="hln-tag"><i></i>Paused for a few days</span>
     <button type="button" class="hln-btn" id="hlNoticeOk">Continue to website</button>
   </div>
@@ -20263,7 +20306,7 @@ document.addEventListener('keydown', function(e){ if (e.key === 'Escape') closeP
     prevFocus=document.activeElement;
     el.classList.add('show'); document.body.style.overflow='hidden';
     requestAnimationFrame(function(){ el.classList.add('in'); });
-    setTimeout(function(){ ok.focus(); },50);
+    setTimeout(function(){ var c=document.getElementById('hlNoticeCard'); (c||ok).focus({preventScroll:true}); },50);
   }
   function close(){
     el.classList.remove('in'); document.body.style.overflow='';
