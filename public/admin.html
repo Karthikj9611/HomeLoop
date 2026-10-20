@@ -14292,28 +14292,20 @@ function buildPropertyDataText(row){
     if (t && t !== 'null' && t !== 'undefined') L.push(label + ': ' + t);
   };
 
-  add('Property ID', row.propertyId);
   add('Listing type', status);
   add('Listed by', basic.listedBy);
   add('Property name', own.propertyName || row.title);
   add('Area', loc.area);
   add('City', loc.city);
-  add('Full address', loc.address);
   add('Pincode', loc.pincode);
-  add('Latitude', loc.lat);
-  add('Longitude', loc.lng);
   add('Google Maps location link', loc.mapLink);
   add('Current location link', loc.currentLocationLink);
 
-  add('Owner name', own.name);
   add('Phone', own.phone);
   add('Alternate number', own.altPhone);
   add('Caretaker number', own.caretakerPhone);
-  add('Email', own.email);
   add('Preferred contact time', own.contactTime);
   add('Owner staying in same building', own.sameAsBuilding);
-  add('Agent phone', own.agentPhone);
-  add('Agent area', own.agentArea);
 
   add(isLease ? 'Lease amount' : (isSale ? 'Sale price' : 'Monthly rent'), price.rent);
   add('Security deposit', price.deposit);
@@ -14341,7 +14333,6 @@ function buildPropertyDataText(row){
     add('Car parking', prop.car);
     add('Tenant preference', prop.tenant);
     add('No. of persons allowed', prop.maxPersons);
-    add('Available from', dt(prop.available));
   }
 
   add('Notice period', terms.notice);
@@ -14362,7 +14353,6 @@ function buildPropertyDataText(row){
     add('Toilet type', pg.toiletType);
     add('Room furnishing', pg.furnish);
     add('Food type', pg.food);
-    add('Available from', dt(pg.available));
     add('Visitor policy', pg.visitors);
     add('Gate time', pg.gateTime);
     add('Bike parking', pg.bike);
@@ -14404,7 +14394,6 @@ function buildPropertyDataText(row){
   add('Amenities', amenities);
   add('Additional amenities', am.extra);
   add('Video tour link', media.video);
-  add('Description', media.desc);
   return L.join('\r\n');
 }
 // Zip = every photo (<ID>_01.ext…) + <ID>.txt (same text as the Data button).
