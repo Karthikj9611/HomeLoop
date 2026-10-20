@@ -312,7 +312,7 @@ body{
   #bulkToolbar .bulk-btn .bulk-btn-label::after{content:attr(data-short);font-size:.82rem;line-height:1.2;display:inline;font-weight:700}
   /* The expand/collapse arrow stays a plain round button */
   #bulkToolbar .bulk-btn.fab-toggle-btn{width:42px!important;min-width:42px!important;height:42px!important;padding:0!important;gap:0!important;justify-content:center!important;border-radius:50%!important}
-  #bulkCompareCount,#bulkShareTenantCount,#bulkShareLinksCount,#bulkCheckAvailabilityCount,#bulkDownloadZipCount,#bulkToolbar .bulkFlagCount{
+  #bulkCompareCount,#bulkShareTenantCount,#bulkShareLinksCount,#bulkCheckAvailabilityCount,#bulkDownloadZipCount,#bulkFullZipCount,#bulkToolbar .bulkFlagCount{
     position:absolute;top:-6px;right:-6px;min-width:20px;height:20px;padding:0 5px;box-sizing:border-box;
     display:flex;align-items:center;justify-content:center;
     border-radius:10px;background:var(--ink,#1f2937);color:#fff;border:2px solid #fff;
@@ -4096,6 +4096,9 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
         <button class="bulk-btn sel-hide" id="bulkDownloadZipBtn" style="display:none;background:#334155;color:#fff;border-color:#334155" onclick="downloadSelectedPropertiesZip()" title="Download photos + data (.txt) of all selected properties as one zip">
           <i class="fas fa-file-zipper"></i> <span class="bulk-btn-label" data-mobile="Download Zip" data-short="Zip">Download Zip</span><span id="bulkDownloadZipCount">0</span>
         </button>
+        <button class="bulk-btn sel-hide" id="bulkFullZipBtn" style="display:none;background:#0f766e;color:#fff;border-color:#0f766e" onclick="downloadSelectedFullDataZips()" title="Download a separate zip for each selected property: photos + full data (all fields)">
+          <i class="fas fa-box-archive"></i> <span class="bulk-btn-label" data-mobile="Full Data Zips" data-short="Full">Full Data Zips</span><span id="bulkFullZipCount">0</span>
+        </button>
         <span id="addPropertyDivider" style="width:1px;align-self:stretch;background:var(--border,#ddd);margin:2px 4px;flex-shrink:0"></span>
         <button type="button" class="bulk-selected-count" id="bulkSelectedCount" style="display:none" onclick="clearPropSelection()" title="Clear selection">
           <i class="fas fa-check-circle bulk-selected-icon"></i> <span id="bulkSelectedNum" class="bulk-selected-num">0</span><span class="bulk-btn-label" data-mobile="Selected"> selected</span> <span class="bulk-selected-clear-x">X</span>
@@ -4855,6 +4858,11 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
         style="display:none;align-items:center;gap:6px;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.4);color:#fff;border-radius:99px;padding:7px 14px;font-size:12.5px;font-weight:700;cursor:pointer;transition:background .15s"
         onmouseover="this.style.background='rgba(255,255,255,.28)'" onmouseout="this.style.background='rgba(255,255,255,.16)'">
         <i class="fas fa-file-zipper" style="font-size:11px"></i> Zip
+      </button>
+      <button type="button" id="addModalFullZipBtn" onclick="downloadPropertyZip(editingPropertyId, this, true)" aria-label="Download photos and full data (zip)" title="Download photos + full data (all fields) (.zip)"
+        style="display:none;align-items:center;gap:6px;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.4);color:#fff;border-radius:99px;padding:7px 14px;font-size:12.5px;font-weight:700;cursor:pointer;transition:background .15s"
+        onmouseover="this.style.background='rgba(255,255,255,.28)'" onmouseout="this.style.background='rgba(255,255,255,.16)'">
+        <i class="fas fa-box-archive" style="font-size:11px"></i> Full Zip
       </button>
       <button type="button" id="addModalCloneBtn" onclick="cloneAdminProperty(editingPropertyId)" aria-label="Clone property"
         style="display:none;align-items:center;gap:6px;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.4);color:#fff;border-radius:99px;padding:7px 14px;font-size:12.5px;font-weight:700;cursor:pointer;transition:background .15s"
@@ -11216,6 +11224,12 @@ function updateBulkToolbarUI(){
     checkAvailBtn.style.display = n >= 1 ? 'inline-flex' : 'none'; checkAvailBtn.classList.toggle('sel-hide', !(n >= 1));
     if (checkAvailCountEl) checkAvailCountEl.textContent = n;
   }
+  const fullZipBtn = document.getElementById('bulkFullZipBtn');
+  const fullZipCountEl = document.getElementById('bulkFullZipCount');
+  if (fullZipBtn && !fullZipBtn.dataset.busy){
+    fullZipBtn.style.display = n >= 1 ? 'inline-flex' : 'none'; fullZipBtn.classList.toggle('sel-hide', !(n >= 1));
+    if (fullZipCountEl) fullZipCountEl.textContent = n;
+  }
   const dlZipBtn = document.getElementById('bulkDownloadZipBtn');
   const dlZipCountEl = document.getElementById('bulkDownloadZipCount');
   if (dlZipBtn && !dlZipBtn.dataset.busy){
@@ -11290,6 +11304,69 @@ window.downloadSelectedPropertiesZip = async function(){
     else if (failed) alert(failed + ' of ' + jobs.length + ' photo(s) could not be downloaded and were skipped.');
   } catch(err){
     alert('Could not build the zip. Try a smaller selection.');
+  } finally {
+    delete btn.dataset.busy; btn.style.opacity = ''; btn.style.pointerEvents = '';
+    updateBulkToolbarUI();
+  }
+};
+
+/* Full Data Zips (bulk): ONE zip file PER selected property (<ID>_full.zip),
+   each with its photos + a .txt holding ALL fields (ID, address, lat/lng,
+   owner name, email, agent, available-from, description included). */
+window.downloadSelectedFullDataZips = async function(){
+  const btn = document.getElementById('bulkFullZipBtn');
+  const cnt = document.getElementById('bulkFullZipCount');
+  if (!btn || btn.dataset.busy) return;
+  const rows = Array.from(_selectedPropIds).map(id => _adminPropCache[id]).filter(Boolean);
+  if (!rows.length){ alert('No selected properties are loaded yet.'); return; }
+  if (rows.length > 10 && !confirm(rows.length + ' separate zip files will be downloaded. Your browser may ask to allow multiple downloads. Continue?')) return;
+  const pad = n => String(n).padStart(2, '0');
+  const extOf = (blob, url) => {
+    const m = { 'image/jpeg':'jpg','image/png':'png','image/webp':'webp','image/gif':'gif','image/avif':'avif' }[blob.type];
+    if (m) return m;
+    const u = (String(url).split('?')[0].match(/\.([a-z0-9]{2,4})$/i) || [])[1];
+    return u ? u.toLowerCase() : 'webp';
+  };
+  btn.dataset.busy = '1'; btn.style.opacity = '.75'; btn.style.pointerEvents = 'none';
+  let failed = 0, doneProps = 0;
+  const tick = () => { if (cnt) cnt.textContent = doneProps + '/' + rows.length; };
+  tick();
+  try{
+    for (const row of rows){
+      const pid = String(row.propertyId || row._id || 'property').replace(/[\\/:*?"<>|]/g, '_');
+      const zip = new JSZip();
+      zip.file(pid + '.txt', buildPropertyDataText(row, true));
+      const urls = _propImageUrls(row);
+      let next = 0;
+      const worker = async () => {
+        while (next < urls.length){
+          const i = next++, u = urls[i];
+          let ok = false;
+          for (let a = 0; a < 2 && !ok; a++){
+            try{
+              const r = await fetch(u);
+              if (!r.ok) throw new Error('bad');
+              const b = await r.blob();
+              zip.file(pid + '_' + pad(i + 1) + '.' + extOf(b, u), b);
+              ok = true;
+            }catch(e){}
+          }
+          if (!ok) failed++;
+        }
+      };
+      await Promise.all(Array.from({ length: Math.min(6, urls.length) }, worker));
+      const out = await zip.generateAsync({ type:'blob', compression:'STORE' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(out);
+      a.download = pid + '_full.zip';
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 8000);
+      doneProps++; tick();
+      await new Promise(r => setTimeout(r, 400));
+    }
+    if (failed) alert(failed + ' photo(s) could not be downloaded and were skipped.');
+  } catch(err){
+    alert('Could not build the zip files. Try a smaller selection.');
   } finally {
     delete btn.dataset.busy; btn.style.opacity = ''; btn.style.pointerEvents = '';
     updateBulkToolbarUI();
@@ -14269,7 +14346,7 @@ function _propImageUrls(row){
    "Label: value", one per line, in form order, empty fields skipped.
    Fields are read from row.full (basic/location/owner/price/property/
    amenities/terms/rules/media/pg/shortStay/sale). */
-function buildPropertyDataText(row){
+function buildPropertyDataText(row, full){   // full=true → also include ID, address, lat/lng, owner name, email, agent, available-from, description
   const f = row.full || {};
   const basic = f.basic || {}, loc = f.location || {}, own = f.owner || {}, price = f.price || {},
         prop = f.property || {}, am = f.amenities || {}, terms = f.terms || {}, rules = f.rules || {},
@@ -14292,20 +14369,26 @@ function buildPropertyDataText(row){
     if (t && t !== 'null' && t !== 'undefined') L.push(label + ': ' + t);
   };
 
+  if (full) add('Property ID', row.propertyId);
   add('Listing type', status);
   add('Listed by', basic.listedBy);
   add('Property name', own.propertyName || row.title);
   add('Area', loc.area);
   add('City', loc.city);
+  if (full) add('Full address', loc.address);
   add('Pincode', loc.pincode);
+  if (full){ add('Latitude', loc.lat); add('Longitude', loc.lng); }
   add('Google Maps location link', loc.mapLink);
   add('Current location link', loc.currentLocationLink);
 
+  if (full) add('Owner name', own.name);
   add('Phone', own.phone);
   add('Alternate number', own.altPhone);
   add('Caretaker number', own.caretakerPhone);
+  if (full) add('Email', own.email);
   add('Preferred contact time', own.contactTime);
   add('Owner staying in same building', own.sameAsBuilding);
+  if (full){ add('Agent phone', own.agentPhone); add('Agent area', own.agentArea); }
 
   add(isLease ? 'Lease amount' : (isSale ? 'Sale price' : 'Monthly rent'), price.rent);
   add('Security deposit', price.deposit);
@@ -14333,6 +14416,7 @@ function buildPropertyDataText(row){
     add('Car parking', prop.car);
     add('Tenant preference', prop.tenant);
     add('No. of persons allowed', prop.maxPersons);
+    if (full) add('Available from', dt(prop.available));
   }
 
   add('Notice period', terms.notice);
@@ -14353,6 +14437,7 @@ function buildPropertyDataText(row){
     add('Toilet type', pg.toiletType);
     add('Room furnishing', pg.furnish);
     add('Food type', pg.food);
+    if (full) add('Available from', dt(pg.available));
     add('Visitor policy', pg.visitors);
     add('Gate time', pg.gateTime);
     add('Bike parking', pg.bike);
@@ -14394,10 +14479,11 @@ function buildPropertyDataText(row){
   add('Amenities', amenities);
   add('Additional amenities', am.extra);
   add('Video tour link', media.video);
+  if (full) add('Description', media.desc);
   return L.join('\r\n');
 }
 // Zip = every photo (<ID>_01.ext…) + <ID>.txt (same text as the Data button).
-async function downloadPropertyZip(id, btn){
+async function downloadPropertyZip(id, btn, fullData){   // fullData=true → all fields in the .txt, file named <ID>_full.zip
   const row = _adminPropCache[id || editingPropertyId];
   if (!row) return;
   const pid = row.propertyId || 'property';
@@ -14416,7 +14502,7 @@ async function downloadPropertyZip(id, btn){
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(a.href), 4000);
   };
-  const text = buildPropertyDataText(row);
+  const text = buildPropertyDataText(row, !!fullData);
   if (btn){ btn.style.opacity = '.6'; btn.style.pointerEvents = 'none'; }
   try{
     const zip = new JSZip();
@@ -14429,7 +14515,7 @@ async function downloadPropertyZip(id, btn){
         zip.file(pid + '_' + pad(i + 1) + '.' + extOf(b, u), b);
       }catch(e){}
     }));
-    save(await zip.generateAsync({ type:'blob', compression:'STORE' }), pid + '.zip');
+    save(await zip.generateAsync({ type:'blob', compression:'STORE' }), pid + (fullData ? '_full.zip' : '.zip'));
   } catch(err){
     save(new Blob([text], { type:'text/plain;charset=utf-8' }), pid + '.txt');
   } finally {
@@ -16768,6 +16854,7 @@ function openAdminAddPropertyModal() {
   const cloneBtnAdd = document.getElementById('addModalCloneBtn');
   if (cloneBtnAdd) cloneBtnAdd.style.display = 'none';
   { const zb = document.getElementById('addModalZipBtn'); if (zb) zb.style.display = 'none'; }
+  { const fb = document.getElementById('addModalFullZipBtn'); if (fb) fb.style.display = 'none'; }
   document.getElementById('addModalTitleText').textContent = 'Add property';
   const sub = document.getElementById('addModalSubtitleText');
   if (sub) { sub.textContent = ''; sub.style.display = 'none'; }
@@ -16924,6 +17011,8 @@ function _setAdminListingMode(mode){
   if (cloneBtn) cloneBtn.style.display = (isView && !_adminModalFromPO) ? 'flex' : 'none';
   const zipBtn = document.getElementById('addModalZipBtn');
   if (zipBtn) zipBtn.style.display = isView ? 'flex' : 'none';
+  const fullZipBtn = document.getElementById('addModalFullZipBtn');
+  if (fullZipBtn) fullZipBtn.style.display = isView ? 'flex' : 'none';
 
   const toggleBtn = document.getElementById('addModalModeToggleBtn');
   if (toggleBtn){
