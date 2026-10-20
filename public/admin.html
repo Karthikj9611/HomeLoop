@@ -5067,7 +5067,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
     <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
       <div class="form-group" id="f-typeWrap">
         <label class="form-label">Status <span style="color:var(--brand)">*</span></label>
-        <select class="form-select" id="f-type" onchange="onFTypeChange(this.value)">
+        <select class="form-select" id="f-type" onchange="onAdminStatusChange(this)">
           <option value="Lease">Lease</option><option selected value="Rent">Rent</option><option value="Sell">Sell</option>
         </select>
       </div>
@@ -17051,6 +17051,15 @@ async function closeAdminEditModal() {
 /* View and Edit are the SAME form now — this just flips which mode it's
    in without closing/reopening the modal. Called by the header's toggle
    button (id="addModalModeToggleBtn"). */
+function onAdminStatusChange(sel){
+  const val = sel.value;
+  if (document.getElementById('addModalBox').classList.contains('view-mode')) {
+    toggleAdminListingMode(); // view -> edit (or clone when opened from Property Owners); reloads form values
+    const t = document.getElementById('f-type');
+    if (t) t.value = val;
+  }
+  onFTypeChange(val);
+}
 function toggleAdminListingMode(){
   const isCurrentlyView = document.getElementById('addModalBox').classList.contains('view-mode');
   if (_adminModalFromPO && isCurrentlyView) { cloneAdminProperty(editingPropertyId); return; }
@@ -17072,6 +17081,8 @@ function _setAdminListingMode(mode){
 
   document.querySelectorAll('#listingFormSections input, #listingFormSections select, #listingFormSections textarea')
     .forEach(el => { el.disabled = isView; });
+  // Status is always editable, even in view mode (changing it there flips to edit mode).
+  { const _t = document.getElementById('f-type'); if (_t) _t.disabled = false; }
 
   const submitBtn = document.getElementById('listingSubmitBtn');
   if (submitBtn) { submitBtn.disabled = isView; submitBtn.textContent = 'Save changes'; }

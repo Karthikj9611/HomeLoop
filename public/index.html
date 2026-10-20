@@ -2155,28 +2155,36 @@ main.tab-explore .empty-state{display:none !important}
 /* ─── FAB ──────────────────────────────────────── */
 .fab{
   position:fixed;bottom:24px;right:24px;z-index:150;
-  width:36px;height:36px;border-radius:50%;
-  background:var(--brand);color:#fff;
+  height:44px;padding:0 20px 0 16px;gap:8px;border-radius:999px;
+  background:linear-gradient(135deg,#ff3b30,#ff9500,#ffcc00,#34c759,#00c7be,#007aff,#af52de,#ff2d92,#ff3b30);
+  background-size:300% 300%;
+  animation:fabRainbow 6s linear infinite;
+  color:#fff;
   display:flex;align-items:center;justify-content:center;
-  box-shadow:0 4px 16px rgba(224,58,82,.35);
-  cursor:pointer;transition:transform .15s,background .12s;
+  box-shadow:0 4px 16px rgba(120,80,200,.4);
+  cursor:pointer;transition:transform .15s;
   border:none;
 }
-.fab:hover{background:var(--brand-hover);transform:scale(1.05)}
-.fab svg{width:16px;height:16px;stroke:#fff;fill:none;stroke-width:2}
+.fab:hover{transform:scale(1.05)}
+@keyframes fabRainbow{0%{background-position:0% 50%}100%{background-position:300% 50%}}
+@media(prefers-reduced-motion:reduce){.fab{animation:none}}
+.fab svg{width:18px;height:18px;stroke:#fff;fill:none;stroke-width:2.5;flex-shrink:0}
+.fab-label{font-size:14px;font-weight:700;letter-spacing:.2px;color:#fff;white-space:nowrap;text-shadow:0 1px 2px rgba(0,0,0,.25)}
 
 @media(max-width:640px){
-  /* The bottom-nav has 6 equal-width tabs (flex:1); "Shortlist" is the first
-     one, so its center sits at 1/12 of the viewport width. Align the FAB
-     to that same x-position (instead of a fixed right offset) so it sits
-     straight above the Shortlist tab. */
+  /* The bottom-nav has 6 equal-width tabs (flex:1); "Review" is the last
+     one, so its center sits 1/12 of the viewport width from the right edge.
+     Align the FAB to that x-position so it sits straight above the Review tab. */
   .fab{
-    right:auto;
-    left:calc(100% * 1 / 12);
-    transform:translateX(-50%);
+    width:36px;height:36px;padding:0;gap:0;border-radius:50%;
+    left:auto;
+    right:calc(100% * 1 / 12);
+    transform:translateX(50%);
     bottom:calc(56px + env(safe-area-inset-bottom) + 20px);
   }
-  .fab:hover{background:var(--brand-hover);transform:translateX(-50%) scale(1.05)}
+  .fab:hover{transform:translateX(50%) scale(1.05)}
+  .fab-label{display:none}
+  .fab svg{width:16px;height:16px;stroke-width:2}
 }
 
 /* ─── FAB add-type picker (opens above the FAB) ─────────── */
@@ -6121,6 +6129,7 @@ main.tab-explore .empty-state{display:none !important}
 <!-- ─── FAB: Add listing ────────────────────────── -->
 <button class="fab" id="fabAdd" onclick="openFabPicker()" aria-label="Add a listing" title="List your property">
   <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+  <span class="fab-label">List property</span>
 </button>
 
 <!-- ─── Service Request Modal ───────────────────── -->
@@ -14245,7 +14254,7 @@ function openAddModal(presetType) {
     document.getElementById('f-type').value = presetType;
   }
   const typeSelect = document.getElementById('f-type');
-  if (typeSelect) typeSelect.disabled = !!presetType;
+  if (typeSelect) typeSelect.disabled = false; // Status stays editable; presetType is only the default
   // Always reflect the logged-in account's own name/phone/email here — even
   // a restored draft — so the listing's contact identity can't drift from
   // the signed-up account, and lock the fields so it can't be edited away.
@@ -14472,10 +14481,9 @@ function applyImportedProperty(p) {
 }
 
 function clearAddModalDraft() {
-  // Status is locked (disabled) when the form was opened from a listing-type
-  // button — keep that value, since the user can't re-pick it once cleared.
+  // Keep the currently selected Status across a clear.
   const _typeSel = document.getElementById('f-type');
-  const _keepType = (_typeSel && _typeSel.disabled) ? _typeSel.value : null;
+  const _keepType = _typeSel ? _typeSel.value : null;
   resetListingForm();
   if (_typeSel && _keepType) _typeSel.value = _keepType;
   // resetListingForm() blanket-clears every input, including owner
@@ -16207,11 +16215,9 @@ function openEditListingFull(id) {
   onFTypeChange(document.getElementById('f-type').value);
   snapshotListingForm();
 
-  // Changing the listing type (Rent/Lease/PG/Short Stay) after creation would
-  // need re-deriving a lot of type-specific fields, so keep it locked here —
-  // same restriction the old quick-edit modal had.
+  // Status (listing type) stays editable while editing too.
   const typeSelect = document.getElementById('f-type');
-  if (typeSelect) typeSelect.disabled = true;
+  if (typeSelect) typeSelect.disabled = false;
 
   // Hide the "Clear form" button — doesn't make sense while editing a
   // listing that already exists.
