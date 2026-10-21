@@ -114,7 +114,27 @@ ul{list-style:none}
   padding:16px 20px 10px;
   background:var(--bg-2);
   scroll-margin-top:calc(var(--nav-h) + var(--filter-h));
+  /* Sticky section header: stays pinned under the filter bar while you scroll
+     through its listings. Each divider lives inside its own section wrapper,
+     so it is pushed away automatically when the next section begins. */
+  position:sticky;
+  top:var(--stick-top,calc(var(--nav-h) + var(--filter-h) - 1px));
+  z-index:90;
 }
+/* While pinned: drop the band + side lines, float only the pill over the cards */
+.section-divider.is-stuck{
+  background:transparent;
+  pointer-events:none;
+}
+.section-divider.is-stuck .section-divider-inner::before,
+.section-divider.is-stuck .section-divider-inner::after{display:none}
+.section-divider.is-stuck .section-divider-inner{justify-content:center}
+.section-divider.is-stuck .section-divider-label{
+  pointer-events:auto;
+  box-shadow:0 4px 14px rgba(0,0,0,.18);
+  background-color:#fff0f3;
+}
+.section-divider.is-stuck .booked-label{background-color:#fdecec}
 .section-divider-inner{
   display:flex;align-items:center;gap:12px;
 }
@@ -20338,6 +20358,41 @@ document.addEventListener('keydown', function(e){ if (e.key === 'Escape') closeP
 })();
 
 
+</script>
+<script>
+/* Mark section headers that are currently pinned under the filter bar */
+(function(){
+  var ticking=false;
+  function update(){
+    ticking=false;
+    /* pin right under the real bottom edge of the filter bar */
+    var fb=document.getElementById('filterDdBar');
+    if(fb&&fb.offsetParent!==null){
+      var fr=fb.getBoundingClientRect();
+      var ft=parseFloat(getComputedStyle(fb).top)||0;
+      /* only trust the measurement while the filter bar is itself pinned */
+      if(Math.abs(fr.top-ft)<=1.5){
+        document.documentElement.style.setProperty('--stick-top',Math.floor(fr.bottom)+'px');
+      }
+    }
+    document.querySelectorAll('.section-divider').forEach(function(d){
+      if(d.offsetParent===null){d.classList.remove('is-stuck');return;}
+      /* offset by the divider's own top padding so the pill itself sits flush under the filter bar */
+      var st=parseFloat(document.documentElement.style.getPropertyValue('--stick-top'));
+      if(isNaN(st)) st=parseFloat(getComputedStyle(d).top)||0;
+      var pt=parseFloat(getComputedStyle(d).paddingTop)||0;
+      var want=Math.round(st-pt+2);
+      if(d.style.top!==want+'px') d.style.top=want+'px';
+      var top=want;
+      var r=d.getBoundingClientRect();
+      d.classList.toggle('is-stuck', r.top<=top+1 && window.scrollY>0);
+    });
+  }
+  function req(){if(!ticking){ticking=true;requestAnimationFrame(update);}}
+  window.addEventListener('scroll',req,{passive:true});
+  window.addEventListener('resize',req);
+  update();
+})();
 </script>
 </body>
 </html>
