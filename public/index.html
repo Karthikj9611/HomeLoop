@@ -184,6 +184,12 @@ ul{list-style:none}
 .section-divider-label svg{
   width:10px;height:10px;flex:0 0 10px;margin:0 4px 0 0 !important;vertical-align:baseline !important;
 }
+.section-divider-label .hdr-ico{
+  font-size:11px;line-height:1;margin-right:4px;flex:0 0 auto;
+  font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;
+  letter-spacing:normal;text-transform:none;
+  filter:drop-shadow(0 1px 1px rgba(0,0,0,.18));
+}
 .section-divider-count{
   display:inline-flex;align-items:center;justify-content:center;
   box-sizing:border-box;min-width:16px;height:14px;padding:0 5px;
@@ -5889,31 +5895,31 @@ main.tab-explore .empty-state{display:none !important}
   <div id="bookedSection">
     <div class="section-divider booked-divider" id="promotedBookedDivider" style="display:none">
       <div class="section-divider-inner">
-        <span class="section-divider-label booked-label">Booked<span class="section-divider-count booked-count" id="promotedBookedCount"></span></span>
+        <span class="section-divider-label booked-label"><span class="hdr-ico" aria-hidden="true">✅</span>Booked<span class="section-divider-count booked-count" id="promotedBookedCount"></span></span>
       </div>
     </div>
     <div class="prop-grid" id="promotedBookedGrid"></div>
     <div class="section-divider booked-divider" id="rentBookedDivider" style="display:none">
       <div class="section-divider-inner">
-        <span class="section-divider-label booked-label">Booked<span class="section-divider-count booked-count" id="rentBookedCount"></span></span>
+        <span class="section-divider-label booked-label"><span class="hdr-ico" aria-hidden="true">✅</span>Booked<span class="section-divider-count booked-count" id="rentBookedCount"></span></span>
       </div>
     </div>
     <div class="prop-grid" id="rentBookedGrid"></div>
     <div class="section-divider booked-divider" id="leaseBookedDivider" style="display:none">
       <div class="section-divider-inner">
-        <span class="section-divider-label booked-label">Booked<span class="section-divider-count booked-count" id="leaseBookedCount"></span></span>
+        <span class="section-divider-label booked-label"><span class="hdr-ico" aria-hidden="true">✅</span>Booked<span class="section-divider-count booked-count" id="leaseBookedCount"></span></span>
       </div>
     </div>
     <div class="prop-grid" id="leaseBookedGrid"></div>
     <div class="section-divider booked-divider" id="pgBookedDivider" style="display:none">
       <div class="section-divider-inner">
-        <span class="section-divider-label booked-label">Booked<span class="section-divider-count booked-count" id="pgBookedCount"></span></span>
+        <span class="section-divider-label booked-label"><span class="hdr-ico" aria-hidden="true">✅</span>Booked<span class="section-divider-count booked-count" id="pgBookedCount"></span></span>
       </div>
     </div>
     <div class="prop-grid" id="pgBookedGrid"></div>
     <div class="section-divider booked-divider" id="sellBookedDivider" style="display:none">
       <div class="section-divider-inner">
-        <span class="section-divider-label booked-label">Booked<span class="section-divider-count booked-count" id="sellBookedCount"></span></span>
+        <span class="section-divider-label booked-label"><span class="hdr-ico" aria-hidden="true">✅</span>Booked<span class="section-divider-count booked-count" id="sellBookedCount"></span></span>
       </div>
     </div>
     <div class="prop-grid" id="sellBookedGrid"></div>
@@ -5926,7 +5932,7 @@ main.tab-explore .empty-state{display:none !important}
       </button>
       <div class="section-divider-inner" style="flex:1;min-width:0">
         <span class="section-divider-label promoted-label">
-          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:4px"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+          <span class="hdr-ico" aria-hidden="true">🕒</span>
           Viewed
         </span>
       </div>
@@ -5942,7 +5948,7 @@ main.tab-explore .empty-state{display:none !important}
     <div class="section-divider" id="promotedDivider" style="display:none">
       <div class="section-divider-inner">
         <span class="section-divider-label promoted-label">
-          <svg viewBox="0 0 24 24" width="14" height="14" fill="#F5B301" stroke="#D99A00" stroke-width="2" style="vertical-align:-2px;margin-right:4px"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+          <span class="hdr-ico" aria-hidden="true">⭐</span>
           Promoted<span class="section-divider-count" id="promotedCount"></span>
         </span>
       </div>
@@ -5952,7 +5958,7 @@ main.tab-explore .empty-state{display:none !important}
   <div id="rentSection">
     <div class="section-divider" id="rentDivider" style="display:none">
       <div class="section-divider-inner">
-        <span class="section-divider-label promoted-label">Rent<span class="section-divider-count" id="rentCount"></span></span>
+        <span class="section-divider-label promoted-label"><span class="hdr-ico" aria-hidden="true">🔑</span>Rent<span class="section-divider-count" id="rentCount"></span></span>
       </div>
     </div>
     <div class="prop-grid" id="rentGrid"></div>
@@ -5960,7 +5966,7 @@ main.tab-explore .empty-state{display:none !important}
   <div id="upcomingSection">
     <div class="section-divider" id="upcomingDivider" style="display:none">
       <div class="section-divider-inner">
-        <span class="section-divider-label promoted-label">Pre-Available<span class="section-divider-count" id="upcomingCount"></span></span>
+        <span class="section-divider-label promoted-label"><span class="hdr-ico" aria-hidden="true">⏳</span>Upcoming<span class="section-divider-count" id="upcomingCount"></span></span>
       </div>
     </div>
     <div class="prop-grid" id="upcomingGrid"></div>
@@ -5968,7 +5974,7 @@ main.tab-explore .empty-state{display:none !important}
   <div id="leaseSection">
     <div class="section-divider" id="leaseDivider" style="display:none">
       <div class="section-divider-inner">
-        <span class="section-divider-label promoted-label">Lease<span class="section-divider-count" id="leaseCount"></span></span>
+        <span class="section-divider-label promoted-label"><span class="hdr-ico" aria-hidden="true">📜</span>Lease<span class="section-divider-count" id="leaseCount"></span></span>
       </div>
     </div>
     <div class="prop-grid" id="leaseGrid"></div>
@@ -5976,7 +5982,7 @@ main.tab-explore .empty-state{display:none !important}
   <div id="pgSection">
     <div class="section-divider" id="pgDivider" style="display:none">
       <div class="section-divider-inner">
-        <span class="section-divider-label promoted-label">PG<span class="section-divider-count" id="pgCount"></span></span>
+        <span class="section-divider-label promoted-label"><span class="hdr-ico" aria-hidden="true">🛏️</span>PG<span class="section-divider-count" id="pgCount"></span></span>
       </div>
     </div>
     <div class="prop-grid" id="pgGrid"></div>
@@ -5984,7 +5990,7 @@ main.tab-explore .empty-state{display:none !important}
   <div id="sellSection">
     <div class="section-divider" id="sellDivider" style="display:none">
       <div class="section-divider-inner">
-        <span class="section-divider-label promoted-label">Sell<span class="section-divider-count" id="sellCount"></span></span>
+        <span class="section-divider-label promoted-label"><span class="hdr-ico" aria-hidden="true">🏷️</span>Sell<span class="section-divider-count" id="sellCount"></span></span>
       </div>
     </div>
     <div class="prop-grid" id="sellGrid"></div>
@@ -5992,7 +5998,7 @@ main.tab-explore .empty-state{display:none !important}
   <div id="shortstaySection">
     <div class="section-divider" id="shortstayDivider" style="display:none">
       <div class="section-divider-inner">
-        <span class="section-divider-label promoted-label">Short Stay<span class="section-divider-count" id="shortstayCount"></span></span>
+        <span class="section-divider-label promoted-label"><span class="hdr-ico" aria-hidden="true">🌙</span>Short Stay<span class="section-divider-count" id="shortstayCount"></span></span>
       </div>
     </div>
     <div class="prop-grid" id="shortstayGrid"></div>
@@ -20874,6 +20880,42 @@ body{
 #hlNotice .hln-tag{margin-top:18px}
 #hlNotice .hln-why{margin:0 auto 20px;max-width:330px;font-size:13.5px;line-height:1.6;color:#8a6b62}
 #hlNotice .hln-tag{margin:18px 0 22px}
+/* Service notice: compact height (desktop + mobile) */
+#hlNotice .hln-card{padding:30px 26px 22px;max-width:380px}
+#hlNotice .hln-ic{width:48px;height:48px;margin:0 auto 12px}
+#hlNotice .hln-ic svg{width:22px;height:22px}
+#hlNotice .hln-label{margin-bottom:5px;font-size:11px}
+#hlNotice h2{margin:0 0 6px;font-size:21px;line-height:1.25}
+#hlNotice .hln-d{font-size:14px;line-height:1.4}
+#hlNotice .hln-points{margin:10px auto 0;gap:6px}
+#hlNotice .hln-points li{padding:7px 11px;font-size:13.5px;line-height:1.35;border-radius:11px}
+#hlNotice .hln-points li i{flex-basis:20px;width:20px;height:20px;margin-top:0;align-self:center}
+#hlNotice .hln-points li i svg{width:11px;height:11px}
+#hlNotice .hln-tag{margin:12px 0 14px;padding:6px 12px;font-size:12.5px}
+#hlNotice .hln-btn{padding:11px 16px;font-size:15px}
+#hlNotice .hln-x{top:12px;right:12px;width:30px;height:30px}
+@media (max-width:480px){
+  #hlNotice .hln-card{padding:24px 18px 18px;max-width:none}
+  #hlNotice .hln-ic{width:42px;height:42px;margin-bottom:10px}
+  #hlNotice .hln-ic svg{width:20px;height:20px}
+  #hlNotice h2{font-size:19px;margin-bottom:4px}
+  #hlNotice .hln-d{font-size:13.5px}
+  #hlNotice .hln-points{margin-top:8px;gap:5px}
+  #hlNotice .hln-points li{padding:6px 10px;font-size:13px}
+  #hlNotice .hln-tag{margin:10px 0 12px;font-size:12px}
+  #hlNotice .hln-btn{padding:10px 14px;font-size:14.5px}
+}
+/* ─── Sticky section pill (RENT 68 etc.): warm style, floating pill only (no band) ─── */
+.section-divider.is-stuck{background:transparent !important;backdrop-filter:none !important;-webkit-backdrop-filter:none !important}
+.section-divider.is-stuck .section-divider-label{
+  background:linear-gradient(180deg,#ffffff 0%,#fff1ea 100%);
+  color:#e8365d;border:1px solid #f0506e;
+  box-shadow:0 0 0 2px rgba(255,248,243,.95),0 8px 18px -8px rgba(232,54,93,.5);
+}
+.section-divider.is-stuck .section-divider-count{background:var(--warm-grad);color:#fff;box-shadow:0 3px 8px -3px rgba(232,54,93,.6)}
+.section-divider.is-stuck .booked-label{background:linear-gradient(180deg,#fff 0%,#fff1ea 100%);color:#e8365d;border-color:#f0506e}
+.section-divider.is-stuck .booked-count{background:var(--warm-grad);color:#fff}
+.section-divider-count{background:var(--warm-grad)}
 </style>
 <div id="hlNotice" role="dialog" aria-modal="true" aria-labelledby="hlNoticeTitle" aria-describedby="hlNoticeLead">
   <div class="hln-card" id="hlNoticeCard" tabindex="-1">
