@@ -287,9 +287,9 @@ ul{list-style:none}
 .topnav .nav-right{grid-column:3;justify-self:end}
 .nav-tab{
   display:flex;flex-direction:column;align-items:center;gap:2px;
-  padding:7px 4px;
+  padding:7px 2px;
   /* equal fixed width so the bold active tab never changes spacing */
-  flex:0 0 74px;width:74px;box-sizing:border-box;
+  flex:0 0 66px;width:66px;box-sizing:border-box;
   font-size:12px;font-weight:500;color:var(--text-2);
   border-radius:99px;
   transition:color .2s ease,background .25s ease,box-shadow .25s ease,transform .2s cubic-bezier(.34,1.56,.64,1);
@@ -325,7 +325,9 @@ ul{list-style:none}
 }
 .nav-tab.active .nav-tab-icon{filter:drop-shadow(0 1px 2px rgba(0,0,0,.25))}
 .nav-tab:hover:not(.active){color:var(--text);background:var(--bg-2)}
-@media (min-width:641px) and (max-width:900px){.nav-tab{flex-basis:66px;width:66px;font-size:11px}.topnav{padding:0 12px;gap:8px}}
+.nav-tab{outline:none}
+.nav-tab:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+@media (min-width:641px) and (max-width:900px){.nav-tab{flex-basis:60px;width:60px;font-size:11px}.topnav{padding:0 12px;gap:8px}}
 .nav-right{display:flex;align-items:center;gap:6px;flex-shrink:0}
 .shortlist-btn{
   display:flex;align-items:center;justify-content:center;
@@ -6132,13 +6134,13 @@ main.tab-explore .empty-state{display:none !important}
   @media (min-width:641px){
     .site-footer{
       display:block;background:var(--bg);border-top:1px solid var(--border);
-      padding:28px 32px 0;
+      padding:10px 32px 0;
     }
     .site-footer-grid{
       max-width:1200px;margin:0 auto;display:grid;
-      grid-template-columns:1.2fr 1fr 1fr;gap:32px; /* Our Services + Follow Us columns hidden */
+      grid-template-columns:repeat(5,1fr);gap:24px;
     }
-    .sf-social-row{display:flex;flex-direction:column;gap:10px}
+    .sf-social-row{display:flex;flex-direction:column;gap:6px}
     .sf-social-link{
       display:inline-flex;align-items:center;gap:10px;font-size:13px;color:var(--text-2);
       text-decoration:none;transition:color .15s;
@@ -6149,20 +6151,22 @@ main.tab-explore .empty-state{display:none !important}
       display:flex;align-items:center;justify-content:center;color:#fff;
     }
     .sf-social-icon svg{width:15px;height:15px}
-    .sf-brand-desc{font-size:13px;color:var(--text-2);line-height:1.6;margin:10px 0 16px;max-width:280px}
+    .sf-brand-desc{font-size:13px;color:var(--text-2);line-height:1.45;margin:4px 0 8px;max-width:none}
     .sf-contact-row{display:flex;gap:8px}
     .sf-contact-btn{
       display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;
-      padding:7px 12px;border-radius:8px;text-decoration:none;color:#fff;
+      padding:5px 12px;border-radius:8px;text-decoration:none;color:#fff;
     }
-    .sf-col-title{font-size:13px;font-weight:700;color:var(--text);margin-bottom:14px}
-    .sf-links{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+    .sf-col-title{font-size:13px;font-weight:700;color:var(--text);margin-bottom:8px}
+    .sf-links{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:5px}
     .sf-links a,.sf-links span{
       font-size:13px;color:var(--text-2);text-decoration:none;cursor:pointer;transition:color .15s;
     }
     .sf-links a:hover,.sf-links span:hover{color:var(--brand)}
+    /* two-column link lists keep the footer short */
+    .sf-links.sf-2col{display:grid;grid-auto-flow:column;grid-auto-columns:max-content;justify-content:start;column-gap:36px;row-gap:5px}
     .site-footer-bottom{
-      max-width:1200px;margin:32px auto 0;padding:16px 0;border-top:1px solid var(--border);
+      max-width:1200px;margin:8px auto 0;padding:6px 0;border-top:1px solid var(--border);
       display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;
       font-size:12px;color:var(--text-3);
     }
@@ -6207,7 +6211,7 @@ main.tab-explore .empty-state{display:none !important}
       </ul>
     </div>
 
-    <div class="sf-col" style="display:none"><!-- hidden: Our Services -->
+    <div class="sf-col">
       <div class="sf-col-title">Our Services</div>
       <ul class="sf-links">
         <li><span onclick="openRentReceiptTool()">Rent Receipt Generator</span></li>
@@ -6217,7 +6221,7 @@ main.tab-explore .empty-state{display:none !important}
       </ul>
     </div>
 
-    <div class="sf-col" style="display:none"><!-- hidden: Follow Us -->
+    <div class="sf-col">
       <div class="sf-col-title">Follow Us</div>
       <div class="sf-social-row">
         <a href="https://wa.me/919035205230" target="_blank" rel="noopener" class="sf-social-link">
