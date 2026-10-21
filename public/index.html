@@ -20352,6 +20352,102 @@ document.addEventListener('keydown', function(e){ if (e.key === 'Escape') closeP
 #hlNotice .hln-btn,#hlNotice .hln-btn:hover{border-radius:12px;background:var(--brand);box-shadow:0 6px 16px -6px rgba(224,58,82,.55)}
 #hlNotice .hln-btn:hover{background:var(--brand-hover)}
 #hlNotice .hln-btn:focus-visible,#hlNotice .hln-x:focus-visible{outline-color:rgba(224,58,82,.45)}
+/* ─── Auth modal: warm ivory card + coral-rose gradient action (scoped to #authModal) ─── */
+#authModal #authModalBox{
+  background:
+    radial-gradient(120% 70% at 100% 0%, rgba(255,164,120,.28) 0%, rgba(255,164,120,0) 55%),
+    radial-gradient(90% 60% at 0% 100%, rgba(244,114,150,.16) 0%, rgba(244,114,150,0) 60%),
+    linear-gradient(180deg,#fffdfa 0%,#fff7f1 100%);
+  border:1px solid rgba(255,190,160,.45);
+  box-shadow:0 40px 80px -24px rgba(190,70,60,.35),0 10px 30px -10px rgba(190,70,60,.18);
+  overflow:hidden;
+}
+#authModal #authModalBox::before{
+  content:"";position:absolute;left:0;right:0;top:0;height:4px;
+  background:linear-gradient(90deg,#ff8a5c 0%,#f0506e 55%,#c9a24a 100%);
+}
+#authModal .add-modal-title{color:#2b1d1a}
+#authModal .auth-tabs{background:rgba(255,160,130,.14);border:1px solid rgba(255,160,130,.22)}
+#authModal .auth-tab{color:#8a6b62}
+#authModal .auth-tab.active{background:#fff;color:#e8365d;box-shadow:0 4px 12px -2px rgba(232,54,93,.22)}
+#authModal .form-label{color:#6b4f47}
+#authModal .form-input{
+  background:#fff;border:1.5px solid #f3dcd2;color:#2b1d1a;
+}
+#authModal .form-input:hover{border-color:#ecc3b4}
+#authModal .form-input:focus{
+  border-color:#f0506e;background:#fff;box-shadow:0 0 0 4px rgba(240,80,110,.14);
+}
+#authModal .form-input:-webkit-autofill,
+#authModal .form-input:-webkit-autofill:focus{
+  -webkit-box-shadow:0 0 0 40px #fff inset !important;
+  -webkit-text-fill-color:#2b1d1a !important;
+  caret-color:#2b1d1a;
+}
+#authModal .form-submit{
+  background:linear-gradient(135deg,#ff8a5c 0%,#f0506e 55%,#e0365d 100%);
+  color:#fff;border:none;
+  box-shadow:0 14px 26px -10px rgba(232,54,93,.6),inset 0 1px 0 rgba(255,255,255,.35);
+  text-shadow:0 1px 1px rgba(150,20,50,.25);
+}
+#authModal .form-submit:hover{
+  background:linear-gradient(135deg,#ff9a6e 0%,#f45f7b 55%,#e8426a 100%);
+  transform:translateY(-1px);
+  box-shadow:0 18px 30px -10px rgba(232,54,93,.65),inset 0 1px 0 rgba(255,255,255,.4);
+}
+#authModal .form-submit:active{transform:translateY(0)}
+#authModal .auth-foot{color:#a08a82}
+#authModal .auth-foot a{color:#e8365d}
+#authModal #authTypeTabsRow .auth-tab{background:#fff;border-color:#f3dcd2;color:#8a6b62}
+#authModal #authTypeTabsRow .auth-tab:hover{border-color:#f0506e}
+#authModal #authTypeTabsRow .auth-tab.active{background:#fff3ee;border-color:#f0506e;color:#e8365d;box-shadow:0 6px 16px -6px rgba(232,54,93,.35)}
+#authModal #authTypeTabsRow .auth-tab.active .at-ico{background:linear-gradient(135deg,#ff8a5c,#e8365d)}
+/* ─── ALL MODALS: warm ivory card + coral-rose gradient actions (same as login modal) ─── */
+:root{
+  --calm-grad:
+    radial-gradient(120% 70% at 100% 0%, rgba(255,164,120,.28) 0%, rgba(255,164,120,0) 55%),
+    radial-gradient(90% 60% at 0% 100%, rgba(244,114,150,.16) 0%, rgba(244,114,150,0) 60%),
+    linear-gradient(180deg,#fffdfa 0%,#fff7f1 100%);
+  --calm-line:rgba(240,120,100,.18);
+  --calm-shadow:0 40px 80px -24px rgba(190,70,60,.35),0 10px 30px -10px rgba(190,70,60,.18);
+  --warm-grad:linear-gradient(135deg,#ff8a5c 0%,#f0506e 55%,#e0365d 100%);
+  --warm-grad-hover:linear-gradient(135deg,#ff9a6e 0%,#f45f7b 55%,#e8426a 100%);
+  --warm-btn-shadow:0 14px 26px -10px rgba(232,54,93,.6),inset 0 1px 0 rgba(255,255,255,.35);
+}
+.modal,.add-modal,.confirm-card,.sort-sheet,.preav-modal{border:1px solid rgba(255,190,160,.45)}
+.add-modal,.confirm-card{position:relative}
+.add-modal::before,.confirm-card::before{
+  content:"";position:absolute;left:0;right:0;top:0;height:4px;z-index:1;pointer-events:none;
+  background:linear-gradient(90deg,#ff8a5c 0%,#f0506e 55%,#c9a24a 100%);
+}
+.add-modal-title,.confirm-card .confirm-title{color:#2b1d1a}
+.add-modal .modal-close{
+  background:rgba(240,80,110,.08);border:1px solid rgba(240,80,110,.25);
+}
+.add-modal .modal-close:hover{background:var(--warm-grad);border-color:transparent}
+.add-modal .form-label{color:#6b4f47}
+.add-modal .form-input,.add-modal select.form-input,.add-modal textarea.form-input{
+  background:#fff;border:1.5px solid #f3dcd2;color:#2b1d1a;
+}
+.add-modal .form-input:hover{border-color:#ecc3b4}
+.add-modal .form-input:focus{border-color:#f0506e;background:#fff;box-shadow:0 0 0 4px rgba(240,80,110,.14)}
+.add-modal .form-input:-webkit-autofill{-webkit-box-shadow:0 0 0 40px #fff inset !important;-webkit-text-fill-color:#2b1d1a !important}
+.add-modal .form-submit,.modal-btn-primary,.confirm-ok-btn:not(.info),.hln-btn{
+  background:var(--warm-grad) !important;color:#fff;border:none;
+  box-shadow:var(--warm-btn-shadow);text-shadow:0 1px 1px rgba(150,20,50,.25);
+  transition:transform .12s,box-shadow .15s,filter .15s;
+}
+.add-modal .form-submit:hover,.modal-btn-primary:hover,.confirm-ok-btn:not(.info):hover,.hln-btn:hover{
+  background:var(--warm-grad-hover) !important;transform:translateY(-1px);
+}
+.add-modal .form-submit:active,.modal-btn-primary:active,.confirm-ok-btn:not(.info):active{transform:translateY(0)}
+.modal-btn-secondary,.confirm-cancel-btn{background:#fff;border:1px solid #f3dcd2;color:#8a6b62}
+.modal-btn-secondary:hover,.confirm-cancel-btn:hover{background:#fff3ee;border-color:#f0506e;color:#e8365d}
+.add-modal .auth-tabs,.add-modal .tabs-row{background:rgba(255,160,130,.14);border:1px solid rgba(255,160,130,.22)}
+.add-modal .auth-tab{color:#8a6b62}
+.add-modal .auth-tab.active{background:#fff;color:#e8365d;box-shadow:0 4px 12px -2px rgba(232,54,93,.22)}
+.add-modal .img-btn-sec{background:#fff;border-color:#f3dcd2}
+.confirm-card .confirm-icon{background:#fff0ea;color:#e8365d}
 </style>
 <div id="hlNotice" role="dialog" aria-modal="true" aria-labelledby="hlNoticeTitle" aria-describedby="hlNoticeLead">
   <div class="hln-card" id="hlNoticeCard" tabindex="-1">
