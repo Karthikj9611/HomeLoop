@@ -20857,6 +20857,23 @@ body{
 /* mini review cards (rv-card) */
 .rv-card{background:linear-gradient(180deg,#fff 0%,#fffaf6 100%);border:1px solid rgba(255,190,160,.55)}
 .rv-card:hover{box-shadow:0 14px 26px -12px rgba(190,70,60,.35)}
+/* ─── Service notice: "what's changing" points ─── */
+#hlNotice .hln-points{list-style:none;margin:18px auto 0;padding:0;max-width:340px;display:flex;flex-direction:column;gap:9px;text-align:left}
+#hlNotice .hln-points li{
+  display:flex;align-items:flex-start;gap:11px;padding:10px 12px;
+  background:#fff;border:1px solid #f6e1d7;border-radius:12px;
+  box-shadow:0 6px 14px -10px rgba(190,70,60,.35);
+  font-size:14px;line-height:1.45;color:#5c433b;font-weight:500;
+}
+#hlNotice .hln-points li i{
+  flex:0 0 22px;width:22px;height:22px;border-radius:50%;margin-top:1px;
+  display:grid;place-items:center;background:var(--warm-grad);color:#fff;
+  box-shadow:0 4px 10px -4px rgba(232,54,93,.6);
+}
+#hlNotice .hln-points li i svg{width:12px;height:12px}
+#hlNotice .hln-tag{margin-top:18px}
+#hlNotice .hln-why{margin:0 auto 20px;max-width:330px;font-size:13.5px;line-height:1.6;color:#8a6b62}
+#hlNotice .hln-tag{margin:18px 0 22px}
 </style>
 <div id="hlNotice" role="dialog" aria-modal="true" aria-labelledby="hlNoticeTitle" aria-describedby="hlNoticeLead">
   <div class="hln-card" id="hlNoticeCard" tabindex="-1">
@@ -20864,8 +20881,13 @@ body{
     <div class="hln-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 4.6L18.5 9l-4.6 1.9L12 15.5l-1.9-4.6L5.5 9l4.6-1.4z"/><path d="M19 15l.8 1.9 1.7.7-1.7.7L19 20l-.8-1.7-1.7-.7 1.7-.7z"/></svg></div>
     <span class="hln-label">Service notice</span>
     <h2 id="hlNoticeTitle">We’re upgrading HomeLoop</h2>
-    <p class="hln-d" id="hlNoticeLead">We’re building new features and improving existing ones to serve you better. Adding new properties is paused for a few days. Thank you for your patience.</p>
-    <span class="hln-tag"><i></i>Paused for a few days</span>
+    <p class="hln-d" id="hlNoticeLead">What we’re improving:</p>
+    <ul class="hln-points" aria-label="What we are working on">
+      <li><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></i><span>A cleaner, easier-to-use design</span></li>
+      <li><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></i><span>Improvements to existing features</span></li>
+      <li><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></i><span>New features on the way</span></li>
+    </ul>
+    <span class="hln-tag"><i></i>Adding new properties is temporarily paused</span>
     <button type="button" class="hln-btn" id="hlNoticeOk">Continue to website</button>
   </div>
 </div>
