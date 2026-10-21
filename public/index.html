@@ -20796,6 +20796,67 @@ body{
     radial-gradient(110% 40% at 100% 100%, rgba(255,164,120,.16) 0%, rgba(255,164,120,0) 60%),
     linear-gradient(180deg,#ffffff 0%,#fffaf6 100%);
 }
+/* ─── REVIEWS SECTION: warm ivory cards + coral-rose accents ─── */
+.reviews-section{background:transparent;border-top:1px solid rgba(240,120,100,.2);position:relative}
+.reviews-section::before{
+  content:"";position:absolute;left:0;right:0;top:-1px;height:3px;
+  background:linear-gradient(90deg,#ff8a5c 0%,#f0506e 55%,#c9a24a 100%);
+}
+.reviews-title{color:#2b1d1a}
+.reviews-title span,.reviews-group-label span{color:#e8365d}
+.reviews-title-clickable{
+  background:linear-gradient(135deg,#fff 0%,#fff1ea 100%);
+  border:1px solid #f6d3c4;box-shadow:0 8px 20px -10px rgba(232,54,93,.4);
+}
+.reviews-title-clickable:hover,.reviews-title-clickable:focus-visible{box-shadow:0 14px 26px -10px rgba(232,54,93,.5)}
+.reviews-title-icon{stroke:#e8365d}
+
+/* rating overview */
+.reviews-overview{
+  background:linear-gradient(180deg,#ffffff 0%,#fffaf6 100%);
+  border:1px solid rgba(255,190,160,.55);
+  box-shadow:0 1px 2px rgba(190,70,60,.05),0 10px 26px -14px rgba(190,70,60,.3);
+}
+.reviews-overview-score{
+  background:
+    radial-gradient(120% 70% at 50% 0%, rgba(255,164,120,.3) 0%, rgba(255,164,120,0) 70%),
+    linear-gradient(180deg,#fff4ec 0%,#ffeadf 100%);
+  border-right:1px solid rgba(240,120,100,.18);
+}
+.reviews-overview-score-num{color:#2b1d1a}
+.reviews-overview-count{color:#a08a82}
+.reviews-bar-track{background:#fbe6db}
+.reviews-bar-fill{background:linear-gradient(90deg,#ff8a5c 0%,#f0506e 100%)}
+.reviews-bar-row span:first-child{color:#2b1d1a}
+.reviews-bar-row span:last-child{color:#a08a82}
+
+/* review cards */
+.review-card{
+  background:linear-gradient(180deg,#ffffff 0%,#fffaf6 100%);
+  border:1px solid rgba(255,190,160,.55);
+  box-shadow:0 1px 2px rgba(190,70,60,.05),0 10px 26px -14px rgba(190,70,60,.3);
+}
+.review-avatar{background:var(--warm-grad) !important;box-shadow:0 6px 14px -6px rgba(232,54,93,.55)}
+.review-card-name{color:#2b1d1a}
+.review-card-date,.review-card-rating-num{color:#a08a82}
+.review-card-text{color:#5c433b}
+.reviews-group + .reviews-group{border-top:1px solid rgba(240,120,100,.2)}
+.reviews-group-label{color:#2b1d1a}
+.reviews-carousel-dot{background:#f3d3c5}
+.reviews-carousel-dot.active{background:var(--warm-grad)}
+.reviews-loadmore-btn{background:#fff;border:1.5px solid #f3dcd2;color:#8a6b62;border-radius:999px}
+.reviews-loadmore-btn:hover{background:#fff1ea;border-color:#f0506e;color:#e8365d}
+
+/* write-a-review form */
+.review-star-btn{color:#f3dcd2}
+.review-form-textarea{background:#fff;border:1.5px solid #f3dcd2;border-radius:12px}
+.review-form-textarea:focus{border-color:#f0506e;box-shadow:0 0 0 4px rgba(240,80,110,.14)}
+.review-submit-btn{background:var(--warm-grad) !important;color:#fff;border:none;box-shadow:var(--warm-btn-shadow)}
+.review-submit-btn:not(:disabled):hover{background:var(--warm-grad-hover) !important;transform:translateY(-1px)}
+
+/* mini review cards (rv-card) */
+.rv-card{background:linear-gradient(180deg,#fff 0%,#fffaf6 100%);border:1px solid rgba(255,190,160,.55)}
+.rv-card:hover{box-shadow:0 14px 26px -12px rgba(190,70,60,.35)}
 </style>
 <div id="hlNotice" role="dialog" aria-modal="true" aria-labelledby="hlNoticeTitle" aria-describedby="hlNoticeLead">
   <div class="hln-card" id="hlNoticeCard" tabindex="-1">
