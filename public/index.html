@@ -20448,6 +20448,207 @@ document.addEventListener('keydown', function(e){ if (e.key === 'Escape') closeP
 .add-modal .auth-tab.active{background:#fff;color:#e8365d;box-shadow:0 4px 12px -2px rgba(232,54,93,.22)}
 .add-modal .img-btn-sec{background:#fff;border-color:#f3dcd2}
 .confirm-card .confirm-icon{background:#fff0ea;color:#e8365d}
+/* ─── Our Charges modal: same warm ivory / coral-rose look (no solid red header) ─── */
+#chargesModal .add-modal{
+  background:var(--calm-grad);
+  border:1px solid rgba(255,190,160,.45);
+  box-shadow:var(--calm-shadow);
+}
+#chargesModal .add-modal-header{
+  background:transparent !important;border-bottom:1px solid rgba(240,120,100,.14);
+}
+#chargesModal .add-modal-header::after{background:rgba(255,160,130,.16)}
+#chargesModal .add-modal-title{color:#2b1d1a}
+#chargesModal .charges-hero-subtitle{color:#a08a82}
+#chargesModal .charges-hero-icon{
+  background:var(--warm-grad);box-shadow:0 8px 18px -8px rgba(232,54,93,.6);
+}
+#chargesModal .modal-close,
+#chargesModal .charges-share-btn{
+  background:rgba(240,80,110,.08);border:1px solid rgba(240,80,110,.25);
+}
+#chargesModal .modal-close:hover,
+#chargesModal .charges-share-btn:hover{background:var(--warm-grad);border-color:transparent;transform:scale(1.06)}
+#chargesModal .modal-close svg,
+#chargesModal .charges-share-btn svg{stroke:#e8365d}
+#chargesModal .modal-close:hover svg,
+#chargesModal .charges-share-btn:hover svg{stroke:#fff}
+#chargesModal .charges-audience-tabs{background:rgba(255,160,130,.14);border:1px solid rgba(255,160,130,.22)}
+#chargesModal .charges-audience-tab{color:#8a6b62}
+#chargesModal .charges-audience-tab.active{background:#fff;color:#e8365d;box-shadow:0 4px 12px -2px rgba(232,54,93,.22)}
+#chargesModal .plan-panel,
+#chargesModal .plan-direct{background:linear-gradient(135deg,#fff5f0,#fffaf7);border-color:rgba(240,120,100,.28)}
+#chargesModal .plan-managed{background:linear-gradient(135deg,#fff8ec,#fffcf6);border-color:rgba(201,162,74,.35)}
+#chargesModal .plan-managed .charges-audience-icon,
+#chargesModal .plan-managed .charges-mini-icon{background:#fdeccb}
+#chargesModal .plan-managed .charges-audience-icon svg,
+#chargesModal .plan-managed .charges-mini-icon svg{stroke:#b9852a}
+#chargesModal .plan-managed .charges-mini-example{color:#b9852a}
+#chargesModal .plan-managed .charges-call-btn{border-color:#c9a24a;color:#a8781f}
+#chargesModal .plan-managed .charges-call-btn:hover{background:linear-gradient(135deg,#d9b25a,#b9852a);color:#fff;border-color:transparent}
+#chargesModal .plan-managed .charges-warning{
+  background:var(--warm-grad);border:none;box-shadow:var(--warm-btn-shadow);
+}
+#chargesModal .plan-managed .charges-warning span{color:#fff}
+#chargesModal .plan-managed .charges-warning strong{color:#fff3c4}
+#chargesModal .charges-price-card,
+#chargesModal .charges-mini-card,
+#chargesModal .plan-panel .charges-mini-card{background:#fff;border:1px solid #f6e1d7}
+#chargesModal .charges-price-card.is-free{background:linear-gradient(135deg,#fff8ec,#fffcf6);border-color:#f3dcae}
+#chargesModal .is-free .charges-price-icon{background:#fdeccb}
+#chargesModal .is-free .charges-price-icon svg{stroke:#b9852a}
+#chargesModal .is-free .charges-price-amount{color:#b9852a}
+#chargesModal .charges-call-btn{background:#fff;border:1.5px solid #f0506e;color:#e8365d}
+#chargesModal .plan-direct .charges-call-btn{border-color:#f0506e;color:#e8365d}
+#chargesModal .charges-call-btn:hover,
+#chargesModal .plan-direct .charges-call-btn:hover{background:var(--warm-grad);color:#fff;border-color:transparent;box-shadow:var(--warm-btn-shadow)}
+#chargesModal .charges-upi-row{background:#fff;border-color:#f0a58f}
+#chargesModal .charges-upi-copy{background:#ffe9e1;color:#e8365d}
+#chargesModal .charges-upi-copy:hover{background:#ffd8cb}
+#chargesModal .form-submit{background:var(--warm-grad) !important;box-shadow:var(--warm-btn-shadow)}
+#chargesModal .svc-price-note.charges-refer-note{background:var(--warm-grad);border:none;box-shadow:var(--warm-btn-shadow)}
+#chargesModal .svc-price-note.charges-refer-note.charges-refer-bonus{background:linear-gradient(135deg,#fff8ec,#fdeccb);border:1px solid #f3dcae;box-shadow:none}
+/* ─── REMAINING MODALS: no solid red/purple headers, same warm ivory + coral-rose look ─── */
+/* overlay scrim — warm instead of purple-grey */
+.modal-overlay,.add-modal-overlay,.preav-overlay,.wish-modal-overlay,#confirmOverlay{background:rgba(52,28,22,.44) !important}
+.sort-backdrop{background:rgba(52,28,22,.4)}
+.add-modal-header{border-bottom-color:rgba(240,120,100,.14)}
+
+/* List-your-property / view-listing modal (#addModal) */
+#addModal .add-modal-header{background:transparent !important;border-bottom:1px solid rgba(240,120,100,.16)}
+#addModal .add-modal-title{color:#2b1d1a !important}
+#addModal #addModalSubtitleText{color:#a08a82 !important}
+#addModal #clearFormBtn{border:1.5px solid rgba(240,80,110,.35) !important;color:#e8365d !important;background:rgba(240,80,110,.06) !important}
+#addModal #clearFormBtn:hover{background:var(--warm-grad) !important;color:#fff !important;border-color:transparent !important}
+#addModal .add-modal-header .modal-close{
+  background:rgba(240,80,110,.08) !important;border:1px solid rgba(240,80,110,.25) !important;box-shadow:none !important;
+}
+#addModal .add-modal-header .modal-close:hover{background:var(--warm-grad) !important;border-color:transparent !important}
+#addModal .add-modal-header .modal-close svg{stroke:#e8365d !important}
+#addModal .add-modal-header .modal-close:hover svg{stroke:#fff !important}
+#addModal .view-share-hdr{background:rgba(37,211,102,.12);color:#16a34a}
+#addModal #addModalBox::before{display:none}
+#addModal .add-modal-header::before{
+  content:"";position:absolute;left:0;right:0;top:0;height:4px;
+  background:linear-gradient(90deg,#ff8a5c 0%,#f0506e 55%,#c9a24a 100%);
+}
+
+/* Viewed-by modal */
+.viewers-modal{background:var(--calm-grad) !important}
+.viewers-modal-header{background:transparent;color:#2b1d1a;border-bottom:1px solid rgba(240,120,100,.14)}
+.viewers-modal-header::before{
+  content:"";position:absolute;left:0;right:0;top:0;height:4px;
+  background:linear-gradient(90deg,#ff8a5c 0%,#f0506e 55%,#c9a24a 100%);
+}
+.viewers-header-blob{background:rgba(255,160,130,.2)}
+.viewers-header-blob-2{background:rgba(244,114,150,.14)}
+.viewers-modal-icon{background:var(--warm-grad);box-shadow:0 6px 14px -6px rgba(232,54,93,.6)}
+.viewers-modal-close{background:rgba(240,80,110,.08);border:1px solid rgba(240,80,110,.25)}
+.viewers-modal-close:hover{background:var(--warm-grad);border-color:transparent}
+.viewers-modal-close svg{stroke:#e8365d}
+.viewers-modal-close:hover svg{stroke:#fff}
+.viewers-hero-number{color:#e8365d}
+.viewers-hero-label{color:#8a6b62;opacity:1}
+.stack-avatar{border-color:#fff;box-shadow:0 2px 6px rgba(190,70,60,.2)}
+.stack-avatar-more{background:#ffe9e1;color:#e8365d}
+.viewers-modal-body{background:transparent}
+
+/* Compare modal */
+.compare-modal-header{background:rgba(255,250,245,.92);backdrop-filter:blur(6px);border-bottom:1px solid rgba(240,120,100,.16)}
+.compare-modal-title{color:#2b1d1a}
+.compare-modal .modal-close,.compare-modal-header-actions .modal-close{
+  background:rgba(240,80,110,.08);border:1px solid rgba(240,80,110,.25);
+}
+.compare-modal .modal-close:hover{background:var(--warm-grad);border-color:transparent}
+
+/* Close buttons everywhere */
+.modal .modal-close,.preav-modal .modal-close{background:rgba(255,255,255,.9);border:1px solid rgba(240,80,110,.25)}
+.modal .modal-close:hover{background:var(--warm-grad);border-color:transparent}
+
+/* Service / banner / hours / sort / today's listings */
+.svc-modal-banner{background:linear-gradient(135deg,rgba(255,138,92,.16),rgba(240,80,110,.1))}
+.hours-modal-icon{background:linear-gradient(135deg,#ffe3d6,#ffd2dc)}
+.hours-modal-btn-secondary{background:var(--warm-grad) !important;color:#fff;box-shadow:var(--warm-btn-shadow)}
+.sort-sheet{background:var(--calm-grad);border-top:1px solid rgba(255,190,160,.45)}
+.sort-option.active,.sort-option.selected{color:#e8365d}
+.preav-modal{background:var(--calm-grad);border:1px solid rgba(255,190,160,.45)}
+/* ─── PANELS & BANNERS: Shortlisted, Filters (fm), Profile, View-listing, Broker info, active tabs ─── */
+/* Shortlisted side/full panel */
+.shortlist-panel{background:var(--calm-grad)}
+.panel-header{background:transparent;border-bottom:1px solid rgba(240,120,100,.16)}
+.panel-header::before{background:rgba(255,160,130,.16);width:130px;height:130px}
+.panel-header::after{
+  content:"";position:absolute;left:0;right:0;top:0;height:4px;
+  background:linear-gradient(90deg,#ff8a5c 0%,#f0506e 55%,#c9a24a 100%);
+}
+.panel-title{color:#2b1d1a}
+.panel-title span{background:var(--warm-grad);color:#fff;box-shadow:0 6px 14px -6px rgba(232,54,93,.6)}
+.panel-close{background:rgba(240,80,110,.08);border:1px solid rgba(240,80,110,.25)}
+.panel-close:hover{background:var(--warm-grad);border-color:transparent}
+.panel-close svg{stroke:#e8365d}
+.panel-close:hover svg{stroke:#fff}
+.panel-empty{color:#a08a82}
+.panel-enquire{background:rgba(255,250,245,.92);border-top:1px solid rgba(240,120,100,.16)}
+.panel-enquire-btn{background:var(--warm-grad) !important;color:#fff;border:none;box-shadow:var(--warm-btn-shadow)}
+
+/* Filters-style modals (fm-*) */
+.fm-box{background:var(--calm-grad)}
+.fm-head{background:transparent;border-bottom:1px solid rgba(240,120,100,.16);position:relative}
+.fm-title,.fm-sub-name{color:#2b1d1a}
+.fm-sub-pos{color:#a08a82}
+.fm-count{background:var(--warm-grad);color:#fff}
+.fm-head .fm-close{background:rgba(240,80,110,.08);border:1px solid rgba(240,80,110,.25);box-shadow:none}
+.fm-head .fm-close:hover{background:var(--warm-grad);border-color:transparent}
+.fm-head .fm-close svg{stroke:#e8365d}
+.fm-head .fm-close:hover svg{stroke:#fff}
+.fm-head .fm-nav{background:#fff;border:1px solid #f3dcd2}
+.fm-head .fm-navbtn{color:#e8365d}
+.fm-head .fm-navbtn:hover{background:var(--warm-grad);color:#fff}
+.fm-done{background:var(--warm-grad) !important;color:#fff;border:none;box-shadow:var(--warm-btn-shadow)}
+.fm-foot{background:rgba(255,250,245,.92);border-top-color:rgba(240,120,100,.16)}
+
+/* Profile modal banner */
+.profile-banner{
+  background:
+    radial-gradient(120% 90% at 100% 0%, rgba(255,164,120,.38) 0%, rgba(255,164,120,0) 60%),
+    radial-gradient(90% 70% at 0% 100%, rgba(244,114,150,.22) 0%, rgba(244,114,150,0) 60%),
+    linear-gradient(180deg,#fffdfa 0%,#fff1e8 100%);
+}
+.profile-banner::before{background:none}
+.profile-banner::after{
+  content:"";position:absolute;left:0;right:0;top:0;height:4px;
+  background:linear-gradient(90deg,#ff8a5c 0%,#f0506e 55%,#c9a24a 100%);
+}
+.profile-banner-title{color:#8a6b62}
+.profile-banner-close{background:rgba(240,80,110,.08);border:1.5px solid rgba(240,80,110,.25);backdrop-filter:none}
+.profile-banner-close:hover{background:var(--warm-grad);border-color:transparent}
+.profile-banner-close svg{stroke:#e8365d}
+.profile-banner-close:hover svg{stroke:#fff}
+.profile-card-float{box-shadow:0 14px 34px -12px rgba(190,70,60,.28);border:1px solid #f6e1d7}
+.profile-avatar-lg,.about-founder-avatar,.about-partner-avatar{background:var(--warm-grad)}
+.profile-avatar-lg{box-shadow:0 0 0 4px #fff,0 0 0 6px #ffd9cb}
+
+/* View-listing subtitle dot */
+.add-modal.view-mode #addModalSubtitleText::before{background:#f0506e}
+
+/* Broker-info modal (inline red header) */
+#brokerInfoModal .add-modal > div:first-child{
+  background:transparent !important;color:#2b1d1a !important;
+  border-bottom:1px solid rgba(240,120,100,.16);
+}
+#brokerInfoModal .add-modal > div:first-child > div:first-child{background:var(--warm-grad) !important}
+#brokerInfoModal .modal-close{background:rgba(240,80,110,.08) !important;border:1px solid rgba(240,80,110,.25) !important}
+#brokerInfoModal .modal-close svg{stroke:#e8365d !important}
+#brokerInfoModal .modal-close:hover{background:var(--warm-grad) !important}
+#brokerInfoModal .modal-close:hover svg{stroke:#fff !important}
+
+/* Active nav / bottom tabs */
+.nav-tab.active{background:var(--warm-grad);box-shadow:0 8px 18px -6px rgba(232,54,93,.55),inset 0 1px 0 rgba(255,255,255,.3)}
+.bottom-tab.active .bottom-tab-icon{background:var(--warm-grad)}
+/* ─── No gap between top navbar and the promo/ad banner ─── */
+.main:has(#adBanner:not([style*="none"])){padding-top:4px}
+.main:has(#adBanner:not([style*="none"])) .results-header{margin-top:0}
+@media (max-width:640px){.main:has(#adBanner:not([style*="none"])){padding-top:4px}}
 </style>
 <div id="hlNotice" role="dialog" aria-modal="true" aria-labelledby="hlNoticeTitle" aria-describedby="hlNoticeLead">
   <div class="hln-card" id="hlNoticeCard" tabindex="-1">
