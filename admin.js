@@ -27,6 +27,7 @@ module.exports = function registerAdminRoutes(app, deps) {
     Visitor,
     PropertyView, PropertyViewer,
     UserSession, // force-logout action on the Customers grid (single-device login unlock)
+    getVideoBucket, VIDEO_EXT_BY_TYPE, looksLikeVideo, uploadVideo,
   } = deps;
 
   // Empties a dedup collection completely (every document gone) without
@@ -531,6 +532,31 @@ module.exports = function registerAdminRoutes(app, deps) {
   // ── GET /api/admin/me — who's logged in, and which features they can see ──
   // admin.html calls this right after login (and on auto-login) to decide
   // which tabs/buttons to show for a sub-admin account.
+  // Video tour upload for the admin listing form. Same storage and response shape as the
+  // public POST /api/upload-video (GridFS, served from /videos/<id>.<ext>), but gated by the
+  // admin session instead of an owner-account login.
+  app.post('/api/admin/upload-video', requireAdmin, requireModule('properties'), uploadVideo.single('video'), async (req, res) => {
+    try {
+      const file = req.file;
+      if (!file) return res.status(400).json({ message: 'No video uploaded' });
+      const ext = VIDEO_EXT_BY_TYPE[file.mimetype];
+      if (!looksLikeVideo(file.buffer, ext)) return res.status(400).json({ message: 'That file does not look like a valid video' });
+      const stream = getVideoBucket().openUploadStream(`${Date.now()}.${ext}`, {
+        contentType: file.mimetype,
+        metadata: { uploadedByAdmin: req.adminEmail || true, uploadedAt: new Date() },
+      });
+      await new Promise((resolve, reject) => {
+        stream.on('error', reject);
+        stream.on('finish', resolve);
+        stream.end(file.buffer);
+      });
+      res.status(201).json({ message: 'Video uploaded successfully', url: `/videos/${stream.id}.${ext}` });
+    } catch (err) {
+      console.error('POST /api/admin/upload-video error:', err);
+      res.status(500).json({ message: 'Error uploading video' });
+    }
+  });
+
   app.get('/api/admin/me', requireAdmin, async (req, res) => {
     try {
       const [modules, actions, buttons] = await Promise.all([

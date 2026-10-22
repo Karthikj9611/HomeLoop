@@ -2651,7 +2651,7 @@ app.put('/api/user/listings/:id', listingWriteLimiter, requireUser, async (req, 
     }
 
     const effectiveListedBy = (fields.basic && fields.basic.listedBy) || (prop.basic || {}).listedBy;
-    if (effectiveListedBy !== 'Broker' && prop.price) {
+    if (effectiveListedBy !== 'Broker' && effectiveListedBy !== 'Agent' && prop.price) { // brokerage applies to Broker and Agent listings
       prop.price.brokerage = undefined;
       prop.price.brokerageAmount = undefined;
     }
@@ -3281,7 +3281,7 @@ app.get('/videos/:id', async (req, res) => {
 app.use((err, req, res, next) => {
   if (err instanceof multer.MulterError || (err && /Only (image|video) files/.test(err.message || ''))) {
     if (err.code === 'LIMIT_FILE_SIZE') {
-      const isVideo = /\/api\/upload-video/.test(req.originalUrl || '');
+      const isVideo = /\/api\/(admin\/)?upload-video/.test(req.originalUrl || '');
       return res.status(413).json({ message: isVideo ? `Video is too large. Maximum size is ${Math.round(VIDEO_MAX_BYTES / 1048576)} MB.` : 'Image is too large. Maximum size is 8 MB.' });
     }
     return res.status(400).json({ message: err.message });
@@ -3838,6 +3838,7 @@ app.get('/api/stats', async (req, res) => {
   Visitor, // visitor-dedup collection — Visits tab's resets drop this collection (see admin.js)
   PropertyView, PropertyViewer, // view-dedup collections — Properties tab's view resets drop these (see admin.js)
   UserSession, // Customers grid "Force logout" action (single-device login unlock)
+  getVideoBucket, VIDEO_EXT_BY_TYPE, looksLikeVideo, uploadVideo, // admin listing form's video upload (POST /api/admin/upload-video)
 }));
 
 // 404 for any API route that didn't match above.

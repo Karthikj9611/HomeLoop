@@ -2425,6 +2425,35 @@ body.pact-hide-booking #propertyTable .pact-booking{display:none!important}
 .form-label[data-ico="video"]{--ico-c:#dc2626;--ico:url("data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%2024%2024%22%20fill=%22none%22%20stroke=%22%23fff%22%20stroke-width=%222%22%20stroke-linecap=%22round%22%20stroke-linejoin=%22round%22%3E%3Crect%20x=%223%22%20y=%226%22%20width=%2213%22%20height=%2212%22%20rx=%222%22/%3E%3Cpath%20d=%22m16%2010%205-3v10l-5-3z%22/%3E%3C/svg%3E")}
 .form-label[data-ico="wrench"]{--ico-c:#64748b;--ico:url("data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%2024%2024%22%20fill=%22none%22%20stroke=%22%23fff%22%20stroke-width=%222%22%20stroke-linecap=%22round%22%20stroke-linejoin=%22round%22%3E%3Cpath%20d=%22M15%205a4%204%200%200%200-4%205L3%2018l3%203%208-8a4%204%200%200%200%205-4l-3%203-3-1-1-3z%22/%3E%3C/svg%3E")}
 .lm-section{font-size:10px;font-weight:800;color:var(--text-2);text-transform:uppercase;letter-spacing:.8px;margin:20px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border-2)}
+/* Accordion tabs: tap a section heading to open/close its fields (form only, not view mode) */
+#listingFormSections .lm-section{cursor:pointer;user-select:none;display:flex;align-items:center;justify-content:space-between;gap:8px;transition:color .12s}
+#listingFormSections .lm-section:hover{color:var(--brand)}
+#listingFormSections .lm-section::after{content:"";width:7px;height:7px;flex:none;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg) translateY(-2px);transition:transform .18s}
+#listingFormSections .lm-section.lm-closed::after{transform:rotate(-45deg)}
+.add-modal:not(.view-mode) .lm-acc-hide{display:none!important}
+.add-modal.view-mode #listingFormSections .lm-section::after{display:none}
+.form-group.auto-hidden{display:none !important}
+.f-video-preview{margin-top:10px;border-radius:12px;overflow:hidden;background:#000;max-width:520px}
+.f-video-preview video{display:block;width:100%;max-height:320px;background:#000}
+.f-video-preview iframe{display:block;width:100%;aspect-ratio:16/9;border:0}
+.f-media-overlay{position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,.88);display:flex;align-items:center;justify-content:center;padding:24px}
+.f-media-overlay img{max-width:100%;max-height:100%;object-fit:contain;border-radius:8px}
+.f-media-overlay button{position:absolute;border:none;border-radius:50%;width:42px;height:42px;font-size:20px;line-height:1;cursor:pointer;background:rgba(255,255,255,.9);color:#111}
+.f-media-overlay .fmo-close{top:16px;right:16px}
+.f-media-overlay .fmo-prev{left:16px;top:50%;transform:translateY(-50%)}
+.f-media-overlay .fmo-next{right:16px;top:50%;transform:translateY(-50%)}
+/* Listing form: no icons on field labels — only the section headers (👤 Owner Details, 📍 Property Location…) keep theirs */
+#addModal .form-label[data-ico]::before{display:none !important}
+#addModal .form-label[data-ico]{padding-left:0}
+#addModal .loc-act-btn svg{display:none}
+/* Contact picker: desktop doesn't need it; phones/tablets (touch) keep it */
+@media (hover:hover) and (pointer:fine){
+  #addModal .contact-pick-btn{display:none !important}
+  #addModal .input-icon-wrap .form-input{padding-right:12px}
+}
+.add-modal.view-mode #videoUploadRow,
+.add-modal.view-mode #f-videoPreview,
+.add-modal.view-mode #f-videoStatus{display:none}
 .form-submit{
   width:100%;padding:12px;border-radius:10px;
   background:var(--brand);color:#fff;font-size:14px;font-weight:700;
@@ -4985,8 +5014,8 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
     <!-- ===== PASTE WHATSAPP MESSAGE (Rent only) ===== -->
     <div id="waPasteBox" style="margin-bottom:14px">
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-        <button type="button" onclick="waOpenModal()" style="background:var(--brand);color:#fff;border:none;border-radius:9px;padding:0 16px;height:36px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">📋 Paste filled message</button>
-        <button type="button" onclick="waOpenSample()" style="background:transparent;color:var(--brand);border:1.5px solid var(--brand);border-radius:9px;padding:0 16px;height:36px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">📄 Sample message</button>
+        <button type="button" onclick="waOpenModal()" style="background:var(--brand);color:#fff;border:none;border-radius:9px;padding:0 16px;height:36px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">Paste filled message</button>
+        <button type="button" onclick="waOpenSample()" style="background:transparent;color:var(--brand);border:1.5px solid var(--brand);border-radius:9px;padding:0 16px;height:36px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">Sample message</button>
         <span id="waPasteStatus" style="font-size:12px;font-weight:600;flex:1;min-width:140px"></span>
       </div>
       <div id="waModal" role="dialog" aria-modal="true" aria-label="Paste WhatsApp message" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.5);align-items:center;justify-content:center;padding:16px">
@@ -5082,7 +5111,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
       <div class="form-group">
         <label class="form-label">Listed By</label>
         <select class="form-select" id="f-listedBy" onchange="updateBrokerageFields()">
-          <option>Agent</option><option>Broker</option><option selected>Owner</option>
+          <option>Agent</option><option>Broker</option><option>Builder</option><option selected>Owner</option>
         </select>
       </div>
     </div>
@@ -5090,9 +5119,9 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
 
     <input type="hidden" id="f-latitude"/><input type="hidden" id="f-longitude"/>
 
-    <!-- ===== 2/3. OWNER DETAILS (incl. Location) ===== -->
+    <!-- ===== 2/3. PROPERTY LOCATION + OWNER DETAILS ===== -->
     <div id="ownerDetailsSection">
-<div class="lm-section">👤 Owner Details</div>
+    <div class="lm-section">👤 Owner Details</div>
     <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
       <div class="form-group">
         <label class="form-label">Owner Name <span style="color:var(--brand)">*</span></label>
@@ -5100,7 +5129,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
         <div class="identity-locked-hint" id="f-ownerName-hint" style="display:none">Auto-filled from your account</div>
       </div>
       <div class="form-group" id="f-ownerPhone-group">
-        <label class="form-label">Phone Number <span style="color:var(--brand)">*</span></label>
+        <label class="form-label">Owner Number <span style="color:var(--brand)">*</span></label>
         <div class="input-icon-wrap">
           <input class="form-input" type="tel" id="f-ownerPhone" inputmode="numeric" maxlength="10" oninput="sanitizeMobileInput(this)"/>
           <button type="button" class="contact-pick-btn" id="f-ownerPhone-pickBtn" onclick="pickContactFromDevice('f-ownerPhone','f-ownerName')" title="Pick from contacts">
@@ -5110,7 +5139,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
         <div class="identity-locked-hint" id="f-ownerPhone-hint" style="display:none">Auto-filled from your account</div>
       </div>
       <div class="form-group">
-        <label class="form-label">Owner Number</label>
+        <label class="form-label">Owner Alt Number</label>
         <div class="input-icon-wrap">
           <input class="form-input" type="tel" id="f-ownerAltPhone" inputmode="numeric" maxlength="10" oninput="sanitizeMobileInput(this)"/>
           <button type="button" class="contact-pick-btn" onclick="pickContactFromDevice('f-ownerAltPhone')" title="Pick from contacts">
@@ -5140,74 +5169,64 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
         <label class="form-label">Owner Lives Here?</label>
         <select class="form-select" id="f-sameAsBuildingAddress"><option value="No">No</option><option selected value="Yes">Yes</option></select>
       </div>
-      <!-- Agent-only fields — shown when Listed by = Agent.
-           Unlike index.html (where these are fixed to the platform's own
-           agent contact), admin can edit any listing's agent phone/area
-           per-property — so these stay plain editable inputs here. -->
-      <div id="f-agentFields" style="grid-column:span 3">
-        <div class="form-row" style="grid-template-columns:1fr 1fr;margin-top:4px">
-          <div class="form-group">
-            <label class="form-label">Agent Phone</label>
-            <div class="input-icon-wrap">
-              <input class="form-input" type="tel" id="f-agentPhone" inputmode="numeric" maxlength="10" value="9035205230" oninput="sanitizeMobileInput(this)"/>
-              <button type="button" class="contact-pick-btn" id="f-agentPhone-pickBtn" onclick="pickContactFromDevice('f-agentPhone')" title="Pick from contacts">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-              </button>
-            </div>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Agent Area</label>
-            <input class="form-input" type="text" id="f-agentArea" value="Prashanth B, Singasandra" />
-          </div>
+    </div>
+    <!-- Agent Details — own tab, shown only when Listed by = Agent -->
+    <div id="agentDetailsSection" style="display:none">
+    <div class="lm-section">🧑‍💼 Agent Details</div>
+    <div class="form-row" style="grid-template-columns:1fr 1fr">
+      <div class="form-group">
+        <label class="form-label">Agent Phone</label>
+        <div class="input-icon-wrap">
+          <input class="form-input" type="tel" id="f-agentPhone" inputmode="numeric" maxlength="10" value="9035205230" oninput="this.value=this.value.replace(/\D/g,'').slice(0,10)" />
         </div>
       </div>
+      <div class="form-group">
+        <label class="form-label">Agent Area</label>
+        <input class="form-input" type="text" id="f-agentArea" value="Prashanth B, Singasandra" autocapitalize="words" />
+      </div>
     </div>
-        <div class="lm-section">📍 Property Location</div>
+    </div>
+    <div class="lm-section">📍 Property Location</div>
     <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
-<div class="form-group" style="grid-column:1 / -1">
+      <div class="form-group" style="grid-column:1 / -1">
       <label class="form-label">Property Name</label>
       <input class="form-input" type="text" id="f-title" autocapitalize="words" onblur="capitalizeWordsInput(this)" oninput="capitalizeWordsInput(this)" />
     </div>
-<div class="form-group" id="fullAddressGroup" style="grid-column:1 / -1">
+      <div class="form-group" id="fullAddressGroup" style="grid-column:1 / -1">
         <label class="form-label">Building Live Address</label>
         <div style="display:flex;gap:7px;align-items:stretch">
-          <textarea class="form-input" id="f-fullAddress" autocapitalize="words" rows="1" style="flex:1;min-width:0;resize:none;overflow:hidden" oninput="capitalizeWordsInput(this); onFullAddressInput(this.value)" onfocus="this.dataset.focusVal=this.value" onblur="capitalizeWordsInput(this); if(this.dataset.focusVal!==this.value) onFullAddressBlur(this.value)"></textarea>
-          <button type="button" onclick="fCaptureLocation()"
-            style="flex-shrink:0;padding:9px 12px;border-radius:9px;border:1.5px solid var(--text);background:var(--bg);color:var(--text);font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;white-space:nowrap;height:40px;margin-top:1px">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M1 12h4M19 12h4"/></svg>
-            <span id="f-locBtnTxt">Live</span>
-          </button>
+          <textarea class="form-input" id="f-fullAddress" autocapitalize="words" rows="1" style="flex:1;min-width:0;resize:none;overflow:hidden" oninput="capitalizeWordsInput(this); onFullAddressInput(this.value)" onblur="capitalizeWordsInput(this); onFullAddressBlur(this.value)"></textarea>
+          <button type="button" onclick="fCaptureLocation()" class="loc-act-btn" aria-label="Capture live location" title="Capture live location" style="display:inline-flex;align-items:center;justify-content:center;gap:6px;flex-shrink:0;padding:0 12px;border-radius:9px;border:1.5px solid var(--text);background:var(--bg);color:var(--text);font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M1 12h4M19 12h4"/></svg><span id="f-locBtnTxt" class="loc-btn-txt">Live</span></button>
         </div>
         <div id="f-locStatus" style="font-size:11px;color:var(--text-2);min-height:14px;margin-top:2px"></div>
       </div>
-<div class="form-group" id="latLngGroup">
+      <div class="form-group auto-hidden" id="latLngGroup">
         <label class="form-label">Latitude / Longitude</label>
-        <input class="form-input" type="text" id="f-latLngDisplay" oninput="onLatLngDisplayInput(this.value)" />
+        <input class="form-input" type="text" id="f-latLngDisplay" readonly />
       </div>
-<div class="form-group" id="mapsLinkGroup">
+      <div class="form-group auto-hidden" id="mapsLinkGroup">
         <label class="form-label">Google Maps Link</label>
         <input class="form-input" type="url" id="f-googleMapsLink" />
       </div>
-<div class="form-group">
-        <label class="form-label">Area <span style="color:var(--brand)">*</span></label>
-        <input class="form-input" type="text" id="f-location" autocapitalize="words" onblur="capitalizeWordsInput(this)" oninput="capitalizeWordsInput(this)" />
+      <div class="form-group" id="currentLocGroup" style="grid-column:1 / -1">
+        <label class="form-label">Building Location Link <span style="color:var(--brand)">*</span></label>
+        <div style="display:flex;gap:7px;align-items:stretch">
+          <input class="form-input" style="flex:1;min-width:0" type="url" id="f-currentLocationLink" inputmode="url" autocomplete="off" oninput="this.value=this.value.trim()" onchange="onBuildingLinkChange(this)" onpaste="var t=this;setTimeout(function(){onBuildingLinkChange(t)},0)" />
+          <button type="button" onclick="window.open('https://www.google.com/maps','_blank','noopener')" class="loc-act-btn" aria-label="Open Google Maps" title="Open Google Maps" style="display:inline-flex;align-items:center;justify-content:center;gap:6px;flex-shrink:0;padding:0 12px;border-radius:9px;border:1.5px solid var(--text);background:var(--bg);color:var(--text);font-size:12px;font-weight:700;cursor:pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg><span class="loc-btn-txt">Open Google Maps</span></button>
+          <button type="button" onclick="openCurrentLocLink()" class="loc-act-btn" aria-label="Open in Google Maps" title="Open in Google Maps" style="display:inline-flex;align-items:center;justify-content:center;gap:6px;flex-shrink:0;padding:0 12px;border-radius:9px;border:1.5px solid var(--text);background:var(--bg);color:var(--text);font-size:12px;font-weight:700;cursor:pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg><span class="loc-btn-txt">Navigate</span></button>
+        </div>
       </div>
-<div class="form-group">
+      <div class="form-group">
+        <label class="form-label">Area <span style="color:var(--brand)">*</span></label>
+        <input class="form-input" type="text" id="f-location" autocapitalize="words" oninput="capitalizeWordsInput(this)" onblur="capitalizeWordsInput(this)" />
+      </div>
+      <div class="form-group">
         <label class="form-label">City</label>
         <input class="form-input identity-locked" type="text" id="f-city" value="Bangalore" readonly tabindex="-1" aria-readonly="true" />
       </div>
-<div class="form-group" id="pincodeGroup">
+      <div class="form-group" id="pincodeGroup">
         <label class="form-label">Pincode</label>
         <input class="form-input" type="text" id="f-pincode" inputmode="numeric" maxlength="6" oninput="onPincodeInput(this)"/>
-      </div>
-<div class="form-group" style="grid-column:1 / -1" id="currentLocGroup">
-        <label class="form-label">Building Location Link <span style="color:var(--brand)">*</span></label>
-        <div style="display:flex;gap:7px;align-items:stretch">
-          <input class="form-input" style="flex:1;min-width:0" type="url" id="f-currentLocationLink" inputmode="url" autocomplete="off" oninput="this.value=this.value.trim()" />
-          <button type="button" onclick="window.open('https://www.google.com/maps','_blank','noopener')" class="loc-act-btn" aria-label="Open Google Maps" title="Open Google Maps" style="display:inline-flex;align-items:center;justify-content:center;gap:6px;flex-shrink:0;padding:0 12px;border-radius:9px;border:1.5px solid var(--text);background:var(--bg);color:var(--text);font-size:12px;font-weight:700;cursor:pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg><span class="loc-btn-txt">Open Google Maps</span></button>
-          <button type="button" onclick="openCurrentLocLink()" class="loc-act-btn" aria-label="Open in Google Maps" title="Open in Google Maps" style="display:inline-flex;align-items:center;justify-content:center;gap:6px;flex-shrink:0;padding:0 12px;border-radius:9px;border:1.5px solid var(--text);background:var(--bg);color:var(--text);font-size:12px;font-weight:700;cursor:pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg><span class="loc-btn-txt">Navigate</span></button>
-          
-        </div>
       </div>
     </div>
     </div>
@@ -5246,7 +5265,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
       <div class="form-group" id="f-floorWrap">
         <label class="form-label">Floor</label>
         <select class="form-select" id="f-floor">
-          <option value=""></option>
+          
           <option>0</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option>9</option>
         </select>
       </div>
@@ -5255,9 +5274,14 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
         <input class="form-input" type="text" id="f-flatNo" maxlength="20" autocomplete="off" />
       </div>
       <div class="form-group">
-        <label class="form-label" id="f-areaLabel">Area (Sqft)</label>
+        <label class="form-label" id="f-areaLabel">Area</label>
         <input class="form-input" type="text" inputmode="numeric" id="f-area" onfocus="stripAreaSqft(this)" onblur="formatAreaSqft(this)" oninput="updateSellPricePerSqft()" />
       </div>
+      <!-- Sell-only: clarifies which area figure was just entered above —
+           resale buyers specifically distinguish these and disputes come up
+           when a listing doesn't say which one it means. Shown only for Sell
+           (toggled in onFTypeChange); hidden again for Plot/Land, where the
+           distinction doesn't apply. -->
       <div class="form-group" id="f-areaTypeWrap" style="display:none">
         <label class="form-label">Area Type</label>
         <select class="form-select" id="f-areaType"><option value=""></option><option>Built-up Area</option><option>Carpet Area</option><option>Super Built-up Area</option></select>
@@ -5296,7 +5320,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
         <label class="form-label">Tenant Preference <span style="color:var(--brand)">*</span></label>
         <div class="am-dd" id="tenantDropdown">
           <button type="button" class="am-dd-trigger" onclick="toggleTenantDropdown(event)">
-            <span><span class="am-dd-count" id="tenantDdCount" style="display:none">0</span><span id="tenantDdLabel">Choose tenant preference…</span></span>
+            <span><span class="am-dd-count" id="tenantDdCount" style="display:none">0</span><span id="tenantDdLabel"></span></span>
             <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
           </button>
           <div class="am-dd-panel" id="tenantDdPanel">
@@ -5321,39 +5345,15 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
     </div>
     </div>
 
-    <!-- ===== 4b. BROKERAGE (only when Listed by = Broker) ===== -->
-    <div id="f-brokerageBlock" style="display:none">
-    <div class="lm-section">🤝 Brokerage</div>
-    <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
-      <div class="form-group" id="f-brokerageWrap">
-        <label class="form-label">Brokerage Fee</label>
-        <select class="form-select" id="f-brokerage" onchange="onBrokerageChange()">
-          <option value=""></option>
-          <option value="1 Day rent">1 Day rent</option>
-          <option value="7 Days rent">7 Days rent</option>
-          <option value="10 Days rent">10 Days rent</option>
-          <option value="15 Days rent">15 Days rent</option>
-          <option value="20 Days rent">20 Days rent</option>
-          <option value="1 Month rent">1 Month rent</option>
-          <option value="25% of rent">25% of rent</option>
-          <option value="50% of rent">50% of rent</option>
-          <option value="75% of rent">75% of rent</option>
-          <option value="100% of rent">100% of rent</option>
-          <option value="Fixed amount">Fixed amount</option>
-        </select>
-      </div>
-      <div class="form-group" id="f-brokerageAmountWrap" style="display:none">
-        <label class="form-label">Brokerage Amount</label>
-        <input class="form-input" type="number" id="f-brokerageAmount" min="0">
-      </div>
-    </div>
-    </div>
 
     <!-- ===== 4. PRICING ===== -->
     <div id="addPricingSection">
     <div class="lm-section">💰 Pricing</div>
     <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
       <div class="form-group"><label class="form-label" id="f-rentLabel">Monthly Rent <span style="color:var(--brand)">*</span></label><input class="form-input" type="number" id="f-rent" min="0" max="9999999" oninput="updateSellPricePerSqft()" /></div>
+      <!-- Sell-only, read-only, auto-computed from price ÷ area (same live
+           sanity-check nudge 99acres shows sellers while pricing a resale).
+           readOnly → excluded from the required-field system automatically. -->
       <div class="form-group" id="f-pricePerSqftWrap" style="display:none">
         <label class="form-label">Price Per Sqft</label>
         <input class="form-input" type="text" id="f-pricePerSqft" readonly />
@@ -5371,7 +5371,27 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
       </div>
 	  <div class="form-group" id="f-negotiableWrap">
         <label class="form-label">Price Negotiable</label>
-        <select class="form-select" id="f-negotiable"><option value=""></option><option value="no">No</option><option value="yes">Yes</option></select>
+        <select class="form-select" id="f-negotiable"><option value="no">No</option><option value="yes">Yes</option></select>
+      </div>
+    </div>
+    </div>
+
+    <!-- ===== 4b. BROKERAGE (only when Listed by = Broker) ===== -->
+    <div id="f-brokerageBlock" style="display:none">
+    <div class="lm-section">🤝 Brokerage</div>
+    <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
+      <div class="form-group" id="f-brokerageWrap">
+        <label class="form-label">Brokerage Fee</label>
+        <select class="form-select" id="f-brokerage" onchange="onBrokerageChange()">
+          <option value="50% of rent">50% of rent</option>
+          <option value="75% of rent">75% of rent</option>
+          <option value="100% of rent">100% of rent</option>
+          <option value="Fixed amount">Fixed amount</option>
+        </select>
+      </div>
+      <div class="form-group" id="f-brokerageAmountWrap" style="display:none">
+        <label class="form-label">Brokerage Amount</label>
+        <input class="form-input" type="number" id="f-brokerageAmount" min="0">
       </div>
     </div>
     </div>
@@ -5382,13 +5402,13 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
     <div id="addRentSection">
       <div class="lm-section">📅 Availability &amp; Terms</div>
       <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
-        <div class="form-group"><label class="form-label">Notice Period</label><select class="form-select" id="f-noticePeriod"><option value=""></option><option>15 Days</option><option>1 Month</option><option>2 Months</option><option selected>3 Months</option></select></div>
-        <div class="form-group"><label class="form-label">Contract Term</label><select class="form-select" id="f-leaseDuration"><option value="">Any</option><option>6 Months</option><option>11 Months</option><option selected>12 Months</option><option>24 Months</option><option>36 Months</option><option>48 Months</option><option>48+ Months</option></select></div>
+        <div class="form-group"><label class="form-label">Notice Period</label><select class="form-select" id="f-noticePeriod"><option>15 Days</option><option>1 Month</option><option>2 Months</option><option selected>3 Months</option></select></div>
+        <div class="form-group"><label class="form-label">Contract Term</label><select class="form-select" id="f-leaseDuration"><option>6 Months</option><option>11 Months</option><option selected>12 Months</option><option>24 Months</option><option>36 Months</option><option>48 Months</option><option>48+ Months</option></select></div>
       </div>
       <div class="lm-section">⚖️ Tenant Rules</div>
       <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
-        <div class="form-group"><label class="form-label">Pets Allowed</label><select class="form-select" id="f-petsAllowed"><option value=""></option><option selected>No</option><option>Restricted</option><option>Yes</option></select></div>
-        <div class="form-group"><label class="form-label">Non-Veg Allowed</label><select class="form-select" id="f-nonVegAllowed"><option value=""></option><option>No</option><option selected>Yes</option></select></div>
+        <div class="form-group"><label class="form-label">Pets Allowed</label><select class="form-select" id="f-petsAllowed"><option selected>No</option><option>Restricted</option><option>Yes</option></select></div>
+        <div class="form-group"><label class="form-label">Non-Veg Allowed</label><select class="form-select" id="f-nonVegAllowed"><option>No</option><option selected>Yes</option></select></div>
       </div>
     </div>
 
@@ -5401,133 +5421,16 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
       </div>
       <div class="lm-section">📋 Lease Terms</div>
       <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
-        <div class="form-group"><label class="form-label">Contract Term</label><select class="form-select" id="f-leaseDurationVal"><option value=""></option><option>1 Year</option><option selected>2 Years</option><option>3 Years</option><option>5 Years</option><option>9 Years</option><option>15 Years</option><option>30 Years</option></select></div>
-        <div class="form-group"><label class="form-label">Lease Type</label><select class="form-select" id="f-leaseType"><option value=""></option><option>Commercial</option><option>Industrial</option><option>Mixed Use</option><option>Residential</option></select></div>
-        <div class="form-group"><label class="form-label">Lock-In Period</label><select class="form-select" id="f-lockInPeriod"><option value="">None</option><option>1 Year</option><option>2 Years</option><option>3 Years</option></select></div>
+        <div class="form-group"><label class="form-label">Contract Term</label><select class="form-select" id="f-leaseDurationVal"><option>1 Year</option><option selected>2 Years</option><option>3 Years</option><option>5 Years</option><option>9 Years</option><option>15 Years</option><option>30 Years</option></select></div>
+        <div class="form-group"><label class="form-label">Lease Type</label><select class="form-select" id="f-leaseType"><option>Commercial</option><option>Industrial</option><option>Mixed Use</option><option>Residential</option></select></div>
+        <div class="form-group"><label class="form-label">Lock-In Period</label><select class="form-select" id="f-lockInPeriod"><option>1 Year</option><option>2 Years</option><option>3 Years</option></select></div>
         <div class="form-group"><label class="form-label">Available From</label><input class="form-input" type="date" id="f-leaseAvailableFrom" /></div>
-        <div class="form-group"><label class="form-label">Notice Period</label><select class="form-select" id="f-leaseNoticePeriod"><option value=""></option><option>1 Month</option><option>2 Months</option><option selected>3 Months</option></select></div>
+        <div class="form-group"><label class="form-label">Notice Period</label><select class="form-select" id="f-leaseNoticePeriod"><option>1 Month</option><option>2 Months</option><option selected>3 Months</option></select></div>
       </div>
       <div class="lm-section">⚖️ House Rules</div>
       <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
-        <div class="form-group"><label class="form-label">Pets Allowed</label><select class="form-select" id="f-leasePets"><option value=""></option><option selected>No</option><option>Yes</option></select></div>
-        <div class="form-group"><label class="form-label">Non-Veg Allowed</label><select class="form-select" id="f-leaseNonVeg"><option value=""></option><option>No</option><option selected>Yes</option></select></div>
-      </div>
-    </div>
-
-    <!-- SELL extras -->
-    <div id="addSellSection" style="display:none">
-      <div class="lm-section">🏷️ Sale Details</div>
-      <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
-        <div class="form-group" id="f-sellTotalFloorsWrap">
-          <label class="form-label">Total Floors</label>
-          <select class="form-select" id="f-sellTotalFloors">
-            <option value=""></option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option>9</option><option>10</option><option>10+</option>
-          </select>
-        </div>
-        <div class="form-group" id="f-sellBalconiesWrap">
-          <label class="form-label">Balconies</label>
-          <select class="form-select" id="f-sellBalconies"><option value=""></option><option>0</option><option>1</option><option>2</option><option>3</option><option>4+</option></select>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Ownership Type</label>
-          <select class="form-select" id="f-sellOwnership">
-            <option value=""></option><option>Co-operative Society</option><option>Freehold</option><option>Leasehold</option><option>Power of Attorney</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Possession Status</label>
-          <select class="form-select" id="f-sellPossession"><option value=""></option><option>Ready to Move</option><option>Under Construction</option></select>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Possession Date</label>
-          <input class="form-input" type="date" id="f-sellPossessionDate" />
-        </div>
-        <div class="form-group">
-          <label class="form-label">RERA Registered</label>
-          <select class="form-select" id="f-sellRera"><option value=""></option><option>No</option><option>Yes</option></select>
-        </div>
-        <div class="form-group">
-          <label class="form-label">RERA ID</label>
-          <input class="form-input" type="text" id="f-sellReraId" maxlength="50" />
-        </div>
-      </div>
-
-      <div class="lm-section">🏛️ Legal &amp; Ownership Details</div>
-      <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
-        <div class="form-group">
-          <label class="form-label">Khata Type</label>
-          <select class="form-select" id="f-sellKhataType"><option value="">Select</option><option>A Khata</option><option>B Khata</option><option>Not Applicable</option></select>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Property Tax Paid</label>
-          <select class="form-select" id="f-sellTaxPaid"><option value="">Select</option><option>Yes</option><option>No</option></select>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Loan Status</label>
-          <select class="form-select" id="f-sellLoanStatus"><option value="">Select</option><option>Free &amp; Clear (No Loan)</option><option>Home Loan Cleared Before Sale</option><option>Bank Loan Pending / To Be Transferred</option></select>
-        </div>
-        <div class="form-group" id="f-sellOcAvailableWrap">
-          <label class="form-label">OC Available</label>
-          <select class="form-select" id="f-sellOcAvailable"><option value="">Select</option><option>Yes</option><option>No</option></select>
-        </div>
-        <div class="form-group" id="f-sellCcAvailableWrap">
-          <label class="form-label">CC Available</label>
-          <select class="form-select" id="f-sellCcAvailable"><option value="">Select</option><option>Yes</option><option>No</option></select>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Previous Owners</label>
-          <select class="form-select" id="f-sellPreviousOwners"><option value="">Select</option><option>0 (First Owner)</option><option>1</option><option>2</option><option>3+</option></select>
-        </div>
-        <div class="form-group" style="grid-column:span 2">
-          <label class="form-label">Project Name</label>
-          <input class="form-input" type="text" id="f-sellProjectName" autocapitalize="words" onblur="capitalizeWordsInput(this)" oninput="capitalizeWordsInput(this)" maxlength="120" placeholder="e.g. Prestige Shantiniketan" />
-        </div>
-      </div>
-
-      <div class="lm-section">🧱 Structure &amp; Site Details</div>
-      <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
-        <div class="form-group" id="f-sellFlooringWrap">
-          <label class="form-label">Flooring Type</label>
-          <select class="form-select" id="f-sellFlooring"><option value="">Select</option><option>Vitrified Tiles</option><option>Marble</option><option>Wooden</option><option>Cement</option><option>Mosaic</option></select>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Water Source</label>
-          <select class="form-select" id="f-sellWaterSource"><option value="">Select</option><option>Corporation</option><option>Borewell</option><option>Both</option></select>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Boundary Wall</label>
-          <select class="form-select" id="f-sellBoundaryWall"><option value="">Select</option><option>Full</option><option>Partial</option><option>None</option></select>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Road Width (Ft)</label>
-          <input class="form-input" type="number" min="0" id="f-sellRoadWidth" />
-        </div>
-        <div class="form-group">
-          <label class="form-label">Open Sides</label>
-          <select class="form-select" id="f-sellOpenSides"><option value="">Select</option><option>1</option><option>2</option><option>3</option><option>4</option></select>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Corner Property</label>
-          <select class="form-select" id="f-sellCornerProperty"><option value="">Select</option><option>Yes</option><option>No</option></select>
-        </div>
-        <div class="form-group" style="grid-column:span 3" id="overlookingFormGroup">
-          <label class="form-label">Overlooking</label>
-          <div class="am-dd" id="overlookingDropdown">
-            <button type="button" class="am-dd-trigger" onclick="toggleOverlookingDropdown(event)">
-              <span><span class="am-dd-count" id="overlookingDdCount" style="display:none">0</span><span id="overlookingDdLabel">Choose what it overlooks…</span></span>
-              <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
-            </button>
-            <div class="am-dd-panel" id="overlookingDdPanel">
-              <div class="am-dd-grid" style="grid-template-columns:1fr">
-                <label class="am-dd-item"><input type="checkbox" id="ov-mainroad" onchange="onOverlookingCheck()"/> Main Road</label>
-                <label class="am-dd-item"><input type="checkbox" id="ov-gardenpark" onchange="onOverlookingCheck()"/> Garden / Park</label>
-                <label class="am-dd-item"><input type="checkbox" id="ov-pool" onchange="onOverlookingCheck()"/> Pool</label>
-                <label class="am-dd-item"><input type="checkbox" id="ov-club" onchange="onOverlookingCheck()"/> Club</label>
-              </div>
-            </div>
-          </div>
-          <input type="hidden" id="f-sellOverlooking" />
-        </div>
+        <div class="form-group"><label class="form-label">Pets Allowed</label><select class="form-select" id="f-leasePets"><option selected>No</option><option>Yes</option></select></div>
+        <div class="form-group"><label class="form-label">Non-Veg Allowed</label><select class="form-select" id="f-leaseNonVeg"><option>No</option><option selected>Yes</option></select></div>
       </div>
     </div>
 
@@ -5550,7 +5453,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
         <div class="form-group"><label class="form-label">Attached Bathroom</label><select class="form-select" id="f-pgBathroom"><option>Shared</option><option selected>Yes</option></select></div>
         <div class="form-group"><label class="form-label">Toilet Type</label><select class="form-select" id="f-pgToiletType"><option>Both</option><option>Indian</option><option selected>Western</option></select></div>
         <div class="form-group"><label class="form-label">Occupancy</label><input class="form-input" type="number" id="f-pgOccupancy" /></div>
-        <div class="form-group"><label class="form-label">Room Furnishing</label><select class="form-select" id="f-pgRoomFurnishing"><option value="">Select</option><option>Fully Furnished</option><option>Semi-Furnished</option><option>Unfurnished</option></select></div>
+        <div class="form-group"><label class="form-label">Room Furnishing</label><select class="form-select" id="f-pgRoomFurnishing"><option>Fully Furnished</option><option>Semi-Furnished</option><option>Unfurnished</option></select></div>
         <div class="form-group">
           <label class="form-label">Bike Parking</label>
           <select class="form-select" id="f-pgBikePark">
@@ -5567,18 +5470,18 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
       <div class="lm-section">📅 Availability &amp; Terms</div>
       <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
         <div class="form-group"><label class="form-label">Available From</label><input class="form-input" type="date" id="f-pgAvailableFrom" /></div>
-        <div class="form-group"><label class="form-label">Notice Period</label><select class="form-select" id="f-pgNotice"><option value="">Select</option><option selected>15 Days</option><option>1 Month</option><option>2 Months</option><option>3 Months</option></select></div>
+        <div class="form-group"><label class="form-label">Notice Period</label><select class="form-select" id="f-pgNotice"><option selected>15 Days</option><option>1 Month</option><option>2 Months</option><option>3 Months</option></select></div>
         <div class="form-group"><label class="form-label">Security Deposit</label><input class="form-input" type="number" id="f-pgDeposit" min="0" /></div>
       </div>
       <div class="lm-section">🍽 Meals &amp; Policies</div>
       <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
         <div class="form-group">
           <label class="form-label">Meals Included</label>
-          <select class="form-select" id="f-pgMeals"><option value="">Select</option><option selected>All 3 Meals</option><option>Breakfast Only</option><option>Dinner Only</option><option>Lunch + Dinner</option><option>No Meals</option><option>On Request</option></select>
+          <select class="form-select" id="f-pgMeals"><option selected>All 3 Meals</option><option>Breakfast Only</option><option>Dinner Only</option><option>Lunch + Dinner</option><option>No Meals</option><option>On Request</option></select>
         </div>
-        <div class="form-group"><label class="form-label">Food Type</label><select class="form-select" id="f-pgFoodType"><option value="">Select</option><option>Veg + Non-veg</option><option>Veg Only</option></select></div>
-        <div class="form-group"><label class="form-label">Gate Closing Time</label><select class="form-select" id="f-pgGateTime"><option value="">No Curfew</option><option>9 PM</option><option>10 PM</option><option>11 PM</option></select></div>
-        <div class="form-group"><label class="form-label">Visitor Policy</label><select class="form-select" id="f-pgVisitorPolicy"><option value="">Select</option><option>Allowed</option><option>Lobby Only</option><option>Not Allowed</option></select></div>
+        <div class="form-group"><label class="form-label">Food Type</label><select class="form-select" id="f-pgFoodType"><option>Veg + Non-veg</option><option>Veg Only</option></select></div>
+        <div class="form-group"><label class="form-label">Gate Closing Time</label><select class="form-select" id="f-pgGateTime"><option>9 PM</option><option>10 PM</option><option>11 PM</option></select></div>
+        <div class="form-group"><label class="form-label">Visitor Policy</label><select class="form-select" id="f-pgVisitorPolicy"><option>Allowed</option><option>Lobby Only</option><option>Not Allowed</option></select></div>
       </div>
     </div>
 
@@ -5594,9 +5497,9 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
           <label class="form-label">Room Type</label>
           <select class="form-select" id="f-ssRoomType"><option>Deluxe</option><option>Double</option><option selected>Single</option><option>Suite</option></select>
         </div>
-        <div class="form-group"><label class="form-label">Open 24 Hours</label><select class="form-select" id="f-ss24hrs"><option value="">Select</option><option>No</option><option>Yes</option></select></div>
-        <div class="form-group"><label class="form-label">Free Cancellation</label><select class="form-select" id="f-ssCancellation"><option value="">Select</option><option>24 Hours Before</option><option>48 Hours Before</option><option>Free Till Check-in</option><option>No Cancellation</option></select></div>
-        <div class="form-group"><label class="form-label">Room Furnishing</label><select class="form-select" id="f-ssFurnish"><option value="">Select</option><option>Fully Furnished</option><option>Semi-Furnished</option><option>Unfurnished</option></select></div>
+        <div class="form-group"><label class="form-label">Open 24 Hours</label><select class="form-select" id="f-ss24hrs"><option>No</option><option>Yes</option></select></div>
+        <div class="form-group"><label class="form-label">Free Cancellation</label><select class="form-select" id="f-ssCancellation"><option>24 Hours Before</option><option>48 Hours Before</option><option>Free Till Check-in</option><option>No Cancellation</option></select></div>
+        <div class="form-group"><label class="form-label">Room Furnishing</label><select class="form-select" id="f-ssFurnish"><option>Fully Furnished</option><option>Semi-Furnished</option><option>Unfurnished</option></select></div>
         <div class="form-group">
           <label class="form-label">Bike Parking</label>
           <select class="form-select" id="f-ssBikePark">
@@ -5612,7 +5515,138 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
       </div>
       <div class="lm-section">🪪 Guest Policy</div>
       <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
-        <div class="form-group"><label class="form-label">Couples Allowed</label><select class="form-select" id="f-ssCouples"><option value="">Select</option><option>No</option><option>Yes</option></select></div>
+        <div class="form-group"><label class="form-label">Couples Allowed</label><select class="form-select" id="f-ssCouples"><option>No</option><option>Yes</option></select></div>
+      </div>
+    </div>
+
+    <!-- ===== 6d. SELL-ONLY FIELDS ===== -->
+    <!-- Modeled on the resale-specific fields NoBroker/Housing/99acres all
+         collect on top of the shared Property Details section above
+         (type/BHK/floor/area/age etc. — reused as-is for Sell). -->
+    <div id="addSellSection" style="display:none">
+      <div class="lm-section">🏷️ Sale Details</div>
+      <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
+        <div class="form-group" id="f-sellTotalFloorsWrap">
+          <label class="form-label">Total Floors</label>
+          <select class="form-select" id="f-sellTotalFloors">
+            <option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option>9</option><option>10</option><option>10+</option>
+          </select>
+        </div>
+        <div class="form-group" id="f-sellBalconiesWrap">
+          <label class="form-label">Balconies</label>
+          <select class="form-select" id="f-sellBalconies"><option>0</option><option>1</option><option>2</option><option>3</option><option>4+</option></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Ownership Type</label>
+          <select class="form-select" id="f-sellOwnership">
+            <option>Co-operative Society</option><option>Freehold</option><option>Leasehold</option><option>Power of Attorney</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Possession Status</label>
+          <select class="form-select" id="f-sellPossession"><option>Ready to Move</option><option>Under Construction</option></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Possession Date</label>
+          <input class="form-input" type="date" id="f-sellPossessionDate" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">RERA Registered</label>
+          <select class="form-select" id="f-sellRera"><option>No</option><option>Yes</option></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">RERA ID</label>
+          <input class="form-input" type="text" id="f-sellReraId" maxlength="50" />
+        </div>
+      </div>
+
+      <!-- Legal/trust fields buyers check before anything else on a resale —
+           modeled on the same NoBroker/Housing/99acres comparison. Khata type
+           and property tax status are Bangalore-specific; OC/CC and loan
+           status are asked everywhere. previousOwners and projectName are
+           lower-stakes discovery/trust details, kept optional (see
+           OPTIONAL_FIELD_IDS) since many legit resale listings won't have a
+           tidy answer (old independent houses, no defined "project" name). -->
+      <div class="lm-section">🏛️ Legal &amp; Ownership Details</div>
+      <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
+        <div class="form-group">
+          <label class="form-label">Khata Type</label>
+          <select class="form-select" id="f-sellKhataType"><option>A Khata</option><option>B Khata</option><option>Not Applicable</option></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Property Tax Paid</label>
+          <select class="form-select" id="f-sellTaxPaid"><option value=""></option><option>Yes</option><option>No</option></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Loan Status</label>
+          <select class="form-select" id="f-sellLoanStatus"><option>Free &amp; Clear (No Loan)</option><option>Home Loan Cleared Before Sale</option><option>Bank Loan Pending / To Be Transferred</option></select>
+        </div>
+        <div class="form-group" id="f-sellOcAvailableWrap">
+          <label class="form-label">OC Available</label>
+          <select class="form-select" id="f-sellOcAvailable"><option value=""></option><option>Yes</option><option>No</option></select>
+        </div>
+        <div class="form-group" id="f-sellCcAvailableWrap">
+          <label class="form-label">CC Available</label>
+          <select class="form-select" id="f-sellCcAvailable"><option value=""></option><option>Yes</option><option>No</option></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Previous Owners</label>
+          <select class="form-select" id="f-sellPreviousOwners"><option value=""></option><option>0 (First Owner)</option><option>1</option><option>2</option><option>3+</option></select>
+        </div>
+        <div class="form-group" style="grid-column:span 2">
+          <label class="form-label">Project Name</label>
+          <input class="form-input" type="text" id="f-sellProjectName" autocapitalize="words" onblur="capitalizeWordsInput(this)" oninput="capitalizeWordsInput(this)" maxlength="120" />
+        </div>
+      </div>
+
+      <!-- Structural/site details — same taxonomy 99acres uses (facing road
+           width, boundary wall None/Partial/Full, overlooking). Flooring and
+           OC/CC above don't apply to a vacant plot — hidden alongside the
+           existing BHK/floor/age exemptions in onSellPropertyTypeChange(). -->
+      <div class="lm-section">🧱 Structure &amp; Site Details</div>
+      <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
+        <div class="form-group" id="f-sellFlooringWrap">
+          <label class="form-label">Flooring Type</label>
+          <select class="form-select" id="f-sellFlooring"><option value=""></option><option>Vitrified Tiles</option><option>Marble</option><option>Wooden</option><option>Cement</option><option>Mosaic</option></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Water Source</label>
+          <select class="form-select" id="f-sellWaterSource"><option value=""></option><option>Corporation</option><option>Borewell</option><option>Both</option></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Boundary Wall</label>
+          <select class="form-select" id="f-sellBoundaryWall"><option value=""></option><option>Full</option><option>Partial</option><option>None</option></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Road Width (Ft)</label>
+          <input class="form-input" type="number" min="0" id="f-sellRoadWidth" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Open Sides</label>
+          <select class="form-select" id="f-sellOpenSides"><option value=""></option><option>1</option><option>2</option><option>3</option><option>4</option></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Corner Property</label>
+          <select class="form-select" id="f-sellCornerProperty"><option value=""></option><option>Yes</option><option>No</option></select>
+        </div>
+        <div class="form-group" style="grid-column:span 3" id="overlookingFormGroup">
+          <label class="form-label">Overlooking</label>
+          <div class="am-dd" id="overlookingDropdown">
+            <button type="button" class="am-dd-trigger" onclick="toggleOverlookingDropdown(event)">
+              <span><span class="am-dd-count" id="overlookingDdCount" style="display:none">0</span><span id="overlookingDdLabel"></span></span>
+              <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <div class="am-dd-panel" id="overlookingDdPanel">
+              <div class="am-dd-grid" style="grid-template-columns:1fr">
+                <label class="am-dd-item"><input type="checkbox" id="ov-mainroad" onchange="onOverlookingCheck()"/> Main Road</label>
+                <label class="am-dd-item"><input type="checkbox" id="ov-gardenpark" onchange="onOverlookingCheck()"/> Garden / Park</label>
+                <label class="am-dd-item"><input type="checkbox" id="ov-pool" onchange="onOverlookingCheck()"/> Pool</label>
+                <label class="am-dd-item"><input type="checkbox" id="ov-club" onchange="onOverlookingCheck()"/> Club</label>
+              </div>
+            </div>
+          </div>
+          <input type="hidden" id="f-sellOverlooking" />
+        </div>
       </div>
     </div>
 
@@ -5623,7 +5657,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
       <label class="form-label">Select Amenities</label>
       <div class="am-dd" id="amDropdown">
         <button type="button" class="am-dd-trigger" onclick="toggleAmDropdown(event)">
-          <span><span class="am-dd-count" id="amDdCount" style="display:none">0</span><span id="amDdLabel">Choose amenities…</span></span>
+          <span><span class="am-dd-count" id="amDdCount" style="display:none">0</span><span id="amDdLabel"></span></span>
           <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
         </button>
         <div class="am-dd-panel" id="amDdPanel">
@@ -5667,19 +5701,30 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
       <input class="form-input" type="text" id="f-amenities-extra" autocapitalize="words" onblur="capitalizeWordsInput(this)" oninput="capitalizeWordsInput(this)"/>
     </div>
     </div>
+
+
     <!-- ===== 8. MEDIA & DESCRIPTION ===== -->
     <div id="mediaSection">
     <div class="lm-section" id="mediaSectionHeader">📸 Media &amp; Description</div>
     <div class="form-group" id="videoUrlGroup">
-      <label class="form-label">Video Tour URL</label>
-      <input class="form-input" type="url" id="f-videoUrl" />
+      <label class="form-label">Video Tour</label>
+      <input class="form-input" type="text" inputmode="url" id="f-videoUrl" placeholder="Paste a YouTube / Vimeo link, or upload a video below" oninput="updateVideoUploadUI()" />
+      <div class="img-row" id="videoUploadRow" style="margin-top:8px">
+        <div class="img-btns">
+          <button type="button" class="img-btn-sec" id="f-videoUploadBtn" onclick="document.getElementById('f-videoFileInput').click()">Upload video</button>
+          <button type="button" class="img-btn-sec" id="f-videoRemoveBtn" style="display:none" onclick="removeUploadedVideo()">Remove video</button>
+        </div>
+        <input type="file" id="f-videoFileInput" accept="video/mp4,video/webm,video/quicktime,video/ogg" style="display:none" onchange="uploadListingVideo(this)"/>
+      </div>
+      <div id="f-videoStatus" style="font-size:12px;color:var(--text-3);margin-top:6px"></div>
+      <div id="f-videoPreview" class="f-video-preview" style="display:none"></div>
     </div>
     <div class="form-group" id="imgFormGroup">
       <label class="form-label">Property Images</label>
       <div class="img-row" id="imgAddControls">
         <div class="img-btns">
-          <button type="button" class="img-btn-sec" onclick="document.getElementById('f-imgFileInput').click()">📁 Upload</button>
-          <button type="button" class="img-btn-sec" onclick="document.getElementById('f-imgCameraInput').click()">📷 Camera</button>
+          <button type="button" class="img-btn-sec" onclick="document.getElementById('f-imgFileInput').click()">Upload</button>
+          <button type="button" class="img-btn-sec" onclick="document.getElementById('f-imgCameraInput').click()">Camera</button>
         </div>
         <input type="file" id="f-imgFileInput" accept="image/*" multiple style="display:none" onchange="addImagesFromFiles(this)"/>
         <input type="file" id="f-imgCameraInput" accept="image/*" capture="environment" style="display:none" onchange="addImagesFromFiles(this)"/>
@@ -16850,6 +16895,7 @@ async function clearListingFormPrompt() {
   _listingFormDirty = false;
 }
 function resetListingForm() {
+  lmAccReset();
   document.querySelectorAll('#addModal input:not([type="checkbox"]), #addModal select, #addModal textarea').forEach(el => { el.value = ''; });
   const noticeRent = document.getElementById('f-noticePeriod');
   const noticeLease = document.getElementById('f-leaseNoticePeriod');
@@ -17094,6 +17140,8 @@ function _setAdminListingMode(mode){
     .forEach(el => { el.disabled = isView; });
   // Status is always editable, even in view mode (changing it there flips to edit mode).
   { const _t = document.getElementById('f-type'); if (_t) _t.disabled = false; }
+  // View shows every tab (read-only); Edit goes back to the accordion.
+  if (isView) lmAccExpandAll(); else lmAccReset();
 
   const submitBtn = document.getElementById('listingSubmitBtn');
   if (submitBtn) { submitBtn.disabled = isView; submitBtn.textContent = 'Save changes'; }
@@ -17332,6 +17380,7 @@ function applyImportedProperty(p) {
   }
 
   sv('f-videoUrl', media.video);
+  updateVideoUploadUI();
   sv('f-desc', media.desc);
   if (Array.isArray(media.images) && media.images.length) {
     fImages = media.images.slice();
@@ -17738,7 +17787,9 @@ async function waSubmitMsg() {
 function updateBrokerageFields() {
   const lb = document.getElementById('f-listedBy');
   const blk = document.getElementById('f-brokerageBlock');
-  if (blk) blk.style.display = (lb && lb.value === 'Broker') ? '' : 'none';
+  if (blk) blk.style.display = (lb && (lb.value === 'Broker' || lb.value === 'Agent')) ? '' : 'none';
+  const agentBlk = document.getElementById('agentDetailsSection');
+  if (agentBlk) agentBlk.style.display = (lb && lb.value === 'Agent') ? '' : 'none';
   onBrokerageChange();
 }
 function onBrokerageChange() {
@@ -17748,6 +17799,7 @@ function onBrokerageChange() {
   if (w) w.style.display = (blk && blk.style.display !== 'none' && sel && sel.value === 'Fixed amount') ? '' : 'none';
 }
 function onFTypeChange(val) {
+  setTimeout(lmAccApply, 0);
   updateBrokerageFields();
   waPasteToggle(val);
   const isPG = val === 'PG';
@@ -18450,6 +18502,7 @@ const OPTIONAL_FIELD_IDS = new Set([
   'f-sellPreviousOwners', 'f-sellProjectName', 'f-sellFlooring', 'f-flatNo',
   'f-sellWaterSource', 'f-sellBoundaryWall', 'f-sellRoadWidth',
   'f-sellOpenSides', 'f-sellCornerProperty',
+  'f-ownerAltPhone', 'f-videoFileInput'
 ]);
 function isUnitField(id) { return /Units$/.test(id); }
 function getAllListingFields() {
@@ -18662,7 +18715,194 @@ function confirmListingReview() {
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', setup); else setup();
 })();
 
+/* ═══════════ Ported from index.html: listing-form accordion, video upload, building-link autofill ═══════════ */
+// Admin has its own draft autosave; index's listing form calls this name.
+function queueListingDraftSave() { if (typeof scheduleListingDraftSave === 'function') scheduleListingDraftSave(); }
+
+/* ── Accordion tabs for the listing form ──
+   Each .lm-section heading toggles the fields under it (up to the next heading,
+   walking document order so headings nested in wrapper divs work too). */
+const LM_ACC_SINGLE = true;  // true = opening one tab closes the others
+function lmAccNext(el, root) { while (el && el !== root) { if (el.nextElementSibling) return el.nextElementSibling; el = el.parentElement; } return null; }
+function lmAccBody(h) {
+  const root = document.getElementById('listingFormSections'), out = [];
+  let c = lmAccNext(h, root);
+  while (c) {
+    if (c.classList.contains('lm-section')) break;
+    if (c.querySelector('.lm-section')) { c = c.firstElementChild || lmAccNext(c, root); continue; }
+    out.push(c); c = lmAccNext(c, root);
+  }
+  return out;
+}
+function lmAccHeaders() { return Array.from(document.querySelectorAll('#listingFormSections .lm-section')); }
+function lmAccApply() {
+  lmAccHeaders().forEach((h, i) => {
+    if (!h.dataset.acc) {
+      h.dataset.acc = '1'; h.setAttribute('role', 'button'); h.tabIndex = 0;
+      if (i > 0) h.classList.add('lm-closed');
+    }
+    const closed = h.classList.contains('lm-closed');
+    h.setAttribute('aria-expanded', closed ? 'false' : 'true');
+    lmAccBody(h).forEach(n => n.classList.toggle('lm-acc-hide', closed));
+  });
+}
+function lmAccReset() { lmAccHeaders().forEach(h => { delete h.dataset.acc; h.classList.remove('lm-closed'); }); lmAccApply(); }
+function lmAccExpandAll() { lmAccHeaders().forEach(h => h.classList.remove('lm-closed')); lmAccApply(); }
+function lmAccToggle(h) {
+  if (document.getElementById('addModal').classList.contains('view-mode')) return;
+  const willClose = !h.classList.contains('lm-closed');
+  if (!willClose && LM_ACC_SINGLE) lmAccHeaders().forEach(x => x.classList.add('lm-closed'));
+  h.classList.toggle('lm-closed', willClose);
+  lmAccApply();
+}
+(function () {
+  const root = document.getElementById('listingFormSections');
+  if (!root) return;
+  root.addEventListener('click', e => { const h = e.target.closest('.lm-section'); if (h && root.contains(h)) lmAccToggle(h); });
+  root.addEventListener('keydown', e => {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    const h = e.target.closest('.lm-section'); if (!h || e.target !== h) return;
+    e.preventDefault(); lmAccToggle(h);
+  });
+})();
+
+/* VIDEO TOUR (paste a link OR upload a file) — admin uploads via POST /api/admin/upload-video */
+const LISTING_VIDEO_MAX_MB = 50; // keep in sync with VIDEO_MAX_BYTES in server.js
+const LISTING_VIDEO_TYPES = ['video/mp4', 'video/webm', 'video/quicktime', 'video/ogg'];
+const OWN_VIDEO_PATH_RE = /^\/videos\/[a-f0-9]{24}\.(mp4|webm|mov|ogg)$/i;
+let _videoUploading = false;
+
+function updateVideoUploadUI() {
+  const input = document.getElementById('f-videoUrl');
+  const status = document.getElementById('f-videoStatus');
+  const removeBtn = document.getElementById('f-videoRemoveBtn');
+  const uploadBtn = document.getElementById('f-videoUploadBtn');
+  if (!input || !status) return;
+  if (_videoUploading) return; // progress text is being shown
+  const isUploaded = OWN_VIDEO_PATH_RE.test(input.value.trim());
+  status.textContent = isUploaded ? '✅ Video uploaded' : '';
+  status.style.color = isUploaded ? 'var(--green, #16a34a)' : 'var(--text-3)';
+  if (removeBtn) removeBtn.style.display = isUploaded ? '' : 'none';
+  if (uploadBtn) uploadBtn.textContent = isUploaded ? 'Replace video' : 'Upload video';
+  renderVideoPreview();
+}
+
+// Inline player under the field: plays an uploaded file, or embeds a pasted YouTube/Vimeo/.mp4 link.
+function renderVideoPreview() {
+  const box = document.getElementById('f-videoPreview');
+  const input = document.getElementById('f-videoUrl');
+  if (!box || !input) return;
+  const v = input.value.trim();
+  const abs = v ? safeUrl(v) : '';
+  const html = abs ? buildVideoEmbed(abs) : '';
+  if (!html) { box.style.display = 'none'; box.innerHTML = ''; box.dataset.src = ''; return; }
+  if (box.dataset.src === abs) return; // already showing this one — don't restart playback on every keystroke
+  box.dataset.src = abs;
+  box.innerHTML = html;
+  box.style.display = '';
+}
+
+function removeUploadedVideo() {
+  const input = document.getElementById('f-videoUrl');
+  if (input) input.value = '';
+  updateVideoUploadUI();
+  queueListingDraftSave();
+}
+
+function uploadListingVideo(fileInput) {
+  const file = (fileInput.files || [])[0];
+  fileInput.value = '';
+  if (!file || _videoUploading) return;
+
+  const status = document.getElementById('f-videoStatus');
+  const uploadBtn = document.getElementById('f-videoUploadBtn');
+  const input = document.getElementById('f-videoUrl');
+
+  if (LISTING_VIDEO_TYPES.indexOf(file.type) < 0) {
+    showToast('Please choose an MP4, WebM, MOV or OGG video.', 'error');
+    return;
+  }
+  if (file.size > LISTING_VIDEO_MAX_MB * 1024 * 1024) {
+    showToast('Video is too large. Maximum size is ' + LISTING_VIDEO_MAX_MB + ' MB.', 'error');
+    return;
+  }
+
+  _videoUploading = true;
+  if (uploadBtn) uploadBtn.disabled = true;
+  if (status) { status.style.color = 'var(--text-3)'; status.textContent = 'Uploading… 0%'; }
+
+  const form = new FormData();
+  form.append('video', file);
+
+  // XHR rather than fetch so we can show real upload progress for a large file.
+  const xhr = new XMLHttpRequest();
+  xhr.open('POST', '/api/admin/upload-video');
+  xhr.setRequestHeader('x-admin-key', ADMIN_KEY);
+  xhr.upload.onprogress = function (e) {
+    if (e.lengthComputable && status) status.textContent = 'Uploading… ' + Math.round((e.loaded / e.total) * 100) + '%';
+  };
+  const finish = function (ok, msg) {
+    _videoUploading = false;
+    if (uploadBtn) uploadBtn.disabled = false;
+    if (!ok) {
+      if (status) { status.textContent = ''; }
+      showToast(msg || 'Could not upload the video. Please try again.', 'error');
+    }
+    updateVideoUploadUI();
+    queueListingDraftSave();
+  };
+  xhr.onload = function () {
+    let data = {};
+    try { data = JSON.parse(xhr.responseText); } catch (e) {}
+    if (xhr.status >= 200 && xhr.status < 300 && data.url) {
+      if (input) input.value = data.url;
+      finish(true);
+    } else {
+      finish(false, data.message);
+    }
+  };
+  xhr.onerror = function () { finish(false, 'Network error while uploading the video.'); };
+  xhr.onabort = function () { finish(false, 'Video upload cancelled.'); };
+  xhr.send(form);
+}
+
+
+// Area name from a Nominatim reverse-geocode result (most specific locality first).
+function pickAreaFromGeocode(d) {
+  const a = (d && d.address) || {};
+  return a.suburb || a.neighbourhood || a.residential || a.city_district || a.village || a.quarter || '';
+}
+// Pull lat/lng out of a full Google Maps link (@lat,lng · ?q=lat,lng · ll= · !3d..!4d). Short links can't be read here.
+function coordsFromMapsLink(url) {
+  const m = String(url || '').match(/@(-?\d+\.\d+),(-?\d+\.\d+)/)
+         || String(url || '').match(/[?&](?:q|ll|query|destination)=(-?\d+\.\d+)(?:,|%2C)(-?\d+\.\d+)/)
+         || String(url || '').match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/);
+  return m ? { lat: parseFloat(m[1]), lng: parseFloat(m[2]) } : null;
+}
+// Building Location Link pasted → fill any still-empty address / area / pincode from its coordinates.
+function onBuildingLinkChange(el) {
+  const v = (el.value || '').trim();
+  if (!v || !isGoogleMapsShareLink(v)) return;
+  const c = coordsFromMapsLink(v);
+  if (!c) {
+    if (/goo\.gl|share\.google/i.test(v)) showToast('Details cannot be read from a short link. Please use the Live button or enter the area manually.', 'info');
+    return;
+  }
+  document.getElementById('f-latitude').value = c.lat;
+  document.getElementById('f-longitude').value = c.lng;
+  document.getElementById('f-latLngDisplay').value = c.lat.toFixed(6) + '° N, ' + c.lng.toFixed(6) + '° E';
+  fetch('https://nominatim.openstreetmap.org/reverse?lat=' + c.lat + '&lon=' + c.lng + '&format=json&accept-language=en')
+    .then(r => r.json())
+    .then(d => {
+      const addr = document.getElementById('f-fullAddress'), area = document.getElementById('f-location'), pin = document.getElementById('f-pincode');
+      if (addr && !addr.value.trim()) addr.value = d.display_name || '';
+      if (area && !area.value.trim()) { area.value = pickAreaFromGeocode(d); if (typeof capitalizeWordsInput === 'function') capitalizeWordsInput(area); }
+      if (pin && !pin.value.trim()) pin.value = (d.address && d.address.postcode) || extractPincodeFromAddress(d.display_name);
+    }).catch(() => {});
+}
+
 function validateListingForm() {
+  lmAccExpandAll(); // collapsed fields would otherwise skip required-checks
   clearAllFieldErrors();
   let firstErrorEl = null;
   getAllListingFields().forEach(el => {
@@ -18998,8 +19238,8 @@ async function adminSubmitListing() {
       overlooking:     gv('f-sellOverlooking') || null,
     } : {},
   };
-  // Broker listings only: brokerage fee option (+ amount when "Fixed amount").
-  if (newProp.basic.listedBy === 'Broker') {
+  // Broker and Agent listings: brokerage fee option (+ amount when "Fixed amount").
+  if (newProp.basic.listedBy === 'Broker' || newProp.basic.listedBy === 'Agent') {
     newProp.price.brokerage = gv('f-brokerage') || null;
     newProp.price.brokerageAmount = gv('f-brokerage') === 'Fixed amount' ? (parseInt(gv('f-brokerageAmount')) || null) : null;
   }
@@ -19910,11 +20150,12 @@ markRequiredLabels();
 <script>
 /* Adds data-ico to each listing-form label (icon is drawn by CSS ::before; text is untouched). */
 (function(){
-  var RULES=[["^status$", "tag"], ["^listed by", "briefcase"], ["^owner name|^caretaker", "user"], ["phone|^owner number", "phone"], ["^email", "mail"], ["contact time|gate closing", "clock"], ["lives here", "home"], ["agent area", "pin"], ["^property name", "home"], ["^project name", "building"], ["live address", "pin"], ["latitude", "cross"], ["maps link|location link", "link"], ["^area \\*?$|^area$", "map"], ["^city", "building"], ["^pincode", "hash"], ["flat number", "hash"], ["property type", "building"], ["^bhk", "bed"], ["bike", "bike"], ["car parking", "car"], ["^floor", "stairs"], ["total floors", "stairs"], ["area \\(sqft\\)|price per sqft", "ruler"], ["area type", "ruler"], ["attached bathroom|^bathrooms", "bath"], ["toilet", "toilet"], ["furnishing", "sofa"], ["kitchen|meals|food type", "utensils"], ["^facing", "compass"], ["age of property|available from|possession date", "calendar"], ["tenant preference|gender", "users"], ["max persons|occupancy$|visitor policy|previous owners", "users"], ["monthly rent|lease amount|security deposit|property tax", "rupee"], ["brokerage", "percent"], ["escalation", "trend"], ["maintenance", "wrench"], ["electricity", "bolt"], ["water", "drop"], ["negotiable", "tag"], ["notice period", "bell"], ["contract term|lease type", "file"], ["lock-in", "lock"], ["pets", "paw"], ["non-veg", "drumstick"], ["room type", "bed"], ["open 24", "clock"], ["free cancellation", "shield"], ["couples", "heart"], ["balconies", "balcony"], ["ownership type|possession status", "key"], ["rera registered|oc available|cc available", "filecheck"], ["rera id|khata", "file"], ["loan status", "bank"], ["flooring", "layers"], ["boundary", "fence"], ["road width", "road"], ["open sides", "grid"], ["corner", "corner"], ["overlooking", "eye"], ["^select amenities", "star"], ["^selected amenities", "checklist"], ["^additional amenities", "plus"], ["video", "video"], ["images", "image"], ["^description", "text"]];
+  var RULES=[["^status$", "tag"], ["^listed by", "briefcase"], ["^owner name|^caretaker", "user"], ["phone|^owner (alt )?number", "phone"], ["^email", "mail"], ["contact time|gate closing", "clock"], ["lives here", "home"], ["agent area", "pin"], ["^property name", "home"], ["^project name", "building"], ["live address", "pin"], ["latitude", "cross"], ["maps link|location link", "link"], ["^area \\*?$|^area$", "map"], ["^city", "building"], ["^pincode", "hash"], ["flat number", "hash"], ["property type", "building"], ["^bhk", "bed"], ["bike", "bike"], ["car parking", "car"], ["^floor", "stairs"], ["total floors", "stairs"], ["area \\(sqft\\)|price per sqft", "ruler"], ["area type", "ruler"], ["attached bathroom|^bathrooms", "bath"], ["toilet", "toilet"], ["furnishing", "sofa"], ["kitchen|meals|food type", "utensils"], ["^facing", "compass"], ["age of property|available from|possession date", "calendar"], ["tenant preference|gender", "users"], ["max persons|occupancy$|visitor policy|previous owners", "users"], ["monthly rent|lease amount|security deposit|property tax", "rupee"], ["brokerage", "percent"], ["escalation", "trend"], ["maintenance", "wrench"], ["electricity", "bolt"], ["water", "drop"], ["negotiable", "tag"], ["notice period", "bell"], ["contract term|lease type", "file"], ["lock-in", "lock"], ["pets", "paw"], ["non-veg", "drumstick"], ["room type", "bed"], ["open 24", "clock"], ["free cancellation", "shield"], ["couples", "heart"], ["balconies", "balcony"], ["ownership type|possession status", "key"], ["rera registered|oc available|cc available", "filecheck"], ["rera id|khata", "file"], ["loan status", "bank"], ["flooring", "layers"], ["boundary", "fence"], ["road width", "road"], ["open sides", "grid"], ["corner", "corner"], ["overlooking", "eye"], ["^select amenities", "star"], ["^selected amenities", "checklist"], ["^additional amenities", "plus"], ["video", "video"], ["images", "image"], ["^description", "text"]];
   function apply(){
     document.querySelectorAll('#addModal .form-label').forEach(function(l){
       if(l.hasAttribute('data-ico')) return;
       var t=(l.textContent||'').replace(/\*/g,'').replace(/\s+/g,' ').trim().toLowerCase();
+      if(l.id==='f-areaLabel'){ l.setAttribute('data-ico','ruler'); return; }
       for(var i=0;i<RULES.length;i++){ if(new RegExp(RULES[i][0]).test(t)){ l.setAttribute('data-ico',RULES[i][1]); break; } }
     });
   }
