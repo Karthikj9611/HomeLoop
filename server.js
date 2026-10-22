@@ -910,7 +910,7 @@ const LocationSchema = new mongoose.Schema({
 }, { _id: false });
 
 const OwnerSchema = new mongoose.Schema({
-  propertyName: { type: String, required: true },
+  propertyName: { type: String, default: '' }, // optional — Property Name is no longer mandatory
   name:         { type: String, default: '' },
   phone:        { type: String, default: '' },
   email:        { type: String, default: '' },
@@ -1508,12 +1508,13 @@ function isEmptyValue(v) {
   return v === undefined || v === null || (typeof v === 'string' && v.trim() === '');
 }
 
-// Required for every listing type — propertyName/area/price.rent are already
-// checked (with a type-specific label) right before this runs, so they're
-// deliberately left out here to avoid a duplicate message.
+// Required for every listing type — area/price.rent are already checked (with a
+// type-specific label) right before this runs, so they're deliberately left out
+// here to avoid a duplicate message. Property Name and Building live address
+// are optional; in Property Location only Area, Pincode and the Building
+// Location Link (currentLocationLink) are mandatory.
 const BASE_REQUIRED_FIELDS = [
   ['location.city',     'Location: City'],
-  ['location.address',  'Location: Building live address'],
   ['location.pincode',  'Location: Pincode'],
   ['location.mapLink',  'Location: Google Maps link'],
   ['location.currentLocationLink', 'Current location link'],
@@ -1667,9 +1668,9 @@ app.post('/api/properties', listingLimiter, requireUser, requireOwner, requireVe
                       : status === 'Short Stay' ? 'price.rent (per day rate)'
                       : status === 'For Sale'   ? 'price.rent (expected price)'
                       :                           'price.rent (monthly rent)';
-    if (!fields.owner.propertyName || !fields.location.area ||
+    if (!fields.location.area ||
         fields.price.rent === undefined || fields.price.rent === null || fields.price.rent === '') {
-      return res.status(400).json({ message: `owner.propertyName, location.area, and ${priceLabel} are required.` });
+      return res.status(400).json({ message: `location.area and ${priceLabel} are required.` });
     }
 
     // Fields required only for specific listing types.

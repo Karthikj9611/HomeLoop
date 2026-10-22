@@ -2832,9 +2832,9 @@ self.addEventListener('notificationclick', event => {
                         : status === 'PG'         ? 'price.rent (monthly charge)'
                         : status === 'Short Stay' ? 'price.rent (per day rate)'
                         :                           'price.rent (monthly rent)';
-      if (!fields.owner.propertyName || !fields.location.area ||
+      if (!fields.location.area ||
           fields.price.rent === undefined || fields.price.rent === null || fields.price.rent === '') {
-        return res.status(400).json({ message: `owner.propertyName, location.area, and ${priceLabel} are required.` });
+        return res.status(400).json({ message: `location.area and ${priceLabel} are required.` });
       }
       if (status === 'PG' && (!fields.pg.gender || !fields.pg.room)) {
         return res.status(400).json({ message: 'pg.gender and pg.room are required for PG listings.' });

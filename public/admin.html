@@ -18423,6 +18423,8 @@ async function watermarkImageFile(file) {
    form validation, so the same fields are mandatory here too) ── */
 const OPTIONAL_FIELD_IDS = new Set([
   'f-importFile', 'f-importText',
+  // Property Location: only Area, Pincode and Building Location Link are mandatory
+  'f-title', 'f-fullAddress', 'f-googleMapsLink',
   'f-latitude', 'f-longitude', 'f-latLngDisplay',
   'f-imgFileInput', 'f-imgCameraInput',
   'f-amenities-extra', 'f-desc',   // description is optional (same as index.html)

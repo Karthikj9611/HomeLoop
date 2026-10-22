@@ -19175,6 +19175,8 @@ function fCaptureLocation() {
 // under that field.
 // ═══════════════════════════════════════════════
 const OPTIONAL_FIELD_IDS = new Set([
+  // Property Location: only Area, Pincode and Building Location Link are mandatory
+  'f-title', 'f-fullAddress', 'f-googleMapsLink',
   'f-latitude', 'f-longitude', 'f-latLngDisplay',
   'f-imgFileInput', 'f-imgCameraInput',
   'f-amenities-extra', 'f-desc',   // description is optional
