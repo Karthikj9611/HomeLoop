@@ -2858,6 +2858,54 @@ main.tab-explore .empty-state{display:none !important}
 .toast.toast-error{--toast-accent:#e0393a;--toast-accent-light:#fdeaea}
 .toast.toast-warning{--toast-accent:#d98a1c;--toast-accent-light:#fef4e3}
 .toast.toast-info{--toast-accent:#2f7feb;--toast-accent-light:#eaf2ff}
+/* Toast restyled to match the site's modals: warm peach card, big radius, glowing icon, brand accent.
+   Success now uses the brand accent (like the modals); error / warning / info keep their own colours. */
+.toast.toast-success{--toast-accent:var(--brand,#e03a52);--toast-accent-light:var(--brand-light,#fff0f2);--toast-accent2:#ff8a5c}
+.toast{
+  position:fixed;overflow:hidden;
+  gap:12px;padding:12px 20px 12px 12px;border-radius:20px;border-top:0;
+  background:radial-gradient(120% 160% at 0% 0%,#ffe7de 0%,rgba(255,231,222,0) 62%),linear-gradient(180deg,#fff6f1 0%,#fff 100%);
+  border:1px solid rgba(246,225,215,.95);
+  box-shadow:0 22px 44px -16px rgba(120,30,50,.4),0 4px 14px rgba(0,0,0,.08);
+  font-weight:700;letter-spacing:-.005em;
+}
+.toast::before{
+  content:"";position:absolute;left:0;right:0;top:0;height:3px;
+  background:linear-gradient(90deg,var(--toast-accent2,var(--toast-accent)),var(--toast-accent));
+}
+.toast-icon{
+  width:36px;height:36px;border-radius:50%;background:#fff;
+  box-shadow:0 0 0 4px var(--toast-accent-light,#fff0f2),0 8px 16px -8px var(--toast-accent,#e03a52);
+  margin:2px 2px 2px 4px;
+}
+.toast-icon svg{width:17px;height:17px}
+/* Alert colour themes — same card for every type, but each type has its own clearly different colour (green / red / amber / blue) */
+.toast{
+  background:radial-gradient(120% 160% at 0% 0%,var(--toast-tint,#ffe7de) 0%,rgba(255,255,255,0) 62%),linear-gradient(180deg,var(--toast-base,#fff6f1) 0%,#fff 100%);
+  border-color:var(--toast-border,rgba(246,225,215,.95));
+  box-shadow:0 22px 44px -16px var(--toast-shadow,rgba(120,30,50,.4)),0 4px 14px rgba(0,0,0,.08);
+}
+.toast.toast-success{ /* fresh emerald green */
+  --toast-accent:#12a566;--toast-accent2:#6fdba6;--toast-accent-light:#d9f6e8;
+  --toast-tint:#c2f0d9;--toast-base:#eefbf4;--toast-border:rgba(176,232,203,.95);--toast-shadow:rgba(10,120,75,.38);
+}
+.toast.toast-error{ /* deeper crimson, rosy card */
+  --toast-accent:#d4202f;--toast-accent2:#ff6b6b;--toast-accent-light:#ffdfe3;
+  --toast-tint:#ffc4cc;--toast-base:#fff0f2;--toast-border:rgba(245,190,198,.95);--toast-shadow:rgba(170,20,40,.42);
+}
+.toast.toast-warning{ /* warm amber / honey */
+  --toast-accent:#e07b00;--toast-accent2:#ffc247;--toast-accent-light:#ffecc8;
+  --toast-tint:#ffdca0;--toast-base:#fff6e2;--toast-border:rgba(247,216,160,.95);--toast-shadow:rgba(170,100,10,.4);
+}
+.toast.toast-info{ /* soft indigo-blue, same blue as the Lease option */
+  --toast-accent:#3f6fe0;--toast-accent2:#8aa8ff;--toast-accent-light:#dfe8ff;
+  --toast-tint:#c9d9ff;--toast-base:#eef3ff;--toast-border:rgba(196,212,250,.95);--toast-shadow:rgba(50,80,180,.36);
+}
+/* All alert types use the same emerald green theme; only the icon differs per type */
+.toast.toast-success,.toast.toast-error,.toast.toast-warning,.toast.toast-info{
+  --toast-accent:#12a566;--toast-accent2:#6fdba6;--toast-accent-light:#d9f6e8;
+  --toast-tint:#c2f0d9;--toast-base:#eefbf4;--toast-border:rgba(176,232,203,.95);--toast-shadow:rgba(10,120,75,.38);
+}
 
 
 /* ─── Backdrop for panels ──────────────────────── */
