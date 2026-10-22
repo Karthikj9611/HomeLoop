@@ -1,3 +1,4 @@
+const ACCT_OWNER_SIDE = ['owner', 'broker', 'agent', 'builder']; // account types that can list properties (agent/builder are assigned by admin)
 const mongoose  = require('mongoose');
 const crypto    = require('crypto');
 const bcrypt    = require('bcryptjs');
@@ -1372,7 +1373,7 @@ self.addEventListener('notificationclick', event => {
         subscriptionFrom: { $ne: null, $lte: now },
         subscriptionTo:   { $ne: null, $gt: now },
         subscriptionStartHandled: { $ne: true },
-        accountType: { $nin: ['owner', 'broker'] },
+        accountType: { $nin: ACCT_OWNER_SIDE },
         isBlocked: { $ne: true },
       }).select('_id').lean();
       for (const { _id } of due) {
@@ -1405,7 +1406,7 @@ self.addEventListener('notificationclick', event => {
       let mobile = String(b.mobile || '').replace(/\D/g, '');
       if (mobile.length > 10 && mobile.startsWith('0'))  mobile = mobile.slice(1);
       if (mobile.length > 10 && mobile.startsWith('91')) mobile = mobile.slice(-10);
-      const accountType = (b.accountType === 'owner' || b.accountType === 'broker') ? b.accountType : 'customer';
+      const accountType = (ACCT_OWNER_SIDE.includes(b.accountType)) ? b.accountType : 'customer';
 
       if (!firstName) return res.status(400).json({ message: 'First name is required.' });
       if (!/^\d{10}$/.test(mobile)) return res.status(400).json({ message: 'Enter a valid 10-digit mobile number.' });
@@ -1668,7 +1669,7 @@ self.addEventListener('notificationclick', event => {
     byUser.forEach((meta, uid) => {
       const u = userMap[uid];
       const _rawType = (u ? u.accountType : meta.snapType);
-      const accountType = (_rawType === 'owner' || _rawType === 'broker') ? 'owner' : 'customer';
+      const accountType = (ACCT_OWNER_SIDE.includes(_rawType)) ? 'owner' : 'customer';
       const row = {
         _id:           uid,
         userId:        u ? (u.userId || '') : '',
@@ -1750,7 +1751,7 @@ self.addEventListener('notificationclick', event => {
       const reason = String((req.body && req.body.reason) || '').trim();
       const user = await findUserByMobileOrId(req.params.mobile);
       if (!user) return res.status(404).json({ message: 'Customer not found' });
-      const allowed = (user.accountType === 'owner' || user.accountType === 'broker') ? OWNER_REASONS : TENANT_REASONS;
+      const allowed = (ACCT_OWNER_SIDE.includes(user.accountType)) ? OWNER_REASONS : TENANT_REASONS;
       if (reason && !allowed.includes(reason)) return res.status(400).json({ message: 'Invalid reason' });
       user.reason = reason;
       await user.save();
@@ -3577,7 +3578,7 @@ self.addEventListener('notificationclick', event => {
                 name: u.name || [u.firstName, u.lastName].filter(Boolean).join(' ').trim(),
                 mobile: u.mobile || '',
                 email: u.email || '',
-                accountType: (u.accountType === 'owner' || u.accountType === 'broker') ? 'owner' : 'customer',
+                accountType: (ACCT_OWNER_SIDE.includes(u.accountType)) ? 'owner' : 'customer',
                 propertiesViewed: viewedBy.get(String(u._id)) || 0,
               } : { removed: true })
             : null,

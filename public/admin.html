@@ -3708,6 +3708,8 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
         <option value="customer">Tenant / Customer</option>
         <option value="owner">Owner</option>
         <option value="broker">Broker</option>
+        <option value="agent">Agent</option>
+        <option value="builder">Builder</option>
       </select>
     </div>
     <div class="share-links-footer">
@@ -3916,6 +3918,12 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
       </button>
       <button class="cat-tab-btn" data-type="broker" onclick="switchCustType('broker')">
         <i class="fas fa-user-tie"></i><span class="cat-tab-btn-label" data-mobile="Brokers">Brokers</span><span class="cat-count" id="cust-type-count-broker">—</span>
+      </button>
+      <button class="cat-tab-btn" data-type="agent" onclick="switchCustType('agent')">
+        <i class="fas fa-user-check"></i><span class="cat-tab-btn-label" data-mobile="Agents">Agents</span><span class="cat-count" id="cust-type-count-agent">—</span>
+      </button>
+      <button class="cat-tab-btn" data-type="builder" onclick="switchCustType('builder')">
+        <i class="fas fa-helmet-safety"></i><span class="cat-tab-btn-label" data-mobile="Builders">Builders</span><span class="cat-count" id="cust-type-count-builder">—</span>
       </button>
       <button class="cat-tab-btn" data-type="propowner" onclick="switchCustType('propowner')" title="Owners taken from the Properties section">
         <i class="fas fa-building-user"></i><span class="cat-tab-btn-label" data-mobile="Prop. Owners">Property Owners</span><span class="cat-count" id="cust-type-count-propowner">—</span>
@@ -5747,6 +5755,9 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
 </div>
 
 <script>
+const ACCT_LABELS = { owner:'Owner', broker:'Broker', agent:'Agent', builder:'Builder', customer:'Tenant' };
+function acctLabel(t){ return ACCT_LABELS[t] || 'Tenant'; }
+const ACCT_OWNER_SIDE = ['owner', 'broker', 'agent', 'builder']; // account types that can list properties (agent/builder are assigned by admin)
 
 let dataTable, propTable, apptTable, honestReviewsTable, userReviewsTable, partnersTable, brokersTable, referralsTable;
 
@@ -7628,7 +7639,7 @@ let _custStatusTab = 'active';   // status: active | leads | rented | subscripti
 try{
   const t = localStorage.getItem('kr_admin_custType');
   const st = localStorage.getItem('kr_admin_custStatus');
-  if(t === 'customer' || t === 'owner' || t === 'broker' || t === 'propowner') _custTypeTab = t;
+  if(t === 'customer' || ACCT_OWNER_SIDE.includes(t) || t === 'propowner') _custTypeTab = t;
   else if(t === 'leads' || t === 'rented' || t === 'subscription'){ _custTypeTab = 'customer'; _custStatusTab = t; } // migrate old saved tab
   if(st === 'active' || st === 'leads' || st === 'rented' || st === 'subscription' || st === 'all') _custStatusTab = st;
 }catch(e){}
@@ -7652,10 +7663,10 @@ function custRowStatus(r){
   if(isRentedRow(r)) return 'rented';
   return 'active';
 }
-function custRowType(r){ return (r && r.accountType === 'owner') ? 'owner' : (r && r.accountType === 'broker') ? 'broker' : 'customer'; }
+function custRowType(r){ return (r && ACCT_OWNER_SIDE.includes(r.accountType)) ? r.accountType : 'customer'; }
 function syncCustTabActive(){
   // Owners don't need subscriptions: hide the Subscription status tab on the Owners tab
-  const _hideSub = _custTypeTab === 'owner' || _custTypeTab === 'broker';
+  const _hideSub = ACCT_OWNER_SIDE.includes(_custTypeTab);
   if(_hideSub && (_custStatusTab === 'subscription' || _custStatusTab === 'rented' || _custStatusTab === 'leads')){ _custStatusTab = 'active'; try{ localStorage.setItem('kr_admin_custStatus','active'); }catch(e){} if(typeof dataTable !== 'undefined' && dataTable) dataTable.draw(); }
   const _subBtn = document.querySelector('#custStatusTabs .cat-tab-btn[data-status="subscription"]');
   if(_subBtn) _subBtn.classList.toggle('po-hidden', _hideSub);
@@ -7697,7 +7708,7 @@ let _custCountsData = [];
 function updateCustTypeCounts(data){
   if(data) _custCountsData = data; else data = _custCountsData;
   // Level 1: every record of that account type, whatever its status.
-  const t = {customer:0, owner:0, broker:0, all:data.length};
+  const t = {customer:0, owner:0, broker:0, agent:0, builder:0, all:data.length};
   // Level 2: records of the currently selected account type, by status.
   const st = {active:0, leads:0, rented:0, subscription:0, all:0};
   data.forEach(r=>{
@@ -8038,7 +8049,7 @@ function statusBadge(s){
   return `<span class="status-badge ${map[s]||'status-sale'}">${escapeHtml(s)||'—'}</span>`;
 }
 function accountTypeBadge(t){
-  if(t === 'broker') return `<span class="status-badge status-acct-broker">Broker</span>`;
+  if(t === 'broker' || t === 'agent' || t === 'builder') return `<span class="status-badge status-acct-broker">${acctLabel(t)}</span>`;
   const isOwner = t === 'owner';
   return `<span class="status-badge ${isOwner?'status-acct-owner':'status-acct-customer'}">${isOwner?'Owner':'Customer'}</span>`;
 }
@@ -8500,7 +8511,7 @@ window.openCustomerEditModal = function(key){
   document.getElementById('ceLastName').value = last;
   document.getElementById('ceMobile').value = String(c.mobile || '').replace(/\D/g,'').slice(-10);
   document.getElementById('ceEmail').value = c.email || '';
-  document.getElementById('ceAccountType').value = (c.accountType === 'owner' || c.accountType === 'broker') ? c.accountType : 'customer';
+  document.getElementById('ceAccountType').value = (ACCT_OWNER_SIDE.includes(c.accountType)) ? c.accountType : 'customer';
   document.getElementById('customerEditModal').classList.add('open');
   lockBodyScroll();
 };
@@ -8638,8 +8649,8 @@ window.resetUserViews = async function(id){
 window.toggleUserPublicCall = async function(id, checkboxEl, accountType){
   if(blockIfViewOnly('customers')){ checkboxEl.checked = !checkboxEl.checked; return; }
   const desired = checkboxEl.checked;
-  const isOwner = accountType === 'owner' || accountType === 'broker';
-  const who = accountType === 'broker' ? 'broker' : (accountType === 'owner' ? 'owner' : 'tenant');
+  const isOwner = ACCT_OWNER_SIDE.includes(accountType);
+  const who = isOwner ? accountType : 'tenant';
   const ok = await showConfirmModal({
     title: desired ? `Enable public call for this ${who}?` : `Disable public call for this ${who}?`,
     message: isOwner
@@ -8913,7 +8924,7 @@ function urStars(n){
   n = Math.max(0, Math.min(5, Number(n) || 0));
   return `<span style="color:#f5a623;letter-spacing:1px">${'★'.repeat(n)}</span><span style="color:#d9d9d9;letter-spacing:1px">${'★'.repeat(5-n)}</span> <span class="prop-sub">${n}/5</span>`;
 }
-function urTypeLabel(t){ return (t === 'owner' || t === 'broker') ? 'Owner' : 'Tenant'; }
+function urTypeLabel(t){ return (ACCT_OWNER_SIDE.includes(t)) ? 'Owner' : 'Tenant'; }
 
 window.filterUserReviews = function(v){
   if(!userReviewsTable) return;
@@ -11758,7 +11769,7 @@ const REASON_COLORS = {
 };
 function reasonColor(r){ return r ? (REASON_COLORS[r] || '#64748b') : ''; }
 function reasonCellHtml(id, value, type, accountType){
-  let list = REASON_PRESETS[(type === 'customer' && (accountType === 'owner' || accountType === 'broker')) ? 'owner' : type] || [];
+  let list = REASON_PRESETS[(type === 'customer' && (ACCT_OWNER_SIDE.includes(accountType))) ? 'owner' : type] || [];
   const cur = value || '';
   const listedLocked = (type === 'propowner' && cur !== 'Available' && cur !== 'Listed');   // Listed is only reachable from Available
   const optHtml = (o, sel) => `<option value="${escapeHtml(o)}" style="color:${reasonColor(o)};font-weight:600"${sel?' selected':''}>${escapeHtml(o)}</option>`;
@@ -12191,7 +12202,7 @@ $(document).ready(function(){
 				  <i class="fas fa-eye"></i><span class="btn-label"> View</span>
 				</button></span>
 
-				<span class="pact pact-whatsapp"><button class="btn-view btn-action-wa" onclick="openCustomerWhatsApp('${row.mobile || row._id}')" title="Open a WhatsApp chat with this ${row.accountType === 'owner' ? 'owner' : row.accountType === 'broker' ? 'broker' : 'tenant'}">
+				<span class="pact pact-whatsapp"><button class="btn-view btn-action-wa" onclick="openCustomerWhatsApp('${row.mobile || row._id}')" title="Open a WhatsApp chat with this ${(ACCT_OWNER_SIDE.includes(row.accountType) ? row.accountType : 'tenant')}">
 				  <i class="fab fa-whatsapp"></i><span class="btn-label"> WhatsApp</span>
 				</button></span>
 
@@ -12199,7 +12210,7 @@ $(document).ready(function(){
 				  <i class="fas fa-pen"></i><span class="btn-label"> Edit</span>
 				</button></span>
 
-				${(row.accountType === 'owner' || row.accountType === 'broker') ? '' : `<span class="pact pact-subscription"><button class="btn-view btn-action-sub${(row.subscriptionFrom || row.subscriptionAt) ? ' is-set' : ''}" onclick="openSubscriptionModal('${row.mobile || row._id}')" title="${(row.subscriptionFrom || row.subscriptionAt) ? 'Subscribed: ' + plainDateTime(row.subscriptionFrom || row.subscriptionAt) + (row.subscriptionTo ? ' → ' + plainDateTime(row.subscriptionTo) : '') + ((row.subscriptions || []).length > 1 ? '  (' + row.subscriptions.length + ' subscriptions — click to view / add)' : '  (click to add another)') : 'Set subscription From – To'}">
+				${(ACCT_OWNER_SIDE.includes(row.accountType)) ? '' : `<span class="pact pact-subscription"><button class="btn-view btn-action-sub${(row.subscriptionFrom || row.subscriptionAt) ? ' is-set' : ''}" onclick="openSubscriptionModal('${row.mobile || row._id}')" title="${(row.subscriptionFrom || row.subscriptionAt) ? 'Subscribed: ' + plainDateTime(row.subscriptionFrom || row.subscriptionAt) + (row.subscriptionTo ? ' → ' + plainDateTime(row.subscriptionTo) : '') + ((row.subscriptions || []).length > 1 ? '  (' + row.subscriptions.length + ' subscriptions — click to view / add)' : '  (click to add another)') : 'Set subscription From – To'}">
 				  <i class="fas fa-calendar-check"></i><span class="btn-label"> Subscription</span>
 				</button></span>`}
 
@@ -12219,10 +12230,10 @@ $(document).ready(function(){
 				  <i class="fas fa-rotate-left"></i><span class="btn-label"> Reset views</span>
 				</button></span>
 
-				<span class="pact pact-publiccall"><label class="mini-toggle-wrap altcall-wrap" title="${row.accountType==='broker' ? 'When ON, all of this broker\'s listings show their number(s) to every visitor' : row.accountType==='owner' ? 'When ON, all of this owner\'s listings show their owner number(s) to every visitor' : 'When ON, this tenant sees owner numbers on all listings while logged in'}"><span class="mini-toggle altcall-toggle">
-				  <input type="checkbox" ${row.publicCall?'checked':''} ${canAct('customers')?'':'disabled'} onchange="toggleUserPublicCall('${row._id}',this,'${row.accountType==='owner'?'owner':row.accountType==='broker'?'broker':'customer'}')">
+				<span class="pact pact-publiccall"><label class="mini-toggle-wrap altcall-wrap" title="${ACCT_OWNER_SIDE.includes(row.accountType) ? 'When ON, all of this ' + row.accountType + '\u2019s listings show their number(s) to every visitor' : 'When ON, this tenant sees owner numbers on all listings while logged in'}"><span class="mini-toggle altcall-toggle">
+				  <input type="checkbox" ${row.publicCall?'checked':''} ${canAct('customers')?'':'disabled'} onchange="toggleUserPublicCall('${row._id}',this,'${ACCT_OWNER_SIDE.includes(row.accountType)?row.accountType:'customer'}')">
 				  <span class="slider"></span>
-				</span><span class="altcall-label">${row.accountType==='owner' ? 'Owner public call' : row.accountType==='broker' ? 'Broker public call' : 'Tenant public call'}</span></label></span>
+				</span><span class="altcall-label">${acctLabel(row.accountType)} public call</span></label></span>
 
 			  </div>
 			`;
@@ -13208,7 +13219,7 @@ $(document).ready(function(){
       { data:'accountType', className:'dt-body-center', render:(d,t)=>{
           const label = urTypeLabel(d);
           if(t!=='display') return label;
-          return `<span class="status-badge ${(d==='owner'||d==='broker')?'status-acct-owner':'status-acct-customer'}">${label}</span>`;
+          return `<span class="status-badge ${(ACCT_OWNER_SIDE.includes(d))?'status-acct-owner':'status-acct-customer'}">${label}</span>`;
       }},
       /* 3 – Rating */
       { data:'rating', render:(d,t)=> t==='display' ? urStars(d) : (Number(d)||0) },
@@ -16264,8 +16275,8 @@ async function openTodayRegistrationsModal(){
       .filter(u => u && u.createdAt && new Date(u.createdAt) >= t0)
       .sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
     _trList = {
-      tenants: today.filter(u => u.accountType !== 'owner' && u.accountType !== 'broker'),
-      owners:  today.filter(u => u.accountType === 'owner' || u.accountType === 'broker'),
+      tenants: today.filter(u => !ACCT_OWNER_SIDE.includes(u.accountType)),
+      owners:  today.filter(u => ACCT_OWNER_SIDE.includes(u.accountType)),
     };
     setCount(today.length);
     _trTab = _trList.tenants.length || !_trList.owners.length ? 'tenants' : 'owners';
@@ -16537,7 +16548,7 @@ async function openSiteVisitorsModal(scope){
     out.total = Math.max(0, out.total - dupes); out.shown = merged.length;
     merged.forEach(v => {
       if(!v.user) out.guests.push(v);
-      else if(v.user.accountType === 'owner' || v.user.accountType === 'broker') out.owners.push(v);
+      else if(ACCT_OWNER_SIDE.includes(v.user.accountType)) out.owners.push(v);
       else out.tenants.push(v);   // deleted accounts (user.removed) land here, shown as "Deleted user"
     });
     _sv = out;

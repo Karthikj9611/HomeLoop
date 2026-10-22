@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <script>
+const ACCT_OWNER_SIDE = ['owner', 'broker', 'agent', 'builder']; // account types that can list properties (agent/builder are assigned by admin)
 /* Contact picker button: shown on phones/tablets, hidden ONLY on desktop. */
 (function(){
   try{
@@ -6932,7 +6933,7 @@ main.tab-explore .empty-state{display:none !important}
       <div class="form-group">
         <label class="form-label">Listed By</label>
         <select class="form-select" id="f-listedBy" onchange="updateBrokerageFields()">
-          <option>Agent</option><option>Broker</option><option selected>Owner</option>
+          <option>Agent</option><option>Broker</option><option>Builder</option><option selected>Owner</option>
         </select>
       </div>
     </div>
@@ -9482,7 +9483,7 @@ function renderViewersModal(data) {
     return;
   }
 
-  const roleBadge = (accountType) => (accountType === 'owner' || accountType === 'broker')
+  const roleBadge = (accountType) => (ACCT_OWNER_SIDE.includes(accountType))
     ? '<span class="viewer-role-badge-inline role-owner" title="Property owner"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-8 9 8"/><path d="M9 21v-8h6v8"/></svg></span>'
     : '<span class="viewer-role-badge-inline role-customer" title="Tenant"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg></span>';
 
@@ -10692,7 +10693,7 @@ function lockPanelHtml() {
 }
 function showPlansFromSwipe() {
   const u = getLoggedInUser();
-  openChargesModal(u && u.accountType === 'broker' ? 'broker' : u && u.accountType === 'owner' ? 'owner' : 'tenant');
+  openChargesModal(u && (u.accountType === 'broker' || u.accountType === 'agent') ? 'broker' : u && ACCT_OWNER_SIDE.includes(u.accountType) ? 'owner' : 'tenant');
 }
 function slideSwipe(uid, dir) {
   const c = document.getElementById(uid);
@@ -13736,7 +13737,7 @@ function openDetailReal(id) {
   } else { _locRow.style.display = 'none'; }
   // Owner accounts don't need to schedule a visit or WhatsApp-contact through
   // the property view — those actions are for prospective tenants only.
-  const viewerIsOwner = (() => { const u = getLoggedInUser(); return !!u && (u.accountType === 'owner' || u.accountType === 'broker'); })();
+  const viewerIsOwner = (() => { const u = getLoggedInUser(); return !!u && (ACCT_OWNER_SIDE.includes(u.accountType)); })();
   document.getElementById('viewScheduleBtn').style.display = viewerIsOwner ? 'none' : '';
   document.getElementById('viewWhatsappBtn').style.display = '';
   const visitBadge = document.getElementById('modal-visit-count');
@@ -14730,15 +14731,17 @@ function unlockIdentityFieldsForEdit() {
     if (hint) hint.style.display = 'none';
   });
 }
-/* "Listed by": broker accounts are locked to Broker; owner accounts can pick any option. */
+/* "Listed by": locked to the logged-in account's own type (owner/broker/agent/builder). */
+const LISTED_BY_BY_ACCOUNT = { owner: 'Owner', broker: 'Broker', agent: 'Agent', builder: 'Builder' };
 function lockListedByToAccount() {
   const u = getLoggedInUser();
   const sel = document.getElementById('f-listedBy');
   if (!u || !sel) return;
-  if (u.accountType === 'broker') {
-    sel.value = 'Broker';
+  const locked = LISTED_BY_BY_ACCOUNT[u.accountType];
+  if (locked) {
+    sel.value = locked;
     sel.disabled = true;
-    sel.title = 'Broker accounts can only list as Broker';
+    sel.title = 'Your account can only list as ' + locked;
   } else {
     sel.disabled = false;
     sel.title = '';
@@ -15076,7 +15079,7 @@ function openProfileModal() {
   document.getElementById('profileTileMobile').textContent = user.mobile || '—';
   // Tenants ('customer' accounts) can't own listings, so the "Listings" tab
   // has nothing to show them — same owner-only gate as updateListPropertyVisibility().
-  const canList = (user.accountType === 'owner' || user.accountType === 'broker');
+  const canList = (ACCT_OWNER_SIDE.includes(user.accountType));
   const listingsTabEl = document.getElementById('profileTabListings');
   if (listingsTabEl) listingsTabEl.style.display = canList ? '' : 'none';
   document.getElementById('profileModal').classList.add('open');
@@ -15144,7 +15147,7 @@ function availableDateInfo(available) {
 const COORDINATOR_PHONE = '9035205230';
 function isOwnerViewer() {
   const u = getLoggedInUser();
-  return !!u && (u.accountType === 'owner' || u.accountType === 'broker');
+  return !!u && (ACCT_OWNER_SIDE.includes(u.accountType));
 }
 
 function getLoggedInUser() {
@@ -15322,7 +15325,7 @@ function updateNavAuth() {
 // set. Called on load and again on every login/logout.
 function updateAdBannerAudience() {
   const user = getLoggedInUser();
-  const audience = !user ? 'all' : ((user.accountType === 'owner' || user.accountType === 'broker') ? 'owner' : 'tenant');
+  const audience = !user ? 'all' : ((ACCT_OWNER_SIDE.includes(user.accountType)) ? 'owner' : 'tenant');
   document.querySelectorAll('#adTrack .ad-slide[data-audience]').forEach(el => {
     el.style.display = (audience === 'all' || el.dataset.audience === audience) ? '' : 'none';
   });
@@ -15340,7 +15343,7 @@ function updateAdBannerAudience() {
   if (typeof window.refreshAdBannerCarousel === 'function') window.refreshAdBannerCarousel();
 }
 function updateListPropertyVisibility(user) {
-  const canList = !user || (user.accountType === 'owner' || user.accountType === 'broker');
+  const canList = !user || (ACCT_OWNER_SIDE.includes(user.accountType));
   const display = canList ? '' : 'none';
   ['fabAdd', 'bottomTabAdd', 'fabInlineAdd', 'menuManageLabel', 'menuListRent', 'menuListLease']  /* menuListPG / menuListSell intentionally excluded: stay hidden (see PG_ENABLED / SELL_ENABLED) */
     .forEach(id => { const el = document.getElementById(id); if (el) el.style.display = display; });
@@ -16250,7 +16253,7 @@ function openPaymentModal(purpose, propertyId, propertyLabel) {
 
   // Owner paying the brokerage fee: skip the tenant-style "Payment for"
   // picker and rent math entirely — it's always a flat fixed charge.
-  const isOwnerBrokerage = !!user && (user.accountType === 'owner' || user.accountType === 'broker') && (purpose || 'brokerage') === 'brokerage';
+  const isOwnerBrokerage = !!user && (ACCT_OWNER_SIDE.includes(user.accountType)) && (purpose || 'brokerage') === 'brokerage';
   // Tells ensureCurrentPaymentRequest() whether the "Payment for" category
   // (rent/lease/pg/other) is meaningful for this flow — the server uses it to
   // cross-check the amount, so we must not send a stale category value left
@@ -17309,7 +17312,7 @@ function openChargesModal(tab, fromLink) {
 }
 function showChargesModal(tab, fromLink) {
   const user = getLoggedInUser();
-  const acct = !user ? null : (user.accountType === 'broker' ? 'broker' : user.accountType === 'owner' ? 'owner' : 'tenant');
+  const acct = !user ? null : ((user.accountType === 'broker' || user.accountType === 'agent') ? 'broker' : ACCT_OWNER_SIDE.includes(user.accountType) ? 'owner' : 'tenant');
   // Which tabs this viewer sees:
   //  - opened from a shared link (?charges=...): only the shared audience (Notice rides along with Tenants)
   //  - logged-in tenant: Tenants + Notice | owner: Owners only | broker: Brokers only
@@ -17342,7 +17345,7 @@ function shareChargesLink() {
   var tab = _chargesTab || 'tenant';
   // A signed-in sharer always sends their own audience's charges (tenants may also send the Notice tab).
   var _u = getLoggedInUser();
-  if (_u) tab = _u.accountType === 'broker' ? 'broker' : _u.accountType === 'owner' ? 'owner' : (tab === 'notice' ? 'notice' : 'tenant');
+  if (_u) tab = (_u.accountType === 'broker' || _u.accountType === 'agent') ? 'broker' : ACCT_OWNER_SIDE.includes(_u.accountType) ? 'owner' : (tab === 'notice' ? 'notice' : 'tenant');
   var url = window.location.origin + '/?charges=' + tab;
   var titles = { tenant: 'Direct Plan & Managed Plan', owner: 'Direct Plan & Managed Plan', broker: 'Direct Plan & Managed Plan', notice: 'Payment Safety Notice' };
   var title = (titles[tab] || 'Direct Plan & Managed Plan') + ' - HomeLoop';
@@ -17374,8 +17377,8 @@ function togglePlan(id) {
 function switchChargesAudience(which) {
   _chargesTab = which;
   const user = getLoggedInUser();
-  const isOwner = !!user && (user.accountType === 'owner' || user.accountType === 'broker');
-  const isTenant = !!user && (user.accountType !== 'owner' && user.accountType !== 'broker');
+  const isOwner = !!user && (ACCT_OWNER_SIDE.includes(user.accountType));
+  const isTenant = !!user && (!ACCT_OWNER_SIDE.includes(user.accountType));
   ['tenant', 'owner', 'broker', 'notice'].forEach(k => {
     document.getElementById('chargesTabBtn-' + k).classList.toggle('active', k === which);
   });
@@ -18147,7 +18150,7 @@ function reviewRole(rv) {
   // before this field existed will have neither, so they fall into 'other'.
   const rawRole = rv.accountType || rv.userType || rv.role || '';
   const r = String(rawRole).toLowerCase();
-  if (r === 'owner' || r === 'broker') return 'owner';
+  if (ACCT_OWNER_SIDE.includes(r)) return 'owner';
   if (r === 'customer') return 'tenant';
   return 'other';
 }

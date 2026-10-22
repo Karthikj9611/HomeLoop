@@ -123,7 +123,7 @@ const UserSchema = new mongoose.Schema({
   // Which of the two signup paths the person picked — drives what admin sees
   // and can later drive customer- vs owner-specific UI. Defaults to
   // 'customer' for any pre-existing accounts created before this field existed.
-  accountType: { type: String, enum: ['customer', 'owner', 'broker'], default: 'customer' },
+  accountType: { type: String, enum: ['customer', 'owner', 'broker', 'agent', 'builder'], default: 'customer' },
   // Manual admin approval gate. Every account starts false on signup; an
   // admin flips it true from the Customers grid (see PATCH /api/users/:id/verify
   // in admin.js). requireVerified (below) blocks all user "submit" routes
@@ -347,11 +347,13 @@ async function requireUser(req, res, next) {
   }
 }
 
-// Broker accounts can list as 'Broker' only (decided here, never by the client).
-// Owner accounts may pick any "Listed by" option, so this returns null for them.
+// "Listed by" is locked to the account type (decided here, never by the client):
+// owner → Owner, broker → Broker, agent → Agent, builder → Builder.
+const ACCT_OWNER_SIDE = ['owner', 'broker', 'agent', 'builder']; // account types that can list properties (agent/builder are assigned by admin)
+const LISTED_BY_FOR_ACCOUNT = { owner: 'Owner', broker: 'Broker', agent: 'Agent', builder: 'Builder' };
 async function requiredListedBy(userId) {
   const u = await User.findById(userId).select('accountType').lean();
-  return (u && u.accountType === 'broker') ? 'Broker' : null;
+  return (u && LISTED_BY_FOR_ACCOUNT[u.accountType]) || null;
 }
 
 // Runs after requireUser. Blocks tenants (accountType 'customer') from
@@ -359,8 +361,8 @@ async function requiredListedBy(userId) {
 async function requireOwner(req, res, next) {
   try {
     const user = await User.findById(req.userId).select('accountType').lean();
-    if (!user || (user.accountType !== 'owner' && user.accountType !== 'broker')) {
-      return res.status(403).json({ message: 'Only property owner or broker accounts can list a property.' });
+    if (!user || !LISTED_BY_FOR_ACCOUNT[user.accountType]) {
+      return res.status(403).json({ message: 'Only property owner, broker, agent or builder accounts can list a property.' });
     }
     next();
   } catch (err) {
@@ -1875,7 +1877,7 @@ app.get('/api/properties', attachUserIfPresent, async (req, res) => {
     // 1) Owner switch: listings posted by an owner account with publicCall on are public to EVERYONE.
     //    (Direct query on the small set of switched-on owners — cheaper than an $in over every listing owner.)
     const _pubOwners = new Set(
-      (await User.find({ publicCall: true, accountType: { $in: ['owner', 'broker'] } }).select('_id').lean()).map(u => String(u._id))
+      (await User.find({ publicCall: true, accountType: { $in: ACCT_OWNER_SIDE } }).select('_id').lean()).map(u => String(u._id))
     );
     if (_pubOwners.size) {
       docs.forEach(d => {
@@ -2073,7 +2075,7 @@ app.post('/api/properties/:id/view', viewLimiter, attachUserIfPresent, async (re
               $set: {
                 userName: viewer.name || '',
                 userPhoto: viewer.profilePhoto || '',
-                userAccountType: (viewer.accountType === 'owner' || viewer.accountType === 'broker') ? 'owner' : 'customer',
+                userAccountType: (ACCT_OWNER_SIDE.includes(viewer.accountType)) ? 'owner' : 'customer',
                 lastViewedAt: new Date(),
               },
               $setOnInsert: { firstViewedAt: new Date() },
@@ -2708,7 +2710,7 @@ const reviewSchema = new mongoose.Schema({
   userKey:     { type: String, required: true, index: true },
   userName:    { type: String, required: true },
   userPhoto:   { type: String, trim: true, default: '' },
-  accountType: { type: String, enum: ['customer', 'owner', 'broker'], default: 'customer' },
+  accountType: { type: String, enum: ['customer', 'owner', 'broker', 'agent', 'builder'], default: 'customer' },
   rating:      { type: Number, required: true, min: 1, max: 5 },
   text:        { type: String, required: true, maxlength: 500 },
   createdAt:   { type: Date, default: Date.now }
@@ -3323,7 +3325,7 @@ app.post('/api/payments/request', paymentLimiter, requireUser, requireVerified, 
     // those are self-declared figures with no ground truth to validate against,
     // and rely on the admin's manual verification against the bank/UPI statement.
     const user = await User.findById(req.userId).select('accountType').lean();
-    if (purpose === 'brokerage' && user && (user.accountType === 'owner' || user.accountType === 'broker')) {
+    if (purpose === 'brokerage' && user && (ACCT_OWNER_SIDE.includes(user.accountType))) {
       // Flat fixed charge — the frontend locks this field to 2000 and never
       // lets an owner edit it, so ignore whatever the client sent and use
       // the known-correct figure instead of merely validating it.
