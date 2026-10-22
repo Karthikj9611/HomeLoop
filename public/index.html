@@ -19348,6 +19348,22 @@ function openListingReview(submitFnName) {
   _reviewRows = [];
   const body = document.getElementById('listingReviewBody');
   body.innerHTML = '';
+  // Read-only preview of the listing as it will appear (new listings only; admin submit has its own payload).
+  let host = body;
+  if (submitFnName === 'submitListing' && !editingPropertyId) {
+    lockListedByToAccount();
+    const pv = buildListingPayload();
+    if (!pv) return; // invalid phone — toast already shown
+    body.appendChild(buildListingPreviewEl(pv));
+    const det = document.createElement('details');
+    det.style.cssText = 'margin-top:14px';
+    const sum = document.createElement('summary');
+    sum.textContent = 'Edit details';
+    sum.style.cssText = 'cursor:pointer;font-size:13px;font-weight:700;color:var(--brand);padding:8px 0';
+    det.appendChild(sum);
+    body.appendChild(det);
+    host = det;
+  }
   const sections = Array.from(document.querySelectorAll('#listingFormSections .lm-section'));
   const fields = Array.from(document.querySelectorAll(
     '#listingFormSections input[id^="f-"], #listingFormSections select[id^="f-"], #listingFormSections textarea[id^="f-"]'
@@ -19357,7 +19373,7 @@ function openListingReview(submitFnName) {
   const imgsChanged = !!snap && (snap.imgs.length !== (typeof fImages !== 'undefined' ? fImages.length : 0) || snap.imgs.some((x, i) => x !== fImages[i]));
   document.getElementById('listingReviewSub').textContent = snap
     ? 'Only the details you changed are listed. You can still edit them here before saving.'
-    : 'Check every detail. You can edit any value here before submitting.';
+    : 'Preview of your listing. Check it, then confirm to submit.';
   let lastSec = null;
   changedFields.forEach(el => {
     let sec = null;
@@ -19366,7 +19382,7 @@ function openListingReview(submitFnName) {
       const h = document.createElement('div');
       h.textContent = sec.textContent.trim();
       h.style.cssText = 'font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--brand);margin:16px 0 4px';
-      body.appendChild(h);
+      host.appendChild(h);
       lastSec = sec;
     }
     const row = document.createElement('div');
@@ -19396,24 +19412,45 @@ function openListingReview(submitFnName) {
     ctl.style.cssText = 'width:100%;min-width:0';
     // Locked fields (read-only / disabled) and the listing type stay display-only here.
     if (el.readOnly || el.disabled || el.id === 'f-type') { ctl.disabled = true; ctl.style.opacity = '.7'; }
-    row.appendChild(lab); row.appendChild(ctl); body.appendChild(row);
+    row.appendChild(lab); row.appendChild(ctl); host.appendChild(row);
     _reviewRows.push({ el, ctl });
   });
   if (snap && !changedFields.length && !imgsChanged) {
     const none = document.createElement('div');
     none.textContent = 'No details were changed.';
     none.style.cssText = 'padding:22px 0;font-size:13px;color:var(--text-2);text-align:center';
-    body.appendChild(none);
+    host.appendChild(none);
   }
   if ((!snap || imgsChanged) && (Array.isArray(window.fImages) || typeof fImages !== 'undefined')) {
     const n = (typeof fImages !== 'undefined' && Array.isArray(fImages)) ? fImages.length : 0;
     const row = document.createElement('div');
     row.style.cssText = 'display:grid;grid-template-columns:minmax(110px,170px) 1fr;gap:10px;align-items:center;padding:8px 0';
     row.innerHTML = '<div style="font-size:12.5px;font-weight:600;color:var(--text-2)">Property images</div><div style="font-size:13px;color:var(--text)">' + n + ' added <span style="color:var(--text-2)">(change them in the form)</span></div>';
-    body.appendChild(row);
+    host.appendChild(row);
   }
   document.getElementById('listingReviewModal').classList.add('open');
   body.scrollTop = 0;
+}
+function buildListingPreviewEl(p) {
+  const wrap = document.createElement('div');
+  const imgs = (p.media && p.media.images) || [];
+  const rent = (p.price && p.price.rent) || 0;
+  const st = (p.basic && p.basic.status) || '';
+  const unit = st === 'For Sale' ? '' : (st === 'Short Stay' ? ' / day' : ' / month');
+  const loc = p.location || {};
+  const title = (p.owner && p.owner.propertyName) || '';
+  const hero = imgs.length ? '<img src="' + esc(imgs[0]) + '" alt="" style="width:100%;height:200px;object-fit:cover;display:block">'
+    : '<div style="height:120px;display:flex;align-items:center;justify-content:center;color:var(--text-2);font-size:13px">No image</div>';
+  wrap.innerHTML =
+    '<div style="border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-top:12px">' + hero +
+    '<div style="padding:12px 14px">' +
+      '<div style="font-size:15px;font-weight:700;color:var(--text)">' + esc(title) + '</div>' +
+      '<div style="font-size:12.5px;color:var(--text-2);margin-top:2px">' + esc([st, loc.area, loc.city].filter(Boolean).join(' · ')) + '</div>' +
+      '<div style="font-size:18px;font-weight:800;color:var(--brand);margin-top:6px">₹' + Number(rent).toLocaleString('en-IN') + unit + '</div>' +
+      (imgs.length > 1 ? '<div style="font-size:11.5px;color:var(--text-2);margin-top:4px">' + imgs.length + ' images</div>' : '') +
+    '</div></div>' +
+    '<div style="margin-top:12px">' + buildDetailTable(p) + '</div>';
+  return wrap;
 }
 function closeListingReview() {
   document.getElementById('listingReviewModal').classList.remove('open');
@@ -19460,7 +19497,7 @@ function confirmListingReview() {
 /* ── Accordion tabs for the listing form ──
    Each .lm-section heading toggles the fields under it (up to the next heading,
    walking document order so headings nested in wrapper divs work too). */
-const LM_ACC_SINGLE = false; // true = opening one tab closes the others
+const LM_ACC_SINGLE = true;  // true = opening one tab closes the others
 function lmAccNext(el, root) { while (el && el !== root) { if (el.nextElementSibling) return el.nextElementSibling; el = el.parentElement; } return null; }
 function lmAccBody(h) {
   const root = document.getElementById('listingFormSections'), out = [];
@@ -19539,15 +19576,9 @@ function validateListingForm() {
   return firstErrorEl;
 }
 
-function submitListing() {
-  lockListedByToAccount();
-  const firstError = validateListingForm();
-  if (firstError) {
-    showToast('Please fill in all required fields', 'warning');
-    firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    if (typeof firstError.focus === 'function') firstError.focus();
-    return;
-  }
+// Builds the nested submission payload from the form (shared by the review preview and the real submit).
+// Returns null (after toasting) if a phone number is invalid.
+function buildListingPayload() {
   const title = document.getElementById('f-title').value.trim();
   const rent = document.getElementById('f-rent').value;
   const loc = document.getElementById('f-location').value.trim();
@@ -19555,7 +19586,7 @@ function submitListing() {
   const ownerPhone = document.getElementById('f-ownerPhone').value.trim();
 /*  if (!title || !rent || !loc || !ownerName || !ownerPhone) {
     showToast('Please fill in title, rent, location and owner details', 'warning');
-    return;
+    return null;
   }
 */
 
@@ -19564,22 +19595,22 @@ function submitListing() {
 
   if (ownerPhone && !isValidIndianMobile(ownerPhone)) {
     showToast('Enter a valid 10-digit owner phone number starting with 6, 7, 8 or 9', 'warning');
-    return;
+    return null;
   }
   const ownerAltPhone = gv('f-ownerAltPhone');
   if (!ownerAltPhone || !isValidIndianMobile(ownerAltPhone)) {
     showToast('Enter a valid 10-digit owner number starting with 6, 7, 8 or 9', 'warning');
-    return;
+    return null;
   }
   const ownerCaretakerPhone = gv('f-ownerCaretakerPhone');
   if (ownerCaretakerPhone && !isValidIndianMobile(ownerCaretakerPhone)) {
     showToast('Enter a valid 10-digit caretaker number starting with 6, 7, 8 or 9', 'warning');
-    return;
+    return null;
   }
   const agentPhone = gv('f-agentPhone');
   if (agentPhone && !isValidIndianMobile(agentPhone)) {
     showToast('Enter a valid 10-digit agent phone number starting with 6, 7, 8 or 9', 'warning');
-    return;
+    return null;
   }
 
   const amenitiesSelected = AM_LIST.filter(([id]) => gb(id)).map(([id, label, unitId]) => {
@@ -19812,6 +19843,20 @@ function submitListing() {
       overlooking:     gv('f-sellOverlooking') || null,
     } : {},
   };
+  return newProp;
+}
+
+function submitListing() {
+  lockListedByToAccount();
+  const firstError = validateListingForm();
+  if (firstError) {
+    showToast('Please fill in all required fields', 'warning');
+    firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    if (typeof firstError.focus === 'function') firstError.focus();
+    return;
+  }
+  const newProp = buildListingPayload();
+  if (!newProp) return;
 
   // ── POST (new listing) or PUT (editing an existing one) to backend ──
   const isEditing = !!editingPropertyId;
