@@ -6949,8 +6949,8 @@ main.tab-explore .empty-state{display:none !important}
         <input class="form-input" type="text" id="f-ownerName" autocapitalize="words" onblur="capitalizeWordsInput(this)" oninput="capitalizeWordsInput(this)"/>
         <div class="identity-locked-hint" id="f-ownerName-hint" style="display:none">Auto-filled from your account</div>
       </div>
-      <div class="form-group owner-phone-hidden" id="f-ownerPhone-group">
-        <label class="form-label">Phone Number <span style="color:var(--brand)">*</span></label>
+      <div class="form-group" id="f-ownerPhone-group">
+        <label class="form-label">Owner Number <span style="color:var(--brand)">*</span></label>
         <div class="input-icon-wrap">
           <input class="form-input" type="tel" id="f-ownerPhone" inputmode="numeric" maxlength="10" oninput="sanitizeMobileInput(this)"/>
           <button type="button" class="contact-pick-btn" id="f-ownerPhone-pickBtn" onclick="pickContactFromDevice('f-ownerPhone','f-ownerName')" title="Pick from contacts">
@@ -6960,7 +6960,7 @@ main.tab-explore .empty-state{display:none !important}
         <div class="identity-locked-hint" id="f-ownerPhone-hint" style="display:none">Auto-filled from your account</div>
       </div>
       <div class="form-group">
-        <label class="form-label">Owner Number</label>
+        <label class="form-label">Owner Alt Number</label>
         <div class="input-icon-wrap">
           <input class="form-input" type="tel" id="f-ownerAltPhone" inputmode="numeric" maxlength="10" oninput="sanitizeMobileInput(this)"/>
           <button type="button" class="contact-pick-btn" onclick="pickContactFromDevice('f-ownerAltPhone')" title="Pick from contacts">
@@ -7029,6 +7029,14 @@ main.tab-explore .empty-state{display:none !important}
         <label class="form-label">Google Maps Link</label>
         <input class="form-input" type="url" id="f-googleMapsLink" />
       </div>
+      <div class="form-group" id="currentLocGroup" style="grid-column:1 / -1">
+        <label class="form-label">Building Location Link <span style="color:var(--brand)">*</span></label>
+        <div style="display:flex;gap:7px;align-items:stretch">
+          <input class="form-input" style="flex:1;min-width:0" type="url" id="f-currentLocationLink" inputmode="url" autocomplete="off" oninput="this.value=this.value.trim()" onchange="onBuildingLinkChange(this)" onpaste="var t=this;setTimeout(function(){onBuildingLinkChange(t)},0)" />
+          <button type="button" onclick="window.open('https://www.google.com/maps','_blank','noopener')" class="loc-act-btn" aria-label="Open Google Maps" title="Open Google Maps" style="display:inline-flex;align-items:center;justify-content:center;gap:6px;flex-shrink:0;padding:0 12px;border-radius:9px;border:1.5px solid var(--text);background:var(--bg);color:var(--text);font-size:12px;font-weight:700;cursor:pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg><span class="loc-btn-txt">Open Google Maps</span></button>
+          <button type="button" onclick="openCurrentLocLink()" class="loc-act-btn" aria-label="Open in Google Maps" title="Open in Google Maps" style="display:inline-flex;align-items:center;justify-content:center;gap:6px;flex-shrink:0;padding:0 12px;border-radius:9px;border:1.5px solid var(--text);background:var(--bg);color:var(--text);font-size:12px;font-weight:700;cursor:pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg><span class="loc-btn-txt">Navigate</span></button>
+        </div>
+      </div>
       <div class="form-group">
         <label class="form-label">Area <span style="color:var(--brand)">*</span></label>
         <input class="form-input" type="text" id="f-location" autocapitalize="words" oninput="capitalizeWordsInput(this)" onblur="capitalizeWordsInput(this)" />
@@ -7040,14 +7048,6 @@ main.tab-explore .empty-state{display:none !important}
       <div class="form-group" id="pincodeGroup">
         <label class="form-label">Pincode</label>
         <input class="form-input" type="text" id="f-pincode" inputmode="numeric" maxlength="6" oninput="onPincodeInput(this)"/>
-      </div>
-      <div class="form-group" id="currentLocGroup" style="grid-column:1 / -1">
-        <label class="form-label">Building Location Link <span style="color:var(--brand)">*</span></label>
-        <div style="display:flex;gap:7px;align-items:stretch">
-          <input class="form-input" style="flex:1;min-width:0" type="url" id="f-currentLocationLink" inputmode="url" autocomplete="off" oninput="this.value=this.value.trim()" onchange="onBuildingLinkChange(this)" onpaste="var t=this;setTimeout(function(){onBuildingLinkChange(t)},0)" />
-          <button type="button" onclick="window.open('https://www.google.com/maps','_blank','noopener')" class="loc-act-btn" aria-label="Open Google Maps" title="Open Google Maps" style="display:inline-flex;align-items:center;justify-content:center;gap:6px;flex-shrink:0;padding:0 12px;border-radius:9px;border:1.5px solid var(--text);background:var(--bg);color:var(--text);font-size:12px;font-weight:700;cursor:pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg><span class="loc-btn-txt">Open Google Maps</span></button>
-          <button type="button" onclick="openCurrentLocLink()" class="loc-act-btn" aria-label="Open in Google Maps" title="Open in Google Maps" style="display:inline-flex;align-items:center;justify-content:center;gap:6px;flex-shrink:0;padding:0 12px;border-radius:9px;border:1.5px solid var(--text);background:var(--bg);color:var(--text);font-size:12px;font-weight:700;cursor:pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg><span class="loc-btn-txt">Navigate</span></button>
-        </div>
       </div>
     </div>
     </div>
@@ -7204,14 +7204,6 @@ main.tab-explore .empty-state{display:none !important}
       <div class="form-group" id="f-brokerageWrap">
         <label class="form-label">Brokerage Fee</label>
         <select class="form-select" id="f-brokerage" onchange="onBrokerageChange()">
-          <option value=""></option>
-          <option value="1 Day rent">1 Day rent</option>
-          <option value="7 Days rent">7 Days rent</option>
-          <option value="10 Days rent">10 Days rent</option>
-          <option value="15 Days rent">15 Days rent</option>
-          <option value="20 Days rent">20 Days rent</option>
-          <option value="1 Month rent">1 Month rent</option>
-          <option value="25% of rent">25% of rent</option>
           <option value="50% of rent">50% of rent</option>
           <option value="75% of rent">75% of rent</option>
           <option value="100% of rent">100% of rent</option>
@@ -14697,27 +14689,26 @@ function applyAvailableFromDates(isNew) {
 }
 function lockIdentityFieldsForNewListing() {
   const user = getLoggedInUser();
-  if (!user) return;
+  const nameEl = document.getElementById('f-ownerName'), phoneEl = document.getElementById('f-ownerPhone'), mailEl = document.getElementById('f-ownerEmail');
+  [nameEl, phoneEl, mailEl].forEach(el => { if (!el) return; el.readOnly = false; el.classList.remove('identity-locked'); });
+  // Prefill owner name / number / email from the login for OWNER and BROKER accounts only.
+  // Agent and builder accounts enter these themselves (they list on others' behalf). Always editable.
+  if (!user || (user.accountType !== 'owner' && user.accountType !== 'broker')) return;
   const fullName = `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.name || '';
-
-  // Owner name and email are prefilled from the account for convenience but
-  // stay editable — a listing is often posted on someone else's behalf (a
-  // broker, a family member), so neither should be locked to whoever is
-  // logged in.
-  const prefillOnly = [
-    ['f-ownerName', fullName],
-    ['f-ownerEmail', user.email || '']
-  ];
-  prefillOnly.forEach(([id, val]) => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    if (!el.value.trim()) el.value = val;
-    el.readOnly = false;
-    el.classList.remove('identity-locked');
-  });
-  // Owner phone field is hidden: it always carries the logged-in number.
-  const phoneEl = document.getElementById('f-ownerPhone');
-  if (phoneEl) phoneEl.value = String(user.mobile || '').replace(/\D/g, '').slice(-10);
+  const fillIfBlank = (el, v) => { if (el && !el.value.trim() && v) el.value = v; };
+  const tenDigits = (m) => String(m || '').replace(/\D/g, '').slice(-10);
+  fillIfBlank(nameEl, fullName);
+  fillIfBlank(phoneEl, tenDigits(user.mobile));
+  fillIfBlank(mailEl, user.email || '');
+  // Cached login data can be stale or incomplete — fill anything still blank from the server.
+  if (user.userKey && [nameEl, phoneEl, mailEl].some(el => el && !el.value.trim())) {
+    fetch('/api/user/me', { headers: userAuthHeaders() }).then(r => r.ok ? r.json() : null).then(d => {
+      if (!d) return;
+      fillIfBlank(nameEl, `${d.firstName || ''} ${d.lastName || ''}`.trim() || d.name || '');
+      fillIfBlank(phoneEl, tenDigits(d.mobile));
+      fillIfBlank(mailEl, d.email || '');
+    }).catch(() => {});
+  }
 }
 function unlockIdentityFieldsForEdit() {
   ['f-ownerName', 'f-ownerPhone', 'f-ownerEmail'].forEach(id => {
@@ -14850,7 +14841,8 @@ function applyImportedProperty(p) {
     sv('f-negotiable', (price.negotiable || '').toLowerCase() === 'yes' ? 'yes' : (price.negotiable || '').toLowerCase() === 'no' ? 'no' : '');
     onMaintenanceChange();
   }
-  sv('f-brokerage', price.brokerage);
+  // Older listings used day-based fees — show the equivalent percentage (15 days = 50%, 1 month = 100%).
+  sv('f-brokerage', ({ '15 Days rent': '50% of rent', '1 Month rent': '100% of rent' })[price.brokerage] || price.brokerage);
   sv('f-brokerageAmount', price.brokerageAmount);
   updateBrokerageFields();
 
@@ -15166,6 +15158,8 @@ async function refreshVerificationStatus() {
     if (!fresh) return; // logged out while this was in flight
     fresh.isVerified = !!data.isVerified;
     fresh.accountType = data.accountType || fresh.accountType;
+    fresh.mobile = data.mobile || fresh.mobile;
+    fresh.email = data.email || fresh.email;
     localStorage.setItem('homeloop_user', JSON.stringify(fresh));
     checkPlanExpired(data);
     checkPlanActivated(data);
@@ -19277,7 +19271,7 @@ const OPTIONAL_FIELD_IDS = new Set([
   'f-imgFileInput', 'f-imgCameraInput',
   'f-amenities-extra', 'f-desc',   // description is optional
   'f-videoUrl', 'f-age', 'f-area',
-  'f-ownerCaretakerPhone', 'f-ownerEmail', 'f-areaType', 'f-maxPersons', 'f-kitchenType',   // optional
+  'f-ownerAltPhone', 'f-ownerCaretakerPhone', 'f-ownerEmail', 'f-areaType', 'f-maxPersons', 'f-kitchenType',   // optional
   'f-maintenance', 'f-leaseMaintenance',
   'f-sellPossessionDate', 'f-sellReraId', 'f-pricePerSqft',
   // Sell-only trust/detail fields kept optional — same reasoning as
@@ -21258,7 +21252,7 @@ body{
 <script>
 /* Adds data-ico to each listing-form label (icon is drawn by CSS ::before; text is untouched). */
 (function(){
-  var RULES=[["^status$", "tag"], ["^listed by", "briefcase"], ["^owner name|^caretaker", "user"], ["phone|^owner number", "phone"], ["^email", "mail"], ["contact time|gate closing", "clock"], ["lives here", "home"], ["agent area", "pin"], ["^property name", "home"], ["^project name", "building"], ["live address", "pin"], ["latitude", "cross"], ["maps link|location link", "link"], ["^area \\*?$|^area$", "map"], ["^city", "building"], ["^pincode", "hash"], ["flat number", "hash"], ["property type", "building"], ["^bhk", "bed"], ["bike", "bike"], ["car parking", "car"], ["^floor", "stairs"], ["total floors", "stairs"], ["area \\(sqft\\)|price per sqft", "ruler"], ["area type", "ruler"], ["attached bathroom|^bathrooms", "bath"], ["toilet", "toilet"], ["furnishing", "sofa"], ["kitchen|meals|food type", "utensils"], ["^facing", "compass"], ["age of property|available from|possession date", "calendar"], ["tenant preference|gender", "users"], ["max persons|occupancy$|visitor policy|previous owners", "users"], ["monthly rent|lease amount|security deposit|property tax", "rupee"], ["brokerage", "percent"], ["escalation", "trend"], ["maintenance", "wrench"], ["electricity", "bolt"], ["water", "drop"], ["negotiable", "tag"], ["notice period", "bell"], ["contract term|lease type", "file"], ["lock-in", "lock"], ["pets", "paw"], ["non-veg", "drumstick"], ["room type", "bed"], ["open 24", "clock"], ["free cancellation", "shield"], ["couples", "heart"], ["balconies", "balcony"], ["ownership type|possession status", "key"], ["rera registered|oc available|cc available", "filecheck"], ["rera id|khata", "file"], ["loan status", "bank"], ["flooring", "layers"], ["boundary", "fence"], ["road width", "road"], ["open sides", "grid"], ["corner", "corner"], ["overlooking", "eye"], ["^select amenities", "star"], ["^selected amenities", "checklist"], ["^additional amenities", "plus"], ["video", "video"], ["images", "image"], ["^description", "text"]];
+  var RULES=[["^status$", "tag"], ["^listed by", "briefcase"], ["^owner name|^caretaker", "user"], ["phone|^owner (alt )?number", "phone"], ["^email", "mail"], ["contact time|gate closing", "clock"], ["lives here", "home"], ["agent area", "pin"], ["^property name", "home"], ["^project name", "building"], ["live address", "pin"], ["latitude", "cross"], ["maps link|location link", "link"], ["^area \\*?$|^area$", "map"], ["^city", "building"], ["^pincode", "hash"], ["flat number", "hash"], ["property type", "building"], ["^bhk", "bed"], ["bike", "bike"], ["car parking", "car"], ["^floor", "stairs"], ["total floors", "stairs"], ["area \\(sqft\\)|price per sqft", "ruler"], ["area type", "ruler"], ["attached bathroom|^bathrooms", "bath"], ["toilet", "toilet"], ["furnishing", "sofa"], ["kitchen|meals|food type", "utensils"], ["^facing", "compass"], ["age of property|available from|possession date", "calendar"], ["tenant preference|gender", "users"], ["max persons|occupancy$|visitor policy|previous owners", "users"], ["monthly rent|lease amount|security deposit|property tax", "rupee"], ["brokerage", "percent"], ["escalation", "trend"], ["maintenance", "wrench"], ["electricity", "bolt"], ["water", "drop"], ["negotiable", "tag"], ["notice period", "bell"], ["contract term|lease type", "file"], ["lock-in", "lock"], ["pets", "paw"], ["non-veg", "drumstick"], ["room type", "bed"], ["open 24", "clock"], ["free cancellation", "shield"], ["couples", "heart"], ["balconies", "balcony"], ["ownership type|possession status", "key"], ["rera registered|oc available|cc available", "filecheck"], ["rera id|khata", "file"], ["loan status", "bank"], ["flooring", "layers"], ["boundary", "fence"], ["road width", "road"], ["open sides", "grid"], ["corner", "corner"], ["overlooking", "eye"], ["^select amenities", "star"], ["^selected amenities", "checklist"], ["^additional amenities", "plus"], ["video", "video"], ["images", "image"], ["^description", "text"]];
   function apply(){
     document.querySelectorAll('#addModal .form-label').forEach(function(l){
       if(l.hasAttribute('data-ico')) return;
