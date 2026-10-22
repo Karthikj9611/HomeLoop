@@ -13719,7 +13719,7 @@ function openDetailReal(id) {
   // owner entered their own number in the agentPhone field).
   const _callLabelEl = document.getElementById('viewCallBtnLabel');
   if (_callLabelEl) {
-    const _agentDigits = String(p.owner?.agentPhone || '').replace(/\D/g, '').slice(-10);
+    const _agentDigits = coordinatorDigits(p).slice(-10);
     _callLabelEl.textContent = (_agentDigits === '9035205230') ? 'Coordinator' : 'Owner';
   }
   // Direct owner call — the server only sends ownerAltPhone when admin turned it on.
@@ -13780,7 +13780,8 @@ function openDetailReal(id) {
   actionsRow2.style.display = '';
   // When a public owner number is enabled, the agent Call/WhatsApp buttons aren't needed
   // (not for owner accounts — they never see the owner-number rows).
-  const _hideAgent = !viewerIsOwner && (_mainOn || _altOn);
+  // Broker-listed properties always keep the Coordinator Call/WhatsApp buttons next to the owner/broker numbers.
+  const _hideAgent = !viewerIsOwner && (_mainOn || _altOn) && p.basic?.listedBy !== 'Broker';
   callBtn.style.display = _hideAgent ? 'none' : '';
   whatsappBtn.style.display = _hideAgent ? 'none' : '';
   if (_hideAgent) actionsRow2.style.display = 'none';
@@ -14359,10 +14360,16 @@ function capitalizeWordsInput(el) {
   el.value = out;
   try { el.setSelectionRange(s, e); } catch (_) {}
 }
+// Coordinator (agent) number for a listing. Broker-listed properties don't store an agent
+// number, so they fall back to the in-house Coordinator line.
+function coordinatorDigits(p) {
+  const d = String((p && p.owner && p.owner.agentPhone) || '').replace(/\D/g, '');
+  return d || ((p && p.basic && p.basic.listedBy === 'Broker') ? COORDINATOR_PHONE : '');
+}
 function openCall(propId) {
   const p = PROPERTIES.find(x => x.id === propId);
   if (!p) return;
-  const rawPhone = (p.owner?.agentPhone || '').replace(/\D/g, '');
+  const rawPhone = coordinatorDigits(p);
   if (!rawPhone) {
     showToast("An agent phone number is not available for this listing.", 'warning');
     return;
@@ -14472,7 +14479,7 @@ function openOwnerWhatsApp(propId, which) {
 function openWhatsApp(propId) {
   const p = PROPERTIES.find(x => x.id === propId);
   if (!p) return;
-  const rawPhone = (p.owner?.agentPhone || '').replace(/\D/g, '');
+  const rawPhone = coordinatorDigits(p);
   if (!rawPhone) {
     showToast("An agent phone number is not available for this listing.", 'warning');
     return;
