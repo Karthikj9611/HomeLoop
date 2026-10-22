@@ -20725,11 +20725,17 @@ document.addEventListener('keydown', function(e){ if (e.key === 'Escape') closeP
 .add-modal .modal-close:hover{background:var(--warm-grad);border-color:transparent}
 .add-modal .form-label{color:#6b4f47}
 .add-modal .form-input,.add-modal select.form-input,.add-modal textarea.form-input{
-  background:#fff;border:1.5px solid #f3dcd2;color:#2b1d1a;
+  background:#fff;border:1.5px solid #f3dcd2;color:#d62839;
 }
 .add-modal .form-input:hover{border-color:#ecc3b4}
 .add-modal .form-input:focus{border-color:#f0506e;background:#fff;box-shadow:0 0 0 4px rgba(240,80,110,.14)}
-.add-modal .form-input:-webkit-autofill{-webkit-box-shadow:0 0 0 40px #fff inset !important;-webkit-text-fill-color:#2b1d1a !important}
+.add-modal .form-input:-webkit-autofill{-webkit-box-shadow:0 0 0 40px #fff inset !important;-webkit-text-fill-color:#d62839 !important}
+/* Listing form: every field pure white — including dropdown buttons (Tenant Preference, amenities) and locked/disabled fields. */
+.add-modal .am-dd-trigger,.add-modal .form-input[readonly],.add-modal .form-input[readonly].identity-locked,.add-modal .form-input:disabled,.add-modal select:disabled,.add-modal .form-select:disabled{background:#fff !important}
+.add-modal .am-dd-trigger{border:1.5px solid #f3dcd2 !important;border-radius:12px}
+/* Same text colour for every value in the listing form (dropdowns were brand-red, inputs dark). */
+.add-modal input:not([type=checkbox]):not([type=radio]),.add-modal select,.add-modal select option,.add-modal .form-select,.add-modal textarea,.add-modal .am-dd-trigger,.add-modal .am-dd-trigger span{color:#d62839 !important}
+.add-modal .form-input:disabled,.add-modal select:disabled{-webkit-text-fill-color:#d62839;opacity:1}
 .add-modal .form-submit,.modal-btn-primary,.confirm-ok-btn:not(.info),.hln-btn{
   background:var(--warm-grad) !important;color:#fff;border:none;
   box-shadow:var(--warm-btn-shadow);text-shadow:0 1px 1px rgba(150,20,50,.25);
