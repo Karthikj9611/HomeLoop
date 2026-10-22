@@ -3498,6 +3498,16 @@ main.tab-explore .empty-state{display:none !important}
 .form-row>.form-group{min-width:0}
 .form-row .form-label{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .form-row .form-input,.form-row .form-select{min-width:0;width:100%;box-sizing:border-box}
+/* List-your-property form on small screens: full-width modal, no side gaps, so both columns are as wide as possible (still equal) */
+@media (max-width:600px){
+  #addModal{padding:0}
+  #addModalBox{width:100% !important;max-width:none !important;border-radius:0;max-height:100vh;max-height:100dvh}
+  #addModalBox .add-modal-header{padding-left:10px !important;padding-right:10px !important}
+  #addModalScrollBody{padding-left:6px !important;padding-right:6px !important}
+  #addModalScrollBody .form-row{gap:6px}
+  #addModalScrollBody .lm-section{margin-left:2px;margin-right:2px}
+}
+
 @media (max-width:640px){
   /* Post Property and View Property share this form — keep every row to
      exactly 2 fields per line on mobile, even where a row is set to 3+
