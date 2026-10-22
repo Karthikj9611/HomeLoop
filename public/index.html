@@ -10656,8 +10656,10 @@ function slideGo(uid, idx) {
   // such sibling, so this is a no-op for them.
   // Last slide locked for visitors without an active plan
   const _old = c.querySelector(':scope > .plan-lock'); if (_old) _old.remove();
-  const _n = c.querySelectorAll('.img-slide').length;
-  if (idx === _n - 1 && lastItemLocked(_n)) {
+  // Lock the last PHOTO only - the video tour (always appended after the photos) stays open.
+  const _all = [...c.querySelectorAll('.img-slide')];
+  const _photos = _all.filter(s => !s.classList.contains('video-slide'));
+  if (_photos.length && lastItemLocked(_photos.length) && _all[idx] === _photos[_photos.length - 1]) {
     const lk = document.createElement('div');
     lk.className = 'plan-lock';
     lk.innerHTML = lockPanelHtml();
@@ -10798,8 +10800,12 @@ function preloadLightboxImage(url) {
 function preloadLightboxNeighbors() {
   const total = lightboxImgs.length;
   if (total < 2) return;
-  if (!(lightboxPropertyMode && lastItemLocked(lightboxTotal()) && (lightboxIdx + 1) % lightboxTotal() === lightboxTotal() - 1)) preloadLightboxImage(lightboxImgs[(lightboxIdx + 1) % total]);
-  if (!(lightboxPropertyMode && lastItemLocked(lightboxTotal()) && (lightboxIdx - 1 + total) % total === lightboxTotal() - 1)) preloadLightboxImage(lightboxImgs[(lightboxIdx - 1 + total) % total]);
+  const locked = lightboxLockedIdx();
+  const all = lightboxTotal();
+  [(lightboxIdx + 1) % all, (lightboxIdx - 1 + all) % all].forEach(n => {
+    // skip the video slot (index >= photo count) and the locked photo
+    if (n < lightboxImgs.length && n !== locked) preloadLightboxImage(lightboxImgs[n]);
+  });
 }
 
 // Public entry point — gated. A logged-out visitor gets the login/sign-up
@@ -10861,6 +10867,11 @@ function openLightboxSimple(urls, idx) {
   document.getElementById('lightboxOverlay').classList.add('open');
 }
 
+// Index of the locked photo (the last PHOTO, never the video), or -1 when nothing is locked.
+function lightboxLockedIdx() {
+  return (lightboxPropertyMode && lastItemLocked(lightboxImgs.length)) ? lightboxImgs.length - 1 : -1;
+}
+
 function lightboxTotal() {
   return lightboxImgs.length + (lightboxVideoHtml ? 1 : 0);
 }
@@ -10889,7 +10900,7 @@ function renderLightbox() {
   const isVideo = lightboxIdx >= lightboxImgs.length;
   const imgEl = document.getElementById('lightboxImg');
   const videoEl = document.getElementById('lightboxVideo');
-  const lockedIdx = (lightboxPropertyMode && lastItemLocked(total)) ? total - 1 : -1;
+  const lockedIdx = lightboxLockedIdx();
   const stageEl = document.querySelector('.lightbox-stage');
   let lockEl = document.getElementById('lightboxLock');
   if (!lockEl && stageEl) {
@@ -10924,7 +10935,7 @@ function renderLightbox() {
     ? lightboxImgs.map((url, i) => i===lockedIdx
         ? `<div class="lightbox-thumb locked${i===lightboxIdx?' active':''}" onclick="lightboxGo(${i})">\uD83D\uDD12</div>`
         : `<div class="lightbox-thumb${i===lightboxIdx?' active':''}" style="background-image:url('${safeUrl(url)}')" onclick="lightboxGo(${i})"></div>`).join('')
-      + (lightboxVideoHtml ? `<div class="lightbox-thumb video-thumb${lockedIdx===lightboxImgs.length?' locked':''}${isVideo?' active':''}" onclick="lightboxGo(${lightboxImgs.length})"><svg viewBox="0 0 24 24" aria-hidden="true"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg></div>` : '')
+      + (lightboxVideoHtml ? `<div class="lightbox-thumb video-thumb${isVideo?' active':''}" onclick="lightboxGo(${lightboxImgs.length})"><svg viewBox="0 0 24 24" aria-hidden="true"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg></div>` : '')
     : '';
   preloadLightboxNeighbors();
 }
