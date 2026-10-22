@@ -3435,7 +3435,6 @@ main.tab-explore .empty-state{display:none !important}
 /* Lat/Lng and Google Maps link are auto-filled and never edited by hand, so they stay hidden. !important so resetFieldVisibility()/hideEmptyViewFields() can't re-show them. */
 .form-group.auto-hidden{display:none !important}
 #f-locStatus:empty{display:none}
-#f-agentFields{display:none!important}
 .add-modal.view-mode input:disabled,
 .add-modal.view-mode select:disabled,
 .add-modal.view-mode textarea:disabled{
@@ -6991,23 +6990,22 @@ main.tab-explore .empty-state{display:none !important}
         <label class="form-label">Owner Lives Here?</label>
         <select class="form-select" id="f-sameAsBuildingAddress"><option value="No">No</option><option selected value="Yes">Yes</option></select>
       </div>
-      <!-- Agent-only fields — shown when Listed by = Agent -->
-      <div id="f-agentFields" style="grid-column:span 3">
-        <div class="form-row" style="grid-template-columns:1fr 1fr;margin-top:4px">
-          <div class="form-group">
-            <label class="form-label">Agent Phone</label>
-            <div class="input-icon-wrap">
-              <input class="form-input identity-locked" type="tel" id="f-agentPhone" inputmode="numeric" maxlength="10" value="9035205230" readonly />
-            </div>
-            <div class="identity-locked-hint">Fixed agent contact number</div>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Agent Area</label>
-            <input class="form-input identity-locked" type="text" id="f-agentArea" value="Prashanth B, Singasandra" readonly />
-            <div class="identity-locked-hint">Fixed agent service area</div>
-          </div>
+    </div>
+    <!-- Agent Details — own tab, shown only when Listed by = Agent -->
+    <div id="agentDetailsSection" style="display:none">
+    <div class="lm-section">🧑‍💼 Agent Details</div>
+    <div class="form-row" style="grid-template-columns:1fr 1fr">
+      <div class="form-group">
+        <label class="form-label">Agent Phone</label>
+        <div class="input-icon-wrap">
+          <input class="form-input" type="tel" id="f-agentPhone" inputmode="numeric" maxlength="10" value="9035205230" oninput="this.value=this.value.replace(/\D/g,'').slice(0,10)" />
         </div>
       </div>
+      <div class="form-group">
+        <label class="form-label">Agent Area</label>
+        <input class="form-input" type="text" id="f-agentArea" value="Prashanth B, Singasandra" autocapitalize="words" />
+      </div>
+    </div>
     </div>
     <div class="lm-section">📍 Property Location</div>
     <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
@@ -7046,7 +7044,7 @@ main.tab-explore .empty-state{display:none !important}
       <div class="form-group" id="currentLocGroup" style="grid-column:1 / -1">
         <label class="form-label">Building Location Link <span style="color:var(--brand)">*</span></label>
         <div style="display:flex;gap:7px;align-items:stretch">
-          <input class="form-input" style="flex:1;min-width:0" type="url" id="f-currentLocationLink" inputmode="url" autocomplete="off" oninput="this.value=this.value.trim()" />
+          <input class="form-input" style="flex:1;min-width:0" type="url" id="f-currentLocationLink" inputmode="url" autocomplete="off" oninput="this.value=this.value.trim()" onchange="onBuildingLinkChange(this)" onpaste="var t=this;setTimeout(function(){onBuildingLinkChange(t)},0)" />
           <button type="button" onclick="window.open('https://www.google.com/maps','_blank','noopener')" class="loc-act-btn" aria-label="Open Google Maps" title="Open Google Maps" style="display:inline-flex;align-items:center;justify-content:center;gap:6px;flex-shrink:0;padding:0 12px;border-radius:9px;border:1.5px solid var(--text);background:var(--bg);color:var(--text);font-size:12px;font-weight:700;cursor:pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg><span class="loc-btn-txt">Open Google Maps</span></button>
           <button type="button" onclick="openCurrentLocLink()" class="loc-act-btn" aria-label="Open in Google Maps" title="Open in Google Maps" style="display:inline-flex;align-items:center;justify-content:center;gap:6px;flex-shrink:0;padding:0 12px;border-radius:9px;border:1.5px solid var(--text);background:var(--bg);color:var(--text);font-size:12px;font-weight:700;cursor:pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg><span class="loc-btn-txt">Navigate</span></button>
         </div>
@@ -14833,10 +14831,9 @@ function applyImportedProperty(p) {
   sv('f-contactTime', owner.contactTime);
   // Older listings stored an address instead of the Yes/No flag — same address as the building means Yes.
   { const _sa = document.getElementById('f-sameAsBuildingAddress'); if (_sa) _sa.value = owner.sameAsBuilding || ((owner.address && owner.address === location.address) ? 'Yes' : 'No'); }
-  // Agent contact is fixed/non-editable — always show the fixed value
-  // rather than whatever happens to be stored on this listing.
-  sv('f-agentPhone', '9035205230');
-  sv('f-agentArea', 'Prashanth B, Singasandra');
+  // Agent contact is editable — show what was saved, falling back to the default.
+  sv('f-agentPhone', owner.agentPhone || '9035205230');
+  sv('f-agentArea', owner.agentArea || 'Prashanth B, Singasandra');
 
   // Pricing
   if (isLease) {
@@ -18995,6 +18992,8 @@ function updateBrokerageFields() {
   const lb = document.getElementById('f-listedBy');
   const blk = document.getElementById('f-brokerageBlock');
   if (blk) blk.style.display = (lb && lb.value === 'Broker') ? '' : 'none';
+  const agentBlk = document.getElementById('agentDetailsSection');
+  if (agentBlk) agentBlk.style.display = (lb && lb.value === 'Agent') ? '' : 'none';
   onBrokerageChange();
 }
 function onBrokerageChange() {
@@ -19195,6 +19194,40 @@ function onPincodeInput(el) {
   pincodeManuallyEdited = true;
 }
 
+
+// Area name from a Nominatim reverse-geocode result (most specific locality first).
+function pickAreaFromGeocode(d) {
+  const a = (d && d.address) || {};
+  return a.suburb || a.neighbourhood || a.residential || a.city_district || a.village || a.quarter || '';
+}
+// Pull lat/lng out of a full Google Maps link (@lat,lng · ?q=lat,lng · ll= · !3d..!4d). Short links can't be read here.
+function coordsFromMapsLink(url) {
+  const m = String(url || '').match(/@(-?\d+\.\d+),(-?\d+\.\d+)/)
+         || String(url || '').match(/[?&](?:q|ll|query|destination)=(-?\d+\.\d+)(?:,|%2C)(-?\d+\.\d+)/)
+         || String(url || '').match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/);
+  return m ? { lat: parseFloat(m[1]), lng: parseFloat(m[2]) } : null;
+}
+// Building Location Link pasted → fill any still-empty address / area / pincode from its coordinates.
+function onBuildingLinkChange(el) {
+  const v = (el.value || '').trim();
+  if (!v || !isGoogleMapsShareLink(v)) return;
+  const c = coordsFromMapsLink(v);
+  if (!c) {
+    if (/goo\.gl|share\.google/i.test(v)) showToast('Details cannot be read from a short link. Please use the Live button or enter the area manually.', 'info');
+    return;
+  }
+  document.getElementById('f-latitude').value = c.lat;
+  document.getElementById('f-longitude').value = c.lng;
+  document.getElementById('f-latLngDisplay').value = c.lat.toFixed(6) + '° N, ' + c.lng.toFixed(6) + '° E';
+  fetch('https://nominatim.openstreetmap.org/reverse?lat=' + c.lat + '&lon=' + c.lng + '&format=json&accept-language=en')
+    .then(r => r.json())
+    .then(d => {
+      const addr = document.getElementById('f-fullAddress'), area = document.getElementById('f-location'), pin = document.getElementById('f-pincode');
+      if (addr && !addr.value.trim()) addr.value = d.display_name || '';
+      if (area && !area.value.trim()) { area.value = pickAreaFromGeocode(d); if (typeof capitalizeWordsInput === 'function') capitalizeWordsInput(area); }
+      if (pin && !pin.value.trim()) pin.value = (d.address && d.address.postcode) || extractPincodeFromAddress(d.display_name);
+    }).catch(() => {});
+}
 function fCaptureLocation() {
   const btnTxt = document.getElementById('f-locBtnTxt');
   const status = document.getElementById('f-locStatus');
@@ -19222,7 +19255,9 @@ function fCaptureLocation() {
         // geocoder didn't return a structured postcode.
         pincodeManuallyEdited = false; // fresh capture — a prior manual edit no longer applies
         document.getElementById('f-pincode').value = (d.address && d.address.postcode) || extractPincodeFromAddress(d.display_name);
-        status.textContent = 'Address captured · Enter Location / Area manually';
+        const areaEl = document.getElementById('f-location');
+        if (areaEl && !areaEl.value.trim()) { areaEl.value = pickAreaFromGeocode(d); if (typeof capitalizeWordsInput === 'function') capitalizeWordsInput(areaEl); }
+        status.textContent = 'Address, area and pincode captured';
       }).catch(() => { status.textContent = 'Coordinates saved.'; });
   }, function() { btnTxt.textContent = 'Live'; status.textContent = 'Permission denied.'; });
 }
@@ -19671,8 +19706,8 @@ function buildListingPayload() {
       caretakerPhone: gv('f-ownerCaretakerPhone') || '',
       contactTime:  gv('f-contactTime') || null,
       sameAsBuilding: gv('f-sameAsBuildingAddress') || 'Yes',
-      agentPhone:   gv('f-agentPhone') || null,
-      agentArea:    gv('f-agentArea') || null,
+      agentPhone:   (document.getElementById('f-listedBy').value === 'Agent' && gv('f-agentPhone')) || null,
+      agentArea:    (document.getElementById('f-listedBy').value === 'Agent' && gv('f-agentArea')) || null,
     },
     price: isLease ? {
       rent:         parseFloat(gv('f-leaseAmount')) || 0,
