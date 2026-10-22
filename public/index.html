@@ -3629,6 +3629,13 @@ main.tab-explore .empty-state{display:none !important}
 .form-label[data-ico="video"]{--ico-c:#dc2626;--ico:url("data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%2024%2024%22%20fill=%22none%22%20stroke=%22%23fff%22%20stroke-width=%222%22%20stroke-linecap=%22round%22%20stroke-linejoin=%22round%22%3E%3Crect%20x=%223%22%20y=%226%22%20width=%2213%22%20height=%2212%22%20rx=%222%22/%3E%3Cpath%20d=%22m16%2010%205-3v10l-5-3z%22/%3E%3C/svg%3E")}
 .form-label[data-ico="wrench"]{--ico-c:#64748b;--ico:url("data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%2024%2024%22%20fill=%22none%22%20stroke=%22%23fff%22%20stroke-width=%222%22%20stroke-linecap=%22round%22%20stroke-linejoin=%22round%22%3E%3Cpath%20d=%22M15%205a4%204%200%200%200-4%205L3%2018l3%203%208-8a4%204%200%200%200%205-4l-3%203-3-1-1-3z%22/%3E%3C/svg%3E")}
 .lm-section{font-size:10px;font-weight:800;color:var(--text-2);text-transform:uppercase;letter-spacing:.8px;margin:20px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border-2)}
+/* Accordion tabs: tap a section heading to open/close its fields (form only, not view mode) */
+#listingFormSections .lm-section{cursor:pointer;user-select:none;display:flex;align-items:center;justify-content:space-between;gap:8px;transition:color .12s}
+#listingFormSections .lm-section:hover{color:var(--brand)}
+#listingFormSections .lm-section::after{content:"";width:7px;height:7px;flex:none;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg) translateY(-2px);transition:transform .18s}
+#listingFormSections .lm-section.lm-closed::after{transform:rotate(-45deg)}
+.add-modal:not(.view-mode) .lm-acc-hide{display:none!important}
+.add-modal.view-mode #listingFormSections .lm-section::after{display:none}
 .form-submit{
   width:100%;padding:12px;border-radius:10px;
   background:var(--brand);color:#fff;font-size:14px;font-weight:700;
@@ -14758,6 +14765,7 @@ function openAddModal(presetType) {
   document.getElementById('addModal').classList.add('open');
   lockBodyScroll();
   onFTypeChange(document.getElementById('f-type').value);
+  lmAccReset();
   if (restored) showToast('Your unfinished listing was restored');
   // Location is NOT auto-captured on open — the address, lat/lng and Maps
   // link are only filled when the person taps "Live" (fCaptureLocation).
@@ -16708,6 +16716,7 @@ function openEditListingFull(id) {
   applyAvailableFromDates(false);
   onFTypeChange(document.getElementById('f-type').value);
   snapshotListingForm();
+  lmAccReset();
 
   // Status (listing type) stays editable while editing too.
   const typeSelect = document.getElementById('f-type');
@@ -18992,6 +19001,7 @@ function onBrokerageChange() {
   if (w) w.style.display = (blk && blk.style.display !== 'none' && sel && sel.value === 'Fixed amount') ? '' : 'none';
 }
 function onFTypeChange(val) {
+  setTimeout(lmAccApply, 0);
   updateBrokerageFields();
   const isPG = val === 'PG';
   const isLease = val === 'Lease';
@@ -19328,6 +19338,7 @@ function snapshotListingForm() {
 let _reviewRows = [];
 let _reviewSubmitFn = null;
 function openListingReview(submitFnName) {
+  lmAccExpandAll();
   const realSubmit = window[submitFnName];
   if (typeof realSubmit !== 'function') return;
   if (submitFnName === 'adminSubmitListing' && typeof blockIfViewOnly === 'function' && blockIfViewOnly('properties')) return;
@@ -19446,7 +19457,55 @@ function confirmListingReview() {
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', setup); else setup();
 })();
 
+/* ── Accordion tabs for the listing form ──
+   Each .lm-section heading toggles the fields under it (up to the next heading,
+   walking document order so headings nested in wrapper divs work too). */
+const LM_ACC_SINGLE = false; // true = opening one tab closes the others
+function lmAccNext(el, root) { while (el && el !== root) { if (el.nextElementSibling) return el.nextElementSibling; el = el.parentElement; } return null; }
+function lmAccBody(h) {
+  const root = document.getElementById('listingFormSections'), out = [];
+  let c = lmAccNext(h, root);
+  while (c) {
+    if (c.classList.contains('lm-section')) break;
+    if (c.querySelector('.lm-section')) { c = c.firstElementChild || lmAccNext(c, root); continue; }
+    out.push(c); c = lmAccNext(c, root);
+  }
+  return out;
+}
+function lmAccHeaders() { return Array.from(document.querySelectorAll('#listingFormSections .lm-section')); }
+function lmAccApply() {
+  lmAccHeaders().forEach((h, i) => {
+    if (!h.dataset.acc) {
+      h.dataset.acc = '1'; h.setAttribute('role', 'button'); h.tabIndex = 0;
+      if (i > 0) h.classList.add('lm-closed');
+    }
+    const closed = h.classList.contains('lm-closed');
+    h.setAttribute('aria-expanded', closed ? 'false' : 'true');
+    lmAccBody(h).forEach(n => n.classList.toggle('lm-acc-hide', closed));
+  });
+}
+function lmAccReset() { lmAccHeaders().forEach(h => { delete h.dataset.acc; h.classList.remove('lm-closed'); }); lmAccApply(); }
+function lmAccExpandAll() { lmAccHeaders().forEach(h => h.classList.remove('lm-closed')); lmAccApply(); }
+function lmAccToggle(h) {
+  if (document.getElementById('addModal').classList.contains('view-mode')) return;
+  const willClose = !h.classList.contains('lm-closed');
+  if (!willClose && LM_ACC_SINGLE) lmAccHeaders().forEach(x => x.classList.add('lm-closed'));
+  h.classList.toggle('lm-closed', willClose);
+  lmAccApply();
+}
+(function () {
+  const root = document.getElementById('listingFormSections');
+  if (!root) return;
+  root.addEventListener('click', e => { const h = e.target.closest('.lm-section'); if (h && root.contains(h)) lmAccToggle(h); });
+  root.addEventListener('keydown', e => {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    const h = e.target.closest('.lm-section'); if (!h || e.target !== h) return;
+    e.preventDefault(); lmAccToggle(h);
+  });
+})();
+
 function validateListingForm() {
+  lmAccExpandAll(); // collapsed fields would otherwise skip required-checks
   clearAllFieldErrors();
   let firstErrorEl = null;
   getAllListingFields().forEach(el => {
