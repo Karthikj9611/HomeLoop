@@ -11332,13 +11332,13 @@ function toggleShortlist(id, el) {
     shortlisted.delete(id);
     delete shortlistedData[id];
     el.classList.remove('liked');
-    showToast('Removed from shortlist');
+    showToast("Removed from shortlist.");
   } else {
     shortlisted.add(id);
     const p = PROPERTIES.find(x => String(x.id) === id);
     if (p) shortlistedData[id] = p;
     el.classList.add('liked');
-    showToast('Added to shortlist ♥');
+    showToast("Added to shortlist.");
   }
   saveShortlist();
   saveShortlistData();
@@ -11396,7 +11396,7 @@ function updateShortlistEnquire() {
   btn.style.opacity = ok ? '' : '.55';
   btn.style.cursor = ok ? '' : 'not-allowed';
   btn.textContent = ok ? (total === 1 ? 'Enquire' : `Enquire (${total})`)
-    : total < ENQUIRE_MIN ? 'Shortlist a property' : `Select up to ${ENQUIRE_MAX} properties`;
+    : total < ENQUIRE_MIN ? 'Shortlist a property' : `You can select up to ${ENQUIRE_MAX} properties.`;
   btn.style.background = ok ? '' : '#9aa0a6';
 }
 /* Single enquiry message used everywhere a tenant contacts an owner/agent on WhatsApp
@@ -11414,9 +11414,9 @@ function _openAgentEnquiry(phone) {
 }
 function enquireShortlistAtOnce() {
   const { total, groups } = _shortlistEnquiryGroups();
-  if (total < ENQUIRE_MIN || total > ENQUIRE_MAX) { showToast(`Select up to ${ENQUIRE_MAX} properties`, 'warning'); return; }
+  if (total < ENQUIRE_MIN || total > ENQUIRE_MAX) { showToast(`You can select up to ${ENQUIRE_MAX} properties.`, 'warning'); return; }
   const phones = Object.keys(groups);
-  if (!phones.length) { showToast('No coordinator phone number added for these listings', 'warning'); return; }
+  if (!phones.length) { showToast("A coordinator phone number is not available for these listings.", 'warning'); return; }
   if (phones.length === 1) { _openAgentEnquiry(phones[0]); return; }
   const wrap = document.getElementById('panelEnquireAgents');
   wrap.innerHTML = phones.map(ph => {
@@ -11475,12 +11475,12 @@ function toggleCompare(id, el) {
     if (el) el.classList.remove('checked');
   } else {
     if (compareSet.size >= COMPARE_MAX) {
-      showToast(`You can compare up to ${COMPARE_MAX} properties at a time`, 'warning');
+      showToast(`You can compare up to ${COMPARE_MAX} properties at a time.`, 'warning');
       return;
     }
     const existingType = getCompareType();
     if (existingType && pTypeLabel(prop) !== existingType) {
-      showToast(`You can only compare ${existingType} properties together`, 'warning');
+      showToast(`Only ${existingType} properties can be compared together.`, 'warning');
       return;
     }
     compareSet.add(id);
@@ -11594,7 +11594,7 @@ function updateCompareUrl() {
 
 function openCompareModal() {
   if (compareSet.size < 2) {
-    showToast('Select at least 2 properties to compare', 'warning');
+    showToast("Please select at least two properties to compare.", 'warning');
     return;
   }
   renderCompareTable();
@@ -14003,14 +14003,14 @@ function toggleShortlistFromModal(id) {
     delete shortlistedData[id];
     document.getElementById('modal-save-btn').classList.remove('liked');
     document.getElementById('modal-save-btn-label').textContent = 'Shortlist';
-    showToast('Removed from shortlist');
+    showToast("Removed from shortlist.");
   } else {
     shortlisted.add(id);
     const p = PROPERTIES.find(x => String(x.id) === id);
     if (p) shortlistedData[id] = p;
     document.getElementById('modal-save-btn').classList.add('liked');
     document.getElementById('modal-save-btn-label').textContent = 'Shortlisted';
-    showToast('Added to shortlist ♥');
+    showToast("Added to shortlist.");
   }
   saveShortlist();
   saveShortlistData();
@@ -14026,7 +14026,7 @@ let scheduleForPropId = null;
 let bookingForPropId = null;
 
 function openScheduleModal(propId) {
-  if (!getLoggedInUser()) { showToast('Please log in to schedule a visit', 'warning'); openAuthModal(); return; }
+  if (!getLoggedInUser()) { showToast("Please log in to schedule a visit.", 'warning'); openAuthModal(); return; }
   if (blockIfNotVerified()) return;
   const p = PROPERTIES.find(x => x.id === propId);
   if (!p) return;
@@ -14131,15 +14131,15 @@ async function submitScheduleVisit() {
   const note  = document.getElementById('sched-note').value.trim();
 
   if (!date || !time) {
-    showToast('Please pick a date and time for your visit', 'warning');
+    showToast("Please select a date and time for your visit.", 'warning');
     return;
   }
-  if (!name) { showToast('Please enter your name', 'warning'); return; }
-  if (!phone) { showToast('Please enter your phone number', 'warning'); return; }
-  if (!isValidIndianMobile(phone)) { showToast('Enter a valid 10-digit mobile number starting with 6, 7, 8 or 9', 'warning'); return; }
+  if (!name) { showToast("Please enter your name.", 'warning'); return; }
+  if (!phone) { showToast("Please enter your phone number.", 'warning'); return; }
+  if (!isValidIndianMobile(phone)) { showToast("Please enter a valid 10-digit mobile number starting with 6, 7, 8 or 9.", 'warning'); return; }
 
   const p = PROPERTIES.find(x => x.id === scheduleForPropId);
-  if (!p) { showToast('Could not find that property. Please try again.', 'error'); return; }
+  if (!p) { showToast("This property is no longer available.", 'error'); return; }
 
   const btn = document.getElementById('scheduleSubmitBtn');
   btn.disabled = true;
@@ -14195,7 +14195,7 @@ async function submitScheduleVisit() {
       note,
     }, { title: 'Visit requested' });
   } catch (err) {
-    showToast('Network error. Please try again.', 'error');
+    showToast("Unable to connect. Please check your internet connection and try again.", 'error');
   } finally {
     btn.disabled = false;
     btn.textContent = 'Request visit';
@@ -14207,7 +14207,7 @@ async function submitScheduleVisit() {
    (OYO-style: no owner visit needed, guest books the room directly)
 ═══════════════════════════════════════════════ */
 function openBookingModal(propId) {
-  if (!getLoggedInUser()) { showToast('Please log in to book', 'warning'); openAuthModal(); return; }
+  if (!getLoggedInUser()) { showToast("Please log in to continue with your booking.", 'warning'); openAuthModal(); return; }
   if (blockIfNotVerified()) return;
   const p = PROPERTIES.find(x => x.id === propId);
   if (!p) return;
@@ -14259,14 +14259,14 @@ async function submitBookingRequest() {
   const email   = document.getElementById('book-email').value.trim();
   const note    = document.getElementById('book-note').value.trim();
 
-  if (!checkin) { showToast('Please pick a check-in date', 'warning'); return; }
-  if (!days || parseInt(days) < 1) { showToast('Please enter the number of days', 'warning'); return; }
-  if (!name) { showToast('Please enter your name', 'warning'); return; }
-  if (!phone) { showToast('Please enter your phone number', 'warning'); return; }
-  if (!isValidIndianMobile(phone)) { showToast('Enter a valid 10-digit mobile number starting with 6, 7, 8 or 9', 'warning'); return; }
+  if (!checkin) { showToast("Please select a check-in date.", 'warning'); return; }
+  if (!days || parseInt(days) < 1) { showToast("Please enter the number of days.", 'warning'); return; }
+  if (!name) { showToast("Please enter your name.", 'warning'); return; }
+  if (!phone) { showToast("Please enter your phone number.", 'warning'); return; }
+  if (!isValidIndianMobile(phone)) { showToast("Please enter a valid 10-digit mobile number starting with 6, 7, 8 or 9.", 'warning'); return; }
 
   const p = PROPERTIES.find(x => x.id === bookingForPropId);
-  if (!p) { showToast('Could not find that property. Please try again.', 'error'); return; }
+  if (!p) { showToast("This property is no longer available.", 'error'); return; }
 
   const btn = document.getElementById('bookingSubmitBtn');
   btn.disabled = true;
@@ -14292,9 +14292,9 @@ async function submitBookingRequest() {
 
     const dateLabel = formatDateDisplay(checkin);
     closeBookingModal();
-    showToast(`Booked from ${dateLabel} for ${days} day${days > 1 ? 's' : ''} — ${p.propertyId || ''}`);
+    showToast(`Booking confirmed from ${dateLabel} for ${days} day${days > 1 ? 's' : ''}.`);
   } catch (err) {
-    showToast('Network error. Please try again.', 'error');
+    showToast("Unable to connect. Please check your internet connection and try again.", 'error');
   } finally {
     btn.disabled = false;
     btn.textContent = 'Confirm booking';
@@ -14337,7 +14337,7 @@ function openCall(propId) {
   if (!p) return;
   const rawPhone = (p.owner?.agentPhone || '').replace(/\D/g, '');
   if (!rawPhone) {
-    showToast('No agent phone number added for this listing', 'warning');
+    showToast("An agent phone number is not available for this listing.", 'warning');
     return;
   }
   const phone = rawPhone.length === 10 ? '+91' + rawPhone : ('+' + rawPhone);
@@ -14372,7 +14372,7 @@ function openPropertyNavigate(propId) {
   // Prefer the owner's pasted Google Maps link (sent only to subscribed tenants); fall back to the address-built directions link.
   const url = p && (p.currentLocationLink || p.navigateUrl);
   if (!url || !/^https?:\/\//i.test(url)) {
-    showToast('Location not available for this listing', 'warning');
+    showToast("Location is not available for this listing.", 'warning');
     return;
   }
   openLocationLinkNavigate(url);
@@ -14405,7 +14405,7 @@ function openCardCall(propId) {
       p.owner?.agentPhone || '')
   ).replace(/\D/g, '');
   if (!rawPhone) {
-    showToast('No phone number added for this listing', 'warning');
+    showToast("A phone number is not available for this listing.", 'warning');
     return;
   }
   const phone = rawPhone.length === 10 ? '+91' + rawPhone : ('+' + rawPhone);
@@ -14418,7 +14418,7 @@ function openOwnerCall(propId, which) {
   if (!p) return;
   const rawPhone = String((which === 'main' ? (p.ownerPhoneCall && p.ownerPhone) : (p.ownerDirectCall && p.ownerAltPhone)) || '').replace(/\D/g, '');
   if (!rawPhone) {
-    showToast('Owner number not available for this listing', 'warning');
+    showToast("The owner's phone number is not available for this listing.", 'warning');
     return;
   }
   const phone = rawPhone.length === 10 ? '+91' + rawPhone : ('+' + rawPhone);
@@ -14431,7 +14431,7 @@ function openOwnerWhatsApp(propId, which) {
   if (!p) return;
   const raw = String((which === 'main' ? (p.ownerPhoneCall && p.ownerPhone) : (p.ownerDirectCall && p.ownerAltPhone)) || '').replace(/\D/g, '');
   if (!raw) {
-    showToast('Owner number not available for this listing', 'warning');
+    showToast("The owner's phone number is not available for this listing.", 'warning');
     return;
   }
   const phone = raw.length === 10 ? '91' + raw : raw;
@@ -14447,7 +14447,7 @@ function openWhatsApp(propId) {
   if (!p) return;
   const rawPhone = (p.owner?.agentPhone || '').replace(/\D/g, '');
   if (!rawPhone) {
-    showToast('No agent phone number added for this listing', 'warning');
+    showToast("An agent phone number is not available for this listing.", 'warning');
     return;
   }
   const phone = rawPhone.length === 10 ? '91' + rawPhone : rawPhone;
@@ -14766,7 +14766,7 @@ function openAddModal(presetType) {
   lockBodyScroll();
   onFTypeChange(document.getElementById('f-type').value);
   lmAccReset();
-  if (restored) showToast('Your unfinished listing was restored');
+  if (restored) showToast("Your unfinished listing has been restored.");
   // Location is NOT auto-captured on open — the address, lat/lng and Maps
   // link are only filled when the person taps "Live" (fCaptureLocation).
 }
@@ -14996,7 +14996,7 @@ function clearAddModalDraft() {
   lockListedByToAccount(); // brokers: back to Broker; owners: re-enabled
   clearListingDraft();
   onFTypeChange(document.getElementById('f-type').value);
-  showToast('Form cleared');
+  showToast("The form has been cleared.");
 }
 
 async function confirmClearAddModalDraft() {
@@ -15498,8 +15498,8 @@ async function submitAuth() {
 
   if (isLogin) {
     const contact = document.getElementById('auth-contact').value.trim();
-    if (!contact) { showToast('Please enter your mobile number', 'warning'); return; }
-    if (!contact.includes('@') && !isValidIndianMobile(contact)) { showToast('Enter a valid 10-digit mobile number starting with 6, 7, 8 or 9', 'warning'); return; }
+    if (!contact) { showToast("Please enter your mobile number.", 'warning'); return; }
+    if (!contact.includes('@') && !isValidIndianMobile(contact)) { showToast("Please enter a valid 10-digit mobile number starting with 6, 7, 8 or 9.", 'warning'); return; }
     body = { contact };
   } else {
     if (!selectedAccountType) {
@@ -15513,13 +15513,13 @@ async function submitAuth() {
     const email            = document.getElementById('auth-email').value.trim();
     const mobile            = document.getElementById('auth-mobile').value.trim();
 
-    if (!firstName) { showToast('Please enter your first name', 'warning'); return; }
-    if (!isValidName(firstName, 3)) { showToast('Please enter a valid first name', 'warning'); return; }
-    if (lastName && !isValidName(lastName)) { showToast('Please enter a valid last name', 'warning'); return; }
-    if (!email)  { showToast('Please enter your email', 'warning'); return; }
-    if (!/^[A-Za-z0-9._%+\-]+@[A-Za-z0-9\-]+(?:\.[A-Za-z0-9\-]+)*\.[A-Za-z]{2,}$/.test(email)) { showToast('Please enter a valid email address', 'warning'); return; }
-    if (!mobile) { showToast('Please enter your mobile number', 'warning'); return; }
-    if (!isValidIndianMobile(mobile)) { showToast('Enter a valid 10-digit mobile number starting with 6, 7, 8 or 9', 'warning'); return; }
+    if (!firstName) { showToast("Please enter your first name.", 'warning'); return; }
+    if (!isValidName(firstName, 3)) { showToast("Please enter a valid first name.", 'warning'); return; }
+    if (lastName && !isValidName(lastName)) { showToast("Please enter a valid last name.", 'warning'); return; }
+    if (!email)  { showToast("Please enter your email address.", 'warning'); return; }
+    if (!/^[A-Za-z0-9._%+\-]+@[A-Za-z0-9\-]+(?:\.[A-Za-z0-9\-]+)*\.[A-Za-z]{2,}$/.test(email)) { showToast("Please enter a valid email address.", 'warning'); return; }
+    if (!mobile) { showToast("Please enter your mobile number.", 'warning'); return; }
+    if (!isValidIndianMobile(mobile)) { showToast("Please enter a valid 10-digit mobile number starting with 6, 7, 8 or 9.", 'warning'); return; }
     body = { firstName, lastName, email, mobile, accountType: selectedAccountType, profilePic: authProfilePicUrl || null };
   }
 
@@ -15561,7 +15561,7 @@ async function submitAuth() {
     }
     finishAuthSuccess(data);
   } catch (err) {
-    showToast('Network error. Please try again.', 'error');
+    showToast("Unable to connect. Please check your internet connection and try again.", 'error');
   } finally {
     btn.disabled = false;
     btn.textContent = isLogin ? 'Log in' : 'Sign up';
@@ -15593,7 +15593,7 @@ async function verifySignupOtp() {
 
   if (!pendingSignupBody) { cancelSignupOtp(); return; }
   const otp = document.getElementById('auth-otp').value.trim();
-  if (!/^\d{6}$/.test(otp)) { showToast('Enter the 6-digit code from your email', 'warning'); return; }
+  if (!/^\d{6}$/.test(otp)) { showToast("Please enter the 6-digit code sent to your email.", 'warning'); return; }
 
   btn.disabled = true;
   btn.textContent = 'Verifying…';
@@ -15619,7 +15619,7 @@ async function verifySignupOtp() {
     pendingSignupBody = null;
     finishAuthSuccess(signupData);
   } catch (err) {
-    showToast('Network error. Please try again.', 'error');
+    showToast("Unable to connect. Please check your internet connection and try again.", 'error');
   } finally {
     btn.disabled = false;
     btn.textContent = pendingSignupBody ? 'Verify & create account' : 'Sign up';
@@ -15642,7 +15642,7 @@ async function resendSignupOtp() {
     const data = await res.json();
     showToast(res.ok ? 'Code resent' : (data.message || 'Could not resend code'), res.ok ? 'success' : 'error');
   } catch (err) {
-    showToast('Network error. Please try again.', 'error');
+    showToast("Unable to connect. Please check your internet connection and try again.", 'error');
   } finally {
     setTimeout(() => { link.style.pointerEvents = ''; link.style.opacity = ''; }, 15000);
   }
@@ -15729,7 +15729,7 @@ async function sendForgotOtp() {
   const btn = document.getElementById('forgotSendBtn');
   if (btn.disabled) return;
   const email = document.getElementById('forgot-email').value.trim();
-  if (!email) { showToast('Please enter your email', 'warning'); return; }
+  if (!email) { showToast("Please enter your email address.", 'warning'); return; }
 
   btn.disabled = true;
   btn.textContent = 'Sending…';
@@ -15749,7 +15749,7 @@ async function sendForgotOtp() {
     document.getElementById('forgotStageOtp').style.display = '';
     showToast(data.message);
   } catch (err) {
-    showToast('Network error. Please try again.', 'error');
+    showToast("Unable to connect. Please check your internet connection and try again.", 'error');
   } finally {
     btn.disabled = false;
     btn.textContent = 'Send reset code';
@@ -15771,7 +15771,7 @@ async function resendForgotOtp() {
     const data = await res.json();
     showToast(res.ok ? 'Code resent' : (data.message || 'Could not resend code'), res.ok ? 'success' : 'error');
   } catch (err) {
-    showToast('Network error. Please try again.', 'error');
+    showToast("Unable to connect. Please check your internet connection and try again.", 'error');
   } finally {
     setTimeout(() => { link.style.pointerEvents = ''; link.style.opacity = ''; }, 15000);
   }
@@ -15787,7 +15787,7 @@ async function verifyForgotOtp() {
   if (btn.disabled) return;
   if (!forgotEmail) { cancelForgotPassword(); return; }
   const otp = document.getElementById('forgot-otp').value.trim();
-  if (!/^\d{6}$/.test(otp)) { showToast('Enter the 6-digit code from your email', 'warning'); return; }
+  if (!/^\d{6}$/.test(otp)) { showToast("Please enter the 6-digit code sent to your email.", 'warning'); return; }
 
   btn.disabled = true;
   btn.textContent = 'Verifying…';
@@ -15804,7 +15804,7 @@ async function verifyForgotOtp() {
     document.getElementById('forgotStageOtp').style.display = 'none';
     document.getElementById('forgotStageNewPass').style.display = '';
   } catch (err) {
-    showToast('Network error. Please try again.', 'error');
+    showToast("Unable to connect. Please check your internet connection and try again.", 'error');
   } finally {
     btn.disabled = false;
     btn.textContent = 'Verify code';
@@ -15818,8 +15818,8 @@ async function submitNewPassword() {
 
   const newPassword     = document.getElementById('forgot-newpassword').value;
   const confirmPassword = document.getElementById('forgot-confirmpassword').value;
-  if (!newPassword || newPassword.length < 6) { showToast('New password must be at least 6 characters', 'warning'); return; }
-  if (newPassword !== confirmPassword) { showToast('Passwords do not match', 'warning'); return; }
+  if (!newPassword || newPassword.length < 6) { showToast("Your new password must be at least 6 characters long.", 'warning'); return; }
+  if (newPassword !== confirmPassword) { showToast("The passwords do not match.", 'warning'); return; }
 
   btn.disabled = true;
   btn.textContent = 'Resetting…';
@@ -15837,7 +15837,7 @@ async function submitNewPassword() {
     switchAuthTab('login');
     document.getElementById('auth-contact').value = forgotEmail || '';
   } catch (err) {
-    showToast('Network error. Please try again.', 'error');
+    showToast("Unable to connect. Please check your internet connection and try again.", 'error');
   } finally {
     btn.disabled = false;
     btn.textContent = 'Reset password';
@@ -15939,9 +15939,9 @@ async function saveProfileEdits() {
   const name   = document.getElementById('profile-edit-name').value.trim();
   const email  = document.getElementById('profile-edit-email').value.trim();
   const mobile = document.getElementById('profile-edit-mobile').value.trim();
-  if (!email)  { showToast('Email cannot be empty', 'warning'); return; }
-  if (!mobile) { showToast('Mobile number cannot be empty', 'warning'); return; }
-  if (!isValidIndianMobile(mobile)) { showToast('Enter a valid 10-digit mobile number starting with 6, 7, 8 or 9', 'warning'); return; }
+  if (!email)  { showToast("Email address is required.", 'warning'); return; }
+  if (!mobile) { showToast("Mobile number is required.", 'warning'); return; }
+  if (!isValidIndianMobile(mobile)) { showToast("Please enter a valid 10-digit mobile number starting with 6, 7, 8 or 9.", 'warning'); return; }
 
   const btn = document.getElementById('profileSaveBtn');
   btn.disabled = true;
@@ -15969,9 +15969,9 @@ async function saveProfileEdits() {
     document.getElementById('profileTileMobile').textContent = user.mobile || '—';
     updateNavAuth();
     exitProfileEditMode();
-    showToast('Profile updated');
+    showToast("Your profile has been updated.");
   } catch (err) {
-    showToast('Network error. Please try again.', 'error');
+    showToast("Unable to connect. Please check your internet connection and try again.", 'error');
   } finally {
     btn.disabled = false;
     btn.textContent = 'Save changes';
@@ -15995,8 +15995,8 @@ function exitPasswordEditMode() {
 async function savePasswordChange() {
   const currentPassword = document.getElementById('profile-current-password').value;
   const newPassword     = document.getElementById('profile-new-password').value;
-  if (!currentPassword || !newPassword) { showToast('Please fill in both fields', 'warning'); return; }
-  if (newPassword.length < 6) { showToast('New password must be at least 6 characters', 'warning'); return; }
+  if (!currentPassword || !newPassword) { showToast("Please fill in both password fields.", 'warning'); return; }
+  if (newPassword.length < 6) { showToast("Your new password must be at least 6 characters long.", 'warning'); return; }
 
   const btn = document.getElementById('profilePasswordBtn');
   btn.disabled = true;
@@ -16010,9 +16010,9 @@ async function savePasswordChange() {
     const data = await res.json();
     if (!res.ok) { showToast(data.message || 'Could not update password', 'error'); return; }
     exitPasswordEditMode();
-    showToast('Password updated successfully');
+    showToast("Your password has been updated.");
   } catch (err) {
-    showToast('Network error. Please try again.', 'error');
+    showToast("Unable to connect. Please check your internet connection and try again.", 'error');
   } finally {
     btn.disabled = false;
     btn.textContent = 'Update password';
@@ -16326,13 +16326,13 @@ async function copyPaymentDetail(text, btnEl, event) {
       document.execCommand('copy');
       document.body.removeChild(ta);
     }
-    showToast('Copied to clipboard');
+    showToast("Copied to clipboard.");
     if (btnEl) {
       btnEl.classList.add('copied');
       setTimeout(() => btnEl.classList.remove('copied'), 1200);
     }
   } catch (err) {
-    showToast('Could not copy — please copy it manually', 'error');
+    showToast("Unable to copy automatically. Please copy it manually.", 'error');
   }
 }
 
@@ -16343,7 +16343,7 @@ async function copyPaymentDetail(text, btnEl, event) {
 function copyCurrentAmount(btnEl, event) {
   if (event) event.stopPropagation();
   const val = document.getElementById('pay-amount-inline').value;
-  if (!val || Number(val) <= 0) { showToast('Enter an amount first', 'warning'); return; }
+  if (!val || Number(val) <= 0) { showToast("Please enter an amount.", 'warning'); return; }
   copyPaymentDetail(val, btnEl, event);
 }
 
@@ -16556,7 +16556,7 @@ async function createPaymentRequest() {
   const amount     = Number(document.getElementById('pay-amount').value);
   const note       = propertyNote;
 
-  if (!amount || amount <= 0) { showToast('Enter a valid amount', 'warning'); return; }
+  if (!amount || amount <= 0) { showToast("Please enter a valid amount.", 'warning'); return; }
 
   const btn = document.getElementById('paymentStage1Btn');
   btn.disabled = true;
@@ -16567,7 +16567,7 @@ async function createPaymentRequest() {
     document.getElementById('paymentStage1').style.display = 'none';
     document.getElementById('paymentStage2').style.display = '';
   } catch (err) {
-    showToast('Network error. Please try again.', 'error');
+    showToast("Unable to connect. Please check your internet connection and try again.", 'error');
   } finally {
     btn.disabled = false;
     btn.textContent = 'Continue';
@@ -16656,7 +16656,7 @@ function buildUpiIntentUrl(s) {
 // as the fallback either way.
 function payViaUpiApp() {
   const url = buildUpiIntentUrl(PAYMENT_SETTINGS_CACHE);
-  if (!url) { showToast('Enter an amount first', 'warning'); return; }
+  if (!url) { showToast("Please enter an amount.", 'warning'); return; }
   window.location.href = url;
 }
 
@@ -16667,7 +16667,7 @@ function payViaUpiApp() {
 // proof against it.
 async function submitPaymentProof() {
   const amount = Number(document.getElementById('pay-amount-inline').value);
-  if (!amount || amount <= 0) { showToast('Enter a valid amount', 'warning'); return; }
+  if (!amount || amount <= 0) { showToast("Please enter a valid amount.", 'warning'); return; }
 
   const fileInput = document.getElementById('pay-screenshot');
   const formData = new FormData();
@@ -16686,10 +16686,10 @@ async function submitPaymentProof() {
     });
     const data = await res.json();
     if (!res.ok) { if (handleNotVerifiedError(data)) return; showToast(data.message || 'Could not submit payment proof', 'error'); return; }
-    showToast('Payment submitted — we\'ll verify it shortly');
+    showToast("Payment submitted. We will verify it shortly.");
     closePaymentModal();
   } catch (err) {
-    showToast('Network error. Please try again.', 'error');
+    showToast("Unable to connect. Please check your internet connection and try again.", 'error');
   } finally {
     btn.disabled = false;
     btn.textContent = "I've paid — submit for verification";
@@ -16706,7 +16706,7 @@ async function submitPaymentProof() {
 ═══════════════════════════════════════════════ */
 function openEditListingFull(id) {
   const p = MY_LISTINGS_CACHE.find(x => x.id === id);
-  if (!p) { showToast('Could not find that listing', 'error'); return; }
+  if (!p) { showToast("This listing is no longer available.", 'error'); return; }
 
   closeProfileModal();
   editingPropertyId = id;
@@ -16788,7 +16788,7 @@ function cloneMyListing(id, propertyLabel) {
 }
 function openCloneListingFull(id) {
   const p = MY_LISTINGS_CACHE.find(x => x.id === id);
-  if (!p) { showToast('Could not find that listing', 'error'); return; }
+  if (!p) { showToast("This listing is no longer available.", 'error'); return; }
 
   closeProfileModal();
   resetListingForm();
@@ -16823,7 +16823,7 @@ function openCloneListingFull(id) {
 
   document.getElementById('addModal').classList.add('open');
   lockBodyScroll();
-  showToast('Details copied — update what\'s different and submit');
+  showToast("Listing details copied. Please update as needed and submit.");
 }
 
 /* ═══════════════════════════════════════════════
@@ -16875,7 +16875,7 @@ function removeSavedListing(id) {
   saveShortlistData();
   loadSavedListings();
   renderCards();
-  showToast('Removed from saved');
+  showToast("Removed from saved listings.");
 }
 
 
@@ -17074,7 +17074,7 @@ function closeNotifModal() {
 function openReferModal() {
   const user = getLoggedInUser();
   // Login is mandatory — referrals are credited to the account.
-  if (!user) { showToast('Please log in to refer a tenant', 'warning'); openAuthModal(); return; }
+  if (!user) { showToast("Please log in to refer a tenant.", 'warning'); openAuthModal(); return; }
   const preloadName = (user && `${user.firstName || ''} ${user.lastName || ''}`.trim()) || (user && user.name) || '';
   document.getElementById('refer-name').value = preloadName;
   document.getElementById('refer-phone').value = (user && user.mobile) || '';
@@ -17100,7 +17100,7 @@ function closeReferModal() {
 let _pendingReferralShare = null;
 
 async function inviteAndRegisterReferral() {
-  if (!getLoggedInUser()) { closeReferModal(); showToast('Please log in to refer a tenant', 'warning'); openAuthModal(); return; }
+  if (!getLoggedInUser()) { closeReferModal(); showToast("Please log in to refer a tenant.", 'warning'); openAuthModal(); return; }
   const referrerName  = document.getElementById('refer-name').value.trim();
   const referrerPhone = document.getElementById('refer-phone').value.trim();
   const tenantName    = document.getElementById('refer-tenant-name').value.trim();
@@ -17108,7 +17108,7 @@ async function inviteAndRegisterReferral() {
 
   // Both tenant details are required so every referral is registered.
   if (!tenantName) { showToast("Enter the tenant's name", 'warning'); return; }
-  if (!isValidIndianMobile(tenantPhone)) { showToast("Enter a valid 10-digit tenant phone", 'warning'); return; }
+  if (!isValidIndianMobile(tenantPhone)) { showToast("Please enter a valid 10-digit phone number for the tenant.", 'warning'); return; }
 
   // Catch the common case immediately, without a round trip — both fields
   // are already digit-only via sanitizeMobileInput, so a plain compare works.
@@ -17270,18 +17270,18 @@ function shareToTenantWhatsApp(tenantPhone, tenantName) {
 function copyVideoLink(url) {
   if (!url) return;
   if (navigator.clipboard) {
-    navigator.clipboard.writeText(url).then(() => showToast('Video link copied!'));
+    navigator.clipboard.writeText(url).then(() => showToast("Video link copied."));
   } else {
-    showToast('Video link: ' + url, 'info');
+    showToast('Unable to copy automatically. Video link: ' + url, 'info');
   }
 }
 
 function copyReferralCode() {
   const code = document.getElementById('referCodeText').textContent.trim();
   if (navigator.clipboard) {
-    navigator.clipboard.writeText(code).then(() => showToast('Referral code copied!'));
+    navigator.clipboard.writeText(code).then(() => showToast("Referral code copied."));
   } else {
-    showToast('Referral code: ' + code, 'info');
+    showToast('Unable to copy automatically. Referral code: ' + code, 'info');
   }
 }
 function shareReferralCode(tenantName) {
@@ -17296,7 +17296,7 @@ function shareReferralCode(tenantName) {
     }).catch(() => {});
   } else {
     navigator.clipboard.writeText(text).then(() => {
-      showToast("Website link copied!");
+      showToast("Website link copied.");
     });
   }
 }
@@ -17349,9 +17349,9 @@ function shareChargesLink() {
   if (navigator.share) {
     navigator.share({ title: title, text: title, url: url }).catch(function () {});
   } else if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(title + '\n' + url).then(function () { showToast('Link copied!'); });
+    navigator.clipboard.writeText(title + '\n' + url).then(function () { showToast("Link copied."); });
   } else {
-    showToast('Link: ' + url, 'info');
+    showToast('Unable to copy automatically. Link: ' + url, 'info');
   }
 }
 function copyUpiNumber(btn, num) {
@@ -17452,7 +17452,7 @@ async function loadHonestReviews() {
 
 /* ── Post Your Video Review (any logged-in user) ── */
 function openSubmitVideoModal() {
-  if (!getLoggedInUser()) { showToast('Please log in to submit your video', 'warning'); openAuthModal(); return; }
+  if (!getLoggedInUser()) { showToast("Please log in to submit your video.", 'warning'); openAuthModal(); return; }
   if (blockIfNotVerified()) return;
   document.getElementById('submitVideoModal').classList.add('open');
   lockBodyScroll();
@@ -18093,9 +18093,9 @@ function reviewTimeAgo(iso) {
 async function submitReview() {
   const user = getLoggedInUser();
   if (!user) { openAuthModal(); return; }
-  if (!reviewRatingSelected) { showToast('Please select a star rating', 'warning'); return; }
+  if (!reviewRatingSelected) { showToast("Please select a star rating.", 'warning'); return; }
   const text = document.getElementById('reviewText').value.trim();
-  if (!text) { showToast('Please write a short review', 'warning'); return; }
+  if (!text) { showToast("Please write a short review.", 'warning'); return; }
 
   const btn = document.getElementById('reviewSubmitBtn');
   btn.disabled = true;
@@ -18120,14 +18120,14 @@ async function submitReview() {
     document.getElementById('reviewText').value = '';
     document.getElementById('reviewCharCount').textContent = '0 / 500';
     setReviewRating(0);
-    showToast('Thanks for your review!');
+    showToast("Thank you for your review.");
     closeReviewModal();
     initReviewForm();
     reviewsPage = 1;
     loadReviews();
   } catch (err) {
     console.error('Could not submit review:', err.message);
-    showToast('Could not post your review. Please try again.', 'error');
+    showToast("Unable to post your review. Please try again.", 'error');
   } finally {
     btn.disabled = false;
     btn.textContent = 'Post review';
@@ -19317,7 +19317,7 @@ function isGoogleMapsShareLink(v) {
 }
 function openCurrentLocLink() {
   const v = (document.getElementById('f-currentLocationLink').value || '').trim();
-  if (!v) { document.getElementById('f-currentLocationLink').focus(); showToast('Paste your location link first', 'info'); return; }
+  if (!v) { document.getElementById('f-currentLocationLink').focus(); showToast("Please paste your location link first.", 'info'); return; }
   if (!isGoogleMapsShareLink(v)) return;   // http(s) only
   window.open(v, '_blank', 'noopener');     // opens in Google Maps (app on phones) without leaving the form
 }
@@ -19594,22 +19594,22 @@ function buildListingPayload() {
   function gb(id) { const el = document.getElementById(id); return el ? el.checked : false; }
 
   if (ownerPhone && !isValidIndianMobile(ownerPhone)) {
-    showToast('Enter a valid 10-digit owner phone number starting with 6, 7, 8 or 9', 'warning');
+    showToast("Please enter a valid 10-digit owner phone number starting with 6, 7, 8 or 9.", 'warning');
     return null;
   }
   const ownerAltPhone = gv('f-ownerAltPhone');
   if (!ownerAltPhone || !isValidIndianMobile(ownerAltPhone)) {
-    showToast('Enter a valid 10-digit owner number starting with 6, 7, 8 or 9', 'warning');
+    showToast("Please enter a valid 10-digit owner phone number starting with 6, 7, 8 or 9.", 'warning');
     return null;
   }
   const ownerCaretakerPhone = gv('f-ownerCaretakerPhone');
   if (ownerCaretakerPhone && !isValidIndianMobile(ownerCaretakerPhone)) {
-    showToast('Enter a valid 10-digit caretaker number starting with 6, 7, 8 or 9', 'warning');
+    showToast("Please enter a valid 10-digit caretaker phone number starting with 6, 7, 8 or 9.", 'warning');
     return null;
   }
   const agentPhone = gv('f-agentPhone');
   if (agentPhone && !isValidIndianMobile(agentPhone)) {
-    showToast('Enter a valid 10-digit agent phone number starting with 6, 7, 8 or 9', 'warning');
+    showToast("Please enter a valid 10-digit agent phone number starting with 6, 7, 8 or 9.", 'warning');
     return null;
   }
 
@@ -19850,7 +19850,7 @@ function submitListing() {
   lockListedByToAccount();
   const firstError = validateListingForm();
   if (firstError) {
-    showToast('Please fill in all required fields', 'warning');
+    showToast("Please complete all required fields.", 'warning');
     firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
     if (typeof firstError.focus === 'function') firstError.focus();
     return;
@@ -19872,7 +19872,7 @@ function submitListing() {
     const data = await res.json();
     if (!res.ok) { if (data.code === 'NOT_VERIFIED') { showPendingVerificationModal(); return; } throw new Error(data.message || 'Server error'); }
     if (isEditing) {
-      showToast('Updated!');
+      showToast("Your listing has been updated.");
       closeEditListingFull();
       loadMyListings();     // refresh "My Listings" with the saved changes
       fetchProperties();    // refresh the public grid so the edit shows up there too
@@ -19887,11 +19887,11 @@ function submitListing() {
     resetListingForm();
     document.getElementById('addModal').classList.remove('open');
     unlockBodyScroll();
-    showToast('Submitted! Will appear once our team verifies it.');
+    showToast("Your listing has been submitted. It will go live once our team verifies it.");
   })
   .catch(err => {
     console.error('Submit listing error:', err);
-    showToast('Failed to ' + (isEditing ? 'save changes' : 'submit') + ': ' + err.message, 'error');
+    showToast('Unable to ' + (isEditing ? 'save your changes' : 'submit your listing') + '. ' + ((err.message && !/fetch|network|server error/i.test(err.message)) ? err.message.replace(/\.?$/, '.') : 'Please try again.'), 'error');
   })
   .finally(() => {
     if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = isEditing ? 'Save changes' : 'Submit listing'; }
@@ -19957,7 +19957,7 @@ async function pickContactFromDevice(fieldId, nameFieldId) {
     let digits = rawTel.replace(/\D/g, '').slice(-10);
     while (digits.length && !/[6-9]/.test(digits[0])) digits = digits.slice(1);
     if (!digits) {
-      showToast('That contact has no usable mobile number.', 'error');
+      showToast("The selected contact does not have a valid mobile number.", 'error');
       return;
     }
     const field = document.getElementById(fieldId);
@@ -19974,7 +19974,7 @@ async function pickContactFromDevice(fieldId, nameFieldId) {
     }
   } catch (err) {
     if (err && err.name !== 'AbortError') {
-      showToast('Could not read that contact — please type the number in.', 'error');
+      showToast("Unable to read the selected contact. Please enter the number manually.", 'error');
     }
   }
 }
