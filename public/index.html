@@ -20893,6 +20893,8 @@ body{
 #hlNotice .hln-points li i svg{width:11px;height:11px}
 #hlNotice .hln-tag{margin:12px 0 14px;padding:6px 12px;font-size:12.5px}
 #hlNotice .hln-btn{padding:11px 16px;font-size:15px}
+#hlNotice .hln-points li span{display:block;min-width:0}
+#hlNotice .hln-sub{display:block;margin-top:1px;font-size:11.5px;line-height:1.35;font-weight:400;color:#9a7b72}
 #hlNotice .hln-x{top:12px;right:12px;width:30px;height:30px}
 @media (max-width:480px){
   #hlNotice .hln-card{padding:24px 18px 18px;max-width:none}
@@ -20904,6 +20906,7 @@ body{
   #hlNotice .hln-points li{padding:6px 10px;font-size:13px}
   #hlNotice .hln-tag{margin:10px 0 12px;font-size:12px}
   #hlNotice .hln-btn{padding:10px 14px;font-size:14.5px}
+  #hlNotice .hln-sub{font-size:11px}
 }
 /* ─── Sticky section pill (RENT 68 etc.): warm style, floating pill only (no band) ─── */
 .section-divider.is-stuck{background:transparent !important;backdrop-filter:none !important;-webkit-backdrop-filter:none !important}
@@ -20925,9 +20928,9 @@ body{
     <h2 id="hlNoticeTitle">We’re upgrading HomeLoop</h2>
     <p class="hln-d" id="hlNoticeLead">What we’re improving:</p>
     <ul class="hln-points" aria-label="What we are working on">
-      <li><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></i><span>A cleaner, easier-to-use design</span></li>
-      <li><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></i><span>Improvements to existing features</span></li>
-      <li><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></i><span>New features on the way</span></li>
+      <li><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></i><span>A completely upgraded UI<small class="hln-sub">A full redesign that is cleaner and easier to use</small></span></li>
+      <li><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></i><span>Enhanced existing features<small class="hln-sub">Improvements to the tools you already use</small></span></li>
+      <li><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></i><span>New features coming soon<small class="hln-sub">Additional tools to help you find and manage properties</small></span></li>
     </ul>
     <span class="hln-tag"><i></i>Adding new properties is temporarily paused</span>
     <button type="button" class="hln-btn" id="hlNoticeOk">Continue to website</button>
