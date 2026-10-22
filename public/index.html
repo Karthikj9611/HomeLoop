@@ -3445,6 +3445,19 @@ main.tab-explore .empty-state{display:none !important}
   color:var(--text-3);-webkit-text-fill-color:var(--text-3);font-weight:400;
 }
 .add-modal.view-mode #videoUrlGroup input{display:none}
+.add-modal.view-mode #videoUploadRow,
+.add-modal.view-mode #f-videoPreview,
+.add-modal.view-mode #f-videoStatus{display:none}
+.f-video-preview{margin-top:10px;border-radius:12px;overflow:hidden;background:#000;max-width:520px}
+.f-video-preview video{display:block;width:100%;max-height:320px;background:#000}
+.f-video-preview iframe{display:block;width:100%;aspect-ratio:16/9;border:0}
+.f-media-overlay{position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,.88);display:flex;align-items:center;justify-content:center;padding:24px}
+.f-media-overlay img{max-width:100%;max-height:100%;object-fit:contain;border-radius:8px}
+.f-media-overlay button{position:absolute;border:none;border-radius:50%;width:42px;height:42px;font-size:20px;line-height:1;cursor:pointer;background:rgba(255,255,255,.9);color:#111}
+.f-media-overlay .fmo-close{top:16px;right:16px}
+.f-media-overlay .fmo-prev{left:16px;top:50%;transform:translateY(-50%)}
+.f-media-overlay .fmo-next{right:16px;top:50%;transform:translateY(-50%)}
+.f-media-overlay .fmo-count{position:absolute;bottom:18px;left:50%;transform:translateX(-50%);color:#fff;font-size:13px;font-weight:600}
 /* Video tour now lives as the LAST slide of the same swipeable gallery
    (see buildImgSlider's videoSlideHtml param / buildVideoSlideHtml()),
    not as a separate card below it. */
@@ -7530,8 +7543,17 @@ main.tab-explore .empty-state{display:none !important}
     <div id="mediaSection">
     <div class="lm-section" id="mediaSectionHeader">📸 Media &amp; Description</div>
     <div class="form-group" id="videoUrlGroup">
-      <label class="form-label">Video Tour URL</label>
-      <input class="form-input" type="url" id="f-videoUrl" />
+      <label class="form-label">Video Tour</label>
+      <input class="form-input" type="text" inputmode="url" id="f-videoUrl" placeholder="Paste a YouTube / Vimeo link, or upload a video below" oninput="updateVideoUploadUI()" />
+      <div class="img-row" id="videoUploadRow" style="margin-top:8px">
+        <div class="img-btns">
+          <button type="button" class="img-btn-sec" id="f-videoUploadBtn" onclick="document.getElementById('f-videoFileInput').click()">🎥 Upload video</button>
+          <button type="button" class="img-btn-sec" id="f-videoRemoveBtn" style="display:none" onclick="removeUploadedVideo()">✕ Remove video</button>
+        </div>
+        <input type="file" id="f-videoFileInput" accept="video/mp4,video/webm,video/quicktime,video/ogg" style="display:none" onchange="uploadListingVideo(this)"/>
+      </div>
+      <div id="f-videoStatus" style="font-size:12px;color:var(--text-3);margin-top:6px"></div>
+      <div id="f-videoPreview" class="f-video-preview" style="display:none"></div>
     </div>
     <div class="form-group" id="imgFormGroup">
       <label class="form-label">Property Images</label>
@@ -14536,6 +14558,7 @@ function resetListingForm() {
   // Reset image previews
   fImages = [];
   renderFImages();
+  if (typeof updateVideoUploadUI === 'function') updateVideoUploadUI();
   // Undo any empty-field hiding from a previous property view (see
   // hideEmptyViewFields) so a fresh "List your property" form always shows
   // every field.
@@ -14915,6 +14938,7 @@ function applyImportedProperty(p) {
 
   // Media
   sv('f-videoUrl', media.video);
+  if (typeof updateVideoUploadUI === 'function') updateVideoUploadUI();
   sv('f-desc', media.desc);
   if (Array.isArray(media.images) && media.images.length) {
     fImages = media.images.slice();
@@ -18766,6 +18790,140 @@ document.addEventListener('click', function(e) {
 });
 
 /* ═══════════════════════════════════════════════
+   VIDEO TOUR (paste a link OR upload a file)
+   The uploaded file goes to POST /api/upload-video, which returns a path like /videos/<id>.mp4.
+   That path is written into #f-videoUrl, so the rest of the form (payload, edit, view, player)
+   treats an uploaded video exactly like a pasted link.
+═══════════════════════════════════════════════ */
+const LISTING_VIDEO_MAX_MB = 50; // keep in sync with VIDEO_MAX_BYTES in server.js
+const LISTING_VIDEO_TYPES = ['video/mp4', 'video/webm', 'video/quicktime', 'video/ogg'];
+const OWN_VIDEO_PATH_RE = /^\/videos\/[a-f0-9]{24}\.(mp4|webm|mov|ogg)$/i;
+let _videoUploading = false;
+
+function updateVideoUploadUI() {
+  const input = document.getElementById('f-videoUrl');
+  const status = document.getElementById('f-videoStatus');
+  const removeBtn = document.getElementById('f-videoRemoveBtn');
+  const uploadBtn = document.getElementById('f-videoUploadBtn');
+  if (!input || !status) return;
+  if (_videoUploading) return; // progress text is being shown
+  const isUploaded = OWN_VIDEO_PATH_RE.test(input.value.trim());
+  status.textContent = isUploaded ? '✅ Video uploaded' : '';
+  status.style.color = isUploaded ? 'var(--green, #16a34a)' : 'var(--text-3)';
+  if (removeBtn) removeBtn.style.display = isUploaded ? '' : 'none';
+  if (uploadBtn) uploadBtn.textContent = isUploaded ? '🎥 Replace video' : '🎥 Upload video';
+  renderVideoPreview();
+}
+
+// Inline player under the field: plays an uploaded file, or embeds a pasted YouTube/Vimeo/.mp4 link.
+function renderVideoPreview() {
+  const box = document.getElementById('f-videoPreview');
+  const input = document.getElementById('f-videoUrl');
+  if (!box || !input) return;
+  const v = input.value.trim();
+  const abs = v ? safeUrl(v) : '';
+  const html = abs ? buildVideoEmbed(abs) : '';
+  if (!html) { box.style.display = 'none'; box.innerHTML = ''; box.dataset.src = ''; return; }
+  if (box.dataset.src === abs) return; // already showing this one — don't restart playback on every keystroke
+  box.dataset.src = abs;
+  box.innerHTML = html;
+  box.style.display = '';
+}
+
+// Full-size viewer for the listing form's image thumbnails (tap a thumbnail; drag still reorders).
+function openFormImagePreview(idx) {
+  if (!fImages.length) return;
+  let cur = Math.max(0, Math.min(idx, fImages.length - 1));
+  const ov = document.createElement('div');
+  ov.className = 'f-media-overlay';
+  const draw = () => {
+    ov.innerHTML = '<img src="' + fImages[cur] + '" alt="Property image"/>' +
+      '<button type="button" class="fmo-close" aria-label="Close">✕</button>' +
+      (fImages.length > 1 ? '<button type="button" class="fmo-prev" aria-label="Previous">‹</button><button type="button" class="fmo-next" aria-label="Next">›</button>' +
+        '<div class="fmo-count">' + (cur + 1) + ' / ' + fImages.length + '</div>' : '');
+  };
+  const close = () => { document.removeEventListener('keydown', onKey); ov.remove(); };
+  const step = (d) => { cur = (cur + d + fImages.length) % fImages.length; draw(); };
+  const onKey = (e) => { if (e.key === 'Escape') close(); else if (e.key === 'ArrowLeft' && fImages.length > 1) step(-1); else if (e.key === 'ArrowRight' && fImages.length > 1) step(1); };
+  ov.addEventListener('click', (e) => {
+    if (e.target.closest('.fmo-close') || e.target === ov) return close();
+    if (e.target.closest('.fmo-prev')) return step(-1);
+    if (e.target.closest('.fmo-next')) return step(1);
+  });
+  document.addEventListener('keydown', onKey);
+  draw();
+  document.body.appendChild(ov);
+}
+
+function removeUploadedVideo() {
+  const input = document.getElementById('f-videoUrl');
+  if (input) input.value = '';
+  updateVideoUploadUI();
+}
+
+function uploadListingVideo(fileInput) {
+  const file = (fileInput.files || [])[0];
+  fileInput.value = '';
+  if (!file || _videoUploading) return;
+
+  const status = document.getElementById('f-videoStatus');
+  const uploadBtn = document.getElementById('f-videoUploadBtn');
+  const input = document.getElementById('f-videoUrl');
+
+  if (LISTING_VIDEO_TYPES.indexOf(file.type) < 0) {
+    showToast('Please choose an MP4, WebM, MOV or OGG video.', 'error');
+    return;
+  }
+  if (file.size > LISTING_VIDEO_MAX_MB * 1024 * 1024) {
+    showToast('Video is too large. Maximum size is ' + LISTING_VIDEO_MAX_MB + ' MB.', 'error');
+    return;
+  }
+
+  const user = getLoggedInUser();
+  if (!user || !user.userKey) {
+    showToast('Please log in to upload a video.', 'warning');
+    return;
+  }
+
+  _videoUploading = true;
+  if (uploadBtn) uploadBtn.disabled = true;
+  if (status) { status.style.color = 'var(--text-3)'; status.textContent = 'Uploading… 0%'; }
+
+  const form = new FormData();
+  form.append('video', file);
+
+  // XHR rather than fetch so we can show real upload progress for a large file.
+  const xhr = new XMLHttpRequest();
+  xhr.open('POST', '/api/upload-video');
+  xhr.setRequestHeader('x-user-key', user.userKey);
+  xhr.upload.onprogress = function (e) {
+    if (e.lengthComputable && status) status.textContent = 'Uploading… ' + Math.round((e.loaded / e.total) * 100) + '%';
+  };
+  const finish = function (ok, msg) {
+    _videoUploading = false;
+    if (uploadBtn) uploadBtn.disabled = false;
+    if (!ok) {
+      if (status) { status.textContent = ''; }
+      showToast(msg || 'Could not upload the video. Please try again.', 'error');
+    }
+    updateVideoUploadUI();
+  };
+  xhr.onload = function () {
+    let data = {};
+    try { data = JSON.parse(xhr.responseText); } catch (e) {}
+    if (xhr.status >= 200 && xhr.status < 300 && data.url) {
+      if (input) input.value = data.url;
+      finish(true);
+    } else {
+      finish(false, data.message);
+    }
+  };
+  xhr.onerror = function () { finish(false, 'Network error while uploading the video.'); };
+  xhr.onabort = function () { finish(false, 'Video upload cancelled.'); };
+  xhr.send(form);
+}
+
+/* ═══════════════════════════════════════════════
    PROPERTY IMAGES (URL paste / file upload / camera)
 ═══════════════════════════════════════════════ */
 let fImages = [];
@@ -18840,6 +18998,7 @@ function fImgPointerUp() {
     el.style.transform = '';
   }
   renderFImages();
+  if (!moved) openFormImagePreview(from); // a plain tap/click (no drag) → view the image full size
 }
 async function addImagesFromFiles(input) {
   const files = Array.from(input.files || []);
@@ -19274,7 +19433,7 @@ const OPTIONAL_FIELD_IDS = new Set([
   'f-latitude', 'f-longitude', 'f-latLngDisplay',
   'f-imgFileInput', 'f-imgCameraInput',
   'f-amenities-extra', 'f-desc',   // description is optional
-  'f-videoUrl', 'f-age', 'f-area',
+  'f-videoUrl', 'f-videoFileInput', 'f-age', 'f-area',
   'f-ownerAltPhone', 'f-ownerCaretakerPhone', 'f-ownerEmail', 'f-areaType', 'f-maxPersons', 'f-kitchenType',   // optional
   'f-maintenance', 'f-leaseMaintenance',
   'f-sellPossessionDate', 'f-sellReraId', 'f-pricePerSqft',
@@ -19615,6 +19774,7 @@ function validateListingForm() {
 // Builds the nested submission payload from the form (shared by the review preview and the real submit).
 // Returns null (after toasting) if a phone number is invalid.
 function buildListingPayload() {
+  if (typeof _videoUploading !== 'undefined' && _videoUploading) { showToast('Please wait — your video is still uploading.', 'warning'); return null; }
   const title = document.getElementById('f-title').value.trim();
   const rent = document.getElementById('f-rent').value;
   const loc = document.getElementById('f-location').value.trim();

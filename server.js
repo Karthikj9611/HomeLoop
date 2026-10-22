@@ -1419,6 +1419,9 @@ function formatPostedDateTime(date) {
 const NESTED_SECTIONS = ['basic','location','owner','price','property','amenities','terms','rules','media','pg','shortStay','sale'];
 
 const URL_FIELDS_BY_SECTION = { location: ['mapLink', 'currentLocationLink'], media: ['video'] };
+// Videos uploaded through POST /api/upload-video are stored in GridFS and served from /videos/<id>.<ext>
+// (relative path, same idea as /uploads/<id> for images) — allowed in media.video alongside http(s) links.
+const OWN_VIDEO_PATH_RE = /^\/videos\/[a-f0-9]{24}\.(mp4|webm|mov|ogg)$/i;
 const MAX_LENGTHS = {
   'owner.propertyName': 200,
   'media.desc':         5000,
@@ -1442,6 +1445,7 @@ function validatePropertyFields(fields) {
     for (const k of urlKeys) {
       const val = obj[k];
       if (val && String(val).trim()) {
+        if (section === 'media' && k === 'video' && OWN_VIDEO_PATH_RE.test(String(val).trim())) continue; // our own uploaded video
         let parsed;
         try { parsed = new URL(String(val).trim()); } catch { return `Invalid URL in field '${section}.${k}'.`; }
         if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
@@ -3161,11 +3165,125 @@ app.post('/api/upload-images', uploadLimiter, attachUserIfPresent, upload.array(
   }
 });
 
+// ────────────────────────────────────────────────────────────────────────────
+// ── VIDEO TOUR UPLOADS ──
+// Property video tours can now be uploaded as a file (in addition to pasting a YouTube/Vimeo
+// link). Videos are far larger than the photos above and MongoDB documents cap at 16 MB, so
+// they go into GridFS (chunked storage in the same database — still no disk, still survives
+// Render restarts). They are served from GET /videos/:id.<ext> with HTTP Range support so
+// <video> can seek / start playing before the whole file has downloaded. The resulting path
+// (e.g. /videos/64f...a1.mp4) is what gets saved in media.video, exactly like a pasted link.
+// ────────────────────────────────────────────────────────────────────────────
+const VIDEO_MAX_BYTES = 50 * 1024 * 1024; // 50 MB per video — raise here (and in index.html) if needed
+const VIDEO_EXT_BY_TYPE = { 'video/mp4': 'mp4', 'video/webm': 'webm', 'video/quicktime': 'mov', 'video/ogg': 'ogg' };
+const VIDEO_TYPE_BY_EXT = { mp4: 'video/mp4', webm: 'video/webm', mov: 'video/quicktime', ogg: 'video/ogg' };
+
+let _videoBucket = null;
+function getVideoBucket() {
+  if (!_videoBucket) _videoBucket = new mongoose.mongo.GridFSBucket(mongoose.connection.db, { bucketName: 'videos' });
+  return _videoBucket;
+}
+
+// The client-supplied mimetype is just a claim — check the file's own signature too, so a
+// renamed .exe / .html can't be stored and served back as "video".
+function looksLikeVideo(buf, ext) {
+  if (!buf || buf.length < 12) return false;
+  if (ext === 'mp4' || ext === 'mov') return buf.slice(4, 8).toString('latin1') === 'ftyp' || ['moov', 'mdat', 'wide', 'free'].includes(buf.slice(4, 8).toString('latin1'));
+  if (ext === 'webm') return buf[0] === 0x1A && buf[1] === 0x45 && buf[2] === 0xDF && buf[3] === 0xA3;
+  if (ext === 'ogg')  return buf.slice(0, 4).toString('latin1') === 'OggS';
+  return false;
+}
+
+const uploadVideo = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: VIDEO_MAX_BYTES, files: 1 },
+  fileFilter: (req, file, cb) => {
+    const ok = Object.prototype.hasOwnProperty.call(VIDEO_EXT_BY_TYPE, file.mimetype);
+    cb(ok ? null : new Error('Only video files (MP4, WebM, MOV, OGG) are allowed'), ok);
+  },
+});
+
+const videoUploadLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, max: 10,
+  standardHeaders: true, legacyHeaders: false,
+  message: { message: 'Too many video uploads. Please try again later.' }
+});
+
+// Same account rules as creating a listing: logged in, and an owner/broker/agent/builder account.
+app.post('/api/upload-video', videoUploadLimiter, requireUser, requireOwner, uploadVideo.single('video'), async (req, res) => {
+  try {
+    const file = req.file;
+    if (!file) return res.status(400).json({ message: 'No video uploaded' });
+    const ext = VIDEO_EXT_BY_TYPE[file.mimetype];
+    if (!looksLikeVideo(file.buffer, ext)) return res.status(400).json({ message: 'That file does not look like a valid video' });
+
+    const stream = getVideoBucket().openUploadStream(`${Date.now()}.${ext}`, {
+      contentType: file.mimetype,
+      metadata: { userId: req.userId, userReadableId: req.userReadableId || null, uploadedAt: new Date() },
+    });
+    await new Promise((resolve, reject) => {
+      stream.on('error', reject);
+      stream.on('finish', resolve);
+      stream.end(file.buffer);
+    });
+
+    res.status(201).json({ message: 'Video uploaded successfully', url: `/videos/${stream.id}.${ext}` });
+  } catch (err) {
+    console.error('POST /api/upload-video error:', err);
+    res.status(500).json({ message: 'Error uploading video' });
+  }
+});
+
+// Public — anyone viewing a listing needs to play it. Supports Range requests (seeking / iOS Safari
+// refuses to play video from a server that ignores them). Bytes never change per id → cache hard.
+app.get('/videos/:id', async (req, res) => {
+  try {
+    const rawId = req.params.id.replace(/\.[a-zA-Z0-9]+$/, '');
+    if (!mongoose.Types.ObjectId.isValid(rawId)) return res.status(404).end();
+    const _id = new mongoose.Types.ObjectId(rawId);
+    const [file] = await getVideoBucket().find({ _id }).limit(1).toArray();
+    if (!file) return res.status(404).end();
+
+    const total = file.length;
+    let start = 0, end = total - 1, status = 200;
+    const range = req.headers.range;
+    if (range) {
+      const m = /^bytes=(\d*)-(\d*)$/.exec(range);
+      if (!m || (m[1] === '' && m[2] === '')) { res.set('Content-Range', `bytes */${total}`); return res.status(416).end(); }
+      if (m[1] === '') { start = Math.max(0, total - parseInt(m[2], 10)); }          // "last N bytes"
+      else { start = parseInt(m[1], 10); if (m[2] !== '') end = Math.min(parseInt(m[2], 10), total - 1); }
+      if (start > end || start >= total) { res.set('Content-Range', `bytes */${total}`); return res.status(416).end(); }
+      status = 206;
+      res.set('Content-Range', `bytes ${start}-${end}/${total}`);
+    }
+
+    res.status(status);
+    res.set({
+      'Content-Type': file.contentType || 'video/mp4',
+      'Content-Length': String(end - start + 1),
+      'Accept-Ranges': 'bytes',
+      'Cache-Control': 'public, max-age=31536000, immutable',
+      'X-Content-Type-Options': 'nosniff',
+    });
+    if (total === 0) return res.end();
+    const dl = getVideoBucket().openDownloadStream(_id, { start, end: end + 1 }); // GridFS `end` is exclusive
+    dl.on('error', () => res.destroy());
+    req.on('close', () => dl.destroy());
+    dl.pipe(res);
+  } catch (err) {
+    res.status(404).end();
+  }
+});
+
 // Multer-specific errors (file too large, too many files, wrong type) come through
 // as thrown errors rather than rejections multer itself formats — catch them here
 // so the client gets a clean 400 instead of a raw 500.
 app.use((err, req, res, next) => {
-  if (err instanceof multer.MulterError || (err && /Only image files/.test(err.message || ''))) {
+  if (err instanceof multer.MulterError || (err && /Only (image|video) files/.test(err.message || ''))) {
+    if (err.code === 'LIMIT_FILE_SIZE') {
+      const isVideo = /\/api\/upload-video/.test(req.originalUrl || '');
+      return res.status(413).json({ message: isVideo ? `Video is too large. Maximum size is ${Math.round(VIDEO_MAX_BYTES / 1048576)} MB.` : 'Image is too large. Maximum size is 8 MB.' });
+    }
     return res.status(400).json({ message: err.message });
   }
   next(err);
