@@ -14657,8 +14657,17 @@ function queueListingDraftSave() {
   _draftSaveTimer = setTimeout(saveListingDraftNow, 300);
 }
 function clearListingDraft() {
+  clearTimeout(_draftSaveTimer); // a save queued just before "Clear form" must not bring the old data back
   try { localStorage.removeItem(LISTING_DRAFT_KEY); } catch (e) {}
 }
+// Refreshing / closing the tab while the form is open: save right away instead of waiting for the 300ms debounce.
+// Only while the new-listing form is actually open, so a blank form is never saved over a real draft.
+function _saveDraftOnLeave() {
+  const m = document.getElementById('addModal');
+  if (m && m.classList.contains('open') && !propertyViewMode && !editingPropertyId && !_videoUploading) saveListingDraftNow();
+}
+window.addEventListener('pagehide', _saveDraftOnLeave);
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') _saveDraftOnLeave(); });
 function restoreListingDraft() {
   let draft;
   try { draft = JSON.parse(localStorage.getItem(LISTING_DRAFT_KEY) || 'null'); } catch (e) { draft = null; }
@@ -14673,6 +14682,7 @@ function restoreListingDraft() {
   fImages = Array.isArray(draft.fImages) ? draft.fImages.slice() : [];
   renderFImages();
   renderAmSelected();
+  if (typeof updateVideoUploadUI === 'function') updateVideoUploadUI(); // show player / Replace button for a restored video
   return true;
 }
 
@@ -18859,6 +18869,7 @@ function removeUploadedVideo() {
   const input = document.getElementById('f-videoUrl');
   if (input) input.value = '';
   updateVideoUploadUI();
+  queueListingDraftSave();
 }
 
 function uploadListingVideo(fileInput) {
@@ -18907,6 +18918,7 @@ function uploadListingVideo(fileInput) {
       showToast(msg || 'Could not upload the video. Please try again.', 'error');
     }
     updateVideoUploadUI();
+    queueListingDraftSave();
   };
   xhr.onload = function () {
     let data = {};
@@ -18945,6 +18957,7 @@ function renderFImages() {
 function removeFImage(i) {
   fImages.splice(i, 1);
   renderFImages();
+  queueListingDraftSave();
 }
 // Drag-to-reorder for the property-images thumbnail grid. Uses Pointer
 // Events (not the HTML5 Drag-and-Drop API) so the same code works with
@@ -18998,6 +19011,7 @@ function fImgPointerUp() {
     el.style.transform = '';
   }
   renderFImages();
+  if (moved) queueListingDraftSave();
   if (!moved) openFormImagePreview(from); // a plain tap/click (no drag) → view the image full size
 }
 async function addImagesFromFiles(input) {
@@ -19024,6 +19038,7 @@ async function addImagesFromFiles(input) {
     showToast(err.message || 'Could not upload images. Please try again.', 'error');
   } finally {
     renderFImages();
+    queueListingDraftSave(); // the change event fired before the upload finished, so save the draft again now that fImages has the new photos
   }
 }
 
