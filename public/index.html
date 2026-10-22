@@ -35,7 +35,8 @@ const ACCT_OWNER_SIDE = ['owner', 'broker', 'agent', 'builder']; // account type
 // anything the visitor is actually here for.
 (function(){
   var WISH_PRELOAD = [
-    { startDate:'2026-08-20', endDate:'2026-08-21', image:'/wishes/varalakshmi-vratam-2026.webp' },
+    { startDate:'2026-11-08', endDate:'2026-11-09', image:'/wishes/HomeLoop_Diwali.png' },
+	{ startDate:'2026-08-20', endDate:'2026-08-21', image:'/wishes/varalakshmi-vratam-2026.webp' },
     { startDate:'2026-09-13', endDate:'2026-09-14', image:'/wishes/ganesh-chaturthi-2026.webp' }
   ];
   function todayStr(){ var d=new Date(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0'); return d.getFullYear()+'-'+m+'-'+day; }
@@ -20620,6 +20621,14 @@ document.addEventListener('keydown', function(e){ if (e.key === 'Escape') closeP
   // its own date(s); nothing needs to be removed afterwards, it just stops
   // firing once the date passes.
   var WISH_CONFIG = [
+	{
+      id: 'HomeLoop_Diwali',
+      startDate: '2026-11-08',   // YYYY-MM-DD (inclusive)
+      endDate:   '2026-11-09',   // last day it should show (inclusive)
+      image:     '/wishes/HomeLoop_Diwali.png',
+      imageFallback: '/wishes/HomeLoop_Diwali.png',
+      alt:       'Happy Diwali — from Home Loop'
+    },
     {
       id: 'varalakshmi-vratam-2026',
       startDate: '2026-08-20',   // YYYY-MM-DD (inclusive)
