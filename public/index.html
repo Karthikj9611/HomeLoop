@@ -1,6 +1,20 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script>
+/* Contact picker button: shown on phones/tablets, hidden ONLY on desktop. */
+(function(){
+  try{
+    var ua = navigator.userAgent || '';
+    var uaMobile = (navigator.userAgentData && navigator.userAgentData.mobile) ||
+                   /Android|iPhone|iPad|iPod|Mobile|Silk|Opera Mini/i.test(ua);
+    var ipadOS = navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1;
+    var coarse = window.matchMedia && window.matchMedia('(pointer:coarse)').matches;
+    var isMobile = !!(uaMobile || ipadOS || coarse);
+    if(!isMobile) document.documentElement.classList.add('no-contact-picker');
+  }catch(e){ /* on error keep the button visible */ }
+})();
+</script>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
 <!-- Static <title> disabled for now so WhatsApp link preview shows only the domain - uncomment to re-enable
@@ -2381,6 +2395,66 @@ main.tab-explore .empty-state{display:none !important}
 .fab-picker-desc{font-size:11.5px;color:var(--text-3);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .fab-picker-chevron{width:16px;height:16px;stroke:var(--text-3);fill:none;stroke-width:2;flex-shrink:0;opacity:.6;transition:transform .14s,opacity .14s}
 .fab-picker-item:hover .fab-picker-chevron{transform:translateX(2px);opacity:1}
+/* ─── Create-a-listing picker: redesigned ─── */
+.fab-picker-backdrop{background:rgba(30,20,35,.42);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+.fab-picker{
+  width:372px;max-width:calc(100vw - 32px);padding:22px 18px 18px;border-radius:26px;overflow:hidden;
+  background:radial-gradient(120% 55% at 50% 0%,#ffe7de 0%,rgba(255,231,222,0) 72%),linear-gradient(180deg,#fff6f1 0%,#fff 46%);
+  border:1px solid rgba(255,255,255,.8);
+  box-shadow:0 30px 70px -18px rgba(120,30,50,.38),0 4px 14px rgba(0,0,0,.08);
+}
+.fab-picker::before{content:"";position:absolute;left:0;right:0;top:0;height:4px;background:linear-gradient(90deg,#ff8a5c,#e03a52 55%,#e8365d)}
+.fab-picker-x{
+  position:absolute;top:14px;right:14px;width:32px;height:32px;display:grid;place-items:center;
+  border:none;border-radius:50%;background:var(--brand);color:#fff;cursor:pointer;
+  box-shadow:0 2px 10px rgba(224,58,82,.32);transition:transform .25s,background .15s;
+}
+.fab-picker-x svg{width:15px;height:15px}
+.fab-picker-x:hover{background:var(--brand-hover);transform:rotate(90deg)}
+.fab-picker-header{display:flex;align-items:center;gap:14px;padding:2px 40px 18px 2px}
+.fab-picker-badge{
+  flex:0 0 auto;width:48px;height:48px;border-radius:50%;display:grid;place-items:center;
+  background:#fff;color:var(--brand);
+  box-shadow:0 0 0 6px rgba(224,58,82,.07),0 0 0 13px rgba(224,58,82,.04),0 10px 22px -8px rgba(224,58,82,.38);
+  margin:6px 6px 6px 8px;
+}
+.fab-picker-badge svg{width:23px;height:23px}
+.fab-picker-title{font-size:20px;line-height:1.2;font-weight:800;letter-spacing:-.01em;color:var(--text)}
+.fab-picker-sub{font-size:13px;color:var(--text-2);margin-top:3px}
+.fab-picker-item{
+  --acc:#e03a52;--acc-bg:#fff0f2;--acc-glow:rgba(224,58,82,.35);
+  position:relative;gap:14px;padding:13px 14px;margin-top:10px;border-radius:18px;
+  background:#fff;border:1px solid #f6e1d7;
+  box-shadow:0 8px 18px -14px rgba(190,70,60,.45);
+  transition:transform .18s,box-shadow .18s,border-color .18s,background .18s;
+}
+.fab-picker-item:has(.fpi-lease){--acc:#3f6fe0;--acc-bg:#eef3ff;--acc-glow:rgba(63,111,224,.35)}
+.fab-picker-item:has(.fpi-pg){--acc:#7c4fd6;--acc-bg:#f3eeff;--acc-glow:rgba(124,79,214,.35)}
+.fab-picker-item:has(.fpi-sell){--acc:#c58a06;--acc-bg:#fff8e1;--acc-glow:rgba(202,138,4,.35)}
+.fab-picker-item:hover{background:#fff;border-color:var(--acc);transform:translateY(-2px);box-shadow:0 14px 26px -14px var(--acc-glow)}
+.fab-picker-item:active{transform:scale(.985)}
+.fab-picker-icon{width:50px;height:50px;border-radius:15px;box-shadow:0 8px 16px -6px var(--acc-glow),inset 0 1px 1px rgba(255,255,255,.45)}
+.fab-picker-icon svg{width:23px;height:23px}
+.fab-picker-label{font-size:15px;font-weight:700;letter-spacing:-.005em}
+.fab-picker-desc{font-size:12.5px;color:var(--text-2);margin-top:2px;white-space:normal}
+.fab-picker-chevron{
+  width:30px;height:30px;padding:8px;box-sizing:border-box;border-radius:50%;
+  background:var(--acc-bg);stroke:var(--acc);stroke-width:2.6;opacity:1;
+  transition:transform .18s,background .18s,stroke .18s;
+}
+.fab-picker-item:hover .fab-picker-chevron{background:var(--acc);stroke:#fff;transform:translateX(2px)}
+.fab-picker.open .fab-picker-item{animation:fabPickIn .38s cubic-bezier(.2,.8,.3,1) both}
+.fab-picker.open .fab-picker-item:nth-of-type(2){animation-delay:.05s}
+.fab-picker.open .fab-picker-item:nth-of-type(3){animation-delay:.12s}
+.fab-picker.open .fab-picker-item:nth-of-type(4){animation-delay:.19s}
+@keyframes fabPickIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@media (max-width:480px){
+  .fab-picker{padding:20px 14px 14px;border-radius:24px}
+  .fab-picker-title{font-size:19px}
+  .fab-picker-item{padding:12px}
+  .fab-picker-icon{width:46px;height:46px}
+}
+@media (prefers-reduced-motion:reduce){.fab-picker.open .fab-picker-item{animation:none}.fab-picker-x:hover{transform:none}}
 
 /* ─── Compare Bar ──────────────────────────────── */
 .compare-bar{
@@ -3413,6 +3487,8 @@ main.tab-explore .empty-state{display:none !important}
   color:#fff;transition:transform .12s,box-shadow .12s;
 }
 .contact-pick-btn:hover{transform:translateY(-50%) scale(1.08)}
+.no-contact-picker .contact-pick-btn{display:none !important}
+.no-contact-picker .input-icon-wrap .form-input{padding-right:12px}
 .contact-pick-btn:active{
   transform:translateY(-50%) scale(.94);
   box-shadow:0 1px 2px rgba(224,58,82,.4),inset 0 1px 2px rgba(0,0,0,.25);
@@ -6393,9 +6469,13 @@ main.tab-explore .empty-state{display:none !important}
 
 <div class="fab-picker-backdrop" id="fabPickerBackdrop" onclick="closeFabPicker()"></div>
 <div class="fab-picker" id="fabPicker" role="menu" aria-label="Choose listing type">
+  <button type="button" class="fab-picker-x" aria-label="Close" onclick="closeFabPicker()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
   <div class="fab-picker-header">
-    <div class="fab-picker-title">Create a listing</div>
-    <div class="fab-picker-sub">What are you posting today?</div>
+    <span class="fab-picker-badge" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v9a1 1 0 0 0 1 1h14"/><path d="M15 6v6M12 9h6"/></svg></span>
+    <div class="fab-picker-headtext">
+      <div class="fab-picker-title">Create a listing</div>
+      <div class="fab-picker-sub">What are you posting today?</div>
+    </div>
   </div>
   <div class="fab-picker-item" role="menuitem" onclick="selectFabType('Rent')">
     <span class="fab-picker-icon fpi-rent"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9"/></svg></span>
@@ -17456,7 +17536,19 @@ document.getElementById('serviceModal').addEventListener('click', function(e) {
 // (not reset) so re-opening keeps whatever they'd already filled in.
 function openRentReceiptTool() {
   const frame = document.getElementById('rentReceiptFrame');
-  if (!frame.src) frame.src = '/rent-receipt.html';
+  if (!frame.src) {
+    frame.addEventListener('load', function hideRrPicker() {
+      try {
+        if (!document.documentElement.classList.contains('no-contact-picker')) return;
+        var d = frame.contentDocument; if (!d) return;
+        d.documentElement.classList.add('no-contact-picker');
+        var st = d.createElement('style');
+        st.textContent = '.contact-pick-btn,[title="Pick from contacts"],[aria-label*="contact" i]{display:none !important}';
+        d.head.appendChild(st);
+      } catch (e) {}
+    });
+    frame.src = '/rent-receipt.html';
+  }
   document.getElementById('rentReceiptModal').classList.add('open');
   lockBodyScroll();
 }
