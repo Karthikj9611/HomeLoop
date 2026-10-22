@@ -13736,7 +13736,7 @@ function openDetailReal(id) {
   // number: a number that matches the fixed in-house agent line (9035205230)
   // is labelled "Coordinator", any other number (the owner's own) is "Owner".
   const _mainRole = (String(p.ownerPhone || '').replace(/\D/g, '').slice(-10) === '9035205230') ? 'Coordinator' : 'Owner';
-  const _altRole  = (String(p.ownerAltPhone || '').replace(/\D/g, '').slice(-10) === '9035205230') ? 'Coordinator' : 'Owner';
+  const _altRole  = (String(p.ownerAltPhone || '').replace(/\D/g, '').slice(-10) === '9035205230') ? 'Coordinator' : 'Owner Alt Number';
   document.getElementById('viewOwnerPhoneLabel').textContent = _mainRole;
   document.getElementById('viewOwnerCallLabel').textContent  = _altRole;
   document.getElementById('viewOwnerPhoneWaLabel').textContent = _mainRole;
@@ -14415,6 +14415,8 @@ function openPropertyNavigate(propId) {
 /* Navigation icon shown right below the card's Call icon. The server only sends navigateUrl
    for listings whose owner number is public to this viewer (active subscription plan for a
    tenant/customer, or an owner who made their listing public), so it appears exactly then. */
+// Set to false to show the Call icon on property cards again (Navigate icon always shows when available).
+const HIDE_CARD_CALL_NAV = true;
 function cardNavBadgeHTML(p) {
   if (!p || isBookedProp(p) || !(p.currentLocationLink || p.navigateUrl)) return '';
   return `<div class="prop-icon-badge prop-icon-nav" onclick="event.stopPropagation();openPropertyNavigate('${p.id}')" aria-label="Navigate" title="Navigate to property"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.6 21.4 12 12 21.4 2.6 12Z" fill="#fff" stroke="#fff" stroke-width="2" stroke-linejoin="round"/><path d="M8.6 15.2v-3.1c0-.8.6-1.4 1.4-1.4h4.6" fill="none" stroke="#1a73e8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M12.9 8.6l2.6 2.1-2.6 2.1" fill="none" stroke="#1a73e8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>`;
@@ -14427,6 +14429,7 @@ function cardNavBadgeHTML(p) {
    login gate — so a visitor can always reach someone directly. */
 /* Card call button: shown when the owner enabled Public call, or the viewer has an active subscription. */
 function cardCallOn(p) {
+  if (HIDE_CARD_CALL_NAV) return false;
   return hasActivePlan() || !!((p.ownerPhoneCall && p.ownerPhone) || (p.ownerDirectCall && p.ownerAltPhone));
 }
 function openCardCall(propId) {
