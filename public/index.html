@@ -9078,25 +9078,6 @@ main.tab-explore .empty-state{display:none !important}
       <span class="menu-item-badge" id="menuNotifCount">0</span>
     </div>
     <div class="menu-divider"></div>
-    <div class="menu-section-label">Support</div>
-    <div class="menu-item" onclick="toggleMenuPanel(); openReferModal();">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2L9 9l-7 1 5 5-1.5 7L12 18l6.5 4L17 15l5-5-7-1z"/></svg>
-      Refer &amp; Earn
-      <span class="menu-item-badge">New</span>
-    </div>
-    <div class="menu-item" onclick="toggleMenuPanel(); openChargesModal();">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/><line x1="6" y1="15" x2="10" y2="15"/></svg>
-      Our Charges
-    </div>
-    <div class="menu-item" onclick="toggleMenuPanel(); openHelpModal();">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 1 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12" y2="17"/></svg>
-      Help &amp; Support
-    </div>
-    <div class="menu-item" onclick="toggleMenuPanel(); openAboutModal();">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="8"/></svg>
-      About Us
-    </div>
-    <div class="menu-divider"></div>
     <div class="menu-section-label" id="menuManageLabel">Manage</div>
     <div class="menu-item" id="menuListRent" onclick="toggleMenuPanel(); openAddModal('Rent');">
       <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -9117,6 +9098,25 @@ main.tab-explore .empty-state{display:none !important}
     <div class="menu-item" onclick="toggleMenuPanel(); openSubmitVideoModal();" style="display:none">
       <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
       Post Your Video Review
+    </div>
+    <div class="menu-divider" id="menuSupportDivider"></div>
+    <div class="menu-section-label">Support</div>
+    <div class="menu-item" onclick="toggleMenuPanel(); openReferModal();">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2L9 9l-7 1 5 5-1.5 7L12 18l6.5 4L17 15l5-5-7-1z"/></svg>
+      Refer &amp; Earn
+      <span class="menu-item-badge">New</span>
+    </div>
+    <div class="menu-item" onclick="toggleMenuPanel(); openChargesModal();">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/><line x1="6" y1="15" x2="10" y2="15"/></svg>
+      Our Charges
+    </div>
+    <div class="menu-item" onclick="toggleMenuPanel(); openHelpModal();">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 1 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12" y2="17"/></svg>
+      Help &amp; Support
+    </div>
+    <div class="menu-item" onclick="toggleMenuPanel(); openAboutModal();">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="8"/></svg>
+      About Us
     </div>
   </div>
   <div class="menu-panel-footer"><span class="brandname">Home<span class="bn-accent">Loop</span></span> · v1.0</div>
@@ -15582,7 +15582,7 @@ function updateAdBannerAudience() {
 function updateListPropertyVisibility(user) {
   const canList = !user || (ACCT_OWNER_SIDE.includes(user.accountType));
   const display = canList ? '' : 'none';
-  ['fabAdd', 'bottomTabAdd', 'fabInlineAdd', 'menuManageLabel', 'menuListRent']  /* menuListPG / menuListSell intentionally excluded: stay hidden (see PG_ENABLED / SELL_ENABLED) */
+  ['fabAdd', 'bottomTabAdd', 'fabInlineAdd', 'menuManageLabel', 'menuListRent', 'menuSupportDivider']  /* menuListPG / menuListSell intentionally excluded: stay hidden (see PG_ENABLED / SELL_ENABLED) */
     .forEach(id => { const el = document.getElementById(id); if (el) el.style.display = display; });
   const _sellMenu = document.getElementById('menuListSell');
   if (_sellMenu) _sellMenu.style.display = (SELL_ENABLED && canList) ? '' : 'none';
@@ -17557,7 +17557,8 @@ function showChargesModal(tab, fromLink) {
   //  - logged-in tenant: Tenants + Notice | owner: Owners only | broker: Brokers only
   //  - guest (no link): everything
   let visible;
-  if (fromLink && tab) visible = (tab === 'notice' || tab === 'tenant') ? ['tenant', 'notice'] : [tab];
+  if (fromLink && tab === 'all') { visible = ['tenant', 'owner', 'broker', 'notice']; tab = acct || 'tenant'; } // common share link: everyone sees every tab
+  else if (fromLink && tab) visible = (tab === 'notice' || tab === 'tenant') ? ['tenant', 'notice'] : [tab];
   else if (acct === 'tenant') visible = ['tenant', 'notice'];
   else if (acct === 'owner')  visible = ['owner'];
   else if (acct === 'broker') visible = ['broker'];
@@ -17581,13 +17582,10 @@ function closeChargesModal() {
 }
 var _chargesTab = 'tenant';
 function shareChargesLink() {
-  var tab = _chargesTab || 'tenant';
-  // A signed-in sharer always sends their own audience's charges (tenants may also send the Notice tab).
-  var _u = getLoggedInUser();
-  if (_u) tab = (_u.accountType === 'broker' || _u.accountType === 'agent') ? 'broker' : ACCT_OWNER_SIDE.includes(_u.accountType) ? 'owner' : (tab === 'notice' ? 'notice' : 'tenant');
-  var url = window.location.origin + '/?charges=' + tab;
-  var titles = { tenant: 'Direct Plan & Managed Plan', owner: 'Direct Plan & Managed Plan', broker: 'Direct Plan & Managed Plan', notice: 'Payment Safety Notice' };
-  var title = (titles[tab] || 'Direct Plan & Managed Plan') + ' - HomeLoop';
+  // One common link for everyone, whichever tab/audience the sharer is on:
+  // whoever opens it sees all the charges tabs (Tenants, Owners, Brokers, Notice).
+  var url = window.location.origin + '/?charges=all';
+  var title = 'Our Charges - HomeLoop';
   if (navigator.share) {
     navigator.share({ title: title, text: title, url: url }).catch(function () {});
   } else if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -18701,7 +18699,7 @@ document.addEventListener('DOMContentLoaded', function() {
     renderRecentlyViewed();
     // ── Deep-link: auto-open the charges modal (?charges=tenant|owner|broker|notice) ──
     const _chParam = new URLSearchParams(window.location.search).get('charges');
-    if (_chParam && ['tenant', 'owner', 'broker', 'notice'].includes(_chParam)) openChargesModal(_chParam, true);
+    if (_chParam && ['all', 'tenant', 'owner', 'broker', 'notice'].includes(_chParam)) openChargesModal(_chParam, true);
 
     if (!ok) return;
     initNearbyLocation(); // ask for location once listings are in, so "Near me first" has data to sort
