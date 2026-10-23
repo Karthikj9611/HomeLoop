@@ -5358,7 +5358,7 @@ main.tab-explore .empty-state{display:none !important}
 
 /* Locked last photo (no active subscription plan) */
 .plan-lock{position:absolute;inset:0;z-index:3;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:18px;text-align:center;color:#3f4a47;background:radial-gradient(120% 70% at 50% 0%,rgba(255,236,214,.75),transparent 62%),linear-gradient(160deg,rgba(250,246,240,.95),rgba(228,240,235,.95));backdrop-filter:blur(18px) saturate(1.05);-webkit-backdrop-filter:blur(18px) saturate(1.05);cursor:default;overflow:hidden;box-sizing:border-box;touch-action:pan-y;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
-.plan-lock-icon{width:46px;height:46px;border-radius:50%;display:grid;place-items:center;font-size:21px;line-height:1;background:rgba(255,255,255,.75);border:1px solid rgba(110,150,138,.28);box-shadow:0 8px 22px -12px rgba(70,100,90,.45)}
+.plan-lock-icon{width:46px;height:46px;flex:0 0 auto;aspect-ratio:1/1;border-radius:50%;display:grid;place-items:center;font-size:21px;line-height:1;background:rgba(255,255,255,.75);border:1px solid rgba(110,150,138,.28);box-shadow:0 8px 22px -12px rgba(70,100,90,.45)}
 .plan-lock-title{font-size:16px;font-weight:700;letter-spacing:-.01em;line-height:1.2}
 .plan-lock-sub{font-size:12.5px;opacity:.85;max-width:240px;line-height:1.4}
 .plan-lock-btn{margin-top:4px;padding:10px 18px;border:none;border-radius:999px;background:#5f9488;color:#fff;font-weight:600;font-size:13px;cursor:pointer;box-shadow:0 8px 18px -10px rgba(60,110,98,.7);display:inline-flex;align-items:center;gap:6px;white-space:nowrap;transition:transform .15s}
@@ -10607,8 +10607,12 @@ function buildImgSlider(p, fg, uidSuffix, videoSlideHtml) {
   ).join('');
   // Video tour, when present, always comes after every photo — the last
   // slide in the same swipeable gallery rather than a separate section.
+  // With photos present, the video tour is a subscriber-only item: its markup is kept
+  // out of the DOM (data-vh) and only injected by slideGo() once a plan is active.
   const videoSlide = videoSlideHtml
-    ? `<div class="img-slide video-slide${imgs.length===0?' active':''}">${videoSlideHtml}</div>`
+    ? (imgs.length >= 1
+        ? `<div class="img-slide video-slide" data-vh="${encodeURIComponent(videoSlideHtml)}"></div>`
+        : `<div class="img-slide video-slide active">${videoSlideHtml}</div>`)
     : '';
   return `<div class="img-slides" id="${uid}">${imgSlides}${videoSlide}</div>`;
 }
@@ -10674,10 +10678,16 @@ function slideGo(uid, idx) {
   // Lock the last PHOTO only - the video tour (always appended after the photos) stays open.
   const _all = [...c.querySelectorAll('.img-slide')];
   const _photos = _all.filter(s => !s.classList.contains('video-slide'));
-  if (_photos.length && lastItemLocked(_photos.length) && _all[idx] === _photos[_photos.length - 1]) {
+  const _act = _all[idx];
+  const _vidLocked = !!(_act && _act.classList.contains('video-slide') && _act.dataset.vh && !hasActivePlan());
+  if (_act && _act.dataset && _act.dataset.vh && hasActivePlan() && !_act.firstElementChild) {
+    _act.innerHTML = decodeURIComponent(_act.dataset.vh);
+  }
+  const _photoLocked = _photos.length && lastItemLocked(_photos.length) && _act === _photos[_photos.length - 1];
+  if (_photoLocked || _vidLocked) {
     const lk = document.createElement('div');
     lk.className = 'plan-lock';
-    lk.innerHTML = lockPanelHtml();
+    lk.innerHTML = lockPanelHtml(_vidLocked ? 'video' : 'photo');
     lk.addEventListener('click', function(e){ e.stopPropagation(); });
     c.appendChild(lk);
   }
@@ -10717,10 +10727,11 @@ function openPlansFromLock(ev) {
   closeLightbox();
   showPlansFromSwipe();
 }
-function lockPanelHtml() {
-  return '<div class="plan-lock-icon">\uD83C\uDFE1</div>'
-    + '<div class="plan-lock-title">Building photo</div>'
-    + '<div class="plan-lock-sub">With the Direct Plan, you can view it and connect with owners directly. We\u2019d be delighted to have you.</div>'
+function lockPanelHtml(kind) {
+  const isVid = kind === 'video';
+  return '<div class="plan-lock-icon">' + (isVid ? '\uD83C\uDFAC' : '\uD83C\uDFE1') + '</div>'
+    + '<div class="plan-lock-title">' + (isVid ? 'Video tour' : 'Building photo') + '</div>'
+    + '<div class="plan-lock-sub">With the Direct Plan, you can view the building photo and video tour, navigate to the exact building location, and connect with owners directly. We\u2019d be delighted to have you.</div>'
     + '<button type="button" class="plan-lock-btn" onclick="openPlansFromLock(event)">Explore Direct Plan</button>';
 }
 function showPlansFromSwipe() {
@@ -10883,6 +10894,10 @@ function lightboxLockedIdx() {
   return (lightboxPropertyMode && lastItemLocked(lightboxImgs.length)) ? lightboxImgs.length - 1 : -1;
 }
 
+function lightboxVideoLocked() {
+  return !!(lightboxPropertyMode && lightboxVideoHtml && lightboxImgs.length >= 1 && !hasActivePlan());
+}
+
 function lightboxTotal() {
   return lightboxImgs.length + (lightboxVideoHtml ? 1 : 0);
 }
@@ -10922,7 +10937,9 @@ function renderLightbox() {
     lockEl.innerHTML = lockPanelHtml();
     stageEl.appendChild(lockEl);
   }
-  if (lightboxIdx === lockedIdx) {
+  const vidLocked = isVideo && lightboxVideoLocked();
+  if (lockEl) lockEl.innerHTML = lockPanelHtml(vidLocked ? 'video' : 'photo');
+  if (lightboxIdx === lockedIdx || vidLocked) {
     imgEl.style.display = 'none';
     imgEl.removeAttribute('src');          // never load the locked photo
     videoEl.style.display = 'none';
