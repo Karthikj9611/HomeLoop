@@ -7044,22 +7044,6 @@ main.tab-explore .empty-state{display:none !important}
       <label class="form-label">Property Name</label>
       <input class="form-input" type="text" id="f-title" autocapitalize="words" onblur="capitalizeWordsInput(this)" oninput="capitalizeWordsInput(this)" />
     </div>
-      <div class="form-group" id="fullAddressGroup" style="grid-column:1 / -1">
-        <label class="form-label">Building Live Address</label>
-        <div style="display:flex;gap:7px;align-items:stretch">
-          <textarea class="form-input" id="f-fullAddress" autocapitalize="words" rows="1" style="flex:1;min-width:0;resize:none;overflow:hidden" oninput="capitalizeWordsInput(this); onFullAddressInput(this.value)" onblur="capitalizeWordsInput(this); onFullAddressBlur(this.value)"></textarea>
-          <button type="button" onclick="fCaptureLocation()" class="loc-act-btn" aria-label="Capture live location" title="Capture live location" style="display:inline-flex;align-items:center;justify-content:center;gap:6px;flex-shrink:0;padding:0 12px;border-radius:9px;border:1.5px solid var(--text);background:var(--bg);color:var(--text);font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M1 12h4M19 12h4"/></svg><span id="f-locBtnTxt" class="loc-btn-txt">Live</span></button>
-        </div>
-        <div id="f-locStatus" style="font-size:11px;color:var(--text-2);min-height:14px;margin-top:2px"></div>
-      </div>
-      <div class="form-group auto-hidden" id="latLngGroup">
-        <label class="form-label">Latitude / Longitude</label>
-        <input class="form-input" type="text" id="f-latLngDisplay" readonly />
-      </div>
-      <div class="form-group auto-hidden" id="mapsLinkGroup">
-        <label class="form-label">Google Maps Link</label>
-        <input class="form-input" type="url" id="f-googleMapsLink" />
-      </div>
       <div class="form-group" id="currentLocGroup" style="grid-column:1 / -1">
         <label class="form-label">Building Location Link <span style="color:var(--brand)">*</span></label>
         <div style="display:flex;gap:7px;align-items:stretch">
@@ -14661,7 +14645,7 @@ function resetFieldVisibility() {
     header.classList.remove('view-hidden');
   });
 }
-const VIEW_ALWAYS_HIDDEN_GROUPS = ['fullAddressGroup', 'latLngGroup', 'mapsLinkGroup', 'currentLocGroup', 'imgFormGroup'];
+const VIEW_ALWAYS_HIDDEN_GROUPS = ['currentLocGroup', 'imgFormGroup'];
 const VIEW_SECTION_HEADERS_SKIP = ['mediaSectionHeader']; // hidden by their own logic already
 function hideEmptyViewFields() {
   document.querySelectorAll('#addModalScrollBody .form-group').forEach(group => {
@@ -14710,15 +14694,6 @@ function hideEmptyViewFields() {
 /* ── Draft autosave: keeps whatever the user has typed even if the
    modal gets closed accidentally (backdrop click, Escape, etc.) ── */
 const LISTING_DRAFT_KEY = 'homeloop_listing_draft_v1';
-// Filled ONLY by tapping "Live" (fCaptureLocation) — never persisted in the
-// draft and always blank when the form opens for a new listing.
-const LIVE_ONLY_FIELD_IDS = ['f-fullAddress', 'f-pincode', 'f-latitude', 'f-longitude', 'f-latLngDisplay', 'f-googleMapsLink'];
-function clearLiveOnlyFields() {
-  LIVE_ONLY_FIELD_IDS.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
-  const btnTxt = document.getElementById('f-locBtnTxt'); if (btnTxt) btnTxt.textContent = 'Live';
-  const st = document.getElementById('f-locStatus'); if (st) st.textContent = '';
-  pincodeManuallyEdited = false;
-}
 let _draftSaveTimer = null;
 
 function saveListingDraftNow() {
@@ -14729,7 +14704,7 @@ function saveListingDraftNow() {
   try {
     const fields = {};
     document.querySelectorAll('#addModal input, #addModal select, #addModal textarea').forEach(el => {
-      if (!el.id || el.type === 'file' || LIVE_ONLY_FIELD_IDS.includes(el.id)) return;
+      if (!el.id || el.type === 'file') return;
       if (el.type === 'checkbox') fields[el.id] = el.checked;
       else fields[el.id] = el.value;
     });
@@ -14760,7 +14735,7 @@ function restoreListingDraft() {
 
   Object.keys(draft.fields).forEach(id => {
     const el = document.getElementById(id);
-    if (!el || LIVE_ONLY_FIELD_IDS.includes(id)) return;
+    if (!el) return;
     if (el.type === 'checkbox') el.checked = !!draft.fields[id];
     else el.value = draft.fields[id];
   });
@@ -14864,7 +14839,6 @@ function openAddModal(presetType) {
   if (blockIfNotVerified()) return;
   const restored = restoreListingDraft();
   if (!restored) resetListingForm();
-  clearLiveOnlyFields(); // address/pincode/lat-lng/maps link come only from tapping Live
   if (presetType) {
     document.getElementById('f-type').value = presetType;
   }
@@ -14881,8 +14855,6 @@ function openAddModal(presetType) {
   onFTypeChange(document.getElementById('f-type').value);
   lmAccReset();
   if (restored) showToast("Your unfinished listing has been restored.");
-  // Location is NOT auto-captured on open — the address, lat/lng and Maps
-  // link are only filled when the person taps "Live" (fCaptureLocation).
 }
 function closeAddModal() {
   // Same modal/header X button and backdrop-click are shared with the
@@ -14924,14 +14896,9 @@ function applyImportedProperty(p) {
   // Location
   sv('f-location', location.area);
   sv('f-city', location.city || 'Bangalore');
-  sv('f-fullAddress', location.address);
   if (location.pincode) sv('f-pincode', location.pincode);
   if (location.lat != null) sv('f-latitude', location.lat);
   if (location.lng != null) sv('f-longitude', location.lng);
-  if (location.lat != null && location.lng != null) {
-    sv('f-latLngDisplay', Number(location.lat).toFixed(6) + '° N, ' + Number(location.lng).toFixed(6) + '° E');
-  }
-  sv('f-googleMapsLink', location.mapLink);
   sv('f-currentLocationLink', location.currentLocationLink);
 
   // Owner
@@ -19393,74 +19360,11 @@ function extractPincodeFromAddress(text) {
   return m ? m[0] : '';
 }
 
-// True once the person has typed into the Pincode box themselves — after
-// that we stop overwriting it from the address text, so a manual correction
-// (or a pincode the address text doesn't contain) always sticks.
-let pincodeManuallyEdited = false;
-
-function onFullAddressInput(value) {
-  if (!pincodeManuallyEdited) {
-    const guess = extractPincodeFromAddress(value);
-    if (guess) document.getElementById('f-pincode').value = guess;
-  }
-  // Re-resolve lat/lng (and the Google Maps link) from the address text
-  // itself whenever the person hand-edits it — debounced so we're not
-  // firing a geocode call on every keystroke.
-  clearTimeout(addressGeocodeTimer);
-  addressGeocodeTimer = setTimeout(() => geocodeAddressText(value), 900);
-}
-
-// Matches only a link this form generated itself from raw coordinates
-// (see fCaptureLocation / geocodeAddressText below) — used to avoid
-// clobbering a link the owner has deliberately pasted/customized
-// (e.g. pointing at the exact building entrance instead of a plain pin).
-const AUTO_MAPS_LINK_RE = /^https:\/\/www\.google\.com\/maps\?q=-?\d+(\.\d+)?,-?\d+(\.\d+)?$/;
-
-// Fires the moment the person leaves the address field (tab/click away) —
-// skips the debounce wait so the edit lands immediately instead of after
-// the 900ms pause, while typing itself still stays debounced.
-function onFullAddressBlur(value) {
-  clearTimeout(addressGeocodeTimer);
-  geocodeAddressText(value);
-}
-
-let addressGeocodeTimer = null;
-function geocodeAddressText(value) {
-  const trimmed = String(value || '').trim();
-  const status = document.getElementById('f-locStatus');
-  if (trimmed.length < 8) return; // too short/likely mid-typing to bother geocoding
-  if (status) status.textContent = 'Updating coordinates from address...';
-  fetch('https://nominatim.openstreetmap.org/search?q=' + encodeURIComponent(trimmed) + '&format=json&limit=1&accept-language=en')
-    .then(r => r.json())
-    .then(results => {
-      if (!results || !results.length) {
-        if (status) status.textContent = 'Could not match address to a location.';
-        return;
-      }
-      const lat = parseFloat(results[0].lat), lon = parseFloat(results[0].lon);
-      document.getElementById('f-latitude').value = lat;
-      document.getElementById('f-longitude').value = lon;
-      document.getElementById('f-latLngDisplay').value = lat.toFixed(6) + '° N, ' + lon.toFixed(6) + '° E';
-      const mapsLinkEl = document.getElementById('f-googleMapsLink');
-      if (mapsLinkEl && (!mapsLinkEl.value || AUTO_MAPS_LINK_RE.test(mapsLinkEl.value))) {
-        mapsLinkEl.value = 'https://www.google.com/maps?q=' + lat + ',' + lon;
-      }
-      if (status) status.textContent = 'Coordinates updated from edited address.';
-    })
-    .catch(() => { if (status) status.textContent = 'Coordinate lookup failed.'; });
-}
-
 function onPincodeInput(el) {
   el.value = el.value.replace(/\D/g, '').slice(0, 6);
-  pincodeManuallyEdited = true;
 }
 
 
-// Area name from a Nominatim reverse-geocode result (most specific locality first).
-function pickAreaFromGeocode(d) {
-  const a = (d && d.address) || {};
-  return a.suburb || a.neighbourhood || a.residential || a.city_district || a.village || a.quarter || '';
-}
 // Pull lat/lng out of a full Google Maps link (@lat,lng · ?q=lat,lng · ll= · !3d..!4d). Short links can't be read here.
 function coordsFromMapsLink(url) {
   const m = String(url || '').match(/@(-?\d+\.\d+),(-?\d+\.\d+)/)
@@ -19468,59 +19372,15 @@ function coordsFromMapsLink(url) {
          || String(url || '').match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/);
   return m ? { lat: parseFloat(m[1]), lng: parseFloat(m[2]) } : null;
 }
-// Building Location Link pasted → fill any still-empty address / area / pincode from its coordinates.
+// Building Location Link pasted -> quietly keep the hidden lat/lng in sync with it (no network call,
+// nothing else is filled: Area and Pincode are always entered by hand). Short links can't be read here,
+// so coordinates are cleared and navigation falls back to the link itself.
 function onBuildingLinkChange(el) {
-  const v = (el.value || '').trim();
-  if (!v || !isGoogleMapsShareLink(v)) return;
-  const c = coordsFromMapsLink(v);
-  if (!c) {
-    if (/goo\.gl|share\.google/i.test(v)) showToast('Details cannot be read from a short link. Please use the Live button or enter the area manually.', 'info');
-    return;
-  }
-  document.getElementById('f-latitude').value = c.lat;
-  document.getElementById('f-longitude').value = c.lng;
-  document.getElementById('f-latLngDisplay').value = c.lat.toFixed(6) + '° N, ' + c.lng.toFixed(6) + '° E';
-  fetch('https://nominatim.openstreetmap.org/reverse?lat=' + c.lat + '&lon=' + c.lng + '&format=json&accept-language=en')
-    .then(r => r.json())
-    .then(d => {
-      const addr = document.getElementById('f-fullAddress'), area = document.getElementById('f-location'), pin = document.getElementById('f-pincode');
-      if (addr && !addr.value.trim()) addr.value = d.display_name || '';
-      if (area && !area.value.trim()) { area.value = pickAreaFromGeocode(d); if (typeof capitalizeWordsInput === 'function') capitalizeWordsInput(area); }
-      if (pin && !pin.value.trim()) pin.value = (d.address && d.address.postcode) || extractPincodeFromAddress(d.display_name);
-    }).catch(() => {});
-}
-function fCaptureLocation() {
-  const btnTxt = document.getElementById('f-locBtnTxt');
-  const status = document.getElementById('f-locStatus');
-  if (!navigator.geolocation) { status.textContent = 'Not supported on this device/browser'; return; }
-  btnTxt.textContent = '...'; status.textContent = 'Getting location...';
-  navigator.geolocation.getCurrentPosition(function(pos) {
-    const lat = pos.coords.latitude, lon = pos.coords.longitude;
-    document.getElementById('f-latitude').value = lat;
-    document.getElementById('f-longitude').value = lon;
-    document.getElementById('f-latLngDisplay').value = lat.toFixed(6) + '° N, ' + lon.toFixed(6) + '° E';
-    btnTxt.textContent = 'OK';
-    // Auto-fill Google Maps link from the same coordinates as the Building
-    // Live Address — a plain pin link that opens straight to this spot.
-    // Left editable (field is optional) so it can be swapped for a more
-    // specific link (e.g. the exact building entrance) if the owner has one.
-    document.getElementById('f-googleMapsLink').value = 'https://www.google.com/maps?q=' + lat + ',' + lon;
-    fetch('https://nominatim.openstreetmap.org/reverse?lat=' + lat + '&lon=' + lon + '&format=json&accept-language=en')
-      .then(r => r.json())
-      .then(d => {
-        document.getElementById('f-fullAddress').value = d.display_name || '';
-        // Structured postcode from the same lookup — used to prioritize
-        // this listing for visitors detected in the same pincode later,
-        // far more reliable than matching free-text area names. Falls back
-        // to pulling a 6-digit code out of the address text itself if the
-        // geocoder didn't return a structured postcode.
-        pincodeManuallyEdited = false; // fresh capture — a prior manual edit no longer applies
-        document.getElementById('f-pincode').value = (d.address && d.address.postcode) || extractPincodeFromAddress(d.display_name);
-        const areaEl = document.getElementById('f-location');
-        if (areaEl && !areaEl.value.trim()) { areaEl.value = pickAreaFromGeocode(d); if (typeof capitalizeWordsInput === 'function') capitalizeWordsInput(areaEl); }
-        status.textContent = 'Address, area and pincode captured';
-      }).catch(() => { status.textContent = 'Coordinates saved.'; });
-  }, function() { btnTxt.textContent = 'Live'; status.textContent = 'Permission denied.'; });
+  const latEl = document.getElementById('f-latitude'), lngEl = document.getElementById('f-longitude');
+  if (!latEl || !lngEl) return;
+  const c = coordsFromMapsLink((el.value || '').trim());
+  latEl.value = c ? c.lat : '';
+  lngEl.value = c ? c.lng : '';
 }
 
 // ═══════════════════════════════════════════════
@@ -19533,8 +19393,8 @@ function fCaptureLocation() {
 // ═══════════════════════════════════════════════
 const OPTIONAL_FIELD_IDS = new Set([
   // Property Location: only Area, Pincode and Building Location Link are mandatory
-  'f-title', 'f-fullAddress', 'f-googleMapsLink',
-  'f-latitude', 'f-longitude', 'f-latLngDisplay',
+  'f-title',
+  'f-latitude', 'f-longitude',
   'f-imgFileInput', 'f-imgCameraInput',
   'f-amenities-extra', 'f-desc',   // description is optional
   'f-videoUrl', 'f-videoFileInput', 'f-age', 'f-area',
@@ -19767,32 +19627,6 @@ function confirmListingReview() {
   if (fn) fn(); // real submit re-validates, then POST/PUT
 }
 
-// ── Building Live Address: look/size like every other field ─────────
-// Starts one line tall (same height as the other inputs) and grows to fit the
-// text, including when Live / a saved listing fills it programmatically.
-(function initAddressAutosize() {
-  function setup() {
-    const el = document.getElementById('f-fullAddress');
-    if (!el || el._autosizeReady) return;
-    el._autosizeReady = true;
-    const grow = () => {
-      if (!el.offsetParent) return;            // hidden modal: measure once visible
-      el.style.height = 'auto';
-      el.style.height = el.scrollHeight + 2 + 'px';
-    };
-    const d = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value');
-    Object.defineProperty(el, 'value', {
-      get() { return d.get.call(this); },
-      set(v) { d.set.call(this, v); grow(); },
-      configurable: true
-    });
-    el.addEventListener('input', grow);
-    if (window.ResizeObserver) new ResizeObserver(grow).observe(el);  // fires when the modal opens / width changes
-    grow();
-  }
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', setup); else setup();
-})();
-
 /* ── Accordion tabs for the listing form ──
    Each .lm-section heading toggles the fields under it (up to the next heading,
    walking document order so headings nested in wrapper divs work too). */
@@ -19949,14 +19783,17 @@ function buildListingPayload() {
     location: {
       area:    loc,
       city:    document.getElementById('f-city').value.trim() || 'Bangalore',
-      address: document.getElementById('f-fullAddress').value.trim(),
       pincode: document.getElementById('f-pincode').value.trim() || null,
-      lat:     parseFloat(document.getElementById('f-latitude').value) || null,
-      lng:     parseFloat(document.getElementById('f-longitude').value) || null,
-      mapLink: gv('f-googleMapsLink')
-        || (document.getElementById('f-latitude').value && document.getElementById('f-longitude').value
-              ? 'https://www.google.com/maps?q=' + document.getElementById('f-latitude').value + ',' + document.getElementById('f-longitude').value
-              : 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent([document.getElementById('f-fullAddress').value.trim(), loc, document.getElementById('f-city').value.trim() || 'Bangalore'].filter(Boolean).join(', '))),
+      // address / lat / lng / mapLink are no longer collected on this form. They are only sent when
+      // there is a real value (lat/lng come silently from the pasted link), so on edit the server's
+      // merge keeps whatever an existing listing already has instead of blanking it.
+      ...(parseFloat(document.getElementById('f-latitude').value) && parseFloat(document.getElementById('f-longitude').value) ? {
+        lat: parseFloat(document.getElementById('f-latitude').value),
+        lng: parseFloat(document.getElementById('f-longitude').value),
+      } : {}),
+      // New listings: the server still requires location.mapLink, so reuse the Building Location Link.
+      // On edit it is left out, so the stored value is kept.
+      ...(editingPropertyId ? {} : { mapLink: gv('f-currentLocationLink') }),
       currentLocationLink: gv('f-currentLocationLink'),
     },
     owner: {

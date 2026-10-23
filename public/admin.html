@@ -7787,11 +7787,13 @@ function buildPropOwners(props){
     loc: [p.loc, p.city].filter(Boolean).join(', '),
     lat: parseFloat(p.latitude),
     lng: parseFloat(p.longitude),
+    link: adminBuildingLinkUrl(p),
     createdAt: p.createdAt || ''      // when the property was listed into the DB (used for the default order)
   })).filter(r => r.propertyId || r.number || r.alt);
 }
 // Open Google Maps directions to the property (coordinates if present, else its location text).
-window.navigateToProperty = function(lat, lng, loc){
+window.navigateToProperty = function(lat, lng, loc, link){
+  if(link && /^https?:\/\//i.test(link)){ window.open(adminLinkNavUrl(link), '_blank', 'noopener'); return; }
   const dest = (isFinite(lat) && isFinite(lng)) ? lat + ',' + lng : (loc || '');
   if(!dest){ alert('No location available for this property'); return; }
   window.open('https://www.google.com/maps/dir/?api=1&destination=' + encodeURIComponent(dest), '_blank', 'noopener');
@@ -7980,7 +7982,8 @@ window.setPropOwnersData = async function(props){
         { data:null, orderable:false, render:(d,t,r)=> {
             if(t!=='display') return '';
             const loc = escapeHtml(r.loc || '').replace(/'/g, '&#39;');
-            return `<button type="button" class="bulk-btn" onclick="navigateToProperty(${isFinite(r.lat)?r.lat:'NaN'}, ${isFinite(r.lng)?r.lng:'NaN'}, '${loc}')" title="Get directions in Google Maps"><i class="fas fa-location-arrow"></i> Navigate</button> `
+            const lnk = escapeHtml(r.link || '').replace(/'/g, '&#39;');
+            return `<button type="button" class="bulk-btn" onclick="navigateToProperty(${isFinite(r.lat)?r.lat:'NaN'}, ${isFinite(r.lng)?r.lng:'NaN'}, '${loc}', '${lnk}')" title="Get directions in Google Maps"><i class="fas fa-location-arrow"></i> Navigate</button> `
                  + `<button type="button" class="bulk-btn" onclick="openPropOwnerView('${escapeHtml(r._id||'')}')" title="View this property"><i class="fas fa-arrow-up-right-from-square"></i> View</button>`;
         }}
       ]
@@ -10937,6 +10940,7 @@ window.closeShareLinksModal = function(){
 };
 
 function mapsDirectionsUrl(row){
+  const _bl = adminBuildingLinkUrl(row); if (_bl) return adminLinkNavUrl(_bl);
   const lat = row.latitude, lng = row.longitude;
   if(lat != null && lng != null && lat !== '' && lng !== ''){
     return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(lat)},${encodeURIComponent(lng)}`;
@@ -13712,8 +13716,31 @@ function _adminToast(msg){
 // dropped pin), then a plain text search on the address as a last resort.
 // Returns null when none of those exist, so the Navigate button can disable
 // itself instead of opening a useless blank search.
+/* Building Location Link first: every Navigate / Directions button prefers the owner's pasted
+   "Building Location Link" (location.currentLocationLink). Listings that were saved before that
+   field existed have it empty, so they keep using the earlier lat/long -> address logic unchanged. */
+function adminBuildingLinkUrl(row) {
+  const l = row && ((row.full && row.full.location && row.full.location.currentLocationLink) || row.currentLocationLink);
+  const v = String(l || '').trim();
+  return /^https?:\/\//i.test(v) ? v : '';
+}
+/* Full google.com/maps links that carry coordinates open as turn-by-turn directions; short links open as-is. */
+function adminLinkNavUrl(url) {
+  let target = url;
+  try {
+    const dec = decodeURIComponent(url);
+    const m = dec.match(/[?&](?:q|query|destination|ll)=(-?\d+\.\d+),\s*(-?\d+\.\d+)/)
+           || dec.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/)
+           || dec.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+    if (m && /(^|\.)google\.[a-z.]+\/maps/i.test(url.replace(/^https?:\/\//i, ''))) {
+      target = `https://www.google.com/maps/dir/?api=1&destination=${m[1]},${m[2]}&travelmode=driving`;
+    }
+  } catch (_) {}
+  return target;
+}
 function propertyMapsUrl(row) {
   const loc = (row.full && row.full.location) || {};
+  const _bl = adminBuildingLinkUrl(row); if (_bl) return _bl;
   if (loc.mapLink) return loc.mapLink;
   const lat = parseFloat(row.latitude), lng = parseFloat(row.longitude);
   if (!isNaN(lat) && !isNaN(lng) && (lat !== 0 || lng !== 0)) {
@@ -13731,6 +13758,7 @@ function propertyMapsUrl(row) {
 // the visitor's current device location (it'll prompt for location access
 // if not already granted) and route straight to the property.
 function propertyDirectionsUrl(row) {
+  const _bl = adminBuildingLinkUrl(row); if (_bl) return adminLinkNavUrl(_bl);
   const loc = (row.full && row.full.location) || {};
   const lat = parseFloat(row.latitude), lng = parseFloat(row.longitude);
   if (!isNaN(lat) && !isNaN(lng) && (lat !== 0 || lng !== 0)) {
@@ -17248,8 +17276,9 @@ function _setAdminListingMode(mode){
       }
       if (adminRows.length) html += `<div class="prop-modal-section-label">🗂️ Admin</div><div class="prop-modal-grid">${adminRows.join('')}</div>`;
 
-      if (p.latitude && p.longitude){
-        const url = `https://www.google.com/maps/dir/?api=1&destination=${p.latitude},${p.longitude}`;
+      const _bl = adminBuildingLinkUrl(p);
+      if (_bl || (p.latitude && p.longitude)){
+        const url = _bl ? adminLinkNavUrl(_bl) : `https://www.google.com/maps/dir/?api=1&destination=${p.latitude},${p.longitude}`;
         html += `<a href="${url}" target="_blank" rel="noopener"
             style="display:flex;align-items:center;justify-content:center;gap:8px;
               width:100%;padding:12px;border-radius:10px;background:#1a73e8;color:#fff;
