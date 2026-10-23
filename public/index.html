@@ -13745,12 +13745,11 @@ let editingPropertyId = null;
 // prompt FIRST, before the property view actually opens; see openLightbox()
 // above for how the guest-continues / logs-in paths are resolved.
 function openDetail(id) {
-  // Login required every time a property card is opened.
-  // Set REQUIRE_LOGIN_TO_VIEW = false to let guests skip the prompt and continue.
+  // Login is optional: logged-out visitors are asked to log in every time they
+  // open a property card, but can skip/close the prompt and continue as a guest.
+  // closeAuthModal() runs pendingBrowseAction when the prompt is dismissed.
   if (!getLoggedInUser()) {
-    const REQUIRE_LOGIN_TO_VIEW = true;
-    pendingBrowseAction = REQUIRE_LOGIN_TO_VIEW ? null : () => openDetailReal(id);
-    showToast('Please log in to view property details', 'warning');
+    pendingBrowseAction = () => openDetailReal(id);
     openAuthModal();
     return;
   }
