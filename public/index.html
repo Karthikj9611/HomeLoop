@@ -11214,10 +11214,10 @@ function cardHTML(p, compact, extraLeftBadge, showAvail) {
           <span class="prop-stat-icon icon-bike">🏍️</span>
           ${bikeCount}
         </span>
-        ${areaSqft ? `<span class="prop-stat" title="Built-up area">
-          <span class="prop-stat-icon icon-area">📐</span>
-          ${areaSqft}sqft
-        </span>` : ''}
+        ${(() => { const fv = String(p.property?.furnish ?? p.pg?.furnish ?? p.shortStay?.furnish ?? '').replace(/[\s-]*furnished$/i, '').trim(); return fv ? `<span class="prop-stat" title="Furnishing">
+          <span class="prop-stat-icon icon-furnish">🛋️</span>
+          ${esc(fv)}
+        </span>` : ''; })()}
       </div>
 <!--<div class="prop-footer">
         <div class="prop-quick-actions">
@@ -11353,10 +11353,10 @@ function shortlistCardHTML(p) {
           <span class="prop-stat-icon icon-bike">🏍️</span>
           ${bikeCount}
         </span>
-        ${areaSqft ? `<span class="prop-stat" title="Built-up area">
-          <span class="prop-stat-icon icon-area">📐</span>
-          ${areaSqft}sqft
-        </span>` : ''}
+        ${(() => { const fv = String(p.property?.furnish ?? p.pg?.furnish ?? p.shortStay?.furnish ?? '').replace(/[\s-]*furnished$/i, '').trim(); return fv ? `<span class="prop-stat" title="Furnishing">
+          <span class="prop-stat-icon icon-furnish">🛋️</span>
+          ${esc(fv)}
+        </span>` : ''; })()}
       </div>
     </div>
   </div>`;
