@@ -10830,11 +10830,7 @@ function preloadLightboxNeighbors() {
 // prompt and continue as a guest (handled by closeAuthModal() below, which
 // runs whatever was stashed in pendingBrowseAction).
 function openLightbox(propId, idx) {
-  if (!getLoggedInUser()) {
-    pendingBrowseAction = () => openLightboxReal(propId, idx);
-    openAuthModal();
-    return;
-  }
+  // No login needed to zoom photos.
   openLightboxReal(propId, idx);
 }
 function openLightboxReal(propId, idx) {
@@ -13684,11 +13680,7 @@ let editingPropertyId = null;
 // prompt FIRST, before the property view actually opens; see openLightbox()
 // above for how the guest-continues / logs-in paths are resolved.
 function openDetail(id) {
-  if (!getLoggedInUser()) {
-    pendingBrowseAction = () => openDetailReal(id);
-    openAuthModal();
-    return;
-  }
+  // No login needed to view property details.
   openDetailReal(id);
 }
 function openDetailReal(id) {
