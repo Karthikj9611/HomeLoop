@@ -5413,13 +5413,14 @@ main.tab-explore .empty-state{display:none !important}
 .plan-lock-btn{margin-top:4px;padding:10px 18px;border:none;border-radius:999px;background:#5f9488;color:#fff;font-weight:600;font-size:13px;cursor:pointer;box-shadow:0 8px 18px -10px rgba(60,110,98,.7);display:inline-flex;align-items:center;gap:6px;white-space:nowrap;transition:transform .15s}
 .plan-lock-btn::after{content:"\203A";font-size:1.25em;line-height:1}
 .plan-lock-btn:active{transform:scale(.96)}
-/* Narrow photo areas (2-column mobile cards): scale the panel down to fit the card */
+/* Narrow photo areas (2-column mobile cards): same panel as desktop (icon, title, description, button),
+   scaled with the card width (cqw) so everything fits inside the 4:3 photo box. */
 @container prop-img-box (max-width:260px){
-  .plan-lock{gap:7px;padding:10px}
-  .plan-lock-icon{width:36px;height:36px;font-size:17px}
-  .plan-lock-title{font-size:13px}
-  .plan-lock-sub{display:none}
-  .plan-lock-btn{padding:8px 13px;font-size:11.5px;margin-top:2px}
+  .plan-lock{gap:2cqw;padding:3cqw 4cqw}
+  .plan-lock-icon{width:11cqw;height:11cqw;font-size:5.6cqw}
+  .plan-lock-title{font-size:6.2cqw}
+  .plan-lock-sub{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:5;overflow:hidden;font-size:4.6cqw;line-height:1.3;max-width:100%;opacity:.85}
+  .plan-lock-btn{padding:2.2cqw 4.6cqw;font-size:4.2cqw;margin-top:1cqw;gap:1.5cqw}
 }
 .plan-lock-lightbox{position:relative;inset:auto;width:min(86vw,420px);height:min(44vh,340px);margin-bottom:96px;border-radius:10px}
 .plan-lock-lightbox .plan-lock-title{font-size:18px}
@@ -20229,6 +20230,33 @@ function showToast(msg, type) {
   toastTimer = setTimeout(() => { t.classList.remove('show'); backdrop.classList.remove('show'); }, duration);
 }
 
+/* Mobile: section header pills (Rent / Lease / Viewed…) copy the exact width and centre of the Locality filter pill,
+   measured from the page itself, so they line up whatever the phone width, scrollbar or CSS rounding. */
+(function syncHeaderPills() {
+  const root = document.documentElement;
+  const mq = window.matchMedia('(max-width:640px)');
+  function sync() {
+    if (!mq.matches) { root.style.removeProperty('--hdr-pill-w'); root.style.removeProperty('--hdr-pill-dx'); return; }
+    const bar = document.getElementById('filterDdBar'), btn = document.getElementById('fdb-locality');
+    if (!bar || !btn) return;
+    const r = btn.getBoundingClientRect();
+    if (!r.width) return;                                   // Locality hidden on this tab: keep the last measurement
+    const centre = r.left + bar.scrollLeft + r.width / 2;   // where it sits when the bar is not scrolled sideways
+    root.style.setProperty('--hdr-pill-w', r.width.toFixed(2) + 'px');
+    root.style.setProperty('--hdr-pill-dx', (centre - root.clientWidth / 2).toFixed(2) + 'px');
+  }
+  window.addEventListener('load', sync);
+  window.addEventListener('resize', sync);
+  window.addEventListener('orientationchange', sync);
+  if (mq.addEventListener) mq.addEventListener('change', sync);
+  document.addEventListener('DOMContentLoaded', function () {
+    sync();
+    const bar = document.getElementById('filterDdBar');
+    if (bar && window.ResizeObserver) new ResizeObserver(sync).observe(bar);
+  });
+  setTimeout(sync, 300); setTimeout(sync, 1200);
+})();
+
 /* ═══════════════════════════════════════════════
    KEYBOARD & CLOSE
 ═══════════════════════════════════════════════ */
@@ -21529,6 +21557,13 @@ body{
   .filter-dd-bar .fd-btn{flex:0 0 calc(33.3333% - 4px) !important;max-width:calc(33.3333% - 4px) !important;
     padding-top:8px !important;padding-bottom:8px !important;border-radius:12px !important}
   .filter-dd-bar .fd-btn.has-sel,.filter-dd-bar .fd-btn.open{border-radius:12px !important}
+  /* Section header pills (Rent / Lease / PG / Promoted / Booked): exactly the width and position of the middle
+     filter pill (Locality). Filter pills = (bar - 18px) / 3 starting 3px in, so their middle sits 3px left of
+     centre. Width is taken from the divider's own width (not 100vw) so a page scrollbar can't throw it off. */
+  .section-divider{padding-left:16px !important;padding-right:16px !important}
+  .section-divider-label{width:var(--hdr-pill-w,calc((100% + 14px) / 3));max-width:none;transform:translateX(var(--hdr-pill-dx,-3px))}
+  /* "Viewed" header has buttons beside the label inside its row, so % isn't the full width there */
+  .section-divider[style*="display:flex"] .section-divider-label{width:var(--hdr-pill-w,calc((100vw - 18px) / 3))}
 }
 /* ─── Ad banner hidden everywhere (markup/JS left intact; !important beats the per-tab inline display toggles) ─── */
 #adBanner,.ad-banner{display:none !important}
@@ -21552,6 +21587,19 @@ body{background:radial-gradient(80% 50% at 100% 0%,rgba(255,150,110,.26) 0%,rgba
 .section-divider.is-stuck .section-divider-label,.section-divider.is-stuck .booked-label{
   box-shadow:0 0 0 2px rgba(255,248,243,.95),0 8px 16px -8px rgba(232,54,93,.4);
 }
+/* Section header pills (Promoted / Rent / Lease / PG / Viewed…, also while pinned): same red-orange gradient look as a
+   selected filter pill (e.g. "Locality 1"): white text, white count badge. Booked included. */
+.promoted-label,.booked-label,
+.section-divider.is-stuck .section-divider-label{
+  background:var(--warm-grad) !important;border-color:transparent !important;color:#fff !important;
+  box-shadow:0 8px 16px -8px rgba(232,54,93,.6),inset 0 1px 0 rgba(255,255,255,.35) !important;
+  text-shadow:0 1px 1px rgba(150,20,50,.25);
+}
+.promoted-label .section-divider-count,.booked-label .section-divider-count,
+.section-divider.is-stuck .section-divider-label .section-divider-count{
+  background:#fff !important;color:#e8365d !important;text-shadow:none;
+}
+.promoted-label .hdr-ico,.booked-label .hdr-ico{filter:drop-shadow(0 1px 2px rgba(0,0,0,.25))}
 /* ─── Unified modal close button (same as the Service Notice X): round coral, white cross, rotate on hover ─── */
 .modal-close,.wish-modal-close,.preav-close,.viewers-modal-close,.panel-close,.profile-banner-close,.fm-close{width:34px !important;height:34px !important;min-width:34px;border-radius:50% !important;background:var(--brand) !important;border:none !important;color:#fff !important;padding:0 !important;align-items:center;justify-content:center;box-shadow:0 2px 10px rgba(224,58,82,.30) !important;-webkit-backdrop-filter:none !important;backdrop-filter:none !important;transition:background .15s,color .15s,transform .25s !important}
 .modal-close:hover,.wish-modal-close:hover,.preav-close:hover,.viewers-modal-close:hover,.panel-close:hover,.profile-banner-close:hover,.fm-close:hover{background:var(--brand-hover) !important;color:#fff !important;transform:rotate(90deg) !important}
@@ -21778,5 +21826,13 @@ body{background:radial-gradient(80% 50% at 100% 0%,rgba(255,150,110,.26) 0%,rgba
   sync();
 })();
 </script>
+<style id="all-white-override">
+/* Whole page white: no peach/gradient behind or below the listings */
+:root{--bg-2:#ffffff;--bg-3:#f5f5f5}
+html,body{background:#fff !important;background-image:none !important}
+body::before,body::after{background:none !important}
+.main,#mainContent,main{background:#fff !important}
+.section-divider{background:#fff}
+</style>
 </body>
 </html>
