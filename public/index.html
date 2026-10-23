@@ -16975,15 +16975,15 @@ function updateNotifBadge(count) {
 // split by meta.status (Confirmed/Cancelled/Completed/Pending) so a cancelled
 // visit reads differently at a glance from a confirmed one.
 const NOTIF_STYLE = {
-  property_verified: { bg: '#e8f7ef', color: '#1a9c5c', icon: '<polyline points="20 6 9 17 4 12"/>' },
-  review_approved:   { bg: '#f2eeff', color: '#7c5cff', icon: '<polygon points="6 3 20 12 6 21 6 3"/>' },
-  account_approved:  { bg: '#e8f7ef', color: '#1a9c5c', icon: '<polyline points="20 6 9 17 4 12"/>' },
-  account_rejected:  { bg: '#fdecef', color: '#E03A52', icon: '<circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>' },
-  visit_confirmed:   { bg: '#eaf1ff', color: '#2f6fed', icon: '<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M9 16l2 2 4-4"/>' },
-  visit_cancelled:   { bg: '#fdecef', color: '#E03A52', icon: '<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="9.5" y1="14" x2="14.5" y2="18"/><line x1="14.5" y1="14" x2="9.5" y2="18"/>' },
-  visit_completed:   { bg: '#eef1fc', color: '#5b7be8', icon: '<path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/>' },
-  visit_pending:     { bg: '#fff8e6', color: '#b8860b', icon: '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>' },
-  default:           { bg: 'var(--brand-light)', color: 'var(--brand)', icon: '<circle cx="12" cy="12" r="1.6"/>' },
+  property_verified: { grad: 'linear-gradient(145deg,#34d399,#059669)', glow: 'rgba(5,150,105,.55)',  bg: '#e8f7ef', color: '#1a9c5c', icon: '<path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><polyline points="8.5 14.5 11 17 15.5 12"/>' },
+  review_approved:   { grad: 'linear-gradient(145deg,#fbbf24,#f59e0b)', glow: 'rgba(245,158,11,.55)', bg: '#fff8e6', color: '#b8860b', icon: '<polygon points="12 2.5 14.9 8.6 21.5 9.5 16.7 14.1 17.9 20.7 12 17.5 6.1 20.7 7.3 14.1 2.5 9.5 9.1 8.6 12 2.5"/>' },
+  account_approved:  { grad: 'linear-gradient(145deg,#34d399,#059669)', glow: 'rgba(5,150,105,.55)',  bg: '#e8f7ef', color: '#1a9c5c', icon: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="8.8 12 11 14.2 15.4 9.8"/>' },
+  account_rejected:  { grad: 'linear-gradient(145deg,#fb7185,#e11d48)', glow: 'rgba(225,29,72,.55)',  bg: '#fdecef', color: '#E03A52', icon: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><line x1="9.5" y1="9.5" x2="14.5" y2="14.5"/><line x1="14.5" y1="9.5" x2="9.5" y2="14.5"/>' },
+  visit_confirmed:   { grad: 'linear-gradient(145deg,#60a5fa,#2563eb)', glow: 'rgba(37,99,235,.55)',  bg: '#eaf1ff', color: '#2f6fed', icon: '<rect x="3" y="4.5" width="18" height="17" rx="2.5"/><line x1="16" y1="2.5" x2="16" y2="6.5"/><line x1="8" y1="2.5" x2="8" y2="6.5"/><line x1="3" y1="10.5" x2="21" y2="10.5"/><polyline points="9 16 11 18 15.2 13.8"/>' },
+  visit_cancelled:   { grad: 'linear-gradient(145deg,#fb7185,#e11d48)', glow: 'rgba(225,29,72,.55)',  bg: '#fdecef', color: '#E03A52', icon: '<rect x="3" y="4.5" width="18" height="17" rx="2.5"/><line x1="16" y1="2.5" x2="16" y2="6.5"/><line x1="8" y1="2.5" x2="8" y2="6.5"/><line x1="3" y1="10.5" x2="21" y2="10.5"/><line x1="9.8" y1="13.8" x2="14.2" y2="18.2"/><line x1="14.2" y1="13.8" x2="9.8" y2="18.2"/>' },
+  visit_completed:   { grad: 'linear-gradient(145deg,#a78bfa,#6d28d9)', glow: 'rgba(109,40,217,.5)',  bg: '#eef1fc', color: '#5b7be8', icon: '<path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 1 1 16 0z"/><polyline points="8.8 10 11 12.2 15.4 7.8"/>' },
+  visit_pending:     { grad: 'linear-gradient(145deg,#fbbf24,#f97316)', glow: 'rgba(249,115,22,.5)',  bg: '#fff8e6', color: '#b8860b', icon: '<circle cx="12" cy="12" r="9.5"/><polyline points="12 6.5 12 12 15.8 14"/>' },
+  default:           { grad: 'linear-gradient(145deg,#ff8a5c,#e8365d)', glow: 'rgba(232,54,93,.5)',   bg: 'var(--brand-light)', color: 'var(--brand)', icon: '<path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>' },
 };
 function resolveNotifStyle(n) {
   let key = n.type;
@@ -17017,11 +17017,11 @@ function renderNotifications(list) {
     const st = resolveNotifStyle(n);
     return `
     <div class="notif-item ${n.read ? '' : 'unread'}" data-id="${n._id}">
-      <div class="notif-icon" style="background:${st.bg};color:${st.color}">
+      <div class="notif-icon" style="background:${st.grad || st.bg};color:#fff;box-shadow:0 6px 12px -6px ${st.glow || 'transparent'}">
         <svg viewBox="0 0 24 24" aria-hidden="true">${st.icon}</svg>
       </div>
       <div class="notif-body">
-        <div class="notif-text">${n.read ? `${esc(n.title)} ${esc(n.message)}` : `<b>${esc(n.title)} ${esc(n.message)}</b>`}</div>
+        <div class="notif-text"><div class="notif-title">${esc(n.title)}</div><div class="notif-msg">${esc(n.message)}</div></div>
         <div class="notif-meta-row">
           <span class="notif-time">${notifTimeAgo(n.createdAt)}</span>
           <span style="display:flex;align-items:center;gap:12px">
@@ -21542,6 +21542,36 @@ body{
   .ad-slide-cta::after{font-size:15px}
   .ad-dots{bottom:4px;padding:2px 6px}
 }
+/* ═══ Notifications — simple & clean ═══ */
+#notifModalBox{max-width:420px}
+.notif-modal-header{padding:18px 20px 14px;border-bottom:1px solid rgba(240,120,100,.16)}
+.notif-modal-header .add-modal-title{font-size:17px;margin-bottom:2px}
+.notif-modal-sub{font-size:12px;color:#a08a82}
+.notif-modal-header .modal-close{width:30px;height:30px}
+.notif-list{padding:0 20px}
+.notif-item,.notif-item.unread,.notif-item:hover,.notif-item.unread:hover{background:transparent;border-radius:0}
+.notif-item{gap:12px;padding:14px 0;border-bottom:1px solid rgba(240,120,100,.14)}
+.notif-item:last-child{border-bottom:none}
+.notif-icon{width:32px;height:32px;border-radius:50%}
+.notif-icon svg{width:16px;height:16px}
+.notif-text{line-height:1.4}
+.notif-title{font-size:13.5px;font-weight:600;color:#2b1d1a}
+.notif-item.unread .notif-title{font-weight:700}
+.notif-item.unread .notif-title::after{content:'';display:inline-block;width:7px;height:7px;border-radius:50%;
+  background:#e8365d;margin-left:7px;vertical-align:middle}
+.notif-msg{font-size:12.5px;color:#7a625a;margin-top:2px;line-height:1.45}
+.notif-meta-row{margin-top:6px}
+.notif-time{font-size:11px;color:#b3a099}
+.notif-mark-read{padding:0;font-size:11.5px}
+.notif-mark-read:hover,.notif-item.unread .notif-mark-read:hover{background:transparent;text-decoration:underline}
+.notif-modal-footer{padding:12px 20px 16px;border-top:1px solid rgba(240,120,100,.16)}
+.notif-modal-footer .modal-btn-secondary{height:40px;padding:0;border-radius:12px;font-size:13px;font-weight:700;
+  background:#fff;border:1px solid #f3dcd2;color:#e8365d}
+.notif-modal-footer .modal-btn-secondary:disabled{background:transparent;border-color:transparent;color:#b3a099;opacity:1}
+/* Notification icons: gradient badges with white glyphs */
+.notif-icon{width:38px;height:38px;border-radius:13px;box-shadow:inset 0 1px 0 rgba(255,255,255,.35)}
+.notif-icon svg{width:19px;height:19px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.notif-item{align-items:flex-start}
 </style>
 <div id="hlNotice" role="dialog" aria-modal="true" aria-labelledby="hlNoticeTitle" aria-describedby="hlNoticeLead">
   <div class="hln-card" id="hlNoticeCard" tabindex="-1">
