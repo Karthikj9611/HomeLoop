@@ -3569,6 +3569,18 @@ main.tab-explore .empty-state{display:none !important}
   #addModalScrollBody .form-row{gap:6px}
   #addModalScrollBody .lm-section{margin-left:2px;margin-right:2px}
 }
+/* Property VIEW modal on mobile: keep equal gaps on the left & right and centre it exactly
+   (the full-width rule above is only meant for the List/Edit property form). */
+@media (max-width:600px){
+  #addModal:has(#addModalBox.view-mode){padding:16px !important}
+  #addModalBox.view-mode{
+    width:calc(100% - 32px) !important;max-width:calc(100% - 32px) !important;
+    margin:auto !important;border-radius:var(--radius-xl,20px) !important;
+    max-height:calc(100vh - 32px);max-height:calc(100dvh - 32px);
+  }
+  #addModalBox.view-mode .add-modal-header{padding-left:14px !important;padding-right:14px !important}
+  #addModalBox.view-mode #addModalScrollBody{padding-left:14px !important;padding-right:14px !important}
+}
 
 @media (max-width:640px){
   /* Post Property and View Property share this form — keep every row to
@@ -21422,6 +21434,26 @@ body{
 .section-divider.is-stuck .booked-label{background:linear-gradient(180deg,#fff 0%,#fff1ea 100%);color:#e8365d;border-color:#f0506e}
 .section-divider.is-stuck .booked-count{background:var(--warm-grad);color:#fff}
 .section-divider-count{background:var(--warm-grad)}
+/* ─── NAVBARS match the modal / property-card peach background ─── */
+:root{--nav-peach:radial-gradient(70% 140% at 100% 0%,rgba(255,164,120,.32) 0%,rgba(255,164,120,0) 70%),radial-gradient(70% 140% at 0% 100%,rgba(244,114,150,.20) 0%,rgba(244,114,150,0) 70%),linear-gradient(180deg,#fff0e6 0%,#ffe8dc 100%)}
+.quick-menu-bar,.topnav,.filter-dd-bar,.bottom-nav{background:var(--nav-peach) !important}
+.quick-menu-bar{border-bottom:1px solid rgba(240,120,100,.2);box-shadow:0 8px 24px -16px rgba(190,70,60,.28)}
+.bottom-nav{border-top:1px solid rgba(240,120,100,.2);box-shadow:0 -10px 24px -16px rgba(190,70,60,.3)}
+.filter-dd-bar{border-bottom:1px solid rgba(240,120,100,.18)}
+.qmb-item{color:#a08a82}
+.qmb-item:active{color:#e8365d}
+.qmb-badge{box-shadow:0 0 0 1.5px #fff6ef}
+/* Filter chips: peach-tinted like the navbars instead of plain white (selected / open states unchanged) */
+.filter-dd-bar .fd-btn:not(.has-sel):not(.open){background:rgba(255,170,140,.16);border-color:rgba(240,120,100,.26);box-shadow:none}
+.filter-dd-bar .fd-btn:not(.has-sel):not(.open):hover{background:rgba(255,170,140,.30);border-color:#f0506e}
+@media (max-width:640px){
+  .filter-dd-bar .fd-btn:not(.has-sel):not(.open){border:none;border-left:1px solid rgba(240,120,100,.22);border-radius:0}
+  .filter-dd-bar .fd-btn:first-child:not(.has-sel):not(.open){border-left:none}
+}
+/* Mobile filter bar: only a hairline gap between the filter buttons */
+@media (max-width:640px){
+  .filter-dd-bar{gap:2px !important;padding-left:0 !important;padding-right:0 !important}
+}
 </style>
 <div id="hlNotice" role="dialog" aria-modal="true" aria-labelledby="hlNoticeTitle" aria-describedby="hlNoticeLead">
   <div class="hln-card" id="hlNoticeCard" tabindex="-1">
@@ -21431,9 +21463,9 @@ body{
     <h2 id="hlNoticeTitle">We’re upgrading HomeLoop</h2>
     <p class="hln-d" id="hlNoticeLead">What we’re improving:</p>
     <ul class="hln-points" aria-label="What we are working on">
-      <li><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></i><span>A completely upgraded UI<small class="hln-sub">A full redesign that is cleaner and easier to use</small></span></li>
-      <li><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></i><span>Enhanced existing features<small class="hln-sub">Improvements to the tools you already use</small></span></li>
-      <li><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></i><span>New features coming soon<small class="hln-sub">Additional tools to help you find and manage properties</small></span></li>
+      <li><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></i><span>A completely upgraded UI</span></li>
+      <li><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></i><span>Enhanced existing features</span></li>
+      <li><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></i><span>New features in development</span></li>
     </ul>
     <span class="hln-tag"><i></i>Adding new properties is temporarily paused</span>
     <button type="button" class="hln-btn" id="hlNoticeOk">Continue to website</button>
