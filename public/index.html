@@ -9102,10 +9102,6 @@ main.tab-explore .empty-state{display:none !important}
       <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
       List Rent Property
     </div>
-    <div class="menu-item" id="menuListLease" onclick="toggleMenuPanel(); openAddModal('Lease');">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-      List Lease Property
-    </div>
     <div class="menu-item" id="menuListPG" onclick="toggleMenuPanel(); openAddModal('PG');" style="display:none">
       <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
       List PG Property
@@ -14906,8 +14902,12 @@ function restoreListingDraft() {
    straight into the (Rent-defaulted) form.
 ═══════════════════════════════════════════════ */
 function openFabPicker() {
-  document.getElementById('fabPickerBackdrop').classList.add('open');
-  document.getElementById('fabPicker').classList.add('open');
+  // The "Create a listing" type chooser is no longer shown. The "List property"
+  // button (desktop FAB + mobile centre "+") opens the listing form directly,
+  // defaulting to Rent (the Status field in the form is still editable).
+  // openAddModal() itself sends logged-out visitors to the login modal and
+  // applies the pending-verification check, so no extra guard is needed here.
+  openAddModal('Rent');
 }
 function closeFabPicker() {
   document.getElementById('fabPickerBackdrop').classList.remove('open');
@@ -15582,7 +15582,7 @@ function updateAdBannerAudience() {
 function updateListPropertyVisibility(user) {
   const canList = !user || (ACCT_OWNER_SIDE.includes(user.accountType));
   const display = canList ? '' : 'none';
-  ['fabAdd', 'bottomTabAdd', 'fabInlineAdd', 'menuManageLabel', 'menuListRent', 'menuListLease']  /* menuListPG / menuListSell intentionally excluded: stay hidden (see PG_ENABLED / SELL_ENABLED) */
+  ['fabAdd', 'bottomTabAdd', 'fabInlineAdd', 'menuManageLabel', 'menuListRent']  /* menuListPG / menuListSell intentionally excluded: stay hidden (see PG_ENABLED / SELL_ENABLED) */
     .forEach(id => { const el = document.getElementById(id); if (el) el.style.display = display; });
   const _sellMenu = document.getElementById('menuListSell');
   if (_sellMenu) _sellMenu.style.display = (SELL_ENABLED && canList) ? '' : 'none';
@@ -20924,6 +20924,8 @@ document.addEventListener('keydown', function(e){ if (e.key === 'Escape') closeP
 #hlNotice .hln-btn::after{content:"→";font-size:17px;line-height:1;transition:transform .2s}
 #hlNotice .hln-btn:hover{transform:translateY(-1px)}
 #hlNotice .hln-btn:hover::after{transform:translateX(4px)}
+#hlNotice .hln-count{font-size:.85em;font-weight:600;opacity:.85;font-variant-numeric:tabular-nums;background:rgba(255,255,255,.2);border-radius:999px;padding:1px 8px;line-height:1.5}
+#hlNotice .hln-count:empty{display:none}
 #hlNotice .hln-x:hover{transform:rotate(90deg)}
 #hlNotice .hln-x{transition:background .15s,color .15s,transform .25s}
 @keyframes hlnFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
@@ -21831,20 +21833,35 @@ body{background:radial-gradient(80% 50% at 100% 0%,rgba(255,150,110,.26) 0%,rgba
       <li><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg></i><span>Building new features<span class="hln-sub">New features for Owners, Tenants, Agents, Builders and Brokers.</span></span></li>
     </ul>
     <span class="hln-tag"><i></i>New property listings are temporarily paused</span>
-    <button type="button" class="hln-btn" id="hlNoticeOk">Continue to website</button>
+    <button type="button" class="hln-btn" id="hlNoticeOk">Continue to website<span class="hln-count" id="hlNoticeCount" aria-hidden="true"></span></button>
   </div>
 </div>
 <script>
 (function(){
   var el=document.getElementById('hlNotice'); if(!el) return;
-  var ok=document.getElementById('hlNoticeOk'), x=document.getElementById('hlNoticeX'), prevFocus=null;
+  var ok=document.getElementById('hlNoticeOk'), x=document.getElementById('hlNoticeX'), prevFocus=null, autoTimer=null, countEl=document.getElementById('hlNoticeCount');
+  var AUTO_CLOSE_SECS=5; /* closes by itself after this many seconds, with a visible countdown on the button */
+  function startCountdown(){
+    var left=AUTO_CLOSE_SECS;
+    if(countEl) countEl.textContent=left+'s';
+    clearInterval(autoTimer);
+    autoTimer=setInterval(function(){
+      left--;
+      if(left<=0){ close(); return; }
+      if(countEl) countEl.textContent=left+'s';
+    },1000);
+  }
   function open(){
     prevFocus=document.activeElement;
+    startCountdown();
     el.classList.add('show'); document.body.style.overflow='hidden';
     requestAnimationFrame(function(){ el.classList.add('in'); });
     setTimeout(function(){ var c=document.getElementById('hlNoticeCard'); (c||ok).focus({preventScroll:true}); },50);
   }
   function close(){
+    clearInterval(autoTimer);
+    if(countEl) countEl.textContent='';
+    if(!el.classList.contains('show')) return; /* already closed (e.g. manual close before the timer fired) */
     el.classList.remove('in'); document.body.style.overflow='';
     setTimeout(function(){ el.classList.remove('show'); },250);
     if(prevFocus&&prevFocus.focus) try{ prevFocus.focus(); }catch(e){}
