@@ -11481,10 +11481,24 @@ function updateShortlistEnquire() {
 }
 /* Single enquiry message used everywhere a tenant contacts an owner/agent on WhatsApp
    (property view "Interested" buttons + shortlist "Enquire"). */
+/* "1 BHK, Hosapalya, \u20B936,000/month" - type, location and price of a listing, for WhatsApp messages. */
+function propDetailsText(p) {
+  const pt = pTypeLabel(p);
+  const prop = p.property || {}, pgd = p.pg || {}, ss = p.shortStay || {};
+  const bhk = (pt === 'PG' || pt === 'ShortStay') ? '' : String(prop.bhk || '').replace(/\s*BHK\s*$/i, '').trim();
+  const type = bhk && parseFloat(bhk) > 0 ? bhk + ' BHK' : (prop.type || pgd.type || ss.type || '');
+  const area = (p.location?.area || '').trim();
+  const rent = Number(p.price?.rent);
+  const price = rent > 0 ? '\u20B9' + rent.toLocaleString('en-IN') + (pt === 'Sell' ? '' : pt === 'ShortStay' ? '/day' : '/month') : '';
+  return [type, area, price].filter(Boolean).join(', ');
+}
 function buildEnquiryMessage(props) {
   const one = props.length === 1;
-  const lines = props.map((p, i) => `${one ? '' : (i + 1) + '. '}${p.propertyId} - ${window.location.origin}/property/${p.id}`);
-  return `Hello, I'm interested in the following ${one ? 'property' : 'properties'} on HomeLoop.\n\n${lines.join('\n')}`;
+  const lines = props.map((p, i) => {
+    const details = propDetailsText(p);
+    return `${one ? '' : (i + 1) + '. '}${p.propertyId}${details ? ' - ' + details : ''}\n${window.location.origin}/property/${p.id}`;
+  });
+  return `Hello, I'm interested in the following ${one ? 'property' : 'properties'} on HomeLoop.\n\n${lines.join('\n\n')}`;
 }
 function _openAgentEnquiry(phone) {
   const props = _shortlistEnquiryGroups().groups[phone];
@@ -14561,7 +14575,9 @@ function sharePropertyWhatsApp(propId) {
   const title = bhk || ptype || 'Property';
   const kind = isSell ? 'for sale' : isShort ? 'for short stay' : isPG ? 'PG' : 'for rent';
   const area = (p.location?.area || '').trim();
-  const msg = `${title} ${kind}${area ? ', ' + area : ''}\n${propertyUrl}`;
+  const rentAmt = Number(p.price?.rent);
+  const priceTxt = rentAmt > 0 ? '\u20B9' + rentAmt.toLocaleString('en-IN') + (isSell ? '' : isShort ? '/day' : '/month') : '';
+  const msg = `${title} ${kind}${area ? ', ' + area : ''}${priceTxt ? ', ' + priceTxt : ''}\n${propertyUrl}`;
   window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank', 'noopener');
 }
 
@@ -15980,7 +15996,9 @@ function openEditRestrictedModal(context, propertyLabel, isBooked) {
   if (waBtn) {
     let href = 'https://wa.me/919035205230';
     if (context === 'booking' && propertyLabel && !isBooked) {
-      const msg = `Hi, property ${propertyLabel} is Booked. Please mark it as Booked.`;
+      const _bp = [...(typeof MY_LISTINGS_CACHE !== 'undefined' ? MY_LISTINGS_CACHE : []), ...PROPERTIES, ...BOOKED_PROPERTIES].find(x => x.propertyId === propertyLabel);
+      const _bd = _bp ? propDetailsText(_bp) : '';
+      const msg = `Hi, property ${propertyLabel}${_bd ? ' (' + _bd + ')' : ''} is Booked. Please mark it as Booked.`;
       href += '?text=' + encodeURIComponent(msg);
     }
     waBtn.href = href;
