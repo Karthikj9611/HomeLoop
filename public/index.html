@@ -21490,6 +21490,18 @@ body{
 @media (max-width:640px){
   .filter-dd-bar .fd-btn.has-sel,.filter-dd-bar .fd-btn.open{margin:0 !important;border-radius:0}
 }
+/* ALL modals on mobile: same width/gaps as the Log in modal — 16px each side, exactly centred.
+   (Bottom sheets and the photo lightbox are left as they are.) */
+@media (max-width:640px){
+  .modal-overlay,.add-modal-overlay,.preav-overlay,.wish-modal-overlay,#confirmOverlay,.fm-overlay,#addModal,
+  #addModal:has(#addModalBox.view-mode){padding:16px !important;box-sizing:border-box}
+  .modal,.add-modal,.preav-modal,.confirm-card,.fm-box,.viewers-modal,.compare-modal,.wish-modal-card,
+  #addModalBox,#addModalBox.view-mode{
+    box-sizing:border-box;width:100% !important;max-width:100% !important;margin:auto !important;
+    max-height:calc(100vh - 32px);max-height:calc(100dvh - 32px);
+  }
+  .modal,.add-modal,.preav-modal,.confirm-card,.fm-box,#addModalBox{border-radius:22px !important}
+}
 </style>
 <div id="hlNotice" role="dialog" aria-modal="true" aria-labelledby="hlNoticeTitle" aria-describedby="hlNoticeLead">
   <div class="hln-card" id="hlNoticeCard" tabindex="-1">
