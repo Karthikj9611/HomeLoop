@@ -5239,8 +5239,10 @@ main.tab-explore .empty-state{display:none !important}
 .img-slides:active{cursor:grabbing}
 .recently-viewed-strip .img-slides,
 [id$="BookedGrid"] .img-slides{cursor:pointer;touch-action:pan-x pan-y}
+.recently-viewed-strip .img-slides,
+[id$="BookedGrid"] .img-slides{cursor:grab}
 .recently-viewed-strip .img-slides:active,
-[id$="BookedGrid"] .img-slides:active{cursor:pointer}
+[id$="BookedGrid"] .img-slides:active{cursor:grabbing}
 .img-slide{display:none;position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background-color:var(--bg-3);pointer-events:none;vertical-align:top}
 .img-slide.active{display:block}
 .img-slide.active{pointer-events:auto}
@@ -5249,6 +5251,23 @@ main.tab-explore .empty-state{display:none !important}
    screenshots (impossible from a web page) or determined users — see
    the contextmenu blocker in JS for the matching right-click deterrent. */
 .img-slide,.lightbox-img,.lightbox-thumb{-webkit-user-drag:none;user-drag:none;-webkit-touch-callout:none}
+
+/* ─── Photo position dots (bottom of the photo, just above the price ribbon) ─── */
+.card-slide-dots{
+  position:absolute;left:0;right:0;bottom:calc(var(--rib-h, 32px) + 6px);z-index:3;
+  display:flex;justify-content:center;align-items:center;gap:5px;
+  pointer-events:none;
+}
+.card-slide-dots span{
+  width:6px;height:6px;border-radius:50%;
+  background:rgba(255,255,255,.55);box-shadow:0 0 3px rgba(0,0,0,.45);
+  transition:width .2s,background .2s;
+}
+.card-slide-dots span.active{width:16px;border-radius:3px;background:#fff}
+.card-slide-dots.tiny{gap:3px}
+.card-slide-dots.tiny span{width:5px;height:5px}
+.card-slide-dots.tiny span.active{width:12px}
+#detailGallerySlot .card-slide-dots{bottom:14px}
 
 /* ─── Image Zoom Lightbox ───────────────────────── */
 #imgZoomOverlay{
@@ -10648,7 +10667,12 @@ function buildImgSlider(p, fg, uidSuffix, videoSlideHtml) {
         ? `<div class="img-slide video-slide" data-vh="${encodeURIComponent(videoSlideHtml)}"></div>`
         : `<div class="img-slide video-slide active">${videoSlideHtml}</div>`)
     : '';
-  return `<div class="img-slides" id="${uid}">${imgSlides}${videoSlide}</div>`;
+  const _slideCount = imgs.length + (videoSlideHtml && imgs.length >= 1 ? 1 : 0);
+  let dots = '';
+  if (_slideCount >= 2 && uidSuffix !== '-cmp') {
+    dots = `<div class="card-slide-dots${_slideCount > 10 ? ' tiny' : ''}" aria-hidden="true">${Array.from({length:_slideCount},(_,i)=>`<span class="${i===0?'active':''}"></span>`).join('')}</div>`;
+  }
+  return `<div class="img-slides" id="${uid}">${imgSlides}${videoSlide}</div>${dots}`;
 }
 
 // Loads a card's non-first slides (see the data-src comment in
@@ -10724,6 +10748,10 @@ function slideGo(uid, idx) {
     lk.innerHTML = lockPanelHtml(_vidLocked ? 'video' : 'photo');
     lk.addEventListener('click', function(e){ e.stopPropagation(); });
     c.appendChild(lk);
+  }
+  const cardDots = c.parentElement && c.parentElement.querySelector(':scope > .card-slide-dots');
+  if (cardDots) {
+    cardDots.querySelectorAll('span').forEach((d,i) => d.classList.toggle('active', i===idx));
   }
   const dotsWrap = c.parentElement && c.parentElement.querySelector('.compare-slide-dots');
   if (dotsWrap) dotsWrap.querySelectorAll('span').forEach((d,i) => d.classList.toggle('active', i===idx));
@@ -10809,6 +10837,58 @@ function slideSwipe(uid, dir) {
   }, {passive:true});
 })();
 
+/* Keeps the photo dots sitting just above each card's price strip, whatever its height
+   (the strip is shorter/taller on Viewed, Booked, compact and mobile cards). */
+(function(){
+  if (!('ResizeObserver' in window)) return;
+  const ro = new ResizeObserver(function(entries){
+    entries.forEach(function(en){
+      const host = en.target.parentElement;
+      if (host) host.style.setProperty('--rib-h', Math.round(en.target.offsetHeight) + 'px');
+    });
+  });
+  const seen = new WeakSet();
+  function scan(root){
+    (root.querySelectorAll ? root.querySelectorAll('.prop-img-price') : []).forEach(function(r){
+      if (!seen.has(r)) { seen.add(r); ro.observe(r); }
+    });
+  }
+  function start(){
+    scan(document);
+    new MutationObserver(function(muts){
+      muts.forEach(function(m){ m.addedNodes.forEach(function(n){
+        if (n.nodeType !== 1) return;
+        if (n.matches && n.matches('.prop-img-price') && !seen.has(n)) { seen.add(n); ro.observe(n); }
+        scan(n);
+      }); });
+    }).observe(document.body, {childList:true, subtree:true});
+  }
+  if (document.body) start(); else document.addEventListener('DOMContentLoaded', start);
+})();
+
+/* Desktop keyboard: hover a card's photo, then press ←/→ to change the photo. */
+(function(){
+  let hoverEl = null;
+  document.addEventListener('mouseover', function(e){
+    const el = e.target.closest && e.target.closest('.img-slides');
+    hoverEl = (el && el.id) ? el : (e.target.closest && e.target.closest('.prop-img') ? e.target.closest('.prop-img').querySelector('.img-slides') : null);
+  });
+  document.addEventListener('mouseleave', function(){ hoverEl = null; });
+  document.addEventListener('keydown', function(e){
+    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+    if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
+    if (!hoverEl || !hoverEl.isConnected || !hoverEl.id) return;
+    if (hoverEl.matches(':hover') === false) { hoverEl = null; return; }
+    const t = e.target;
+    if (t && t.closest && t.closest('input,textarea,select,[contenteditable="true"]')) return;
+    const lb = document.getElementById('lightboxOverlay');
+    if (lb && lb.classList.contains('open')) return;
+    if (hoverEl.querySelectorAll('.img-slide').length < 2) return;
+    e.preventDefault();
+    slideStep(hoverEl.id, e.key === 'ArrowLeft' ? -1 : 1);
+  });
+})();
+
 /* Mouse-drag swipe for desktop — same threshold/logic as the touch handler
    above, so trackpad/mouse users can swipe through photos without arrow
    buttons. A plain click (no meaningful drag) still falls through to the
@@ -10818,7 +10898,6 @@ function slideSwipe(uid, dir) {
   document.addEventListener('mousedown', function(e){
     const el = e.target.closest('.img-slides');
     if (!el || !el.id) { active = null; return; }
-    if (el.closest('.recently-viewed-strip, [id$="BookedGrid"]')) { active = null; return; }
     if (el.querySelectorAll('.img-slide').length < 2) { active = null; return; }
     active = el;
     mx = e.clientX;
@@ -10830,10 +10909,20 @@ function slideSwipe(uid, dir) {
     const dy = e.clientY - my;
     if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) {
       window._lastSwipeTs = Date.now();
+      window._lastMouseDragTs = Date.now();   // a mouse drag still fires a click afterwards — swallowed below
       slideSwipe(active.id, dx < 0 ? 1 : -1);
     }
     active = null;
   });
+  // After a mouse drag-swipe the browser fires a click on the photo, which would open the
+  // property view. Swallow that click (capture phase, before the photo's onclick runs).
+  document.addEventListener('click', function(e){
+    if (Date.now() - (window._lastMouseDragTs || 0) < 350 && e.target.closest && e.target.closest('.img-slides, .prop-card')) {
+      e.stopPropagation();
+      e.preventDefault();
+      window._lastMouseDragTs = 0;
+    }
+  }, true);
 })();
 
 /* ═══════════════════════════════════════════════
