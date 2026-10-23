@@ -14990,7 +14990,7 @@ function lockListedByToAccount() {
 }
 function openAddModal(presetType) {
   if (!getLoggedInUser()) { openAuthModal(); return; }
-  if (blockIfNotVerified()) return;
+  if (blockIfNotVerified({ allowOwnerBroker: true })) return;
   const restored = restoreListingDraft();
   if (!restored) resetListingForm();
   if (presetType) {
@@ -15474,8 +15474,10 @@ function closePlanExpiredModal() {
 // the caller can `if (blockIfNotVerified()) return;`. Not a security
 // boundary — server-side requireVerified is — this is purely so people
 // don't fill out a whole form before finding out they can't submit it.
-function blockIfNotVerified() {
+function blockIfNotVerified(opts) {
   const user = getLoggedInUser();
+  // Owner / broker accounts may list a property without admin verification.
+  if (opts && opts.allowOwnerBroker && user && (user.accountType === 'owner' || user.accountType === 'broker')) return false;
   if (user && !user.isVerified) {
     showPendingVerificationModal();
     return true;

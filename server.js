@@ -394,6 +394,27 @@ async function requireVerified(req, res, next) {
   }
 }
 
+// Same as requireVerified, but owner and broker accounts are exempt: they can
+// post a listing straight away without waiting for an admin to verify the
+// account. (The listing itself still starts with verified:false, so admin
+// approval of the property before it goes public is unchanged.) Every other
+// account type (agent, builder, customer) still needs User.isVerified.
+const SELF_LISTING_ACCOUNT_TYPES = ['owner', 'broker'];
+async function requireVerifiedUnlessOwnerBroker(req, res, next) {
+  try {
+    const user = await User.findById(req.userId).select('isVerified accountType').lean();
+    if (user && (user.isVerified || SELF_LISTING_ACCOUNT_TYPES.includes(user.accountType))) return next();
+    return res.status(403).json({
+      code: 'NOT_VERIFIED',
+      error: 'Your account is pending admin verification. Please wait for confirmation before posting anything.',
+      message: 'Your account is pending admin verification. Please wait for confirmation before posting anything.',
+    });
+  } catch (err) {
+    console.error('requireVerifiedUnlessOwnerBroker error:', err);
+    res.status(500).json({ message: 'Server error. Please try again.' });
+  }
+}
+
 // Like requireUser, but never blocks the request — just attaches req.userId
 // (and req.userReadableId) if a valid session key was sent (null otherwise).
 // Used on routes that must still work for guests, e.g. submitting a listing
@@ -1649,7 +1670,7 @@ const listingWriteLimiter = rateLimit({
 });
 
 // ── POST /api/properties ──
-app.post('/api/properties', listingLimiter, requireUser, requireOwner, requireVerified, async (req, res) => {
+app.post('/api/properties', listingLimiter, requireUser, requireOwner, requireVerifiedUnlessOwnerBroker, async (req, res) => {
   try {
     const body = req.body || {};
     const fields = NESTED_SECTIONS.reduce((acc, k) => {
