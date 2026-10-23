@@ -5268,6 +5268,14 @@ main.tab-explore .empty-state{display:none !important}
 .card-slide-dots.tiny span{width:5px;height:5px}
 .card-slide-dots.tiny span.active{width:12px}
 #detailGallerySlot .card-slide-dots{bottom:14px}
+@media (max-width:768px){
+  .card-slide-dots{gap:2px}
+  .card-slide-dots span{width:3px;height:3px;box-shadow:0 0 2px rgba(0,0,0,.4)}
+  .card-slide-dots span.active{width:8px;border-radius:2px}
+  .card-slide-dots.tiny{gap:2px}
+  .card-slide-dots.tiny span{width:3px;height:3px}
+  .card-slide-dots.tiny span.active{width:8px}
+}
 
 /* ─── Image Zoom Lightbox ───────────────────────── */
 #imgZoomOverlay{
