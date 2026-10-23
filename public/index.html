@@ -21653,6 +21653,15 @@ html{background:#ffeadf}
 body{background:radial-gradient(80% 50% at 100% 0%,rgba(255,150,110,.26) 0%,rgba(255,150,110,0) 60%),radial-gradient(70% 45% at 0% 100%,rgba(244,114,150,.16) 0%,rgba(244,114,150,0) 60%),linear-gradient(180deg,#ffeee4 0%,#ffe4d5 100%);background-attachment:fixed}
 .section-divider{background:transparent}
 .promoted-label,.booked-label,.section-divider.is-stuck .section-divider-label,.section-divider.is-stuck .booked-label{background:linear-gradient(180deg,#ffeee6 0%,#ffdcce 100%);border:1px solid rgba(240,120,100,.38);color:#e8365d;box-shadow:0 2px 6px -3px rgba(190,70,60,.28),inset 0 1px 0 rgba(255,255,255,.55)}
+/* Section header pills (BOOKED / PROMOTED / RENT…) use the same surface as the filter pills (.fd-btn) */
+.promoted-label,.booked-label,.section-divider.is-stuck .section-divider-label,.section-divider.is-stuck .booked-label{
+  background:linear-gradient(180deg,#fff 0%,#fffaf6 100%);
+  border:1px solid #f3dcd2;color:#e8365d;
+  box-shadow:0 2px 6px -2px rgba(190,70,60,.14);
+}
+.section-divider.is-stuck .section-divider-label,.section-divider.is-stuck .booked-label{
+  box-shadow:0 0 0 2px rgba(255,248,243,.95),0 8px 16px -8px rgba(232,54,93,.4);
+}
 /* ─── Unified modal close button (same as the Service Notice X): round coral, white cross, rotate on hover ─── */
 .modal-close,.wish-modal-close,.preav-close,.viewers-modal-close,.panel-close,.profile-banner-close,.fm-close{width:34px !important;height:34px !important;min-width:34px;border-radius:50% !important;background:var(--brand) !important;border:none !important;color:#fff !important;padding:0 !important;align-items:center;justify-content:center;box-shadow:0 2px 10px rgba(224,58,82,.30) !important;-webkit-backdrop-filter:none !important;backdrop-filter:none !important;transition:background .15s,color .15s,transform .25s !important}
 .modal-close:hover,.wish-modal-close:hover,.preav-close:hover,.viewers-modal-close:hover,.panel-close:hover,.profile-banner-close:hover,.fm-close:hover{background:var(--brand-hover) !important;color:#fff !important;transform:rotate(90deg) !important}
