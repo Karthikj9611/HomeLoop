@@ -2911,6 +2911,55 @@ main.tab-explore .empty-state{display:none !important}
   --toast-accent:#12a566;--toast-accent2:#6fdba6;--toast-accent-light:#d9f6e8;
   --toast-tint:#c2f0d9;--toast-base:#eefbf4;--toast-border:rgba(176,232,203,.95);--toast-shadow:rgba(10,120,75,.38);
 }
+/* ═══ Toast — centred "pop-up" card: big animated icon on top, message below. Always in the exact centre. ═══ */
+.toast.toast-success{--toast-accent:#12b76a;--toast-accent2:#5eead4}
+.toast.toast-error{--toast-accent:#f0384f;--toast-accent2:#ff9a6b}
+.toast.toast-warning{--toast-accent:#f59e0b;--toast-accent2:#ffd25e}
+.toast.toast-info{--toast-accent:#4f6bff;--toast-accent2:#8fb4ff}
+.toast{
+  top:50%;left:50%;
+  transform:translate(-50%,-50%) scale(.8);
+  flex-direction:column;align-items:center;justify-content:center;text-align:center;
+  gap:16px;width:max-content;min-width:230px;max-width:min(86vw,320px);
+  padding:30px 34px 28px;border-radius:28px;overflow:visible;
+  background:
+    radial-gradient(120% 70% at 50% 0%,color-mix(in srgb,var(--toast-accent) 13%,transparent) 0%,transparent 70%),
+    #fff;
+  -webkit-backdrop-filter:none;backdrop-filter:none;
+  border:1px solid color-mix(in srgb,var(--toast-accent) 16%,#f1e9e6);
+  box-shadow:
+    0 40px 80px -24px rgba(40,18,30,.38),
+    0 12px 30px -10px rgba(40,18,30,.16),
+    0 0 0 8px color-mix(in srgb,var(--toast-accent) 6%,transparent);
+  color:#2a1f24;font-size:16px;font-weight:700;letter-spacing:-.01em;
+  transition:opacity .22s ease,transform .5s cubic-bezier(.34,1.5,.64,1);
+}
+.toast.show{transform:translate(-50%,-50%) scale(1)}
+.toast::before,.toast::after{content:none}
+.toast > *{position:relative;z-index:1}
+.toast-icon{
+  position:relative;width:68px;height:68px;margin:0;border-radius:50%;flex-shrink:0;
+  background:linear-gradient(145deg,var(--toast-accent2) 0%,var(--toast-accent) 100%);
+  box-shadow:0 16px 30px -10px color-mix(in srgb,var(--toast-accent) 80%,transparent),inset 0 2px 0 rgba(255,255,255,.4);
+}
+.toast-icon::before,.toast-icon::after{
+  content:"";position:absolute;inset:0;border-radius:50%;
+  border:2px solid var(--toast-accent);opacity:0;pointer-events:none;
+}
+.toast.show .toast-icon{animation:toastIconPop .55s cubic-bezier(.34,1.6,.64,1) .05s both}
+.toast.show .toast-icon::before{animation:toastRing 1.3s ease-out .25s both}
+.toast.show .toast-icon::after{animation:toastRing 1.3s ease-out .55s both}
+.toast-icon svg{width:36px;height:36px;fill:none;stroke:#fff;stroke-width:3.2;stroke-linecap:round;stroke-linejoin:round;filter:none}
+.toast.show .toast-icon svg [pathLength]{stroke-dasharray:1;stroke-dashoffset:1;animation:toastDraw .45s ease-out .3s forwards}
+.toast-msg{flex:none;line-height:1.4;color:#2a1f24;text-wrap:balance}
+@keyframes toastIconPop{0%{transform:scale(0);opacity:0}100%{transform:scale(1);opacity:1}}
+@keyframes toastRing{0%{transform:scale(1);opacity:.55}100%{transform:scale(1.85);opacity:0}}
+@keyframes toastDraw{to{stroke-dashoffset:0}}
+@media (prefers-reduced-motion:reduce){
+  .toast,.toast.show .toast-icon{transition:opacity .2s ease;animation:none}
+  .toast.show .toast-icon::before,.toast.show .toast-icon::after{animation:none}
+  .toast.show .toast-icon svg [pathLength]{animation:none;stroke-dashoffset:0}
+}
 
 
 /* ─── Backdrop for panels ──────────────────────── */
@@ -9072,7 +9121,7 @@ main.tab-explore .empty-state{display:none !important}
 <div class="toast-backdrop" id="toastBackdrop"></div>
 <div class="toast toast-success" id="toast" role="status" aria-live="polite">
   <span class="toast-icon" id="toastIcon">
-    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path pathLength="1" d="M5.5 12.8l4.4 4.4L18.5 7.6"/></svg>
   </span>
   <span class="toast-msg" id="toastMsg"></span>
 </div>
@@ -20040,10 +20089,10 @@ function submitListing() {
 ═══════════════════════════════════════════════ */
 let toastTimer;
 const TOAST_ICONS = {
-  success: '<path d="M20 6L9 17l-5-5"/>',
-  error:   '<circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="13"/><line x1="12" y1="16" x2="12" y2="16.01"/>',
-  warning: '<path d="M12 9v4"/><path d="M12 16.01h.01"/><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>',
-  info:    '<circle cx="12" cy="12" r="9"/><line x1="12" y1="11" x2="12" y2="16.5"/><line x1="12" y1="7.5" x2="12" y2="7.51"/>',
+  success: '<path pathLength="1" d="M5.5 12.8l4.4 4.4L18.5 7.6"/>',
+  error:   '<path pathLength="1" d="M7 7l10 10"/><path pathLength="1" d="M17 7L7 17"/>',
+  warning: '<path pathLength="1" d="M12 5.5v8"/><path d="M12 18.2h.01"/>',
+  info:    '<path d="M12 6.8h.01"/><path pathLength="1" d="M12 11v7"/>',
 };
 
 /* ── Indian mobile number validation ──
@@ -20168,6 +20217,8 @@ function showToast(msg, type) {
     `<svg viewBox="0 0 24 24" aria-hidden="true">${TOAST_ICONS[kind]}</svg>`;
   t.classList.remove('toast-success', 'toast-error', 'toast-warning', 'toast-info');
   t.classList.add('toast-' + kind);
+  // Restart the countdown-bar / icon animation when a new toast replaces one that's still showing.
+  t.classList.remove('show'); void t.offsetWidth;
   t.classList.add('show');
   backdrop.classList.add('show');
   clearTimeout(toastTimer);
