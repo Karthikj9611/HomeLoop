@@ -11988,11 +11988,9 @@ function updateAllOnlySections() {
   const resultsCountEl = document.querySelector('.results-count');
   const adBannerEl = document.getElementById('adBanner');
   if (rh) {
-    // Ad banner shows only on the Review ('All') and Sell tabs — Promoted, Rent,
-    // Lease and Broker no longer show it. Those tabs keep their normal top
-    // padding (they still hold the property grid) but the header is hidden.
-    const adTab = ['All', 'Sell'].includes(currentTab);
-    const gridTab = ['Promoted', 'Rent', 'Lease', 'Broker'].includes(currentTab);
+    // Ad banner shows on Sell, Promoted, Rent, Lease and Broker — hidden on the Review ('All') tab.
+    const adTab = ['Sell', 'Promoted', 'Rent', 'Lease', 'Broker'].includes(currentTab);
+    const gridTab = false; // banner sits above the grid on every tab, so keep the normal top gap
     rh.style.display = adTab ? '' : 'none';
     if (resultsCountEl) resultsCountEl.style.display = show ? '' : 'none';
     if (adBannerEl) adBannerEl.style.display = adTab ? '' : 'none';
@@ -21501,6 +21499,48 @@ body{
     max-height:calc(100vh - 32px);max-height:calc(100dvh - 32px);
   }
   .modal,.add-modal,.preav-modal,.confirm-card,.fm-box,#addModalBox{border-radius:22px !important}
+}
+/* Ad banner alignment: label stacked directly above the headline, whole group centred with the icon + CTA */
+.ad-slide{display:grid !important;grid-template-columns:auto minmax(0,1fr) auto;grid-template-rows:auto auto;
+  column-gap:14px;row-gap:1px;align-content:center;align-items:center}
+.ad-slide-icon{grid-column:1;grid-row:1 / span 2;align-self:center}
+.ad-slide-audience{position:static !important;grid-column:2;grid-row:1;align-self:end;line-height:1.1;margin:0}
+.ad-slide-text{grid-column:2;grid-row:2;align-self:start;padding-top:0 !important;min-width:0}
+.ad-slide-cta{grid-column:3;grid-row:1 / span 2;align-self:center;margin-left:0}
+.ad-slide:not(:has(.ad-slide-audience)) .ad-slide-text{grid-row:1 / span 2;align-self:center}
+.ad-dots{bottom:4px}
+@media (max-width:640px){.ad-slide{column-gap:10px}}
+/* ═══ Ad banner — premium polish ═══ */
+.ad-banner{height:62px;border-radius:20px;
+  box-shadow:0 14px 30px -14px rgba(20,16,17,.40),0 0 0 1px rgba(255,255,255,.35) inset}
+.ad-slide{padding:0 22px;column-gap:14px;box-shadow:inset 0 1px 0 rgba(255,255,255,.28),inset 0 -14px 24px -18px rgba(0,0,0,.28)}
+.ad-slide::before{top:-70%;right:-3%;width:210px;height:210px;background:radial-gradient(circle,rgba(255,255,255,.26) 0%,rgba(255,255,255,0) 68%)}
+.ad-slide::after{bottom:-80%;left:4%;width:170px;height:170px;background:radial-gradient(circle,rgba(255,255,255,.14) 0%,rgba(255,255,255,0) 70%)}
+.ad-slide-icon{width:38px;height:38px;font-size:18px;
+  background:linear-gradient(145deg,rgba(255,255,255,.36),rgba(255,255,255,.12));
+  box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.55),0 6px 14px -6px rgba(0,0,0,.35)}
+.ad-slide-audience{justify-self:start;width:fit-content;padding:2px 8px 2px;border-radius:99px;
+  background:rgba(255,255,255,.2);box-shadow:inset 0 0 0 1px rgba(255,255,255,.28);
+  font-size:8.5px;font-weight:800;letter-spacing:.09em;opacity:1;color:#fff;line-height:1.35}
+.ad-slide-text{font-size:16px;font-weight:700;letter-spacing:-.015em;line-height:1.2;
+  text-shadow:0 1px 3px rgba(0,0,0,.18)}
+.ad-slide-cta{font-size:12.5px;font-weight:800;padding:9px 18px;border-radius:99px;
+  box-shadow:0 8px 18px -8px rgba(0,0,0,.45),inset 0 -2px 0 rgba(0,0,0,.06)}
+.ad-slide-cta::after{content:'\203A';font-size:17px;line-height:.8;margin-left:1px;font-weight:700;transition:transform .18s ease}
+.ad-slide:hover .ad-slide-cta::after{transform:translateX(3px)}
+.ad-dots{bottom:5px;gap:4px;padding:3px 7px;border-radius:99px;background:rgba(0,0,0,.16);
+  backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
+.ad-dot{width:4px;height:4px;background:rgba(255,255,255,.55)}
+.ad-dot.active{width:14px;background:#fff}
+@media (max-width:640px){
+  .ad-banner{height:74px;border-radius:18px}
+  .ad-slide{padding:0 14px;column-gap:10px}
+  .ad-slide-icon{width:34px;height:34px;font-size:16px}
+  .ad-slide-text{font-size:13px;line-height:1.22}
+  .ad-slide-audience{font-size:7.5px;padding:2px 7px}
+  .ad-slide-cta{font-size:11.5px;padding:8px 13px}
+  .ad-slide-cta::after{font-size:15px}
+  .ad-dots{bottom:4px;padding:2px 6px}
 }
 </style>
 <div id="hlNotice" role="dialog" aria-modal="true" aria-labelledby="hlNoticeTitle" aria-describedby="hlNoticeLead">
