@@ -21366,9 +21366,8 @@ body{
 }
 .section-divider.is-stuck{background:rgba(255,246,239,.92);backdrop-filter:blur(6px)}
 .prop-card{
-  background:
-    radial-gradient(110% 40% at 100% 100%, rgba(255,164,120,.16) 0%, rgba(255,164,120,0) 60%),
-    linear-gradient(180deg,#ffffff 0%,#fffaf6 100%);
+  background:var(--calm-grad);
+  border:1px solid var(--calm-line);
 }
 /* ─── REVIEWS SECTION: warm ivory cards + coral-rose accents ─── */
 .reviews-section{background:transparent;border-top:1px solid rgba(240,120,100,.2);position:relative}
@@ -21627,19 +21626,18 @@ body{
 .notif-icon{width:38px;height:38px;border-radius:13px;box-shadow:inset 0 1px 0 rgba(255,255,255,.35)}
 .notif-icon svg{width:19px;height:19px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .notif-item{align-items:flex-start}
-/* Filter buttons: soft peach-coral tint to match the bar and theme (was white) */
-.filter-dd-bar .fd-btn:not(.has-sel):not(.open){
-  background:linear-gradient(180deg,#ffeee6 0%,#ffdfd2 100%);border:1px solid rgba(240,120,100,.34);border-radius:12px;
-  color:#8a3f3a;box-shadow:0 2px 6px -3px rgba(190,70,60,.28),inset 0 1px 0 rgba(255,255,255,.6);transform:none;
+/* Filter bar: white; filter fields inside use the modal gradient */
+#filterDdBar.filter-dd-bar{background:#fff !important}
+#filterDdBar .fd-btn:not(.has-sel):not(.open){
+  background:var(--calm-grad) !important;border:1px solid rgba(240,120,100,.30) !important;border-radius:12px !important;
+  box-shadow:0 2px 6px -3px rgba(190,70,60,.22) !important;transform:none !important;
 }
-.filter-dd-bar .fd-btn:not(.has-sel):not(.open):hover{background:linear-gradient(180deg,#ffe3d8 0%,#ffd0c0 100%);border-color:#f0506e;color:#e8365d;transform:none}
+#filterDdBar .fd-btn:not(.has-sel):not(.open):hover{border-color:#f0506e !important;filter:brightness(.98)}
 @media (max-width:640px){
   :root{--filter-h:44px}
   .filter-dd-bar{gap:3px !important;padding:4px 3px !important}
   .filter-dd-bar .fd-btn{flex:0 0 calc(33.3333% - 4px) !important;max-width:calc(33.3333% - 4px) !important;
     padding-top:8px !important;padding-bottom:8px !important;border-radius:12px !important}
-  .filter-dd-bar .fd-btn:not(.has-sel):not(.open){border:1px solid rgba(240,120,100,.34)}
-  .filter-dd-bar .fd-btn:first-child:not(.has-sel):not(.open){border-left:1px solid rgba(240,120,100,.34)}
   .filter-dd-bar .fd-btn.has-sel,.filter-dd-bar .fd-btn.open{border-radius:12px !important}
 }
 /* ─── Ad banner hidden everywhere (markup/JS left intact; !important beats the per-tab inline display toggles) ─── */
@@ -21647,6 +21645,14 @@ body{
 #resultsHeader{display:none !important}
 .main:has(#adBanner){padding-top:0 !important}
 .main .section-divider{padding-top:6px}
+/* Properties area (behind the cards, booked/viewed/promoted sections, empty/error states) is white */
+.main,#mainContent{background:#fff}
+/* ─── Remove remaining white: deeper peach page, peach section pills, no flat band behind dividers ─── */
+:root{--bg-2:#ffeadf;--bg-3:#fddccb}
+html{background:#ffeadf}
+body{background:radial-gradient(80% 50% at 100% 0%,rgba(255,150,110,.26) 0%,rgba(255,150,110,0) 60%),radial-gradient(70% 45% at 0% 100%,rgba(244,114,150,.16) 0%,rgba(244,114,150,0) 60%),linear-gradient(180deg,#ffeee4 0%,#ffe4d5 100%);background-attachment:fixed}
+.section-divider{background:transparent}
+.promoted-label,.booked-label,.section-divider.is-stuck .section-divider-label,.section-divider.is-stuck .booked-label{background:linear-gradient(180deg,#ffeee6 0%,#ffdcce 100%);border:1px solid rgba(240,120,100,.38);color:#e8365d;box-shadow:0 2px 6px -3px rgba(190,70,60,.28),inset 0 1px 0 rgba(255,255,255,.55)}
 </style>
 <div id="hlNotice" role="dialog" aria-modal="true" aria-labelledby="hlNoticeTitle" aria-describedby="hlNoticeLead">
   <div class="hln-card" id="hlNoticeCard" tabindex="-1">
