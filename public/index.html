@@ -1346,6 +1346,9 @@ main.tab-explore .empty-state{display:none !important}
   content:'';position:absolute;left:0;top:3px;bottom:3px;width:1px;background:var(--border);
 }
 .prop-stat svg{width:14px;height:14px;stroke:var(--text-3);fill:none;stroke-width:1.8;flex-shrink:0}
+@media (max-width:700px){.prop-stat.stat-car-0,.prop-stat.stat-lift-desk{display:none}}
+/* Booked + Recently Viewed cards are narrow: drop the furnishing stat so the lift stat fits. */
+[id$="BookedGrid"] .prop-stat:has(.icon-furnish),#recentlyViewedStrip .prop-stat:has(.icon-furnish){display:none}
 .prop-stat-icon{
   font-size:13px;line-height:1;flex-shrink:0;
   display:flex;align-items:center;justify-content:center;
@@ -11028,6 +11031,13 @@ function matchesTab(p, tab) {
    AM_LIST) — that's the string actually saved into amenities.selected — so
    matching only "lift" here meant this always evaluated to false, even for
    listings with the elevator amenity checked. */
+/* Lift count: amenity strings are saved like "Elevator ×2"; default 1 when no qty. */
+function pLiftCount(p) {
+  const a = (p.amenities?.selected || []).find(a => /lift|elevator/i.test(a));
+  if (!a) return 0;
+  const m = String(a).match(/[×x]\s*(\d+)/i);
+  return m ? (parseInt(m[1], 10) || 1) : 1;
+}
 function pHasLift(p) {
   return (p.amenities?.selected || []).some(a => /lift|elevator/i.test(a));
 }
@@ -11206,10 +11216,19 @@ function cardHTML(p, compact, extraLeftBadge, showAvail) {
         ${isPGCard ? (pg.gender ? (() => { const gIcon = {'Boys':'♂️','Girls':'♀️','Co-ed':'⚥'}[pg.gender] || '🚻'; const gAbbr = {'Boys':'M','Girls':'F','Co-ed':'M/F'}[pg.gender] || esc(pg.gender); return `<span class="prop-stat" title="Gender preference: ${esc(pg.gender)}">
           <span class="prop-stat-icon icon-gender">${gIcon}</span>
           ${gAbbr}
-        </span>`; })() : '') : `<span class="prop-stat" title="${carCount+' car parking spot'+(carCount===1?'':'s')}">
+        </span>`; })() : '') : (carCount > 0 ? `<span class="prop-stat" title="${carCount+' car parking spot'+(carCount===1?'':'s')}">
           <span class="prop-stat-icon icon-car">🚗</span>
           ${carCount}
-        </span>`}
+        </span>`+`<span class="prop-stat stat-lift-desk${lift ? '' : ' is-off'}" title="${lift ? (pLiftCount(p)+' lift'+(pLiftCount(p)===1?'':'s')) : 'No lift'}">
+          <span class="prop-stat-icon icon-lift"><svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true" style="width:15px;height:15px;stroke:none"><rect x="1.5" y="1" width="13" height="14" rx="3" style="fill:#4f89e6;stroke:none"/><path d="M8 3.2 5.3 6.6h5.4z" style="fill:#fff;stroke:none"/><path d="M8 12.8 5.3 9.4h5.4z" style="fill:#fff;stroke:none"/></svg></span>
+          ${pLiftCount(p)}
+        </span>` : `<span class="prop-stat stat-car-0" title="0 car parking spots">
+          <span class="prop-stat-icon icon-car">🚗</span>
+          0
+        </span>`+`<span class="prop-stat${lift ? '' : ' is-off'}" title="${lift ? (pLiftCount(p)+' lift'+(pLiftCount(p)===1?'':'s')) : 'No lift'}">
+          <span class="prop-stat-icon icon-lift"><svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true" style="width:15px;height:15px;stroke:none"><rect x="1.5" y="1" width="13" height="14" rx="3" style="fill:#4f89e6;stroke:none"/><path d="M8 3.2 5.3 6.6h5.4z" style="fill:#fff;stroke:none"/><path d="M8 12.8 5.3 9.4h5.4z" style="fill:#fff;stroke:none"/></svg></span>
+          ${pLiftCount(p)}
+        </span>`)}
         <span class="prop-stat" title="${bikeCount+' bike parking spot'+(bikeCount===1?'':'s')}">
           <span class="prop-stat-icon icon-bike">🏍️</span>
           ${bikeCount}
@@ -11345,10 +11364,19 @@ function shortlistCardHTML(p) {
         ${isPGCardSL ? (pgSL.gender ? (() => { const gIcon = {'Boys':'♂️','Girls':'♀️','Co-ed':'⚥'}[pgSL.gender] || '🚻'; const gAbbr = {'Boys':'M','Girls':'F','Co-ed':'M/F'}[pgSL.gender] || esc(pgSL.gender); return `<span class="prop-stat" title="Gender preference: ${esc(pgSL.gender)}">
           <span class="prop-stat-icon icon-gender">${gIcon}</span>
           ${gAbbr}
-        </span>`; })() : '') : `<span class="prop-stat" title="${carCount+' car parking spot'+(carCount===1?'':'s')}">
+        </span>`; })() : '') : (carCount > 0 ? `<span class="prop-stat" title="${carCount+' car parking spot'+(carCount===1?'':'s')}">
           <span class="prop-stat-icon icon-car">🚗</span>
           ${carCount}
-        </span>`}
+        </span>`+`<span class="prop-stat stat-lift-desk${lift ? '' : ' is-off'}" title="${lift ? (pLiftCount(p)+' lift'+(pLiftCount(p)===1?'':'s')) : 'No lift'}">
+          <span class="prop-stat-icon icon-lift"><svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true" style="width:15px;height:15px;stroke:none"><rect x="1.5" y="1" width="13" height="14" rx="3" style="fill:#4f89e6;stroke:none"/><path d="M8 3.2 5.3 6.6h5.4z" style="fill:#fff;stroke:none"/><path d="M8 12.8 5.3 9.4h5.4z" style="fill:#fff;stroke:none"/></svg></span>
+          ${pLiftCount(p)}
+        </span>` : `<span class="prop-stat stat-car-0" title="0 car parking spots">
+          <span class="prop-stat-icon icon-car">🚗</span>
+          0
+        </span>`+`<span class="prop-stat${lift ? '' : ' is-off'}" title="${lift ? (pLiftCount(p)+' lift'+(pLiftCount(p)===1?'':'s')) : 'No lift'}">
+          <span class="prop-stat-icon icon-lift"><svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true" style="width:15px;height:15px;stroke:none"><rect x="1.5" y="1" width="13" height="14" rx="3" style="fill:#4f89e6;stroke:none"/><path d="M8 3.2 5.3 6.6h5.4z" style="fill:#fff;stroke:none"/><path d="M8 12.8 5.3 9.4h5.4z" style="fill:#fff;stroke:none"/></svg></span>
+          ${pLiftCount(p)}
+        </span>`)}
         <span class="prop-stat" title="${bikeCount+' bike parking spot'+(bikeCount===1?'':'s')}">
           <span class="prop-stat-icon icon-bike">🏍️</span>
           ${bikeCount}
