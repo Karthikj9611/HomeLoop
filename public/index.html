@@ -1115,6 +1115,19 @@ main.tab-explore .empty-state{display:none !important}
 .prop-icon-promoted{background:linear-gradient(135deg,#eec9c0,#d9a488)}
 .prop-icon-promoted svg{width:13px;height:13px;fill:#4a2418;stroke:none}
 .prop-icon-verified{background:linear-gradient(135deg,#4ba7ff,#1a73e8)}
+/* Unverified badge — top-left of the photo. Never inside the right-hand icon stack, so no other card element moves. */
+.prop-unverified{
+  display:inline-flex;align-items:center;gap:2px;flex-shrink:0;
+  height:14px;padding:0 5px 0 4px;border-radius:0 99px 99px 0;box-sizing:border-box;margin-left:-10px;
+  background:linear-gradient(135deg,#ff8a5b 0%,#f2584f 55%,#e03360 100%);color:#fff;
+  border:1px solid rgba(255,255,255,.35);border-left:0;
+  font-size:7px;font-weight:800;letter-spacing:0;text-transform:uppercase;line-height:1;white-space:nowrap;
+  box-shadow:0 2px 8px rgba(224,51,96,.4),inset 0 1px 0 rgba(255,255,255,.3);pointer-events:none;
+}
+.prop-unverified-abs{position:absolute;top:0;left:-10px;margin-left:0}
+/* when the type letter (R/L/P) sits before it, keep a normal rounded pill beside it instead of flush-left */
+.prop-badge-type-letter + .prop-unverified{margin-left:0;border-radius:99px;border-left:1px solid rgba(255,255,255,.35);padding-left:5px}
+.prop-unverified svg{display:none;width:7px;height:7px;fill:none;stroke:#fff;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
 .prop-icon-verified svg{width:15px;height:15px;fill:#fff;stroke:none}
 .prop-card.prop-card-promoted .prop-icon-promoted{background:linear-gradient(135deg,#ffd166,#f4a300)}
 .prop-card.prop-card-promoted .prop-icon-promoted svg{fill:#7a4a00}
@@ -11332,7 +11345,12 @@ function amenityTagsHTML(p) {
   return list.map(a => `<span class="prop-chip chip-amenity" title="${esc(a)}"><span class="prop-chip-icon">${amenityIcon(a)}</span>${esc(a)}</span>`).join('');
 }
 
+/* Fail-safe wrapper: one malformed listing (e.g. an incomplete unverified submission) must never blank the whole grid. */
 function cardHTML(p, compact, extraLeftBadge, showAvail) {
+  try { return _cardHTMLRaw(p, compact, extraLeftBadge, showAvail); }
+  catch (err) { console.error('Card render failed for listing', p && (p.propertyId || p.id), err); return ''; }
+}
+function _cardHTMLRaw(p, compact, extraLeftBadge, showAvail) {
   const liked = shortlisted.has(String(p.id));
   const compared = compareSet.has(p.id);
   const lockedType = getCompareType();
@@ -11378,6 +11396,7 @@ function cardHTML(p, compact, extraLeftBadge, showAvail) {
       <div class="prop-card-top-row">
         <div class="prop-left-badges">
           ${(!compact && !['Rent','Lease','PG','ShortStay'].includes(currentTab)) ? `<span class="prop-badge-type-letter${pTypeLetter.length>1?' wide':''} badge-${pType.toLowerCase()}" title="${pType}">${pTypeLetter}</span>` : ''}
+          ${(!p.verified && !isBookedProp(p)) ? '<div class="prop-unverified" title="Unverified — yet to be verified by our team"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5"/><path d="M12 16.3h.01"/></svg>Yet to verify</div>' : ''}
         </div>
         <div class="prop-right-badges">
           ${extraLeftBadge || ''}
@@ -11528,6 +11547,7 @@ function shortlistCardHTML(p) {
       ${buildImgSlider(p, fg, '-sl')}
       ${priceChipsHTML(p, pType, deposit, maintenance, leaseDur, {ribbon:true})}
       <div class="prop-card-top-row" style="justify-content:flex-end">
+        ${(!p.verified && !isBookedProp(p)) ? '<div class="prop-unverified prop-unverified-abs" title="Unverified — yet to be verified by our team"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5"/><path d="M12 16.3h.01"/></svg>Yet to verify</div>' : ''}
         <div class="prop-right-badges">
           ${(SHOW_VERIFIED_BADGE && p.verified) ? '<div class="prop-icon-badge prop-icon-verified" title="Verified"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.5" fill="#fff"/><path d="M8 12.3l2.6 2.6 5.4-5.8" stroke="#1a73e8" stroke-width="2.1" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>' : ''}
           <div class="prop-icon-badge prop-views-float" onclick="event.stopPropagation();openViewersModal('${p.id}')" title="${getViews(p).toLocaleString('en-IN')} views &middot; tap to see who viewed">
@@ -12062,6 +12082,7 @@ function renderCompareTable() {
           <div class="compare-slide-dots">${cmpImgs.map((_,i)=>`<span class="${i===0?'active':''}"></span>`).join('')}</div>
           ` : ''}
           <div class="prop-card-top-row" style="justify-content:flex-end">
+            ${(!p.verified && !isBookedProp(p)) ? '<div class="prop-unverified prop-unverified-abs" title="Unverified — yet to be verified by our team"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5"/><path d="M12 16.3h.01"/></svg>Yet to verify</div>' : ''}
             <div class="prop-right-badges">
               ${(SHOW_VERIFIED_BADGE && p.verified) ? '<div class="prop-icon-badge prop-icon-verified" title="Verified"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.5" fill="#fff"/><path d="M8 12.3l2.6 2.6 5.4-5.8" stroke="#1a73e8" stroke-width="2.1" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>' : ''}
               <div class="prop-icon-badge prop-views-float" onclick="event.stopPropagation();openViewersModal('${p.id}')" title="${getViews(p).toLocaleString('en-IN')} views &middot; tap to see who viewed">
@@ -20276,16 +20297,14 @@ function submitListing() {
       fetchProperties();    // refresh the public grid so the edit shows up there too
       return;
     }
-    // Don't add this to PROPERTIES / the public grid — a brand-new listing
-    // is unverified, and the public /api/properties endpoint only returns
-    // verified: true listings. It'll show up once admin verifies it; until
-    // then it's visible to the owner via "My Listings" (fetched fresh from
-    // /api/user/my-listings, which is unfiltered for the owner's own posts).
+    // New listings go live immediately with an "Unverified" badge on the card;
+    // the badge disappears once admin verifies it. Refresh the public grid so it shows up now.
     clearListingDraft();
     resetListingForm();
     document.getElementById('addModal').classList.remove('open');
     unlockBodyScroll();
-    showToast("Your listing has been submitted. It will go live once our team verifies it.");
+    fetchProperties();
+    showToast("Your listing is live! It shows an Unverified tag until our team verifies it.");
   })
   .catch(err => {
     console.error('Submit listing error:', err);

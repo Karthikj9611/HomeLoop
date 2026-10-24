@@ -1787,8 +1787,8 @@ app.get('/api/properties', attachUserIfPresent, async (req, res) => {
     // ?booked=true flips this to fetch the booked ones instead, so the frontend
     // can show a separate "Booked" section per type without ever mixing the two.
     const filter = booked === 'true'
-      ? { verified: true, booked: true, blocked: { $ne: true } }
-      : { verified: true, booked: { $ne: true }, blocked: { $ne: true } }; // a listing only appears to the public once admin has verified it, and disappears again once marked booked
+      ? { booked: true, blocked: { $ne: true } }
+      : { booked: { $ne: true }, blocked: { $ne: true } }; // listings go live as soon as they are submitted (not-yet-verified ones carry verified:false and the frontend shows an "Unverified" badge on the card); they disappear once marked booked or blocked
     if (status && typeof status === 'string') filter['basic.status'] = status;
 
     // Logged-in tenant with admin "Public call" ON → owner numbers on listings (applied below).

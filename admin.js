@@ -2375,7 +2375,7 @@ self.addEventListener('notificationclick', event => {
         await notifyUser(prop.userId, {
           type: 'property_verified',
           title: 'Listing verified',
-          message: `Your ${prop.basic.status} listing "${prop.owner.propertyName}" in ${prop.location.area} is now verified and live for everyone to see.`,
+          message: `Your ${prop.basic.status} listing "${prop.owner.propertyName}" in ${prop.location.area} is now verified \u2014 the Unverified tag has been removed from it.`,
           meta: { propertyId: prop.propertyId, mongoId: String(prop._id) },
         });
       }
@@ -2792,7 +2792,7 @@ self.addEventListener('notificationclick', event => {
           await notifyUser(prop.userId, {
             type: 'property_verified',
             title: 'Listing verified',
-            message: `Your ${prop.basic && prop.basic.status} listing "${prop.owner && prop.owner.propertyName}" in ${prop.location && prop.location.area} is now verified and live for everyone to see.`,
+            message: `Your ${prop.basic && prop.basic.status} listing "${prop.owner && prop.owner.propertyName}" in ${prop.location && prop.location.area} is now verified \u2014 the Unverified tag has been removed from it.`,
             meta: { propertyId: prop.propertyId, mongoId: String(prop._id) },
           });
         } catch (e) { console.error('bulk-flags notify error:', e); }
