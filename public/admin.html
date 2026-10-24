@@ -11408,6 +11408,7 @@ window.downloadSelectedPropertiesZip = async function(){
     const folder = zip.folder(pid);
     try{ folder.file(pid + '.txt', buildPropertyDataText(row)); }catch(e){}
     _propImageUrls(row).forEach((u, i) => jobs.push({ folder, pid, u, i }));
+    jobs.push({ folder, pid, row, video: true });
   });
   btn.dataset.busy = '1'; btn.style.opacity = '.75'; btn.style.pointerEvents = 'none';
   let done = 0, failed = 0;
@@ -11418,6 +11419,11 @@ window.downloadSelectedPropertiesZip = async function(){
     const worker = async () => {
       while (next < jobs.length){
         const j = jobs[next++];
+        if (j.video){
+          const v = await _propVideoFile(j.row);
+          if (v) j.folder.file(j.pid + '_video.' + v.ext, v.blob);
+          done++; tick(); continue;
+        }
         let ok = false;
         for (let attempt = 0; attempt < 2 && !ok; attempt++){
           try{
@@ -11440,8 +11446,8 @@ window.downloadSelectedPropertiesZip = async function(){
     a.download = 'Properties_' + rows.length + '_' + stamp + '.zip';
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(a.href), 8000);
-    if (!jobs.length) alert('No photos were found for the selected properties — only the text files were zipped.');
-    else if (failed) alert(failed + ' of ' + jobs.length + ' photo(s) could not be downloaded and were skipped.');
+    if (!jobs.some(j => !j.video)) alert('No photos were found for the selected properties — only the text files (and videos, if any) were zipped.');
+    else if (failed) alert(failed + ' photo(s) could not be downloaded and were skipped.');
   } catch(err){
     alert('Could not build the zip. Try a smaller selection.');
   } finally {
@@ -11495,6 +11501,8 @@ window.downloadSelectedFullDataZips = async function(){
         }
       };
       await Promise.all(Array.from({ length: Math.min(6, urls.length) }, worker));
+      const vid = await _propVideoFile(row);
+      if (vid) zip.file(pid + '_video.' + vid.ext, vid.blob);
       const out = await zip.generateAsync({ type:'blob', compression:'STORE' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(out);
@@ -13677,6 +13685,14 @@ function safeUrl(v){
   }catch{}
   return '';
 }
+// Uploaded videos are stored as a relative path (/videos/<id>.mp4) served by the API server, so they must be
+// resolved against BASE (the API origin) — not the page's own origin, which can differ (e.g. admin opened from
+// another port / host). Pasted links go through safeUrl() as before.
+function videoSrcUrl(v){
+  const t = String(v || '').trim();
+  if (/^\/videos\/[a-f0-9]{24}\.(mp4|webm|mov|ogg)$/i.test(t)) return BASE.replace(/\/+$/, '') + t;
+  return safeUrl(t);
+}
 function getVideoEmbedInfo(url){
   let u;
   try{ u = new URL(url); }catch{ return null; }
@@ -14506,6 +14522,20 @@ function _propImageUrls(row){
   (m && Array.isArray(m.images) ? m.images : []).forEach(add);
   return out;
 }
+// Video tour file of a property → { blob, ext } or null. Only uploaded videos (/videos/<id>.mp4) and direct
+// .mp4/.webm/.mov/.ogg links can be downloaded; YouTube / Vimeo stay as the link in the .txt.
+async function _propVideoFile(row){
+  const raw = String((row && row.full && row.full.media && row.full.media.video) || (row && row.video) || '').trim();
+  if (!raw || !/\.(mp4|webm|mov|ogg)(\?.*)?$/i.test(raw)) return null;
+  try{
+    const r = await fetch(videoSrcUrl(raw) || raw);
+    if (!r.ok) return null;
+    const blob = await r.blob();
+    const byType = { 'video/mp4':'mp4','video/webm':'webm','video/quicktime':'mov','video/ogg':'ogg' }[blob.type];
+    const byUrl = (raw.split('?')[0].match(/\.([a-z0-9]{2,4})$/i) || [])[1];
+    return { blob, ext: byType || (byUrl ? byUrl.toLowerCase() : 'mp4') };
+  }catch(e){ return null; }
+}
 /* Property data as a plain .txt, laid out like the listing form:
    "Label: value", one per line, in form order, empty fields skipped.
    Fields are read from row.full (basic/location/owner/price/property/
@@ -14646,7 +14676,7 @@ function buildPropertyDataText(row, full){   // full=true → also include ID, a
   if (full) add('Description', media.desc);
   return L.join('\r\n');
 }
-// Zip = every photo (<ID>_01.ext…) + <ID>.txt (same text as the Data button).
+// Zip = every photo (<ID>_01.ext…) + the video (<ID>_video.ext, when uploaded) + <ID>.txt (same text as the Data button).
 async function downloadPropertyZip(id, btn, fullData){   // fullData=true → all fields in the .txt, file named <ID>_full.zip
   const row = _adminPropCache[id || editingPropertyId];
   if (!row) return;
@@ -14679,6 +14709,9 @@ async function downloadPropertyZip(id, btn, fullData){   // fullData=true → al
         zip.file(pid + '_' + pad(i + 1) + '.' + extOf(b, u), b);
       }catch(e){}
     }));
+    // Video tour (uploaded file or direct video link) → <ID>_video.<ext>; YouTube/Vimeo stay as the link in the .txt
+    const vid = await _propVideoFile(row);
+    if (vid) zip.file(pid + '_video.' + vid.ext, vid.blob);
     save(await zip.generateAsync({ type:'blob', compression:'STORE' }), pid + (fullData ? '_full.zip' : '.zip'));
   } catch(err){
     save(new Blob([text], { type:'text/plain;charset=utf-8' }), pid + '.txt');
@@ -17232,7 +17265,7 @@ function _setAdminListingMode(mode){
   const videoUrl = full.media?.video || '';
   const videoRow = document.getElementById('aeVideoViewRow');
   const videoEmbedWrap = document.getElementById('aeVideoEmbedWrap');
-  const safeVideoUrl = safeUrl(videoUrl);
+  const safeVideoUrl = videoSrcUrl(videoUrl);
   if (isView && safeVideoUrl){
     const link = document.getElementById('aeVideoViewLink');
     link.href = safeVideoUrl;
@@ -18833,7 +18866,7 @@ function renderVideoPreview() {
   const input = document.getElementById('f-videoUrl');
   if (!box || !input) return;
   const v = input.value.trim();
-  const abs = v ? safeUrl(v) : '';
+  const abs = v ? videoSrcUrl(v) : '';
   const html = abs ? buildVideoEmbed(abs) : '';
   if (!html) { box.style.display = 'none'; box.innerHTML = ''; box.dataset.src = ''; return; }
   if (box.dataset.src === abs) return; // already showing this one — don't restart playback on every keystroke
@@ -18876,7 +18909,7 @@ function uploadListingVideo(fileInput) {
 
   // XHR rather than fetch so we can show real upload progress for a large file.
   const xhr = new XMLHttpRequest();
-  xhr.open('POST', '/api/admin/upload-video');
+  xhr.open('POST', BASE + '/api/admin/upload-video');
   xhr.setRequestHeader('x-admin-key', ADMIN_KEY);
   xhr.upload.onprogress = function (e) {
     if (e.lengthComputable && status) status.textContent = 'Uploading… ' + Math.round((e.loaded / e.total) * 100) + '%';
