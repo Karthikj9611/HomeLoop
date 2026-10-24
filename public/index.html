@@ -5624,6 +5624,7 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
   touch-action:manipulation;-webkit-tap-highlight-color:transparent;
 }
 </style>
+<style>#hlNotice .hln-tag{border-radius:16px !important}#hlNotice .hln-tag i{flex-shrink:0}</style>
 </head>
 <body>
 
@@ -21030,7 +21031,7 @@ document.addEventListener('keydown', function(e){ if (e.key === 'Escape') closeP
 #hlNotice .hln-label{display:block;margin-bottom:8px;font-size:11.5px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#4a5668}
 #hlNotice h2{margin:0 0 12px;font-size:23px;line-height:1.3;font-weight:650;letter-spacing:-.01em;color:#1f2937}
 #hlNotice .hln-d{margin:0 auto;max-width:320px;font-size:15.5px;line-height:1.75;color:#5f6b7c}
-#hlNotice .hln-tag{display:inline-flex;align-items:center;gap:7px;margin:20px 0 26px;padding:7px 14px;border-radius:99px;font-size:13px;font-weight:600;color:#3f7d62;background:#e8f6ef}
+#hlNotice .hln-tag{max-width:100%;box-sizing:border-box;text-align:left;line-height:1.4;display:inline-flex;align-items:center;gap:7px;margin:20px 0 26px;padding:7px 14px;border-radius:99px;font-size:13px;font-weight:600;color:#3f7d62;background:#e8f6ef}
 #hlNotice .hln-tag i{width:7px;height:7px;border-radius:50%;background:#5cb88c;animation:hlnBreathe 2.8s ease-in-out infinite}
 @keyframes hlnBreathe{0%,100%{opacity:.45;transform:scale(.85)}50%{opacity:1;transform:scale(1.1)}}
 #hlNotice .hln-btn{display:block;width:100%;padding:14px 18px;border:none;border-radius:14px;font:inherit;font-size:15.5px;font-weight:600;color:#fff;background:#e03a52;cursor:pointer;box-shadow:0 6px 16px rgba(224,58,82,.22);transition:background .15s,transform .15s,box-shadow .15s}
@@ -22006,7 +22007,7 @@ body{background:radial-gradient(80% 50% at 100% 0%,rgba(255,150,110,.26) 0%,rgba
       <li><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg></i><span>Enhancing existing features<span class="hln-sub">Smoother search, filters and listings.</span></span></li>
       <li><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg></i><span>Building new features<span class="hln-sub">New features for Owners, Tenants, Agents, Builders and Brokers.</span></span></li>
     </ul>
-    <span class="hln-tag"><i></i>New property listings are temporarily paused</span>
+    <span class="hln-tag"><i></i>Property owners can now list their homes themselves after logging in. Every listing is verified by our team.</span>
     <button type="button" class="hln-btn" id="hlNoticeOk">Continue to website<span class="hln-count" id="hlNoticeCount" aria-hidden="true"></span></button>
   </div>
 </div>
