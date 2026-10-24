@@ -5614,6 +5614,16 @@ main.tab-explore .empty-state{display:none !important}
 ["gesturestart","gesturechange","gestureend"].forEach(function(e){document.addEventListener(e,function(ev){ev.preventDefault();},{passive:false});});
 (function(){var t=0;document.addEventListener("touchend",function(e){var n=Date.now();if(n-t<=300)e.preventDefault();t=n;},{passive:false});})();
 </script>
+<style id="hl-fast-modals">
+/* Full-screen blur is expensive to repaint on every open/close — the dim colour is enough. */
+.modal-overlay,.add-modal-overlay,.preav-overlay,.wish-modal-overlay,.fm-overlay,.fab-picker-backdrop,.sort-backdrop,.lightbox-overlay,#confirmOverlay,#hlNotice{
+  backdrop-filter:none !important;-webkit-backdrop-filter:none !important;
+}
+/* Tap = act immediately (no double-tap wait / grey flash) on close buttons and other controls. */
+button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-close,.panel-close,.fm-close{
+  touch-action:manipulation;-webkit-tap-highlight-color:transparent;
+}
+</style>
 </head>
 <body>
 
@@ -12839,32 +12849,43 @@ let _scrollLockCount = 0;
 let _scrollLockY = 0;
 function lockBodyScroll() {
   if (_scrollLockCount === 0) {
-    _scrollLockY = window.scrollY || window.pageYOffset || 0;
-    document.body.style.position = 'fixed';
-    document.body.style.top = (-_scrollLockY) + 'px';
-    document.body.style.left = '0';
-    document.body.style.right = '0';
-    document.body.style.width = '100%';
-    document.body.style.overflow = 'hidden';
+    // If a deferred unlock is still pending the body is already fixed — keep the saved offset.
+    if (document.body.style.position !== 'fixed') {
+      _scrollLockY = window.scrollY || window.pageYOffset || 0;
+      document.body.style.position = 'fixed';
+      document.body.style.top = (-_scrollLockY) + 'px';
+      document.body.style.left = '0';
+      document.body.style.right = '0';
+      document.body.style.width = '100%';
+      document.body.style.overflow = 'hidden';
+    }
   }
   _scrollLockCount++;
+}
+// Un-fixing the body + restoring scroll forces a full re-layout of this very large page. Doing that
+// in the same frame as the close made every modal feel slow to disappear. The counter is updated
+// at once, but the layout work runs right AFTER the browser has painted the modal as closed.
+function _applyBodyUnlock() {
+  if (_scrollLockCount !== 0) return;             // something re-locked meanwhile — leave it
+  if (document.body.style.position !== 'fixed') return;
+  document.body.style.position = '';
+  document.body.style.top = '';
+  document.body.style.left = '';
+  document.body.style.right = '';
+  document.body.style.width = '';
+  document.body.style.overflow = '';
+  // html{scroll-behavior:smooth} would animate this jump from the top;
+  // force an instant restore so the page stays exactly where it was.
+  const _root = document.documentElement;
+  const _prevSB = _root.style.scrollBehavior;
+  _root.style.scrollBehavior = 'auto';
+  window.scrollTo(0, _scrollLockY);
+  _root.style.scrollBehavior = _prevSB;
 }
 function unlockBodyScroll() {
   _scrollLockCount = Math.max(0, _scrollLockCount - 1);
   if (_scrollLockCount === 0) {
-    document.body.style.position = '';
-    document.body.style.top = '';
-    document.body.style.left = '';
-    document.body.style.right = '';
-    document.body.style.width = '';
-    document.body.style.overflow = '';
-    // html{scroll-behavior:smooth} would animate this jump from the top;
-    // force an instant restore so the page stays exactly where it was.
-    const _root = document.documentElement;
-    const _prevSB = _root.style.scrollBehavior;
-    _root.style.scrollBehavior = 'auto';
-    window.scrollTo(0, _scrollLockY);
-    _root.style.scrollBehavior = _prevSB;
+    requestAnimationFrame(function () { setTimeout(_applyBodyUnlock, 0); });
   }
 }
 
@@ -14314,10 +14335,13 @@ function closeDetail() {
   propertyViewMode = false;
   const clearBtn = document.getElementById('clearFormBtn');
   if (clearBtn) clearBtn.style.display = '';
-  const gallerySlot = document.getElementById('detailGallerySlot');
-  if (gallerySlot) gallerySlot.innerHTML = '';
-  const tableWrap = document.getElementById('detailTableWrap');
-  if (tableWrap) tableWrap.innerHTML = '';
+  requestAnimationFrame(function () { setTimeout(function () {
+    if (propertyViewMode) return; // a property was opened again meanwhile — don't wipe it
+    const gallerySlot = document.getElementById('detailGallerySlot');
+    if (gallerySlot) gallerySlot.innerHTML = '';
+    const tableWrap = document.getElementById('detailTableWrap');
+    if (tableWrap) tableWrap.innerHTML = '';
+  }, 0); });
 
   document.getElementById('addModalTitleText').textContent = 'List your property';
   const sub = document.getElementById('addModalSubtitleText');
