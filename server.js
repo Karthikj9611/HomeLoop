@@ -1140,6 +1140,7 @@ function buildListingSchema() {
     promoted:         { type: Boolean, default: false },
     promotedPriority: { type: Number,  default: 0 }, // 0 = not manually ranked yet; sorts to the back of the promoted queue (see rankOf below) until an admin assigns 1, 2, 3...
     booked:           { type: Boolean, default: false }, // once true, listing is hidden from the public site regardless of verified status
+    bookedAt:         { type: Date,    default: null  }, // when the listing was last marked booked (set by the booked toggles; null when un-booked). Orders the public Booked section, newest first.
     blocked:          { type: Boolean, default: false }, // admin "Block" (Properties grid): removed from the whole public platform immediately; reversible
     blockedAt:        { type: Date, default: null },
     ownerDirectCall:  { type: Boolean, default: false }, // admin "Public call" toggle on the alt number: when true, GET /api/properties exposes owner.altPhone (as ownerAltPhone)
@@ -1862,8 +1863,14 @@ app.get('/api/properties', attachUserIfPresent, async (req, res) => {
     // Internal/admin-only fields — never read by the public frontend
     // NOTE: userId is fetched (needed for the per-owner Public call lookup below) but
     // deleted from every doc before the response is sent.
+    // Booked listings: bookingDetails stays private EXCEPT bookedOn (a plain date),
+    // which is only read below to order the Booked section and then deleted.
+    const _bdExcl = booked === 'true'
+      ? ['propertyId','ownerId','ownerName','ownerPhone','ownerEmail','tenantId','tenantName','tenantPhone','tenantEmail','description','agreementImages','proofImages']
+          .map(f => '-bookingDetails.' + f).join(' ')
+      : '-bookingDetails';
     const PUBLIC_SELECT =
-      '-remarks -userReadableId -__v -bookingDetails ' +
+      '-remarks -userReadableId -__v ' + _bdExcl + ' ' +
       // Owner PII that only ever populated hidden form inputs in the read-only
       // detail view (VIEW_ALWAYS_HIDDEN_GROUPS on the frontend). owner.phone is
       // excluded too — Call/WhatsApp now read owner.agentPhone only (dynamically),
@@ -1969,7 +1976,17 @@ app.get('/api/properties', attachUserIfPresent, async (req, res) => {
     // the back of the promoted queue, behind every listing an admin has
     // explicitly set to 1, 2, 3..., rather than jumping to the front.
     const rankOf = (p) => (p && p > 0) ? p : Infinity;
-    docs.sort((a, b) =>
+    // Booked section: most recently booked first (today → past). Date used is
+    // when it was marked booked (bookedAt), else the admin-entered booked-on date,
+    // else the listing's created date for older records that have neither.
+    const _bookedTime = (d) => {
+      const t = new Date(d.bookedAt || (d.bookingDetails && d.bookingDetails.bookedOn) || d.createdAt).getTime();
+      return isNaN(t) ? 0 : t;
+    };
+    if (booked === 'true') {
+      docs.forEach(d => { d._bookedSort = _bookedTime(d); });
+      docs.sort((a, b) => b._bookedSort - a._bookedSort);
+    } else docs.sort((a, b) =>
       (Number(b.promoted) - Number(a.promoted)) ||
       (rankOf(a.promotedPriority) - rankOf(b.promotedPriority)) ||
       (new Date(b.createdAt) - new Date(a.createdAt))
@@ -2008,7 +2025,10 @@ app.get('/api/properties', attachUserIfPresent, async (req, res) => {
                       : 'Recently',
       verified:     !!doc.verified,
       booked:       !!doc.booked,
+      // Effective "booked on" time (ISO) — the frontend keeps the Booked section in this order.
+      ...(booked === 'true' ? { bookedAt: new Date(doc._bookedSort || 0).toISOString() } : {}),
     }));
+    if (booked === 'true') mapped.forEach(m => { delete m.bookingDetails; delete m._bookedSort; });
 
     // Guest/normal responses: public listing data only, already scrubbed of PII — cached briefly to avoid
     // a redundant DB hit on quick back/forward navigation. A response that includes owner numbers for an
@@ -2703,7 +2723,7 @@ app.patch('/api/user/listings/:id/booked', listingWriteLimiter, requireUser, asy
     const ownershipFilter = await getUserOwnershipFilter(req.userId);
     let updated = null;
     for (const M of LISTING_MODEL_LIST) {
-      updated = await M.findOneAndUpdate({ _id: req.params.id, ...ownershipFilter }, { booked }, { new: true });
+      updated = await M.findOneAndUpdate({ _id: req.params.id, ...ownershipFilter }, { booked, bookedAt: booked ? new Date() : null }, { new: true });
       if (updated) break;
     }
     if (!updated) return res.status(404).json({ message: 'Listing not found, or you do not have permission to update it' });

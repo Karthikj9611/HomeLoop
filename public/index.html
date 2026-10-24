@@ -10418,6 +10418,9 @@ function renderBookedSections(fsIn) {
     return Array.isArray(v) ? v.length > 0 : v !== null && v !== undefined;
   });
   const booked = (_filterActive || searchQuery) ? [] : getFiltered(BOOKED_PROPERTIES, _fsB); // search also hides Booked
+  // Booked section order: most recently booked first (today → past), whatever the grid sort is.
+  const _bt = (p) => { const t = new Date(p.bookedAt || p.createdAt).getTime(); return isNaN(t) ? 0 : t; };
+  booked.sort((a, b) => _bt(b) - _bt(a));
   if (currentTab === 'Promoted') {
     groups.promoted = booked.filter(p => p.promoted);
   } else if (currentTab === 'Broker') {

@@ -2537,7 +2537,7 @@ self.addEventListener('notificationclick', event => {
       if (typeof booked !== 'boolean') {
         return res.status(400).json({ message: 'booked must be a boolean' });
       }
-      const prop = await updateListingById(req.params.id, { booked }, { new: true });
+      const prop = await updateListingById(req.params.id, { booked, bookedAt: booked ? new Date() : null }, { new: true });
       if (!prop) return res.status(404).json({ message: 'Property not found' });
       res.json({ message: 'Booked status updated', booked: prop.booked });
     } catch (err) {
@@ -2769,6 +2769,7 @@ self.addEventListener('notificationclick', event => {
         if (changes && changes[f] !== undefined) {
           if (typeof changes[f] !== 'boolean') return res.status(400).json({ message: f + ' must be a boolean' });
           update[f] = changes[f];
+          if (f === 'booked') update.bookedAt = changes[f] ? new Date() : null; // keeps the Booked section ordered by when it was booked
         }
       }
       if (!Object.keys(update).length) return res.status(400).json({ message: 'No changes provided' });
