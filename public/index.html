@@ -10141,20 +10141,26 @@ function setEmptyStateContent() {
 
   // Builders / Maintenance tabs have no listings yet — friendly placeholder.
   if (currentTab === 'Builder' || currentTab === 'Maintenance') {
-    title.textContent = (currentTab === 'Builder' ? 'Builders' : 'Management') + ' — coming soon';
+    title.textContent = (currentTab === 'Builder' ? 'Builders' : 'Management') + ' — Coming Soon';
     text.textContent = currentTab === 'Builder'
-      ? "We're getting builder projects ready. Check back soon!"
-      : "We're getting property management services ready. Check back soon!";
+      ? "We're getting builder projects ready."
+      : "We're getting property management services ready.";
     actions.style.display = 'none';
     return;
   }
   const label = TAB_EMPTY_LABEL[currentTab] || 'listings';
+  if (currentTab === 'Broker' && tabRawCount(currentTab) === 0) {
+    title.textContent = 'Brokers \u2014 Coming Soon';
+    text.textContent = "We're getting broker listings ready.";
+    actions.style.display = 'none';
+    return;
+  }
   if (tabRawCount(currentTab) === 0) {
     // Nothing in this category at all — filters are irrelevant here.
     title.textContent = `No ${label} yet`;
     text.textContent = currentTab === 'All'
-      ? "There's nothing listed yet. Check back soon, or be the first to post one!"
-      : `There are no ${label} on HomeLoop yet. Check back soon, or try another category.`;
+      ? "There's nothing listed yet. Be the first to post one!"
+      : `There are no ${label} on HomeLoop yet. Try another category.`;
     actions.style.display = 'none';
   } else {
     // Listings exist, but the current filters/search ruled all of them out.
@@ -22071,6 +22077,34 @@ body::before,body::after{background:none !important}
 .prop-card,.prop-card.prop-card-promoted{background:var(--calm-grad) !important;border:1px solid rgba(240,120,100,.30) !important;box-shadow:0 2px 6px -3px rgba(190,70,60,.22) !important}
 .prop-card:hover,.prop-card.prop-card-promoted:hover{border-color:#f0506e !important}
 .prop-body{background:transparent}
+
+/* ═══ Empty state: dead-centre of the visible content area ═══
+   The area runs from the bottom of the sticky bars to the top of the bottom
+   nav (mobile) or the bottom of the viewport (desktop). */
+main.main:has(> .empty-state.show){
+  position:relative;
+  padding:0 !important;
+  min-height:calc(100vh - var(--nav-h) - var(--filter-h));
+  min-height:calc(100dvh - var(--nav-h) - var(--filter-h));
+}
+main.main:has(> .empty-state.show) > .empty-state.show{
+  position:absolute;
+  inset:0;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  padding:0 20px;
+  pointer-events:none;           /* never blocks the section divider above */
+}
+main.main:has(> .empty-state.show) > .empty-state.show .empty-state-actions,
+main.main:has(> .empty-state.show) > .empty-state.show button{pointer-events:auto}
+@media (max-width:640px){
+  main.main:has(> .empty-state.show){
+    min-height:calc(100vh - var(--qmb-h) - var(--filter-h) - 56px - env(safe-area-inset-bottom));
+    min-height:calc(100dvh - var(--qmb-h) - var(--filter-h) - 56px - env(safe-area-inset-bottom));
+  }
+}
 </style>
 </body>
 </html>
