@@ -2098,6 +2098,16 @@ body.pact-hide-booking #propertyTable .pact-booking{display:none!important}
   position:relative;
 }
 .add-modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;padding-right:40px}
+/* Edit-property modal header on phones: one row — title, icon-only action buttons, Close */
+@media (max-width:640px){
+  .ae-hdr{flex-wrap:nowrap !important;padding:12px 14px !important;gap:8px !important}
+  .ae-hdr > div:first-child{flex:1 1 0;min-width:0}
+  .ae-hdr .add-modal-title{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .ae-hdr-actions{gap:6px !important;flex:0 0 auto}
+  .ae-hdr-btn{width:34px;height:34px;padding:0 !important;font-size:0 !important;gap:0 !important;justify-content:center;flex:0 0 auto}
+  .ae-hdr-btn i{font-size:14px !important;margin:0}
+  .ae-hdr .modal-close{flex:0 0 auto;width:34px !important;height:34px !important}
+}
 .add-modal-title{font-size:17px;font-weight:700}
 .modal-close{
   position:absolute;top:12px;right:12px;z-index:3;
@@ -2363,6 +2373,7 @@ body.pact-hide-booking #propertyTable .pact-booking{display:none!important}
   .loc-act-btn{padding:0 11px!important;min-width:44px!important;width:44px}
   #currentLocGroup .form-input{min-width:0;width:100%}
   .loc-act-btn .loc-btn-txt{display:none}
+  #addModal .loc-act-btn svg{display:inline-block !important;width:18px;height:18px}
 }
 .loc-act-btn{min-width:110px}
 .form-input[readonly].identity-locked{background:var(--bg-2,#f4f4f6);color:var(--text-2);cursor:not-allowed}
@@ -4953,28 +4964,28 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
      /api/admin/properties/:id instead of /api/user/listings/:id. ─── -->
 <div class="add-modal-overlay" id="addModal" role="dialog" aria-modal="true" aria-label="Edit property listing">
   <div class="add-modal" id="addModalBox" style="max-width:860px;padding:0;overflow:hidden;display:flex;flex-direction:column;max-height:92vh">
-    <div class="add-modal-header" style="background:linear-gradient(135deg,var(--brand) 0%,var(--brand-hover) 100%);padding:14px 28px;margin-bottom:0;position:relative;flex-shrink:0">
+    <div class="add-modal-header ae-hdr" style="background:linear-gradient(135deg,var(--brand) 0%,var(--brand-hover) 100%);padding:14px 28px;margin-bottom:0;position:relative;flex-shrink:0">
       <div>
         <div class="add-modal-title" style="color:#fff" id="addModalTitleText">Edit property</div>
         <div style="color:rgba(255,255,255,.85);font-size:12px;font-weight:600;margin-top:2px;display:none" id="addModalSubtitleText"></div>
       </div>
-      <div style="display:flex;align-items:center;gap:10px">
-      <button type="button" id="addModalZipBtn" onclick="downloadPropertyZip(editingPropertyId, this)" aria-label="Download photos and data (zip)" title="Download photos + data (.zip)"
+      <div class="ae-hdr-actions" style="display:flex;align-items:center;gap:10px">
+      <button type="button" class="ae-hdr-btn" id="addModalZipBtn" onclick="downloadPropertyZip(editingPropertyId, this)" aria-label="Download photos and data (zip)" title="Download photos + data (.zip)"
         style="display:none;align-items:center;gap:6px;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.4);color:#fff;border-radius:99px;padding:7px 14px;font-size:12.5px;font-weight:700;cursor:pointer;transition:background .15s"
         onmouseover="this.style.background='rgba(255,255,255,.28)'" onmouseout="this.style.background='rgba(255,255,255,.16)'">
         <i class="fas fa-file-zipper" style="font-size:11px"></i> Zip
       </button>
-      <button type="button" id="addModalFullZipBtn" onclick="downloadPropertyZip(editingPropertyId, this, true)" aria-label="Download photos and full data (zip)" title="Download photos + full data (all fields) (.zip)"
+      <button type="button" class="ae-hdr-btn" id="addModalFullZipBtn" onclick="downloadPropertyZip(editingPropertyId, this, true)" aria-label="Download photos and full data (zip)" title="Download photos + full data (all fields) (.zip)"
         style="display:none;align-items:center;gap:6px;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.4);color:#fff;border-radius:99px;padding:7px 14px;font-size:12.5px;font-weight:700;cursor:pointer;transition:background .15s"
         onmouseover="this.style.background='rgba(255,255,255,.28)'" onmouseout="this.style.background='rgba(255,255,255,.16)'">
         <i class="fas fa-box-archive" style="font-size:11px"></i> Full Zip
       </button>
-      <button type="button" id="addModalCloneBtn" onclick="cloneAdminProperty(editingPropertyId)" aria-label="Clone property"
+      <button type="button" class="ae-hdr-btn" id="addModalCloneBtn" onclick="cloneAdminProperty(editingPropertyId)" aria-label="Clone property"
         style="display:none;align-items:center;gap:6px;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.4);color:#fff;border-radius:99px;padding:7px 14px;font-size:12.5px;font-weight:700;cursor:pointer;transition:background .15s"
         onmouseover="this.style.background='rgba(255,255,255,.28)'" onmouseout="this.style.background='rgba(255,255,255,.16)'">
         <i class="fas fa-clone" style="font-size:11px"></i> Clone
       </button>
-      <button type="button" id="addModalModeToggleBtn" onclick="toggleAdminListingMode()" aria-label="Toggle edit mode"
+      <button type="button" class="ae-hdr-btn" id="addModalModeToggleBtn" onclick="toggleAdminListingMode()" aria-label="Toggle edit mode"
         style="display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.4);color:#fff;border-radius:99px;padding:7px 14px;font-size:12.5px;font-weight:700;cursor:pointer;transition:background .15s"
         onmouseover="this.style.background='rgba(255,255,255,.28)'" onmouseout="this.style.background='rgba(255,255,255,.16)'">
         <i class="fas fa-pen" style="font-size:11px"></i> Edit
@@ -17281,10 +17292,10 @@ function _setAdminListingMode(mode){
         const url = _bl ? adminLinkNavUrl(_bl) : `https://www.google.com/maps/dir/?api=1&destination=${p.latitude},${p.longitude}`;
         html += `<a href="${url}" target="_blank" rel="noopener"
             style="display:flex;align-items:center;justify-content:center;gap:8px;
-              width:100%;padding:12px;border-radius:10px;background:#1a73e8;color:#fff;
+              width:100%;padding:12px;border-radius:10px;background:var(--brand);color:#fff;
               font-size:0.86rem;font-weight:700;text-decoration:none;margin-top:14px;
               transition:background 0.18s;font-family:inherit;"
-            onmouseover="this.style.background='#1558c0'" onmouseout="this.style.background='#1a73e8'">
+            onmouseover="this.style.background='var(--brand-hover)'" onmouseout="this.style.background='var(--brand)'">
             <i class="fas fa-location-arrow"></i> Navigate on Google Maps
           </a>`;
       }
@@ -18924,7 +18935,7 @@ function onBuildingLinkChange(el) {
     .then(r => r.json())
     .then(d => {
       const addr = document.getElementById('f-fullAddress'), area = document.getElementById('f-location'), pin = document.getElementById('f-pincode');
-      if (addr && !addr.value.trim()) addr.value = d.display_name || '';
+      // Building Live Address is no longer auto-filled from the pasted link (not required)
       if (area && !area.value.trim()) { area.value = pickAreaFromGeocode(d); if (typeof capitalizeWordsInput === 'function') capitalizeWordsInput(area); }
       if (pin && !pin.value.trim()) pin.value = (d.address && d.address.postcode) || extractPincodeFromAddress(d.display_name);
     }).catch(() => {});
