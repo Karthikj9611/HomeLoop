@@ -10132,6 +10132,20 @@ function tabRawCount(tab) {
   }).length;
 }
 
+// Shown when a category has no listings at all: invites the right kind of poster to list.
+// add = preset for the list form ('' = account's own type, null = no button).
+const EMPTY_PITCH = {
+  All:         { t: 'No Listings Yet \u2014 List Your Property', x: 'Owners, brokers and builders can post their properties on HomeLoop and connect directly with potential buyers and tenants.', add: '' },
+  Rent:        { t: 'Rent \u2014 List Your Property', x: 'Owners and brokers can post their rental homes on HomeLoop and connect directly with genuine tenants.', add: 'Rent' },
+  Lease:       { t: 'Lease \u2014 List Your Property', x: 'Owners can post their properties for lease on HomeLoop and connect directly with serious lessees.', add: 'Lease' },
+  PG:          { t: 'PG \u2014 List Your PG', x: 'PG owners can list their rooms and beds on HomeLoop and connect directly with students and working professionals.', add: 'PG' },
+  ShortStay:   { t: 'Short Stay \u2014 List Your Stay', x: 'Hosts can list short stay homes and rooms on HomeLoop and connect directly with guests.', add: 'ShortStay' },
+  Sell:        { t: 'Sell \u2014 List Your Property', x: 'Owners, brokers and builders can post their properties for sale on HomeLoop and connect directly with genuine buyers.', add: 'Sell' },
+  Broker:      { t: 'Brokers \u2014 List Your Properties', x: 'Brokers can post their listings on HomeLoop and connect directly with potential buyers and tenants.', add: '' },
+  Builder:     { t: 'Builders \u2014 List Your Properties', x: 'Builders can post their properties on HomeLoop and connect directly with potential buyers and tenants.', add: null },
+  Maintenance: { t: 'Property Management \u2014 List Your Services', x: 'Property management companies can list their services on HomeLoop and connect directly with owners who need their homes looked after.', add: null },
+};
+
 function setEmptyStateContent() {
   const title = document.getElementById('emptyStateTitle');
   const text = document.getElementById('emptyStateText');
@@ -10152,33 +10166,33 @@ function setEmptyStateContent() {
     return;
   }
 
-  // Builders / Maintenance tabs have no listings yet — friendly placeholder.
-  if (currentTab === 'Builder' || currentTab === 'Maintenance') {
-    title.textContent = (currentTab === 'Builder' ? 'Builders' : 'Management') + ' — Coming Soon';
-    text.textContent = currentTab === 'Builder'
-      ? "We're getting builder projects ready."
-      : "We're getting property management services ready.";
-    actions.style.display = 'none';
+  // Remember the original "Clear filters" button so it can be restored after a pitch button replaced it.
+  if (actions.dataset.orig === undefined) actions.dataset.orig = actions.innerHTML;
+  const showPitch = (pitch) => {
+    title.textContent = pitch.t;
+    text.textContent = pitch.x;
+    if (pitch.add === null) { actions.style.display = 'none'; return; }
+    actions.innerHTML = '<button class="empty-state-btn primary" onclick="openAddModal(' + (pitch.add ? "'" + pitch.add + "'" : '') + ')">List your property</button>';
+    actions.style.display = '';
+  };
+
+  // Builders / Management tabs have no listings yet — "list your properties" pitch.
+  if ((currentTab === 'Builder' || currentTab === 'Maintenance') && EMPTY_PITCH[currentTab]) {
+    showPitch(EMPTY_PITCH[currentTab]);
     return;
   }
   const label = TAB_EMPTY_LABEL[currentTab] || 'listings';
-  if (currentTab === 'Broker' && tabRawCount(currentTab) === 0) {
-    title.textContent = 'Brokers \u2014 Coming Soon';
-    text.textContent = "We're getting broker listings ready.";
-    actions.style.display = 'none';
-    return;
-  }
   if (tabRawCount(currentTab) === 0) {
-    // Nothing in this category at all — filters are irrelevant here.
+    // Nothing in this category at all — filters are irrelevant here. Pitch owners / brokers / builders to list.
+    if (EMPTY_PITCH[currentTab]) { showPitch(EMPTY_PITCH[currentTab]); return; }
     title.textContent = `No ${label} yet`;
-    text.textContent = currentTab === 'All'
-      ? "There's nothing listed yet. Be the first to post one!"
-      : `There are no ${label} on HomeLoop yet. Try another category.`;
+    text.textContent = `There are no ${label} on HomeLoop yet. Try another category.`;
     actions.style.display = 'none';
   } else {
     // Listings exist, but the current filters/search ruled all of them out.
     title.textContent = 'No properties found';
     text.textContent = "We couldn't find anything matching your filters. Try widening your search or clearing a few filters.";
+    actions.innerHTML = actions.dataset.orig;
     actions.style.display = '';
   }
 }
