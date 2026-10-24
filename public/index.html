@@ -379,6 +379,9 @@ ul{list-style:none}
 .nav-tab{outline:none}
 .nav-tab:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
 @media (min-width:641px) and (max-width:900px){.nav-tab{flex-basis:60px;width:60px;font-size:11px}.topnav{padding:0 12px;gap:8px}}
+/* "Property Management" is too long for the fixed 66px tab: give it a wider slot and let the label wrap onto two lines */
+.nav-tab.nav-tab-wide{flex:0 0 78px;width:78px;white-space:normal;text-align:center;line-height:1.1}
+@media (min-width:641px) and (max-width:900px){.nav-tab.nav-tab-wide{flex-basis:70px;width:70px}}
 .nav-right{display:flex;align-items:center;gap:6px;flex-shrink:0}
 .shortlist-btn{
   display:flex;align-items:center;justify-content:center;
@@ -2255,6 +2258,7 @@ main.tab-explore .empty-state{display:none !important}
   border:none;
 }
 .fab:hover{transform:scale(1.05)}
+.mob-shortlist-fab{display:none}
 @keyframes fabRainbow{0%{background-position:0% 50%}100%{background-position:300% 50%}}
 @media(prefers-reduced-motion:reduce){.fab{animation:none}}
 .fab svg{width:18px;height:18px;stroke:#fff;fill:none;stroke-width:2.5;flex-shrink:0}
@@ -5181,6 +5185,9 @@ main.tab-explore .empty-state{display:none !important}
     gap:3px;font-size:10px;font-weight:500;color:var(--text-3);cursor:pointer;
     position:relative;
   }
+  /* 8 slots now: tighter labels; "Property Management" wraps onto two lines */
+  .bottom-tab{min-width:0;text-align:center;white-space:nowrap}
+  .bottom-tab.bottom-tab-wide{white-space:normal;font-size:9px;line-height:1.05}
   .bottom-tab-icon{
     font-size:20px;line-height:1;filter:drop-shadow(0 1px 1.5px rgba(0,0,0,.18));
     display:flex;align-items:center;justify-content:center;
@@ -5208,6 +5215,25 @@ main.tab-explore .empty-state{display:none !important}
   .bottom-add-btn svg{width:20px;height:20px;stroke:#fff;fill:none;stroke-width:2.8;stroke-linecap:round}
   .bottom-tab-add:active .bottom-add-btn{transform:scale(.94)}
   @media(prefers-reduced-motion:reduce){.bottom-add-btn{animation:none}}
+  /* Shortlist: round button floating straight above the Review tab (last of 7 visible bottom tabs → centre is 1/14 from the right edge) */
+  .mob-shortlist-fab{
+    display:flex;align-items:center;justify-content:center;
+    position:fixed;z-index:120;
+    right:calc(100% / 14);transform:translateX(50%);
+    bottom:calc(56px + env(safe-area-inset-bottom) + 12px);
+    width:42px;height:42px;border-radius:50%;padding:0;
+    background:var(--bg);border:1px solid rgba(240,120,100,.28);
+    box-shadow:0 6px 16px -4px rgba(190,70,60,.4);cursor:pointer;
+  }
+  .mob-shortlist-fab:active{transform:translateX(50%) scale(.94)}
+  .mob-shortlist-icon{font-size:20px;line-height:1}
+  .mob-shortlist-badge{
+    position:absolute;top:-4px;right:-4px;
+    background:var(--brand);color:#fff;border-radius:99px;
+    font-size:9px;font-weight:700;min-width:16px;height:16px;
+    display:flex;align-items:center;justify-content:center;padding:0 4px;
+    box-shadow:0 0 0 1.5px var(--bg);
+  }
   /* the floating + is replaced by the centre tab above */
   .fab{display:none!important}
   .bottom-tab-icon-wrap{position:relative;display:inline-flex}
@@ -5606,6 +5632,14 @@ main.tab-explore .empty-state{display:none !important}
     <div class="nav-tab" data-tab="Broker" role="tab" onclick="switchTab(this)" tabindex="0">
       <span class="nav-tab-icon"><svg viewBox="0 0 68 44" aria-hidden="true" style="width:40px;height:auto;flex:none;display:block;overflow:visible"><g transform="translate(23 20)"><path d="M-10 22v-5a10 6.5 0 0 1 20 0v5z" fill="#F4F1E8"/><path d="M-10 22v-5a10 6.5 0 0 1 4-5l2 10zM10 22v-5a10 6.5 0 0 0-4-5l-2 10z" fill="#3b6ea5"/><path d="M-3.5 12.5L0 16l3.5-3.5" stroke="#fff" stroke-width="1" fill="none" opacity=".7"/><path d="M-4 10.5h8v2.5h-8z" fill="#C68E62"/><circle r="9.5" fill="#C68E62"/><path d="M-10 0C-12-13 12-13 10 0C9-5 5-7-1-6.5C-5-5.5-8-3-10 0Z" fill="#1f1a17"/><ellipse cx="-3.6" cy="1.8" rx="1.4" ry="1.7" fill="#2b1b12"/><ellipse cx="3.6" cy="1.8" rx="1.4" ry="1.7" fill="#2b1b12"/><path d="M-5.5 5.2Q-2.5 3.6 0 4.8Q2.5 3.6 5.5 5.2Q2.5 6.8 0 5.9Q-2.5 6.8-5.5 5.2Z" fill="#1f1a17"/><path d="M-2.2 7.8Q0 9.2 2.2 7.8" stroke="#2b1b12" stroke-width=".9" fill="none" stroke-linecap="round"/></g><g transform="translate(45 20)"><path d="M-10 22v-5a10 6.5 0 0 1 20 0v5z" fill="#F4F1E8"/><path d="M-10 22v-5a10 6.5 0 0 1 4-5l2 10zM10 22v-5a10 6.5 0 0 0-4-5l-2 10z" fill="#2f7d5b"/><path d="M-3.5 12.5L0 16l3.5-3.5" stroke="#fff" stroke-width="1" fill="none" opacity=".7"/><path d="M-4 10.5h8v2.5h-8z" fill="#B07A50"/><circle r="9.5" fill="#B07A50"/><path d="M-10-1.5L-9.5-8Q0-12 9.5-8L10-1.5L7-4.5Q0-6.5-7-4.5Z" fill="#F4F1E8"/><path d="M-10-1.5L10-1.5" stroke="#d8d3c2" stroke-width="1"/><ellipse cx="-3.6" cy="1.8" rx="1.4" ry="1.7" fill="#2b1b12"/><ellipse cx="3.6" cy="1.8" rx="1.4" ry="1.7" fill="#2b1b12"/><path d="M-5.5 5.2Q-2.5 3.6 0 4.8Q2.5 3.6 5.5 5.2Q2.5 6.8 0 5.9Q-2.5 6.8-5.5 5.2Z" fill="#1f1a17"/><path d="M-2.2 7.8Q0 9.2 2.2 7.8" stroke="#2b1b12" stroke-width=".9" fill="none" stroke-linecap="round"/></g></svg></span>
       Brokers
+    </div>
+    <div class="nav-tab" data-tab="Builder" role="tab" onclick="switchTab(this)" tabindex="0">
+      <span class="nav-tab-icon">🏗️</span>
+      Builders
+    </div>
+    <div class="nav-tab nav-tab-wide" data-tab="Maintenance" role="tab" onclick="switchTab(this)" tabindex="0">
+      <span class="nav-tab-icon">🏢</span>
+      Management
     </div>
     <div class="nav-tab" data-tab="PG" role="tab" onclick="switchTab(this)" tabindex="0" style="display:none">
       <span class="nav-tab-icon">🛏️</span>
@@ -6702,14 +6736,6 @@ main.tab-explore .empty-state{display:none !important}
 
 <!-- ─── Mobile bottom nav ────────────────────────── -->
 <nav class="bottom-nav" aria-label="Main navigation">
-  <div class="bottom-tab" onclick="toggleShortlistPanel()">
-    <span class="bottom-tab-icon-wrap">
-      <span class="bottom-tab-icon">❤️</span>
-      <span class="bottom-tab-badge" id="bottomTabShortlistCount">0</span>
-    </span>
-    Shortlist
-  </div>
-  
   <div class="bottom-tab" data-tab="Promoted" onclick="switchTabMobile(this)">
     <span class="bottom-tab-icon">⭐</span>
     Promoted
@@ -6718,11 +6744,27 @@ main.tab-explore .empty-state{display:none !important}
     <span class="bottom-tab-icon">🔑</span>
     Rent
   </div>
+  <div class="bottom-tab bottom-tab-wide" data-tab="Maintenance" onclick="switchTabMobile(this)">
+    <span class="bottom-tab-icon">🏢</span>
+    Management
+  </div>
   <div class="bottom-tab bottom-tab-add" id="bottomTabAdd" onclick="openFabPicker()" role="button" aria-label="List your property">
     <span class="bottom-add-btn"><svg viewBox="0 0 24 24" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>
     List
   </div>
-  <div class="bottom-tab" data-tab="Lease" onclick="switchTabMobile(this)">
+  <div class="bottom-tab" data-tab="Broker" onclick="switchTabMobile(this)">
+    <span class="bottom-tab-icon">👨‍💼</span>
+    Brokers
+  </div>
+  <div class="bottom-tab" data-tab="Builder" onclick="switchTabMobile(this)">
+    <span class="bottom-tab-icon">🏗️</span>
+    Builders
+  </div>
+  <div class="bottom-tab" data-tab="All" onclick="switchTabMobile(this)">
+    <span class="bottom-tab-icon">⭐</span>
+    Review
+  </div>
+  <div class="bottom-tab" data-tab="Lease" onclick="switchTabMobile(this)" style="display:none"><!-- Lease hidden from the mobile bar for now: remove style="display:none" to bring it back -->
     <span class="bottom-tab-icon">📜</span>
     Lease
   </div>
@@ -6730,19 +6772,18 @@ main.tab-explore .empty-state{display:none !important}
     <span class="bottom-tab-icon">🏷️</span>
     Sell
   </div>
-  <div class="bottom-tab" data-tab="Broker" onclick="switchTabMobile(this)">
-    <span class="bottom-tab-icon"><svg viewBox="0 0 68 44" aria-hidden="true" style="width:42px;height:auto;flex:none;display:block;overflow:visible"><g transform="translate(23 20)"><path d="M-10 22v-5a10 6.5 0 0 1 20 0v5z" fill="#F4F1E8"/><path d="M-10 22v-5a10 6.5 0 0 1 4-5l2 10zM10 22v-5a10 6.5 0 0 0-4-5l-2 10z" fill="#3b6ea5"/><path d="M-3.5 12.5L0 16l3.5-3.5" stroke="#fff" stroke-width="1" fill="none" opacity=".7"/><path d="M-4 10.5h8v2.5h-8z" fill="#C68E62"/><circle r="9.5" fill="#C68E62"/><path d="M-10 0C-12-13 12-13 10 0C9-5 5-7-1-6.5C-5-5.5-8-3-10 0Z" fill="#1f1a17"/><ellipse cx="-3.6" cy="1.8" rx="1.4" ry="1.7" fill="#2b1b12"/><ellipse cx="3.6" cy="1.8" rx="1.4" ry="1.7" fill="#2b1b12"/><path d="M-5.5 5.2Q-2.5 3.6 0 4.8Q2.5 3.6 5.5 5.2Q2.5 6.8 0 5.9Q-2.5 6.8-5.5 5.2Z" fill="#1f1a17"/><path d="M-2.2 7.8Q0 9.2 2.2 7.8" stroke="#2b1b12" stroke-width=".9" fill="none" stroke-linecap="round"/></g><g transform="translate(45 20)"><path d="M-10 22v-5a10 6.5 0 0 1 20 0v5z" fill="#F4F1E8"/><path d="M-10 22v-5a10 6.5 0 0 1 4-5l2 10zM10 22v-5a10 6.5 0 0 0-4-5l-2 10z" fill="#2f7d5b"/><path d="M-3.5 12.5L0 16l3.5-3.5" stroke="#fff" stroke-width="1" fill="none" opacity=".7"/><path d="M-4 10.5h8v2.5h-8z" fill="#B07A50"/><circle r="9.5" fill="#B07A50"/><path d="M-10-1.5L-9.5-8Q0-12 9.5-8L10-1.5L7-4.5Q0-6.5-7-4.5Z" fill="#F4F1E8"/><path d="M-10-1.5L10-1.5" stroke="#d8d3c2" stroke-width="1"/><ellipse cx="-3.6" cy="1.8" rx="1.4" ry="1.7" fill="#2b1b12"/><ellipse cx="3.6" cy="1.8" rx="1.4" ry="1.7" fill="#2b1b12"/><path d="M-5.5 5.2Q-2.5 3.6 0 4.8Q2.5 3.6 5.5 5.2Q2.5 6.8 0 5.9Q-2.5 6.8-5.5 5.2Z" fill="#1f1a17"/><path d="M-2.2 7.8Q0 9.2 2.2 7.8" stroke="#2b1b12" stroke-width=".9" fill="none" stroke-linecap="round"/></g></svg></span>
-    Brokers
-  </div>
   <div class="bottom-tab" data-tab="PG" onclick="switchTabMobile(this)" style="display:none">
     <span class="bottom-tab-icon">🛏️</span>
     PG
   </div>
-  <div class="bottom-tab" data-tab="All" onclick="switchTabMobile(this)">
-    <span class="bottom-tab-icon">⭐</span>
-    Review
-  </div>
 </nav>
+
+<!-- Mobile: Shortlist button floats just above the Review tab (replaces the old bottom-bar Shortlist tab) -->
+<button type="button" class="mob-shortlist-fab" onclick="toggleShortlistPanel()" aria-label="View shortlisted properties" title="Shortlist">
+  <span class="mob-shortlist-icon">❤️</span>
+  <span class="mob-shortlist-badge" id="bottomTabShortlistCount">0</span>
+</button>
+
 
 
 
@@ -8154,6 +8195,21 @@ main.tab-explore .empty-state{display:none !important}
     </div>
   </div>
 
+</div>
+
+<!-- ─── "Coming soon" modal (shown when the Builders / Management tab is opened) ─── -->
+<div class="add-modal-overlay" id="comingSoonModal" role="dialog" aria-modal="true" aria-labelledby="comingSoonTitle" onclick="if(event.target===this)closeComingSoonModal()">
+  <div class="add-modal cs-card">
+    <button class="modal-close cs-close" onclick="closeComingSoonModal()" aria-label="Close">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <div class="cs-icon" id="comingSoonIcon">🏗️</div>
+    <div class="cs-badge" id="comingSoonBadge">Coming soon</div>
+    <h3 class="cs-title" id="comingSoonTitle">Builders</h3>
+    <p class="cs-text cs-def" id="comingSoonDef"></p>
+    <p class="cs-text cs-dev" id="comingSoonText">This feature is being developed.</p>
+    <button type="button" class="cs-btn" onclick="closeComingSoonModal()">Got it</button>
+  </div>
 </div>
 
 <!-- ─── Broker info modal (shown when the Broker tab is opened) ─── -->
@@ -10043,6 +10099,8 @@ const TAB_EMPTY_LABEL = {
   ShortStay: 'short stay listings',
   Sell: 'listings for sale',
   Broker: 'broker listings',
+  Builder: 'builder listings',
+  Maintenance: 'property management services',
   All: 'listings',
 };
 
@@ -10081,6 +10139,15 @@ function setEmptyStateContent() {
     return;
   }
 
+  // Builders / Maintenance tabs have no listings yet — friendly placeholder.
+  if (currentTab === 'Builder' || currentTab === 'Maintenance') {
+    title.textContent = (currentTab === 'Builder' ? 'Builders' : 'Management') + ' — coming soon';
+    text.textContent = currentTab === 'Builder'
+      ? "We're getting builder projects ready. Check back soon!"
+      : "We're getting property management services ready. Check back soon!";
+    actions.style.display = 'none';
+    return;
+  }
   const label = TAB_EMPTY_LABEL[currentTab] || 'listings';
   if (tabRawCount(currentTab) === 0) {
     // Nothing in this category at all — filters are irrelevant here.
@@ -12229,7 +12296,7 @@ function switchTab(el) {
   renderBookedSections(); // re-filter the already-fetched BOOKED_PROPERTIES for the new tab
   renderRecentlyViewed();
   renderShortlistPanel();
-  if (currentTab === 'Broker') openBrokerInfoModal();
+  if (COMING_SOON_TABS[currentTab]) openComingSoonModal(currentTab); // Broker / Builder / Management info popups (the old long Broker modal is no longer opened)
 }
 
 function switchTabMobile(el) {
@@ -12246,7 +12313,7 @@ function switchTabMobile(el) {
   renderBookedSections(); // re-filter the already-fetched BOOKED_PROPERTIES for the new tab
   renderRecentlyViewed();
   renderShortlistPanel();
-  if (currentTab === 'Broker') openBrokerInfoModal();
+  if (COMING_SOON_TABS[currentTab]) openComingSoonModal(currentTab); // Broker / Builder / Management info popups (the old long Broker modal is no longer opened)
 }
 
 function syncMobileTab() {
@@ -17294,7 +17361,11 @@ async function markAllNotifsRead() {
     updateNotifChrome(0);
   } catch (err) { /* best-effort */ }
 }
+// Long "Broker listings" modal: switched OFF for now (Brokers tab uses the small info popup instead).
+// Set to true to bring it back — nothing else needs to change.
+const BROKER_INFO_MODAL_ENABLED = false;
 function openBrokerInfoModal() {
+  if (!BROKER_INFO_MODAL_ENABLED) return;
   const m = document.getElementById('brokerInfoModal');
   if (!m || m.classList.contains('open')) return;
   m.classList.add('open');
@@ -17307,6 +17378,33 @@ function closeBrokerInfoModal() {
   unlockBodyScroll();
 }
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeBrokerInfoModal(); });
+
+/* "Coming soon" modal for tabs whose feature is still being built (Builders, Management). */
+const COMING_SOON_TABS = {
+  Broker:      { icon: '👨‍💼', title: 'Brokers',    text: 'This feature is being developed.', def: 'Neighbourhood brokers and property agents who list properties for owners. They set their own commission, shown on each listing — confirm the amount before paying anything.' },
+  Builder:     { icon: '🏗️', title: 'Builders',   text: 'This feature is being developed.', def: 'Developers who construct residential and commercial projects. Here you’ll be able to explore new projects and apartments directly from builders.' },
+  Maintenance: { icon: '🏢', title: 'Property Management', text: 'This feature is being developed.', def: 'A professional team looks after a property on the owner’s behalf — finding tenants, collecting rent and handling repairs and upkeep.' },
+};
+function openComingSoonModal(tab) {
+  const cfg = COMING_SOON_TABS[tab], m = document.getElementById('comingSoonModal');
+  if (!cfg || !m) return;
+  document.getElementById('comingSoonIcon').textContent = cfg.icon;
+  document.getElementById('comingSoonTitle').textContent = cfg.title;
+  const _soon = cfg.soon !== false; // Broker is a plain info popup, not "coming soon"
+  document.getElementById('comingSoonDef').textContent = cfg.def || '';
+  document.getElementById('comingSoonBadge').style.display = _soon ? '' : 'none';
+  document.getElementById('comingSoonDef').style.marginBottom = _soon ? '' : '18px';
+  document.getElementById('comingSoonText').style.display = _soon ? '' : 'none';
+  document.getElementById('comingSoonText').textContent = cfg.text;
+  if (!m.classList.contains('open')) { m.classList.add('open'); lockBodyScroll(); }
+}
+function closeComingSoonModal() {
+  const m = document.getElementById('comingSoonModal');
+  if (!m || !m.classList.contains('open')) return;
+  m.classList.remove('open');
+  unlockBodyScroll();
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeComingSoonModal(); });
 
 function closeNotifModal() {
   document.getElementById('notifModal').classList.remove('open');
@@ -21231,6 +21329,18 @@ document.addEventListener('keydown', function(e){ if (e.key === 'Escape') closeP
 
 /* View-listing subtitle dot */
 .add-modal.view-mode #addModalSubtitleText::before{background:#f0506e}
+
+/* Coming-soon modal (Builders / Management tabs) */
+#comingSoonModal .cs-card{width:min(340px,calc(100vw - 32px));max-width:340px;min-width:0;padding:28px 22px 22px;border-radius:22px;text-align:center;position:relative;display:flex;flex-direction:column;align-items:center;background:linear-gradient(180deg,#fff7f3,#fff)}
+#comingSoonModal .cs-close{position:absolute;top:10px;right:10px;width:28px;height:28px;background:rgba(240,80,110,.08);border:1px solid rgba(240,80,110,.25)}
+#comingSoonModal .cs-close svg{width:13px;height:13px;stroke:#e8365d}
+#comingSoonModal .cs-icon{width:64px;height:64px;border-radius:20px;background:var(--warm-grad);display:flex;align-items:center;justify-content:center;font-size:32px;box-shadow:0 10px 22px -8px rgba(232,54,93,.5)}
+#comingSoonModal .cs-badge{margin-top:14px;padding:3px 12px;border-radius:99px;background:rgba(232,54,93,.1);color:#e8365d;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+#comingSoonModal .cs-title{margin:14px 0 8px;font-size:20px;font-weight:800;color:#2b1d1a;letter-spacing:-.01em}
+#comingSoonModal .cs-text{margin:0 0 18px;font-size:13.5px;line-height:1.5;color:#5c433b}
+#comingSoonModal .cs-def{margin:0 0 10px;padding:10px 12px;border-radius:12px;background:rgba(232,54,93,.06);color:#4a2f27}
+#comingSoonModal .cs-dev{font-weight:700;color:#e8365d}
+#comingSoonModal .cs-btn{width:100%;height:42px;border:none;border-radius:12px;background:var(--warm-grad);color:#fff;font-size:14px;font-weight:700;cursor:pointer}
 
 /* Broker-info modal (inline red header) */
 #brokerInfoModal .add-modal > div:first-child{
