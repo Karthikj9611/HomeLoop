@@ -379,7 +379,7 @@ ul{list-style:none}
 .nav-tab{outline:none}
 .nav-tab:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
 @media (min-width:641px) and (max-width:900px){.nav-tab{flex-basis:60px;width:60px;font-size:11px}.topnav{padding:0 12px;gap:8px}}
-/* "Property Management" is too long for the fixed 66px tab: give it a wider slot and let the label wrap onto two lines */
+/* "PG & Coliving" is too long for the fixed 66px tab: give it a wider slot and let the label wrap onto two lines */
 .nav-tab.nav-tab-wide{flex:0 0 78px;width:78px;white-space:normal;text-align:center;line-height:1.1}
 @media (min-width:641px) and (max-width:900px){.nav-tab.nav-tab-wide{flex-basis:70px;width:70px}}
 .nav-right{display:flex;align-items:center;gap:6px;flex-shrink:0}
@@ -5198,7 +5198,7 @@ main.tab-explore .empty-state{display:none !important}
     gap:3px;font-size:10px;font-weight:500;color:var(--text-3);cursor:pointer;
     position:relative;
   }
-  /* 8 slots now: tighter labels; "Property Management" wraps onto two lines */
+  /* 8 slots now: tighter labels; "PG & Coliving" wraps onto two lines */
   .bottom-tab{min-width:0;text-align:center;white-space:nowrap}
   .bottom-tab.bottom-tab-wide{white-space:normal;font-size:9px;line-height:1.05}
   .bottom-tab-icon{
@@ -5662,8 +5662,8 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
       Builders
     </div>
     <div class="nav-tab nav-tab-wide" data-tab="Maintenance" role="tab" onclick="switchTab(this)" tabindex="0">
-      <span class="nav-tab-icon">🏢</span>
-      Management
+      <span class="nav-tab-icon">🛏️</span>
+      PG &amp; Coliving
     </div>
     <div class="nav-tab" data-tab="PG" role="tab" onclick="switchTab(this)" tabindex="0" style="display:none">
       <span class="nav-tab-icon">🛏️</span>
@@ -6769,8 +6769,8 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
     Rent
   </div>
   <div class="bottom-tab bottom-tab-wide" data-tab="Maintenance" onclick="switchTabMobile(this)">
-    <span class="bottom-tab-icon">🏢</span>
-    Management
+    <span class="bottom-tab-icon">🛏️</span>
+    PG &amp; Coliving
   </div>
   <div class="bottom-tab bottom-tab-add" id="bottomTabAdd" onclick="openFabPicker()" role="button" aria-label="List your property">
     <span class="bottom-add-btn"><svg viewBox="0 0 24 24" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>
@@ -10124,7 +10124,7 @@ const TAB_EMPTY_LABEL = {
   Sell: 'listings for sale',
   Broker: 'broker listings',
   Builder: 'builder listings',
-  Maintenance: 'property management services',
+  Maintenance: 'PG & Coliving listings',
   All: 'listings',
 };
 
@@ -10154,7 +10154,7 @@ const EMPTY_PITCH = {
   Sell:        { t: 'Sell \u2014 List Your Property', x: 'Owners, brokers and builders can post their properties for sale on HomeLoop and connect directly with genuine buyers.', add: 'Sell' },
   Broker:      { t: 'Brokers \u2014 List Your Properties', x: 'Brokers can post their listings on HomeLoop and connect directly with potential buyers and tenants.', add: '' },
   Builder:     { t: 'Builders \u2014 List Your Properties', x: 'Builders can post their properties on HomeLoop and connect directly with potential buyers and tenants.', add: null },
-  Maintenance: { t: 'Property Management \u2014 List Your Services', x: 'Property management companies can list their services on HomeLoop and connect directly with owners who need their homes looked after.', add: null },
+  Maintenance: { t: 'PG & Coliving \u2014 List Your Space', x: 'PG and co-living operators can list their rooms and beds on HomeLoop and connect directly with students and working professionals.', add: null },
 };
 
 function setEmptyStateContent() {
@@ -17447,9 +17447,8 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeBrokerI
 
 /* "Coming soon" modal for tabs whose feature is still being built (Builders, Management). */
 const COMING_SOON_TABS = {
-  Broker:      { icon: '👨‍💼', title: 'Brokers',    text: 'This feature is being developed.', def: 'Neighbourhood brokers and property agents who list properties for owners. They set their own commission, shown on each listing — confirm the amount before paying anything.' },
   Builder:     { icon: '🏗️', title: 'Builders',   text: 'This feature is being developed.', def: 'Developers who construct residential and commercial projects. Here you’ll be able to explore new projects and apartments directly from builders.' },
-  Maintenance: { icon: '🏢', title: 'Property Management', text: 'This feature is being developed.', def: 'A professional team looks after a property on the owner’s behalf — finding tenants, collecting rent and handling repairs and upkeep.' },
+  Maintenance: { icon: '🛏️', title: 'PG & Coliving', text: 'This feature is being developed.', def: 'Paying-guest (PG) stays and co-living spaces — rent a bed or room in a shared home, usually furnished, with meals, Wi-Fi and housekeeping often included.' },
 };
 function openComingSoonModal(tab) {
   const cfg = COMING_SOON_TABS[tab], m = document.getElementById('comingSoonModal');
