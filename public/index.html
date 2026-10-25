@@ -10363,9 +10363,13 @@ function renderCards() {
     setEmptyStateContent();
     empty.classList.add('show');
     renderBookedSections(_fsNow); // booked matches (if any) must still follow the filters
+    // If booked cards are on screen, the empty message must flow below them instead of being centred over them.
+    const _mainEl = empty.parentElement;
+    if (_mainEl) _mainEl.classList.toggle('empty-with-booked', !!_mainEl.querySelector('[id$="BookedGrid"] .prop-card'));
     return;
   }
   empty.classList.remove('show');
+  if (empty.parentElement) empty.parentElement.classList.remove('empty-with-booked');
 
   // On the Promoted tab, `list` is already scoped to promoted items only,
   // so every card would land in both the "Promoted listings" highlight
@@ -22159,6 +22163,9 @@ main.main:has(> .empty-state.show) > .empty-state.show{
 }
 main.main:has(> .empty-state.show) > .empty-state.show .empty-state-actions,
 main.main:has(> .empty-state.show) > .empty-state.show button{pointer-events:auto}
+/* Booked cards are showing above the empty message: stack it in normal flow below them (no overlay) */
+main.main.empty-with-booked:has(> .empty-state.show){min-height:0;padding-bottom:24px !important}
+main.main.empty-with-booked:has(> .empty-state.show) > .empty-state.show{position:static;inset:auto;padding:32px 20px 16px;pointer-events:auto}
 @media (max-width:640px){
   main.main:has(> .empty-state.show){
     min-height:calc(100vh - var(--qmb-h) - var(--filter-h) - 56px - env(safe-area-inset-bottom));
