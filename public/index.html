@@ -20730,13 +20730,13 @@ document.addEventListener('keydown',function(e){
 </div>
 
 <!-- Pre-Available welcome modal: centered, 100% width, once per session on load -->
-<div class="preav-overlay" id="preavOverlay" role="dialog" aria-modal="true" aria-label="Today’s Listings">
+<div class="preav-overlay" id="preavOverlay" role="dialog" aria-modal="true" aria-label="This Week’s Listings">
   <div class="preav-modal">
     <div class="preav-top">
       <div class="preav-badge"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M10 21v-6h4v6"/></svg></div>
       <div class="preav-titles">
-        <h2 class="preav-title">Today’s Listings<span class="preav-count" id="preavCount"></span></h2>
-        <p class="preav-sub"><span class="l">New listings added today — tap any card for full details</span><span class="s">Tap any card for full details</span></p>
+        <h2 class="preav-title">This Week’s Listings<span class="preav-count" id="preavCount"></span></h2>
+        <p class="preav-sub"><span class="l">New listings added <b class="preav-range"></b> — tap any card for full details</span><span class="s"><b class="preav-range"></b> · Tap any card for details</span></p>
       </div>
       <button class="preav-close" id="preavClose" aria-label="Close">
         <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -20756,15 +20756,17 @@ function showPreAvailModal() {
   var q = new URLSearchParams(window.location.search);
   if (q.has('compare') || q.has('property') || q.has('charges')) return;
   if (/^\/property\/[a-fA-F0-9]{24}$/.test(window.location.pathname)) return;
-  // Only listings created today — compared by calendar date only (time of day ignored), sorted by property ID ascending.
-  function dayKey(v){
-    var d = new Date(v);
-    if (isNaN(d)) return '';
-    return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate();
-  }
-  var todayKey = dayKey(new Date());
+  // Only listings created this week: Monday 12:00am through Sunday 11:59:59pm (local time), sorted by property ID ascending.
+  var now = new Date();
+  var weekStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - ((now.getDay() + 6) % 7), 0, 0, 0, 0); // Monday 00:00
+  var weekEnd = new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate() + 7, 0, 0, 0, 0); // next Monday 00:00 (exclusive)
+  var _mo = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var weekLast = new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate() + 6); // Sunday
+  var rangeTxt = 'Mon ' + weekStart.getDate() + ' ' + _mo[weekStart.getMonth()] + ' – Sun ' + weekLast.getDate() + ' ' + _mo[weekLast.getMonth()];
   var items = PROPERTIES.filter(function(p){
-    if (!p.createdAt || dayKey(p.createdAt) !== todayKey) return false;
+    if (!p.createdAt) return false;
+    var c = new Date(p.createdAt);
+    if (isNaN(c) || c < weekStart || c >= weekEnd) return false;
     if (p.basic?.listedBy === 'Broker') return false; // broker listings show only in the Brokers tab
     if (typeof SHORT_STAY_ENABLED !== 'undefined' && !SHORT_STAY_ENABLED && pTypeLabel(p) === 'ShortStay') return false;
     return true;
@@ -20779,6 +20781,7 @@ function showPreAvailModal() {
   var ov = document.getElementById('preavOverlay');
   if (ov.classList.contains('open')) return;
   document.getElementById('preavCount').textContent = items.length;
+  document.querySelectorAll('#preavOverlay .preav-range').forEach(function(el){ el.textContent = rangeTxt; });
   var grid = document.getElementById('preavGrid');
   grid.innerHTML = items.map(function(p){ return cardHTML(p, true, undefined, true); }).join('');
   ov.classList.add('open');
