@@ -13142,20 +13142,20 @@ function priceChipsHTML(p, pType, deposit, maintenance, leaseDur, opts) {
   const rentChip = `<div class="prop-chip price-chip price-chip-rent">
     <span class="price-ico-3d">${rentSvg}</span>
     <span class="price-text-stack">
-      <span class="prop-price">₹${fmtRupeeResponsive(p.price?.rent||0, true)}${pType === 'Sell' ? '' : `<span class="prop-price-unit">/ <span class="unit-full">${rentUnit}</span><span class="unit-short">${rentUnitShort}</span></span>`}</span>
+      <span class="prop-price"><span class="rs">₹</span>${fmtRupeeResponsive(p.price?.rent||0, true)}${pType === 'Sell' ? '' : `<span class="prop-price-unit">/ <span class="unit-full">${rentUnit}</span><span class="unit-short">${rentUnitShort}</span></span>`}</span>
     </span>
   </div>`;
   const maintChip = maintenance > 0 ? `<div class="prop-chip price-chip" title="Monthly maintenance">
     <span class="price-ico-3d">${maintSvg}</span>
     <span class="price-text-stack">
-      <span class="prop-deposit-val">₹${fmtRupeeResponsive(maintenance, true)}</span>
+      <span class="prop-deposit-val"><span class="rs">₹</span>${fmtRupeeResponsive(maintenance, true)}</span>
       <span class="prop-deposit-lbl"><span class="unit-full">Maintenance</span><span class="unit-short">Maint</span></span>
     </span>
   </div>` : '';
   const depositChip = deposit > 0 ? `<div class="prop-chip price-chip" title="Security deposit">
     <span class="price-ico-3d">${depositSvg}</span>
     <span class="price-text-stack">
-      <span class="prop-deposit-val">₹${fmtRupeeResponsive(deposit, true)}</span>
+      <span class="prop-deposit-val"><span class="rs">₹</span>${fmtRupeeResponsive(deposit, true)}</span>
       <span class="prop-deposit-lbl"><span class="unit-full">Deposit</span><span class="unit-short">SD</span></span>
     </span>
   </div>` : '';
@@ -22172,6 +22172,46 @@ main.main.empty-with-booked:has(> .empty-state.show) > .empty-state.show{positio
     min-height:calc(100dvh - var(--qmb-h) - var(--filter-h) - 56px - env(safe-area-inset-bottom));
   }
 }
+
+/* ─── PRICE RIBBON TYPOGRAPHY: modern, bold rent figure + soft supporting text ─── */
+.prop-img-price .prop-price-chips .price-chip{align-items:center}
+.prop-img-price .prop-price-chips .price-chip .prop-price{
+  display:inline-flex;align-items:baseline;
+  font-size:18px;font-weight:800;line-height:1;letter-spacing:-.025em;
+  font-variant-numeric:tabular-nums;font-feature-settings:'tnum' 1,'cv11' 1;
+  text-shadow:0 1px 3px rgba(120,20,40,.35);
+}
+.prop-img-price .rs{
+  font-size:.62em;font-weight:700;opacity:.92;
+  margin-right:2px;position:relative;top:-.32em;letter-spacing:0;
+}
+.prop-img-price .prop-price-chips .price-chip .prop-price-unit{
+  font-size:11px;font-weight:600;letter-spacing:.01em;
+  -webkit-text-fill-color:rgba(255,255,255,.82);color:rgba(255,255,255,.82);
+  margin-left:4px;text-shadow:none;
+}
+.prop-img-price .prop-price-chips .price-chip .prop-deposit-val{
+  font-size:14px;font-weight:800;line-height:1;letter-spacing:-.02em;
+  font-variant-numeric:tabular-nums;font-feature-settings:'tnum' 1,'cv11' 1;
+  text-shadow:0 1px 2px rgba(120,20,40,.3);
+}
+.prop-img-price .prop-price-chips .price-chip .prop-deposit-lbl{
+  font-size:10.5px;font-weight:600;letter-spacing:.02em;margin-left:5px;
+  color:rgba(255,255,255,.78);-webkit-text-fill-color:rgba(255,255,255,.78);text-shadow:none;
+}
+.prop-img-price .prop-price-chips .price-chip:not(:first-child)::before{
+  height:26px;width:1px;
+  background:linear-gradient(to bottom,transparent,rgba(255,255,255,.55),transparent);
+}
+.prop-img-price{padding-top:7px;padding-bottom:7px}
+@media (max-width:640px){
+  .prop-img-price .prop-price-chips .price-chip .prop-price{font-size:15px}
+  .prop-img-price .prop-price-chips .price-chip .prop-price-unit{font-size:10px;margin-left:3px}
+  .prop-img-price .prop-price-chips .price-chip .prop-deposit-val{font-size:12px}
+  .prop-img-price .prop-price-chips .price-chip .prop-deposit-lbl{font-size:9.5px;margin-left:3px}
+  .prop-img-price{padding-top:6px;padding-bottom:6px}
+}
+
 </style>
 </body>
 </html>
