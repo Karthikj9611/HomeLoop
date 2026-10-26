@@ -4040,6 +4040,7 @@ main.tab-explore .empty-state{display:none !important}
 .profile-mini-icon-btn.booked-active svg{stroke:#e04444}
 /* Owner-only WhatsApp share button — filled icon, brand green, matching the
    other WhatsApp touchpoints (.prop-qa-whatsapp / .prop-action-whatsapp) */
+.profile-mini-actions{flex-wrap:wrap}
 .profile-mini-icon-btn.profile-mini-icon-whatsapp{border-color:#bfe8cf}
 .profile-mini-icon-btn.profile-mini-icon-whatsapp svg{fill:#25D366;stroke:none;width:15px;height:15px}
 .profile-mini-icon-btn.profile-mini-icon-whatsapp:hover{background:#e8faef;border-color:#25D366}
@@ -16549,6 +16550,7 @@ function myListingCardHtml(p) {
         <button class="profile-mini-icon-btn profile-mini-icon-whatsapp" title="Share on WhatsApp" onclick="event.stopPropagation();shareMyListingViaWhatsApp('${p.id}')">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.6 6.32A7.85 7.85 0 0 0 12.05 4c-4.37 0-7.93 3.56-7.93 7.93 0 1.4.37 2.76 1.06 3.96L4 20l4.24-1.11a7.9 7.9 0 0 0 3.8.97h.01c4.37 0 7.93-3.56 7.93-7.93 0-2.12-.82-4.11-2.38-5.61zm-5.55 12.2h-.01a6.58 6.58 0 0 1-3.35-.92l-.24-.14-2.51.66.67-2.45-.16-.25a6.58 6.58 0 0 1-1.01-3.5c0-3.64 2.96-6.6 6.61-6.6a6.57 6.57 0 0 1 6.6 6.61c0 3.64-2.97 6.6-6.61 6.6zm3.62-4.94c-.2-.1-1.17-.58-1.35-.64-.18-.07-.31-.1-.45.1-.13.2-.51.64-.62.77-.11.13-.23.15-.42.05-.2-.1-.83-.31-1.58-.98-.58-.52-.98-1.16-1.09-1.36-.11-.2-.01-.3.09-.4.09-.09.2-.23.3-.35.1-.11.13-.2.2-.33.06-.13.03-.25-.02-.35-.05-.1-.45-1.08-.61-1.48-.16-.39-.33-.33-.45-.34-.12-.01-.25-.01-.38-.01-.13 0-.35.05-.53.25-.18.2-.7.69-.7 1.67 0 .98.72 1.93.82 2.06.1.13 1.41 2.15 3.42 3.02.48.2.85.33 1.14.42.48.15.91.13 1.26.08.38-.06 1.17-.48 1.34-.94.16-.46.16-.86.11-.94-.05-.09-.18-.14-.38-.24z"/></svg>
         </button>
+        ${agentOwnerContactBtns(p)}
       </div>
     </div></div>`;
 }
@@ -16644,6 +16646,37 @@ async function toggleMyListingBooked(id, btnEl) {
 // fixed number — opens wa.me/?text= so the owner picks the recipient from
 // their own WhatsApp contacts, same no-fixed-number pattern used by
 // shareCompareViaWhatsApp() and admin.html's owner-share feature).
+/* Agents: direct Call / WhatsApp to the listing's owner number and owner alt number.
+   The in-house support line (9035205230) is skipped; duplicates are collapsed. */
+const SUPPORT_LINE_DIGITS = '9035205230';
+function ownerDirectNumbers(p) {
+  const out = [];
+  [['main', p && p.owner && p.owner.phone], ['alt', p && p.owner && p.owner.altPhone]].forEach(([which, raw]) => {
+    const d = String(raw || '').replace(/\D/g, '').slice(-10);
+    if (d.length === 10 && d !== SUPPORT_LINE_DIGITS && !out.some(o => o.digits === d)) out.push({ which, digits: d });
+  });
+  return out;
+}
+function callListingOwner(id, which) {
+  const p = MY_LISTINGS_CACHE.find(x => x.id === id); if (!p) return;
+  const n = ownerDirectNumbers(p).find(o => o.which === which); if (!n) { showToast("Owner number not available.", 'warning'); return; }
+  window.location.href = 'tel:+91' + n.digits;
+}
+function whatsappListingOwner(id, which) {
+  const p = MY_LISTINGS_CACHE.find(x => x.id === id); if (!p) return;
+  const n = ownerDirectNumbers(p).find(o => o.which === which); if (!n) { showToast("Owner number not available.", 'warning'); return; }
+  window.open('https://wa.me/91' + n.digits, '_blank', 'noopener');
+}
+function agentOwnerContactBtns(p) {
+  if (!isAgentUser()) return '';
+  const phoneSvg = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.8 19.8 0 0 1 1.61 3.4 2 2 0 0 1 3.59 1.22h3a2 2 0 0 1 2 1.72 12.8 12.8 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 8.78a16 16 0 0 0 6.29 6.29l1.14-1.14a2 2 0 0 1 2.11-.45 12.8 12.8 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>';
+  const waSvg = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.6 6.32A7.85 7.85 0 0 0 12.05 4c-4.37 0-7.93 3.56-7.93 7.93 0 1.4.37 2.76 1.06 3.96L4 20l4.24-1.11a7.9 7.9 0 0 0 3.8.97h.01c4.37 0 7.93-3.56 7.93-7.93 0-2.12-.82-4.11-2.38-5.61z"/></svg>';
+  return ownerDirectNumbers(p).map(n => {
+    const tag = n.which === 'alt' ? ' (alt)' : '';
+    return `<button class="profile-mini-icon-btn" title="Call owner${tag}" onclick="event.stopPropagation();callListingOwner('${p.id}','${n.which}')">${phoneSvg}</button>` +
+           `<button class="profile-mini-icon-btn profile-mini-icon-whatsapp" title="WhatsApp owner${tag}" onclick="event.stopPropagation();whatsappListingOwner('${p.id}','${n.which}')">${waSvg}</button>`;
+  }).join('');
+}
 function shareMyListingViaWhatsApp(id) {
   const p = MY_LISTINGS_CACHE.find(x => x.id === id);
   if (!p) return;
