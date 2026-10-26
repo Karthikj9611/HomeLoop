@@ -1218,10 +1218,14 @@ function modelForStatus(status, listedBy) {
 // form (see f-ownerPhone/f-ownerAltPhone + isValidIndianMobile on the
 // frontend), same shape normalizeMobile() produces, so a direct match works;
 // normalizing both sides here just guards against stray old data.
-async function getUserOwnershipFilter(userId) {
+// AGENT accounts are HomeLoop employees: unless { ownOnly: true } is passed, the filter is
+// empty ({}), so "my listings" / edit / booked act on EVERY listing in the system.
+// (ownOnly is kept for any future destructive action; user delete itself is disabled.)
+async function getUserOwnershipFilter(userId, { ownOnly = false } = {}) {
   const or = [{ userId }];
   if (mongoose.Types.ObjectId.isValid(userId)) {
-    const user = await User.findById(userId).select('mobile').lean();
+    const user = await User.findById(userId).select('mobile accountType').lean();
+    if (user && user.accountType === 'agent' && !ownOnly) return {};
     const mobile = user && user.mobile ? normalizeMobile(user.mobile) : '';
     if (mobile) {
       // Match the login number against the owner's main number, alt number and (for brokers)
@@ -2630,6 +2634,7 @@ app.get('/api/user/my-listings', requireUser, async (req, res) => {
       return {
         ...rest,
         id:           String(doc._id),
+        bookedOn:     (bookingDetails && bookingDetails.bookedOn) || null, // plain date only (bookingDetails itself stays private)
         displayPrice: formatPrice((doc.price || {}).rent, (doc.basic || {}).status),
       };
     });
@@ -2654,7 +2659,8 @@ app.put('/api/user/listings/:id', listingWriteLimiter, requireUser, async (req, 
     }, {});
 
     // Broker accounts stay locked to 'Broker' on edit; owners can change it.
-    if (body.basic && typeof body.basic === 'object') { const _lb = await requiredListedBy(req.userId); if (_lb) fields.basic.listedBy = _lb; }
+    // Agents (employees) edit other people's listings too, so their account type must NOT overwrite listedBy.
+    if (body.basic && typeof body.basic === 'object') { const _lb = await requiredListedBy(req.userId); if (_lb === 'Agent') delete fields.basic.listedBy; else if (_lb) fields.basic.listedBy = _lb; }
 
     // Only validate/apply sections the client actually sent something for,
     // so a partial edit (e.g. just price) doesn't get wiped by empty objects.
@@ -2736,20 +2742,10 @@ app.patch('/api/user/listings/:id/booked', listingWriteLimiter, requireUser, asy
   }
 });
 
-app.delete('/api/user/listings/:id', listingWriteLimiter, requireUser, async (req, res) => {
-  try {
-    const ownershipFilter = await getUserOwnershipFilter(req.userId);
-    let deleted = null;
-    for (const M of LISTING_MODEL_LIST) {
-      deleted = await M.findOneAndDelete({ _id: req.params.id, ...ownershipFilter });
-      if (deleted) break;
-    }
-    if (!deleted) return res.status(404).json({ message: 'Listing not found, or you do not have permission to delete it' });
-    res.json({ message: 'Listing deleted' });
-  } catch (err) {
-    console.error('DELETE /api/user/listings/:id error:', err);
-    res.status(500).json({ message: 'Error deleting listing' });
-  }
+// Deleting listings is disabled for every user account (owner, broker, agent, builder).
+// Only the admin panel (admin.js) can remove a listing.
+app.delete('/api/user/listings/:id', requireUser, (req, res) => {
+  res.status(403).json({ message: 'Listings cannot be deleted. Please contact support.' });
 });
 
 const reviewSchema = new mongoose.Schema({
