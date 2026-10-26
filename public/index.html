@@ -15113,14 +15113,14 @@ function selectFabType(type) {
 // allow past dates in the picker. New listings (isNew) get today filled in
 // when empty or already in the past; when editing an existing listing only
 // the minimum is applied, so a saved date is never silently overwritten.
-function applyAvailableFromDates(isNew) {
+function applyAvailableFromDates(isNew, forceToday) {
   const d = new Date();
   const today = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
   ['f-avail', 'f-leaseAvailableFrom', 'f-pgAvailableFrom'].forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
     el.min = today;
-    if (isNew && (!el.value || el.value < today)) el.value = today;
+    if (isNew && (forceToday || !el.value || el.value < today)) el.value = today;
   });
 }
 function lockIdentityFieldsForNewListing() {
@@ -17293,7 +17293,7 @@ function openCloneListingFull(id) {
   // logged-in account and re-locked, exactly like starting any other new
   // listing.
   lockIdentityFieldsForNewListing();
-  applyAvailableFromDates(true);
+  applyAvailableFromDates(true, true); // a clone always starts with today's date as "Available from" (not the source listing's date)
   onFTypeChange(document.getElementById('f-type').value);
 
   // Unlike editing, the type is free to change — this is a brand-new,
