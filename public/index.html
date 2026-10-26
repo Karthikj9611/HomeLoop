@@ -4049,7 +4049,7 @@ main.tab-explore .empty-state{display:none !important}
    fields already returned by GET /api/user/my-listings (views, visitCount,
    createdAt) — no extra endpoint needed. ── */
 .mylistings-summary{
-  display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:16px;
+  display:grid;grid-template-columns:repeat(2,1fr);gap:9px;margin-bottom:16px;
 }
 .mylistings-stat{
   border:1.5px solid var(--border);border-radius:13px;padding:11px 10px;text-align:center;background:var(--bg);
@@ -5754,8 +5754,8 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
     Help
   </div>
   <div class="qmb-item" onclick="openAboutModal()">
-    <span class="qmb-icon">💼</span>
-    About
+    <span class="qmb-icon">📞</span>
+    Contact
   </div>
 </div>
 
@@ -9242,7 +9242,7 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
     </div>
     <div class="menu-item" onclick="toggleMenuPanel(); openAboutModal();">
       <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="8"/></svg>
-      About Us
+      Contact Us
     </div>
   </div>
   <div class="menu-panel-footer"><span class="brandname">Home<span class="bn-accent">Loop</span></span> · v1.0</div>
@@ -16529,7 +16529,7 @@ function myListingCardHtml(p) {
           const _fd = v => { const t = v ? formatDateDisplay(v) : ''; return t ? esc(t) : ''; };
           const listed = _fd(p.createdAt);
           const bookedD = p.booked ? _fd(p.bookedAt || p.bookedOn) : '';
-          const avail = _fd(((p.basic?.status === 'PG') ? p.pg?.available : p.property?.available) || p.property?.available || p.pg?.available);
+          const avail = p.booked ? '' : _fd(((p.basic?.status === 'PG') ? p.pg?.available : p.property?.available) || p.property?.available || p.pg?.available);
           const parts = [];
           if (listed) parts.push(`<span class="pm-d"><b>Listed</b> ${listed}</span>`);
           if (bookedD) parts.push(`<span class="pm-d pm-d-booked"><b>Booked</b> ${bookedD}</span>`);
@@ -16579,7 +16579,6 @@ function renderMyListings() {
     summaryEl.innerHTML = `
       <div class="mylistings-summary">
         <div class="mylistings-stat"><div class="mylistings-stat-val">${totalViews}</div><div class="mylistings-stat-lbl">Total Views</div></div>
-        <div class="mylistings-stat"><div class="mylistings-stat-val">${totalVisits}</div><div class="mylistings-stat-lbl">Visit Requests</div></div>
         <div class="mylistings-stat"><div class="mylistings-stat-val">${MY_LISTINGS_CACHE.length}</div><div class="mylistings-stat-lbl">Listings</div></div>
       </div>`;
   }
@@ -16588,7 +16587,8 @@ function renderMyListings() {
   const _qb = ((document.getElementById('myBookedSearch') || {}).value || '').trim().toLowerCase();
   const _match = (p, q) => !q || String(p.propertyId || '').toLowerCase().includes(q);
   const _active = MY_LISTINGS_CACHE.filter(p => !p.booked);
-  const _booked = MY_LISTINGS_CACHE.filter(p => p.booked);
+  const _bt = p => new Date(p.bookedAt || p.bookedOn || p.createdAt || 0).getTime() || 0; // when it was booked (falls back to listed date)
+  const _booked = MY_LISTINGS_CACHE.filter(p => p.booked).sort((a, b) => (_bt(b) - _bt(a)) || (new Date(b.createdAt || 0) - new Date(a.createdAt || 0))); // newest booking first: today, yesterday, …
   const _cnt = document.getElementById('profileBookedCount');
   if (_cnt) _cnt.textContent = _booked.length ? ' (' + _booked.length + ')' : '';
 
@@ -16634,6 +16634,7 @@ async function toggleMyListingBooked(id, btnEl) {
     const data = await res.json().catch(() => ({}));
     if (!res.ok) { alert(data.message || 'Could not update booked status.'); return; }
     p.booked = typeof data.booked === 'boolean' ? data.booked : desired;
+    p.bookedAt = p.booked ? new Date().toISOString() : null; // so a just-booked listing jumps to the top
     renderMyListings();
   } catch (err) {
     alert('⚠️ Could not connect to server.');
