@@ -136,6 +136,7 @@ const UserSchema = new mongoose.Schema({
   //                 everyone in GET /api/properties (same as turning on each listing's own toggles).
   //  • 'broker'   → same as 'owner': every listing THIS broker posted shows its number(s) to everyone.
   //  • 'customer' → THIS tenant, while logged in, sees owner number(s) + Navigate on EVERY listing.
+  //  • 'agent'    → THIS agent, while logged in, sees owner number(s) + Navigate on EVERY listing (no subscription needed).
   publicCall:  { type: Boolean, default: false, index: true },
   // Admin-set subscription date & time for this customer (Customers grid's
   // "Subscription" button). null until an admin sets one — purely a record
@@ -349,7 +350,7 @@ async function requireUser(req, res, next) {
 
 // "Listed by" is locked to the account type (decided here, never by the client):
 // owner → Owner, broker → Broker, agent → Agent, builder → Builder.
-const ACCT_OWNER_SIDE = ['owner', 'broker', 'agent', 'builder']; // account types that can list properties (agent/builder are assigned by admin)
+const ACCT_OWNER_SIDE = ['owner', 'broker', 'agent', 'builder']; // account types that can list properties (agent is assigned by admin; builder can sign up)
 const LISTED_BY_FOR_ACCOUNT = { owner: 'Owner', broker: 'Broker', agent: 'Agent', builder: 'Builder' };
 async function requiredListedBy(userId) {
   const u = await User.findById(userId).select('accountType').lean();
@@ -553,7 +554,7 @@ app.post('/api/user/signup', userAuthLimiter, async (req, res) => {
     if (!mobile    || !String(mobile).trim())    return res.status(400).json({ message: 'Mobile number is required' });
     if (!/^[\d+\-\s]{7,15}$/.test(String(mobile).trim())) return res.status(400).json({ message: 'Please enter a valid mobile number' });
 
-    const cleanAccountType = (accountType === 'owner' || accountType === 'broker') ? accountType : 'customer';
+    const cleanAccountType = (accountType === 'owner' || accountType === 'broker' || accountType === 'builder') ? accountType : 'customer';
 
     const cleanEmail  = String(email).toLowerCase().trim();
     const cleanMobile = normalizeMobile(mobile);
@@ -1814,6 +1815,7 @@ app.get('/api/properties', attachUserIfPresent, async (req, res) => {
     // Logged-in tenant with admin "Public call" ON → owner numbers on listings (applied below).
     // If the tenant also subscribed for ONE BHK type, ONLY that BHK's listings are loaded at all.
     let _viewerPublicCall = false;
+    let _viewerIsAgent = false; // agent account with admin Public call ON: call details on every listing, no plan filters
     let _viewerBhk = '';
     let _viewerSub = null;    // current plan's filters (multi-BHK / areas / parking / budget)
     let _viewerSubFrom = null;   // when this tenant's subscription starts / ends (page uses them to reset "Viewed")
@@ -1824,6 +1826,7 @@ app.get('/api/properties', attachUserIfPresent, async (req, res) => {
         _viewerSubFrom = _viewer.subscriptionFrom || _viewer.subscriptionAt || null;
         _viewerSubTo = _viewer.subscriptionTo || null;
       }
+      _viewerIsAgent = !!(_viewer && _viewer.accountType === 'agent' && _viewer.publicCall); // admin Public call toggle on an agent = works like a subscription, but no plan/filters/subscription record
       _viewerPublicCall = !!(_viewer && _viewer.publicCall && (_viewer.accountType || 'customer') === 'customer');
       // Plan just started but the 1-minute start sweep hasn't switched Public call on yet → treat it as ON now.
       if (_viewer && !_viewerPublicCall && (_viewer.accountType || 'customer') === 'customer' && !_viewer.subscriptionStartHandled) {
@@ -1929,7 +1932,7 @@ app.get('/api/properties', attachUserIfPresent, async (req, res) => {
     // 1) Owner switch: listings posted by an owner account with publicCall on are public to EVERYONE.
     //    (Direct query on the small set of switched-on owners — cheaper than an $in over every listing owner.)
     const _pubOwners = new Set(
-      (await User.find({ publicCall: true, accountType: { $in: ACCT_OWNER_SIDE } }).select('_id').lean()).map(u => String(u._id))
+      (await User.find({ publicCall: true, accountType: { $in: ACCT_OWNER_SIDE.filter(t => t !== 'agent') } }).select('_id').lean()).map(u => String(u._id))
     );
     if (_pubOwners.size) {
       docs.forEach(d => {
@@ -1941,6 +1944,11 @@ app.get('/api/properties', attachUserIfPresent, async (req, res) => {
     //    is public for THIS viewer only (the response is then private/uncached — see Cache-Control below).
     // (_viewerPublicCall is resolved above, before the query.)
     if (_viewerPublicCall) docs.forEach(d => { d.ownerPhoneCall = true; d.ownerDirectCall = true; });
+
+    // 3) Agent switch: a logged-in AGENT whose admin Public call toggle is ON gets owner numbers, navigate
+    //    and live-location link on EVERY listing — like a subscription, but no subscription record and
+    //    no plan filters (agents always see all listings). Toggle OFF → normal behaviour.
+    if (_viewerIsAgent) docs.forEach(d => { d.ownerPhoneCall = true; d.ownerDirectCall = true; });
 
     // Backfill location.pincode from the free-text address for listings that
     // never got an explicit pincode saved (older/imported listings). Mirrors
@@ -1978,7 +1986,7 @@ app.get('/api/properties', attachUserIfPresent, async (req, res) => {
       // frontend — only the derived pincode above survives past this point.
       // Pasted Google Maps link (owner's live location) — ONLY for a logged-in tenant whose
       // subscription / Public call is active. Everyone else never receives it.
-      if (_viewerPublicCall && /^https?:\/\//i.test(String(doc.location.currentLocationLink || '').trim())) {
+      if ((_viewerPublicCall || _viewerIsAgent) && /^https?:\/\//i.test(String(doc.location.currentLocationLink || '').trim())) {
         doc.currentLocationLink = String(doc.location.currentLocationLink).trim();
       }
       delete doc.location.address;
@@ -2055,7 +2063,7 @@ app.get('/api/properties', attachUserIfPresent, async (req, res) => {
     // entitled tenant is private + uncached, and every response varies by session key so a shared cache
     // can never hand one viewer's response to another.
     res.vary('x-user-key');
-    res.set('Cache-Control', _viewerPublicCall ? 'private, no-store' : 'private, max-age=30');
+    res.set('Cache-Control', (_viewerPublicCall || _viewerIsAgent) ? 'private, no-store' : 'private, max-age=30');
     // bhkFilter: which BHK restriction was applied for this viewer ('' = none) — handy for checking in DevTools → Network.
     res.json({ properties: mapped, total: mapped.length, bhkFilter: _viewerBhk, subscriptionFrom: _viewerSubFrom, subscriptionTo: _viewerSubTo });
   } catch (err) {

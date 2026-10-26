@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <script>
-const ACCT_OWNER_SIDE = ['owner', 'broker', 'agent', 'builder']; // account types that can list properties (agent/builder are assigned by admin)
+const ACCT_OWNER_SIDE = ['owner', 'broker', 'agent', 'builder']; // account types that can list properties (agent is assigned by admin; builder can sign up)
 /* Contact picker button: shown on phones/tablets, hidden ONLY on desktop. */
 (function(){
   try{
@@ -3769,8 +3769,8 @@ main.tab-explore .empty-state{display:none !important}
 #authModal .auth-tabs{background:var(--bg-3);border-radius:12px;padding:4px;margin-bottom:22px}
 #authModal .auth-tab{padding:10px 0;font-size:13.5px;font-weight:650;letter-spacing:-.005em;border-radius:9px;transition:box-shadow .15s,color .15s;white-space:nowrap}
 #authModal .auth-tab.active{box-shadow:0 2px 8px rgba(20,15,16,.10)}
-/* Account-type picker: three equal selection cards */
-#authModal #authTypeTabsRow{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;background:transparent;padding:0;border-radius:0}
+/* Account-type picker: four equal selection cards (2 x 2) */
+#authModal #authTypeTabsRow{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;background:transparent;padding:0;border-radius:0}
 #authModal #authTypeTabsRow.has-error{background:transparent;box-shadow:none}
 #authModal #authTypeTabsRow.has-error .auth-tab{border-color:var(--brand)}
 #authModal #authTypeTabsRow .auth-tab{
@@ -7844,8 +7844,9 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
           <div class="auth-tab" id="authTypeCustomer" onclick="selectAccountType('customer')"><span class="at-ico"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></svg></span><span>Tenant</span></div>
           <div class="auth-tab" id="authTypeOwner" onclick="selectAccountType('owner')"><span class="at-ico"><svg viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="M11 12l9-9"/><path d="M16 7l3 3"/></svg></span><span>Property owner</span></div>
           <div class="auth-tab" id="authTypeBroker" onclick="selectAccountType('broker')"><span class="at-ico"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/><path d="M3 13h18"/></svg></span><span>Broker</span></div>
+          <div class="auth-tab" id="authTypeBuilder" onclick="selectAccountType('builder')"><span class="at-ico"><svg viewBox="0 0 24 24"><rect x="4" y="3" width="10" height="18" rx="1"/><path d="M14 9h6v12h-6"/><path d="M8 7h2M8 11h2M8 15h2M17 13h0M17 17h0"/></svg></span><span>Builder</span></div>
         </div>
-        <div class="field-error-text" id="authTypeError" style="display:none;margin:-10px 0 12px">Please select whether you're looking for a home, a property owner or a broker</div>
+        <div class="field-error-text" id="authTypeError" style="display:none;margin:-10px 0 12px">Please select whether you're looking for a home, a property owner, a broker or a builder</div>
       </div>
       <!-- Profile photo on signup — commented out for now, keep markup for later re-enable
       <div id="authSignupPhotoField" style="display:none">
@@ -14104,8 +14105,8 @@ function openDetailReal(id) {
   // Each number has its own admin "Public call" toggle; the server only sends a number when its toggle is on.
   const _mainOn = !!(p.ownerPhoneCall && p.ownerPhone), _altOn = !!(p.ownerDirectCall && p.ownerAltPhone);
   // Owner accounts never get the owner-number rows — all their calls go to the Coordinator.
-  document.getElementById('viewOwnerMainRow').style.display = (_mainOn && !isOwnerViewer()) ? '' : 'none';
-  document.getElementById('viewOwnerAltRow').style.display  = (_altOn  && !isOwnerViewer()) ? '' : 'none';
+  document.getElementById('viewOwnerMainRow').style.display = (_mainOn && (!isOwnerViewer() || isAgentViewer())) ? '' : 'none';
+  document.getElementById('viewOwnerAltRow').style.display  = (_altOn  && (!isOwnerViewer() || isAgentViewer())) ? '' : 'none';
   document.getElementById('viewOwnerPhoneBtn').onclick   = () => openOwnerCall(p.id, 'main');
   document.getElementById('viewOwnerPhoneWaBtn').onclick = () => openOwnerWhatsApp(p.id, 'main');
   document.getElementById('viewOwnerCallBtn').onclick    = () => openOwnerCall(p.id, 'alt');
@@ -14131,7 +14132,7 @@ function openDetailReal(id) {
   document.getElementById('viewNavigateBtn').onclick = () => openPropertyNavigate(p.id);
   // Pasted Google Maps link + Copy button — server only sends currentLocationLink to subscribed tenants.
   const _locRow = document.getElementById('viewLocLinkRow');
-  const _locUrl = (!isOwnerViewer() && /^https?:\/\//i.test(String(p.currentLocationLink || ''))) ? String(p.currentLocationLink) : '';
+  const _locUrl = ((!isOwnerViewer() || isAgentViewer()) && /^https?:\/\//i.test(String(p.currentLocationLink || ''))) ? String(p.currentLocationLink) : '';
   if (_locUrl) {
     const _locA = document.getElementById('viewLocLinkText');
     _locA.href = _locUrl; _locA.textContent = _locUrl;
@@ -14817,7 +14818,7 @@ function openCardCall(propId) {
   const p = PROPERTIES.find(x => x.id === propId) || BOOKED_PROPERTIES.find(x => x.id === propId);
   if (!p) return;
   const rawPhone = String(
-    isOwnerViewer() ? (p.owner?.agentPhone || '') : (
+    (isOwnerViewer() && !isAgentViewer()) ? (p.owner?.agentPhone || '') : (
       (p.ownerDirectCall && p.ownerAltPhone) ||
       (p.ownerPhoneCall && p.ownerPhone) ||
       p.owner?.agentPhone || '')
@@ -15593,6 +15594,11 @@ function availableDateInfo(available) {
 // In-house Coordinator line. Call / WhatsApp now go to each listing's own agent
 // number for every viewer, including logged-in owner accounts.
 const COORDINATOR_PHONE = '9035205230';
+/* HomeLoop employee account — gets Public call (owner numbers, navigate, location link) on every listing. */
+function isAgentViewer() {
+  const u = getLoggedInUser();
+  return !!u && u.accountType === 'agent';
+}
 function isOwnerViewer() {
   const u = getLoggedInUser();
   return !!u && (ACCT_OWNER_SIDE.includes(u.accountType));
@@ -15835,6 +15841,7 @@ function selectAccountType(type) {
   document.getElementById('authTypeCustomer').classList.toggle('active', type === 'customer');
   document.getElementById('authTypeOwner').classList.toggle('active', type === 'owner');
   document.getElementById('authTypeBroker').classList.toggle('active', type === 'broker');
+  document.getElementById('authTypeBuilder').classList.toggle('active', type === 'builder');
   document.getElementById('authTypeTabsRow').classList.remove('has-error');
   document.getElementById('authTypeError').style.display = 'none';
   saveSignupDraft();
@@ -15921,6 +15928,7 @@ function restoreSignupDraft() {
   document.getElementById('authTypeCustomer').classList.toggle('active', selectedAccountType === 'customer');
   document.getElementById('authTypeOwner').classList.toggle('active', selectedAccountType === 'owner');
   document.getElementById('authTypeBroker').classList.toggle('active', selectedAccountType === 'broker');
+  document.getElementById('authTypeBuilder').classList.toggle('active', selectedAccountType === 'builder');
   document.getElementById('authTypeTabsRow').classList.remove('has-error');
   document.getElementById('authTypeError').style.display = 'none';
 
@@ -21290,7 +21298,7 @@ document.addEventListener('keydown', function(e){ if (e.key === 'Escape') closeP
     linear-gradient(180deg,#fffdfa 0%,#fff7f1 100%);
   border:1px solid rgba(255,190,160,.45);
   box-shadow:0 40px 80px -24px rgba(190,70,60,.35),0 10px 30px -10px rgba(190,70,60,.18);
-  overflow:hidden;
+  overflow-x:hidden;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain; /* was overflow:hidden — clipped the form once the account-type picker grew to 2 rows */
 }
 #authModal #authModalBox::before{
   content:"";position:absolute;left:0;right:0;top:0;height:4px;
