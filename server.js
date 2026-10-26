@@ -394,13 +394,15 @@ async function requireVerified(req, res, next) {
   }
 }
 
-// Same as requireVerified, but owner and broker accounts are exempt: they can
+// Same as requireVerified, but OWNER and AGENT accounts are exempt: they can
 // post a listing straight away without waiting for an admin to verify the
 // account. (The listing itself still starts with verified:false, so admin
 // approval of the property before it goes public is unchanged.) Every other
-// account type (agent, builder, customer) still needs User.isVerified.
-const SELF_LISTING_ACCOUNT_TYPES = ['owner', 'broker'];
-async function requireVerifiedUnlessOwnerBroker(req, res, next) {
+// account type (broker, builder, customer) can NOT list until an admin has
+// verified the account in the backend (User.isVerified). This is the real
+// gate — the frontend check is only for convenience.
+const SELF_LISTING_ACCOUNT_TYPES = ['owner', 'agent'];
+async function requireVerifiedUnlessOwnerAgent(req, res, next) {
   try {
     const user = await User.findById(req.userId).select('isVerified accountType').lean();
     if (user && (user.isVerified || SELF_LISTING_ACCOUNT_TYPES.includes(user.accountType))) return next();
@@ -410,7 +412,7 @@ async function requireVerifiedUnlessOwnerBroker(req, res, next) {
       message: 'Your account is pending admin verification. Please wait for confirmation before posting anything.',
     });
   } catch (err) {
-    console.error('requireVerifiedUnlessOwnerBroker error:', err);
+    console.error('requireVerifiedUnlessOwnerAgent error:', err);
     res.status(500).json({ message: 'Server error. Please try again.' });
   }
 }
@@ -1671,7 +1673,7 @@ const listingWriteLimiter = rateLimit({
 });
 
 // ── POST /api/properties ──
-app.post('/api/properties', listingLimiter, requireUser, requireOwner, requireVerifiedUnlessOwnerBroker, async (req, res) => {
+app.post('/api/properties', listingLimiter, requireUser, requireOwner, requireVerifiedUnlessOwnerAgent, async (req, res) => {
   try {
     const body = req.body || {};
     const fields = NESTED_SECTIONS.reduce((acc, k) => {

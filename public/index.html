@@ -8840,7 +8840,7 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
         <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
     </div>
-    <p style="font-size:13.5px;color:var(--text-2);line-height:1.6;margin-bottom:18px">Your details need to be verified by our admin team before you can post anything — listings, reviews, visit requests, bookings, or payments. Please wait until you receive confirmation.</p>
+    <p style="font-size:13.5px;color:var(--text-2);line-height:1.6;margin-bottom:18px">Your account needs to be verified by our admin team before you can list a property or post anything else. Please contact admin to get verified.</p>
     <div class="help-quick-strip">
       <a class="help-quick-btn" href="tel:9035205230">
         <svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.8 19.8 0 0 1 1.61 3.4 2 2 0 0 1 3.59 1.22h3a2 2 0 0 1 2 1.72 12.8 12.8 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 8.78a16 16 0 0 0 6.29 6.29l1.14-1.14a2 2 0 0 1 2.11-.45 12.8 12.8 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
@@ -15130,7 +15130,28 @@ function lockListedByToAccount() {
 }
 function openAddModal(presetType) {
   if (!getLoggedInUser()) { openAuthModal(); return; }
-  if (blockIfNotVerified({ allowOwnerBroker: true })) return;
+  // Tenant (customer) accounts can never list — the server rejects them too (requireOwner).
+  { const _u = getLoggedInUser(); if (_u && !ACCT_OWNER_SIDE.includes(_u.accountType)) { showToast('Only property owner or agent accounts can list a property.', 'warning'); return; } }
+  if (blockIfNotVerified({ allowOwnerAgent: true })) return;
+  // Owner / agent open the form straight away. Broker / builder: re-check with the server first
+  // (cached isVerified can be stale) — if not verified, show the "contact admin" modal, never the form.
+  { const _u2 = getLoggedInUser();
+    if (_u2 && _u2.accountType !== 'owner' && _u2.accountType !== 'agent') {
+      fetch('/api/user/me', { headers: userAuthHeaders() }).then(r => r.ok ? r.json() : null).then(d => {
+        if (!d || !d.isVerified) {
+          const c = getLoggedInUser();
+          if (c) { c.isVerified = false; localStorage.setItem('homeloop_user', JSON.stringify(c)); }
+          showPendingVerificationModal();
+          return;
+        }
+        openAddModalForm(presetType);
+      }).catch(() => showPendingVerificationModal());
+      return;
+    }
+  }
+  openAddModalForm(presetType);
+}
+function openAddModalForm(presetType) {
   const restored = restoreListingDraft();
   if (!restored) resetListingForm();
   if (presetType) {
@@ -15616,8 +15637,9 @@ function closePlanExpiredModal() {
 // don't fill out a whole form before finding out they can't submit it.
 function blockIfNotVerified(opts) {
   const user = getLoggedInUser();
-  // Owner / broker accounts may list a property without admin verification.
-  if (opts && opts.allowOwnerBroker && user && (user.accountType === 'owner' || user.accountType === 'broker')) return false;
+  // Only owner / agent accounts may list a property without admin verification.
+  // Every other account type (broker, builder, tenant) must be verified in the backend first.
+  if (opts && opts.allowOwnerAgent && user && (user.accountType === 'owner' || user.accountType === 'agent')) return false;
   if (user && !user.isVerified) {
     showPendingVerificationModal();
     return true;
