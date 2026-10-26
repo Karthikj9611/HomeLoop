@@ -17615,8 +17615,9 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeBrokerI
 
 /* "Coming soon" modal for tabs whose feature is still being built (Builders, Management). */
 const COMING_SOON_TABS = {
-  Builder:     { icon: '🏗️', title: 'Builders',   text: 'This feature is being developed.', def: 'Developers who construct residential and commercial projects. Here you’ll be able to explore new projects and apartments directly from builders.' },
-  Maintenance: { icon: '🛏️', title: 'PG & Coliving', text: 'This feature is being developed.', def: 'Paying-guest (PG) stays and co-living spaces — rent a bed or room in a shared home, usually furnished, with meals, Wi-Fi and housekeeping often included.' },
+  Builder:     { icon: '🏗️', title: 'Builders',   text: 'This feature is being developed. Expected to be released by 1 Jan 2027.', def: 'Developers who construct residential and commercial projects. Builders can list their properties directly on HomeLoop.' },
+  Broker:      { icon: '👨‍💼', title: 'Brokers — List Your Properties', text: 'This feature is being developed. Expected to be released by 1 Jan 2027.', def: 'Brokers can post their listings on HomeLoop and connect directly with potential buyers and tenants. List your properties under your own brokerage and let potential tenants contact you directly.' },
+  Maintenance: { icon: '🛏️', title: 'PG & Coliving', text: 'This feature is being developed. Expected to be released by 1 Jan 2027.', def: 'Owners can list their PG and co-living properties directly on HomeLoop.' },
 };
 function openComingSoonModal(tab) {
   const cfg = COMING_SOON_TABS[tab], m = document.getElementById('comingSoonModal');
@@ -22398,6 +22399,17 @@ main.main.empty-with-booked:has(> .empty-state.show) > .empty-state.show{positio
   #hlNotice .hln-card{padding-top:20px}
   #hlNotice .hln-x{top:10px;right:10px}
 }
+
+/* Service notice: points in green */
+#hlNotice .hln-points li{border-color:rgba(46,160,103,.28);background:#f4fbf7;box-shadow:0 6px 14px -10px rgba(46,160,103,.35)}
+#hlNotice .hln-points li i{background:linear-gradient(135deg,#43c383,#2ea067);box-shadow:0 4px 10px -4px rgba(46,160,103,.6)}
+#hlNotice .hln-points li{color:#1f5f43}
+#hlNotice .hln-sub{color:#3d7d5f}
+
+/* Service notice: "listings paused" point in red */
+#hlNotice .hln-points li:last-child{border-color:rgba(224,58,82,.32);background:#fff5f6;box-shadow:0 6px 14px -10px rgba(224,58,82,.4);color:#a61e33}
+#hlNotice .hln-points li:last-child i{background:linear-gradient(135deg,#ef5a70,#d62f48);box-shadow:0 4px 10px -4px rgba(224,58,82,.6)}
+#hlNotice .hln-points li:last-child .hln-sub{color:#b8465a}
 </style>
 </body>
 </html>
