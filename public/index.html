@@ -4051,6 +4051,10 @@ main.tab-explore .empty-state{display:none !important}
 .mylistings-summary{
   display:grid;grid-template-columns:repeat(2,1fr);gap:9px;margin-bottom:16px;
 }
+.mylistings-summary.cols-3{grid-template-columns:repeat(3,1fr)}
+.mylistings-stat.is-tab{cursor:pointer;transition:border-color .15s,background .15s,box-shadow .15s}
+.mylistings-stat.is-tab.active{border-color:var(--brand);background:#fdecef;box-shadow:0 3px 10px rgba(0,0,0,.08)}
+.mylistings-stat.is-tab.active .mylistings-stat-val,.mylistings-stat.is-tab.active .mylistings-stat-lbl{color:var(--brand)}
 .mylistings-stat{
   border:1.5px solid var(--border);border-radius:13px;padding:11px 10px;text-align:center;background:var(--bg);
 }
@@ -8122,6 +8126,7 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
 
       <!-- ── Tab: Booked ── -->
       <div class="profile-tab-panel" id="profilePanelBooked">
+        <div id="myBookedSummary"></div>
         <div class="pm-search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input id="myBookedSearch" type="search" placeholder="Search booked by property ID" autocomplete="off" oninput="renderMyListings()" /></div>
         <div id="myBookedContent">
           <div class="profile-loading">Loading booked listings…</div>
@@ -16563,6 +16568,9 @@ function myListingCardHtml(p) {
     </div></div>`;
 }
 
+window._bookedSub = 'all'; // Booked tab sub-filter: 'all' | 'us'
+function setBookedSub(key) { window._bookedSub = key; renderMyListings(); }
+
 function renderMyListings() {
   const wrap = document.getElementById('myListingsContent');
   const summaryEl = document.getElementById('myListingsSummary');
@@ -16572,6 +16580,7 @@ function renderMyListings() {
     if (_bw0) _bw0.innerHTML = '<div class="profile-list-empty">No booked listings yet.</div>';
     const _cnt0 = document.getElementById('profileBookedCount'); if (_cnt0) _cnt0.textContent = '';
     if (summaryEl) summaryEl.innerHTML = '';
+    const _bs0 = document.getElementById('myBookedSummary'); if (_bs0) _bs0.innerHTML = '';
     wrap.innerHTML = `<div class="profile-list-empty">
       <div class="profile-list-empty-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9l9-7 9 7v11a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/></svg></div>
       You haven't posted any listings yet.<br>Tap "+ List property" to add one.
@@ -16581,14 +16590,20 @@ function renderMyListings() {
 
   // Summary strip — totals across every listing this owner has, so they get
   // a single-glance read on overall performance without opening each card.
+  // Listings tab = active (non-booked) listings only; Booked tab gets its own stats.
+  const _sumActive = MY_LISTINGS_CACHE.filter(p => !p.booked);
+  const _sumBooked = MY_LISTINGS_CACHE.filter(p => p.booked);
+  const _viewsOf = list => list.reduce((sum, p) => sum + (p.views || 0), 0);
+  // "Booked by us" = booked through our team (flag/field set server-side).
+  const _byUs = p => p.bookedByUs === true || /^(us|homeloop|admin|team)$/i.test(String(p.bookedBy || p.bookedVia || ''));
+  const _stat = (v, l) => `<div class="mylistings-stat"><div class="mylistings-stat-val">${v}</div><div class="mylistings-stat-lbl">${l}</div></div>`;
+  const _tstat = (v, l, key) => `<div class="mylistings-stat is-tab${window._bookedSub === key ? ' active' : ''}" role="tab" onclick="setBookedSub('${key}')"><div class="mylistings-stat-val">${v}</div><div class="mylistings-stat-lbl">${l}</div></div>`;
   if (summaryEl) {
-    const totalViews  = MY_LISTINGS_CACHE.reduce((sum, p) => sum + (p.views || 0), 0);
-    const totalVisits = MY_LISTINGS_CACHE.reduce((sum, p) => sum + (p.visitCount || 0), 0);
-    summaryEl.innerHTML = `
-      <div class="mylistings-summary">
-        <div class="mylistings-stat"><div class="mylistings-stat-val">${totalViews}</div><div class="mylistings-stat-lbl">Total Views</div></div>
-        <div class="mylistings-stat"><div class="mylistings-stat-val">${MY_LISTINGS_CACHE.length}</div><div class="mylistings-stat-lbl">Listings</div></div>
-      </div>`;
+    summaryEl.innerHTML = `<div class="mylistings-summary">${_stat(_viewsOf(_sumActive), 'Total Views')}${_stat(_sumActive.length, 'Listings')}</div>`;
+  }
+  const bookedSumEl = document.getElementById('myBookedSummary');
+  if (bookedSumEl) {
+    bookedSumEl.innerHTML = `<div class="mylistings-summary cols-3">${_stat(_viewsOf(_sumBooked), 'Total Views')}${_tstat(_sumBooked.length, 'Booked', 'all')}${_tstat(_sumBooked.filter(_byUs).length, 'Booked by us', 'us')}</div>`;
   }
 
   const _q = ((document.getElementById('myListingsSearch') || {}).value || '').trim().toLowerCase();
@@ -16596,9 +16611,9 @@ function renderMyListings() {
   const _match = (p, q) => !q || String(p.propertyId || '').toLowerCase().includes(q);
   const _active = MY_LISTINGS_CACHE.filter(p => !p.booked);
   const _bt = p => new Date(p.bookedAt || p.bookedOn || p.createdAt || 0).getTime() || 0; // when it was booked (falls back to listed date)
-  const _booked = MY_LISTINGS_CACHE.filter(p => p.booked).sort((a, b) => (_bt(b) - _bt(a)) || (new Date(b.createdAt || 0) - new Date(a.createdAt || 0))); // newest booking first: today, yesterday, …
+  const _booked = MY_LISTINGS_CACHE.filter(p => p.booked && (window._bookedSub !== 'us' || _byUs(p))).sort((a, b) => (_bt(b) - _bt(a)) || (new Date(b.createdAt || 0) - new Date(a.createdAt || 0))); // newest booking first: today, yesterday, …
   const _cnt = document.getElementById('profileBookedCount');
-  if (_cnt) _cnt.textContent = _booked.length ? ' (' + _booked.length + ')' : '';
+  if (_cnt) _cnt.textContent = _sumBooked.length ? ' (' + _sumBooked.length + ')' : '';
 
   const _fill = (el, list, q, emptyMsg) => {
     if (!el) return;
@@ -16608,7 +16623,7 @@ function renderMyListings() {
       : `<div class="profile-list-empty">${q ? 'No listing found for “' + esc(q) + '”.' : emptyMsg}</div>`;
   };
   _fill(wrap, _active, _q, 'No active listings. Booked listings are in the Booked tab.');
-  _fill(document.getElementById('myBookedContent'), _booked, _qb, 'No booked listings yet.');
+  _fill(document.getElementById('myBookedContent'), _booked, _qb, window._bookedSub === 'us' ? 'No listings booked by us yet.' : 'No booked listings yet.');
 }
 
 // Booked button: asks first (booking takes the listing off the public site), then flips the flag.

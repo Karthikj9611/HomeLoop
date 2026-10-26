@@ -2657,6 +2657,7 @@ app.get('/api/user/my-listings', requireUser, async (req, res) => {
         ...rest,
         id:           String(doc._id),
         bookedOn:     (bookingDetails && bookingDetails.bookedOn) || null, // plain date only (bookingDetails itself stays private)
+        bookedByUs:   !!(bookingDetails && bookingDetails.tenantId), // booked through us = admin saved booking details with a tenant (flag only; the record stays private)
         displayPrice: formatPrice((doc.price || {}).rent, (doc.basic || {}).status),
       };
     });
