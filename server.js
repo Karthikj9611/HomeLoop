@@ -417,6 +417,19 @@ async function requireVerifiedUnlessOwnerAgent(req, res, next) {
   }
 }
 
+// Runs after requireUser. Only AGENT accounts (HomeLoop employees) may change an existing
+// listing. Owners / brokers / builders must contact support, who edit it for them.
+async function requireAgent(req, res, next) {
+  try {
+    const user = await User.findById(req.userId).select('accountType').lean();
+    if (user && user.accountType === 'agent') return next();
+    return res.status(403).json({ message: 'Changes can only be made by our team. Please contact support.' });
+  } catch (err) {
+    console.error('requireAgent error:', err);
+    res.status(500).json({ message: 'Server error. Please try again.' });
+  }
+}
+
 // Like requireUser, but never blocks the request — just attaches req.userId
 // (and req.userReadableId) if a valid session key was sent (null otherwise).
 // Used on routes that must still work for guests, e.g. submitting a listing
@@ -697,7 +710,7 @@ app.get('/api/user/me', requireUser, async (req, res) => {
 });
 
 // ── UPDATE current user profile (name / email / mobile) ──
-app.put('/api/user/me', profileUpdateLimiter, requireUser, async (req, res) => {
+app.put('/api/user/me', profileUpdateLimiter, requireUser, requireAgent, async (req, res) => {
   try {
     const { name, email, mobile, profilePhoto } = req.body || {};
     const update = {};
@@ -2647,7 +2660,7 @@ app.get('/api/user/my-listings', requireUser, async (req, res) => {
 });
 
 // ── PUT /api/user/listings/:id (edit a listing the user owns) ──
-app.put('/api/user/listings/:id', listingWriteLimiter, requireUser, async (req, res) => {
+app.put('/api/user/listings/:id', listingWriteLimiter, requireUser, requireAgent, async (req, res) => {
   try {
     const { doc: prop, model: currentModel } = await findUserListingById(req.params.id, req.userId);
     if (!prop) return res.status(404).json({ message: 'Listing not found, or you do not have permission to edit it' });
@@ -2722,7 +2735,7 @@ app.put('/api/user/listings/:id', listingWriteLimiter, requireUser, async (req, 
 // an owner can never flip this for a listing that isn't theirs. Once true,
 // the listing is excluded from GET /api/properties (booked: { $ne: true }
 // filter there) and disappears from the public site, same as the admin toggle.
-app.patch('/api/user/listings/:id/booked', listingWriteLimiter, requireUser, async (req, res) => {
+app.patch('/api/user/listings/:id/booked', listingWriteLimiter, requireUser, requireAgent, async (req, res) => {
   try {
     const { booked } = req.body || {};
     if (typeof booked !== 'boolean') {

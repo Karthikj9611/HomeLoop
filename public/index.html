@@ -8029,7 +8029,7 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
         <div id="profileViewMode">
           <div class="profile-edit-row">
             <span class="profile-section-label" style="margin:0">Account details</span>
-            <button class="profile-link-btn" onclick="openEditRestrictedModal('profile')">
+            <button class="profile-link-btn" onclick="editProfileDetails()">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
               Edit
             </button>
@@ -16380,6 +16380,11 @@ function handleNotVerifiedError(data) {
 /* ═══════════════════════════════════════════════
    PROFILE MODAL — EDIT NAME / EMAIL / MOBILE
 ═══════════════════════════════════════════════ */
+// Only agents (HomeLoop employees) may change account details; everyone else gets the "contact support" popup.
+function isAgentUser() { const u = getLoggedInUser(); return !!u && u.accountType === 'agent'; }
+function editProfileDetails() {
+  if (isAgentUser()) enterProfileEditMode(); else openEditRestrictedModal('profile');
+}
 function enterProfileEditMode() {
   const user = getLoggedInUser();
   if (!user) return;
@@ -16538,7 +16543,7 @@ function myListingCardHtml(p) {
         <button class="profile-mini-icon-btn" title="Edit" onclick="event.stopPropagation();editMyListing('${p.id}', '${esc(p.propertyId||'')}')">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
         </button>
-        <button class="profile-mini-icon-btn${p.booked ? ' booked-active' : ''}" title="${p.booked ? 'Mark as available' : 'Mark as booked'}" onclick="event.stopPropagation();openEditRestrictedModal('booking', '${esc(p.propertyId||'')}', ${p.booked ? 'true' : 'false'})">
+        <button class="profile-mini-icon-btn${p.booked ? ' booked-active' : ''}" title="${p.booked ? 'Mark as available' : 'Mark as booked'}" onclick="event.stopPropagation();confirmToggleBooked('${p.id}', this)">
           <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
         </button>
         <button class="profile-mini-icon-btn profile-mini-icon-whatsapp" title="Share on WhatsApp" onclick="event.stopPropagation();shareMyListingViaWhatsApp('${p.id}')">
@@ -16594,6 +16599,19 @@ function renderMyListings() {
   };
   _fill(wrap, _active, _q, 'No active listings. Booked listings are in the Booked tab.');
   _fill(document.getElementById('myBookedContent'), _booked, _qb, 'No booked listings yet.');
+}
+
+// Booked button: asks first (booking takes the listing off the public site), then flips the flag.
+// The server only lets an owner/broker/builder change THEIR OWN listings; agents can change any.
+function confirmToggleBooked(id, btnEl) {
+  const p = MY_LISTINGS_CACHE.find(x => x.id === id);
+  if (!p) return;
+  const label = p.propertyId || 'this listing';
+  if (!isAgentUser()) { openEditRestrictedModal('booking', p.propertyId || '', !!p.booked); return; }
+  const msg = p.booked
+    ? `Mark ${label} as available again? It will show on the website again.`
+    : `Mark ${label} as booked? It will be removed from the website.`;
+  if (confirm(msg)) toggleMyListingBooked(id, btnEl);
 }
 
 // Owner-only: flip the booked flag on one of their own listings (mirrors the
@@ -17266,7 +17284,7 @@ function closeEditListingFull() {
 // the "contact support" message.
 function canCloneListings() {
   const u = getLoggedInUser();
-  return !!u && ['owner', 'broker', 'agent'].includes(u.accountType);
+  return !!u && ACCT_OWNER_SIDE.includes(u.accountType); // owner / broker / agent / builder can duplicate their own listings; tenants can't list at all
 }
 // Agents are HomeLoop employees: they can edit any listing straight from their profile.
 // Every other account type still gets the "contact support" message.
@@ -17280,6 +17298,7 @@ function cloneMyListing(id, propertyLabel) {
   openCloneListingFull(id);
 }
 function openCloneListingFull(id) {
+  if (!canCloneListings()) { const _p0 = MY_LISTINGS_CACHE.find(x => x.id === id); openEditRestrictedModal('clone', _p0 ? _p0.propertyId : ''); return; }
   const p = MY_LISTINGS_CACHE.find(x => x.id === id);
   if (!p) { showToast("This listing is no longer available.", 'error'); return; }
 
@@ -20419,6 +20438,8 @@ function buildListingPayload() {
 }
 
 function submitListing() {
+  { const _sub = document.getElementById('addModalSubtitleText');
+    if (!editingPropertyId && _sub && /^Copied from/.test(_sub.textContent || '') && !canCloneListings()) { openEditRestrictedModal('clone'); return; } }
   lockListedByToAccount();
   const firstError = validateListingForm();
   if (firstError) {
