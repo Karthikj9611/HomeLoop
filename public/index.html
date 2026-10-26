@@ -4060,7 +4060,8 @@ main.tab-explore .empty-state{display:none !important}
 .pm-search svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:15px;height:15px;stroke:var(--text-3);fill:none;stroke-width:2;pointer-events:none}
 .pm-search input{width:100%;box-sizing:border-box;padding:10px 12px 10px 34px;border:1.5px solid var(--border);border-radius:12px;background:var(--bg);color:var(--text);font:600 13px inherit;font-family:inherit;outline:none}
 .pm-search input:focus{border-color:var(--brand)}
-.profile-mini-card.pm-compact{padding:9px 11px;gap:10px;margin-bottom:8px;border-radius:13px}
+.profile-mini-card.pm-compact{display:block;container-type:inline-size;padding:9px 11px;margin-bottom:8px;border-radius:13px}
+.pm-compact .pm-row{display:flex;align-items:center;gap:10px}
 .pm-compact .profile-mini-thumb{width:46px;height:46px;border-radius:10px;font-size:8px}
 .pm-compact .pm-line{display:flex;align-items:center;gap:8px;min-width:0;overflow:hidden;white-space:nowrap}
 .pm-compact .pm-line2{margin-top:4px;gap:7px}
@@ -4079,9 +4080,12 @@ main.tab-explore .empty-state{display:none !important}
 .pm-compact .profile-mini-actions{flex-direction:row;gap:5px}
 .pm-compact .profile-mini-icon-btn{width:28px;height:28px;border-radius:8px}
 .pm-compact .profile-mini-icon-btn svg{width:13px;height:13px}
-@media (max-width:520px){
-  .pm-compact .pm-line3{flex-wrap:wrap;white-space:normal;gap:2px 10px}
-  .pm-compact .profile-mini-actions{display:grid;grid-template-columns:repeat(2,28px);gap:5px}
+/* Narrow card (small popup / phone): text gets the full width, the 4 buttons drop to a neat row underneath */
+@container (max-width:580px){
+  .pm-compact .pm-row{flex-wrap:wrap;row-gap:8px}
+  .pm-compact .profile-mini-actions{flex:1 1 100%;justify-content:flex-end;gap:8px;padding-top:8px;border-top:1px dashed var(--border)}
+  .pm-compact .profile-mini-icon-btn{width:32px;height:32px}
+  .pm-compact .pm-line2,.pm-compact .pm-line3{flex-wrap:wrap;white-space:normal;row-gap:3px}
 }
 .profile-mini-stats{display:flex;align-items:center;gap:12px;margin-top:6px}
 .profile-mini-stat{display:flex;align-items:center;gap:4px;font-size:11px;font-weight:700;color:var(--text-2)}
@@ -9030,8 +9034,8 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
       </div>
     </div>
 
-    <!-- Founder -->
-    <div class="about-section">
+    <!-- Founder — hidden for now; remove style="display:none" to show it again -->
+    <div class="about-section" style="display:none">
       <div class="about-section-title">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
         Founder
@@ -9116,9 +9120,9 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
         </div>
         <div style="flex:1;min-width:0">
-          <div class="about-office-name">Samruddhi Sanzio</div>
-          <div class="about-office-addr">AECS Layout - A Block, AECS Layout, Singasandra, Bengaluru, Karnataka 560068</div>
-          <a class="about-phone-link" href="https://share.google/4gGEfUWWVpNKtsK2g" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>Get Directions</a>
+          <div class="about-office-name">HomeLoop</div>
+          <div class="about-office-addr">Ground Floor, #29, 9th main, Hosapalya Bangalore - 560068<br>Near Diana Convent English Medium School</div>
+          <a class="about-phone-link" href="https://share.google/aP0vM00E1VI2yp0po" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>Get Directions</a>
         </div>
       </div>
     </div>
@@ -16500,7 +16504,7 @@ function myListingCardHtml(p) {
     const thumb = img ? `style="background-image:url('${safeUrl(img)}')"` : '';
     const rent = p.price?.rent != null ? fmtRupee(p.price.rent) : '—';
     const daysLive = p.createdAt ? Math.max(0, Math.floor((Date.now() - new Date(p.createdAt).getTime()) / 86400000)) : null;
-    return `<div class="profile-mini-card pm-compact" onclick="closeProfileModal();openDetail('${p.id}')">
+    return `<div class="profile-mini-card pm-compact" onclick="closeProfileModal();openDetail('${p.id}')"><div class="pm-row">
       <div class="profile-mini-thumb" ${thumb}>${img ? '' : 'No photo'}</div>
       <div class="profile-mini-body">
         <div class="pm-line">
@@ -16541,7 +16545,7 @@ function myListingCardHtml(p) {
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.6 6.32A7.85 7.85 0 0 0 12.05 4c-4.37 0-7.93 3.56-7.93 7.93 0 1.4.37 2.76 1.06 3.96L4 20l4.24-1.11a7.9 7.9 0 0 0 3.8.97h.01c4.37 0 7.93-3.56 7.93-7.93 0-2.12-.82-4.11-2.38-5.61zm-5.55 12.2h-.01a6.58 6.58 0 0 1-3.35-.92l-.24-.14-2.51.66.67-2.45-.16-.25a6.58 6.58 0 0 1-1.01-3.5c0-3.64 2.96-6.6 6.61-6.6a6.57 6.57 0 0 1 6.6 6.61c0 3.64-2.97 6.6-6.61 6.6zm3.62-4.94c-.2-.1-1.17-.58-1.35-.64-.18-.07-.31-.1-.45.1-.13.2-.51.64-.62.77-.11.13-.23.15-.42.05-.2-.1-.83-.31-1.58-.98-.58-.52-.98-1.16-1.09-1.36-.11-.2-.01-.3.09-.4.09-.09.2-.23.3-.35.1-.11.13-.2.2-.33.06-.13.03-.25-.02-.35-.05-.1-.45-1.08-.61-1.48-.16-.39-.33-.33-.45-.34-.12-.01-.25-.01-.38-.01-.13 0-.35.05-.53.25-.18.2-.7.69-.7 1.67 0 .98.72 1.93.82 2.06.1.13 1.41 2.15 3.42 3.02.48.2.85.33 1.14.42.48.15.91.13 1.26.08.38-.06 1.17-.48 1.34-.94.16-.46.16-.86.11-.94-.05-.09-.18-.14-.38-.24z"/></svg>
         </button>
       </div>
-    </div>`;
+    </div></div>`;
 }
 
 function renderMyListings() {
