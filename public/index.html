@@ -20964,7 +20964,7 @@ function showToast(msg, type) {
     if (!r.width) return;                                   // Locality hidden on this tab: keep the last measurement
     const centre = r.left + bar.scrollLeft + r.width / 2;   // where it sits when the bar is not scrolled sideways
     root.style.setProperty('--hdr-pill-w', r.width.toFixed(2) + 'px');
-    root.style.setProperty('--hdr-pill-dx', (centre - root.clientWidth / 2).toFixed(2) + 'px');
+    root.style.setProperty('--hdr-pill-dx', '0px'); // header pills stay centred; do not follow the Locality pill's offset
   }
   window.addEventListener('load', sync);
   window.addEventListener('resize', sync);
@@ -22299,7 +22299,7 @@ body{
      filter pill (Locality). Filter pills = (bar - 18px) / 3 starting 3px in, so their middle sits 3px left of
      centre. Width is taken from the divider's own width (not 100vw) so a page scrollbar can't throw it off. */
   .section-divider{padding-left:16px !important;padding-right:16px !important}
-  .section-divider-label{width:var(--hdr-pill-w,calc((100% + 14px) / 3));max-width:none;transform:translateX(var(--hdr-pill-dx,-3px))}
+  .section-divider-label{width:var(--hdr-pill-w,calc((100% + 14px) / 3));max-width:none;transform:none}
   /* "Viewed" header has buttons beside the label inside its row, so % isn't the full width there */
   .section-divider[style*="display:flex"] .section-divider-label{width:var(--hdr-pill-w,calc((100vw - 18px) / 3))}
 }
