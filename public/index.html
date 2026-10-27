@@ -1213,10 +1213,9 @@ main.tab-explore .empty-state{display:none !important}
 .unit-short{display:none}
 /* Desktop default: show the full comma-separated rupee amount (₹30,000);
    the abbreviated K/L/Cr form is mobile-only (see max-width:640px block). */
-.amt-short{display:none}
-/* Viewed + Booked cards: always show abbreviated amounts (₹28K / ₹1L), on desktop too. */
-#recentlyViewedStrip .amt-full,[id$="BookedGrid"] .amt-full{display:none}
-#recentlyViewedStrip .amt-short,[id$="BookedGrid"] .amt-short{display:inline}
+/* Prices/deposits/maintenance always abbreviated (₹43K / ₹2L), desktop + mobile. */
+.amt-full{display:none}
+.amt-short{display:inline}
 .price-chip svg{width:12px;height:12px;stroke:#a85c6e;fill:none;stroke-width:2;flex-shrink:0}
 .prop-price{
   font-size:15px;font-weight:800;
@@ -5804,6 +5803,22 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
   <!-- Locality — location.area (e.g. "Singasandra, AECS Layout"), options
        built dynamically the same way as Pincode (see fdCollectLocalities).
        Distinct from the existing "Area" filter below, which is sqft size. -->
+  <!-- RENT + LEASE: BHK -->
+  <div class="fd-btn fd-rent fd-lease fd-sell" id="fdb-bhk" onclick="toggleFd('bhk',this)">
+    <span class="fd-icon">🛏️</span>
+    <span class="fd-label">BHK</span> <span class="fd-badge" id="fdbc-bhk" style="display:none"></span>
+    <svg class="chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+    <div class="fd-pop" id="fdp-bhk" onclick="event.stopPropagation()">
+      <div class="fd-pop-label">BHK</div>
+      <input class="fd-search" type="text" placeholder="Search BHK…" oninput="fdSearchOpts('fdo-bhk', this.value)"/>
+      <div class="fd-opts" id="fdo-bhk"></div>
+      <div class="fd-pop-footer">
+        <button class="fd-clear-btn" onclick="clearFd('bhk')">Clear</button>
+        <button class="fd-apply-btn" onclick="applyFd('bhk')">Apply</button>
+      </div>
+    </div>
+  </div>
+  
   <div class="fd-btn fd-rent fd-lease fd-pg fd-shortstay fd-sell" id="fdb-locality" onclick="toggleFd('locality',this)">
     <span class="fd-icon">🏘️</span>
     <span class="fd-label">Locality</span> <span class="fd-badge" id="fdbc-locality" style="display:none"></span>
@@ -5937,22 +5952,6 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
   
 
 
-  <!-- RENT + LEASE: BHK -->
-  <div class="fd-btn fd-rent fd-lease fd-sell" id="fdb-bhk" onclick="toggleFd('bhk',this)">
-    <span class="fd-icon">🛏️</span>
-    <span class="fd-label">BHK</span> <span class="fd-badge" id="fdbc-bhk" style="display:none"></span>
-    <svg class="chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
-    <div class="fd-pop" id="fdp-bhk" onclick="event.stopPropagation()">
-      <div class="fd-pop-label">BHK</div>
-      <input class="fd-search" type="text" placeholder="Search BHK…" oninput="fdSearchOpts('fdo-bhk', this.value)"/>
-      <div class="fd-opts" id="fdo-bhk"></div>
-      <div class="fd-pop-footer">
-        <button class="fd-clear-btn" onclick="clearFd('bhk')">Clear</button>
-        <button class="fd-apply-btn" onclick="applyFd('bhk')">Apply</button>
-      </div>
-    </div>
-  </div>
-  
     <!-- RENT + LEASE: Bathrooms -->
   <div class="fd-btn fd-rent fd-lease fd-pg fd-sell" id="fdb-bathrooms" onclick="toggleFd('bathrooms',this)">
     <span class="fd-icon">🚿</span>
