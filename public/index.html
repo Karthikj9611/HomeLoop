@@ -10242,12 +10242,15 @@ function setEmptyStateContent() {
 
   // Remember the original "Clear filters" button so it can be restored after a pitch button replaced it.
   if (actions.dataset.orig === undefined) actions.dataset.orig = actions.innerHTML;
+  actions.classList.remove('pitch-hide-mobile');
   const showPitch = (pitch) => {
     title.textContent = pitch.t;
     text.textContent = pitch.x;
     if (pitch.add === null) { actions.style.display = 'none'; return; }
     actions.innerHTML = '<button class="empty-state-btn primary" onclick="openAddModal(' + (pitch.add ? "'" + pitch.add + "'" : '') + ')">List your property</button>';
     actions.style.display = '';
+    // TEMP: Brokers' "List your property" button is hidden on mobile until broker listing is enabled. Delete this line to bring it back.
+    if (currentTab === 'Broker') actions.classList.add('pitch-hide-mobile');
   };
 
   // Builders / Management tabs have no listings yet — "list your properties" pitch.
@@ -22314,6 +22317,7 @@ body{
   .section-divider[style*="display:flex"] .section-divider-label{width:var(--hdr-pill-w,calc((100vw - 18px) / 3))}
 }
 /* ─── Ad banner hidden everywhere (markup/JS left intact; !important beats the per-tab inline display toggles) ─── */
+@media (max-width:640px){ #emptyStateActions.pitch-hide-mobile{display:none !important} }
 #adBanner,.ad-banner{display:none !important}
 #resultsHeader{display:none !important}
 .main:has(#adBanner){padding-top:0 !important}
