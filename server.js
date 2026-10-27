@@ -643,8 +643,8 @@ app.post('/api/user/login', userAuthLimiter, async (req, res) => {
     // Single-device login: refuse a second concurrent login instead of
     // silently signing the first device out. The first device stays logged
     // in until it explicitly logs out (or its session expires/TTLs out).
-    // Agents (HomeLoop staff) are exempt: they may stay logged in on several devices at once.
-    if (user.accountType !== 'agent' && await hasActiveUserSession(user._id)) {
+    // Applies to every account type, agents included.
+    if (await hasActiveUserSession(user._id)) {
       return res.status(409).json({ message: 'This account is already logged in on another device. Please log out there first.' });
     }
 
