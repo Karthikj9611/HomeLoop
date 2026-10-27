@@ -1972,9 +1972,28 @@ app.get('/api/properties', attachUserIfPresent, async (req, res) => {
       const _own = doc.owner || {};
       const _pub = (doc.ownerPhoneCall && String(_own.phone || '').trim()) || (doc.ownerDirectCall && String(_own.altPhone || '').trim());
       if (_pub) {
+        // Same priority as the admin Navigate button: the pasted Building Location Link first,
+        // then lat/lng, then the address. Full google.com/maps links carrying coordinates become
+        // turn-by-turn directions; short links (maps.app.goo.gl) are passed through as-is.
+        const _bl = String(doc.location.currentLocationLink || '').trim();
+        let _blUrl = '';
+        if (/^https?:\/\//i.test(_bl)) {
+          _blUrl = _bl;
+          try {
+            const dec = decodeURIComponent(_bl);
+            const m = dec.match(/[?&](?:q|query|destination|ll)=(-?\d+\.\d+),\s*(-?\d+\.\d+)/)
+                   || dec.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/)
+                   || dec.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+            if (m && /(^|\.)google\.[a-z.]+\/maps/i.test(_bl.replace(/^https?:\/\//i, ''))) {
+              _blUrl = `https://www.google.com/maps/dir/?api=1&destination=${m[1]},${m[2]}&travelmode=driving`;
+            }
+          } catch (_) {}
+        }
         const lat = parseFloat(doc.location.lat), lng = parseFloat(doc.location.lng);
         const parts = [doc.location.address, doc.location.area, doc.location.city, doc.location.pincode].filter(Boolean);
-        if (!isNaN(lat) && !isNaN(lng) && (lat !== 0 || lng !== 0)) {
+        if (_blUrl) {
+          doc.navigateUrl = _blUrl;
+        } else if (!isNaN(lat) && !isNaN(lng) && (lat !== 0 || lng !== 0)) {
           doc.navigateUrl = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving`;
         } else if (parts.length) {
           doc.navigateUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(parts.join(', '))}&travelmode=driving`;
