@@ -14613,14 +14613,24 @@ function buildAgentFormTable(p) {
     kv('Additional amenities', amenities.extra, true),
   ]);
 
-  const imgs = Array.isArray(media.images) ? media.images.filter(u => /^https?:\/\//i.test(String(u || ''))) : [];
+  // Own uploads are stored as relative paths (/uploads/<id>, /videos/<id>.mp4); pasted links are http(s) URLs. Count both.
+  const isMediaUrl = u => /^(https?:\/\/|\/(uploads|videos)\/)/i.test(String(u || '').trim());
+  const imgs = Array.isArray(media.images) ? media.images.filter(isMediaUrl) : [];
+  const vidUrl = txt(media.video);
+  const vidCount = isMediaUrl(vidUrl) ? 1 : 0;
+  const cntBadge = function (n, word) {
+    return '<div style="font-weight:700;margin-bottom:' + (n ? '8px' : '0') + ';color:' + (n ? 'inherit' : '#e8365d') + '">' +
+           n + ' ' + word + (n === 1 ? '' : 's') + '</div>';
+  };
   section('📸 Media & Description', [
-    kvHtml('Images (' + imgs.length + ')', imgs.length
+    kvHtml('Images (' + imgs.length + ')', cntBadge(imgs.length, 'image') + (imgs.length
       ? '<div style="display:flex;flex-wrap:wrap;gap:6px">' + imgs.map(u =>
           '<a href="' + esc(u) + '" target="_blank" rel="noopener"><img src="' + esc(u) +
           '" alt="" loading="lazy" style="width:64px;height:64px;object-fit:cover;border-radius:8px"></a>').join('') + '</div>'
-      : '', true),
-    kvLink('Video tour', media.video),
+      : ''), true),
+    kvHtml('Video tour (' + vidCount + ')', cntBadge(vidCount, 'video') + (vidCount
+      ? '<a href="' + esc(vidUrl) + '" target="_blank" rel="noopener" style="word-break:break-all;text-decoration:underline">' + esc(vidUrl) + '</a>'
+      : (vidUrl ? esc(vidUrl) : '')), true),
     kv('Description', media.desc, true),
   ]);
 
