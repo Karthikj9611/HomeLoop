@@ -7156,13 +7156,13 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
     <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
       <div class="form-group">
         <label class="form-label">Owner Name <span style="color:var(--brand)">*</span></label>
-        <input class="form-input" type="text" id="f-ownerName" autocapitalize="words" onblur="capitalizeWordsInput(this)" oninput="capitalizeWordsInput(this)"/>
+        <input class="form-input" type="text" id="f-ownerName" autocomplete="off" autocapitalize="words" onblur="capitalizeWordsInput(this)" oninput="capitalizeWordsInput(this)"/>
         <div class="identity-locked-hint" id="f-ownerName-hint" style="display:none">Auto-filled from your account</div>
       </div>
       <div class="form-group" id="f-ownerPhone-group">
         <label class="form-label">Owner Number <span style="color:var(--brand)">*</span></label>
         <div class="input-icon-wrap">
-          <input class="form-input" type="tel" id="f-ownerPhone" inputmode="numeric" maxlength="10" oninput="sanitizeMobileInput(this)"/>
+          <input class="form-input" type="tel" id="f-ownerPhone" autocomplete="off" inputmode="numeric" maxlength="10" oninput="sanitizeMobileInput(this)"/>
           <button type="button" class="contact-pick-btn" id="f-ownerPhone-pickBtn" onclick="pickContactFromDevice('f-ownerPhone','f-ownerName')" title="Pick from contacts">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
           </button>
@@ -7189,7 +7189,7 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
       </div>
       <div class="form-group">
         <label class="form-label">Email</label>
-        <input class="form-input" type="email" id="f-ownerEmail"/>
+        <input class="form-input" type="email" id="f-ownerEmail" autocomplete="off"/>
         <div class="identity-locked-hint" id="f-ownerEmail-hint" style="display:none">Auto-filled from your account</div>
       </div>
       <div class="form-group">
@@ -15050,6 +15050,7 @@ function saveListingDraftNow() {
       if (el.type === 'checkbox') fields[el.id] = el.checked;
       else fields[el.id] = el.value;
     });
+    if (fields['f-listedBy'] === 'Agent') { delete fields['f-ownerName']; delete fields['f-ownerPhone']; delete fields['f-ownerEmail']; }
     const draft = { fields, fImages: fImages.slice(), savedAt: Date.now() };
     localStorage.setItem(LISTING_DRAFT_KEY, JSON.stringify(draft));
   } catch (e) { /* localStorage unavailable/full — fail silently */ }
@@ -15134,6 +15135,14 @@ function lockIdentityFieldsForNewListing() {
   const user = getLoggedInUser();
   const nameEl = document.getElementById('f-ownerName'), phoneEl = document.getElementById('f-ownerPhone'), mailEl = document.getElementById('f-ownerEmail');
   [nameEl, phoneEl, mailEl].forEach(el => { if (!el) return; el.readOnly = false; el.classList.remove('identity-locked'); });
+  // Listed by = Agent: never prefill owner name / number / email (not from the login,
+  // a restored draft, or a cloned listing) — the agent types the real owner's details.
+  { const _lb = document.getElementById('f-listedBy');
+    if ((user && user.accountType === 'agent') || (_lb && _lb.value === 'Agent')) {
+      [nameEl, phoneEl, mailEl].forEach(el => { if (el) el.value = ''; });
+      return;
+    }
+  }
   // Prefill owner name / number / email from the login for OWNER and BROKER accounts only.
   // Agent and builder accounts enter these themselves (they list on others' behalf). Always editable.
   if (!user || (user.accountType !== 'owner' && user.accountType !== 'broker')) return;
