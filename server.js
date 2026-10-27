@@ -1906,7 +1906,7 @@ app.get('/api/properties', attachUserIfPresent, async (req, res) => {
       // owner.propertyName excluded too (client-side search no longer matches on
       // it — search now matches area/BHK only). owner.agentPhone is kept for
       // Call/WhatsApp.
-      '-owner.name -owner.propertyName -owner.email -owner.contactTime -owner.address -owner.sameAsBuilding -owner.agentArea -owner.caretakerPhone ' +
+      '-owner.name -owner.propertyName -owner.email -owner.contactTime -owner.address -owner.sameAsBuilding -owner.agentArea ' +
       // Location detail that's likewise only used to fill the always-hidden
       // full-address/lat-lng/Google-Maps-link form groups.
       // NOTE: location.address is intentionally *not* excluded at the query
@@ -2065,6 +2065,10 @@ app.get('/api/properties', attachUserIfPresent, async (req, res) => {
       doc.ownerPhoneCall  = !!doc.ownerPhoneCall  && !!main;
       if (doc.ownerDirectCall) doc.ownerAltPhone = alt;
       if (doc.ownerPhoneCall)  doc.ownerPhone = main;
+      // Caretaker number: fetched above, but only leaves the server (as top-level ownerCaretakerPhone)
+      // when a main/alt number is public for this viewer; otherwise it stays private.
+      const care = String((doc.owner && doc.owner.caretakerPhone) || '').trim();
+      if (care && (doc.ownerPhoneCall || doc.ownerDirectCall)) doc.ownerCaretakerPhone = care;
       if (doc.owner && !_viewerIsAgentAcct) { delete doc.owner.altPhone; delete doc.owner.phone; delete doc.owner.caretakerPhone; }
       delete doc.userId; // internal — only used above for the per-owner Public call lookup
     });
