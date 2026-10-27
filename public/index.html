@@ -14774,17 +14774,37 @@ const HIDE_DESCRIPTION_IN_VIEW = false;
    open turn-by-turn directions to them; short links (maps.app.goo.gl) can't be read client-side,
    so they open as-is in Google Maps (the app on phones), where Directions/Start is one tap. */
 function openLocationLinkNavigate(url) {
-  let target = url;
-  try {
-    const dec = decodeURIComponent(url);
-    const m = dec.match(/[?&](?:q|query|destination|ll)=(-?\d+\.\d+),\s*(-?\d+\.\d+)/)
-           || dec.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/)
-           || dec.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
-    if (m && /(^|\.)google\.[a-z.]+\/maps/i.test(url.replace(/^https?:\/\//i, ''))) {
-      target = `https://www.google.com/maps/dir/?api=1&destination=${m[1]},${m[2]}&travelmode=driving`;
+  const dirUrl = (lat, lng) => `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving`;
+  const coordsOf = (u) => {
+    try {
+      const dec = decodeURIComponent(u);
+      return dec.match(/[?&](?:q|query|destination|ll)=(-?\d+\.\d+),\s*(-?\d+\.\d+)/)
+          || dec.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/)
+          || dec.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+    } catch (_) { return null; }
+  };
+  const bare = url.replace(/^https?:\/\//i, '');
+  // 1) Full Google Maps URL that already carries coordinates -> directions immediately.
+  const m = coordsOf(url);
+  if (m && /(^|\.)google\.[a-z.]+\/maps/i.test(bare)) {
+    window.open(dirUrl(m[1], m[2]), '_blank', 'noopener');
+    return;
+  }
+  // 2) Already a directions link -> open as-is.
+  if (/google\.[a-z.]+\/maps\/dir/i.test(bare)) { window.open(url, '_blank', 'noopener'); return; }
+  // 3) Short link (maps.app.goo.gl / goo.gl/maps): ask the server for the coordinates, then open directions.
+  //    The tab is opened synchronously (so popup blockers allow it) and pointed at directions once resolved.
+  if (/^(maps\.app\.goo\.gl|goo\.gl\/maps)/i.test(bare)) {
+    const w = window.open('about:blank', '_blank');
+    if (w) {
+      fetch('/api/maps/resolve?url=' + encodeURIComponent(url), { credentials: 'same-origin' })
+        .then(r => r.ok ? r.json() : Promise.reject())
+        .then(c => { w.location.href = dirUrl(c.lat, c.lng); })
+        .catch(() => { w.location.href = url; });
+      return;
     }
-  } catch (_) {}
-  window.open(target, '_blank', 'noopener');
+  }
+  window.open(url, '_blank', 'noopener');
 }
 
 /* Opens Google Maps directions to the property — only listings with a public owner number carry navigateUrl. */

@@ -2085,6 +2085,59 @@ const viewLimiter = rateLimit({
   message: { message: 'Too many requests. Please try again later.' }
 });
 
+/* ── Resolve a short Google Maps link (maps.app.goo.gl / goo.gl/maps) to coordinates ──
+   Short links can't be read in the browser (CORS), so the client asks us to follow the redirects
+   and pull out lat/lng, then opens Google Maps *directions* straight to them. Only Google hosts
+   are ever contacted (SSRF guard) and results are cached in memory. */
+const _mapsResolveCache = new Map();
+const _MAPS_SHORT_HOST = /^(maps\.app\.goo\.gl|goo\.gl)$/i;
+const _MAPS_ALLOWED_HOST = /^(maps\.app\.goo\.gl|goo\.gl|([a-z0-9-]+\.)?google\.[a-z.]+)$/i;
+function _coordsFromMapsText(t) {
+  let dec = String(t || '');
+  try { dec = decodeURIComponent(dec); } catch (_) {}
+  const m = dec.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/)
+         || dec.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/)
+         || dec.match(/[?&](?:q|query|destination|ll|daddr)=(-?\d+\.\d+),\s*(-?\d+\.\d+)/);
+  return m ? { lat: parseFloat(m[1]), lng: parseFloat(m[2]) } : null;
+}
+async function _resolveMapsShortLink(startUrl) {
+  const https = require('https');
+  let url = startUrl;
+  for (let hop = 0; hop < 6; hop++) {
+    const u = new URL(url);
+    if (u.protocol !== 'https:' || !_MAPS_ALLOWED_HOST.test(u.hostname)) return null;
+    const c = _coordsFromMapsText(u.href);
+    if (c) return c;
+    const next = await new Promise((resolve) => {
+      const r = https.request(u, { method: 'GET', timeout: 5000, headers: { 'User-Agent': 'Mozilla/5.0 (compatible; HomeLoop/1.0)' } }, (resp) => {
+        resp.resume();
+        if (resp.statusCode >= 300 && resp.statusCode < 400 && resp.headers.location) {
+          try { resolve(new URL(resp.headers.location, u).href); } catch (_) { resolve(null); }
+        } else resolve(null);
+      });
+      r.on('timeout', () => { r.destroy(); resolve(null); });
+      r.on('error', () => resolve(null));
+      r.end();
+    });
+    if (!next) return null;
+    url = next;
+  }
+  return _coordsFromMapsText(url);
+}
+app.get('/api/maps/resolve', viewLimiter, async (req, res) => {
+  try {
+    const raw = String(req.query.url || '').trim();
+    let u; try { u = new URL(raw); } catch (_) { return res.status(400).json({ message: 'Invalid URL.' }); }
+    if (u.protocol !== 'https:' || !_MAPS_SHORT_HOST.test(u.hostname)) return res.status(400).json({ message: 'Unsupported link.' });
+    if (_mapsResolveCache.has(raw)) return res.json(_mapsResolveCache.get(raw));
+    const c = await _resolveMapsShortLink(raw);
+    if (!c) return res.status(404).json({ message: 'Could not read coordinates.' });
+    if (_mapsResolveCache.size > 5000) _mapsResolveCache.clear();
+    _mapsResolveCache.set(raw, c);
+    res.json(c);
+  } catch (e) { res.status(500).json({ message: 'Could not resolve link.' }); }
+});
+
 app.post('/api/properties/:id/view', viewLimiter, attachUserIfPresent, async (req, res) => {
   try {
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
