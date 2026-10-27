@@ -1214,6 +1214,9 @@ main.tab-explore .empty-state{display:none !important}
 /* Desktop default: show the full comma-separated rupee amount (₹30,000);
    the abbreviated K/L/Cr form is mobile-only (see max-width:640px block). */
 .amt-short{display:none}
+/* Viewed + Booked cards: always show abbreviated amounts (₹28K / ₹1L), on desktop too. */
+#recentlyViewedStrip .amt-full,[id$="BookedGrid"] .amt-full{display:none}
+#recentlyViewedStrip .amt-short,[id$="BookedGrid"] .amt-short{display:inline}
 .price-chip svg{width:12px;height:12px;stroke:#a85c6e;fill:none;stroke-width:2;flex-shrink:0}
 .prop-price{
   font-size:15px;font-weight:800;
