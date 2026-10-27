@@ -1816,6 +1816,7 @@ app.get('/api/properties', attachUserIfPresent, async (req, res) => {
     // If the tenant also subscribed for ONE BHK type, ONLY that BHK's listings are loaded at all.
     let _viewerPublicCall = false;
     let _viewerIsAgent = false; // agent account with admin Public call ON: call details on every listing, no plan filters
+    let _viewerIsAgentAcct = false; // ANY logged-in agent account (HomeLoop employee): gets the COMPLETE listing, hidden fields included (owner, address, lat/lng, map links…)
     let _viewerBhk = '';
     let _viewerSub = null;    // current plan's filters (multi-BHK / areas / parking / budget)
     let _viewerSubFrom = null;   // when this tenant's subscription starts / ends (page uses them to reset "Viewed")
@@ -1826,6 +1827,7 @@ app.get('/api/properties', attachUserIfPresent, async (req, res) => {
         _viewerSubFrom = _viewer.subscriptionFrom || _viewer.subscriptionAt || null;
         _viewerSubTo = _viewer.subscriptionTo || null;
       }
+      _viewerIsAgentAcct = !!(_viewer && _viewer.accountType === 'agent');
       _viewerIsAgent = !!(_viewer && _viewer.accountType === 'agent' && _viewer.publicCall); // admin Public call toggle on an agent = works like a subscription, but no plan/filters/subscription record
       _viewerPublicCall = !!(_viewer && _viewer.publicCall && (_viewer.accountType || 'customer') === 'customer');
       // Plan just started but the 1-minute start sweep hasn't switched Public call on yet → treat it as ON now.
@@ -1892,7 +1894,10 @@ app.get('/api/properties', attachUserIfPresent, async (req, res) => {
       ? ['propertyId','ownerId','ownerName','ownerPhone','ownerEmail','tenantId','tenantName','tenantPhone','tenantEmail','description','agreementImages','proofImages']
           .map(f => '-bookingDetails.' + f).join(' ')
       : '-bookingDetails';
-    const PUBLIC_SELECT =
+    // Agent accounts (HomeLoop employees) get the complete listing — every form field, including the
+    // ones that are hidden from the public. Only admin-internal notes (remarks) and booking records stay private.
+    const AGENT_SELECT = '-remarks -__v ' + _bdExcl;
+    const PUBLIC_SELECT = _viewerIsAgentAcct ? AGENT_SELECT :
       '-remarks -userReadableId -__v ' + _bdExcl + ' ' +
       // Owner PII that only ever populated hidden form inputs in the read-only
       // detail view (VIEW_ALWAYS_HIDDEN_GROUPS on the frontend). owner.phone is
@@ -2008,6 +2013,7 @@ app.get('/api/properties', attachUserIfPresent, async (req, res) => {
       if ((_viewerPublicCall || _viewerIsAgent) && /^https?:\/\//i.test(String(doc.location.currentLocationLink || '').trim())) {
         doc.currentLocationLink = String(doc.location.currentLocationLink).trim();
       }
+      if (_viewerIsAgentAcct) return; // agent accounts keep the full address, lat/lng and map links
       delete doc.location.address;
       delete doc.location.lat;
       delete doc.location.lng;
@@ -2059,7 +2065,7 @@ app.get('/api/properties', attachUserIfPresent, async (req, res) => {
       doc.ownerPhoneCall  = !!doc.ownerPhoneCall  && !!main;
       if (doc.ownerDirectCall) doc.ownerAltPhone = alt;
       if (doc.ownerPhoneCall)  doc.ownerPhone = main;
-      if (doc.owner) { delete doc.owner.altPhone; delete doc.owner.phone; delete doc.owner.caretakerPhone; }
+      if (doc.owner && !_viewerIsAgentAcct) { delete doc.owner.altPhone; delete doc.owner.phone; delete doc.owner.caretakerPhone; }
       delete doc.userId; // internal — only used above for the per-owner Public call lookup
     });
 
@@ -2082,7 +2088,7 @@ app.get('/api/properties', attachUserIfPresent, async (req, res) => {
     // entitled tenant is private + uncached, and every response varies by session key so a shared cache
     // can never hand one viewer's response to another.
     res.vary('x-user-key');
-    res.set('Cache-Control', (_viewerPublicCall || _viewerIsAgent) ? 'private, no-store' : 'private, max-age=30');
+    res.set('Cache-Control', (_viewerPublicCall || _viewerIsAgent || _viewerIsAgentAcct) ? 'private, no-store' : 'private, max-age=30');
     // bhkFilter: which BHK restriction was applied for this viewer ('' = none) — handy for checking in DevTools → Network.
     res.json({ properties: mapped, total: mapped.length, bhkFilter: _viewerBhk, subscriptionFrom: _viewerSubFrom, subscriptionTo: _viewerSubTo });
   } catch (err) {

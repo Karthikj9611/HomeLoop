@@ -14222,6 +14222,8 @@ function openDetailReal(id) {
    left out here, same as before — contacting the owner goes through the
    Call/WhatsApp/Schedule buttons instead of showing raw contact info. */
 function buildDetailTable(p) {
+  // Agent accounts (HomeLoop employees) get the complete form incl. hidden fields.
+  if (isAgentViewer()) return buildAgentFormTable(p);
   const basic = p.basic || {}, location = p.location || {}, price = p.price || {},
         property = p.property || {}, amenities = p.amenities || {}, terms = p.terms || {},
         rules = p.rules || {}, media = p.media || {}, pg = p.pg || {}, shortStay = p.shortStay || {},
@@ -14391,6 +14393,240 @@ function buildDetailTable(p) {
 
   if (!rowsHtml.length) return '<div class="profile-list-empty" style="padding:14px 0">No details added yet.</div>';
   return '<div class="detail-table-card"><table class="detail-table"><tbody>' + rowsHtml.join('') + '</tbody></table></div>';
+}
+
+/* ───────────────────────────────────────────────────────────────────────
+   AGENT VIEW — the COMPLETE "List your property" form, read-only.
+   Agent accounts (HomeLoop employees) get the full listing from the server
+   (GET /api/properties skips its public scrubbing for them), so this mirrors
+   every section of the list form in the same order and with the same labels —
+   including the fields the public view never shows: owner name / numbers /
+   email, agent details, property name, building location link, full address,
+   lat/lng, map link, images, video. Empty fields are shown as "—" so the
+   agent sees exactly what was (and was not) captured. Reads straight from the
+   property object; never touches the real form or the agent's own draft.
+─────────────────────────────────────────────────────────────────────── */
+function buildAgentFormTable(p) {
+  const basic = p.basic || {}, location = p.location || {}, owner = p.owner || {}, price = p.price || {},
+        property = p.property || {}, amenities = p.amenities || {}, terms = p.terms || {},
+        rules = p.rules || {}, media = p.media || {}, pg = p.pg || {}, shortStay = p.shortStay || {},
+        sale = p.sale || {};
+
+  const status = basic.status || 'For Rent';
+  const isPG = status === 'PG', isLease = status === 'Lease', isShortStay = status === 'Short Stay',
+        isSell = status === 'For Sale';
+  const typeLabel = isPG ? 'PG' : isLease ? 'Lease' : isShortStay ? 'Short Stay' : isSell ? 'Sell' : 'Rent';
+
+  const rows = [];
+  const EMPTY = '<span style="opacity:.45">—</span>';
+  function section(label, rowList) {
+    rows.push('<tr class="detail-section-row sec-listing-info"><td colspan="2">' + label + '</td></tr>');
+    rows.push(...rowList);
+  }
+  function txt(v) { return (v === null || v === undefined) ? '' : String(v).trim(); }
+  function kvHtml(label, html, full) {
+    return '<tr' + (full ? ' class="detail-row-full"' : '') + '><td class="detail-row-label">' + esc(label) +
+           '</td><td class="detail-row-value">' + (html || EMPTY) + '</td></tr>';
+  }
+  function kv(label, value, full) { const t = txt(value); return kvHtml(label, t ? esc(t) : '', full); }
+  // Plain external link (video, images…) — opens in a new tab.
+  function kvLink(label, url) {
+    const u = txt(url);
+    return kvHtml(label, /^https?:\/\//i.test(u)
+      ? '<a href="' + esc(u) + '" target="_blank" rel="noopener" style="word-break:break-all;text-decoration:underline">' + esc(u) + '</a>'
+      : (u ? esc(u) : ''), true);
+  }
+  // Location row: the text AND a "Navigate" button both open Google Maps directions
+  // (openLocationLinkNavigate turns any Google Maps link carrying coordinates into turn-by-turn directions).
+  function kvNav(label, text, navUrl, full) {
+    const t = txt(text), u = txt(navUrl);
+    if (!t) return kvHtml(label, '', full);
+    if (!/^https?:\/\//i.test(u)) return kvHtml(label, esc(t), full);
+    const go = 'openLocationLinkNavigate(this.dataset.url);return false';
+    return kvHtml(label,
+      '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px">' +
+      '<a href="' + esc(u) + '" data-url="' + esc(u) + '" onclick="' + go + '" style="flex:1 1 auto;min-width:0;word-break:break-all;text-decoration:underline;cursor:pointer">' + esc(t) + '</a>' +
+      ' <button type="button" data-url="' + esc(u) + '" onclick="event.stopPropagation();' + go + '" ' +
+      'style="display:inline-flex;align-items:center;gap:5px;flex:0 0 auto;margin-left:auto;padding:5px 11px;border-radius:999px;border:1.5px solid #1a73e8;background:#1a73e8;color:#fff;font-size:12px;font-weight:700;cursor:pointer;vertical-align:middle">' +
+      '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>Navigate</button></div>', full);
+  }
+  function kvPhone(label, v) {
+    const d = txt(v).replace(/\D/g, '');
+    return kvHtml(label, d ? '<a href="tel:' + esc(d) + '">' + esc(txt(v)) + '</a>' : '');
+  }
+  const money = (n, suffix) => (n != null && n !== '' && !isNaN(Number(n))) ? fmtRupee(n) + (suffix || '') : '';
+
+  rows.push('<tr class="detail-section-row sec-listing-info"><td colspan="2" style="text-transform:none">' +
+            '🔒 Agent view — complete listing form, including fields hidden from the public</td></tr>');
+
+  section('📋 Basic Information', [
+    kv('Listing type', typeLabel),
+    kv('Listed by', basic.listedBy),
+    kv('Property ID', p.propertyId),
+    kv('Verified', p.verified ? 'Yes' : 'No'),
+    kv('Booked', p.booked ? 'Yes' : 'No'),
+    kv('Promoted', p.promoted ? 'Yes' + (p.promotedPriority > 0 ? ' (priority ' + p.promotedPriority + ')' : '') : 'No'),
+    kv('Posted', p.posted),
+  ]);
+
+  section('👤 Owner Details', [
+    kv('Owner Name', owner.name),
+    kvPhone('Owner Number', owner.phone),
+    kvPhone('Owner Alt Number', owner.altPhone),
+    kvPhone('Caretaker Number', owner.caretakerPhone),
+    kv('Email', owner.email),
+    kv('Contact Time', owner.contactTime),
+    kv('Owner Lives Here?', owner.sameAsBuilding),
+    owner.address ? kv('Owner address (legacy)', owner.address, true) : null,
+  ].filter(Boolean));
+
+  if (basic.listedBy === 'Agent' || owner.agentPhone || owner.agentArea) {
+    section('🧑‍💼 Agent Details', [
+      kvPhone('Agent Phone', owner.agentPhone),
+      kv('Agent Area', owner.agentArea),
+    ]);
+  }
+
+  const lat = location.lat, lng = location.lng;
+  const hasLL = lat != null && lng != null && lat !== '' && lng !== '' && !isNaN(parseFloat(lat)) && !isNaN(parseFloat(lng));
+  const dirTo = (dest) => 'https://www.google.com/maps/dir/?api=1&destination=' + encodeURIComponent(dest) + '&travelmode=driving';
+  const addrParts = [location.address, location.area, location.city, location.pincode].filter(Boolean).join(', ');
+  section('📍 Property Location', [
+    kv('Property Name', owner.propertyName, true),
+    kvNav('Building Location Link', location.currentLocationLink, location.currentLocationLink, true),
+    kv('Area', location.area),
+    kv('City', location.city),
+    kv('Pincode', location.pincode),
+    kvNav('Full address', location.address, addrParts ? dirTo(addrParts) : '', true),
+    kvNav('Latitude / Longitude', hasLL ? lat + ', ' + lng : '', hasLL ? dirTo(lat + ',' + lng) : '', true),
+    kvNav('Google Maps link', location.mapLink, location.mapLink, true),
+  ]);
+
+  if (isPG) {
+    section('🏢 Property Details', [
+      kv('Bike parking', pg.bike),
+      kv('Car parking', pg.car),
+    ]);
+  } else {
+    section('🏢 Property Details', [
+      !isShortStay ? kv('Property type', property.type) : null,
+      !isShortStay ? kv('BHK', property.bhk) : null,
+      !isShortStay ? kv((isSell && sale.areaType) ? sale.areaType : 'Built-up area', property.area) : null,
+      !isShortStay ? kv('Age of property', property.age) : null,
+      !isShortStay && !isSell ? kv('Preferred tenants', property.tenant) : null,
+      !isShortStay && !isSell ? kv('Persons allowed', property.maxPersons) : null,
+      !isShortStay ? kv('Facing', property.facing) : null,
+      kv('Bike parking', property.bike),
+      kv('Car parking', property.car),
+      !isShortStay ? kv('Floor', property.floor) : null,
+      !isShortStay ? kv('Flat number', property.flatNo) : null,
+      !isShortStay ? kv('Bathrooms', property.bathrooms) : null,
+      !isShortStay ? kv('Toilet type', property.toiletType) : null,
+      !isShortStay ? kv('Kitchen type', property.kitchenType) : null,
+      !isShortStay ? kv('Furnishing', property.furnish) : null,
+      !isShortStay ? kv('Available from', formatDateDisplay(property.available)) : null,
+    ].filter(Boolean));
+  }
+
+  if (isLease) {
+    section('💼 Lease Pricing', [
+      kv('Lease amount', money(price.rent, '/month')),
+      kv('Maintenance', money(price.maintenance)),
+    ]);
+  } else {
+    section('💰 Pricing', [
+      kv(isSell ? 'Price' : 'Rent', money(price.rent, isSell ? '' : isShortStay ? '/day' : '/month')),
+      !isShortStay ? kv('Deposit', money(price.deposit)) : null,
+      !isPG && !isShortStay ? kv('Maintenance', money(price.maintenance)) : null,
+      !isPG && !isShortStay ? kv('Rent increase', price.rentIncrease) : null,
+      !isPG && !isShortStay ? kv('Electricity included', price.electricity) : null,
+      !isPG && !isShortStay ? kv('Water charge', price.water) : null,
+      kv('Negotiable', price.negotiable),
+    ].filter(Boolean));
+  }
+
+  if (basic.listedBy === 'Broker' || basic.listedBy === 'Agent' || price.brokerage) {
+    section('🤝 Brokerage', [
+      kv('Brokerage fee', price.brokerage),
+      price.brokerage === 'Fixed amount' ? kv('Brokerage amount', money(price.brokerageAmount)) : null,
+    ].filter(Boolean));
+  }
+
+  if (isLease) {
+    section('📋 Lease Terms', [
+      kv('Notice period', terms.notice),
+      kv('Contract Term', terms.lease),
+      kv('Lease type', terms.leaseType),
+      kv('Lock-in period', terms.lockIn),
+    ]);
+    section('⚖️ House Rules', [kv('Pets allowed', rules.pets), kv('Non-veg allowed', rules.nonVeg)]);
+  } else if (!isPG && !isShortStay) {
+    section('📅 Availability & Terms', [kv('Notice period', terms.notice), kv('Contract Term', terms.lease)]);
+    section('⚖️ Tenant Rules', [kv('Pets allowed', rules.pets), kv('Non-veg allowed', rules.nonVeg), kv('Piped gas', rules.gas)]);
+  }
+
+  if (isPG) {
+    section('🛏 Room Details', [
+      kv('Property type', pg.type), kv('Gender preference', pg.gender), kv('Room type', pg.room),
+      kv('Occupancy', pg.occupancy), kv('Bathroom', pg.bathroom), kv('Toilet type', pg.toiletType),
+      kv('Room furnishing', pg.furnish),
+    ]);
+    section('📅 Availability & Terms', [
+      kv('Available from', formatDateDisplay(pg.available)), kv('Notice period', pg.notice),
+    ]);
+    section('🍽 Meals & Policies', [
+      kv('Meals', pg.meals), kv('Food type', pg.food), kv('Visitor policy', pg.visitors), kv('Gate closing time', pg.gateTime),
+    ]);
+  }
+
+  if (isShortStay) {
+    section('🛎 Room & Booking', [
+      kv('Property type', shortStay.type), kv('Room type', shortStay.roomType),
+      kv('Available 24 hours', shortStay.available24hrs), kv('Free cancellation window', shortStay.cancellation),
+      kv('Room furnishing', shortStay.furnish),
+    ]);
+    section('🪪 Guest Policy', [kv('Unmarried couples allowed', shortStay.couplesAllowed)]);
+  }
+
+  if (isSell) {
+    section('🏷️ Sale Details', [
+      kv('Total floors in building', sale.totalFloors), kv('Balconies', sale.balconies),
+      kv('Ownership type', sale.ownership), kv('Possession status', sale.possession),
+      kv('Possession date', sale.possessionDate ? formatDateDisplay(sale.possessionDate) : ''),
+      kv('RERA registered', sale.reraRegistered), kv('RERA ID', sale.reraId),
+    ]);
+    section('🏛️ Legal & Ownership Details', [
+      kv('Khata type', sale.khataType), kv('Property tax paid up to date', sale.propertyTaxPaid),
+      kv('Loan status', sale.loanStatus), kv('Occupancy Certificate (OC) available', sale.ocAvailable),
+      kv('Completion Certificate (CC) available', sale.ccAvailable),
+      kv('Number of previous owners', sale.previousOwners), kv('Society / Project name', sale.projectName),
+    ]);
+    section('🧱 Structure & Site Details', [
+      kv('Flooring type', sale.flooring), kv('Water source', sale.waterSource), kv('Boundary wall', sale.boundaryWall),
+      kv('Width of facing road', sale.roadWidth ? sale.roadWidth + ' ft' : ''),
+      kv('Number of open sides', sale.openSides), kv('Corner property', sale.cornerProperty),
+      kv('Overlooking', sale.overlooking),
+    ]);
+  }
+
+  const selected = Array.isArray(amenities.selected) ? amenities.selected : [];
+  section('✨ Amenities', [
+    kv('Amenities', selected.join(', '), true),
+    kv('Additional amenities', amenities.extra, true),
+  ]);
+
+  const imgs = Array.isArray(media.images) ? media.images.filter(u => /^https?:\/\//i.test(String(u || ''))) : [];
+  section('📸 Media & Description', [
+    kvHtml('Images (' + imgs.length + ')', imgs.length
+      ? '<div style="display:flex;flex-wrap:wrap;gap:6px">' + imgs.map(u =>
+          '<a href="' + esc(u) + '" target="_blank" rel="noopener"><img src="' + esc(u) +
+          '" alt="" loading="lazy" style="width:64px;height:64px;object-fit:cover;border-radius:8px"></a>').join('') + '</div>'
+      : '', true),
+    kvLink('Video tour', media.video),
+    kv('Description', media.desc, true),
+  ]);
+
+  return '<div class="detail-table-card"><table class="detail-table"><tbody>' + rows.join('') + '</tbody></table></div>';
 }
 
 function closeDetail() {
