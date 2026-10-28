@@ -8207,6 +8207,12 @@ window.subPickDate = function(name){
   const nat = document.getElementById(`subscription${name}Native`);
   const cur = subGet(name);
   nat.value = cur ? subNativeVal(cur) : '';
+  // Past days are greyed out in the calendar: From can't be before today; To can't be before From (or today).
+  const _td = new Date(); _td.setHours(0, 0, 0, 0);
+  let _min = _td;
+  if(name === 'To'){ const f = subGet('From'); if(f && f > _td) _min = new Date(f.getTime()); }
+  if(name === 'From' && _subscriptionEditId && cur && cur < _td) _min = new Date(cur.getFullYear(), cur.getMonth(), cur.getDate());   // editing a plan that already started: keep its own date selectable
+  nat.min = subNativeVal(_min);
   try { nat.showPicker ? nat.showPicker() : (nat.focus(), nat.click()); } catch(e){ nat.focus(); nat.click(); }
 };
 ['From','To'].forEach(function(name){
@@ -8522,6 +8528,11 @@ function subValidate(){
   if(!toTxt) errs.push(['subGrpTo', 'End date & time is required']);
   else if(!to) errs.push(['subGrpTo', 'Use dd-mm-yyyy hh:mm AM/PM']);
   else if(from && to <= from) errs.push(['subGrpTo', 'End must be after the start']);
+  if(!_subscriptionEditId){   // new plan: nothing in the past (typed dates too)
+    const _t0 = new Date(); _t0.setHours(0, 0, 0, 0);
+    if(from && from < _t0) errs.push(['subGrpFrom', 'Start date cannot be in the past']);
+    if(to && to < new Date()) errs.push(['subGrpTo', 'End date cannot be in the past']);
+  }
   if(!_subIsOwner && !_subBhkSel.get().length && !_subPropSel.get().length) errs.push(['subGrpBhk', 'Select at least one BHK or add Property IDs']);
   const bMin = document.getElementById('subscriptionBudgetMin').value.trim();
   const bMax = document.getElementById('subscriptionBudgetMax').value.trim();

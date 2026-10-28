@@ -1290,6 +1290,7 @@ self.addEventListener('notificationclick', event => {
       if (fromVal === undefined || toVal === undefined) return res.status(400).json({ message: 'Invalid date/time' });
       if (!fromVal || !toVal) return res.status(400).json({ message: 'Both From and To dates are required' });
       if (toVal <= fromVal) return res.status(400).json({ message: 'To date must be after From date' });
+      if (!body.subscriptionId && toVal <= new Date()) return res.status(400).json({ message: 'End date cannot be in the past' });
       // BHK: multi-select array (`subscriptionBhks`); a legacy single `subscriptionBhk` string is still accepted. [] = all BHKs.
       let bhksVal = Array.isArray(body.subscriptionBhks) ? body.subscriptionBhks
                   : (body.subscriptionBhk ? [body.subscriptionBhk] : []);
