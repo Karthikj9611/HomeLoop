@@ -22908,6 +22908,13 @@ main.main.empty-with-booked:has(> .empty-state.show) > .empty-state.show{positio
 #hlNotice .hln-points li:last-child{border-color:rgba(224,58,82,.32);background:#fff5f6;box-shadow:0 6px 14px -10px rgba(224,58,82,.4);color:#a61e33}
 #hlNotice .hln-points li:last-child i{background:linear-gradient(135deg,#ef5a70,#d62f48);box-shadow:0 4px 10px -4px rgba(224,58,82,.6)}
 #hlNotice .hln-points li:last-child .hln-sub{color:#b8465a}
+
+/* Property VIEW modal: narrower card. Desktop caps at 640px; mobile gets wider side gaps. */
+#addModalBox.view-mode{width:100% !important;max-width:640px !important}
+@media (max-width:640px){
+  #addModal:has(#addModalBox.view-mode){padding:16px 28px !important;box-sizing:border-box}
+  #addModalBox.view-mode{width:100% !important;max-width:100% !important}
+}
 </style>
 </body>
 </html>
