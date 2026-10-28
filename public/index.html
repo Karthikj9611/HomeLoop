@@ -5529,6 +5529,13 @@ main.tab-explore .empty-state{display:none !important}
 .plan-lock-btn{margin-top:4px;padding:10px 18px;border:none;border-radius:999px;background:#5f9488;color:#fff;font-weight:600;font-size:13px;cursor:pointer;box-shadow:0 8px 18px -10px rgba(60,110,98,.7);display:inline-flex;align-items:center;gap:6px;white-space:nowrap;transition:transform .15s}
 .plan-lock-btn::after{content:"\203A";font-size:1.25em;line-height:1}
 .plan-lock-btn:active{transform:scale(.96)}
+/* On property cards the lock covers the photo only: the price strip, badges, eye/compare/heart buttons
+   and top accent bar stay visible and in place, so the card looks the same as every other card. */
+.prop-img .img-slides > .plan-lock{z-index:1;inset:0 0 var(--rib-h,0px) 0;gap:6px;padding:10px 14px 24px}
+.prop-img .img-slides > .plan-lock .plan-lock-icon{width:clamp(26px,10cqw,36px);height:clamp(26px,10cqw,36px);font-size:clamp(13px,5cqw,17px)}
+.prop-img .img-slides > .plan-lock .plan-lock-title{font-size:clamp(13px,5.5cqw,16px)}
+.prop-img .img-slides > .plan-lock .plan-lock-sub{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden;font-size:clamp(11px,4.2cqw,12.5px);line-height:1.35;max-width:100%}
+.prop-img .img-slides > .plan-lock .plan-lock-btn{margin-top:2px;padding:7px 14px;font-size:clamp(11px,4cqw,12.5px)}
 /* Narrow photo areas (2-column mobile cards): same panel as desktop (icon, title, description, button),
    scaled with the card width (cqw) so everything fits inside the 4:3 photo box. */
 @container prop-img-box (max-width:260px){
@@ -11088,7 +11095,7 @@ function lockPanelHtml(kind) {
   const isVid = kind === 'video';
   return '<div class="plan-lock-icon">' + (isVid ? '\uD83C\uDFAC' : '\uD83C\uDFE1') + '</div>'
     + '<div class="plan-lock-title">' + (isVid ? 'Video tour' : 'Building photo') + '</div>'
-    + '<div class="plan-lock-sub">With the Direct Plan, you can view the building photo and video tour, navigate to the exact building location, and connect with owners directly. We\u2019d be delighted to have you.</div>'
+    + '<div class="plan-lock-sub">The Direct Plan unlocks the building photo, video tour and owner contact.</div>'
     + '<button type="button" class="plan-lock-btn" onclick="openPlansFromLock(event)">Explore Direct Plan</button>';
 }
 function showPlansFromSwipe() {
