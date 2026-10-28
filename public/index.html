@@ -4440,10 +4440,11 @@ main.tab-explore .empty-state{display:none !important}
 #chargesModal .charges-includes{
   background:var(--bg-2);border:1px solid var(--border);border-radius:14px;padding:10px 13px;gap:8px;
 }
-#chargesModal .charges-include-item{gap:9px;font-size:11.5px;line-height:1.4}
-#chargesModal .charges-include-item svg{
-  width:18px;height:18px;padding:4px;border-radius:50%;
-  background:#dcfce7;stroke:#16a34a;stroke-width:2.5;box-sizing:border-box;flex-shrink:0;
+#chargesModal .charges-include-item{gap:10px;font-size:11.5px;line-height:1.4;align-items:flex-start}
+#chargesModal .charges-include-item svg{display:none}
+#chargesModal .charges-include-item::before{
+  content:"";width:5px;height:5px;border-radius:50%;background:var(--text-2);
+  flex-shrink:0;margin:6px 4px 0 4px;
 }
 
 /* Note / warning card — same flat style as svc-price-note, just tinted for emphasis */
@@ -8546,13 +8547,7 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
           <div class="charges-mini-example">From the date listed</div>
         </div>
       </div>
-      <div class="charges-includes">
-        <div class="charges-include-item"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><span><b>Goes live</b> after payment and verification</span></div>
-        <div class="charges-include-item"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><span><b>Shown in the Brokers tab</b></span></div>
-        <div class="charges-include-item"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><span><b>Tenants contact you directly</b></span></div>
-        <div class="charges-include-item"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><span><b>Your commission,</b> set by you</span></div>
-      </div>
-      <div class="svc-price-note charges-refer-note"><strong>Note:</strong> Any fraud or misbehaviour with tenants will get you <b>blacklisted</b>.</div>
+      <div class="svc-price-note charges-refer-note"><strong>Note:</strong> Goes live in the <b>Brokers tab</b> after payment and verification. Tenants contact you directly; you set your commission. Misbehaviour with tenants gets you <b>blacklisted</b>.</div>
 <a class="charges-call-btn" href="tel:9035205230"><svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.8 19.8 0 0 1 1.61 3.4 2 2 0 0 1 3.59 1.22h3a2 2 0 0 1 2 1.72 12.8 12.8 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 8.78a16 16 0 0 0 6.29 6.29l1.14-1.14a2 2 0 0 1 2.11-.45 12.8 12.8 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>9035205230</a>
 </div></div>
       </div>
@@ -8581,11 +8576,7 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
           <div class="charges-mini-example">From the date listed</div>
         </div>
       </div>
-      <div class="charges-includes">
-        <div class="charges-include-item"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><span><b>Goes live</b> after payment and verification</span></div>
-        <div class="charges-include-item"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><span><b>Shown in the PG &amp; Coliving tab</b></span></div>
-        <div class="charges-include-item"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><span><b>Tenants contact you directly</b></span></div>
-      </div>
+      <div class="svc-price-note charges-refer-note"><strong>Note:</strong> Goes live in the <b>PG &amp; Coliving tab</b> after payment and verification. Tenants contact you directly.</div>
 <a class="charges-call-btn" href="tel:9035205230"><svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.8 19.8 0 0 1 1.61 3.4 2 2 0 0 1 3.59 1.22h3a2 2 0 0 1 2 1.72 12.8 12.8 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 8.78a16 16 0 0 0 6.29 6.29l1.14-1.14a2 2 0 0 1 2.11-.45 12.8 12.8 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>9035205230</a>
 </div></div>
       </div>
@@ -8616,7 +8607,7 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
             <div class="charges-mini-example">Flat fee — same for every flat size</div>
           </div>
         </div>
-        <div class="svc-price-note charges-refer-note"><strong>Note:</strong> Your listing stays promoted for <b>30–45 days</b>. Verified tenants can call or WhatsApp you anytime.</div>
+        <div class="svc-price-note charges-refer-note"><strong>Note:</strong> Promoted for <b>30–45 days</b>. Verified tenants can call or WhatsApp you anytime.</div>
 
 
 <a class="charges-call-btn" href="tel:9035205230"><svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.8 19.8 0 0 1 1.61 3.4 2 2 0 0 1 3.59 1.22h3a2 2 0 0 1 2 1.72 12.8 12.8 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 8.78a16 16 0 0 0 6.29 6.29l1.14-1.14a2 2 0 0 1 2.11-.45 12.8 12.8 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>9035205230</a>
@@ -8644,19 +8635,10 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
           </div>
         </div>
 
-        <div class="charges-includes">
-          <div class="charges-include-item"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><span>Visit coordination handled by our team</span></div>
-          <div class="charges-include-item"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><span>Agreement and paperwork help included</span></div>
-          <div class="charges-include-item"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><span>Verified tenants shortlisted for you</span></div>
-          <div class="charges-include-item"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><span>Once the tenant likes the house and is ready to pay the token advance or advance, we deduct our 5–10% fee and pay the remaining amount to you</span></div>
-        </div>
-
-
-<div class="svc-price-note charges-refer-note"><strong>Note:</strong> We give priority to <b>promoted properties</b> first. If you haven't chosen promotion, we then bring tenants to normal listings in order of <b>listed date</b>.</div>
+        <div class="svc-price-note charges-refer-note"><strong>Note:</strong> We handle visits, paperwork and tenant shortlisting. We keep a <b>5–10% fee</b> from the token advance; the tenant pays the rest to you. <b>Promoted properties</b> get priority, then by <b>listed date</b>.</div>
 <a class="charges-call-btn" href="tel:9035205230"><svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.8 19.8 0 0 1 1.61 3.4 2 2 0 0 1 3.59 1.22h3a2 2 0 0 1 2 1.72 12.8 12.8 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 8.78a16 16 0 0 0 6.29 6.29l1.14-1.14a2 2 0 0 1 2.11-.45 12.8 12.8 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>9035205230</a>
 </div></div>
 </div>
-        <div class="svc-price-note charges-refer-note charges-refer-bonus"><strong>Note:</strong> Referral bonus not applicable for builders.</div>
       <button class="charges-contact-link" onclick="closeChargesModal(); openHelpModal();">Got a question? Contact us</button>
     </div>
 
@@ -8668,7 +8650,7 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
           <svg class="plan-chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
         </button>
         <div class="plan-body"><div class="plan-body-inner">
-          <div class="svc-price-note charges-refer-note"><strong>Note:</strong> <b>Managed Plan only:</b> pay the <b>token or advance amount</b> only when <b>the owner, the tenant and our Coordinator</b> are <b>all together</b>. Not before.</div>
+          <div class="svc-price-note charges-refer-note"><strong>Note:</strong> <b>Managed Plan:</b> pay the token or advance only when the <b>owner, tenant and our Coordinator</b> are all together.</div>
         </div></div>
       </div>
       <div class="charges-or-divider">and</div>
@@ -8678,7 +8660,7 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
           <svg class="plan-chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
         </button>
         <div class="plan-body"><div class="plan-body-inner">
-          <div class="svc-price-note charges-refer-note"><strong>Note:</strong> <b>Direct Plan:</b> never pay brokerage to property staff. <a href="javascript:void(0)" onclick="closeChargesModal(); openHelpModal();" style="color:#fbbf24;font-weight:700;text-decoration:underline;text-underline-offset:2px">Report it</a> and we will <b>blacklist that property</b>.</div>
+          <div class="svc-price-note charges-refer-note"><strong>Note:</strong> <b>Direct Plan:</b> never pay brokerage to property staff. <a href="javascript:void(0)" onclick="closeChargesModal(); openHelpModal();" style="color:#fbbf24;font-weight:700;text-decoration:underline;text-underline-offset:2px">Report it</a> — we'll <b>blacklist that property</b>.</div>
         </div></div>
       </div>
       <div class="charges-or-divider">and</div>
@@ -8688,7 +8670,7 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
           <svg class="plan-chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
         </button>
         <div class="plan-body"><div class="plan-body-inner">
-          <div class="svc-price-note charges-refer-note"><strong>Note:</strong> <b>Tenants:</b> we <b>verify every broker property</b> before it is posted on HomeLoop. Still, <b>be careful with money</b>. Brokers charge their own commission, so <b>visit the property yourself</b>, <b>pay only after you are satisfied</b>, and keep a receipt for every payment. Since you deal with brokers <b>directly, without HomeLoop</b>, <b>we are not responsible</b> for any issue with them.</div>
+          <div class="svc-price-note charges-refer-note"><strong>Note:</strong> <b>Tenants:</b> brokers are verified, but you deal with them directly — <b>HomeLoop is not responsible</b>. Visit the property, <b>pay only when satisfied</b>, and keep receipts.</div>
         </div></div>
       </div>
       <button class="charges-contact-link" onclick="closeChargesModal(); openHelpModal();">Got a question? Contact us</button>
@@ -8712,14 +8694,9 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
           <div class="charges-mini-example">Only the one property you are interested in</div>
         </div>
       </div>
-      <div class="charges-includes">
-        <div class="charges-include-item"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><span>Pick the <b>one property</b> you like</span></div>
-        <div class="charges-include-item"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><span>Get that property's <b>owner details directly</b></span></div>
-        <div class="charges-include-item"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><span><b>Visit by yourself</b> at your own time — no agent needed</span></div>
-        <div class="charges-include-item"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><span>Another property? <b>₹150 for each next property</b></span></div>
-      </div>
-      <div class="svc-price-note charges-refer-note charges-refer-bonus"><strong>Note:</strong> Valid for <b>that property only</b>. Want to see another property? Pay <b>₹150 again</b> for each next property.</div>
-<a class="charges-call-btn" href="tel:9035205230"><svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.8 19.8 0 0 1 1.61 3.4 2 2 0 0 1 3.59 1.22h3a2 2 0 0 1 2 1.72 12.8 12.8 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 8.78a16 16 0 0 0 6.29 6.29l1.14-1.14a2 2 0 0 1 2.11-.45 12.8 12.8 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>9035205230</a>
+      
+      <div class="svc-price-note charges-refer-note"><strong>Note:</strong> Pick <b>one property</b>, get its <b>owner details</b> and visit on your own. Valid for that property only; <b>₹150</b> for each next one.</div>
+      <a class="charges-call-btn" href="tel:9035205230"><svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.8 19.8 0 0 1 1.61 3.4 2 2 0 0 1 3.59 1.22h3a2 2 0 0 1 2 1.72 12.8 12.8 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 8.78a16 16 0 0 0 6.29 6.29l1.14-1.14a2 2 0 0 1 2.11-.45 12.8 12.8 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>9035205230</a>
 </div></div>
       </div>
       <div class="charges-or-divider">or</div>
@@ -8742,9 +8719,7 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
         </div>
       </div>
       
-      <div class="svc-price-note charges-refer-note charges-refer-bonus"><strong>Note:</strong> Call or WhatsApp owners directly and navigate to their properties. Plan starts after payment and is <b>valid for 2 days</b>.</div>
-
-
+      <div class="svc-price-note charges-refer-note"><strong>Note:</strong> <b>Call or WhatsApp owners directly</b> and visit on your own. Valid for <b>2 days</b> from payment.</div>
 <a class="charges-call-btn" href="tel:9035205230"><svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.8 19.8 0 0 1 1.61 3.4 2 2 0 0 1 3.59 1.22h3a2 2 0 0 1 2 1.72 12.8 12.8 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 8.78a16 16 0 0 0 6.29 6.29l1.14-1.14a2 2 0 0 1 2.11-.45 12.8 12.8 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>9035205230</a>
 </div></div>
       </div>
@@ -8778,20 +8753,14 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
           <div class="charges-mini-example">e.g. ₹20k rent → ₹10k</div>
         </div>
       </div>
+      
 
-      <div class="charges-includes">
-        <div class="charges-include-item"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><span>Filter up to 4 properties and come to meet us</span></div>
-        <div class="charges-include-item"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><span>Pay ₹2,000 only after meeting us — never before</span></div>
-        <div class="charges-include-item"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><span>We show only the properties you filtered and marked as interested</span></div>
-        <div class="charges-include-item"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><span>Guided visits and agreement support</span></div>
-      </div>
-
-<div class="svc-price-note charges-refer-note charges-refer-bonus"><strong>Note:</strong> When your deal closes, the <b>₹2,000 you paid is deducted</b> — pay only the remaining amount.</div>
+<div class="svc-price-note charges-refer-note"><strong>Note:</strong> <b>Filter up to 4 properties</b> and meet us. Pay <b>₹2,000 after meeting</b> — never before. We then show only your picks, with guided visits and agreement support. The <b>₹2,000 is deducted</b> when your deal closes.</div>
 <a class="charges-call-btn" href="tel:9035205230"><svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.8 19.8 0 0 1 1.61 3.4 2 2 0 0 1 3.59 1.22h3a2 2 0 0 1 2 1.72 12.8 12.8 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 8.78a16 16 0 0 0 6.29 6.29l1.14-1.14a2 2 0 0 1 2.11-.45 12.8 12.8 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>9035205230</a>
 </div></div>
       </div>
 
-      <div class="svc-price-note charges-refer-note charges-refer-bonus"><strong>Note:</strong> <b>Refer friends &amp; earn ₹1,000</b> — only when your referred tenant takes the <b>Managed Plan</b>. Not applicable for the Direct Plan.</div>
+      <div class="svc-price-note charges-refer-note"><strong>Note:</strong> <b>Refer a friend, earn ₹1,000</b> — only if they take the <b>Managed Plan</b>.</div>
 
       <button class="form-submit pay-online-btn" onclick="closeChargesModal(); openPaymentModal('brokerage');">Pay brokerage online</button>
       <button class="charges-contact-link" onclick="closeChargesModal(); openHelpModal();">Got a question? Contact us</button>
@@ -8821,7 +8790,7 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
           <div class="charges-mini-example">Flat fee — same for every flat size</div>
         </div>
       </div>
-      <div class="svc-price-note charges-refer-note"><strong>Note:</strong> Your listing stays promoted for <b>30–45 days</b>. Verified tenants can call or WhatsApp you anytime.</div>
+      <div class="svc-price-note charges-refer-note"><strong>Note:</strong> Promoted for <b>30–45 days</b>. Verified tenants can call or WhatsApp you anytime.</div>
 
 
 <a class="charges-call-btn" href="tel:9035205230"><svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.8 19.8 0 0 1 1.61 3.4 2 2 0 0 1 3.59 1.22h3a2 2 0 0 1 2 1.72 12.8 12.8 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 8.78a16 16 0 0 0 6.29 6.29l1.14-1.14a2 2 0 0 1 2.11-.45 12.8 12.8 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>9035205230</a>
@@ -8849,19 +8818,10 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
         </div>
       </div>
 
-      <div class="charges-includes">
-        <div class="charges-include-item"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><span>Visit coordination handled by our team</span></div>
-        <div class="charges-include-item"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><span>Agreement and paperwork help included</span></div>
-        <div class="charges-include-item"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><span>Verified tenants shortlisted for you</span></div>
-        <div class="charges-include-item"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><span>Once the tenant likes the house and is ready to pay the token advance or advance, we deduct our 5–10% fee and pay the remaining amount to you</span></div>
-      </div>
-
-
-<div class="svc-price-note charges-refer-note"><strong>Note:</strong> We give priority to <b>promoted properties</b> first. If you haven't chosen promotion, we then bring tenants to normal listings in order of <b>listed date</b>.</div>
+      <div class="svc-price-note charges-refer-note"><strong>Note:</strong> We handle visits, paperwork and tenant shortlisting. We keep a <b>5–10% fee</b> from the token advance; the tenant pays the rest to you. <b>Promoted properties</b> get priority, then by <b>listed date</b>.</div>
 <a class="charges-call-btn" href="tel:9035205230"><svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.8 19.8 0 0 1 1.61 3.4 2 2 0 0 1 3.59 1.22h3a2 2 0 0 1 2 1.72 12.8 12.8 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 8.78a16 16 0 0 0 6.29 6.29l1.14-1.14a2 2 0 0 1 2.11-.45 12.8 12.8 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>9035205230</a>
 </div></div>
 </div>
-      <div class="svc-price-note charges-refer-note charges-refer-bonus"><strong>Note:</strong> Referral bonus not applicable for owners.</div>
 
       <button class="form-submit pay-online-btn" onclick="closeChargesModal(); openPaymentModal('brokerage');">Pay online</button>
       <button class="charges-contact-link" onclick="closeChargesModal(); openHelpModal();">Got a question? Contact us</button>
@@ -8886,14 +8846,9 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
           <div class="charges-mini-example">Only the one property you are interested in</div>
         </div>
       </div>
-      <div class="charges-includes">
-        <div class="charges-include-item"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><span>Pick the <b>one property</b> you like</span></div>
-        <div class="charges-include-item"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><span>Get that property's <b>owner details directly</b></span></div>
-        <div class="charges-include-item"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><span><b>Visit by yourself</b> at your own time — no agent needed</span></div>
-        <div class="charges-include-item"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><span>Another property? <b>₹150 for each next property</b></span></div>
-      </div>
-      <div class="svc-price-note charges-refer-note charges-refer-bonus"><strong>Note:</strong> Valid for <b>that property only</b>. Want to see another property? Pay <b>₹150 again</b> for each next property.</div>
-<a class="charges-call-btn" href="tel:9035205230"><svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.8 19.8 0 0 1 1.61 3.4 2 2 0 0 1 3.59 1.22h3a2 2 0 0 1 2 1.72 12.8 12.8 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 8.78a16 16 0 0 0 6.29 6.29l1.14-1.14a2 2 0 0 1 2.11-.45 12.8 12.8 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>9035205230</a>
+      
+      <div class="svc-price-note charges-refer-note"><strong>Note:</strong> Pick <b>one property</b>, get its <b>owner details</b> and visit on your own. Valid for that property only; <b>₹150</b> for each next one.</div>
+      <a class="charges-call-btn" href="tel:9035205230"><svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.8 19.8 0 0 1 1.61 3.4 2 2 0 0 1 3.59 1.22h3a2 2 0 0 1 2 1.72 12.8 12.8 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 8.78a16 16 0 0 0 6.29 6.29l1.14-1.14a2 2 0 0 1 2.11-.45 12.8 12.8 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>9035205230</a>
 </div></div>
       </div>
       <div class="charges-or-divider">or</div>
@@ -8908,17 +8863,15 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
 <svg class="plan-chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
 </button>
 <div class="plan-body"><div class="plan-body-inner">
-        <div class="charges-mini-grid" style="grid-template-columns:1fr">
-          <div class="charges-mini-card">
-            <div class="charges-mini-label">1 · 2 · 3 BHK &amp; above</div>
-            <div class="charges-mini-amount">₹1,000 – ₹2,000</div>
-            <div class="charges-mini-example">Varies by flat size and location</div>
-          </div>
+      <div class="charges-mini-grid" style="grid-template-columns:1fr">
+        <div class="charges-mini-card">
+          <div class="charges-mini-label">1 · 2 · 3 BHK &amp; above</div>
+          <div class="charges-mini-amount">₹1,000 – ₹2,000</div>
+          <div class="charges-mini-example">Varies by flat size and location</div>
         </div>
+      </div>
         
-        <div class="svc-price-note charges-refer-note charges-refer-bonus"><strong>Note:</strong> Call or WhatsApp owners directly and navigate to their properties. Plan starts after payment and is <b>valid for 2 days</b>.</div>
-  
-
+        <div class="svc-price-note charges-refer-note"><strong>Note:</strong> <b>Call or WhatsApp owners directly</b> and visit on your own. Valid for <b>2 days</b> from payment.</div>
 <a class="charges-call-btn" href="tel:9035205230"><svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.8 19.8 0 0 1 1.61 3.4 2 2 0 0 1 3.59 1.22h3a2 2 0 0 1 2 1.72 12.8 12.8 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 8.78a16 16 0 0 0 6.29 6.29l1.14-1.14a2 2 0 0 1 2.11-.45 12.8 12.8 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>9035205230</a>
 </div></div>
 </div>
@@ -8933,38 +8886,31 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
 <svg class="plan-chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
 </button>
 <div class="plan-body"><div class="plan-body-inner">
-        <div class="charges-mini-grid" style="grid-template-columns:1fr">
-          <div class="charges-mini-card">
-            <div class="charges-mini-icon">
-              <svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7"/><path d="M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9"/></svg>
-            </div>
-            <div class="charges-mini-label">Rental</div>
-            <div class="charges-mini-amount">20–30% rent</div>
-            <div class="charges-mini-example">Depends on location · e.g. ₹20k → ₹4k–6k</div>
+      <div class="charges-mini-grid" style="grid-template-columns:1fr">
+        <div class="charges-mini-card">
+          <div class="charges-mini-icon">
+            <svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7"/><path d="M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9"/></svg>
           </div>
-          <div class="charges-mini-card" style="display:none">
-            <div class="charges-mini-icon">
-              <svg viewBox="0 0 24 24"><path d="m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4"/><path d="m21 2-9.6 9.6"/><circle cx="7.5" cy="15.5" r="5.5"/></svg>
-            </div>
-            <div class="charges-mini-label">Lease</div>
-            <div class="charges-mini-amount">½ month</div>
-            <div class="charges-mini-example">e.g. ₹20k rent → ₹10k</div>
+          <div class="charges-mini-label">Rental</div>
+          <div class="charges-mini-amount">20–30% rent</div>
+          <div class="charges-mini-example">Depends on location · e.g. ₹20k → ₹4k–6k</div>
+        </div>
+        <div class="charges-mini-card" style="display:none">
+          <div class="charges-mini-icon">
+            <svg viewBox="0 0 24 24"><path d="m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4"/><path d="m21 2-9.6 9.6"/><circle cx="7.5" cy="15.5" r="5.5"/></svg>
           </div>
+          <div class="charges-mini-label">Lease</div>
+          <div class="charges-mini-amount">½ month</div>
+          <div class="charges-mini-example">e.g. ₹20k rent → ₹10k</div>
         </div>
+      </div>
+        
 
-        <div class="charges-includes">
-          <div class="charges-include-item"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><span>Filter up to 4 properties and come to meet us</span></div>
-          <div class="charges-include-item"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><span>Pay ₹2,000 only after meeting us — never before</span></div>
-          <div class="charges-include-item"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><span>We show only the properties you filtered and marked as interested</span></div>
-          <div class="charges-include-item"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><span>Guided visits and agreement support</span></div>
-        </div>
-
-
-<div class="svc-price-note charges-refer-note charges-refer-bonus"><strong>Note:</strong> When your deal closes, the <b>₹2,000 you paid is deducted</b> — pay only the remaining amount.</div>
+<div class="svc-price-note charges-refer-note"><strong>Note:</strong> <b>Filter up to 4 properties</b> and meet us. Pay <b>₹2,000 after meeting</b> — never before. We then show only your picks, with guided visits and agreement support. The <b>₹2,000 is deducted</b> when your deal closes.</div>
 <a class="charges-call-btn" href="tel:9035205230"><svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.8 19.8 0 0 1 1.61 3.4 2 2 0 0 1 3.59 1.22h3a2 2 0 0 1 2 1.72 12.8 12.8 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 8.78a16 16 0 0 0 6.29 6.29l1.14-1.14a2 2 0 0 1 2.11-.45 12.8 12.8 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>9035205230</a>
 </div></div>
 </div>
-        <div class="svc-price-note charges-refer-note charges-refer-bonus"><strong>Note:</strong> <b>Refer friends &amp; earn ₹1,000</b> — only when your referred tenant takes the <b>Managed Plan</b>. Not applicable for the Direct Plan.</div>
+        <div class="svc-price-note charges-refer-note"><strong>Note:</strong> <b>Refer a friend, earn ₹1,000</b> — only if they take the <b>Managed Plan</b>.</div>
       </div>
 
       <div class="charges-audience-panel" id="chargesTabPanel-owner">
@@ -8990,7 +8936,7 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
             <div class="charges-mini-example">Flat fee — same for every flat size</div>
           </div>
         </div>
-        <div class="svc-price-note charges-refer-note"><strong>Note:</strong> Your listing stays promoted for <b>30–45 days</b>. Verified tenants can call or WhatsApp you anytime.</div>
+        <div class="svc-price-note charges-refer-note"><strong>Note:</strong> Promoted for <b>30–45 days</b>. Verified tenants can call or WhatsApp you anytime.</div>
 
 
 <a class="charges-call-btn" href="tel:9035205230"><svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.8 19.8 0 0 1 1.61 3.4 2 2 0 0 1 3.59 1.22h3a2 2 0 0 1 2 1.72 12.8 12.8 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 8.78a16 16 0 0 0 6.29 6.29l1.14-1.14a2 2 0 0 1 2.11-.45 12.8 12.8 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>9035205230</a>
@@ -9018,19 +8964,10 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
           </div>
         </div>
 
-        <div class="charges-includes">
-          <div class="charges-include-item"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><span>Visit coordination handled by our team</span></div>
-          <div class="charges-include-item"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><span>Agreement and paperwork help included</span></div>
-          <div class="charges-include-item"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><span>Verified tenants shortlisted for you</span></div>
-          <div class="charges-include-item"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><span>Once the tenant likes the house and is ready to pay the token advance or advance, we deduct our 5–10% fee and pay the remaining amount to you</span></div>
-        </div>
-
-
-<div class="svc-price-note charges-refer-note"><strong>Note:</strong> We give priority to <b>promoted properties</b> first. If you haven't chosen promotion, we then bring tenants to normal listings in order of <b>listed date</b>.</div>
+        <div class="svc-price-note charges-refer-note"><strong>Note:</strong> We handle visits, paperwork and tenant shortlisting. We keep a <b>5–10% fee</b> from the token advance; the tenant pays the rest to you. <b>Promoted properties</b> get priority, then by <b>listed date</b>.</div>
 <a class="charges-call-btn" href="tel:9035205230"><svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.8 19.8 0 0 1 1.61 3.4 2 2 0 0 1 3.59 1.22h3a2 2 0 0 1 2 1.72 12.8 12.8 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 8.78a16 16 0 0 0 6.29 6.29l1.14-1.14a2 2 0 0 1 2.11-.45 12.8 12.8 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>9035205230</a>
 </div></div>
 </div>
-        <div class="svc-price-note charges-refer-note charges-refer-bonus"><strong>Note:</strong> Referral bonus not applicable for owners.</div>
       </div>
 
     </div>
