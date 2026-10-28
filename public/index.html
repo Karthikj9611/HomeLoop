@@ -1054,7 +1054,7 @@ main.tab-explore .empty-state{display:none !important}
 }
 .prop-card-top-row > *{pointer-events:auto}
 .prop-left-badges{
-  display:flex;align-items:center;gap:6px;
+  display:flex;align-items:center;gap:6px;min-height:26px;
 }
 .prop-badge-promoted{
   height:23px;display:flex;align-items:center;gap:3px;
@@ -1122,6 +1122,42 @@ main.tab-explore .empty-state{display:none !important}
 .prop-icon-promoted svg{width:13px;height:13px;fill:#4a2418;stroke:none}
 .prop-icon-verified{background:linear-gradient(135deg,#4ba7ff,#1a73e8)}
 /* Unverified badge — top-left of the photo. Never inside the right-hand icon stack, so no other card element moves. */
+/* ─── Direct (owner-listed, no brokerage) highlight ─── */
+.prop-badge-direct{
+  position:relative;overflow:hidden;isolation:isolate;
+  display:inline-flex;align-items:center;gap:5px;flex-shrink:0;height:26px;padding:0 10px 0 3px;margin:0;
+  border-radius:99px;box-sizing:border-box;
+  background:linear-gradient(135deg,#34d37a 0%,#12a455 50%,#0b7d3e 100%);color:#fff;
+  border:1px solid rgba(255,255,255,.75);
+  font-size:10.5px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;line-height:1;white-space:nowrap;
+  text-shadow:0 1px 2px rgba(0,60,25,.45);
+  box-shadow:0 2px 8px rgba(18,164,85,.5),inset 0 1px 0 rgba(255,255,255,.5),inset 0 -2px 4px rgba(0,70,30,.25);
+  pointer-events:none;animation:pbdGlow 2.8s ease-in-out infinite;
+}
+.prop-badge-direct::before{ /* glossy top highlight */
+  content:'';position:absolute;left:0;right:0;top:0;height:48%;z-index:-1;
+  background:linear-gradient(180deg,rgba(255,255,255,.38),rgba(255,255,255,0));
+}
+.prop-badge-direct::after{ /* light sweep */
+  content:'';position:absolute;top:-20%;bottom:-20%;left:-60%;width:40%;z-index:1;
+  background:linear-gradient(100deg,transparent,rgba(255,255,255,.65),transparent);
+  transform:skewX(-20deg);animation:pbdShine 3.6s ease-in-out infinite;
+}
+.prop-badge-direct .pbd-ico{
+  width:20px;height:20px;border-radius:50%;flex-shrink:0;
+  display:inline-flex;align-items:center;justify-content:center;
+  background:#fff;box-shadow:0 1px 3px rgba(0,60,25,.35);
+}
+.prop-badge-direct .pbd-ico svg{width:12px;height:12px;fill:none;stroke:#0b7d3e;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
+.prop-badge-direct .pbd-txt{position:relative}
+@keyframes pbdShine{0%,55%{left:-60%}100%{left:130%}}
+@keyframes pbdGlow{0%,100%{box-shadow:0 2px 8px rgba(18,164,85,.5),inset 0 1px 0 rgba(255,255,255,.5),inset 0 -2px 4px rgba(0,70,30,.25)}
+  50%{box-shadow:0 2px 12px rgba(18,164,85,.8),inset 0 1px 0 rgba(255,255,255,.5),inset 0 -2px 4px rgba(0,70,30,.25)}}
+@media (prefers-reduced-motion:reduce){.prop-badge-direct,.prop-badge-direct::after{animation:none}}
+.prop-card.prop-card-direct:not(.prop-card-promoted){
+  border-color:rgba(46,158,85,.55);
+  box-shadow:0 0 0 1px rgba(46,158,85,.22),0 4px 14px rgba(46,158,85,.14);
+}
 .prop-unverified{
   display:inline-flex;align-items:center;gap:2px;flex-shrink:0;
   height:14px;padding:0 5px 0 4px;border-radius:0 99px 99px 0;box-sizing:border-box;margin-left:-10px;
@@ -1134,6 +1170,23 @@ main.tab-explore .empty-state{display:none !important}
 /* when the type letter (R/L/P) sits before it, keep a normal rounded pill beside it instead of flush-left */
 .prop-badge-type-letter + .prop-unverified{margin-left:0;border-radius:99px;border-left:1px solid rgba(255,255,255,.35);padding-left:5px}
 .prop-unverified svg{display:none;width:7px;height:7px;fill:none;stroke:#fff;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+/* Main cards: "Yet to verify" + "Owner" tags start flush at the card's left edge (rounded on the right only),
+   both 26px tall like the view icon. Stacked, so the first tag sits on the same line as the view icon. */
+.prop-left-badges{flex-direction:column;align-items:flex-start;gap:6px}
+.prop-left-badges .prop-badge-direct,
+.prop-left-badges .prop-unverified{
+  height:26px;margin-left:-10px;border-radius:0 99px 99px 0;border-left:0;
+}
+.prop-left-badges .prop-unverified{
+  padding:0 11px 0 12px;
+  border:1px solid rgba(255,255,255,.7);border-left:0;
+  font-size:10.5px;letter-spacing:.06em;
+  box-shadow:0 2px 8px rgba(224,51,96,.45),inset 0 1px 0 rgba(255,255,255,.35);
+}
+.prop-left-badges .prop-badge-direct{padding:0 11px 0 9px;border-left:0}
+.prop-left-badges .prop-badge-direct{order:1}
+.prop-left-badges .prop-unverified{order:2}
+.prop-left-badges .prop-badge-type-letter{order:3}
 .prop-icon-verified svg{width:15px;height:15px;fill:#fff;stroke:none}
 .prop-card.prop-card-promoted .prop-icon-promoted{background:linear-gradient(135deg,#ffd166,#f4a300)}
 .prop-card.prop-card-promoted .prop-icon-promoted svg{fill:#7a4a00}
@@ -11555,6 +11608,12 @@ function amenityTagsHTML(p) {
 }
 
 /* Fail-safe wrapper: one malformed listing (e.g. an incomplete unverified submission) must never blank the whole grid. */
+/* Direct = the owner is on the Direct Plan: admin switched on "Public call" for the
+   listing, so the server sends the owner's own number (main and/or alt) and tenants
+   can contact the owner directly. Managed-plan / coordinator-only listings don't get it. */
+function isDirectProp(p) {
+  return !!(p && ((p.ownerPhoneCall && p.ownerPhone) || (p.ownerDirectCall && p.ownerAltPhone)));
+}
 function cardHTML(p, compact, extraLeftBadge, showAvail) {
   try { return _cardHTMLRaw(p, compact, extraLeftBadge, showAvail); }
   catch (err) { console.error('Card render failed for listing', p && (p.propertyId || p.id), err); return ''; }
@@ -11596,14 +11655,16 @@ function _cardHTMLRaw(p, compact, extraLeftBadge, showAvail) {
   const availableInfo = availableDateInfo(available);
   const compactClass = compact ? ' compact' : '';
   const promotedClass = p.promoted ? ' prop-card-promoted' : '';
+  const directClass = isDirectProp(p) ? ' prop-card-direct' : '';
   const availAccentClass = availableInfo ? (availableInfo.cls === 'prop-loc-avail-past' ? ' avail-past' : ' avail-future') : '';
-  return `<div class="prop-card${listClass}${compactClass}${promotedClass} type-${pType.toLowerCase()}${availAccentClass}" data-property-id="${p.id}" onclick="openDetail('${p.id}')">
+  return `<div class="prop-card${listClass}${compactClass}${promotedClass}${directClass} type-${pType.toLowerCase()}${availAccentClass}" data-property-id="${p.id}" onclick="openDetail('${p.id}')">
     <div class="prop-img" style="background:${bg}" data-idx="0">
       ${buildImgSlider(p, fg, '-grid')}
       ${priceChipsHTML(p, pType, deposit, maintenance, leaseDur, {ribbon:true})}
       <span class="prop-img-id-badge">${esc(p.propertyId || '')}</span>
       <div class="prop-card-top-row">
         <div class="prop-left-badges">
+          ${(isDirectProp(p) && !isBookedProp(p)) ? '<div class="prop-badge-direct" title="Owner — contact the owner directly, no brokerage"><span class="pbd-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.6"/><path d="M4.8 20c.6-3.8 3.6-6 7.2-6s6.6 2.2 7.2 6"/></svg></span><span class="pbd-txt">Owner</span></div>' : ''}
           ${(!compact && !['Rent','Lease','PG','ShortStay'].includes(currentTab)) ? `<span class="prop-badge-type-letter${pTypeLetter.length>1?' wide':''} badge-${pType.toLowerCase()}" title="${pType}">${pTypeLetter}</span>` : ''}
           ${(!p.verified && !isBookedProp(p)) ? '<div class="prop-unverified" title="Unverified — yet to be verified by our team"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5"/><path d="M12 16.3h.01"/></svg>Yet to verify</div>' : ''}
         </div>
