@@ -1936,12 +1936,30 @@ app.get('/api/properties', attachUserIfPresent, async (req, res) => {
     //
     // 1) Owner switch: listings posted by an owner account with publicCall on are public to EVERYONE.
     //    (Direct query on the small set of switched-on owners — cheaper than an $in over every listing owner.)
-    const _pubOwners = new Set(
-      (await User.find({ publicCall: true, accountType: { $in: ACCT_OWNER_SIDE.filter(t => t !== 'agent') } }).select('_id').lean()).map(u => String(u._id))
-    );
+    //    An OWNER whose running subscription plan lists specific Property IDs gets Public call on ONLY for those listings
+    //    (no IDs on the plan, or a manual switch with no running plan = all of that owner's listings).
+    const _pubOwners = new Map();   // ownerId -> null (all listings) | Set of propertyIds
+    const _pubOwnerByMobile = new Map();   // owner account's 10-digit mobile -> ownerId (matches listings an agent posted with the owner's number)
+    const _l10 = (v) => String(v || '').replace(/\D/g, '').slice(-10);
+    {
+      const _nowO = new Date();
+      (await User.find({ publicCall: true, accountType: { $in: ACCT_OWNER_SIDE.filter(t => t !== 'agent') } })
+        .select('_id accountType mobile subscriptionFrom subscriptionAt subscriptionTo subscriptionFilter').lean()).forEach(u => {
+        if (u.accountType === 'owner' && _l10(u.mobile).length === 10) _pubOwnerByMobile.set(_l10(u.mobile), String(u._id));
+        const _from = u.subscriptionFrom || u.subscriptionAt;
+        const _ids = (u.accountType === 'owner' && u.subscriptionFilter && Array.isArray(u.subscriptionFilter.propertyIds)) ? u.subscriptionFilter.propertyIds : [];
+        const _running = _from && u.subscriptionTo && new Date(_from) <= _nowO && new Date(u.subscriptionTo) > _nowO;
+        _pubOwners.set(String(u._id), (_ids.length && _running) ? new Set(_ids.map(x => String(x).trim().toUpperCase())) : null);
+      });
+    }
     if (_pubOwners.size) {
       docs.forEach(d => {
-        if (d.userId && _pubOwners.has(String(d.userId))) { d.ownerPhoneCall = true; d.ownerDirectCall = true; }
+        let _oid = (d.userId && _pubOwners.has(String(d.userId))) ? String(d.userId) : null;
+        if (!_oid && d.owner) _oid = _pubOwnerByMobile.get(_l10(d.owner.phone)) || _pubOwnerByMobile.get(_l10(d.owner.altPhone)) || null;
+        if (!_oid) return;
+        const _only = _pubOwners.get(_oid);
+        if (_only && !_only.has(String(d.propertyId || '').toUpperCase())) return;
+        d.ownerPhoneCall = true; d.ownerDirectCall = true;
       });
     }
 

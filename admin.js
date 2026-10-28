@@ -1182,12 +1182,13 @@ self.addEventListener('notificationclick', event => {
     const plan = pickCurrentPlan(user.subscriptions, now);
     const curFrom = user.subscriptionFrom || user.subscriptionAt || null;
     const curTo = user.subscriptionTo || null;
-    const isTenant = (user.accountType || 'customer') === 'customer' && !user.isBlocked;
+    const planType = ['customer', 'owner'].includes(user.accountType || 'customer'); // tenants + owner accounts have plans
+    const isTenant = planType && !user.isBlocked;
     if (!plan) {
       // No plans left → clear the mirror. If a plan was running, switch Public call off (as the expiry sweep would).
       const wasRunning = !!(curFrom && curTo && new Date(curFrom) <= now && new Date(curTo) > now);
       const upd = { subscriptionAt: null, subscriptionFrom: null, subscriptionTo: null, subscriptionBhk: '', subscriptionFilter: null, subscriptionExpiryHandled: false, subscriptionStartHandled: false };
-      if (wasRunning && (user.accountType || 'customer') === 'customer') upd.publicCall = false;
+      if (wasRunning && planType) upd.publicCall = false;
       return User.findByIdAndUpdate(id, upd, { new: true }).lean();
     }
     const same = curFrom && curTo && +new Date(curFrom) === +new Date(plan.from) && +new Date(curTo) === +new Date(plan.to);
@@ -1201,7 +1202,7 @@ self.addEventListener('notificationclick', event => {
     const running = new Date(plan.from) <= now && new Date(plan.to) > now;
     if (running) {
       if (isTenant) { upd.publicCall = true; upd.subscriptionStartHandled = true; }   // already running → Public call ON now
-    } else if (curTo && new Date(curTo) <= now && !user.subscriptionExpiryHandled && (user.accountType || 'customer') === 'customer') {
+    } else if (curTo && new Date(curTo) <= now && !user.subscriptionExpiryHandled && planType) {
       upd.publicCall = false;   // previous plan ended before the expiry sweep ran, next one hasn't started
     }
     return User.findByIdAndUpdate(id, upd, { new: true }).lean();
@@ -1216,10 +1217,30 @@ self.addEventListener('notificationclick', event => {
   const fmtPlanDate = (d) => new Date(d).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Kolkata' });
 
   // ── GET /api/admin/listing-ids — all available (verified, unbooked, unblocked) listings: options for the subscription "Property IDs" field ──
+  // An owner's listings = posted from their account (userId) OR carrying their mobile number as the owner / alt number
+  // (e.g. listed by an agent on their behalf) — same rule as "My listings" on the site.
+  const last10 = (v) => String(v || '').replace(/\D/g, '').slice(-10);
+  const ownerListingOr = (userId, mobile) => {
+    const or = [{ userId }];
+    const m = last10(mobile);
+    if (m.length === 10) { const rx = new RegExp('^\\D*(?:(?:91|0)\\D*)?' + m.split('').join('\\D*') + '\\D*$'); or.push({ 'owner.phone': rx }, { 'owner.altPhone': rx }); }
+    return or;
+  };
+  const isOwnersListing = (d, userId, mobile) => {
+    const m = last10(mobile);
+    return String(d.userId || '') === String(userId) || (m.length === 10 && (last10(d.owner && d.owner.phone) === m || last10(d.owner && d.owner.altPhone) === m));
+  };
   app.get('/api/admin/listing-ids', requireAdmin, async (req, res) => {
     try {
+      // ?userId=<owner _id> → that owner's listings only (own account OR matching mobile number; verified or not — they are live either way); used by the owner Subscription form.
+      const ownerOnly = req.query.userId && mongoose.Types.ObjectId.isValid(String(req.query.userId)) ? String(req.query.userId) : '';
+      let baseQ = { verified: true };
+      if (ownerOnly) {
+        const ou = await User.findById(ownerOnly).select('mobile').lean();
+        baseQ = { $or: ownerListingOr(ownerOnly, ou && ou.mobile) };
+      }
       const lists = await Promise.all(LISTING_MODEL_LIST.map(M =>
-        M.find({ verified: true, booked: { $ne: true }, blocked: { $ne: true }, propertyId: { $exists: true, $ne: '' } })
+        M.find({ ...baseQ, booked: { $ne: true }, blocked: { $ne: true }, propertyId: { $exists: true, $ne: '' } })
           .select('propertyId location.area property.bhk basic.status').lean()));
       const seen = new Set();
       const items = lists.flat().filter(d => d.propertyId && !seen.has(d.propertyId) && seen.add(d.propertyId)).map(d => ({
@@ -1258,6 +1279,11 @@ self.addEventListener('notificationclick', event => {
       const { id } = req.params;
       if (!mongoose.Types.ObjectId.isValid(id)) return res.status(400).json({ message: 'Invalid user id' });
       const body = req.body || {};
+      const targetUser = await User.findById(id).select('accountType mobile').lean();
+      if (!targetUser) return res.status(404).json({ message: 'Customer not found' });
+      const targetType = targetUser.accountType || 'customer';
+      if (targetType !== 'customer' && targetType !== 'owner') return res.status(400).json({ message: 'Subscriptions are only for tenant and owner accounts' });
+      const isOwnerPlan = targetType === 'owner'; // owner plan = just From–To; Public call ON/OFF for all their listings, no BHK/area filters
       const parse = (v) => { if (!v) return null; const d = new Date(v); return isNaN(d.getTime()) ? undefined : d; };
       const fromVal = parse(body.subscriptionFrom !== undefined ? body.subscriptionFrom : body.subscriptionAt);
       const toVal   = parse(body.subscriptionTo);
@@ -1271,11 +1297,16 @@ self.addEventListener('notificationclick', event => {
       // Direct property access: listing IDs like QWR001 (case-insensitive). Each must exist.
       const propertyIdsVal = [...new Set((Array.isArray(body.subscriptionPropertyIds) ? body.subscriptionPropertyIds : []).map(x => String(x).trim().toUpperCase()).filter(Boolean))].slice(0, 200);
       if (propertyIdsVal.some(x => !/^[A-Z0-9-]{3,20}$/.test(x))) return res.status(400).json({ message: 'Invalid property ID format' });
-      if (!bhksVal.length && !propertyIdsVal.length) return res.status(400).json({ message: 'Select at least one BHK or add Property IDs' });
+      if (!isOwnerPlan && !bhksVal.length && !propertyIdsVal.length) return res.status(400).json({ message: 'Select at least one BHK or add Property IDs' });
       if (propertyIdsVal.length) {
-        const found = (await Promise.all(LISTING_MODEL_LIST.map(M => M.find({ propertyId: { $in: propertyIdsVal } }).select('propertyId').lean()))).flat().map(d => String(d.propertyId).toUpperCase());
+        const foundDocs = (await Promise.all(LISTING_MODEL_LIST.map(M => M.find({ propertyId: { $in: propertyIdsVal } }).select('propertyId userId owner.phone owner.altPhone').lean()))).flat();
+        const found = foundDocs.map(d => String(d.propertyId).toUpperCase());
         const missing = propertyIdsVal.filter(x => !found.includes(x));
         if (missing.length) return res.status(400).json({ message: 'Property ID not found: ' + missing.join(', ') });
+        if (isOwnerPlan) {   // an owner plan can only cover that owner's own listings
+          const foreign = foundDocs.filter(d => !isOwnersListing(d, id, targetUser.mobile)).map(d => String(d.propertyId).toUpperCase());
+          if (foreign.length) return res.status(400).json({ message: 'Not this owner\u2019s listing: ' + foreign.join(', ') });
+        }
       }
       if (bhksVal.some(b => !SUB_BHK_LIST.includes(b))) return res.status(400).json({ message: 'Invalid BHK' });
       const areasVal = [...new Set((Array.isArray(body.subscriptionAreas) ? body.subscriptionAreas : []).map(x => String(x).trim().slice(0, 80)).filter(Boolean))].slice(0, 50);
@@ -1399,7 +1430,7 @@ self.addEventListener('notificationclick', event => {
         subscriptionFrom: { $ne: null, $lte: now },
         subscriptionTo:   { $ne: null, $gt: now },
         subscriptionStartHandled: { $ne: true },
-        accountType: { $nin: ACCT_OWNER_SIDE },
+        accountType: { $nin: ACCT_OWNER_SIDE.filter(t => t !== 'owner') }, // tenants + owner accounts
         isBlocked: { $ne: true },
       }).select('_id').lean();
       for (const { _id } of due) {

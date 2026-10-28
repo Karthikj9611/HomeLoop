@@ -8188,9 +8188,20 @@ function subSet(name, d){                     // write a Date into the text fiel
 }
 function subGet(name){ return subParse(document.getElementById(`subscription${name}Input`).value); }
 // Standard plan = 48 hours: when "From" changes, "To" fills in as From + 48 h (still editable).
+let _subIsOwner = false;   // true while the popup is open for an OWNER account: plain From–To plan, no filters
 function subAutoTo(){
   const f = subGet('From');
-  if(f) subSet('To', new Date(f.getTime() + 48*60*60*1000));
+  if(!f) return;
+  if(_subIsOwner){ const t = new Date(f.getTime()); t.setMonth(t.getMonth() + 1); subSet('To', t); }   // owners: default 1 month
+  else subSet('To', new Date(f.getTime() + 48*60*60*1000));
+}
+// Owner plans only need From / To — hide BHK / Areas / Parking / Budget / Property IDs.
+function subApplyOwnerMode(){
+  document.querySelectorAll('#subscriptionFormCard .form-group').forEach(g => {
+    g.style.display = (_subIsOwner && g.id !== 'subGrpFrom' && g.id !== 'subGrpTo' && g.id !== 'subGrpProps') ? 'none' : '';
+  });
+  const lab = document.querySelector('#subGrpProps .form-label');
+  if(lab) lab.style.display = _subIsOwner ? 'none' : '';   // owner form: no label above the property picker
 }
 window.subPickDate = function(name){
   const nat = document.getElementById(`subscription${name}Native`);
@@ -8220,6 +8231,8 @@ window.openSubscriptionModal = function(key){
   if(!c){ alert('Customer details not loaded yet — please retry.'); return; }
   _subscriptionTargetId = c._id;
   _subscriptionCacheKey = key;
+  _subIsOwner = c.accountType === 'owner';
+  subApplyOwnerMode();
   _subTab = subPlans().length ? 'saved' : 'add';   // no plans yet → straight to the form
   subResetForm();                       // always a blank form: saving ADDS another plan
   subRenderPlans();
@@ -8324,7 +8337,7 @@ const _subCarSel  = subMsel('subCarSel',  { placeholder: 'Any', options: _subPar
 const _subPropSel = subMsel('subPropSel', { placeholder: 'Select properties', searchPlaceholder: 'Search by ID, area or BHK', emptyText: 'No available properties', options: [], search: true, tagValue: true });
 let _subAreasLoaded = false;
 function subLoadPropertyIds(){
-  fetch(`${BASE}/api/admin/listing-ids`, { headers: authHeaders() })
+  fetch(`${BASE}/api/admin/listing-ids` + (_subIsOwner && _subscriptionTargetId ? '?userId=' + encodeURIComponent(_subscriptionTargetId) : ''), { headers: authHeaders() })
     .then(r => r.ok ? r.json() : null)
     .then(d => {
       if(!d || !d.items) return;
@@ -8363,6 +8376,7 @@ function subFillFilters(p){
 }
 // "2 BHK, 3 BHK homes · Indiranagar, HSR (+1) · Bike + Car parking · ₹15,000–₹30,000"
 function subPlanSummary(p){
+  if(_subIsOwner) return (p.propertyIds && p.propertyIds.length) ? 'Public call ON for: ' + p.propertyIds.join(', ') : 'Public call ON for all listings';
   const bhks = (p.bhks && p.bhks.length) ? p.bhks : (p.bhk ? [p.bhk] : []);
   const pids = p.propertyIds || [];
   const parts = [bhks.length ? bhks.join(', ') + ' homes only' : (pids.length ? 'No BHK filter' : 'All BHKs')];
@@ -8508,7 +8522,7 @@ function subValidate(){
   if(!toTxt) errs.push(['subGrpTo', 'End date & time is required']);
   else if(!to) errs.push(['subGrpTo', 'Use dd-mm-yyyy hh:mm AM/PM']);
   else if(from && to <= from) errs.push(['subGrpTo', 'End must be after the start']);
-  if(!_subBhkSel.get().length && !_subPropSel.get().length) errs.push(['subGrpBhk', 'Select at least one BHK or add Property IDs']);
+  if(!_subIsOwner && !_subBhkSel.get().length && !_subPropSel.get().length) errs.push(['subGrpBhk', 'Select at least one BHK or add Property IDs']);
   const bMin = document.getElementById('subscriptionBudgetMin').value.trim();
   const bMax = document.getElementById('subscriptionBudgetMax').value.trim();
   if((bMin !== '' && !(Number(bMin) >= 0)) || (bMax !== '' && !(Number(bMax) >= 0))) errs.push(['subGrpBudget', 'Budget must be a positive number']);
@@ -12278,7 +12292,7 @@ $(document).ready(function(){
 				  <i class="fas fa-pen"></i><span class="btn-label"> Edit</span>
 				</button></span>
 
-				${(ACCT_OWNER_SIDE.includes(row.accountType)) ? '' : `<span class="pact pact-subscription"><button class="btn-view btn-action-sub${(row.subscriptionFrom || row.subscriptionAt) ? ' is-set' : ''}" onclick="openSubscriptionModal('${row.mobile || row._id}')" title="${(row.subscriptionFrom || row.subscriptionAt) ? 'Subscribed: ' + plainDateTime(row.subscriptionFrom || row.subscriptionAt) + (row.subscriptionTo ? ' → ' + plainDateTime(row.subscriptionTo) : '') + ((row.subscriptions || []).length > 1 ? '  (' + row.subscriptions.length + ' subscriptions — click to view / add)' : '  (click to add another)') : 'Set subscription From – To'}">
+				${(ACCT_OWNER_SIDE.includes(row.accountType) && row.accountType !== 'owner') ? '' : `<span class="pact pact-subscription"><button class="btn-view btn-action-sub${(row.subscriptionFrom || row.subscriptionAt) ? ' is-set' : ''}" onclick="openSubscriptionModal('${row.mobile || row._id}')" title="${(row.subscriptionFrom || row.subscriptionAt) ? 'Subscribed: ' + plainDateTime(row.subscriptionFrom || row.subscriptionAt) + (row.subscriptionTo ? ' → ' + plainDateTime(row.subscriptionTo) : '') + ((row.subscriptions || []).length > 1 ? '  (' + row.subscriptions.length + ' subscriptions — click to view / add)' : '  (click to add another)') : 'Set subscription From – To'}">
 				  <i class="fas fa-calendar-check"></i><span class="btn-label"> Subscription</span>
 				</button></span>`}
 
