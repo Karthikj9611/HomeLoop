@@ -1187,6 +1187,16 @@ main.tab-explore .empty-state{display:none !important}
 .prop-left-badges .prop-badge-direct{order:1}
 .prop-left-badges .prop-unverified{order:2}
 .prop-left-badges .prop-badge-type-letter{order:3}
+/* Mobile (≤640px): the right-hand icon stack is scaled to .78, so the view icon is ~20px — scale the tags to match. */
+@media(max-width:640px){
+  .prop-left-badges{min-height:20px;gap:5px}
+  .prop-left-badges .prop-badge-direct,
+  .prop-left-badges .prop-unverified{height:20px;font-size:8.2px;letter-spacing:.05em}
+  .prop-left-badges .prop-badge-direct{padding:0 8px 0 5px;gap:4px}
+  .prop-left-badges .prop-unverified{padding:0 8px 0 9px}
+  .prop-left-badges .prop-badge-direct .pbd-ico{width:15px;height:15px}
+  .prop-left-badges .prop-badge-direct .pbd-ico svg{width:9px;height:9px}
+}
 .prop-icon-verified svg{width:15px;height:15px;fill:#fff;stroke:none}
 .prop-card.prop-card-promoted .prop-icon-promoted{background:linear-gradient(135deg,#ffd166,#f4a300)}
 .prop-card.prop-card-promoted .prop-icon-promoted svg{fill:#7a4a00}
