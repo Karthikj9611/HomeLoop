@@ -2112,7 +2112,7 @@ app.get('/api/properties', attachUserIfPresent, async (req, res) => {
     res.vary('x-user-key');
     res.set('Cache-Control', (_viewerPublicCall || _viewerIsAgent || _viewerIsAgentAcct) ? 'private, no-store' : 'private, max-age=30');
     // bhkFilter: which BHK restriction was applied for this viewer ('' = none) — handy for checking in DevTools → Network.
-    res.json({ properties: mapped, total: mapped.length, bhkFilter: _viewerBhk, subscriptionFrom: _viewerSubFrom, subscriptionTo: _viewerSubTo });
+    res.json({ properties: mapped, total: mapped.length, bhkFilter: _viewerBhk, subscriptionFrom: _viewerSubFrom, subscriptionTo: _viewerSubTo, agentPublicCall: !!_viewerIsAgent });
   } catch (err) {
     console.error('GET /api/properties error:', err);
     res.status(500).json({ message: 'Error fetching properties' });

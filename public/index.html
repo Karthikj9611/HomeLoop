@@ -11136,6 +11136,7 @@ function slideStep(uid, dir) {
    the first photo. Arrow buttons and swiping backwards keep their normal behaviour. */
 function hasActivePlan() {
   try {
+    if (window._agentPublicCall && isAgentViewer()) return true; // agent Public call ON works like an active plan
     const w = window._subWindow;
     if (!w || !w.from) return false;
     const now = Date.now(), from = new Date(w.from).getTime();
@@ -19418,6 +19419,7 @@ async function fetchProperties(renderAfter = true) {
     const res = await fetch('/api/properties', { headers: userAuthHeaders(), cache: 'no-store' });
     if (!res.ok) throw new Error('Server returned ' + res.status);
     const data = await res.json();
+    window._agentPublicCall = !!data.agentPublicCall; // agent with admin Public call ON: building photo + video tour unlocked (no subscription record)
     syncViewedWithSubscription(data.subscriptionFrom, data.subscriptionTo); // reset "Viewed" at plan start and at plan end
     if (data.properties && (data.properties.length > 0 || data.subscriptionFrom)) {   // a subscribed viewer with an empty result must still replace the old list
       PROPERTIES = data.properties;
