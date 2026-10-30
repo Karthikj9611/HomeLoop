@@ -1818,16 +1818,20 @@ app.get('/api/properties', attachUserIfPresent, async (req, res) => {
     let _viewerIsAgent = false; // agent account with admin Public call ON: call details on every listing, no plan filters
     let _viewerIsAgentAcct = false; // ANY logged-in agent account (HomeLoop employee): gets the COMPLETE listing, hidden fields included (owner, address, lat/lng, map links…)
     let _viewerBhk = '';
+    let _viewerOwnerSide = false; // owner / broker / builder account: their OWN listings get the full gallery (last photo + video tour)
+    let _viewerMobile = '';
     let _viewerSub = null;    // current plan's filters (multi-BHK / areas / parking / budget)
     let _viewerSubFrom = null;   // when this tenant's subscription starts / ends (page uses them to reset "Viewed")
     let _viewerSubTo = null;
     if (req.userId) {
-      const _viewer = await User.findById(req.userId).select('publicCall accountType subscriptionBhk subscriptionFilter subscriptionFrom subscriptionAt subscriptionTo subscriptionExpiryHandled subscriptionStartHandled').lean();
+      const _viewer = await User.findById(req.userId).select('mobile publicCall accountType subscriptionBhk subscriptionFilter subscriptionFrom subscriptionAt subscriptionTo subscriptionExpiryHandled subscriptionStartHandled').lean();
       if (_viewer && (_viewer.accountType || 'customer') === 'customer') {
         _viewerSubFrom = _viewer.subscriptionFrom || _viewer.subscriptionAt || null;
         _viewerSubTo = _viewer.subscriptionTo || null;
       }
       _viewerIsAgentAcct = !!(_viewer && _viewer.accountType === 'agent');
+      _viewerOwnerSide = !!(_viewer && ACCT_OWNER_SIDE.includes(_viewer.accountType) && _viewer.accountType !== 'agent');
+      _viewerMobile = (_viewer && _viewer.mobile) ? normalizeMobile(_viewer.mobile) : '';
       _viewerIsAgent = !!(_viewer && _viewer.accountType === 'agent' && _viewer.publicCall); // admin Public call toggle on an agent = works like a subscription, but no plan/filters/subscription record
       _viewerPublicCall = !!(_viewer && _viewer.publicCall && (_viewer.accountType || 'customer') === 'customer');
       // Plan just started but the 1-minute start sweep hasn't switched Public call on yet → treat it as ON now.
@@ -2079,6 +2083,13 @@ app.get('/api/properties', attachUserIfPresent, async (req, res) => {
     docs.forEach(doc => {
       const alt  = String((doc.owner && doc.owner.altPhone) || '').trim();
       const main = String((doc.owner && doc.owner.phone) || '').trim();
+      // Listing posted by (or registered to the mobile number of) the logged-in owner-side viewer → ownListing:true,
+      // so the frontend unlocks the last photo + video tour for him. Only a boolean leaves the server.
+      if (_viewerOwnerSide && req.userId) {
+        const _digits = s => String(s || '').replace(/\D/g, '').slice(-10);
+        doc.ownListing = (doc.userId && String(doc.userId) === String(req.userId)) ||
+          !!(_viewerMobile && [main, alt, doc.owner && doc.owner.agentPhone].some(n => n && _digits(n) === _viewerMobile.slice(-10)));
+      }
       doc.ownerDirectCall = !!doc.ownerDirectCall && !!alt;
       doc.ownerPhoneCall  = !!doc.ownerPhoneCall  && !!main;
       if (doc.ownerDirectCall) doc.ownerAltPhone = alt;

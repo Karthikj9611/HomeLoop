@@ -11037,7 +11037,7 @@ function buildImgSlider(p, fg, uidSuffix, videoSlideHtml) {
   if (_slideCount >= 2 && uidSuffix !== '-cmp') {
     dots = `<div class="card-slide-dots${_slideCount > 10 ? ' tiny' : ''}" aria-hidden="true">${Array.from({length:_slideCount},(_,i)=>`<span class="${i===0?'active':''}"></span>`).join('')}</div>`;
   }
-  return `<div class="img-slides" id="${uid}">${imgSlides}${videoSlide}</div>${dots}`;
+  return `<div class="img-slides" id="${uid}"${p.ownListing ? ' data-own="1"' : ''}>${imgSlides}${videoSlide}</div>${dots}`;
 }
 
 // Loads a card's non-first slides (see the data-src comment in
@@ -11102,11 +11102,12 @@ function slideGo(uid, idx) {
   const _all = [...c.querySelectorAll('.img-slide')];
   const _photos = _all.filter(s => !s.classList.contains('video-slide'));
   const _act = _all[idx];
-  const _vidLocked = !!(_act && _act.classList.contains('video-slide') && _act.dataset.vh && !hasActivePlan());
-  if (_act && _act.dataset && _act.dataset.vh && hasActivePlan() && !_act.firstElementChild) {
+  const _own = c.dataset.own === '1'; // owner viewing his own listing: nothing is locked
+  const _vidLocked = !!(_act && _act.classList.contains('video-slide') && _act.dataset.vh && !_own && !hasActivePlan());
+  if (_act && _act.dataset && _act.dataset.vh && (_own || hasActivePlan()) && !_act.firstElementChild) {
     _act.innerHTML = decodeURIComponent(_act.dataset.vh);
   }
-  const _photoLocked = _photos.length && lastItemLocked(_photos.length) && _act === _photos[_photos.length - 1];
+  const _photoLocked = _photos.length && !_own && lastItemLocked(_photos.length) && _act === _photos[_photos.length - 1];
   if (_photoLocked || _vidLocked) {
     const lk = document.createElement('div');
     lk.className = 'plan-lock';
@@ -11297,6 +11298,7 @@ function slideSwipe(uid, dir) {
 let lightboxImgs = [];
 let lightboxIdx = 0;
 let lightboxVideoHtml = ''; // '' when this property has no (valid) video tour
+let lightboxOwn = false; // true when the property being zoomed is the logged-in owner's own listing (nothing locked)
 let lightboxPropertyMode = false; // true only for property photos (not the About-modal partner photos)
 
 // The lightbox swaps a single <img>'s src on each swipe instead of
@@ -11352,6 +11354,7 @@ function openLightboxReal(propId, idx) {
   renderCards();        // reflect the new count on the card grid
   lightboxImgs = p.media.images;
   lightboxVideoHtml = buildVideoSlideHtml(p);
+  lightboxOwn = !!p.ownListing;
   lightboxPropertyMode = true;
   lightboxIdx = idx || 0;
   lightboxPreloaded.clear();
@@ -11371,6 +11374,7 @@ function openLightboxSimple(urls, idx) {
   if (!Array.isArray(urls) || !urls.length) return;
   lightboxImgs = urls;
   lightboxVideoHtml = '';
+  lightboxOwn = false;
   lightboxPropertyMode = false;
   lightboxIdx = idx || 0;
   lightboxPreloaded.clear();
@@ -11380,11 +11384,11 @@ function openLightboxSimple(urls, idx) {
 
 // Index of the locked photo (the last PHOTO, never the video), or -1 when nothing is locked.
 function lightboxLockedIdx() {
-  return (lightboxPropertyMode && lastItemLocked(lightboxImgs.length)) ? lightboxImgs.length - 1 : -1;
+  return (lightboxPropertyMode && !lightboxOwn && lastItemLocked(lightboxImgs.length)) ? lightboxImgs.length - 1 : -1;
 }
 
 function lightboxVideoLocked() {
-  return !!(lightboxPropertyMode && lightboxVideoHtml && lightboxImgs.length >= 1 && !hasActivePlan());
+  return !!(lightboxPropertyMode && lightboxVideoHtml && lightboxImgs.length >= 1 && !lightboxOwn && !hasActivePlan());
 }
 
 function lightboxTotal() {
