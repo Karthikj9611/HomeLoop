@@ -17157,7 +17157,10 @@ function checkAvailabilityListing(id) {
   const _bhkNum = String(p.property?.bhk || '').replace(/\s*BHK\s*$/i, '').trim();
   const _price = p.price?.rent != null ? fmtRupee(p.price.rent) + (p.basic?.status === 'For Sale' ? '' : '/month') : '';
   const _details = [p.location?.area, _bhkNum ? _bhkNum + ' BHK' : '', _price].filter(Boolean).join(' | ');
-  const msg = `Hi, is ${p.propertyId || 'listing'} still available?` + (_details ? `\n${_details}` : '') + `\n${window.location.origin}/property/${p.id}\n\nAlso, is any other property of yours vacant, or going to be vacated soon? Please let us know, we would like to list the property.\n\nOr you can login to www.homeloop.com and list it on your own, we just verify the property by visiting.`;
+  // Booked listing: no point asking "still available?" - only ask the owner for other vacant properties.
+  const msg = p.booked
+    ? `Hi, this is from HomeLoop Rental Platform.\n\nIs any other property of yours vacant, or going to be vacated soon? Please let us know, we would like to list the property.\n\nOr you can login to www.homeloop.com and list it on your own, we just verify the property by visiting.`
+    : `Hi, this is from HomeLoop Rental Platform.\n\nIs ${p.propertyId || 'listing'} still available?` + (_details ? `\n${_details}` : '') + `\n${window.location.origin}/property/${p.id}\n\nAlso, is any other property of yours vacant, or going to be vacated soon? Please let us know, we would like to list the property.\n\nOr you can login to www.homeloop.com and list it on your own, we just verify the property by visiting.`;
   let ov = document.getElementById('checkAvailOverlay');
   if (!ov) {
     ov = document.createElement('div');
