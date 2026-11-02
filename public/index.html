@@ -21053,7 +21053,8 @@ function submitListing() {
     unlockBodyScroll();
     fetchProperties();
     var _u = getLoggedInUser(); var _acct = (_u && _u.accountType) || '';
-    showToast((_acct === 'broker' || _acct === 'builder' || (newProp.basic && newProp.basic.status === 'PG'))
+    var _lb2 = (newProp.basic && newProp.basic.listedBy) || '';
+    showToast((_acct === 'broker' || _acct === 'builder' || _lb2 === 'Broker' || _lb2 === 'Builder' || (newProp.basic && newProp.basic.status === 'PG'))
       ? "Your listing has been submitted. It will go live once our team verifies it."
       : "Your listing is live! It shows a Yet to verify tag until our team verifies it.");
   })
