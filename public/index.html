@@ -1360,7 +1360,7 @@ main.tab-explore .empty-state{display:none !important}
 .prop-loc-avail.prop-loc-avail-future{color:#1a8f4c}
 /* Logged-in owner accounts: no Compare / Call icons on the cards (the property view keeps its Call + WhatsApp buttons). */
 .viewer-owner .prop-action-compare,
-.viewer-owner .prop-icon-call{display:none !important}
+.viewer-owner:not(.viewer-agent) .prop-icon-call{display:none !important} /* HomeLoop agent accounts (Public call) keep the card Call icon */
 /* Rent tab: Promoted listings slide horizontally instead of wrapping into a grid. */
 #promotedSection{position:relative}
 .prop-grid.promo-slider{display:flex;grid-template-columns:none;gap:16px;overflow-x:auto;overflow-y:hidden;scroll-snap-type:none;scroll-behavior:auto;scroll-padding-left:20px;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-top:4px;padding-bottom:10px}
@@ -10564,6 +10564,7 @@ window.addEventListener('resize', () => { clearTimeout(window._bookedSlT); windo
 
 function syncViewerOwnerClass() {
   try { document.documentElement.classList.toggle('viewer-owner', isOwnerViewer()); } catch (_) {}
+  try { document.documentElement.classList.toggle('viewer-agent', isAgentViewer()); } catch (_) {}
 }
 syncViewerOwnerClass();
 let _renderToken = 0; // bumped on every renderCards(); cancels any in-flight chunked render
@@ -11957,7 +11958,7 @@ function _shortlistEnquiryGroups() {
   const groups = {};
   ids.forEach(id => {
     const p = shortlistedData[id];
-    const raw = String(p.owner?.agentPhone || '').replace(/\D/g, '');
+    const raw = coordinatorDigits(p);
     if (!raw) return;
     const phone = raw.length === 10 ? '91' + raw : raw;
     (groups[phone] = groups[phone] || []).push(p);
@@ -15189,8 +15190,8 @@ function capitalizeWordsInput(el) {
 // Coordinator (agent) number for a listing. Broker-listed properties don't store an agent
 // number, so they fall back to the in-house Coordinator line.
 function coordinatorDigits(p) {
-  const d = String((p && p.owner && p.owner.agentPhone) || '').replace(/\D/g, '');
-  return d || ((p && p.basic && p.basic.listedBy === 'Broker') ? COORDINATOR_PHONE : '');
+  // Public call OFF: every Call / WhatsApp / enquiry (tenant, owner, PG, broker, builder) goes to the in-house Coordinator line.
+  return COORDINATOR_PHONE;
 }
 function openCall(propId) {
   const p = PROPERTIES.find(x => x.id === propId);
@@ -15249,23 +15250,25 @@ function cardNavBadgeHTML(p) {
 }
 
 /* Property-card call icon: when the owner's numbers are public (active subscription plan),
-   dials the owner's ALTERNATE number first, then the main number if there is no alternate;
+   dials the owner's MAIN (mobile) number first, then the ALTERNATE number if there is no main number;
    listings with no public number keep the old behaviour and call the agent.
    Like every other Call/WhatsApp entry point, this dials straight away — no
    login gate — so a visitor can always reach someone directly. */
 /* Card call button: shown when the owner enabled Public call, or the viewer has an active subscription. */
 function cardCallOn(p) {
-  if (HIDE_CARD_CALL_NAV) return false;
-  return hasActivePlan() || !!((p.ownerPhoneCall && p.ownerPhone) || (p.ownerDirectCall && p.ownerAltPhone));
+  // Show the card call button only when a Public call number is actually available for this listing
+  // (server sends ownerPhone / ownerAltPhone only when admin switched Public call on).
+  if (!p || isBookedProp(p)) return false;
+  return !!((p.ownerPhoneCall && p.ownerPhone) || (p.ownerDirectCall && p.ownerAltPhone));
 }
 function openCardCall(propId) {
   const p = PROPERTIES.find(x => x.id === propId) || BOOKED_PROPERTIES.find(x => x.id === propId);
   if (!p) return;
   const rawPhone = String(
-    (isOwnerViewer() && !isAgentViewer()) ? (p.owner?.agentPhone || '') : (
-      (p.ownerDirectCall && p.ownerAltPhone) ||
+    (isOwnerViewer() && !isAgentViewer()) ? COORDINATOR_PHONE : (
       (p.ownerPhoneCall && p.ownerPhone) ||
-      p.owner?.agentPhone || '')
+      (p.ownerDirectCall && p.ownerAltPhone) ||
+      COORDINATOR_PHONE)
   ).replace(/\D/g, '');
   if (!rawPhone) {
     showToast("A phone number is not available for this listing.", 'warning');
