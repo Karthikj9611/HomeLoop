@@ -395,18 +395,24 @@ async function requireVerified(req, res, next) {
   }
 }
 
-// Same as requireVerified, but OWNER and AGENT accounts are exempt: they can
-// post a listing straight away without waiting for an admin to verify the
-// account. (The listing itself still starts with verified:false, so admin
-// approval of the property before it goes public is unchanged.) Every other
-// account type (broker, builder, customer) can NOT list until an admin has
-// verified the account in the backend (User.isVerified). This is the real
-// gate — the frontend check is only for convenience.
+// Same as requireVerified, but OWNER and AGENT accounts are exempt for normal
+// (Rent / Lease / Sale / Short Stay) listings: they can post straight away
+// without waiting for an admin to verify the account. (The listing itself still
+// starts with verified:false, so admin approval of the property before it goes
+// public is unchanged.) Exceptions that ALWAYS need an admin-verified account
+// (User.isVerified):
+//   • broker and builder accounts (any listing)
+//   • PG & Coliving listings (basic.status === 'PG') from any non-agent account
+// Agents are HomeLoop staff and stay exempt. This is the real gate — the
+// frontend check is only for convenience.
 const SELF_LISTING_ACCOUNT_TYPES = ['owner', 'agent'];
 async function requireVerifiedUnlessOwnerAgent(req, res, next) {
   try {
     const user = await User.findById(req.userId).select('isVerified accountType').lean();
-    if (user && (user.isVerified || SELF_LISTING_ACCOUNT_TYPES.includes(user.accountType))) return next();
+    const isPgListing = ((req.body && req.body.basic && req.body.basic.status) || '') === 'PG';
+    const selfListingAllowed = SELF_LISTING_ACCOUNT_TYPES.includes(user && user.accountType)
+      && (!isPgListing || user.accountType === 'agent'); // PG & Coliving needs verification, except for agents
+    if (user && (user.isVerified || selfListingAllowed)) return next();
     return res.status(403).json({
       code: 'NOT_VERIFIED',
       error: 'Your account is pending admin verification. Please wait for confirmation before posting anything.',
@@ -1665,10 +1671,7 @@ function findMissingRequiredFields(fields, status) {
   if ((fields.basic || {}).listedBy === 'Agent') {
     required.push(['owner.agentPhone', 'Agent phone number'], ['owner.agentArea', 'Agent service area']);
   }
-  if ((fields.basic || {}).listedBy === 'Broker') {
-    required.push(['price.brokerage', 'Brokerage fee']);
-    if ((fields.price || {}).brokerage === 'Fixed amount') required.push(['price.brokerageAmount', 'Brokerage amount']);
-  }
+  // Broker listings use the same form as Owner listings — no separate brokerage-fee fields are required.
   const missing = required.filter(([path]) => isEmptyValue(getPath(fields, path)));
   const labels = missing.map(([, label]) => label);
   const images = (fields.media || {}).images;
@@ -1700,7 +1703,10 @@ app.post('/api/properties', listingLimiter, requireUser, requireOwner, requireVe
       return acc;
     }, {});
 
-    { const _lb = await requiredListedBy(req.userId); if (_lb) fields.basic.listedBy = _lb; } // brokers locked to Broker (before validation: Broker needs brokerage fields)
+    { const _lb = await requiredListedBy(req.userId);
+      if (_lb === 'Agent') { // agents (employees) list on behalf of others: they choose Owner / Broker / Builder / Agent; a Broker pick lands in the Brokers tab
+        if (!['Owner', 'Broker', 'Builder', 'Agent'].includes(fields.basic.listedBy)) fields.basic.listedBy = 'Agent';
+      } else if (_lb) fields.basic.listedBy = _lb; } // owner / broker / builder accounts stay locked to their own type
     const validationError = validatePropertyFields(fields);
     if (validationError) return res.status(400).json({ message: validationError });
 

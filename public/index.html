@@ -7220,7 +7220,7 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
       <div class="form-group" id="f-typeWrap">
         <label class="form-label">Status <span style="color:var(--brand)">*</span></label>
         <select class="form-select" id="f-type" onchange="onFTypeChange(this.value)">
-          <option value="Lease">Lease</option><option selected value="Rent">Rent</option><option value="Sell" hidden>Sell</option>
+          <option value="Lease">Lease</option><option selected value="Rent">Rent</option><option value="PG">PG &amp; Coliving</option><option value="Sell" hidden>Sell</option>
         </select>
       </div>
       <div class="form-group">
@@ -9398,9 +9398,9 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
       <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
       List Rent Property
     </div>
-    <div class="menu-item" id="menuListPG" onclick="toggleMenuPanel(); openAddModal('PG');" style="display:none">
+    <div class="menu-item" id="menuListPG" onclick="toggleMenuPanel(); openAddModal('PG');">
       <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-      List PG Property
+      List PG &amp; Coliving
     </div>
     <div class="menu-item" id="menuListSell" onclick="toggleMenuPanel(); openAddModal('Sell');" style="display:none"><!-- SELL_ENABLED -->
       <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -10199,7 +10199,7 @@ function renderRecentlyViewed() {
     // No live data left (listing removed) — filters can't be evaluated
     // without it, so fall back to the old tab/type-only match rather than
     // dropping the entry outright.
-    if (currentTab === 'Promoted' || currentTab === 'Verified' || currentTab === 'Broker') return false;
+    if (currentTab === 'Promoted' || currentTab === 'Verified' || currentTab === 'Broker' || currentTab === 'Builder' || currentTab === 'Maintenance') return false;
     const type = rv.type || pTypeLabel({});
     return type === currentTab;
   });
@@ -10388,8 +10388,8 @@ const EMPTY_PITCH = {
   ShortStay:   { t: 'Short Stay \u2014 List Your Stay', x: 'Hosts can list short stay homes and rooms on HomeLoop and connect directly with guests.', add: 'ShortStay' },
   Sell:        { t: 'Sell \u2014 List Your Property', x: 'Owners, brokers and builders can post their properties for sale on HomeLoop and connect directly with genuine buyers.', add: 'Sell' },
   Broker:      { t: 'Brokers \u2014 List Your Properties', x: 'Brokers can post their listings on HomeLoop and connect directly with potential buyers and tenants.', add: '' },
-  Builder:     { t: 'Builders \u2014 List Your Properties', x: 'Builders can post their properties on HomeLoop and connect directly with potential buyers and tenants.', add: null },
-  Maintenance: { t: 'PG & Coliving \u2014 List Your Space', x: 'PG and co-living operators can list their rooms and beds on HomeLoop and connect directly with students and working professionals.', add: null },
+  Builder:     { t: 'Builders \u2014 List Your Properties', x: 'Builders can post their properties on HomeLoop and connect directly with potential buyers and tenants.', add: '' },
+  Maintenance: { t: 'PG & Coliving \u2014 List Your Space', x: 'PG and co-living operators can list their rooms and beds on HomeLoop and connect directly with students and working professionals.', add: 'PG' },
 };
 
 function setEmptyStateContent() {
@@ -10421,15 +10421,9 @@ function setEmptyStateContent() {
     if (pitch.add === null) { actions.style.display = 'none'; return; }
     actions.innerHTML = '<button class="empty-state-btn primary" onclick="openAddModal(' + (pitch.add ? "'" + pitch.add + "'" : '') + ')">List your property</button>';
     actions.style.display = '';
-    // TEMP: Brokers' "List your property" button is hidden on mobile until broker listing is enabled. Delete this line to bring it back.
-    if (currentTab === 'Broker') actions.classList.add('pitch-hide-mobile');
   };
 
   // Builders / Management tabs have no listings yet — "list your properties" pitch.
-  if ((currentTab === 'Builder' || currentTab === 'Maintenance') && EMPTY_PITCH[currentTab]) {
-    showPitch(EMPTY_PITCH[currentTab]);
-    return;
-  }
   const label = TAB_EMPTY_LABEL[currentTab] || 'listings';
   if (tabRawCount(currentTab) === 0) {
     // Nothing in this category at all — filters are irrelevant here. Pitch owners / brokers / builders to list.
@@ -10645,7 +10639,7 @@ function renderCards() {
   // All, `list` spans multiple types and showing a promoted
   // property in both the highlights section and its type section is
   // intentional (that's what makes that view comprehensive).
-  const dedupe = ['Rent', 'Lease', 'PG', 'ShortStay', 'Sell', 'Broker'].includes(currentTab);
+  const dedupe = ['Rent', 'Lease', 'PG', 'ShortStay', 'Sell', 'Broker', 'Builder', 'Maintenance'].includes(currentTab);
   const groups = {
     promoted,
     rent:      list.filter(p => (!dedupe || !p.promoted) && sectionKeyFor(p) === 'rent' && !(upcomingActive() && isUpcomingRent(p))),
@@ -10675,7 +10669,7 @@ function renderCards() {
   // only one populated, so pagination just adds noise — show every
   // matching listing on one page with no page controls. All/Promoted
   // still page normally since multiple sections stack together there.
-  const noPagination = ['Rent', 'Lease', 'PG', 'ShortStay', 'Sell'].includes(currentTab);
+  const noPagination = ['Rent', 'Lease', 'PG', 'ShortStay', 'Sell', 'Builder', 'Maintenance'].includes(currentTab);
 
   SECTIONS.forEach(key => {
     const items = groups[key];
@@ -10904,7 +10898,7 @@ function paginationHTML(section, page, total) {
 function sectionItems(section) {
   const list = getFiltered();
   if (section === 'promoted') return list.filter(p => p.promoted && !(currentTab === 'Rent' && isUpcomingRent(p)));
-  const dedupe = ['Rent', 'Lease', 'PG', 'ShortStay', 'Sell', 'Broker'].includes(currentTab);
+  const dedupe = ['Rent', 'Lease', 'PG', 'ShortStay', 'Sell', 'Broker', 'Builder', 'Maintenance'].includes(currentTab);
   if (section === 'upcoming') return upcomingActive() ? list.filter(p => sectionKeyFor(p) === 'rent' && isUpcomingRent(p)) : [];
   if (section === 'rent' && upcomingActive()) return list.filter(p => (!dedupe || !p.promoted) && sectionKeyFor(p) === 'rent' && !isUpcomingRent(p));
   return list.filter(p => (!dedupe || !p.promoted) && sectionKeyFor(p) === section);
@@ -11520,10 +11514,14 @@ function matchesTab(p, tab) {
   // Broker listings (promoted, booked or not) live ONLY in the Brokers tab —
   // hidden from Explore/All, Promoted, Rent, Lease, PG, Sell, etc.
   if (tab !== 'Broker' && p.basic?.listedBy === 'Broker') return false;
+  // Same for Builder listings: they live ONLY in the Builders tab.
+  if (tab !== 'Builder' && p.basic?.listedBy === 'Builder') return false;
   if (tab === 'All') return true;
   if (tab === 'Promoted') return !!p.promoted;
   if (tab === 'Verified') return !!p.verified;
   if (tab === 'Broker') return p.basic?.listedBy === 'Broker';
+  if (tab === 'Builder') return p.basic?.listedBy === 'Builder';
+  if (tab === 'Maintenance') return pTypeLabel(p) === 'PG'; // the "PG & Coliving" nav tab
   return pTypeLabel(p) === tab;
 }
 
@@ -13862,7 +13860,7 @@ const SELL_ENABLED = false;
 // tab / bottom tab / FAB option / menu item below) to bring it back. Nothing
 // about PG itself was removed: the data model, filters, listing form, and
 // card rendering are all untouched.
-const PG_ENABLED = false;
+const PG_ENABLED = true;
 
 function getFiltered(source = PROPERTIES, fsIn) {
   const fs = fsIn || getFilterState(); // callers rendering twice pass it in to avoid re-reading the DOM
@@ -15633,6 +15631,12 @@ function lockListedByToAccount() {
     updateBrokerageFields();
     return;
   }
+  if (u.accountType === 'agent') { // agents list on behalf of owners / brokers / builders: they pick "Listed by" themselves
+    sel.disabled = false;
+    sel.title = '';
+    updateBrokerageFields();
+    return;
+  }
   if (locked) {
     sel.value = locked;
     sel.disabled = true;
@@ -15647,11 +15651,13 @@ function openAddModal(presetType) {
   if (!getLoggedInUser()) { openAuthModal(); return; }
   // Tenant (customer) accounts can never list — the server rejects them too (requireOwner).
   { const _u = getLoggedInUser(); if (_u && !ACCT_OWNER_SIDE.includes(_u.accountType)) { showToast('Only property owner or agent accounts can list a property.', 'warning'); return; } }
-  if (blockIfNotVerified({ allowOwnerAgent: true })) return;
+  // PG & Coliving listings need admin verification for everyone except agents; broker / builder always do.
+  const _needsVerifyForPg = presetType === 'PG' && (getLoggedInUser() || {}).accountType !== 'agent';
+  if (blockIfNotVerified({ allowOwnerAgent: !_needsVerifyForPg })) return;
   // Owner / agent open the form straight away. Broker / builder: re-check with the server first
   // (cached isVerified can be stale) — if not verified, show the "contact admin" modal, never the form.
   { const _u2 = getLoggedInUser();
-    if (_u2 && _u2.accountType !== 'owner' && _u2.accountType !== 'agent') {
+    if (_u2 && (_u2.accountType !== 'owner' && _u2.accountType !== 'agent' || _needsVerifyForPg && _u2.accountType !== 'agent')) {
       fetch('/api/user/me', { headers: userAuthHeaders() }).then(r => r.ok ? r.json() : null).then(d => {
         if (!d || !d.isVerified) {
           const c = getLoggedInUser();
@@ -16266,7 +16272,7 @@ function updateAdBannerAudience() {
 function updateListPropertyVisibility(user) {
   const canList = !user || (ACCT_OWNER_SIDE.includes(user.accountType));
   const display = canList ? '' : 'none';
-  ['fabAdd', 'bottomTabAdd', 'fabInlineAdd', 'menuManageLabel', 'menuListRent', 'menuSupportDivider']  /* menuListPG / menuListSell intentionally excluded: stay hidden (see PG_ENABLED / SELL_ENABLED) */
+  ['fabAdd', 'bottomTabAdd', 'fabInlineAdd', 'menuManageLabel', 'menuListRent', 'menuSupportDivider', 'menuListPG']  /* menuListSell intentionally excluded: stays hidden (see SELL_ENABLED) */
     .forEach(id => { const el = document.getElementById(id); if (el) el.style.display = display; });
   const _sellMenu = document.getElementById('menuListSell');
   if (_sellMenu) _sellMenu.style.display = (SELL_ENABLED && canList) ? '' : 'none';
@@ -18139,11 +18145,7 @@ function closeBrokerInfoModal() {
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeBrokerInfoModal(); });
 
 /* "Coming soon" modal for tabs whose feature is still being built (Builders, Management). */
-const COMING_SOON_TABS = {
-  Builder:     { icon: '🏗️', title: 'Builders',   text: 'This feature is being developed. Expected to be released by 1 Jan 2027.', def: 'Developers who construct residential and commercial projects. Builders can list their properties directly on HomeLoop.' },
-  Broker:      { icon: '👨‍💼', title: 'Brokers — List Your Properties', text: 'This feature is being developed. Expected to be released by 1 Jan 2027.', def: 'List your properties under your own brokerage and let potential tenants contact you directly.' },
-  Maintenance: { icon: '🛏️', title: 'PG & Coliving', text: 'This feature is being developed. Expected to be released by 1 Jan 2027.', def: 'Owners can list their PG and co-living properties directly on HomeLoop.' },
-};
+const COMING_SOON_TABS = {}; // empty: Brokers / Builders / PG & Coliving open their own listing pages now (no popup)
 function openComingSoonModal(tab) {
   const cfg = COMING_SOON_TABS[tab], m = document.getElementById('comingSoonModal');
   if (!cfg || !m) return;
@@ -20235,7 +20237,7 @@ async function watermarkImageFile(file) {
 function updateBrokerageFields() {
   const lb = document.getElementById('f-listedBy');
   const blk = document.getElementById('f-brokerageBlock');
-  if (blk) blk.style.display = (lb && lb.value === 'Broker') ? '' : 'none';
+  if (blk) blk.style.display = 'none'; // brokers / builders use the same form as owners — no separate brokerage-fee block
   const agentBlk = document.getElementById('agentDetailsSection');
   if (agentBlk) agentBlk.style.display = (lb && lb.value === 'Agent') ? '' : 'none';
   onBrokerageChange();
@@ -20854,11 +20856,6 @@ function buildListingPayload() {
                     : gv('f-negotiable').toLowerCase() === 'no'  ? 'No'
                     : null,
       }),
-      // Broker listings only: brokerage fee option (+ amount when "Fixed amount").
-      ...(document.getElementById('f-listedBy').value === 'Broker' ? {
-        brokerage:       gv('f-brokerage') || null,
-        brokerageAmount: gv('f-brokerage') === 'Fixed amount' ? (parseInt(gv('f-brokerageAmount')) || null) : null,
-      } : {}),
     },
     ...(isPG ? {} : {
       property: {
