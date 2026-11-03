@@ -15196,10 +15196,10 @@ async function submitBookingRequest() {
 }
 
 /* ═══════════════════════════════════════════════
-   CALL / WHATSAPP CONTACT — open to guests (no login needed)
-   Call, WhatsApp, Shortlist and Compare are all open to guests.
-   requireLoginForContact() is currently unused — kept as a ready-made
-   helper in case a login gate is needed again.
+   CALL / WHATSAPP / NAVIGATE — login required for PUBLIC-CALL listings only
+   On listings with a public owner number / navigate link (isPublicCallProp), Call,
+   WhatsApp and Navigate call requireLoginForContact() first: guests get a toast and
+   the login/signup modal. Other listings (Coordinator line) stay open to guests.
 ═══════════════════════════════════════════════ */
 // Login gate helper (currently unused). Shows the
 // login/signup modal and returns true (blocked) when logged out, so the
@@ -15232,9 +15232,14 @@ function coordinatorDigits(p) {
   // Public call OFF: every Call / WhatsApp / enquiry (tenant, owner, PG, broker, builder) goes to the in-house Coordinator line.
   return COORDINATOR_PHONE;
 }
+/* A "public call" listing: the owner's number and/or the navigate link is exposed on it. Only these need a login to Call / WhatsApp / Navigate. */
+function isPublicCallProp(p) {
+  return !!p && (cardCallOn(p) || !!(p.currentLocationLink || p.navigateUrl));
+}
 function openCall(propId) {
   const p = PROPERTIES.find(x => x.id === propId);
   if (!p) return;
+  if (isPublicCallProp(p) && requireLoginForContact('Please log in to call the owner')) return;
   const rawPhone = coordinatorDigits(p);
   if (!rawPhone) {
     showToast("An agent phone number is not available for this listing.", 'warning');
@@ -15253,6 +15258,7 @@ const HIDE_DESCRIPTION_IN_VIEW = false;
    open turn-by-turn directions to them; short links (maps.app.goo.gl) can't be read client-side,
    so they open as-is in Google Maps (the app on phones), where Directions/Start is one tap. */
 function openLocationLinkNavigate(url) {
+  if (requireLoginForContact('Please log in to get directions to the property')) return;
   let target = url;
   try {
     const dec = decodeURIComponent(url);
@@ -15268,6 +15274,7 @@ function openLocationLinkNavigate(url) {
 
 /* Opens Google Maps directions to the property — only listings with a public owner number carry navigateUrl. */
 function openPropertyNavigate(propId) {
+  if (requireLoginForContact('Please log in to get directions to the property')) return;
   const p = PROPERTIES.find(x => x.id === propId) || BOOKED_PROPERTIES.find(x => x.id === propId);
   // Prefer the owner's pasted Google Maps link (sent only to subscribed tenants); fall back to the address-built directions link.
   const url = p && (p.currentLocationLink || p.navigateUrl);
@@ -15301,6 +15308,7 @@ function cardCallOn(p) {
   return !!((p.ownerPhoneCall && p.ownerPhone) || (p.ownerDirectCall && p.ownerAltPhone));
 }
 function openCardCall(propId) {
+  if (requireLoginForContact('Please log in to call the owner')) return;
   const p = PROPERTIES.find(x => x.id === propId) || BOOKED_PROPERTIES.find(x => x.id === propId);
   if (!p) return;
   const rawPhone = String(
@@ -15326,6 +15334,7 @@ function publicOwnerPhone(p, which) {
 }
 /* Calls the owner's main ('main') or alternate ('alt') number — only reachable when admin enabled Public call (numbers are absent otherwise). */
 function openOwnerCall(propId, which) {
+  if (requireLoginForContact('Please log in to call the owner')) return;
   const p = PROPERTIES.find(x => x.id === propId) || BOOKED_PROPERTIES.find(x => x.id === propId);
   if (!p) return;
   const rawPhone = String(publicOwnerPhone(p, which)).replace(/\D/g, '');
@@ -15339,6 +15348,7 @@ function openOwnerCall(propId, which) {
 
 /* WhatsApp on the owner's main ('main') or alternate ('alt') number — only when admin enabled Public call for it. */
 function openOwnerWhatsApp(propId, which) {
+  if (requireLoginForContact('Please log in to WhatsApp the owner')) return;
   const p = PROPERTIES.find(x => x.id === propId) || BOOKED_PROPERTIES.find(x => x.id === propId);
   if (!p) return;
   const raw = String(publicOwnerPhone(p, which)).replace(/\D/g, '');
@@ -15357,6 +15367,7 @@ function openOwnerWhatsApp(propId, which) {
 function openWhatsApp(propId) {
   const p = PROPERTIES.find(x => x.id === propId);
   if (!p) return;
+  if (isPublicCallProp(p) && requireLoginForContact('Please log in to contact on WhatsApp')) return;
   const rawPhone = coordinatorDigits(p);
   if (!rawPhone) {
     showToast("An agent phone number is not available for this listing.", 'warning');
