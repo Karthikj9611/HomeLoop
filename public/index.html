@@ -13624,6 +13624,29 @@ document.addEventListener('keydown', function (e) {
   if (!body) return;
   ['click', 'input'].forEach(t => body.addEventListener(t, () => setTimeout(fmUpdateCounts, 0)));
 })();
+/* Auto-advance: once an option is picked, glide to the next filter's options.
+   Short pause (reset on every further tap) so several options can still be ticked
+   in a row; it only advances after the user stops tapping. Stays put on the last
+   filter, and never fires for typing in the search box or range inputs. */
+(function () {
+  const body = document.getElementById('fmSubBody');
+  if (!body) return;
+  const FM_AUTO_NEXT_MS = 700;
+  let timer = null;
+  body.addEventListener('click', function (e) {
+    const opt = e.target.closest && e.target.closest('.fp-opt');
+    if (!opt || !_fmSub) return;
+    clearTimeout(timer);
+    const fromId = _fmSub.id;
+    timer = setTimeout(() => {
+      if (!_fmSub || _fmSub.id !== fromId) return;          // user already moved on / closed
+      if (!opt.classList.contains('sel') && fmCountFor(_fmSub.pop) === 0) return;   // nothing selected -> stay
+      const i = _fmRows.findIndex(r => r.id === fromId);
+      if (i < 0 || i >= _fmRows.length - 1) return;         // last filter: stay
+      fmSubGo(1);
+    }, FM_AUTO_NEXT_MS);
+  }, true);   // capture: the filter popovers call stopPropagation() on click, so a normal (bubbling) listener never sees it
+})();
 
 /* Close dropdowns on outside click */
 document.addEventListener('click', function(e) {
@@ -23122,5 +23145,20 @@ main.main.empty-with-booked:has(> .empty-state.show) > .empty-state.show{positio
   });
 })();
 </script>
+<style>
+/* Filter options modal: identical width + height for every filter (Property ID, BHK, Price …).
+   The box is fixed-size; the option list scrolls inside it, search box + footer stay put. */
+.fm-sub .fm-box{
+  width:100% !important;max-width:480px !important;
+  height:min(78vh,600px) !important;height:min(78dvh,600px) !important;max-height:none !important;
+}
+.fm-sub .fm-body{display:flex !important;flex-direction:column;overflow:hidden !important;min-height:0}
+.fm-sub .fd-pop{flex:1 1 auto;flex-direction:column;min-height:0;overflow-y:auto;width:100% !important;max-width:none !important;min-width:0 !important;align-self:stretch;box-sizing:border-box}
+.fm-sub .fd-pop .fd-search,.fm-sub .fd-opts,.fm-sub .fd-opts .fp-opt{width:100%;max-width:none;box-sizing:border-box}
+.fm-sub .fd-opts{flex:1 1 auto;min-height:0;max-height:none !important;overflow-y:auto}
+@media(max-width:640px){
+  .fm-sub .fm-box{max-width:none !important;height:min(78dvh,600px) !important}
+}
+</style>
 </body>
 </html>
