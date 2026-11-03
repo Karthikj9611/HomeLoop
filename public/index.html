@@ -13143,6 +13143,8 @@ function syncFdBar() {
    position:fixed (restoring the exact scroll offset on unlock) is the
    reliable cross-browser fix. Counter-based so nested/stacked modals
    (e.g. opening a picker on top of another modal) don't unlock too early. */
+/* Run non-visual close work AFTER the browser has painted the modal as closed. */
+function _afterPaint(fn) { requestAnimationFrame(function () { setTimeout(fn, 0); }); }
 let _scrollLockCount = 0;
 let _scrollLockY = 0;
 function lockBodyScroll() {
@@ -13572,8 +13574,9 @@ function _fmSubRestore() {
 function closeFmSub() {
   const sub = document.getElementById('fmSubModal');
   if (!sub || !_fmSub) return;
-  _fmSubRestore();
   sub.classList.remove('open');
+  const _cur = _fmSub;
+  _afterPaint(function () { if (_fmSub === _cur) _fmSubRestore(); });
 }
 /* ‹ / › : jump to the previous / next filter's options (wraps around) */
 function fmSubGo(dir) {
@@ -13592,13 +13595,16 @@ function closeFiltersModal() {
   closeFmSub();
   const modal = document.getElementById('filtersModal');
   if (!modal || !modal.classList.contains('open')) return;
-  document.getElementById('fmBody').innerHTML = '';
-  _fmRows = [];
   modal.classList.remove('open');
   unlockBodyScroll();
   _fmNormalMode = true;   // "or just close it and use the normal filters"
-  Object.keys(FD_GROUPS).forEach(id => refreshFdBtn(id));
-  FD_RANGE_IDS.forEach(id => refreshFdRangeBtn(id, true));
+  _afterPaint(function () {
+    if (modal.classList.contains('open')) return; // reopened meanwhile
+    document.getElementById('fmBody').innerHTML = '';
+    _fmRows = [];
+    Object.keys(FD_GROUPS).forEach(id => refreshFdBtn(id));
+    FD_RANGE_IDS.forEach(id => refreshFdRangeBtn(id, true));
+  });
 }
 /* Capture phase: runs before a chip's own onclick, so the first tap on the
    bar opens the modal instead of a dropdown. */
@@ -14892,28 +14898,26 @@ function buildAgentFormTable(p) {
 
 function closeDetail() {
   document.getElementById('addModal').classList.remove('open');
-  document.getElementById('addModalBox').classList.remove('view-mode');
   document.getElementById('addModal').classList.remove('view-mode');
-  unlockBodyScroll();
   propertyViewMode = false;
-  const clearBtn = document.getElementById('clearFormBtn');
-  if (clearBtn) clearBtn.style.display = '';
-  requestAnimationFrame(function () { setTimeout(function () {
-    if (propertyViewMode) return; // a property was opened again meanwhile — don't wipe it
+  unlockBodyScroll();
+  _afterPaint(function () {
+    if (propertyViewMode) return; // a property was opened again meanwhile — don't touch it
+    document.getElementById('addModalBox').classList.remove('view-mode');
+    const clearBtn = document.getElementById('clearFormBtn');
+    if (clearBtn) clearBtn.style.display = '';
     const gallerySlot = document.getElementById('detailGallerySlot');
     if (gallerySlot) gallerySlot.innerHTML = '';
     const tableWrap = document.getElementById('detailTableWrap');
     if (tableWrap) tableWrap.innerHTML = '';
-  }, 0); });
-
-  document.getElementById('addModalTitleText').textContent = 'List your property';
-  const sub = document.getElementById('addModalSubtitleText');
-  if (sub) { sub.style.display = 'none'; sub.textContent = ''; }
-
-  document.getElementById('viewActionsRow').style.display = 'none';
-  document.getElementById('viewActionsRow2').style.display = 'none';
-  document.getElementById('viewActionsFooter').style.display = 'none';
-  clearDeepLinkUrl();
+    document.getElementById('addModalTitleText').textContent = 'List your property';
+    const sub = document.getElementById('addModalSubtitleText');
+    if (sub) { sub.style.display = 'none'; sub.textContent = ''; }
+    document.getElementById('viewActionsRow').style.display = 'none';
+    document.getElementById('viewActionsRow2').style.display = 'none';
+    document.getElementById('viewActionsFooter').style.display = 'none';
+    clearDeepLinkUrl();
+  });
 }
 
 function toggleShortlistFromModal(id) {
@@ -15797,9 +15801,9 @@ function closeAddModal() {
   // Do NOT clear the draft here — closing (even accidentally) should not
   // wipe what the user has already filled in. It's cleared only on
   // successful submission or explicit "Clear form".
-  saveListingDraftNow();
   document.getElementById('addModal').classList.remove('open');
   unlockBodyScroll();
+  _afterPaint(saveListingDraftNow);
 }
 
 // Populates every Add/Edit Listing form field from a property object.
