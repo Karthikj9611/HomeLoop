@@ -5002,14 +5002,24 @@ main.tab-explore .empty-state{display:none !important}
 .auth-photo-remove:hover{background:var(--brand)}
 .auth-photo-remove svg{width:10px;height:10px;stroke:#fff;fill:none;stroke-width:3}
 .img-thumb-grid{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:8px}
-.img-thumb{position:relative;width:72px;height:72px;border-radius:9px;overflow:hidden;border:1.5px solid var(--border-2);flex-shrink:0;cursor:grab;touch-action:none;user-select:none;-webkit-user-drag:none;transition:box-shadow .15s ease,opacity .15s ease}
+.img-thumb{position:relative;width:84px;height:84px;border-radius:9px;overflow:hidden;border:1.5px solid var(--border-2);flex-shrink:0;cursor:grab;touch-action:none;user-select:none;-webkit-user-drag:none;transition:box-shadow .15s ease,opacity .15s ease}
 .img-thumb img{width:100%;height:100%;object-fit:cover;display:block;pointer-events:none}
 .img-thumb.dragging{cursor:grabbing;opacity:.85;box-shadow:0 6px 18px rgba(0,0,0,.3);z-index:5}
 .img-thumb.drag-over{outline:2px dashed var(--brand);outline-offset:2px}
 .img-thumb-cover{
-  position:absolute;bottom:3px;left:3px;background:rgba(0,0,0,.65);color:#fff;
+  position:absolute;top:3px;left:3px;background:rgba(0,0,0,.65);color:#fff;
   font-size:9px;font-weight:600;padding:1px 5px;border-radius:4px;pointer-events:none;letter-spacing:.2px;
 }
+/* Move-left / move-right buttons on each photo (tap alternative to dragging) */
+.img-thumb-mv{
+  position:absolute;bottom:3px;width:24px;height:24px;padding:0;
+  background:rgba(0,0,0,.65);color:#fff;border:none;border-radius:50%;
+  font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;
+}
+.img-thumb-mv.l{left:3px}
+.img-thumb-mv.r{right:3px}
+.img-thumb-mv:hover{background:var(--brand)}
+.add-modal.view-mode .img-thumb-mv{display:none}
 .img-thumb-del{
   position:absolute;top:3px;right:3px;width:18px;height:18px;
   background:rgba(0,0,0,.65);color:#fff;border:none;border-radius:50%;
@@ -7830,7 +7840,7 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
       </div>
       <div class="img-thumb-grid" id="fImgGrid"></div>
       <div class="img-hint" id="fImgHint">No images added yet.</div>
-      <div class="img-hint" id="fImgOrderHint" style="display:none">Drag to reorder — first photo is the cover image shown on cards.</div>
+      <div class="img-hint" id="fImgOrderHint" style="display:none">Drag a photo, or tap ‹ › to reorder — the first photo is the cover image shown on cards.</div>
     </div>
     <div class="form-group">
       <label class="form-label">Description</label>
@@ -20038,10 +20048,21 @@ function renderFImages() {
       '<img src="' + src + '" alt="img" draggable="false"/>' +
       (i === 0 ? '<span class="img-thumb-cover">Cover</span>' : '') +
       '<button type="button" class="img-thumb-del" onclick="event.stopPropagation();removeFImage(' + i + ')">✕</button>' +
+      (i > 0 ? '<button type="button" class="img-thumb-mv l" aria-label="Move photo left" title="Move left" onclick="event.stopPropagation();moveFImage(' + i + ',-1)">‹</button>' : '') +
+      (i < fImages.length - 1 ? '<button type="button" class="img-thumb-mv r" aria-label="Move photo right" title="Move right" onclick="event.stopPropagation();moveFImage(' + i + ',1)">›</button>' : '') +
     '</div>'
   ).join('');
   hint.style.display = fImages.length ? 'none' : 'block';
   if (orderHint) orderHint.style.display = fImages.length > 1 ? 'block' : 'none';
+}
+// Tap alternative to dragging: shift a photo one place left/right (position 1 = cover).
+function moveFImage(i, dir) {
+  const j = i + dir;
+  if (j < 0 || j >= fImages.length) return;
+  const item = fImages.splice(i, 1)[0];
+  fImages.splice(j, 0, item);
+  renderFImages();
+  queueListingDraftSave();
 }
 function removeFImage(i) {
   fImages.splice(i, 1);
@@ -20054,7 +20075,7 @@ function removeFImage(i) {
 // Safari. The first thumbnail after reordering becomes the "Cover" image,
 // which is what shows on property cards, compare, and shortlist.
 function fImgPointerDown(e, i) {
-  if (e.target.closest('.img-thumb-del')) return;
+  if (e.target.closest('.img-thumb-del, .img-thumb-mv')) return;
   e.preventDefault();
   const grid = document.getElementById('fImgGrid');
   const el = grid.querySelector('.img-thumb[data-idx="' + i + '"]');
@@ -20617,7 +20638,7 @@ function openListingReview(submitFnName) {
     const n = (typeof fImages !== 'undefined' && Array.isArray(fImages)) ? fImages.length : 0;
     const row = document.createElement('div');
     row.style.cssText = 'display:grid;grid-template-columns:minmax(110px,170px) 1fr;gap:10px;align-items:center;padding:8px 0';
-    row.innerHTML = '<div style="font-size:12.5px;font-weight:600;color:var(--text-2)">Property images</div><div style="font-size:13px;color:var(--text)">' + n + ' added <span style="color:var(--text-2)">(change them in the form)</span></div>';
+    row.innerHTML = '<div style="font-size:12.5px;font-weight:600;color:var(--text-2)">Property images</div><div style="font-size:13px;color:var(--text)">' + n + ' photo' + (n === 1 ? '' : 's') + ' <span style="color:var(--text-2)">(' + (snap && snap.imgs.length === n && snap.imgs.slice().sort().join('|') === fImages.slice().sort().join('|') ? 'order changed' : 'updated') + ')</span></div>';
     host.appendChild(row);
   }
   document.getElementById('listingReviewModal').classList.add('open');
