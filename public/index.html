@@ -10490,10 +10490,16 @@ function glideEdgeEase(pos, max) {
   const t = Math.min(1, Math.max(0, d / len));
   return GLIDE_FLOOR + (1 - GLIDE_FLOOR) * (t * t * (3 - 2 * t));
 }
+// ONE shared direction for every strip (Promoted / Pre-available / Booked / Viewed).
+// All strips glide left -> right together. A strip that reaches its right end simply
+// waits there; only when EVERY active strip has reached the end does the whole set
+// pause briefly and then glide right -> left together (and the same again at the left).
+let _glideDir = 1, _glideFlipAt = 0;
+const GLIDE_END_HOLD = 1500;  // ms everyone waits once all strips have finished a pass
 function glideFrame(ts) {
   const dt = _glideLast ? Math.min(ts - _glideLast, 50) : 16;
   _glideLast = ts;
-  let active = 0;
+  let active = 0, counted = 0, finished = 0;
   _glide.forEach((st, grid) => {
     if (!st.visible || !glideEligible(grid)) { glideClear(grid); return; }
     active++;
@@ -10506,11 +10512,22 @@ function glideFrame(ts) {
     st.ramp += (target - st.ramp) * (1 - Math.exp(-dt / (target > st.ramp ? 450 : 160)));
     if (st.ramp > 0.995) st.ramp = 1; else if (st.ramp < 0.004) st.ramp = 0;
     if (st.ramp === 0) { glideClear(grid); st.pos = grid.scrollLeft; return; }
-    st.pos += st.dir * GLIDE_SPEED * dt * st.ramp * glideEdgeEase(st.pos, max);
-    if (st.pos >= max) { st.pos = max; st.dir = -1; }
-    else if (st.pos <= 0) { st.pos = 0; st.dir = 1; }
+    // Hovered / touched strips don't hold the others back; everything else is counted.
+    counted++;
+    st.dir = _glideDir;
+    st.pos += _glideDir * GLIDE_SPEED * dt * st.ramp * glideEdgeEase(st.pos, max);
+    if (st.pos >= max) st.pos = max;
+    else if (st.pos <= 0) st.pos = 0;
+    if (_glideDir > 0 ? st.pos >= max - 0.5 : st.pos <= 0.5) finished++;
     glideSet(grid, st.pos);
   });
+  // Every moving strip is at its end -> wait together, then all turn around.
+  if (counted > 0 && finished === counted) {
+    if (!_glideFlipAt) _glideFlipAt = ts + GLIDE_END_HOLD;
+    else if (ts >= _glideFlipAt) { _glideDir = -_glideDir; _glideFlipAt = 0; }
+  } else {
+    _glideFlipAt = 0;
+  }
   if (active) _glideRAF = requestAnimationFrame(glideFrame);
   else { _glideRAF = 0; _glideLast = 0; }
 }
