@@ -905,7 +905,7 @@ main.tab-explore .empty-state{display:none !important}
 .prop-img{
   position:relative;
   width:100%;
-  aspect-ratio:4/3;
+  aspect-ratio:7/6;
   overflow:hidden;
   background:linear-gradient(135deg,#ebe5e7,#ddd5d8); /* visible placeholder while the photo loads (was near-white) */
   flex-shrink:0;
@@ -23011,5 +23011,75 @@ main.main.empty-with-booked:has(> .empty-state.show) > .empty-state.show{positio
   }
 }
 </style>
+<!-- ══ Modal queue: service notice → This Week's Listings → greeting, one at a time, with full background blur ══ -->
+<style>
+#hlNotice,#preavOverlay,#wishModalOverlay{
+  background:rgba(30,20,35,.5) !important;
+  -webkit-backdrop-filter:blur(18px) saturate(1.05) !important;backdrop-filter:blur(18px) saturate(1.05) !important;
+}
+.mq-hold{display:none !important}
+</style>
+<script>
+(function(){
+  var Q=[
+    {id:'hlNotice',cls:'show'},
+    {id:'preavOverlay',cls:'open'},
+    {id:'wishModalOverlay',cls:'open'}
+  ];
+  var els={}, held={}, noticeDone=false, timer=null;
+  Q.forEach(function(m){ els[m.id]=document.getElementById(m.id); });
+  if(!els.hlNotice) noticeDone=true;
+
+  function wants(m){ return els[m.id] && els[m.id].classList.contains(m.cls); }
+
+  function hold(m){
+    var el=els[m.id]; if(held[m.id]) return;
+    held[m.id]=true; el.classList.add('mq-hold');
+    if(m.id==='preavOverlay' && typeof preavAutoStop==='function') try{ preavAutoStop(); }catch(e){}
+  }
+  function release(m){
+    var el=els[m.id]; if(!held[m.id]) return;
+    held[m.id]=false; el.classList.remove('mq-hold');
+    if(m.id==='preavOverlay'){
+      try{ if(typeof preavSyncNav==='function') preavSyncNav(); if(typeof preavAutoStart==='function') preavAutoStart(); }catch(e){}
+    }
+  }
+
+  function sync(){
+    var shown=false;
+    Q.forEach(function(m){
+      if(!wants(m)){ if(held[m.id]){ held[m.id]=false; els[m.id].classList.remove('mq-hold'); } return; }
+      var blocked = shown || (m.id!=='hlNotice' && !noticeDone);
+      if(blocked) hold(m);
+      else { release(m); shown=true; }
+    });
+  }
+
+  function onChange(){
+    if(!noticeDone && els.hlNotice){
+      var n=els.hlNotice;
+      if(n.classList.contains('show')) n._mqSeen=true;
+      else if(n._mqSeen){ noticeDone=true; setTimeout(sync,280); return; } /* notice closed → next one fades in */
+    }
+    sync();
+  }
+
+  var mo=new MutationObserver(function(){ onChange(); });
+  Q.forEach(function(m){ if(els[m.id]) mo.observe(els[m.id],{attributes:true,attributeFilter:['class']}); });
+
+  /* Safety: if the notice never opens, don't block the others forever */
+  timer=setTimeout(function(){
+    if(!noticeDone && els.hlNotice && !els.hlNotice._mqSeen){ noticeDone=true; sync(); }
+  },3000);
+
+  /* Closing one modal reveals the next after a brief pause so they don't flash over each other */
+  Q.forEach(function(m){
+    if(!els[m.id]) return;
+    new MutationObserver(function(){
+      if(!wants(m)){ setTimeout(sync,260); }
+    }).observe(els[m.id],{attributes:true,attributeFilter:['class']});
+  });
+})();
+</script>
 </body>
 </html>
