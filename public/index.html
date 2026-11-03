@@ -22972,9 +22972,22 @@ main.main.empty-with-booked:has(> .empty-state.show) > .empty-state.show{positio
 
 /* Property VIEW modal: narrower card. Desktop caps at 640px; mobile gets wider side gaps. */
 #addModalBox.view-mode{width:100% !important;max-width:640px !important}
-@media (max-width:640px){
-  #addModal:has(#addModalBox.view-mode){padding:16px 28px !important;box-sizing:border-box}
-  #addModalBox.view-mode{width:100% !important;max-width:100% !important}
+/* MOBILE: every modal = 5% gap left, 90% width, 5% gap right */
+@media (max-width:700px){
+  .sort-modal,.modal-overlay,.preav-overlay,.wish-modal-overlay,#confirmOverlay,
+  .fm-overlay,.add-modal-overlay,#hlNotice,#addModal:has(#addModalBox.view-mode){
+    padding-left:5% !important;padding-right:5% !important;
+    padding-top:16px !important;padding-bottom:16px !important;
+    box-sizing:border-box !important;
+  }
+  .modal,.add-modal,.compare-modal,.viewers-modal,.profile-modal-box,.hours-modal,
+  .preav-modal,.fm-box,.fm-sub .fm-box,.sort-sheet,.wish-modal-card,.confirm-card,
+  #hlNotice .hln-card,#comingSoonModal .cs-card,#chargesModal .add-modal,
+  #addModalBox,#addModalBox.view-mode{
+    width:100% !important;max-width:none !important;min-width:0 !important;
+    margin-left:auto !important;margin-right:auto !important;
+    box-sizing:border-box !important;
+  }
 }
 </style>
 </body>
