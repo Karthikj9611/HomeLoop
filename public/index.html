@@ -1367,7 +1367,7 @@ main.tab-explore .empty-state{display:none !important}
 .prop-grid.promo-slider::-webkit-scrollbar{display:none}
 /* An empty slider (no cards) must take up no space — its own padding was adding ~14px between the banner and the first section header on the Promoted tab. */
 .prop-grid.promo-slider:empty{display:none}
-.prop-grid.promo-slider,[id$="BookedGrid"],#recentlyViewedStrip{will-change:scroll-position,transform;overscroll-behavior-x:contain}
+.prop-grid.promo-slider,[id$="BookedGrid"],#recentlyViewedStrip{overscroll-behavior-x:contain}
 .prop-grid.promo-slider > .prop-card{flex:0 0 var(--promo-card-w, calc((100% - 48px) / 4));width:var(--promo-card-w, auto);min-width:0;scroll-snap-align:start}
 /* Fallbacks only (used until JS measures the real Rent grid track): flex-basis % is already
    relative to the content box, so the container padding must NOT be subtracted again. */
@@ -11038,7 +11038,7 @@ function buildImgSlider(p, fg, uidSuffix, videoSlideHtml) {
   // position and congested the network enough to blank out the very
   // images that were actually scrolling into view.
   const imgSlides = imgs.map((url, i) =>
-    `<img class="img-slide${i===0?' active':''}" ${i===0?`src="${safeUrl(url)}" loading="lazy"`:`data-src="${safeUrl(url)}"`} decoding="async" alt="" draggable="false" onclick="event.stopPropagation();handleCardImgClick(this,'${p.id}',${i})" />`
+    `<img class="img-slide${i===0?' active':''}" ${i===0?`src="${safeUrl(url)}" loading="lazy"`:`data-src="${safeUrl(url)}"`} decoding="sync" alt="" draggable="false" onclick="event.stopPropagation();handleCardImgClick(this,'${p.id}',${i})" />`
   ).join('');
   // Video tour, when present, always comes after every photo — the last
   // slide in the same swipeable gallery rather than a separate section.
@@ -22863,31 +22863,37 @@ body{background:radial-gradient(80% 50% at 100% 0%,rgba(255,150,110,.26) 0%,rgba
 <script>
 /* Mark section headers that are currently pinned under the filter bar */
 (function(){
-  var ticking=false;
+  var ticking=false, root=document.documentElement;
   function update(){
     ticking=false;
-    /* pin right under the real bottom edge of the filter bar */
     var fb=document.getElementById('filterDdBar');
     if(fb&&fb.offsetParent!==null){
       var fr=fb.getBoundingClientRect();
       var ft=parseFloat(getComputedStyle(fb).top)||0;
-      /* only trust the measurement while the filter bar is itself pinned */
       if(Math.abs(fr.top-ft)<=1.5){
-        document.documentElement.style.setProperty('--stick-top',Math.floor(fr.bottom)+'px');
+        root.style.setProperty('--stick-top',Math.floor(fr.bottom)+'px');
       }
     }
-    document.querySelectorAll('.section-divider').forEach(function(d){
-      if(d.offsetParent===null){d.classList.remove('is-stuck');return;}
-      /* offset by the divider's own top padding so the pill itself sits flush under the filter bar */
-      var st=parseFloat(document.documentElement.style.getPropertyValue('--stick-top'));
-      if(isNaN(st)) st=parseFloat(getComputedStyle(d).top)||0;
-      var pt=parseFloat(getComputedStyle(d).paddingTop)||0;
-      var want=Math.round(st-pt+2);
-      if(d.style.top!==want+'px') d.style.top=want+'px';
-      var top=want;
-      var r=d.getBoundingClientRect();
-      d.classList.toggle('is-stuck', r.top<=top+1 && window.scrollY>0);
-    });
+    var st=parseFloat(root.style.getPropertyValue('--stick-top'));
+    var sy=window.scrollY;
+    var divs=document.querySelectorAll('.section-divider');
+    var plan=[], i, d;
+    /* READ phase */
+    for(i=0;i<divs.length;i++){
+      d=divs[i];
+      if(d.offsetParent===null){plan.push(null);continue;}
+      var cs=getComputedStyle(d);
+      var s2=isNaN(st)?(parseFloat(cs.top)||0):st;
+      var want=Math.round(s2-(parseFloat(cs.paddingTop)||0)+2);
+      plan.push({want:want,stuck:d.getBoundingClientRect().top<=want+1&&sy>0});
+    }
+    /* WRITE phase */
+    for(i=0;i<divs.length;i++){
+      d=divs[i];
+      if(!plan[i]){d.classList.remove('is-stuck');continue;}
+      if(d.style.top!==plan[i].want+'px') d.style.top=plan[i].want+'px';
+      d.classList.toggle('is-stuck',plan[i].stuck);
+    }
   }
   function req(){if(!ticking){ticking=true;requestAnimationFrame(update);}}
   window.addEventListener('scroll',req,{passive:true});
@@ -22916,6 +22922,11 @@ body{background:radial-gradient(80% 50% at 100% 0%,rgba(255,150,110,.26) 0%,rgba
   sync();
 })();
 </script>
+<style id="scroll-blank-fix">
+/* Un-loaded card photos were painting #f5f5f5 over the grey placeholder, which looked like a white blank while scrolling */
+.prop-img .img-slide{background-color:transparent}
+.prop-img{background:linear-gradient(135deg,#ebe5e7,#ddd5d8)}
+</style>
 <style id="all-white-override">
 /* Whole page white: no peach/gradient behind or below the listings */
 :root{--bg-2:#ffffff;--bg-3:#f5f5f5}
