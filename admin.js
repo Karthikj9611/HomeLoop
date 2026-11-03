@@ -1,4 +1,4 @@
-const ACCT_OWNER_SIDE = ['owner', 'broker', 'agent', 'builder']; // account types that can list properties (agent/builder are assigned by admin)
+const ACCT_OWNER_SIDE = ['owner', 'pg', 'broker', 'agent', 'builder']; // account types that can list properties (agent/builder are assigned by admin)
 const mongoose  = require('mongoose');
 const crypto    = require('crypto');
 const bcrypt    = require('bcryptjs');

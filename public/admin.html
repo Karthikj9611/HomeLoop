@@ -3782,6 +3782,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
       <select class="form-input" id="ceAccountType">
         <option value="customer">Tenant / Customer</option>
         <option value="owner">Owner</option>
+        <option value="pg">PG / Co-living Owner</option>
         <option value="broker">Broker</option>
         <option value="agent">Agent</option>
         <option value="builder">Builder</option>
@@ -3990,6 +3991,9 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
       </button>
       <button class="cat-tab-btn" data-type="owner" onclick="switchCustType('owner')">
         <i class="fas fa-house-user"></i><span class="cat-tab-btn-label" data-mobile="Owners">Owners</span><span class="cat-count" id="cust-type-count-owner">—</span>
+      </button>
+      <button class="cat-tab-btn" data-type="pg" onclick="switchCustType('pg')">
+        <i class="fas fa-bed"></i><span class="cat-tab-btn-label" data-mobile="PG Owners">PG Owners</span><span class="cat-count" id="cust-type-count-pg">—</span>
       </button>
       <button class="cat-tab-btn" data-type="broker" onclick="switchCustType('broker')">
         <i class="fas fa-user-tie"></i><span class="cat-tab-btn-label" data-mobile="Brokers">Brokers</span><span class="cat-count" id="cust-type-count-broker">—</span>
@@ -5894,9 +5898,9 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
 </div>
 
 <script>
-const ACCT_LABELS = { owner:'Owner', broker:'Broker', agent:'Agent', builder:'Builder', customer:'Tenant' };
+const ACCT_LABELS = { owner:'Owner', pg:'PG Owner', broker:'Broker', agent:'Agent', builder:'Builder', customer:'Tenant' };
 function acctLabel(t){ return ACCT_LABELS[t] || 'Tenant'; }
-const ACCT_OWNER_SIDE = ['owner', 'broker', 'agent', 'builder']; // account types that can list properties (agent/builder are assigned by admin)
+const ACCT_OWNER_SIDE = ['owner', 'pg', 'broker', 'agent', 'builder']; // account types that can list properties (agent/builder are assigned by admin)
 
 let dataTable, propTable, apptTable, honestReviewsTable, userReviewsTable, partnersTable, brokersTable, referralsTable;
 
@@ -7847,7 +7851,7 @@ let _custCountsData = [];
 function updateCustTypeCounts(data){
   if(data) _custCountsData = data; else data = _custCountsData;
   // Level 1: every record of that account type, whatever its status.
-  const t = {customer:0, owner:0, broker:0, agent:0, builder:0, all:data.length};
+  const t = {customer:0, owner:0, pg:0, broker:0, agent:0, builder:0, all:data.length};
   // Level 2: records of the currently selected account type, by status.
   const st = {active:0, leads:0, rented:0, subscription:0, all:0};
   data.forEach(r=>{
@@ -8191,7 +8195,7 @@ function statusBadge(s){
   return `<span class="status-badge ${map[s]||'status-sale'}">${escapeHtml(s)||'—'}</span>`;
 }
 function accountTypeBadge(t){
-  if(t === 'broker' || t === 'agent' || t === 'builder') return `<span class="status-badge status-acct-broker">${acctLabel(t)}</span>`;
+  if(t === 'pg' || t === 'broker' || t === 'agent' || t === 'builder') return `<span class="status-badge status-acct-broker">${acctLabel(t)}</span>`;
   const isOwner = t === 'owner';
   return `<span class="status-badge ${isOwner?'status-acct-owner':'status-acct-customer'}">${isOwner?'Owner':'Customer'}</span>`;
 }

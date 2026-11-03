@@ -123,7 +123,7 @@ const UserSchema = new mongoose.Schema({
   // Which of the two signup paths the person picked — drives what admin sees
   // and can later drive customer- vs owner-specific UI. Defaults to
   // 'customer' for any pre-existing accounts created before this field existed.
-  accountType: { type: String, enum: ['customer', 'owner', 'broker', 'agent', 'builder'], default: 'customer' },
+  accountType: { type: String, enum: ['customer', 'owner', 'pg', 'broker', 'agent', 'builder'], default: 'customer' },
   // Manual admin approval gate. Every account starts false on signup; an
   // admin flips it true from the Customers grid (see PATCH /api/users/:id/verify
   // in admin.js). requireVerified (below) blocks all user "submit" routes
@@ -350,8 +350,8 @@ async function requireUser(req, res, next) {
 
 // "Listed by" is locked to the account type (decided here, never by the client):
 // owner → Owner, broker → Broker, agent → Agent, builder → Builder.
-const ACCT_OWNER_SIDE = ['owner', 'broker', 'agent', 'builder']; // account types that can list properties (agent is assigned by admin; builder can sign up)
-const LISTED_BY_FOR_ACCOUNT = { owner: 'Owner', broker: 'Broker', agent: 'Agent', builder: 'Builder' };
+const ACCT_OWNER_SIDE = ['owner', 'pg', 'broker', 'agent', 'builder']; // account types that can list properties (agent is assigned by admin; builder can sign up)
+const LISTED_BY_FOR_ACCOUNT = { owner: 'Owner', pg: 'Owner', broker: 'Broker', agent: 'Agent', builder: 'Builder' };
 async function requiredListedBy(userId) {
   const u = await User.findById(userId).select('accountType').lean();
   return (u && LISTED_BY_FOR_ACCOUNT[u.accountType]) || null;
@@ -560,7 +560,7 @@ app.post('/api/user/signup', userAuthLimiter, async (req, res) => {
     if (!mobile    || !String(mobile).trim())    return res.status(400).json({ message: 'Mobile number is required' });
     if (!/^[\d+\-\s]{7,15}$/.test(String(mobile).trim())) return res.status(400).json({ message: 'Please enter a valid mobile number' });
 
-    const cleanAccountType = (accountType === 'owner' || accountType === 'broker' || accountType === 'builder') ? accountType : 'customer';
+    const cleanAccountType = (accountType === 'owner' || accountType === 'pg' || accountType === 'broker' || accountType === 'builder') ? accountType : 'customer';
 
     const cleanEmail  = String(email).toLowerCase().trim();
     const cleanMobile = normalizeMobile(mobile);
@@ -2844,7 +2844,7 @@ const reviewSchema = new mongoose.Schema({
   userKey:     { type: String, required: true, index: true },
   userName:    { type: String, required: true },
   userPhoto:   { type: String, trim: true, default: '' },
-  accountType: { type: String, enum: ['customer', 'owner', 'broker', 'agent', 'builder'], default: 'customer' },
+  accountType: { type: String, enum: ['customer', 'owner', 'pg', 'broker', 'agent', 'builder'], default: 'customer' },
   rating:      { type: Number, required: true, min: 1, max: 5 },
   text:        { type: String, required: true, maxlength: 500 },
   createdAt:   { type: Date, default: Date.now }
