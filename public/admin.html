@@ -12247,7 +12247,13 @@ $(document).ready(function(){
       /* 6 – Email */
       { data:null, render:(d,t,row)=>{ if(t==='display') return renderEmail(row); return plainEmail(row); }},
       /* 7 – Property Listings (count) */
-      { data:'listingsCount', className:'dt-body-center', render:(d)=> String(d ?? 0) },
+      { data:'listingsCount', className:'dt-body-center', render:(d,t,row)=>{
+          const n = d ?? 0;
+          if(t!=='display') return n;
+          if(!n) return '0';
+          const key = String(row.mobile || row._id).replace(/'/g,"\\'");
+          return '<button type="button" class="views-badge" title="Click to see this user\'s properties" onclick="openOwnedPropsModal(\''+key+'\')"><i class="fas fa-house"></i><span>'+n+'</span></button>';
+      }},
       /* 8 – Visit Requests (count) */
       { data:'visitsCount', className:'dt-body-center', render:(d)=> String(d ?? 0) },
       /* 9 – Views (total views on their listings + listings they have viewed) */
@@ -16233,6 +16239,63 @@ async function openViewedPropsModal(key){
     ).join('') + '</div>';
   }catch(e){
     box.innerHTML = '<div class="vp-empty"><i class="fas fa-triangle-exclamation"></i>Could not load the list. Please try again.</div>';
+  }
+}
+
+/* Opens the full read-only property view (same form as the Properties grid's View button) on top of the listings modal.
+   _adminPropCache is normally filled by the Properties grid on page load; if the listing isn't there yet, load it first. */
+async function viewOwnedProperty(id){
+  if(!_adminPropCache[id]){
+    try{
+      const res = await fetch(BASE + '/api/admin/properties', { headers: authHeaders() });
+      if(!res.ok) throw new Error('bad status');
+      const all = await res.json();
+      (Array.isArray(all) ? all : []).forEach(p => { if(p && p._id && !_adminPropCache[p._id]) _adminPropCache[p._id] = p; });
+    }catch(e){ alert('Could not load that listing'); return; }
+  }
+  openAdminPropModal(id);
+}
+
+/* Customers grid → Listings badge: every property owned by this customer. */
+async function openOwnedPropsModal(key){
+  const c = _customerCache[key];
+  if(!c) return;
+  const modal = document.getElementById('viewedPropsModal');
+  _vmTheme(modal, 'cust');
+  const box = document.getElementById('viewedPropsModalBox');
+  const fullName = ((c.firstName||'')+' '+(c.lastName||'')).trim() || c.email || 'Customer';
+  document.getElementById('viewedPropsModalAvatar').textContent = fullName.split(/\s+/).slice(0,2).map(w => w.charAt(0)).join('').toUpperCase() || '?';
+  document.getElementById('viewedPropsModalName').textContent = fullName;
+  document.getElementById('viewedPropsModalSub').textContent = c.mobile || '';
+  const countEl = document.getElementById('viewedPropsModalCount');
+  const setCount = n => { countEl.innerHTML = '<b>' + n + '</b><span>listings</span>'; };
+  setCount(Number(c.listingsCount || 0));
+  box.innerHTML = '<div class="vx-list"><div class="vx-skel"></div><div class="vx-skel"></div><div class="vx-skel"></div></div>';
+  modal.classList.add('open');
+  document.body.style.overflow = 'hidden';
+  try{
+    const list = await _pvFetchJson('/api/users/' + encodeURIComponent(c._id) + '/listings');
+    if(!modal.classList.contains('open')) return;
+    setCount(list.length);
+    if(!list.length){
+      box.innerHTML = '<div class="vp-empty"><i class="fas fa-house-circle-xmark"></i>No listings.</div>';
+      return;
+    }
+    box.innerHTML = '<div class="vx-list"><div class="vx-group">' + list.map((v, i) => {
+      const st = String(v.status || '').replace(/^for\s+/i, '');
+      const cls = /sale|sell/i.test(st) ? ' sale' : /lease/i.test(st) ? ' st-lease' : /\bpg\b/i.test(st) ? ' st-pg' : /short/i.test(st) ? ' st-short' : '';
+      const flags = [v.booked ? 'Booked' : '', v.blocked ? 'Blocked' : '', v.verified ? '' : 'Unverified'].filter(Boolean).join(' · ');
+      const meta = [v.type, [v.area, v.city].filter(Boolean).join(', '), v.views + ' views', flags].filter(Boolean).join(' · ');
+      const d = v.createdAt ? new Date(v.createdAt) : null;
+      return '<div class="vx-row' + cls + '" style="cursor:pointer;animation-delay:' + Math.min(i, 10) * 35 + 'ms" title="Click to view this property" onclick="viewOwnedProperty(\'' + _adminModalEsc(v._id) + '\')">' +
+        '<div class="sv-av sq"><i class="fas fa-house"></i></div>' +
+        '<div class="vx-main"><div class="vx-pid"><span class="sv-name">' + _adminModalEsc(v.propertyId || v._id) + '</span>' + (st ? '<span class="vx-tag">' + _adminModalEsc(st) + '</span>' : '') + '</div>' +
+        '<div class="vx-meta"><i class="fas fa-location-dot"></i>' + _adminModalEsc(meta || '—') + '</div></div>' +
+        (d ? '<span class="vx-ago">' + _adminModalEsc(fmtDateDMY(d)) + '</span>' : '') +
+      '</div>';
+    }).join('') + '</div></div>';
+  }catch(e){
+    box.innerHTML = _pvErrHtml(e);
   }
 }
 

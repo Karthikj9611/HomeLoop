@@ -1787,6 +1787,45 @@ self.addEventListener('notificationclick', event => {
     }
   });
 
+  // -- GET /api/users/:id/listings (admin: which properties belong to this customer) --
+  // Feeds the Listings-count badge in the Customers grid. Same ownership rule as the grid count:
+  // listing.userId matches, or owner.phone / owner.altPhone equals their mobile.
+  app.get('/api/users/:id/listings', requireAdmin, requireModule('customers'), async (req, res) => {
+    try {
+      const { id } = req.params;
+      if (!mongoose.Types.ObjectId.isValid(id)) return res.status(400).json({ message: 'Invalid user id' });
+      const user = await User.findById(id).select('mobile').lean();
+      if (!user) return res.status(404).json({ message: 'User not found' });
+      let m = String(user.mobile || '').replace(/\D/g, '');
+      if (m.length > 10 && m.startsWith('0')) m = m.slice(1);
+      if (m.length > 10 && m.startsWith('91')) m = m.slice(m.length - 10);
+      const or = [{ userId: id }];
+      if (m) { or.push({ 'owner.phone': m }, { 'owner.altPhone': m }); }
+      const docs = (await Promise.all(LISTING_MODEL_LIST.map(M =>
+        M.find({ $or: or })
+          .select('propertyId userId basic.status location.area location.city property.type property.bhk verified booked blocked views createdAt')
+          .lean()
+      ))).flat();
+      docs.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+      res.json(docs.map(d => ({
+        _id:        String(d._id),
+        propertyId: d.propertyId || '',
+        status:     d.basic ? (d.basic.status || '') : '',
+        type:       d.property ? [d.property.bhk, d.property.type].filter(Boolean).join(' ') : '',
+        area:       d.location ? (d.location.area || '') : '',
+        city:       d.location ? (d.location.city || '') : '',
+        verified:   !!d.verified,
+        booked:     !!d.booked,
+        blocked:    !!d.blocked,
+        views:      d.views || 0,
+        createdAt:  d.createdAt,
+      })));
+    } catch (err) {
+      console.error('GET /api/users/:id/listings error:', err);
+      res.status(500).json({ message: 'Error fetching listings' });
+    }
+  });
+
   app.patch('/api/users/mobile/:mobile/remarks', requireAdmin, requireModuleAction('customers'), async (req, res) => {
     try {
       const { remarks } = req.body || {};
