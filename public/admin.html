@@ -280,6 +280,24 @@ body{
   #partnerBulkToolbar .bulk-btn .bulk-btn-label{display:none!important}
   #brokerBulkToolbar .bulk-btn .bulk-btn-label{display:none!important}
 }
+/* Floating-stack PDF button (Honest Reviews / Partners / Brokers): the PDF export is a DataTables
+   .dt-button, not a .bulk-btn, so it fell back to the global transparent/no-border style and
+   vanished over the table. Give it the same solid pill as the Copy button. */
+#reviewBulkToolbar .dt-buttons,#partnerBulkToolbar .dt-buttons,#brokerBulkToolbar .dt-buttons{display:flex!important;flex-direction:column!important;flex-wrap:nowrap!important;gap:8px!important;width:100%!important;margin:0!important}
+#reviewBulkToolbar .dt-button,#partnerBulkToolbar .dt-button,#brokerBulkToolbar .dt-button{
+  width:100%!important;min-width:0!important;height:38px!important;padding:0 14px!important;gap:6px!important;
+  flex-direction:row!important;justify-content:flex-start!important;align-items:center!important;white-space:nowrap!important;
+  background:#fff!important;color:var(--ink)!important;border:1px solid var(--border)!important;
+  border-radius:calc(var(--radius) - 4px)!important;box-shadow:0 4px 14px rgba(0,0,0,.22)!important}
+#reviewBulkToolbar .dt-button:hover,#partnerBulkToolbar .dt-button:hover,#brokerBulkToolbar .dt-button:hover{background:var(--surface2)!important}
+#reviewBulkToolbar .dt-button .bulk-btn-label,#partnerBulkToolbar .dt-button .bulk-btn-label,#brokerBulkToolbar .dt-button .bulk-btn-label{font-size:0!important;line-height:0!important}
+#reviewBulkToolbar .dt-button .bulk-btn-label::after,#partnerBulkToolbar .dt-button .bulk-btn-label::after,#brokerBulkToolbar .dt-button .bulk-btn-label::after{content:attr(data-mobile);font-size:.82rem;line-height:1.2;display:inline;font-weight:700}
+@media(max-width:768px){
+  #reviewBulkToolbar .dt-buttons,#partnerBulkToolbar .dt-buttons,#brokerBulkToolbar .dt-buttons{width:auto!important;align-items:flex-end!important;gap:10px!important}
+  #reviewBulkToolbar .dt-button,#partnerBulkToolbar .dt-button,#brokerBulkToolbar .dt-button{width:46px!important;min-width:46px!important;height:46px!important;padding:0!important;gap:0!important;justify-content:center!important;border-radius:50%!important}
+  #reviewBulkToolbar .dt-button i,#partnerBulkToolbar .dt-button i,#brokerBulkToolbar .dt-button i{font-size:1.05rem!important;margin:0!important}
+  #reviewBulkToolbar .dt-button .bulk-btn-label,#partnerBulkToolbar .dt-button .bulk-btn-label,#brokerBulkToolbar .dt-button .bulk-btn-label{display:none!important}
+}
 /* Selection-only actions: stay hidden until JS clears .sel-hide (beats mobile display:inline-flex!important) */
 #bulkToolbar .bulk-btn.sel-hide{display:none!important}
 /* Uniform column: every button same width, left-aligned, one under the other */
@@ -2092,7 +2110,7 @@ body.pact-hide-booking #propertyTable .pact-booking{display:none!important}
 }
 .add-modal-overlay.open{display:flex}
 .add-modal{
-  background:var(--bg);border-radius:var(--radius-xl);
+  background:#fff;border-radius:var(--radius-xl);
   width:100%;max-width:520px;max-height:92vh;
   overflow-y:auto;padding:24px;
   position:relative;
@@ -2194,7 +2212,7 @@ body.pact-hide-booking #propertyTable .pact-booking{display:none!important}
 .compare-modal-header{
   display:flex;align-items:center;justify-content:space-between;
   margin:-24px -24px 16px;padding:18px 24px;border-bottom:1px solid var(--border);
-  position:sticky;top:-24px;background:var(--bg);z-index:5;
+  position:sticky;top:-24px;background:#fff;z-index:5;
 }
 .compare-modal-title{font-size:17px;font-weight:700}
 .compare-modal-header-actions{display:flex;align-items:center;gap:8px}
@@ -3390,6 +3408,25 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
   .add-modal.share-links-modal-box,.add-modal.notif-modal-box,.add-modal.compare-modal-box{max-width:100%}
   .confirm-card{max-width:380px}
 }
+
+/* Standard modal header (orange, same as the property view/edit modal): title + subtitle on the left, action buttons + close on the right. */
+.std-hdr{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 24px;background:linear-gradient(135deg,var(--brand) 0%,var(--brand-hover) 100%);color:#fff;position:sticky;top:0;z-index:5;flex-shrink:0}
+.std-hdr-text{min-width:0;flex:1}
+.std-hdr-title{font-size:1.1rem;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.std-hdr-sub{font-size:12px;font-weight:600;color:rgba(255,255,255,.85);margin-top:2px}
+.std-hdr-sub:empty{display:none}
+.std-hdr-actions{display:flex;align-items:center;gap:10px;flex:0 0 auto}
+.std-hdr-btn{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.4);color:#fff;border-radius:99px;padding:7px 14px;font:inherit;font-size:12.5px;font-weight:700;cursor:pointer;transition:background .15s}
+.std-hdr-btn:hover{background:rgba(255,255,255,.28)}
+.std-hdr-btn i{font-size:11px}
+.std-hdr-close{width:32px;height:32px;border-radius:50%;border:0;background:var(--brand);color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;cursor:pointer;box-shadow:0 3px 8px rgba(0,0,0,.25);transition:background .15s}
+.std-hdr-close:hover{background:var(--brand-hover)}
+@media (max-width:640px){.std-hdr{padding:12px 14px}.std-hdr-btn .btn-label{display:none}}
+/* Read-only "view" mode shared by the Honest Review / Partner / Broker modals: fields locked, Save row hidden, Edit button shown in the header. */
+.ro-edit-btn{display:none}
+.prop-modal-wrap.ro-view .ro-edit-btn{display:inline-flex}
+.prop-modal-wrap.ro-view .prop-modal-body{pointer-events:none}
+.prop-modal-wrap.ro-view .hr-modal-actions{display:none}
 </style>
 </head>
 <body>
@@ -3585,7 +3622,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
 .sub-form-card{background:#fff;border:1px solid var(--border);border-radius:14px;padding:16px 16px 4px;margin-bottom:12px}
 .sub-form-card.editing{border-color:#4f46e5;box-shadow:0 0 0 3px rgba(79,70,229,.08)}
 .sub-field-hint{font-size:11.5px;color:var(--text-2);margin:-2px 0 0;line-height:1.4}
-.sub-tabs{display:flex;gap:6px;padding:0 24px;border-bottom:1px solid var(--border);background:var(--bg)}
+.sub-tabs{display:flex;gap:6px;padding:0 24px;border-bottom:1px solid var(--border);background:#fff}
 .sub-tab{border:none;background:none;padding:12px 14px;font-size:14px;font-weight:700;color:var(--text-2);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-1px;font-family:inherit;display:flex;align-items:center;gap:8px}
 .sub-tab:hover{color:var(--ink)}
 .sub-tab.on{color:var(--brand);border-bottom-color:var(--brand)}
@@ -3629,7 +3666,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
 .sub-area-tag button{border:none;background:rgba(0,0,0,.08);color:inherit;width:18px;height:18px;border-radius:50%;cursor:pointer;font-size:12px;line-height:1;padding:0}
 .sub-row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .sub-edit-cancel{background:none;border:none;color:#4338ca;font-size:12.5px;font-weight:600;cursor:pointer;padding:0;margin-left:8px}
-.sub-foot{display:flex;gap:10px;padding:14px 24px 18px;border-top:1px solid var(--border);background:var(--bg)}
+.sub-foot{display:flex;gap:10px;padding:14px 24px 18px;border-top:1px solid var(--border);background:#fff}
 .sub-foot button{padding:12px 14px;border-radius:var(--radius-xs);border:none;font-family:'Inter',sans-serif;font-size:14px;font-weight:700;cursor:pointer;white-space:nowrap}
 </style>
 <!-- ══ SUBSCRIPTION MODAL — view / add / edit / remove a customer's subscription plans ══ -->
@@ -3717,11 +3754,9 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
 <!-- EDIT CUSTOMER MODAL - opened by the Customers grid's "Edit" button -->
 <div class="add-modal-overlay" id="customerEditModal" role="dialog" aria-modal="true" aria-label="Edit customer">
   <div class="add-modal" id="customerEditModalBox" style="max-width:420px">
-    <div class="compare-modal-header">
-      <span class="compare-modal-title">Edit Customer</span>
-      <button class="modal-close" onclick="closeCustomerEditModal()" aria-label="Close">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-      </button>
+    <div class="std-hdr" style="margin:-24px -24px 18px;position:static">
+      <div class="std-hdr-text"><div class="std-hdr-title">Edit Customer</div></div>
+      <div class="std-hdr-actions"><button type="button" class="std-hdr-close" onclick="closeCustomerEditModal()" aria-label="Close">&#10005;</button></div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
       <div class="form-group" style="margin-bottom:0">
@@ -9295,6 +9330,33 @@ window.setReviewStatus = async function(id, status){
 };
 
 /* ── HONEST REVIEWS: ADD / EDIT MODAL ── */
+/* Read-only view mode for the Honest Review / Partner / Broker modals. */
+const _RO_CFG = {
+  honestReviewModal:{ mod:'reviews',  titleId:'honestReviewModalTitle', view:'Honest Review', edit:'Edit Honest Review' },
+  partnerModal:     { mod:'partners', titleId:'partnerModalTitle',      view:'Partner',       edit:'Edit Partner' },
+  brokerModal:      { mod:'brokers',  titleId:'brokerModalTitle',       view:'Broker',        edit:'Edit Broker' }
+};
+function _roApply(modalId, on){
+  const m = document.getElementById(modalId), cfg = _RO_CFG[modalId];
+  if(!m || !cfg) return;
+  m.classList.toggle('ro-view', !!on);
+  m.querySelectorAll('.prop-modal-body input, .prop-modal-body select, .prop-modal-body textarea').forEach(el => {
+    if(el.type === 'hidden') return;
+    if(on){ if(el.disabled) el.dataset.roKeep = '1'; el.disabled = true; }
+    else if(!el.dataset.roKeep) el.disabled = false;
+  });
+  const b = m.querySelector('.ro-edit-btn');
+  if(b) b.style.display = (on && !canAct(cfg.mod)) ? 'none' : '';
+  if(on) document.getElementById(cfg.titleId).textContent = cfg.view;
+  if(modalId === 'brokerModal'){ const sub = document.getElementById('brokerModalSub'); if(sub && on) sub.textContent = "Area and contact number"; }
+}
+window.roEnableEdit = function(modalId){
+  const cfg = _RO_CFG[modalId];
+  if(!cfg || blockIfViewOnly(cfg.mod)) return;
+  _roApply(modalId, false);
+  document.getElementById(cfg.titleId).textContent = cfg.edit;
+};
+
 window.openHonestReviewModal = function(id){
   const errEl = document.getElementById('hrFormError');
   errEl.classList.remove('show'); errEl.textContent = '';
@@ -9314,6 +9376,7 @@ window.openHonestReviewModal = function(id){
 
   document.getElementById('honestReviewModal').classList.add('open');
   document.body.style.overflow = 'hidden';
+  _roApply('honestReviewModal', !!row);
 };
 
 function closeHonestReviewModal(){
@@ -9381,7 +9444,7 @@ window.saveHonestReview = async function(){
 /* ── BROKERS: ADD / EDIT / DELETE ── */
 let _editingBrokerId = null;
 window.openBrokerModal = function(id){
-  if(blockIfViewOnly('brokers')) return;
+  if(!(typeof id === 'string' && id) && blockIfViewOnly('brokers')) return;   // adding needs action access; viewing an existing broker does not
   clearBrokerError();
   // called from the toolbar's onclick with no args (add) or with a broker id (edit)
   const row = (typeof id === 'string' && id)
@@ -9394,7 +9457,8 @@ window.openBrokerModal = function(id){
   document.getElementById('brokerModalSub').textContent   = row ? "Update the broker's area or contact number" : "Save the broker's area and contact number";
   document.getElementById('brokerFormSaveBtn').textContent = row ? 'Update broker' : 'Save broker';
   document.getElementById('brokerModal').classList.add('open');
-  setTimeout(()=>document.getElementById('brokerFormLocation').focus(), 50);
+  _roApply('brokerModal', !!row);
+  if(!row) setTimeout(()=>document.getElementById('brokerFormLocation').focus(), 50);
 };
 
 window.closeBrokerModal = function(){
@@ -9776,6 +9840,7 @@ window.openPartnerModal = function(id){
 
   document.getElementById('partnerModal').classList.add('open');
   document.body.style.overflow = 'hidden';
+  _roApply('partnerModal', !!row);
 };
 
 function closePartnerModal(){
@@ -12305,10 +12370,6 @@ $(document).ready(function(){
 				  <i class="fab fa-whatsapp"></i><span class="btn-label"> WhatsApp</span>
 				</button></span>
 
-				<span class="pact pact-edit"><button class="btn-view btn-action-edit" onclick="openCustomerEditModal('${row.mobile || row._id}')" title="Edit this customer's details">
-				  <i class="fas fa-pen"></i><span class="btn-label"> Edit</span>
-				</button></span>
-
 				${(ACCT_OWNER_SIDE.includes(row.accountType) && row.accountType !== 'owner') ? '' : `<span class="pact pact-subscription"><button class="btn-view btn-action-sub${(row.subscriptionFrom || row.subscriptionAt) ? ' is-set' : ''}" onclick="openSubscriptionModal('${row.mobile || row._id}')" title="${(row.subscriptionFrom || row.subscriptionAt) ? 'Subscribed: ' + plainDateTime(row.subscriptionFrom || row.subscriptionAt) + (row.subscriptionTo ? ' → ' + plainDateTime(row.subscriptionTo) : '') + ((row.subscriptions || []).length > 1 ? '  (' + row.subscriptions.length + ' subscriptions — click to view / add)' : '  (click to add another)') : 'Set subscription From – To'}">
 				  <i class="fas fa-calendar-check"></i><span class="btn-label"> Subscription</span>
 				</button></span>`}
@@ -13264,7 +13325,7 @@ $(document).ready(function(){
       { data:null, orderable:false, render:(d,t,row)=>{
           if(t!=='display') return '';
           return `<div style="display:inline-flex;gap:6px;flex-wrap:nowrap;justify-content:center">
-            <span class="pact pact-edit"><button class="btn-view" onclick="openHonestReviewModal('${row._id}')"><i class="fas fa-pen"></i><span class="btn-label"> Edit</span></button></span>
+            <span class="pact pact-edit"><button class="btn-view" onclick="openHonestReviewModal('${row._id}')"><i class="fas fa-eye"></i><span class="btn-label"> View</span></button></span>
             <span class="pact pact-delete"><button class="btn-view" style="color:#c0392b" title="Delete this review" onclick="deleteHonestReview('${row._id}')"><i class="fas fa-trash"></i><span class="btn-label"> Delete</span></button></span>
           </div>`;
       }}
@@ -13417,7 +13478,7 @@ $(document).ready(function(){
       { data:null, orderable:false, render:(d,t,row)=>{
           if(t!=='display') return '';
           return `<div style="display:inline-flex;gap:6px;flex-wrap:nowrap;justify-content:center">
-            <span class="pact pact-edit"><button class="btn-view" onclick="openPartnerModal('${row._id}')"><i class="fas fa-pen"></i><span class="btn-label"> Edit</span></button></span>
+            <span class="pact pact-edit"><button class="btn-view" onclick="openPartnerModal('${row._id}')"><i class="fas fa-eye"></i><span class="btn-label"> View</span></button></span>
             <span class="pact pact-delete"><button class="btn-view" onclick="deletePartner('${row._id}')"><i class="fas fa-trash"></i><span class="btn-label"> Delete</span></button></span>
           </div>`;
       }}
@@ -13487,7 +13548,7 @@ $(document).ready(function(){
       { data:null, orderable:false, render:(d,t,row)=>{
           if(t!=='display') return '';
           return `<div style="display:inline-flex;gap:6px;flex-wrap:nowrap;justify-content:center">
-            <span class="pact pact-edit"><button class="btn-view" title="Edit this broker" onclick="openBrokerModal('${row._id}')"><i class="fas fa-pen"></i><span class="btn-label"> Edit</span></button></span>
+            <span class="pact pact-edit"><button class="btn-view" title="View this broker" onclick="openBrokerModal('${row._id}')"><i class="fas fa-eye"></i><span class="btn-label"> View</span></button></span>
             <span class="pact pact-delete"><button class="btn-view" onclick="deleteBroker('${row._id}')"><i class="fas fa-trash"></i><span class="btn-label"> Delete</span></button></span>
           </div>`;
       }}
@@ -15307,7 +15368,6 @@ const COL_TOGGLE_CONFIGS = {
       {key:'verified',     label:'Verified badge'},
       {key:'view',         label:'View'},
       {key:'whatsapp',     label:'WhatsApp'},
-      {key:'edit',         label:'Edit'},
       {key:'subscription', label:'Subscription'},
       {key:'delete',       label:'Delete'},
       {key:'logout',       label:'Force logout'},
@@ -15339,7 +15399,7 @@ const COL_TOGGLE_CONFIGS = {
     menuId:'reviewColToggleMenu', btnId:'reviewColToggleBtn', wrapId:'reviewColToggleWrap',
     storageKey:'rip_admin_reviewColVisibility',
     tableSel:'#honestReviewsTable', actionStorageKey:'rip_admin_reviewActionVisibility_v1',
-    actions:[ {key:'edit', label:'Edit'}, {key:'delete', label:'Delete'} ]
+    actions:[ {key:'edit', label:'View'}, {key:'delete', label:'Delete'} ]
   },
   userReview: {
     getTable: ()=>userReviewsTable,
@@ -15361,7 +15421,7 @@ const COL_TOGGLE_CONFIGS = {
     menuId:'partnerColToggleMenu', btnId:'partnerColToggleBtn', wrapId:'partnerColToggleWrap',
     storageKey:'rip_admin_partnerColVisibility',
     tableSel:'#partnersTable', actionStorageKey:'rip_admin_partnerActionVisibility_v1',
-    actions:[ {key:'edit', label:'Edit'}, {key:'delete', label:'Delete'} ]
+    actions:[ {key:'edit', label:'View'}, {key:'delete', label:'Delete'} ]
   },
   referral: {
     getTable: ()=>referralsTable,
@@ -15952,12 +16012,16 @@ function openCustomerModal(id){
 
   const c = _customerCache[id];
   if(!c) return;
+  window._custModalKey = id;
+  const eb = document.getElementById('customerModalEditBtn');
+  if(eb) eb.style.display = canAct('customers') ? '' : 'none';
 
   const fullName =
     `${c.firstName || ''} ${c.lastName || ''}`.trim();
 
   document.getElementById('customerModalName').innerHTML =
     _adminModalEsc(fullName || c.name || 'Customer');
+  const _cs = document.getElementById('customerModalSub'); if(_cs) _cs.textContent = c.mobile || '';
 
   const avatarEl = document.getElementById('customerModalAvatar');
   if (avatarEl) {
@@ -16773,6 +16837,14 @@ function closeViewedPropsModal(){
   document.getElementById('viewedPropsModal').classList.remove('open');
   ['sv-modal','sv-t-visit','sv-t-reg','sv-t-views','sv-t-cust'].forEach(c => document.getElementById('viewedPropsModal').classList.remove(c));
   if(!document.getElementById('customerModal').classList.contains('open')) document.body.style.overflow = '';
+}
+
+/* One action for View + Edit: the grid's View button opens this modal; Edit here switches to the edit form. */
+function editFromCustomerModal(){
+  const key = window._custModalKey;
+  if(!key) return;
+  closeCustomerModal();
+  openCustomerEditModal(key);
 }
 
 function closeCustomerModal(){
@@ -19484,40 +19556,14 @@ markRequiredLabels();
 
   <div class="prop-modal">
 
-    <div class="prop-modal-close-row">
-      <button class="prop-modal-close-btn" onclick="closeCustomerModal()">✕</button>
+    <div class="std-hdr">
+      <div class="std-hdr-text"><div class="std-hdr-title" id="customerModalName"></div><div class="std-hdr-sub" id="customerModalSub"></div></div>
+      <div class="std-hdr-actions"><button type="button" id="customerModalEditBtn" class="std-hdr-btn" onclick="editFromCustomerModal()" title="Edit this customer's details"><i class="fas fa-pen"></i> Edit</button><button type="button" class="std-hdr-close" onclick="closeCustomerModal()" aria-label="Close">&#10005;</button></div>
     </div>
 
     <div class="prop-modal-body">
 
-      <!-- Avatar -->
-      <div style="display:flex;justify-content:center;margin-bottom:20px">
-        <div id="customerModalAvatar" style="
-          width:90px;
-          height:90px;
-          border-radius:50%;
-          background:var(--gold-light);
-          display:flex;
-          align-items:center;
-          justify-content:center;
-          overflow:hidden;
-          font-size:2rem;
-          color:var(--gold-dark);
-        ">
-          <i class="fas fa-user"></i>
-        </div>
-      </div>
-
-      <!-- Name -->
-      <div id="customerModalName"
-        style="
-          text-align:center;
-          font-size:1.4rem;
-          font-weight:700;
-          margin-bottom:20px;
-          color:var(--ink);
-        ">
-      </div>
+      <div style="display:none"><div id="customerModalAvatar"></div></div>
 
       <!-- Details -->
       <div class="prop-modal-grid" id="customerModalDetails"></div>
@@ -19600,39 +19646,12 @@ markRequiredLabels();
 
   <div class="prop-modal">
 
-    <div class="prop-modal-close-row">
-      <button class="prop-modal-close-btn" onclick="closeApptModal()">✕</button>
+    <div class="std-hdr">
+      <div class="std-hdr-text"><div class="std-hdr-title" id="apptModalName"></div></div>
+      <div class="std-hdr-actions"><button type="button" class="std-hdr-close" onclick="closeApptModal()" aria-label="Close">&#10005;</button></div>
     </div>
 
     <div class="prop-modal-body">
-
-      <!-- Avatar -->
-      <div style="display:flex;justify-content:center;margin-bottom:20px">
-        <div style="
-          width:90px;
-          height:90px;
-          border-radius:50%;
-          background:var(--gold-light);
-          display:flex;
-          align-items:center;
-          justify-content:center;
-          font-size:2rem;
-          color:var(--gold-dark);
-        ">
-          <i class="fas fa-calendar-check"></i>
-        </div>
-      </div>
-
-      <!-- Name -->
-      <div id="apptModalName"
-        style="
-          text-align:center;
-          font-size:1.4rem;
-          font-weight:700;
-          margin-bottom:20px;
-          color:var(--ink);
-        ">
-      </div>
 
       <!-- Details -->
       <div class="prop-modal-grid" id="apptModalDetails"></div>
@@ -19648,15 +19667,12 @@ markRequiredLabels();
 
   <div class="prop-modal">
 
-    <div class="prop-modal-close-row">
-      <button class="prop-modal-close-btn" onclick="closeHonestReviewModal()">✕</button>
+    <div class="std-hdr">
+      <div class="std-hdr-text"><div class="std-hdr-title" id="honestReviewModalTitle">Add Honest Review</div></div>
+      <div class="std-hdr-actions"><button type="button" class="std-hdr-btn ro-edit-btn" onclick="roEnableEdit('honestReviewModal')"><i class="fas fa-pen"></i> Edit</button><button type="button" class="std-hdr-close" onclick="closeHonestReviewModal()" aria-label="Close">&#10005;</button></div>
     </div>
 
     <div class="prop-modal-body">
-
-      <div style="text-align:center;font-size:1.4rem;font-weight:700;margin-bottom:20px;color:var(--ink)" id="honestReviewModalTitle">
-        Add Honest Review
-      </div>
 
       <div class="hr-form-error" id="hrFormError"></div>
 
@@ -19727,15 +19743,12 @@ markRequiredLabels();
 
   <div class="prop-modal">
 
-    <div class="prop-modal-close-row">
-      <button class="prop-modal-close-btn" onclick="closePartnerModal()">✕</button>
+    <div class="std-hdr">
+      <div class="std-hdr-text"><div class="std-hdr-title" id="partnerModalTitle">Add Partner</div></div>
+      <div class="std-hdr-actions"><button type="button" class="std-hdr-btn ro-edit-btn" onclick="roEnableEdit('partnerModal')"><i class="fas fa-pen"></i> Edit</button><button type="button" class="std-hdr-close" onclick="closePartnerModal()" aria-label="Close">&#10005;</button></div>
     </div>
 
     <div class="prop-modal-body">
-
-      <div style="text-align:center;font-size:1.4rem;font-weight:700;margin-bottom:20px;color:var(--ink)" id="partnerModalTitle">
-        Add Partner
-      </div>
 
       <div class="hr-form-error" id="partnerFormError"></div>
 
@@ -19851,15 +19864,11 @@ markRequiredLabels();
 </style>
 <div class="prop-modal-wrap" id="brokerModal" onclick="if(event.target===this)closeBrokerModal()">
   <div class="prop-modal">
-    <div class="prop-modal-close-row">
-      <button class="prop-modal-close-btn" onclick="closeBrokerModal()" aria-label="Close">&times;</button>
+    <div class="std-hdr">
+      <div class="std-hdr-text"><div class="std-hdr-title" id="brokerModalTitle">Add Broker</div><div class="std-hdr-sub" id="brokerModalSub">Save the broker's area and contact number</div></div>
+      <div class="std-hdr-actions"><button type="button" class="std-hdr-btn ro-edit-btn" onclick="roEnableEdit('brokerModal')"><i class="fas fa-pen"></i> Edit</button><button type="button" class="std-hdr-close" onclick="closeBrokerModal()" aria-label="Close">&#10005;</button></div>
     </div>
     <div class="prop-modal-body">
-      <div class="bk-head">
-        <div class="bk-badge"><i class="fas fa-user-tie"></i></div>
-        <div class="bk-title" id="brokerModalTitle">Add Broker</div>
-        <div class="bk-sub" id="brokerModalSub">Save the broker's area and contact number</div>
-      </div>
 
       <div class="hr-form-error" id="brokerFormError"></div>
 
