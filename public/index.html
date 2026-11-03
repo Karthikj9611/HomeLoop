@@ -15232,11 +15232,19 @@ function coordinatorDigits(p) {
   // Public call OFF: every Call / WhatsApp / enquiry (tenant, owner, PG, broker, builder) goes to the in-house Coordinator line.
   return COORDINATOR_PHONE;
 }
+/* Tapping Call / WhatsApp / Navigate counts as a view of that listing (same server-deduped counter as opening the card), even if the visitor is then asked to log in. */
+function countContactView(propId) {
+  try {
+    const p = PROPERTIES.find(x => x.id === propId);
+    if (p) incrementViews(p);
+  } catch (_) {}
+}
 /* A "public call" listing: the owner's number and/or the navigate link is exposed on it. Only these need a login to Call / WhatsApp / Navigate. */
 function isPublicCallProp(p) {
   return !!p && (cardCallOn(p) || !!(p.currentLocationLink || p.navigateUrl));
 }
 function openCall(propId) {
+  countContactView(propId);
   const p = PROPERTIES.find(x => x.id === propId);
   if (!p) return;
   if (isPublicCallProp(p) && requireLoginForContact('Please log in to call the owner')) return;
@@ -15274,6 +15282,7 @@ function openLocationLinkNavigate(url) {
 
 /* Opens Google Maps directions to the property — only listings with a public owner number carry navigateUrl. */
 function openPropertyNavigate(propId) {
+  countContactView(propId);
   if (requireLoginForContact('Please log in to get directions to the property')) return;
   const p = PROPERTIES.find(x => x.id === propId) || BOOKED_PROPERTIES.find(x => x.id === propId);
   // Prefer the owner's pasted Google Maps link (sent only to subscribed tenants); fall back to the address-built directions link.
@@ -15308,6 +15317,7 @@ function cardCallOn(p) {
   return !!((p.ownerPhoneCall && p.ownerPhone) || (p.ownerDirectCall && p.ownerAltPhone));
 }
 function openCardCall(propId) {
+  countContactView(propId);
   if (requireLoginForContact('Please log in to call the owner')) return;
   const p = PROPERTIES.find(x => x.id === propId) || BOOKED_PROPERTIES.find(x => x.id === propId);
   if (!p) return;
@@ -15334,6 +15344,7 @@ function publicOwnerPhone(p, which) {
 }
 /* Calls the owner's main ('main') or alternate ('alt') number — only reachable when admin enabled Public call (numbers are absent otherwise). */
 function openOwnerCall(propId, which) {
+  countContactView(propId);
   if (requireLoginForContact('Please log in to call the owner')) return;
   const p = PROPERTIES.find(x => x.id === propId) || BOOKED_PROPERTIES.find(x => x.id === propId);
   if (!p) return;
@@ -15348,6 +15359,7 @@ function openOwnerCall(propId, which) {
 
 /* WhatsApp on the owner's main ('main') or alternate ('alt') number — only when admin enabled Public call for it. */
 function openOwnerWhatsApp(propId, which) {
+  countContactView(propId);
   if (requireLoginForContact('Please log in to WhatsApp the owner')) return;
   const p = PROPERTIES.find(x => x.id === propId) || BOOKED_PROPERTIES.find(x => x.id === propId);
   if (!p) return;
@@ -15365,6 +15377,7 @@ function openOwnerWhatsApp(propId, which) {
    WHATSAPP CONTACT
 ═══════════════════════════════════════════════ */
 function openWhatsApp(propId) {
+  countContactView(propId);
   const p = PROPERTIES.find(x => x.id === propId);
   if (!p) return;
   if (isPublicCallProp(p) && requireLoginForContact('Please log in to contact on WhatsApp')) return;
