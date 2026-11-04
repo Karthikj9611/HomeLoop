@@ -1218,6 +1218,14 @@ main.tab-explore .empty-state{display:none !important}
 .prop-icon-badge.prop-icon-wa:active{transform:scale(.93)}
 /* 6 icons in the stack: tighten the gaps so it still clears the slide dots / price ribbon */
 .prop-right-badges:has(.prop-icon-wa){gap:6px}
+/* Reserved slot for one more button under Navigate: invisible, keeps its space; the stack is
+   scaled down a little so it still ends above the slide dots / price ribbon. */
+.prop-icon-badge.prop-icon-slot{visibility:hidden;pointer-events:none;background:none;border:0;box-shadow:none}
+.prop-card .prop-right-badges:has(> .prop-icon-slot){scale:.86;transform-origin:top right}
+.compare-col-img .prop-right-badges:has(> .prop-icon-slot){scale:.9}
+.recently-viewed-strip .prop-icon-slot,#recentlyViewedStrip .prop-icon-slot,[id$="BookedGrid"] .prop-icon-slot{display:none}
+.recently-viewed-strip .prop-right-badges,#recentlyViewedStrip .prop-right-badges,[id$="BookedGrid"] .prop-right-badges{scale:none !important}
+
 /* Views icon, relocated from the bottom action row to sit directly below
    the shortlist heart in the floating right-badge stack (see prop-right-badges
    above) — styled like the heart (translucent white circle) rather than the
@@ -5315,7 +5323,7 @@ main.tab-explore .empty-state{display:none !important}
   /* Shortlist + This Week's Listings (mobile): bigger buttons, still ending above the slide dots / price ribbon. */
   .panel-list .prop-right-badges{gap:6px;transform:scale(.86);transform-origin:top right}
   .panel-list .prop-right-badges:has(.prop-icon-wa){gap:3px}
-  .panel-list .prop-right-badges:has(> :nth-child(7)){gap:3px;transform:scale(.74)}
+  .panel-list .prop-right-badges:has(> :nth-child(8)){gap:3px;transform:scale(.74)}
   .compare-table th.compare-col,.compare-empty-cell,.compare-add-slot{min-width:140px}
   .compare-row-label,.compare-section-row td{position:static;left:auto}
   .compare-modal-header{padding:14px 16px}
@@ -11758,7 +11766,7 @@ function _cardHTMLRaw(p, compact, extraLeftBadge, showAvail) {
           ${cardCallOn(p) ? `<div class="prop-icon-badge prop-icon-call" onclick="event.stopPropagation();openCardCall('${p.id}')" aria-label="Call" title="${(p.ownerPhoneCall && p.ownerPhone) || (p.ownerDirectCall && p.ownerAltPhone) ? 'Call owner' : 'Call agent'}">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
           </div>` : ''}
-          ${cardWhatsAppBadgeHTML(p)}${cardNavBadgeHTML(p)}
+          ${cardWhatsAppBadgeHTML(p)}${cardNavBadgeHTML(p)}${cardExtraSlotHTML(p)}
           `}
         </div>
       </div>
@@ -11907,7 +11915,7 @@ function shortlistCardHTML(p) {
           ${cardCallOn(p) ? `<div class="prop-icon-badge prop-icon-call" onclick="event.stopPropagation();openCardCall('${p.id}')" aria-label="Call" title="${(p.ownerPhoneCall && p.ownerPhone) || (p.ownerDirectCall && p.ownerAltPhone) ? 'Call owner' : 'Call agent'}">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
           </div>` : ''}
-          ${cardWhatsAppBadgeHTML(p)}${cardNavBadgeHTML(p)}
+          ${cardWhatsAppBadgeHTML(p)}${cardNavBadgeHTML(p)}${cardExtraSlotHTML(p)}
           `}
         </div>
       </div>
@@ -12439,7 +12447,7 @@ function renderCompareTable() {
           ${cardCallOn(p) ? `<div class="prop-icon-badge prop-icon-call" onclick="event.stopPropagation();openCardCall('${p.id}')" aria-label="Call" title="${(p.ownerPhoneCall && p.ownerPhone) || (p.ownerDirectCall && p.ownerAltPhone) ? 'Call owner' : 'Call agent'}">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
           </div>` : ''}
-          ${cardWhatsAppBadgeHTML(p)}${cardNavBadgeHTML(p)}
+          ${cardWhatsAppBadgeHTML(p)}${cardNavBadgeHTML(p)}${cardExtraSlotHTML(p)}
             </div>
           </div>
         </div>
@@ -15349,6 +15357,13 @@ function openPropertyNavigate(propId) {
    tenant/customer, or an owner who made their listing public), so it appears exactly then. */
 // Set to false to show the Call icon on property cards again (Navigate icon always shows when available).
 const HIDE_CARD_CALL_NAV = true;
+// Reserved slot below the Navigate button (invisible, same size as the other round buttons).
+// To add the next button everywhere (cards, list, shortlist, compare, This Week panel):
+// return its HTML here, e.g. `<div class="prop-icon-badge prop-icon-xyz" ...>...</div>`.
+function cardExtraSlotHTML(p) {
+  if (!p || isBookedProp(p)) return '';
+  return '<div class="prop-icon-badge prop-icon-slot" aria-hidden="true"></div>';
+}
 function cardNavBadgeHTML(p) {
   if (!p || isBookedProp(p) || !(p.currentLocationLink || p.navigateUrl)) return '';
   return `<div class="prop-icon-badge prop-icon-nav" onclick="event.stopPropagation();openPropertyNavigate('${p.id}')" aria-label="Navigate" title="Navigate to property"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.6 21.4 12 12 21.4 2.6 12Z" fill="#fff" stroke="#fff" stroke-width="2" stroke-linejoin="round"/><path d="M8.6 15.2v-3.1c0-.8.6-1.4 1.4-1.4h4.6" fill="none" stroke="#1a73e8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M12.9 8.6l2.6 2.1-2.6 2.1" fill="none" stroke="#1a73e8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>`;
@@ -21579,19 +21594,33 @@ document.addEventListener('keydown',function(e){
 .wk-wrap .shortlist-panel{z-index:1}
 .shortlist-panel .panel-header.wk-header{display:block !important;padding:0 !important;background:transparent !important;overflow:visible}
 .shortlist-panel .panel-header.wk-header::before{display:none !important}
-.wk-header .preav-top{justify-content:center !important;text-align:center}
-@media (max-width:700px){.wk-header .preav-top{justify-content:center !important;padding:10px 50px !important}}
+/* Header: single compact row — live dot, gradient title, one pill (dates + count) */
+.wk-head{position:relative;display:flex;align-items:center;gap:10px;flex-wrap:nowrap;min-height:52px;padding:10px 56px 10px 16px;border-bottom:1px solid rgba(224,58,82,.10)}
+.wk-live{position:relative;width:8px;height:8px;border-radius:50%;background:var(--brand,#E03A52);flex:0 0 auto}
+.wk-live::after{content:"";position:absolute;inset:0;border-radius:50%;background:var(--brand,#E03A52);animation:wkPulse 1.8s ease-out infinite}
+@keyframes wkPulse{0%{transform:scale(1);opacity:.55}100%{transform:scale(3);opacity:0}}
+.wk-title{margin:0;flex:0 1 auto;min-width:0;font-size:17px;line-height:1.2;font-weight:800;letter-spacing:-.015em;white-space:nowrap;background:linear-gradient(90deg,#E03A52 0%,#F0623F 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent}
+.wk-pill{display:inline-flex;align-items:center;gap:6px;flex:0 0 auto;white-space:nowrap;padding:3px 10px;border-radius:999px;background:rgba(224,58,82,.08);border:1px solid rgba(224,58,82,.16);font-size:12px;font-weight:700;line-height:1.3;color:var(--brand,#E03A52)}
+.wk-pill .wk-sep{width:3px;height:3px;border-radius:50%;background:currentColor;opacity:.55;flex:0 0 auto}
+.wk-pill b{font-weight:800}
+.wk-head .preav-close{top:50% !important;bottom:auto !important;right:12px !important;margin:0 !important;transform:translateY(-50%)}
+.wk-head .preav-close:hover{transform:translateY(-50%) rotate(90deg) !important}
+@media (max-width:430px){
+  .wk-head{gap:8px;padding:8px 48px 8px 12px;min-height:46px}
+  .wk-title{font-size:15px}
+  .wk-pill{font-size:11px;padding:2px 8px;gap:5px}
+  #preavCountLbl{display:none}
+}
+@media (prefers-reduced-motion:reduce){.wk-live::after{animation:none;opacity:0}}
 </style>
 <div class="wk-wrap" id="preavOverlay" role="dialog" aria-modal="true" aria-label="This Week’s Listings">
   <div class="panel-backdrop" id="preavBackdrop"></div>
   <aside class="shortlist-panel" id="preavPanel" aria-label="This Week’s Listings">
     <div class="panel-header wk-header">
-      <div class="preav-top">
-        <div class="preav-badge"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M10 21v-6h4v6"/></svg><span class="preav-count" id="preavCount"></span></div>
-        <div class="preav-titles">
-          <h2 class="preav-title">This Week’s Listings</h2>
-          <p class="preav-sub"><span class="l"><b class="preav-range"></b></span><span class="s"><b class="preav-range"></b></span></p>
-        </div>
+      <div class="wk-head">
+        <i class="wk-live" aria-hidden="true"></i>
+        <h2 class="wk-title">This Week’s Listings</h2>
+        <div class="wk-pill"><span class="preav-range"></span><i class="wk-sep" aria-hidden="true"></i><span><b id="preavCount"></b> <span id="preavCountLbl">listings</span></span></div>
         <button class="preav-close" id="preavClose" aria-label="Close This Week’s Listings">
           <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
@@ -21633,7 +21662,8 @@ function showPreAvailModal() {
   var ov = document.getElementById('preavOverlay');
   if (ov.classList.contains('open')) return;
   document.getElementById('preavCount').textContent = items.length;
-  document.querySelectorAll('#preavOverlay .preav-range').forEach(function(el){ el.textContent = rangeTxt; });
+  document.getElementById('preavCountLbl').textContent = items.length === 1 ? 'listing' : 'listings';
+  document.querySelectorAll('#preavOverlay .preav-range').forEach(function(el){ el.textContent = (weekStart.getMonth() === weekLast.getMonth()) ? (weekStart.getDate() + '–' + weekLast.getDate() + ' ' + _mo[weekLast.getMonth()]) : (weekStart.getDate() + ' ' + _mo[weekStart.getMonth()] + ' – ' + weekLast.getDate() + ' ' + _mo[weekLast.getMonth()]); });
   var grid = document.getElementById('preavGrid');
   grid.innerHTML = items.map(function(p){ return cardHTML(p, true, undefined, true); }).join('');
   grid.scrollTop = 0;
