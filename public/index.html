@@ -5115,8 +5115,11 @@ main.tab-explore .empty-state{display:none !important}
      icon and the gaps between them together, without needing to hand-tune
      each icon's own width/height/svg rules individually. */
   .prop-right-badges{transform:scale(.78);transform-origin:top right}
-  /* 6 icons (Call + WhatsApp both shown for Public-call listings): compact so the stack stays above the slide dots */
-  .prop-right-badges:has(.prop-icon-wa){gap:4px;transform:scale(.68)}
+  /* Main grid (mobile): taller photo + larger buttons. 5 icons normally, 6 when Call + WhatsApp both show;
+     the stack is sized to end above the slide dots either way. */
+  .prop-grid:not(.list-view):not([id$="BookedGrid"]) .prop-img{aspect-ratio:auto;height:206px}
+  .prop-grid:not(.list-view):not([id$="BookedGrid"]) .prop-right-badges{gap:6px;transform:scale(.86)}
+  .prop-grid:not(.list-view):not([id$="BookedGrid"]) .prop-right-badges:has(.prop-icon-wa){gap:3px}
   .prop-card{min-height:0}
   .view-toggle{display:none}
   .prop-grid.list-view{grid-template-columns:1fr 1fr;gap:10px}
@@ -5308,11 +5311,11 @@ main.tab-explore .empty-state{display:none !important}
      the price ribbon below it. 168px gives the fully-loaded stack
      (heart+views+compare+call+promoted+verified, all at the .78 mobile
      scale) clear room above the ribbon. */
-  .panel-list .prop-img{height:176px}
-  /* Shortlist + This Week's Listings (mobile): keep the whole right-hand button stack above the
-     slide dots / price ribbon. 5 icons by default; 6 when the verified badge is also shown. */
-  .panel-list .prop-right-badges{gap:6px;transform:scale(.72);transform-origin:top right}
-  .panel-list .prop-right-badges:has(> :nth-child(6)){transform:scale(.62)}
+  .panel-list .prop-img{height:206px}
+  /* Shortlist + This Week's Listings (mobile): bigger buttons, still ending above the slide dots / price ribbon. */
+  .panel-list .prop-right-badges{gap:6px;transform:scale(.86);transform-origin:top right}
+  .panel-list .prop-right-badges:has(.prop-icon-wa){gap:3px}
+  .panel-list .prop-right-badges:has(> :nth-child(7)){gap:3px;transform:scale(.74)}
   .compare-table th.compare-col,.compare-empty-cell,.compare-add-slot{min-width:140px}
   .compare-row-label,.compare-section-row td{position:static;left:auto}
   .compare-modal-header{padding:14px 16px}
