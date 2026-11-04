@@ -1404,8 +1404,22 @@ const Notification = mongoose.model('Notification', NotificationSchema);
 // Best-effort notification creation — never lets a notification failure
 // break the admin action that triggered it. No-op if userId is null (e.g.
 // a listing posted while logged out has no owner to notify).
+// Users are only notified of positive outcomes: property verified, review
+// approved, account approved, visit confirmed. Everything else (pending,
+// cancelled, completed, rejected, unverified) is dropped here, so every caller
+// — including admin.js — is covered without touching each call site.
+function shouldNotifyUser(type, meta) {
+  const status = String((meta && meta.status) || '').toLowerCase();
+  if (type === 'property_verified') return !['unverified', 'rejected'].includes(status);
+  if (type === 'review_approved')   return true;
+  if (type === 'account_verification') return status === 'approved' || status === 'verified';
+  if (type === 'visit_status')      return status === 'confirmed';
+  return false;
+}
+
 async function notifyUser(userId, { type, title, message, meta }) {
   if (!userId) return;
+  if (!shouldNotifyUser(type, meta)) return;
   try {
     await Notification.create({ userId, type, title, message, meta: meta || {} });
   } catch (err) {
@@ -2509,24 +2523,6 @@ app.post('/api/visits', visitLimiter, requireUser, requireVerified, async (req, 
       { $inc: { visitCount: 1 } },
       { new: true, select: 'visitCount' }
     ).lean();
-
-    // Drop a notification for the visit itself (not just later status
-    // changes) — this is what lets the notification panel offer an
-    // "Add to calendar" action right away, before an owner/admin has
-    // confirmed anything. `property` was already fetched above via
-    // findListingById, so no extra query is needed here.
-    await notifyUser(visit.userId, {
-      type: 'visit_status',
-      title: 'Visit requested',
-      message: `Your visit request for ${visitDate} at ${visitTime} has been saved and is awaiting confirmation.`,
-      meta: {
-        visitId: visit.visitId, mongoId: String(visit._id), status: 'Pending',
-        visitDate, visitTime,
-        propertyName: (property.owner    && property.owner.propertyName) || '',
-        propertyArea: (property.location && property.location.area)      || '',
-        propertyCode: property.propertyId || '',
-      },
-    });
 
     // Also raise the admin-facing bell notification (separate from the
     // notifyUser call above) — this is what feeds the Appointments tab's
