@@ -1222,7 +1222,14 @@ main.tab-explore .empty-state{display:none !important}
    scaled down a little so it still ends above the slide dots / price ribbon. */
 .prop-icon-badge.prop-icon-slot{visibility:hidden;pointer-events:none;background:none;border:0;box-shadow:none}
 .prop-card .prop-right-badges:has(> .prop-icon-slot){scale:.86;transform-origin:top right}
-.compare-col-img .prop-right-badges:has(> .prop-icon-slot){scale:.9}
+/* Compare (desktop + mobile): size the whole stack from the photo's own height so every button
+   plus the reserved slot always fits inside the image (no clipping, no overlap with the dots). */
+.compare-col-img{container-type:size}
+.compare-col-img .prop-right-badges{--cs:clamp(16px,calc((100cqh - 16px - 18px) / 7),26px);transform:none !important;scale:none !important;gap:3px !important}
+.compare-col-img .prop-icon-badge,.compare-col-img .prop-heart{width:var(--cs) !important;height:var(--cs) !important;min-width:0}
+.compare-col-img .prop-icon-badge svg,.compare-col-img .prop-heart svg{width:52% !important;height:52% !important}
+.compare-col-img .prop-icon-badge.prop-views-float .prop-views-float-badge{transform:scale(.85);transform-origin:top left}
+@media (max-width:700px){.compare-col-card .compare-col-img{aspect-ratio:1/1}}
 .recently-viewed-strip .prop-icon-slot,#recentlyViewedStrip .prop-icon-slot,[id$="BookedGrid"] .prop-icon-slot{display:none}
 .recently-viewed-strip .prop-right-badges,#recentlyViewedStrip .prop-right-badges,[id$="BookedGrid"] .prop-right-badges{scale:none !important}
 
