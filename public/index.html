@@ -11008,20 +11008,78 @@ function buildVideoSlideHtml(p) {
   const videoUrl = p.media?.video || '';
   const safeVideoUrl = safeUrl(videoUrl);
   if (!safeVideoUrl) return '';
-  const embedHtml = buildVideoEmbed(safeVideoUrl);
-  const body = embedHtml || `<div class="video-slide-fallback">
+  const embedHtml = buildMinimalVideoEmbed(safeVideoUrl);
+  if (embedHtml) return embedHtml;
+  return `<div class="video-slide-fallback">
       <svg viewBox="0 0 24 24" aria-hidden="true"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
       <a href="${esc(safeVideoUrl)}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">Watch video tour</a>
     </div>`;
-  const actions = `<div class="video-slide-actions" onclick="event.stopPropagation()">
-      <a href="${esc(safeVideoUrl)}" target="_blank" rel="noopener noreferrer" aria-label="Open video in new tab" title="Open in new tab">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-      </a>
-      <button type="button" class="video-copy-btn" data-url="${esc(videoUrl)}" onclick="copyVideoLink(this.dataset.url)" aria-label="Copy video link" title="Copy link">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-      </button>
-    </div>`;
-  return body + actions;
+}
+
+// Gallery video: muted, no native controls, a single play/pause button.
+const VID_ICON_PLAY = '<svg viewBox="0 0 24 24" aria-hidden="true"><polygon points="7 4 20 12 7 20 7 4" fill="currentColor" stroke="none"/></svg>';
+const VID_ICON_PAUSE = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="4" width="4" height="16" rx="1" fill="currentColor" stroke="none"/><rect x="14" y="4" width="4" height="16" rx="1" fill="currentColor" stroke="none"/></svg>';
+function buildMinimalVideoEmbed(url) {
+  const info = getVideoEmbedInfo(url);
+  if (!info) return '';
+  let media = '';
+  if (info.type === 'file') {
+    media = `<video class="vid-media" data-kind="file" muted playsinline loop preload="auto" oncanplay="vidCanPlay(this)" ontimeupdate="vidTick(this)" onloadedmetadata="vidTick(this)" ondurationchange="vidTick(this)" onplay="vidSync(this)" onpause="vidSync(this)" disablepictureinpicture disableremoteplayback controlslist="nodownload nofullscreen noremoteplayback noplaybackrate" src="${safeUrl(info.src)}"></video>`;
+  } else if (info.type === 'youtube') {
+    media = `<iframe class="vid-media" data-kind="yt" title="Video tour" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" allow="autoplay; encrypted-media" src="https://www.youtube-nocookie.com/embed/${info.id}?controls=0&mute=1&modestbranding=1&rel=0&playsinline=1&disablekb=1&fs=0&iv_load_policy=3&loop=1&playlist=${info.id}&enablejsapi=1"></iframe>`;
+  } else if (info.type === 'vimeo') {
+    media = `<iframe class="vid-media" data-kind="vimeo" title="Video tour" loading="lazy" allow="autoplay" src="https://player.vimeo.com/video/${info.id}?controls=0&muted=1&title=0&byline=0&portrait=0&playsinline=1&loop=1"></iframe>`;
+  } else return '';
+  const btn = `<button type="button" class="vid-toggle" onclick="event.stopPropagation();toggleGalleryVideo(this.closest('.vid-wrap'))" aria-label="Play video" title="Play / pause">${VID_ICON_PLAY}</button>`;
+  const prog = info.type === 'file'
+    ? `<input type="range" class="vid-seek" min="0" max="1000" value="0" step="1" aria-label="Seek" oninput="vidSeek(this)"><span class="vid-time">0:00 / 0:00</span>`
+    : '';
+  const bar = prog ? `<div class="vid-bar" onclick="event.stopPropagation()" onpointerdown="event.stopPropagation()" onmousedown="event.stopPropagation()" ontouchstart="event.stopPropagation()" ontouchmove="event.stopPropagation()">${prog}</div>` : '';
+  return `<div class="vid-wrap" data-playing="0">${media}<div class="vid-hit" onclick="event.stopPropagation();toggleGalleryVideo(this.parentNode)"></div>${btn}${bar}</div>`;
+}
+function vidCanPlay(v) {
+  const w = v.closest('.vid-wrap');
+  if (w && w.__want && v.paused) { v.muted = true; const r = v.play(); if (r && r.catch) r.catch(() => {}); }
+}
+function vidFmt(t) { t = Math.max(0, Math.floor(t || 0)); return Math.floor(t / 60) + ':' + String(t % 60).padStart(2, '0'); }
+function vidTick(v) {
+  const w = v.closest('.vid-wrap'); if (!w) return;
+  const sk = w.querySelector('.vid-seek'), tm = w.querySelector('.vid-time');
+  const d = v.duration || 0;
+  if (sk && !sk.dataset.drag) { sk.value = d ? Math.round(v.currentTime / d * 1000) : 0; sk.style.setProperty('--p', (sk.value / 10) + '%'); }
+  if (tm) tm.textContent = vidFmt(v.currentTime) + ' / ' + vidFmt(d);
+}
+function vidSeek(sk) {
+  const w = sk.closest('.vid-wrap'), v = w && w.querySelector('video'); if (!v || !v.duration) return;
+  v.currentTime = v.duration * sk.value / 1000;
+  sk.style.setProperty('--p', (sk.value / 10) + '%');
+  vidTick(v);
+}
+function vidSync(v) {
+  const w = v.closest('.vid-wrap'); if (!w) return;
+  const on = !v.paused; w.dataset.playing = on ? '1' : '0';
+  const b = w.querySelector('.vid-toggle');
+  if (b) { b.innerHTML = on ? VID_ICON_PAUSE : VID_ICON_PLAY; b.setAttribute('aria-label', on ? 'Pause video' : 'Play video'); }
+}
+function toggleGalleryVideo(wrap) {
+  if (!wrap) return;
+  const m = wrap.querySelector('.vid-media'); if (!m) return;
+  const btn = wrap.querySelector('.vid-toggle');
+  const play = wrap.dataset.playing !== '1';
+  const kind = m.dataset.kind;
+  if (kind === 'file') {
+    m.muted = true; m.controls = false;
+    if (play) { const r = m.play(); if (r && r.catch) r.catch(() => {}); } else m.pause();
+  } else if (kind === 'yt') {
+    m.contentWindow.postMessage(JSON.stringify({ event: 'command', func: play ? 'playVideo' : 'pauseVideo', args: [] }), '*');
+    if (play) m.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'mute', args: [] }), '*');
+  } else if (kind === 'vimeo') {
+    m.contentWindow.postMessage(JSON.stringify({ method: play ? 'play' : 'pause' }), '*');
+  }
+  wrap.__want = play;
+  wrap.dataset.playing = play ? '1' : '0';
+  btn.innerHTML = play ? VID_ICON_PAUSE : VID_ICON_PLAY;
+  btn.setAttribute('aria-label', play ? 'Pause video' : 'Play video');
 }
 
 // Viewed and Booked cards are read-only quick-glance cards — no call/
@@ -23008,6 +23066,58 @@ body{background:radial-gradient(80% 50% at 100% 0%,rgba(255,150,110,.26) 0%,rgba
   fit();
 })();
 </script>
+<script>
+/* Gallery video: auto-plays (muted) as soon as its slide is shown, pauses when swiped away / modal closed / scrolled out of view */
+(function(){
+  function cmd(w,play){
+    var m=w.querySelector('.vid-media'); if(!m) return;
+    var k=m.dataset.kind;
+    if(k==='file'){ w.__want=play; m.muted=true; if(play){ if(m.error||m.networkState===3) m.load(); var r=m.play(); if(r&&r.catch) r.catch(function(){}); } else m.pause(); return; }
+    try{
+      if(k==='yt'){ m.contentWindow.postMessage(JSON.stringify({event:'command',func:play?'playVideo':'pauseVideo',args:[]}),'*'); }
+      else if(k==='vimeo'){ m.contentWindow.postMessage(JSON.stringify({method:play?'play':'pause'}),'*'); }
+    }catch(e){}
+    w.dataset.playing=play?'1':'0';
+    var b=w.querySelector('.vid-toggle');
+    if(b&&typeof VID_ICON_PAUSE!=='undefined'){ b.innerHTML=play?VID_ICON_PAUSE:VID_ICON_PLAY; }
+  }
+  var io=('IntersectionObserver' in window)?new IntersectionObserver(function(es){
+    es.forEach(function(e){
+      var w=e.target, on=e.isIntersecting&&e.intersectionRatio>=0.5;
+      if(on) setTimeout(function(){ if(w.isConnected) cmd(w,true); }, w.querySelector('iframe')?700:0);
+      else cmd(w,false);
+    });
+  },{threshold:[0,0.5]}):null;
+  function scan(root){
+    if(!io||!root||root.nodeType!==1) return;
+    var list=root.matches&&root.matches('.vid-wrap')?[root]:root.querySelectorAll?root.querySelectorAll('.vid-wrap'):[];
+    Array.prototype.forEach.call(list,function(w){ if(!w.__vidObs){ w.__vidObs=1; io.observe(w); } });
+  }
+  new MutationObserver(function(ms){
+    ms.forEach(function(m){ for(var i=0;i<m.addedNodes.length;i++) scan(m.addedNodes[i]); });
+  }).observe(document.body,{childList:true,subtree:true});
+  scan(document.body);
+})();
+</script>
+<style id="video-minimal">
+/* Gallery video: no native controls / volume / fullscreen / menu / link chips — one play-pause button, muted */
+.vid-wrap{position:absolute;inset:0;background:#000}
+.vid-wrap .vid-media{position:absolute;inset:0;width:100%;height:100%;border:0;object-fit:contain;background:#000;pointer-events:none}
+.vid-wrap video::-webkit-media-controls,.vid-wrap video::-webkit-media-controls-enclosure{display:none !important}
+.vid-hit{position:absolute;inset:0;z-index:1;cursor:pointer}
+.vid-bar{position:absolute;left:12px;right:12px;bottom:32px;z-index:2;display:flex;align-items:center;gap:10px;padding:6px 14px;border-radius:999px;background:rgba(0,0,0,.5);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);color:#fff}
+.vid-seek{flex:1;min-width:0;height:18px;margin:0;-webkit-appearance:none;appearance:none;background:transparent;cursor:pointer}
+.vid-seek::-webkit-slider-runnable-track{height:4px;border-radius:2px;background:linear-gradient(to right,#fff var(--p,0%),rgba(255,255,255,.35) var(--p,0%))}
+.vid-seek::-moz-range-track{height:4px;border-radius:2px;background:rgba(255,255,255,.35)}
+.vid-seek::-moz-range-progress{height:4px;border-radius:2px;background:#fff}
+.vid-seek::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;border-radius:50%;background:#fff;margin-top:-4px}
+.vid-seek::-moz-range-thumb{width:12px;height:12px;border:none;border-radius:50%;background:#fff}
+.vid-time{font-size:12px;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
+.vid-toggle{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:2;width:64px;height:64px;border-radius:50%;border:2px solid rgba(255,255,255,.85);background:rgba(0,0,0,.45);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px)}
+.vid-toggle:hover{background:rgba(0,0,0,.75)}
+.vid-toggle svg{width:20px;height:20px}
+.video-slide-actions{display:none !important}
+</style>
 <style id="scroll-blank-fix">
 /* Un-loaded card photos were painting #f5f5f5 over the grey placeholder, which looked like a white blank while scrolling */
 .prop-img .img-slide{background-color:transparent}
