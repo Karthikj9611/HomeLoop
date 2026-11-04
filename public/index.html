@@ -242,6 +242,7 @@ ul{list-style:none}
 [id$="BookedGrid"] .prop-views-float{display:none}
 /* Booked cards: no Call / navigate icons for anyone. */
 [id$="BookedGrid"] .prop-icon-call,
+[id$="BookedGrid"] .prop-icon-wa,
 [id$="BookedGrid"] .prop-icon-nav{display:none !important}
 /* TEMP: eye/views icon hidden on ALL property cards. Markup + click handler
    (openViewersModal) are untouched — delete this one rule to bring it back. 
@@ -1211,6 +1212,12 @@ main.tab-explore .empty-state{display:none !important}
 .prop-icon-badge.prop-icon-nav{background:linear-gradient(135deg,#5cb3ff,#1a73e8);cursor:pointer}
 .prop-icon-badge.prop-icon-nav svg{width:17px;height:17px;fill:none;stroke:none}
 .prop-icon-badge.prop-icon-nav:active{transform:scale(.93)}
+/* WhatsApp quick-action (shown only where the Call icon is, i.e. owner enabled Public call) */
+.prop-icon-badge.prop-icon-wa{background:#25d366;cursor:pointer}
+.prop-icon-badge.prop-icon-wa svg{width:15px;height:15px;fill:#fff;stroke:none}
+.prop-icon-badge.prop-icon-wa:active{transform:scale(.93)}
+/* 6 icons in the stack: tighten the gaps so it still clears the slide dots / price ribbon */
+.prop-right-badges:has(.prop-icon-wa){gap:6px}
 /* Views icon, relocated from the bottom action row to sit directly below
    the shortlist heart in the floating right-badge stack (see prop-right-badges
    above) — styled like the heart (translucent white circle) rather than the
@@ -1360,7 +1367,8 @@ main.tab-explore .empty-state{display:none !important}
 .prop-loc-avail.prop-loc-avail-future{color:#1a8f4c}
 /* Logged-in owner accounts: no Compare / Call icons on the cards (the property view keeps its Call + WhatsApp buttons). */
 .viewer-owner .prop-action-compare,
-.viewer-owner:not(.viewer-agent) .prop-icon-call{display:none !important} /* HomeLoop agent accounts (Public call) keep the card Call icon */
+.viewer-owner:not(.viewer-agent) .prop-icon-call,
+.viewer-owner:not(.viewer-agent) .prop-icon-wa{display:none !important} /* HomeLoop agent accounts (Public call) keep the card Call icon */
 /* Rent tab: Promoted listings slide horizontally instead of wrapping into a grid. */
 #promotedSection{position:relative}
 .prop-grid.promo-slider{display:flex;grid-template-columns:none;gap:16px;overflow-x:auto;overflow-y:hidden;scroll-snap-type:none;scroll-behavior:auto;scroll-padding-left:20px;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-top:4px;padding-bottom:10px}
@@ -2236,6 +2244,8 @@ main.tab-explore .empty-state{display:none !important}
 [id$="BookedGrid"] .prop-icon-badge svg{width:10px;height:10px}
 .recently-viewed-strip .prop-icon-badge.prop-icon-call svg,
 [id$="BookedGrid"] .prop-icon-badge.prop-icon-call svg,
+.recently-viewed-strip .prop-icon-badge.prop-icon-wa svg,
+[id$="BookedGrid"] .prop-icon-badge.prop-icon-wa svg,
 .recently-viewed-strip .prop-icon-badge.prop-icon-nav svg,
 [id$="BookedGrid"] .prop-icon-badge.prop-icon-nav svg{width:14px;height:14px}
 .recently-viewed-strip .prop-icon-badge.prop-views-float .prop-views-float-badge,
@@ -5105,6 +5115,8 @@ main.tab-explore .empty-state{display:none !important}
      icon and the gaps between them together, without needing to hand-tune
      each icon's own width/height/svg rules individually. */
   .prop-right-badges{transform:scale(.78);transform-origin:top right}
+  /* 6 icons (Call + WhatsApp both shown for Public-call listings): compact so the stack stays above the slide dots */
+  .prop-right-badges:has(.prop-icon-wa){gap:4px;transform:scale(.68)}
   .prop-card{min-height:0}
   .view-toggle{display:none}
   .prop-grid.list-view{grid-template-columns:1fr 1fr;gap:10px}
@@ -5296,7 +5308,11 @@ main.tab-explore .empty-state{display:none !important}
      the price ribbon below it. 168px gives the fully-loaded stack
      (heart+views+compare+call+promoted+verified, all at the .78 mobile
      scale) clear room above the ribbon. */
-  .panel-list .prop-img{height:168px}
+  .panel-list .prop-img{height:176px}
+  /* Shortlist + This Week's Listings (mobile): keep the whole right-hand button stack above the
+     slide dots / price ribbon. 5 icons by default; 6 when the verified badge is also shown. */
+  .panel-list .prop-right-badges{gap:6px;transform:scale(.72);transform-origin:top right}
+  .panel-list .prop-right-badges:has(> :nth-child(6)){transform:scale(.62)}
   .compare-table th.compare-col,.compare-empty-cell,.compare-add-slot{min-width:140px}
   .compare-row-label,.compare-section-row td{position:static;left:auto}
   .compare-modal-header{padding:14px 16px}
@@ -11739,7 +11755,7 @@ function _cardHTMLRaw(p, compact, extraLeftBadge, showAvail) {
           ${cardCallOn(p) ? `<div class="prop-icon-badge prop-icon-call" onclick="event.stopPropagation();openCardCall('${p.id}')" aria-label="Call" title="${(p.ownerPhoneCall && p.ownerPhone) || (p.ownerDirectCall && p.ownerAltPhone) ? 'Call owner' : 'Call agent'}">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
           </div>` : ''}
-          ${cardNavBadgeHTML(p)}
+          ${cardWhatsAppBadgeHTML(p)}${cardNavBadgeHTML(p)}
           `}
         </div>
       </div>
@@ -11888,7 +11904,7 @@ function shortlistCardHTML(p) {
           ${cardCallOn(p) ? `<div class="prop-icon-badge prop-icon-call" onclick="event.stopPropagation();openCardCall('${p.id}')" aria-label="Call" title="${(p.ownerPhoneCall && p.ownerPhone) || (p.ownerDirectCall && p.ownerAltPhone) ? 'Call owner' : 'Call agent'}">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
           </div>` : ''}
-          ${cardNavBadgeHTML(p)}
+          ${cardWhatsAppBadgeHTML(p)}${cardNavBadgeHTML(p)}
           `}
         </div>
       </div>
@@ -12420,7 +12436,7 @@ function renderCompareTable() {
           ${cardCallOn(p) ? `<div class="prop-icon-badge prop-icon-call" onclick="event.stopPropagation();openCardCall('${p.id}')" aria-label="Call" title="${(p.ownerPhoneCall && p.ownerPhone) || (p.ownerDirectCall && p.ownerAltPhone) ? 'Call owner' : 'Call agent'}">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
           </div>` : ''}
-          ${cardNavBadgeHTML(p)}
+          ${cardWhatsAppBadgeHTML(p)}${cardNavBadgeHTML(p)}
             </div>
           </div>
         </div>
@@ -15364,6 +15380,28 @@ function openCardCall(propId) {
   }
   const phone = rawPhone.length === 10 ? '+91' + rawPhone : ('+' + rawPhone);
   window.location.href = 'tel:' + phone;
+}
+
+/* Card WhatsApp quick-action: same visibility rule as the card Call icon (owner enabled Public call),
+   so a tenant can text the owner instead of calling. */
+function cardWhatsAppBadgeHTML(p) {
+  if (!cardCallOn(p)) return '';
+  return `<div class="prop-icon-badge prop-icon-wa" onclick="event.stopPropagation();openCardWhatsApp('${p.id}')" aria-label="WhatsApp the owner" title="WhatsApp the owner"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg></div>`;
+}
+/* Opens WhatsApp to the owner's public number (main first, else alternate) with the usual enquiry text. */
+function openCardWhatsApp(propId) {
+  countContactView(propId);
+  if (requireLoginForContact('Please log in to WhatsApp the owner')) return;
+  const p = PROPERTIES.find(x => x.id === propId) || BOOKED_PROPERTIES.find(x => x.id === propId) || (typeof shortlistedData !== 'undefined' && shortlistedData[propId]);
+  if (!p) return;
+  const raw = String(publicOwnerPhone(p, 'main') || publicOwnerPhone(p, 'alt')).replace(/\D/g, '');
+  if (!raw) {
+    showToast("The owner's phone number is not available for this listing.", 'warning');
+    return;
+  }
+  const phone = raw.length === 10 ? '91' + raw : raw;
+  const msg = buildEnquiryMessage([p]);
+  window.open(isOwnerViewer() ? 'https://wa.me/' + phone : 'https://wa.me/' + phone + '?text=' + encodeURIComponent(msg), '_blank', 'noopener');
 }
 
 /* Public number for a button: 'main' / 'alt' / 'care' (caretaker). Empty unless that number is public to this viewer. */
