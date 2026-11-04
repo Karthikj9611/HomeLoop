@@ -21534,10 +21534,10 @@ document.addEventListener('keydown',function(e){
 <div class="preav-overlay" id="preavOverlay" role="dialog" aria-modal="true" aria-label="This Week’s Listings">
   <div class="preav-modal">
     <div class="preav-top">
-      <div class="preav-badge"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M10 21v-6h4v6"/></svg></div>
+      <div class="preav-badge"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M10 21v-6h4v6"/></svg><span class="preav-count" id="preavCount"></span></div>
       <div class="preav-titles">
-        <h2 class="preav-title">This Week’s Listings<span class="preav-count" id="preavCount"></span></h2>
-        <p class="preav-sub"><span class="l">New listings added <b class="preav-range"></b> — tap any card for full details</span><span class="s"><b class="preav-range"></b> · Tap any card for details</span></p>
+        <h2 class="preav-title">This Week’s Listings</h2>
+        <p class="preav-sub"><span class="l"><b class="preav-range"></b></span><span class="s"><b class="preav-range"></b></span></p>
       </div>
       <button class="preav-close" id="preavClose" aria-label="Close">
         <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -22779,6 +22779,52 @@ body{background:radial-gradient(80% 50% at 100% 0%,rgba(255,150,110,.26) 0%,rgba
 .preav-title{font-size:17px}
 .preav-sub{font-size:12px;margin-top:2px}
 .preav-close{top:10px;right:12px;width:36px;height:36px}
+/* Compact header: icon left, title + date stacked beside it, both same small font size */
+.preav-top{position:relative;display:flex;flex-direction:row;align-items:center;justify-content:center;gap:12px !important;min-height:64px;padding:12px 64px !important;border-bottom:1px solid rgba(224,58,82,.10)}
+.preav-badge{position:relative;overflow:visible;margin:0;transform:none;flex:0 0 auto;width:42px;height:42px;border-radius:13px}
+.preav-badge svg{width:20px;height:20px}
+.preav-close{position:absolute;right:20px !important;top:0 !important;bottom:0;margin:auto 0 !important;width:34px !important;height:34px !important;min-width:34px !important}
+.preav-titles{flex:0 1 auto !important;display:flex;flex-direction:column;align-items:flex-start;justify-content:space-between;height:42px;text-align:left}
+.preav-title{position:static;display:flex;align-items:center;gap:8px;font-size:15px;font-weight:700;letter-spacing:-.01em;line-height:1.2;text-align:left;justify-content:flex-start}
+.preav-count{position:absolute;top:-7px;right:-7px;transform:none;margin:0;min-width:20px;height:20px;padding:0 5px;box-sizing:border-box;font-size:11px;font-weight:800;line-height:1;background:#fff;color:var(--brand,#e03a52);border:2px solid var(--brand,#e03a52);box-shadow:0 2px 6px rgba(224,58,82,.35)}
+.preav-sub{margin:0 !important;display:inline-flex;align-items:center;gap:6px;padding:2px 10px;border-radius:999px;background:rgba(224,58,82,.08);border:1px solid rgba(224,58,82,.14);font-size:15px;font-weight:700;color:var(--brand,#e03a52);line-height:1.2;text-align:left;letter-spacing:-.01em}
+.preav-sub::before{content:"";width:5px;height:5px;border-radius:50%;background:var(--brand,#e03a52)}
+.preav-sub b{font-weight:inherit}
+.preav-sub .l{display:inline !important}
+.preav-sub .s{display:none !important}
+/* Perfect alignment: identical font size, fixed row heights that add up to the icon height, shared left edge */
+.preav-titles{box-sizing:border-box;height:42px !important;align-items:flex-start !important;justify-content:space-between !important;margin:0 !important;padding:0 !important}
+.preav-title{box-sizing:border-box;height:20px;margin:0 !important;padding:0 !important;font-size:15px !important;line-height:20px !important;font-weight:700 !important;align-items:center}
+.preav-sub{box-sizing:border-box;height:21px;margin:0 !important;padding:0 10px !important;font-size:15px !important;line-height:19px !important;font-weight:700 !important;align-items:center;align-self:flex-start}
+.preav-sub *,.preav-sub .l,.preav-sub b{font-size:inherit !important;line-height:inherit !important;font-weight:inherit !important;margin:0;padding:0}
+/* Title pill: same shape, size and height as the date pill */
+.preav-title{display:inline-flex !important;align-self:flex-start;width:fit-content;height:21px !important;line-height:19px !important;padding:0 10px !important;border-radius:999px;background:rgba(20,16,17,.06);border:1px solid rgba(20,16,17,.10);color:var(--text,#1a1a1a);white-space:nowrap}
+/* Final: both pills identical (width, colour, height) with a gap between them, total height = icon height */
+.preav-badge{width:46px !important;height:46px !important}
+.preav-titles{height:46px !important;align-items:stretch !important;justify-content:space-between !important}
+.preav-title,.preav-sub{display:flex !important;align-items:center;justify-content:center;align-self:stretch !important;width:auto !important;height:20px !important;box-sizing:border-box;padding:0 12px !important;border-radius:999px;background:rgba(224,58,82,.08) !important;border:1px solid rgba(224,58,82,.16) !important;color:var(--brand,#e03a52) !important;font-size:15px !important;font-weight:700 !important;line-height:18px !important;white-space:nowrap;gap:6px}
+.preav-title::before{content:"";width:5px;height:5px;border-radius:50%;background:var(--brand,#e03a52)}
+/* Taller icon; pills left-aligned so the dots and text line up one below the other */
+.preav-badge{width:58px !important;height:58px !important;border-radius:17px !important}
+.preav-badge svg{width:26px !important;height:26px !important}
+.preav-titles{height:58px !important}
+.preav-title,.preav-sub{height:25px !important;justify-content:flex-start !important;padding:0 14px !important;line-height:23px !important}
+@media (max-width:700px){
+  .preav-badge{width:48px !important;height:48px !important;border-radius:14px !important}
+  .preav-badge svg{width:22px !important;height:22px !important}
+  .preav-titles{height:48px !important}
+  .preav-title,.preav-sub{height:21px !important;font-size:13px !important;line-height:19px !important;padding:0 11px !important}
+}
+@media (max-width:700px){
+  .preav-top{min-height:56px;padding:10px 50px 10px 14px !important;gap:10px !important;justify-content:flex-start}
+  .preav-badge{width:38px;height:38px;border-radius:12px}
+  .preav-badge svg{width:18px;height:18px}
+  .preav-close{right:12px !important;width:30px !important;height:30px !important;min-width:30px !important}
+  .preav-titles{height:38px}
+  .preav-title,.preav-sub{font-size:13px}
+  .preav-count{top:-6px;right:-6px;min-width:18px;height:18px;font-size:10px;padding:0 4px}
+  .preav-sub{padding:1px 9px}
+}
 /* Compact Shortlisted panel header */
 .shortlist-panel .panel-header{padding:10px 16px}
 .shortlist-panel .panel-header::before{width:80px;height:80px;top:-30px;right:-24px}
