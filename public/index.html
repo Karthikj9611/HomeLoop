@@ -3690,7 +3690,7 @@ main.tab-explore .empty-state{display:none !important}
 /* Cards elsewhere use object-fit:cover (fill + crop) on .img-slide, but in
    the property-view gallery we want the whole photo visible with nothing
    cut off, even if that means letterboxing rather than filling the box. */
-.detail-gallery .img-slide{object-fit:contain;background:var(--bg-3)}
+.detail-gallery .img-slide{object-fit:cover;background:var(--bg-3)}
 .detail-gallery .img-slide.video-slide{background:#000}
 .form-select{
   width:100%;border:1.5px solid var(--border-2);border-radius:9px;
@@ -22855,7 +22855,7 @@ body{background:radial-gradient(80% 50% at 100% 0%,rgba(255,150,110,.26) 0%,rgba
 #detailGallerySlot .img-slides{background:linear-gradient(180deg,#2a211e 0%,#17110f 100%);isolation:isolate}
 #detailGallerySlot .img-slides::before{content:"";position:absolute;inset:-40px;z-index:0;background:var(--gal-bg,none) center / cover no-repeat;filter:blur(26px) saturate(1.15);transform:scale(1.05);opacity:.95}
 #detailGallerySlot .img-slides::after{content:"";position:absolute;inset:0;z-index:0;background:rgba(20,12,10,.28);pointer-events:none}
-#detailGallerySlot .img-slide{background:transparent !important;z-index:1}
+#detailGallerySlot .img-slide{background:transparent !important;z-index:1;object-fit:cover !important;object-position:center}
 #detailGallerySlot .img-slide.video-slide{background:#000 !important}
 </style>
 <div id="hlNotice" role="dialog" aria-modal="true" aria-labelledby="hlNoticeTitle" aria-describedby="hlNoticeLead">
@@ -22981,6 +22981,31 @@ body{background:radial-gradient(80% 50% at 100% 0%,rgba(255,150,110,.26) 0%,rgba
   new MutationObserver(sync).observe(slot,{subtree:true,childList:true,attributes:true,attributeFilter:['class','src']});
   slot.addEventListener('load',sync,true);
   sync();
+})();
+</script>
+<script>
+/* Property view gallery: full width, with the box height following the active photo's own aspect ratio so it looks like the original image (no crop). Very tall photos are capped at 78vh and letterboxed over the blurred backdrop. */
+(function(){
+  var slot=document.getElementById('detailGallerySlot'); if(!slot) return;
+  function fit(){
+    try{
+      var pi=slot.querySelector('.prop-img'); if(!pi) return;
+      var img=slot.querySelector('img.img-slide.active'); if(!img||!img.naturalWidth) return;
+      var w=pi.clientWidth; if(!w) return;
+      var want=w*img.naturalHeight/img.naturalWidth;
+      var max=Math.round(window.innerHeight*0.78), min=220;
+      var h=Math.max(min,Math.min(want,max));
+      pi.style.setProperty('height',Math.round(h)+'px','important');
+      pi.style.setProperty('aspect-ratio','auto','important');
+      pi.style.transition='height .25s ease';
+      var capped=want>max+1||want<min-1;
+      slot.querySelectorAll('img.img-slide').forEach(function(i){i.style.setProperty('object-fit',capped?'contain':'cover','important');});
+    }catch(e){}
+  }
+  new MutationObserver(fit).observe(slot,{subtree:true,childList:true,attributes:true,attributeFilter:['class','src']});
+  slot.addEventListener('load',fit,true);
+  window.addEventListener('resize',fit);
+  fit();
 })();
 </script>
 <style id="scroll-blank-fix">
