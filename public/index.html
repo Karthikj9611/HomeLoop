@@ -21530,29 +21530,39 @@ document.addEventListener('keydown',function(e){
   </div>
 </div>
 
-<!-- Pre-Available welcome modal: centered, 100% width, once per session on load -->
-<div class="preav-overlay" id="preavOverlay" role="dialog" aria-modal="true" aria-label="This Week’s Listings">
-  <div class="preav-modal">
-    <div class="preav-top">
-      <div class="preav-badge"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M10 21v-6h4v6"/></svg><span class="preav-count" id="preavCount"></span></div>
-      <div class="preav-titles">
-        <h2 class="preav-title">This Week’s Listings</h2>
-        <p class="preav-sub"><span class="l"><b class="preav-range"></b></span><span class="s"><b class="preav-range"></b></span></p>
+<!-- This Week's Listings: right slide-in panel, same look/behaviour as the Shortlist panel (desktop + mobile) -->
+<style>
+.wk-wrap{position:fixed;inset:0;z-index:250;display:none}
+.wk-wrap.open{display:block}
+.wk-wrap .panel-backdrop{display:block;z-index:0}
+.wk-wrap .shortlist-panel{z-index:1}
+.shortlist-panel .panel-header.wk-header{display:block !important;padding:0 !important;background:transparent !important;overflow:visible}
+.shortlist-panel .panel-header.wk-header::before{display:none !important}
+.wk-header .preav-top{justify-content:center !important;text-align:center}
+@media (max-width:700px){.wk-header .preav-top{justify-content:center !important;padding:10px 50px !important}}
+</style>
+<div class="wk-wrap" id="preavOverlay" role="dialog" aria-modal="true" aria-label="This Week’s Listings">
+  <div class="panel-backdrop" id="preavBackdrop"></div>
+  <aside class="shortlist-panel" id="preavPanel" aria-label="This Week’s Listings">
+    <div class="panel-header wk-header">
+      <div class="preav-top">
+        <div class="preav-badge"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M10 21v-6h4v6"/></svg><span class="preav-count" id="preavCount"></span></div>
+        <div class="preav-titles">
+          <h2 class="preav-title">This Week’s Listings</h2>
+          <p class="preav-sub"><span class="l"><b class="preav-range"></b></span><span class="s"><b class="preav-range"></b></span></p>
+        </div>
+        <button class="preav-close" id="preavClose" aria-label="Close This Week’s Listings">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
       </div>
-      <button class="preav-close" id="preavClose" aria-label="Close">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-      </button>
     </div>
-    <div class="preav-body">
-      <button class="preav-nav prev hide" id="preavPrev" aria-label="Previous"><svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg></button>
-      <div class="preav-grid" id="preavGrid"></div>
-      <button class="preav-nav next" id="preavNext" aria-label="Next"><svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg></button>
-    </div>
-  </div>
+    <div class="panel-list" id="preavGrid"></div>
+  </aside>
 </div>
 <script>
-// Opens on first visit per session when pre-available rentals exist.
+// Opens on first visit per session when this week's listings exist.
 // Skipped on deep links (shared property / compare / charges).
+var _preavLocked = false;
 function showPreAvailModal() {
   var q = new URLSearchParams(window.location.search);
   if (q.has('compare') || q.has('property') || q.has('charges')) return;
@@ -21585,95 +21595,31 @@ function showPreAvailModal() {
   document.querySelectorAll('#preavOverlay .preav-range').forEach(function(el){ el.textContent = rangeTxt; });
   var grid = document.getElementById('preavGrid');
   grid.innerHTML = items.map(function(p){ return cardHTML(p, true, undefined, true); }).join('');
+  grid.scrollTop = 0;
   ov.classList.add('open');
-  document.documentElement.classList.add('preav-lock');
+  void ov.offsetWidth; // flush so the slide-in transition runs
+  document.getElementById('preavPanel').classList.add('open');
+  if (!_preavLocked) { _preavLocked = true; lockBodyScroll(); }
   observeCardImgs(grid);
-  preavAutoStart();
 }
 function closePreAvailModal() {
   var ov = document.getElementById('preavOverlay');
   if (!ov.classList.contains('open')) return;
-  ov.classList.remove('open');
-  document.documentElement.classList.remove('preav-lock');
-  preavAutoStop();
+  document.getElementById('preavPanel').classList.remove('open');
+  if (_preavLocked) { _preavLocked = false; unlockBodyScroll(); }
+  // let the slide-out finish (.25s, same as the Shortlist panel) before removing the wrapper
+  setTimeout(function(){
+    if (!document.getElementById('preavPanel').classList.contains('open')) ov.classList.remove('open');
+  }, 260);
 }
-function preavSyncNav() {
-  var g = document.getElementById('preavGrid');
-  var max = g.scrollWidth - g.clientWidth - 4;
-  document.getElementById('preavPrev').classList.toggle('hide', g.scrollLeft <= 4);
-  document.getElementById('preavNext').classList.toggle('hide', g.scrollLeft >= max);
-}
-// Auto-slide: glides one step every 4s (2 cards on mobile, 1 on desktop) with a slow eased
-// animation, then loops back to the start. Pauses while the user touches/hovers/scrolls.
-var preavTimer = null, preavResume = null, preavRaf = null;
-function preavCancelAnim() {
-  if (preavRaf) { cancelAnimationFrame(preavRaf); preavRaf = null; }
-  var g = document.getElementById('preavGrid');
-  g.style.scrollSnapType = '';
-}
-function preavGlide(g, to, duration) {
-  preavCancelAnim();
-  var from = g.scrollLeft, dist = to - from;
-  if (Math.abs(dist) < 1) return;
-  g.style.scrollSnapType = 'none'; // snap would fight the animation frame by frame
-  var t0 = null;
-  function ease(t){ return t < .5 ? 4*t*t*t : 1 - Math.pow(-2*t + 2, 3)/2; } // easeInOutCubic
-  function frame(ts){
-    if (t0 === null) t0 = ts;
-    var t = Math.min((ts - t0) / duration, 1);
-    g.scrollLeft = from + dist * ease(t);
-    if (t < 1) preavRaf = requestAnimationFrame(frame);
-    else { preavRaf = null; g.style.scrollSnapType = ''; }
-  }
-  preavRaf = requestAnimationFrame(frame);
-}
-function preavAutoStep() {
-  var g = document.getElementById('preavGrid');
-  var first = g.firstElementChild;
-  if (!first || g.scrollWidth <= g.clientWidth + 4) return;
-  var gap = parseFloat(getComputedStyle(g).columnGap) || 0;
-  var per = window.matchMedia('(max-width:700px)').matches ? 2 : 1;
-  var step = (first.offsetWidth + gap) * per;
-  var max = g.scrollWidth - g.clientWidth;
-  if (g.scrollLeft >= max - 4) preavGlide(g, 0, 2000);
-  else preavGlide(g, Math.min(g.scrollLeft + step, max), 1400);
-}
-function preavAutoStart() {
-  preavAutoStop();
-  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-  preavTimer = setInterval(preavAutoStep, 4500);
-}
-function preavAutoStop() {
-  preavCancelAnim();
-  clearInterval(preavTimer); preavTimer = null;
-  clearTimeout(preavResume); preavResume = null;
-}
-function preavAutoPause(delay) {
-  preavCancelAnim();
-  clearInterval(preavTimer); preavTimer = null;
-  clearTimeout(preavResume);
-  if (delay) preavResume = setTimeout(function(){
-    if (document.getElementById('preavOverlay').classList.contains('open')) preavAutoStart();
-  }, delay);
-}
-(function(){
-  var g = document.getElementById('preavGrid');
-  g.addEventListener('touchstart', function(){ preavAutoPause(5000); }, { passive: true });
-  g.addEventListener('touchmove', function(){ preavAutoPause(5000); }, { passive: true });
-  g.addEventListener('wheel', function(){ preavAutoPause(5000); }, { passive: true });
-  g.addEventListener('mouseenter', function(){ preavAutoPause(0); });
-  g.addEventListener('mouseleave', function(){ preavAutoPause(1500); });
-  ['preavPrev','preavNext'].forEach(function(id){
-    document.getElementById(id).addEventListener('click', function(){ preavAutoPause(5000); });
-  });
-})();
-document.getElementById('preavGrid').addEventListener('scroll', preavSyncNav, { passive: true });
-window.addEventListener('resize', preavSyncNav);
-document.getElementById('preavPrev').addEventListener('click', function(){ document.getElementById('preavGrid').scrollBy({ left: -640, behavior: 'smooth' }); });
-document.getElementById('preavNext').addEventListener('click', function(){ document.getElementById('preavGrid').scrollBy({ left: 640, behavior: 'smooth' }); });
+// No-op stubs: the old carousel's auto-slide/arrow hooks are still called by the modal queue and the tab renderer.
+function preavSyncNav() {}
+function preavAutoStart() {}
+function preavAutoStop() {}
+function preavAutoPause() {}
 document.getElementById('preavClose').addEventListener('click', closePreAvailModal);
-document.getElementById('preavOverlay').addEventListener('click', function(e){ if (e.target === this) closePreAvailModal(); });
-// Card click opens detail (inline onclick); close the popup so detail sits on top cleanly.
+document.getElementById('preavBackdrop').addEventListener('click', closePreAvailModal);
+// Card click opens detail (inline onclick); close the panel so detail sits on top cleanly.
 document.getElementById('preavGrid').addEventListener('click', function(e){
   if (e.target.closest('.prop-card')) setTimeout(closePreAvailModal, 0);
 });
@@ -23136,7 +23082,7 @@ main.main.empty-with-booked:has(> .empty-state.show) > .empty-state.show{positio
 </style>
 <!-- ══ Modal queue: service notice → This Week's Listings → greeting, one at a time, with full background blur ══ -->
 <style>
-#hlNotice,#preavOverlay,#wishModalOverlay{
+#hlNotice,#wishModalOverlay{
   background:rgba(30,20,35,.5) !important;
   -webkit-backdrop-filter:blur(18px) saturate(1.05) !important;backdrop-filter:blur(18px) saturate(1.05) !important;
 }
