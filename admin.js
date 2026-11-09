@@ -1643,7 +1643,7 @@ self.addEventListener('notificationclick', event => {
       if (ids.length) {
         const docs = (await Promise.all(LISTING_MODEL_LIST.map(M =>
           M.find({ _id: { $in: ids } })
-            .select('propertyId basic.status location.area location.city property.type property.bhk').lean()
+            .select('propertyId basic.status location.area location.city property.type property.bhk price.rent').lean()
         ))).flat();
         docs.forEach(d => { found[String(d._id)] = d; });
       }
@@ -1657,6 +1657,8 @@ self.addEventListener('notificationclick', event => {
           type:          d && d.property ? [d.property.bhk, d.property.type].filter(Boolean).join(' ') : '',
           area:          d && d.location ? (d.location.area || '') : '',
           city:          d && d.location ? (d.location.city || '') : '',
+          displayPrice:  d && d.price && d.price.rent != null && d.price.rent !== ''
+                           ? formatPrice(d.price.rent, d.basic && d.basic.status) : '',
           firstViewedAt: r.firstViewedAt,
           lastViewedAt:  r.lastViewedAt,
         };

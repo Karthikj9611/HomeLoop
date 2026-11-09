@@ -16252,13 +16252,16 @@ function _pvAgo(d){
   return dd < 30 ? dd + ' day' + (dd > 1 ? 's' : '') + ' ago' : fmtDateDMY(d);
 }
 /* Compact meta for viewed-property rows: BHK · area · price (ID is rendered separately). */
+/* Price comes from the API's displayPrice; the admin property cache is only a fallback. */
 function _pvPropMeta(v){
   v = v || {};
+  const c = (v._id && _adminPropCache[v._id]) || null;
+  if(c) v = Object.assign({}, c, Object.fromEntries(Object.entries(v).filter(([, x]) => x != null && x !== '')));
   const t = String(v.bhk || v.type || '');
   const m = t.match(/\d+(?:\.\d+)?\s*(?:BHK|RK)/i);
   const bhk = m ? m[0].replace(/\s+/g, ' ').toUpperCase() : (v.bhk || '');
   const raw = v.displayPrice || (v.price && typeof v.price === 'object' ? v.price.rent : v.price) || v.rent;
-  const price = raw == null || raw === '' ? '' : (typeof raw === 'string' && /\D/.test(raw.replace(/,/g,'')) ? raw : fmtRupee(String(raw).replace(/,/g,'')));
+  const price = raw == null || raw === '' ? '' : (typeof raw === 'string' && /\D/.test(raw.replace(/,/g,'')) ? (/^\d/.test(raw) ? '₹' + raw : raw) : fmtRupee(String(raw).replace(/,/g,'')));
   return [bhk, v.area, price].filter(Boolean).join(' \u00b7 ');
 }
 function _pvTimeHtml(v){
