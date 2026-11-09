@@ -8504,9 +8504,17 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
     </div>
 
     <span id="referCodeText" style="display:none">HOMELOOP-GUEST24</span>
-    <!-- Referrer details come from the logged-in account (login is required). -->
-    <input type="hidden" id="refer-name" />
-    <input type="hidden" id="refer-phone" />
+    <!-- Referrer details: pre-filled when logged in, typed in by guests. All fields are required so the reward can be credited. -->
+    <div id="referGuestFields">
+      <div class="form-group">
+        <label class="form-label">Your name</label>
+        <input class="form-input" type="text" id="refer-name" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Your phone</label>
+        <input class="form-input" type="tel" id="refer-phone" inputmode="numeric" maxlength="10" oninput="sanitizeMobileInput(this)" />
+      </div>
+    </div>
 
     <div class="form-group">
       <label class="form-label">Tenant's name</label>
@@ -8592,7 +8600,7 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
       </button>
     </div>
     <div class="refer-required-hint" style="font-size:13px;color:var(--text-2);margin-bottom:14px">
-      The tenant number (<span id="referSelfTenantPhone"></span>) matches your own, so this can't be registered as a referral. You can still share the invite link with someone else.
+      <span id="referSelfTenantPhone"></span> is your own number. Refer someone else, or share the invite link anyway.
     </div>
     <button class="form-submit" id="referSelfShareBtn" onclick="shareAnywayAfterSelfReferral()">Share anyway</button>
   </div>
@@ -8627,13 +8635,13 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
         <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7"/><path d="M4 10v10h16V10"/></svg>
         Owners
       </button>
-      <button type="button" class="charges-audience-tab" id="chargesTabBtn-pg" role="tab" onclick="switchChargesAudience('pg')">
-        <svg viewBox="0 0 24 24"><path d="M2 4v16"/><path d="M2 8h18a2 2 0 0 1 2 2v10"/><path d="M2 17h20"/><path d="M6 8v9"/></svg>
-        PG &amp; Coliving
-      </button>
       <button type="button" class="charges-audience-tab" id="chargesTabBtn-builder" role="tab" onclick="switchChargesAudience('builder')">
         <svg viewBox="0 0 24 24"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/></svg>
         Builders
+      </button>
+      <button type="button" class="charges-audience-tab" id="chargesTabBtn-pg" role="tab" onclick="switchChargesAudience('pg')">
+        <svg viewBox="0 0 24 24"><path d="M2 4v16"/><path d="M2 8h18a2 2 0 0 1 2 2v10"/><path d="M2 17h20"/><path d="M6 8v9"/></svg>
+        PG
       </button>
       <button type="button" class="charges-audience-tab" id="chargesTabBtn-broker" role="tab" onclick="switchChargesAudience('broker')">
         <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
@@ -8674,7 +8682,6 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
       <div class="svc-price-note charges-refer-note"><strong>Note:</strong> Goes live in the <b>Brokers tab</b> after payment and verification. Tenants contact you directly; you set your commission. Misbehaviour with tenants gets you <b>blacklisted</b>.</div>
 </div></div>
       </div>
-      <button class="charges-contact-link" onclick="closeChargesModal(); openHelpModal();">Got a question? Contact us</button>
     </div>
 
     <!-- PG & Coliving charges (tab) -->
@@ -8702,7 +8709,6 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
       <div class="svc-price-note charges-refer-note"><strong>Note:</strong> Goes live in the <b>PG &amp; Coliving tab</b> after payment and verification. Tenants contact you directly.</div>
 </div></div>
       </div>
-      <button class="charges-contact-link" onclick="closeChargesModal(); openHelpModal();">Got a question? Contact us</button>
     </div>
 
     <!-- Builders charges (tab) — same plans as Owners -->
@@ -8729,7 +8735,7 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
             <div class="charges-mini-example">Flat fee — same for every flat size</div>
           </div>
         </div>
-        <div class="svc-price-note charges-refer-note"><strong>Note:</strong> Promoted for <b>30–45 days</b>. Verified tenants can call or WhatsApp you anytime.</div>
+        <div class="svc-price-note charges-refer-note"><strong>Note:</strong> Promoted for <b>a month</b>. Verified tenants can call or WhatsApp you anytime.</div>
 
 
 </div></div>
@@ -8756,44 +8762,42 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
           </div>
         </div>
 
-        <div class="svc-price-note charges-refer-note"><strong>Note:</strong> We handle visits, paperwork and tenant shortlisting. We keep a <b>5% fee</b> from the token advance; the tenant pays the rest to you. <b>Promoted properties</b> get priority, then by <b>listed date</b>.</div>
+        <div class="svc-price-note charges-refer-note"><strong>Note:</strong> We handle visits, paperwork and tenant shortlisting. We keep a <b>5% fee</b> when the tenant pays the deposit; the tenant pays the rest to you. <b>Promoted properties</b> get priority, then by <b>listed date</b>.</div>
 </div></div>
 </div>
-      <button class="charges-contact-link" onclick="closeChargesModal(); openHelpModal();">Got a question? Contact us</button>
     </div>
 
     <!-- Payment Safety Notice (tab) -->
     <div id="chargesNoticePanel" style="display:none">
       <div class="plan-panel plan-managed" id="planNoticeAdvance">
         <button type="button" class="plan-toggle" aria-expanded="false" onclick="togglePlan('planNoticeAdvance')">
-          <div class="charges-audience-head"><div class="charges-audience-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><div class="charges-audience-name">Managed Plan : Token Advance &amp; Advance Payment Safety</div></div>
+          <div class="charges-audience-head"><div class="charges-audience-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><div class="charges-audience-name">Managed Plan: Pay Safely</div></div>
           <svg class="plan-chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
         </button>
         <div class="plan-body"><div class="plan-body-inner">
-          <div class="svc-price-note charges-refer-note"><strong>Note:</strong> <b>Managed Plan:</b> pay the token or advance only when the <b>owner, tenant and our Coordinator</b> are all together.</div>
+          <div class="svc-price-note charges-refer-note"><strong>Note:</strong> Pay the deposit only with the <b>owner, tenant and our Coordinator</b> present.</div>
         </div></div>
       </div>
       <div class="charges-or-divider">and</div>
       <div class="plan-panel plan-direct" id="planNoticeBrokerage">
         <button type="button" class="plan-toggle" aria-expanded="false" onclick="togglePlan('planNoticeBrokerage')">
-          <div class="charges-audience-head"><div class="charges-audience-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div><div class="charges-audience-name">Direct Plan : Do not pay brokerage to property staff</div></div>
+          <div class="charges-audience-head"><div class="charges-audience-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div><div class="charges-audience-name">Direct Plan: No Brokerage</div></div>
           <svg class="plan-chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
         </button>
         <div class="plan-body"><div class="plan-body-inner">
-          <div class="svc-price-note charges-refer-note"><strong>Note:</strong> <b>Direct Plan:</b> never pay brokerage to property staff. <a href="javascript:void(0)" onclick="closeChargesModal(); openHelpModal();" style="color:#fbbf24;font-weight:700;text-decoration:underline;text-underline-offset:2px">Report it</a> — we'll <b>blacklist that property</b>.</div>
+          <div class="svc-price-note charges-refer-note"><strong>Note:</strong> Never pay brokerage to property staff. <a href="javascript:void(0)" onclick="closeChargesModal(); openHelpModal();" style="color:#fbbf24;font-weight:700;text-decoration:underline;text-underline-offset:2px">Report it</a> — we’ll <b>blacklist that property</b>.</div>
         </div></div>
       </div>
       <div class="charges-or-divider">and</div>
       <div class="plan-panel plan-direct" id="planNoticeBrokerRisk">
         <button type="button" class="plan-toggle" aria-expanded="false" onclick="togglePlan('planNoticeBrokerRisk')">
-          <div class="charges-audience-head"><div class="charges-audience-icon"><svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div><div class="charges-audience-name">Tenants : Be careful with brokers</div></div>
+          <div class="charges-audience-head"><div class="charges-audience-icon"><svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div><div class="charges-audience-name">Brokers: Be Careful</div></div>
           <svg class="plan-chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
         </button>
         <div class="plan-body"><div class="plan-body-inner">
-          <div class="svc-price-note charges-refer-note"><strong>Note:</strong> <b>Tenants:</b> brokers are verified, but you deal with them directly — <b>HomeLoop is not responsible</b>. Visit the property, <b>pay only when satisfied</b>, and keep receipts.</div>
+          <div class="svc-price-note charges-refer-note"><strong>Note:</strong> Brokers are verified, but you deal with them directly — <b>HomeLoop is not responsible</b>. <b>Pay only when satisfied</b> and keep receipts.</div>
         </div></div>
       </div>
-      <button class="charges-contact-link" onclick="closeChargesModal(); openHelpModal();">Got a question? Contact us</button>
     </div>
 
     <!-- ═══ Tenant / default view ═══ -->
@@ -8815,7 +8819,7 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
         </div>
       </div>
       
-      <div class="svc-price-note charges-refer-note"><strong>Note:</strong> Pick <b>one property</b>, get its <b>owner details</b> and visit on your own. Valid for that property only; <b>₹150</b> for each next one.</div>
+      <div class="svc-price-note charges-refer-note"><strong>Note:</strong> <b>Choose one property</b>, receive the <b>owner’s contact details</b>, and arrange a visit directly. The service covers one property; each additional property costs just <b>₹150</b>.</div>
 </div></div>
       </div>
       <div class="charges-or-divider">or</div>
@@ -8838,7 +8842,7 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
         </div>
       </div>
       
-      <div class="svc-price-note charges-refer-note"><strong>Note:</strong> As per your requirement, we enable <b>direct calling</b> for you. <b>Call or WhatsApp owners</b>, navigate to their property directly and visit on your own. Valid for <b>2 days</b> from payment.</div>
+      <div class="svc-price-note charges-refer-note"><strong>Note:</strong> Based on your requirements, we’ll enable <b>direct contact</b> with property owners, allowing you to <b>call or WhatsApp owners</b>, connect with them directly, and visit properties at your convenience. This service is valid for <b>2 days</b> from the date of payment.</div>
 </div></div>
       </div>
 
@@ -8859,8 +8863,8 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
             <svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7"/><path d="M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9"/></svg>
           </div>
           <div class="charges-mini-label">Rental</div>
-          <div class="charges-mini-amount">20–30% rent</div>
-          <div class="charges-mini-example">Depends on location · e.g. ₹20k → ₹4k–6k</div>
+          <div class="charges-mini-amount">20% rent</div>
+          <div class="charges-mini-example">e.g. ₹20k rent → ₹4k</div>
         </div>
         <div class="charges-mini-card" style="display:none">
           <div class="charges-mini-icon">
@@ -8873,16 +8877,14 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
       </div>
       
 
-<div class="svc-price-note charges-refer-note"><strong>Note:</strong> <b>Filter up to 4 properties</b> and meet us. Pay <b>₹2,000 after meeting</b> — never before. We then show only your picks, with guided visits. The <b>₹2,000 is deducted</b> when your deal closes.</div>
+<div class="svc-price-note charges-refer-note"><strong>Note:</strong> <b>Shortlist up to 6 properties</b> and meet us. Pay <b>₹2,000 only after the meeting</b>. We’ll arrange guided visits for your selected properties. This <b>₹2,000 is adjusted</b> against the 20% service fee, and you pay the <b>remaining balance only after the deal is closed</b>.</div>
 </div></div>
       </div>
 
-      <div class="svc-price-note charges-refer-note"><strong>Note:</strong> <b>Agreement is common for all plans.</b> Need it from our side? We prepare it and hand it over to the tenant.</div>
+      <div class="svc-price-note charges-refer-note"><strong>Note:</strong> <b>Rental agreement preparation</b> is available at an affordable additional cost across all plans.</div>
 
-      <div class="svc-price-note charges-refer-note charges-referral-note"><strong>Note:</strong> <b>Refer a friend, earn ₹1,000</b> — only if they take the <b>Managed Plan</b>.</div>
 
       <button class="form-submit pay-online-btn" onclick="closeChargesModal(); openPaymentModal('brokerage');">Pay brokerage online</button>
-      <button class="charges-contact-link" onclick="closeChargesModal(); openHelpModal();">Got a question? Contact us</button>
     </div>
 
     <!-- ═══ Owner view ═══ -->
@@ -8909,7 +8911,7 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
           <div class="charges-mini-example">Flat fee — same for every flat size</div>
         </div>
       </div>
-      <div class="svc-price-note charges-refer-note"><strong>Note:</strong> Promoted for <b>30–45 days</b>. Verified tenants can call or WhatsApp you anytime.</div>
+      <div class="svc-price-note charges-refer-note"><strong>Note:</strong> Promoted for <b>a month</b>. Verified tenants can call or WhatsApp you anytime.</div>
 
 
 </div></div>
@@ -8936,12 +8938,11 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
         </div>
       </div>
 
-      <div class="svc-price-note charges-refer-note"><strong>Note:</strong> We handle visits, paperwork and tenant shortlisting. We keep a <b>5% fee</b> from the token advance; the tenant pays the rest to you. <b>Promoted properties</b> get priority, then by <b>listed date</b>.</div>
+      <div class="svc-price-note charges-refer-note"><strong>Note:</strong> We handle visits, paperwork and tenant shortlisting. We keep a <b>5% fee</b> when the tenant pays the deposit; the tenant pays the rest to you. <b>Promoted properties</b> get priority, then by <b>listed date</b>.</div>
 </div></div>
 </div>
 
       <button class="form-submit pay-online-btn" onclick="closeChargesModal(); openPaymentModal('brokerage');">Pay online</button>
-      <button class="charges-contact-link" onclick="closeChargesModal(); openHelpModal();">Got a question? Contact us</button>
     </div>
 
     <!-- ═══ Guest view — nobody logged in, show both, simplified via tabs ═══ -->
@@ -8964,7 +8965,7 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
         </div>
       </div>
       
-      <div class="svc-price-note charges-refer-note"><strong>Note:</strong> Pick <b>one property</b>, get its <b>owner details</b> and visit on your own. Valid for that property only; <b>₹150</b> for each next one.</div>
+      <div class="svc-price-note charges-refer-note"><strong>Note:</strong> <b>Choose one property</b>, receive the <b>owner’s contact details</b>, and arrange a visit directly. The service covers one property; each additional property costs just <b>₹150</b>.</div>
 </div></div>
       </div>
       <div class="charges-or-divider">or</div>
@@ -8987,7 +8988,7 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
         </div>
       </div>
         
-        <div class="svc-price-note charges-refer-note"><strong>Note:</strong> As per your requirement, we enable <b>direct calling</b> for you. <b>Call or WhatsApp owners</b>, navigate to their property directly and visit on your own. Valid for <b>2 days</b> from payment.</div>
+        <div class="svc-price-note charges-refer-note"><strong>Note:</strong> Based on your requirements, we’ll enable <b>direct contact</b> with property owners, allowing you to <b>call or WhatsApp owners</b>, connect with them directly, and visit properties at your convenience. This service is valid for <b>2 days</b> from the date of payment.</div>
 </div></div>
 </div>
         <div class="charges-or-divider">or</div>
@@ -9007,8 +9008,8 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
             <svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7"/><path d="M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9"/></svg>
           </div>
           <div class="charges-mini-label">Rental</div>
-          <div class="charges-mini-amount">20–30% rent</div>
-          <div class="charges-mini-example">Depends on location · e.g. ₹20k → ₹4k–6k</div>
+          <div class="charges-mini-amount">20% rent</div>
+          <div class="charges-mini-example">e.g. ₹20k rent → ₹4k</div>
         </div>
         <div class="charges-mini-card" style="display:none">
           <div class="charges-mini-icon">
@@ -9021,12 +9022,11 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
       </div>
         
 
-<div class="svc-price-note charges-refer-note"><strong>Note:</strong> <b>Filter up to 4 properties</b> and meet us. Pay <b>₹2,000 after meeting</b> — never before. We then show only your picks, with guided visits. The <b>₹2,000 is deducted</b> when your deal closes.</div>
+<div class="svc-price-note charges-refer-note"><strong>Note:</strong> <b>Shortlist up to 6 properties</b> and meet us. Pay <b>₹2,000 only after the meeting</b>. We’ll arrange guided visits for your selected properties. This <b>₹2,000 is adjusted</b> against the 20% service fee, and you pay the <b>remaining balance only after the deal is closed</b>.</div>
 </div></div>
 </div>
-        <div class="svc-price-note charges-refer-note"><strong>Note:</strong> <b>Agreement is common for all plans.</b> Need it from our side? We prepare it and hand it over to the tenant.</div>
+        <div class="svc-price-note charges-refer-note"><strong>Note:</strong> <b>Rental agreement preparation</b> is available at an affordable additional cost across all plans.</div>
 
-        <div class="svc-price-note charges-refer-note charges-referral-note"><strong>Note:</strong> <b>Refer a friend, earn ₹1,000</b> — only if they take the <b>Managed Plan</b>.</div>
       </div>
 
       <div class="charges-audience-panel" id="chargesTabPanel-owner">
@@ -9052,7 +9052,7 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
             <div class="charges-mini-example">Flat fee — same for every flat size</div>
           </div>
         </div>
-        <div class="svc-price-note charges-refer-note"><strong>Note:</strong> Promoted for <b>30–45 days</b>. Verified tenants can call or WhatsApp you anytime.</div>
+        <div class="svc-price-note charges-refer-note"><strong>Note:</strong> Promoted for <b>a month</b>. Verified tenants can call or WhatsApp you anytime.</div>
 
 
 </div></div>
@@ -9079,7 +9079,7 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
           </div>
         </div>
 
-        <div class="svc-price-note charges-refer-note"><strong>Note:</strong> We handle visits, paperwork and tenant shortlisting. We keep a <b>5% fee</b> from the token advance; the tenant pays the rest to you. <b>Promoted properties</b> get priority, then by <b>listed date</b>.</div>
+        <div class="svc-price-note charges-refer-note"><strong>Note:</strong> We handle visits, paperwork and tenant shortlisting. We keep a <b>5% fee</b> when the tenant pays the deposit; the tenant pays the rest to you. <b>Promoted properties</b> get priority, then by <b>listed date</b>.</div>
 </div></div>
 </div>
       </div>
@@ -18393,8 +18393,8 @@ function closeNotifModal() {
 ═══════════════════════════════════════════════ */
 function openReferModal() {
   const user = getLoggedInUser();
-  // Login is mandatory — referrals are credited to the account.
-  if (!user) { showToast("Please log in to refer a tenant.", 'warning'); openAuthModal(); return; }
+  // Login is optional: logged-in users get their name + phone pre-filled;
+  // guests type them in. Either way every field is required.
   const preloadName = (user && `${user.firstName || ''} ${user.lastName || ''}`.trim()) || (user && user.name) || '';
   document.getElementById('refer-name').value = preloadName;
   document.getElementById('refer-phone').value = (user && user.mobile) || '';
@@ -18420,12 +18420,14 @@ function closeReferModal() {
 let _pendingReferralShare = null;
 
 async function inviteAndRegisterReferral() {
-  if (!getLoggedInUser()) { closeReferModal(); showToast("Please log in to refer a tenant.", 'warning'); openAuthModal(); return; }
   const referrerName  = document.getElementById('refer-name').value.trim();
   const referrerPhone = document.getElementById('refer-phone').value.trim();
   const tenantName    = document.getElementById('refer-tenant-name').value.trim();
   const tenantPhone   = document.getElementById('refer-tenant-phone').value.trim();
 
+  // All four fields are required (referrer details are pre-filled when logged in).
+  if (!referrerName) { showToast("Enter your name", 'warning'); return; }
+  if (!isValidIndianMobile(referrerPhone)) { showToast("Please enter your valid 10-digit phone number.", 'warning'); return; }
   // Both tenant details are required so every referral is registered.
   if (!tenantName) { showToast("Enter the tenant's name", 'warning'); return; }
   if (!isValidIndianMobile(tenantPhone)) { showToast("Please enter a valid 10-digit phone number for the tenant.", 'warning'); return; }
@@ -18641,6 +18643,8 @@ function showChargesModal(tab, fromLink) {
   else if (acct === 'owner')  visible = ['owner', 'pg', 'builder'];
   else if (acct === 'broker') visible = ['broker'];
   else visible = ['tenant', 'owner', 'pg', 'builder', 'broker', 'notice'];
+  // Builders charges tab hidden for now - delete this line to re-enable
+  visible = visible.filter(k => k !== 'builder'); if (!visible.length) { visible = ['tenant', 'notice']; tab = null; }
   ['tenant', 'owner', 'pg', 'builder', 'broker', 'notice'].forEach(k => {
     document.getElementById('chargesTabBtn-' + k).style.display = visible.includes(k) ? '' : 'none';
   });
