@@ -5847,7 +5847,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
 
     <div class="form-actions-row">
       <button type="button" class="form-clear-btn" id="listingClearBtn" onclick="clearListingFormPrompt()" title="Erase everything typed in this form">Clear form</button>
-      <button class="form-submit" id="listingSubmitBtn" onclick="lmAccExpandAll();adminSubmitListing()">Save changes</button>
+      <button class="form-submit" id="listingSubmitBtn" onclick="lmAccExpandAll();editingPropertyId ? openListingReview('adminSubmitListing') : adminSubmitListing()">Save changes</button>
     </div>
 
     <!-- View-mode only: admin/meta info that isn't part of the actual

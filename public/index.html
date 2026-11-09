@@ -7884,7 +7884,7 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
     </div>
     <!-- /listingFormSections -->
 
-    <button class="form-submit" id="listingSubmitBtn" onclick="lmAccExpandAll();submitListing()">Submit listing</button>
+    <button class="form-submit" id="listingSubmitBtn" onclick="lmAccExpandAll();editingPropertyId ? openListingReview('submitListing') : submitListing()">Submit listing</button>
 
     <!-- View-mode only: quick actions carried over from the old detail view (save,
          contact, schedule a visit, WhatsApp). Sits inline at the end of the
