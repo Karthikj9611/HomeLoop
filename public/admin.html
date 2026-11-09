@@ -3378,6 +3378,8 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
 #userPropsModal .vx-uprop{padding:9px 10px;border-radius:12px;background:#f8fafc;border:1px solid #e2e8f0;gap:10px;font-size:.82rem}
 #userPropsModal .vx-uprop>i{flex:none;width:26px;height:26px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;font-size:.7rem;color:#fff;background:linear-gradient(135deg,#10b981,#06b6d4)}
 #userPropsModal .vx-uprop.gone>i{background:#cbd5e1}
+#userPropsModal .vx-uprop-link{cursor:pointer;transition:border-color .15s,background .15s,transform .15s}
+#userPropsModal .vx-uprop-link:hover{border-color:#10b981;background:#ecfdf5;transform:translateY(-1px)}
 #userPropsModal .vx-uprop-time{padding:2px 8px;border-radius:99px;background:#d1fae5;color:#047857}
 /* Today's registrations: views chip */
 .trv-wrap{display:block}
@@ -16249,6 +16251,16 @@ function _pvAgo(d){
   const dd = Math.floor(h / 24);
   return dd < 30 ? dd + ' day' + (dd > 1 ? 's' : '') + ' ago' : fmtDateDMY(d);
 }
+/* Compact meta for viewed-property rows: BHK · area · price (ID is rendered separately). */
+function _pvPropMeta(v){
+  v = v || {};
+  const t = String(v.bhk || v.type || '');
+  const m = t.match(/\d+(?:\.\d+)?\s*(?:BHK|RK)/i);
+  const bhk = m ? m[0].replace(/\s+/g, ' ').toUpperCase() : (v.bhk || '');
+  const raw = v.displayPrice || (v.price && typeof v.price === 'object' ? v.price.rent : v.price) || v.rent;
+  const price = raw == null || raw === '' ? '' : (typeof raw === 'string' && /\D/.test(raw.replace(/,/g,'')) ? raw : fmtRupee(String(raw).replace(/,/g,'')));
+  return [bhk, v.area, price].filter(Boolean).join(' \u00b7 ');
+}
 function _pvTimeHtml(v){
   const dt = v ? new Date(v) : null;
   return dt ? '<div class="vp-time"><b>' + _adminModalEsc(_pvAgo(dt)) + '</b>' + _adminModalEsc(fmtDateDMY(dt) + ' ' + fmtTimeHM(dt)) + '</div>' : '';
@@ -16556,6 +16568,13 @@ function openUserPropsModal(btn, nameArg, bodyHtml, subArg){
   document.getElementById('upmBody').scrollTop = 0;
   return m;
 }
+/* Row click inside the viewed-properties popup: close it, then open the full property view. */
+function openViewedRowProperty(id){
+  if(!id) return;
+  closeUserPropsModal();
+  viewOwnedProperty(id);
+}
+window.openViewedRowProperty = openViewedRowProperty;
 function closeUserPropsModal(){
   const m = document.getElementById('userPropsModal');
   if(m) m.classList.remove('open');
@@ -16582,9 +16601,9 @@ async function openRegViews(btn){
     const html = list.length
       ? list.map(v => {
           const idTxt = v.removed ? 'Listing removed' : (v.propertyId || v._id);
-          const meta = [v.type, String(v.status || '').replace(/^for\s+/i, ''), [v.area, v.city].filter(Boolean)[0]].filter(Boolean).join(' · ');
+          const meta = _pvPropMeta(v);
           const d = v.lastViewedAt ? new Date(v.lastViewedAt) : null;
-          return '<div class="vx-uprop' + (v.removed ? ' gone' : '') + '"' + (d ? ' title="' + _adminModalEsc(fmtDateDMY(d) + ' ' + fmtTimeHM(d)) + '"' : '') + '>' +
+          return '<div class="vx-uprop' + (v.removed ? ' gone' : ' vx-uprop-link') + '"' + (v.removed ? '' : ' onclick="openViewedRowProperty(\'' + _adminModalEsc(v._id) + '\')"') + (d ? ' title="' + _adminModalEsc(fmtDateDMY(d) + ' ' + fmtTimeHM(d)) + '"' : '') + '>' +
             '<i class="fas ' + (v.removed ? 'fa-house-circle-xmark' : 'fa-house') + '"></i><b>' + _adminModalEsc(idTxt) + '</b>' +
             '<span class="vx-uprop-meta">' + _adminModalEsc(meta) + '</span>' +
             (d ? '<span class="vx-uprop-time">' + _adminModalEsc(_pvAgo(d)) + '</span>' : '') + '</div>';
@@ -16681,8 +16700,8 @@ function renderTodayPv(){
       else {
         if(u.mobile) contact += '<div class="vx-meta">' + _telLink(u.mobile) + '</div>';
       }
-      const props = g.items.map(({ pid, pm, d: dt }) =>
-        '<div class="vx-uprop" title="' + _adminModalEsc(fmtDateDMY(dt) + ' ' + fmtTimeHM(dt)) + '">' +
+      const props = g.items.map(({ pid, pm, d: dt, id }) =>
+        '<div class="vx-uprop vx-uprop-link"' + (id ? ' onclick="openViewedRowProperty(\'' + _adminModalEsc(id) + '\')"' : '') + ' title="' + _adminModalEsc(fmtDateDMY(dt) + ' ' + fmtTimeHM(dt)) + '">' +
           '<i class="fas fa-house"></i><b>' + _adminModalEsc(pid) + '</b>' +
           '<span class="vx-uprop-meta">' + _adminModalEsc(pm) + '</span>' +
           '<span class="vx-uprop-time">' + _adminModalEsc(fmtTimeHM(dt)) + '</span></div>').join('');
@@ -16742,18 +16761,18 @@ async function openTodayPropertyViewsModal(){
         try{
           const d = await _pvFetchJson('/api/properties/' + encodeURIComponent(pr._id) + '/viewers-admin');
           const pid = d.propertyId || pr.propertyId || pr._id;
-          const pm = [pr.type, [pr.area, pr.city].filter(Boolean)[0]].filter(Boolean).join(' · ');
+          const pm = _pvPropMeta(pr);
           [['tenants', d.tenants], ['owners', d.owners]].forEach(([kind, arr]) => {
             (arr || []).forEach(u => {
               const dt = u.lastViewedAt ? new Date(u.lastViewedAt) : null;
               if(!dt || dt < t0) return;
-              add(kind, String(u.userId || u.mobile || u.email || u.name || ('x' + (gAnon++))), u, { pid, pm, d: dt });
+              add(kind, String(u.userId || u.mobile || u.email || u.name || ('x' + (gAnon++))), u, { pid, pm, d: dt, id: pr._id });
             });
           });
           (d.guests || []).forEach(g => {
             const dt = g.viewedAt ? new Date(g.viewedAt) : null;
             if(!dt || dt < t0) return;
-            add('guests', String(g.ref || ('x' + (gAnon++))), g, { pid, pm, d: dt });
+            add('guests', String(g.ref || ('x' + (gAnon++))), g, { pid, pm, d: dt, id: pr._id });
           });
         }catch(_){ failed++; }
         done++;
