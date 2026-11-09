@@ -2455,9 +2455,8 @@ body.pact-hide-booking #propertyTable .pact-booking{display:none!important}
 .form-label[data-ico="wrench"]{--ico-c:#64748b;--ico:url("data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%2024%2024%22%20fill=%22none%22%20stroke=%22%23fff%22%20stroke-width=%222%22%20stroke-linecap=%22round%22%20stroke-linejoin=%22round%22%3E%3Cpath%20d=%22M15%205a4%204%200%200%200-4%205L3%2018l3%203%208-8a4%204%200%200%200%205-4l-3%203-3-1-1-3z%22/%3E%3C/svg%3E")}
 .lm-section{font-size:10px;font-weight:800;color:var(--text-2);text-transform:uppercase;letter-spacing:.8px;margin:20px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border-2)}
 /* Accordion tabs: tap a section heading to open/close its fields (form only, not view mode) */
-#listingFormSections .lm-section{cursor:pointer;user-select:none;display:flex;align-items:center;justify-content:space-between;gap:8px;transition:color .12s}
-#listingFormSections .lm-section:hover{color:var(--brand)}
-#listingFormSections .lm-section::after{content:"";width:7px;height:7px;flex:none;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg) translateY(-2px);transition:transform .18s}
+#listingFormSections .lm-section{cursor:default;user-select:none;display:flex;align-items:center;justify-content:space-between;gap:8px;transition:color .12s}
+#listingFormSections .lm-section::after{display:none;content:"";width:7px;height:7px;flex:none;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg) translateY(-2px);transition:transform .18s}
 #listingFormSections .lm-section.lm-closed::after{transform:rotate(-45deg)}
 .add-modal:not(.view-mode) .lm-acc-hide{display:none!important}
 .add-modal.view-mode #listingFormSections .lm-section::after{display:none}
@@ -5310,7 +5309,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
         <label class="form-label">Building Location Link <span style="color:var(--brand)">*</span></label>
         <div style="display:flex;gap:7px;align-items:stretch">
           <input class="form-input" style="flex:1;min-width:0" type="url" id="f-currentLocationLink" inputmode="url" autocomplete="off" oninput="this.value=this.value.trim()" onchange="onBuildingLinkChange(this)" onpaste="var t=this;setTimeout(function(){onBuildingLinkChange(t)},0)" />
-          <button type="button" onclick="window.open('https://www.google.com/maps','_blank','noopener')" class="loc-act-btn" aria-label="Open Google Maps" title="Open Google Maps" style="display:inline-flex;align-items:center;justify-content:center;gap:6px;flex-shrink:0;padding:0 12px;border-radius:9px;border:1.5px solid var(--text);background:var(--bg);color:var(--text);font-size:12px;font-weight:700;cursor:pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg><span class="loc-btn-txt">Open Google Maps</span></button>
+          <button type="button" onclick="window.open('https://www.google.com/maps','_blank','noopener')" class="loc-act-btn" aria-label="Maps" title="Open Google Maps" style="display:inline-flex;align-items:center;justify-content:center;gap:6px;flex-shrink:0;padding:0 12px;border-radius:9px;border:1.5px solid var(--text);background:var(--bg);color:var(--text);font-size:12px;font-weight:700;cursor:pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg><span class="loc-btn-txt">Maps</span></button>
           <button type="button" onclick="openCurrentLocLink()" class="loc-act-btn" aria-label="Open in Google Maps" title="Open in Google Maps" style="display:inline-flex;align-items:center;justify-content:center;gap:6px;flex-shrink:0;padding:0 12px;border-radius:9px;border:1.5px solid var(--text);background:var(--bg);color:var(--text);font-size:12px;font-weight:700;cursor:pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg><span class="loc-btn-txt">Navigate</span></button>
         </div>
       </div>
@@ -5848,7 +5847,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
 
     <div class="form-actions-row">
       <button type="button" class="form-clear-btn" id="listingClearBtn" onclick="clearListingFormPrompt()" title="Erase everything typed in this form">Clear form</button>
-      <button class="form-submit" id="listingSubmitBtn" onclick="openListingReview('adminSubmitListing')">Save changes</button>
+      <button class="form-submit" id="listingSubmitBtn" onclick="lmAccExpandAll();adminSubmitListing()">Save changes</button>
     </div>
 
     <!-- View-mode only: admin/meta info that isn't part of the actual
@@ -19039,6 +19038,7 @@ function queueListingDraftSave() { if (typeof scheduleListingDraftSave === 'func
    Each .lm-section heading toggles the fields under it (up to the next heading,
    walking document order so headings nested in wrapper divs work too). */
 const LM_ACC_SINGLE = true;  // true = opening one tab closes the others
+const LM_ACC_ENABLED = false; // false = one continuous form, all sections always open
 function lmAccNext(el, root) { while (el && el !== root) { if (el.nextElementSibling) return el.nextElementSibling; el = el.parentElement; } return null; }
 function lmAccBody(h) {
   const root = document.getElementById('listingFormSections'), out = [];
@@ -19052,6 +19052,10 @@ function lmAccBody(h) {
 }
 function lmAccHeaders() { return Array.from(document.querySelectorAll('#listingFormSections .lm-section')); }
 function lmAccApply() {
+  if (!LM_ACC_ENABLED) {
+    lmAccHeaders().forEach(h => { h.classList.remove('lm-closed'); h.removeAttribute('role'); h.removeAttribute('aria-expanded'); h.removeAttribute('tabindex'); lmAccBody(h).forEach(n => n.classList.remove('lm-acc-hide')); });
+    return;
+  }
   lmAccHeaders().forEach((h, i) => {
     if (!h.dataset.acc) {
       h.dataset.acc = '1'; h.setAttribute('role', 'button'); h.tabIndex = 0;
@@ -19065,6 +19069,7 @@ function lmAccApply() {
 function lmAccReset() { lmAccHeaders().forEach(h => { delete h.dataset.acc; h.classList.remove('lm-closed'); }); lmAccApply(); }
 function lmAccExpandAll() { lmAccHeaders().forEach(h => h.classList.remove('lm-closed')); lmAccApply(); }
 function lmAccToggle(h) {
+  if (!LM_ACC_ENABLED) return;
   if (document.getElementById('addModal').classList.contains('view-mode')) return;
   const willClose = !h.classList.contains('lm-closed');
   if (!willClose && LM_ACC_SINGLE) lmAccHeaders().forEach(x => x.classList.add('lm-closed'));
@@ -19356,8 +19361,8 @@ async function adminSubmitListing() {
     return;
   }
   const ownerAltPhone = gv('f-ownerAltPhone');
-  if (!ownerAltPhone || !isValidIndianMobile(ownerAltPhone)) {
-    alert('Enter a valid 10-digit owner number starting with 6, 7, 8 or 9');
+  if (ownerAltPhone && !isValidIndianMobile(ownerAltPhone)) {
+    alert('Enter a valid 10-digit alternate number starting with 6, 7, 8 or 9');
     return;
   }
   const ownerCaretakerPhone = gv('f-ownerCaretakerPhone');
@@ -19424,7 +19429,7 @@ async function adminSubmitListing() {
       name:         ownerName,
       phone:        ownerPhone,
       email:        document.getElementById('f-ownerEmail').value.trim(),
-      altPhone:     gv('f-ownerAltPhone') || null,
+      altPhone:     gv('f-ownerAltPhone') || '',
       caretakerPhone: gv('f-ownerCaretakerPhone') || '',
       contactTime:  gv('f-contactTime') || null,
       sameAsBuilding: gv('f-sameAsBuildingAddress') || 'Yes',
