@@ -35,7 +35,7 @@ const ACCT_OWNER_SIDE = ['owner', 'pg', 'broker', 'agent', 'builder']; // accoun
 // anything the visitor is actually here for.
 (function(){
   var WISH_PRELOAD = [
-    { startDate:'2026-11-08', endDate:'2026-11-09', image:'/wishes/HomeLoop_Diwali.png' },
+    { startDate:'2026-11-08', endDate:'2026-11-08', image:'/wishes/HomeLoop_Diwali.png' },
 	{ startDate:'2026-08-20', endDate:'2026-08-21', image:'/wishes/varalakshmi-vratam-2026.webp' },
     { startDate:'2026-09-13', endDate:'2026-09-14', image:'/wishes/ganesh-chaturthi-2026.webp' }
   ];
@@ -7850,13 +7850,15 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
     <div class="lm-section" id="mediaSectionHeader">📸 Media &amp; Description</div>
     <div class="form-group" id="videoUrlGroup">
       <label class="form-label">Video Tour</label>
-      <input class="form-input" type="text" inputmode="url" id="f-videoUrl" placeholder="Paste a YouTube / Vimeo link, or upload a video below" oninput="updateVideoUploadUI()" />
+      <input class="form-input" type="text" inputmode="url" id="f-videoUrl" oninput="updateVideoUploadUI()" />
       <div class="img-row" id="videoUploadRow" style="margin-top:8px">
         <div class="img-btns">
-          <button type="button" class="img-btn-sec" id="f-videoUploadBtn" onclick="document.getElementById('f-videoFileInput').click()">🎥 Upload video</button>
+          <button type="button" class="img-btn-sec" id="f-videoUploadBtn" onclick="document.getElementById('f-videoFileInput').click()">🎥 Upload</button>
+          <button type="button" class="img-btn-sec" id="f-videoRecordBtn" onclick="document.getElementById('f-videoCameraInput').click()">🔴 Record</button>
           <button type="button" class="img-btn-sec" id="f-videoRemoveBtn" style="display:none" onclick="removeUploadedVideo()">✕ Remove video</button>
         </div>
         <input type="file" id="f-videoFileInput" accept="video/mp4,video/webm,video/quicktime,video/ogg" style="display:none" onchange="uploadListingVideo(this)"/>
+        <input type="file" id="f-videoCameraInput" accept="video/*" capture="environment" style="display:none" onchange="uploadListingVideo(this)"/>
       </div>
       <div id="f-videoStatus" style="font-size:12px;color:var(--text-3);margin-top:6px"></div>
       <div id="f-videoPreview" class="f-video-preview" style="display:none"></div>
@@ -20107,7 +20109,7 @@ function updateVideoUploadUI() {
   status.textContent = isUploaded ? '✅ Video uploaded' : '';
   status.style.color = isUploaded ? 'var(--green, #16a34a)' : 'var(--text-3)';
   if (removeBtn) removeBtn.style.display = isUploaded ? '' : 'none';
-  if (uploadBtn) uploadBtn.textContent = isUploaded ? '🎥 Replace video' : '🎥 Upload video';
+  if (uploadBtn) uploadBtn.textContent = isUploaded ? '🎥 Replace' : '🎥 Upload';
   renderVideoPreview();
 }
 
@@ -20184,6 +20186,8 @@ function uploadListingVideo(fileInput) {
 
   _videoUploading = true;
   if (uploadBtn) uploadBtn.disabled = true;
+  const recordBtn = document.getElementById('f-videoRecordBtn');
+  if (recordBtn) recordBtn.disabled = true;
   if (status) { status.style.color = 'var(--text-3)'; status.textContent = 'Uploading… 0%'; }
 
   const form = new FormData();
@@ -20199,6 +20203,7 @@ function uploadListingVideo(fileInput) {
   const finish = function (ok, msg) {
     _videoUploading = false;
     if (uploadBtn) uploadBtn.disabled = false;
+    if (recordBtn) recordBtn.disabled = false;
     if (!ok) {
       if (status) { status.textContent = ''; }
       showToast(msg || 'Could not upload the video. Please try again.', 'error');
@@ -20638,7 +20643,7 @@ const OPTIONAL_FIELD_IDS = new Set([
   'f-latitude', 'f-longitude',
   'f-imgFileInput', 'f-imgCameraInput',
   'f-amenities-extra', 'f-desc',   // description is optional
-  'f-videoUrl', 'f-videoFileInput', 'f-age', 'f-area',
+  'f-videoUrl', 'f-videoFileInput', 'f-videoCameraInput', 'f-age', 'f-area',
   'f-ownerAltPhone', 'f-ownerCaretakerPhone', 'f-ownerEmail', 'f-areaType', 'f-maxPersons', 'f-kitchenType',   // optional
   'f-maintenance', 'f-leaseMaintenance',
   'f-sellPossessionDate', 'f-sellReraId', 'f-pricePerSqft',
@@ -22943,6 +22948,10 @@ body{background:radial-gradient(80% 50% at 100% 0%,rgba(255,150,110,.26) 0%,rgba
 <script>
 (function(){
   var el=document.getElementById('hlNotice'); if(!el) return;
+  /* Once the visitor closes this notice it stays away for the rest of that day (device's local date); it comes back the next day. */
+  var DISMISS_KEY='hl_service_notice_closed_on';
+  function todayStr(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+  try{ if(localStorage.getItem(DISMISS_KEY)===todayStr()){ el.parentNode.removeChild(el); return; } }catch(e){ /* storage unavailable — just show it */ }
   var ok=document.getElementById('hlNoticeOk'), x=document.getElementById('hlNoticeX'), prevFocus=null, autoTimer=null, countEl=document.getElementById('hlNoticeCount');
   function open(){
     prevFocus=document.activeElement;
@@ -22954,6 +22963,7 @@ body{background:radial-gradient(80% 50% at 100% 0%,rgba(255,150,110,.26) 0%,rgba
     clearInterval(autoTimer);
     if(countEl) countEl.textContent='';
     if(!el.classList.contains('show')) return; /* already closed (e.g. manual close before the timer fired) */
+    try{ localStorage.setItem(DISMISS_KEY,todayStr()); }catch(e){ /* ignore */ }
     el.classList.remove('in'); document.body.style.overflow='';
     setTimeout(function(){ el.classList.remove('show'); },250);
     if(prevFocus&&prevFocus.focus) try{ prevFocus.focus(); }catch(e){}
