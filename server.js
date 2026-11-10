@@ -1391,7 +1391,7 @@ const BookingRequest = mongoose.model('BookingRequest', BookingRequestSchema);
 // /api/user/notifications and the unread badge polls /unread-count.
 const NotificationSchema = new mongoose.Schema({
   userId:    { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
-  type:      { type: String, enum: ['property_verified', 'review_approved', 'visit_status', 'account_verification'], required: true },
+  type:      { type: String, enum: ['property_verified', 'review_approved', 'visit_status', 'account_verification', 'payment_verified'], required: true },
   title:     { type: String, required: true },
   message:   { type: String, required: true },
   read:      { type: Boolean, default: false, index: true },
@@ -1412,6 +1412,7 @@ function shouldNotifyUser(type, meta) {
   const status = String((meta && meta.status) || '').toLowerCase();
   if (type === 'property_verified') return !['unverified', 'rejected'].includes(status);
   if (type === 'review_approved')   return true;
+  if (type === 'payment_verified')  return true; // only ever raised on verify; unverify/reject stay silent
   if (type === 'account_verification') return status === 'approved' || status === 'verified';
   if (type === 'visit_status')      return status === 'confirmed';
   return false;
@@ -1847,6 +1848,7 @@ app.get('/api/properties', attachUserIfPresent, async (req, res) => {
     let _viewerSub = null;    // current plan's filters (multi-BHK / areas / parking / budget)
     let _viewerSubFrom = null;   // when this tenant's subscription starts / ends (page uses them to reset "Viewed")
     let _viewerSubTo = null;
+    let _singleUnlocked = null; // Set of listing ids this user unlocked via a verified Single Property Plan payment
     if (req.userId) {
       const _viewer = await User.findById(req.userId).select('mobile publicCall accountType subscriptionBhk subscriptionFilter subscriptionFrom subscriptionAt subscriptionTo subscriptionExpiryHandled subscriptionStartHandled').lean();
       if (_viewer && (_viewer.accountType || 'customer') === 'customer') {
@@ -2001,6 +2003,16 @@ app.get('/api/properties', attachUserIfPresent, async (req, res) => {
     //    no plan filters (agents always see all listings). Toggle OFF → normal behaviour.
     if (_viewerIsAgent) docs.forEach(d => { d.ownerPhoneCall = true; d.ownerDirectCall = true; });
 
+    // 4) Single Property Plan: a logged-in user whose ₹150 payment for a listing was verified gets that ONE
+    //    listing's owner number(s) + Navigate/location link — nothing else changes for other listings.
+    if (req.userId && !_viewerIsAgentAcct) {
+      const _paid = await PaymentRequest.find({ userId: req.userId, purpose: 'single_property', status: 'verified', propertyId: { $ne: null } }).select('propertyId').lean();
+      if (_paid.length) {
+        _singleUnlocked = new Set(_paid.map(p => String(p.propertyId)));
+        docs.forEach(d => { if (_singleUnlocked.has(String(d._id))) { d.ownerPhoneCall = true; d.ownerDirectCall = true; d.singleUnlocked = true; } });
+      }
+    }
+
     // Backfill location.pincode from the free-text address for listings that
     // never got an explicit pincode saved (older/imported listings). Mirrors
     // the same "last 6-digit run in the address" pattern the frontend used
@@ -2056,7 +2068,7 @@ app.get('/api/properties', attachUserIfPresent, async (req, res) => {
       // frontend — only the derived pincode above survives past this point.
       // Pasted Google Maps link (owner's live location) — ONLY for a logged-in tenant whose
       // subscription / Public call is active. Everyone else never receives it.
-      if ((_viewerPublicCall || _viewerIsAgent) && /^https?:\/\//i.test(String(doc.location.currentLocationLink || '').trim())) {
+      if ((_viewerPublicCall || _viewerIsAgent || (_singleUnlocked && _singleUnlocked.has(String(doc._id)))) && /^https?:\/\//i.test(String(doc.location.currentLocationLink || '').trim())) {
         doc.currentLocationLink = String(doc.location.currentLocationLink).trim();
       }
       if (_viewerIsAgentAcct) return; // agent accounts keep the full address, lat/lng and map links
@@ -2145,7 +2157,7 @@ app.get('/api/properties', attachUserIfPresent, async (req, res) => {
     // entitled tenant is private + uncached, and every response varies by session key so a shared cache
     // can never hand one viewer's response to another.
     res.vary('x-user-key');
-    res.set('Cache-Control', (_viewerPublicCall || _viewerIsAgent || _viewerIsAgentAcct) ? 'private, no-store' : 'private, max-age=30');
+    res.set('Cache-Control', (_viewerPublicCall || _viewerIsAgent || _viewerIsAgentAcct || _singleUnlocked) ? 'private, no-store' : 'private, max-age=30');
     // bhkFilter: which BHK restriction was applied for this viewer ('' = none) — handy for checking in DevTools → Network.
     res.json({ properties: mapped, total: mapped.length, bhkFilter: _viewerBhk, subscriptionFrom: _viewerSubFrom, subscriptionTo: _viewerSubTo, agentPublicCall: !!_viewerIsAgent });
   } catch (err) {
@@ -3456,6 +3468,10 @@ const PaymentSettings = mongoose.model('PaymentSettings', PaymentSettingsSchema)
 // are NOT real payment details — replace them with your actual UPI id/bank
 // account either via PUT /api/admin/payment-settings once that screen
 // exists, or by editing this object directly, then delete this block.
+// Single Property Plan: flat fee, paid by UPI / GPay to this number (no payment gateway).
+// Admin verifies the payment by hand; verified payment unlocks that ONE listing's owner contact for the payer.
+const SINGLE_PROPERTY_FEE = 150;
+const SINGLE_PROPERTY_PAY_PHONE = '9611459960';
 const DUMMY_PAYMENT_DETAILS = {
   upiId:             '8553261336@sbi',
   qrImageUrl:        '',
@@ -3473,7 +3489,7 @@ app.get('/api/payment-settings', async (req, res) => {
     if (!settings) console.warn('⚠️  No PaymentSettings in DB — serving DUMMY_PAYMENT_DETAILS. Replace these before accepting real payments.');
     res.vary('x-user-key');
     res.set('Cache-Control', 'private, no-store'); // login-gated + payment-related: never cached
-    res.json(settings || DUMMY_PAYMENT_DETAILS);
+    res.json({ ...(settings || DUMMY_PAYMENT_DETAILS), singlePlanPhone: SINGLE_PROPERTY_PAY_PHONE, singlePlanFee: SINGLE_PROPERTY_FEE });
   } catch (err) {
     console.error('GET /api/payment-settings error:', err.message);
     res.status(500).json({ message: 'Error fetching payment settings' });
@@ -3490,7 +3506,7 @@ const PaymentRequestSchema = new mongoose.Schema({
   refCode:        { type: String, unique: true, index: true }, // e.g. PAY-000123
   userId:         { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
   userReadableId: { type: String, default: null, index: true }, // human-readable User.userId, same pattern as VisitRequest/Property
-  purpose:        { type: String, enum: ['brokerage', 'booking', 'visit_deposit', 'promotion'], required: true },
+  purpose:        { type: String, enum: ['brokerage', 'booking', 'visit_deposit', 'promotion', 'single_property'], required: true },
   // Real listing _id, when the caller has one on hand (e.g. the "Promote this
   // listing" button on My Listings, which already knows the property's Mongo
   // _id, or the property picker in the payment modal). Left null when the
@@ -3528,7 +3544,7 @@ const paymentLimiter = rateLimit({
 app.post('/api/payments/request', paymentLimiter, requireUser, requireVerified, async (req, res) => {
   try {
     const { purpose, amount, note, propertyId, category, rentTotal } = req.body || {};
-    if (!['brokerage', 'booking', 'visit_deposit', 'promotion'].includes(purpose)) {
+    if (!['brokerage', 'booking', 'visit_deposit', 'promotion', 'single_property'].includes(purpose)) {
       return res.status(400).json({ message: 'Invalid payment purpose' });
     }
     let amt = Number(amount);
@@ -3546,7 +3562,7 @@ app.post('/api/payments/request', paymentLimiter, requireUser, requireVerified, 
     let propertyDoc = null;
     if (propertyId) {
       for (const M of LISTING_MODEL_LIST) {
-        propertyDoc = await M.findById(propertyId).select('userId basic.status').lean();
+        propertyDoc = await M.findById(propertyId).select('userId basic.status booked').lean();
         if (propertyDoc) break;
       }
       if (!propertyDoc) return res.status(404).json({ message: 'Property not found' });
@@ -3586,6 +3602,20 @@ app.post('/api/payments/request', paymentLimiter, requireUser, requireVerified, 
       if (amt !== expected) {
         return res.status(400).json({ message: `Amount does not match ${category === 'lease' ? '50%' : '30%'} of the entered rent` });
       }
+    }
+
+    // Single Property Plan: tenant pays the flat fee for ONE listing's owner contact. Amount is forced
+    // server-side; admin verifies the UPI payment by hand, after which GET /api/properties exposes that
+    // listing's owner number(s) to this user only.
+    if (purpose === 'single_property') {
+      if (user && ACCT_OWNER_SIDE.includes(user.accountType)) {
+        return res.status(403).json({ message: 'The Single Property Plan is for tenant accounts' });
+      }
+      if (!propertyDoc) return res.status(400).json({ message: 'Choose the property you want the owner contact for' });
+      if (propertyDoc.booked) return res.status(409).json({ message: 'This property is already booked' });
+      const _already = await PaymentRequest.findOne({ userId: req.userId, purpose: 'single_property', propertyId, status: 'verified' }).select('_id').lean();
+      if (_already) return res.status(409).json({ message: 'You have already unlocked this property' });
+      amt = SINGLE_PROPERTY_FEE;
     }
 
     const refCode = await nextSequenceId('PAY');
@@ -3638,6 +3668,13 @@ app.post('/api/payments/:id/submit-proof', paymentLimiter, requireUser, requireV
     request.status = 'submitted';
     request.submittedAt = new Date();
     await request.save();
+
+    notifyAdmin({
+      type:    'payment_submitted',
+      title:   'New payment submitted',
+      message: `${request.refCode} · ₹${request.amount} · ${request.purpose === 'single_property' ? 'Single Property Plan' : request.purpose}${request.note ? ' · ' + request.note : ''}`,
+      meta:    { mongoId: String(request._id), userId: String(req.userId) },
+    }); // fire-and-forget; notifyAdmin swallows its own errors, doesn't block the response
 
     res.json({ message: 'Payment proof submitted — awaiting verification', request });
   } catch (err) {

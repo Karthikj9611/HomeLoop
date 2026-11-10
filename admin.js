@@ -3443,6 +3443,11 @@ self.addEventListener('notificationclick', event => {
       const { status } = req.query;
       const filter = status && status !== 'all' ? { status } : {};
       const payments = await PaymentRequest.find(filter).sort({ createdAt: -1 }).lean();
+      // Payer name + mobile so the admin can match the UPI sender against the payment.
+      const _uids = [...new Set(payments.map(p => String(p.userId)))];
+      const _users = _uids.length ? await User.find({ _id: { $in: _uids } }).select('name mobile').lean() : [];
+      const _umap = new Map(_users.map(u => [String(u._id), u]));
+      payments.forEach(p => { const u = _umap.get(String(p.userId)); p.userName = (u && u.name) || ''; p.userMobile = (u && u.mobile) || ''; });
       res.json({ payments });
     } catch (err) {
       console.error('GET /api/admin/payments error:', err.message);
@@ -3468,10 +3473,59 @@ self.addEventListener('notificationclick', event => {
 
       await applyPaymentVerifiedSideEffects(request);
 
+      // Tell the payer — best-effort (notifyUser never throws / blocks the admin action).
+      const _single = request.purpose === 'single_property';
+      await notifyUser(request.userId, {
+        type: 'payment_verified',
+        title: 'Payment verified',
+        message: _single
+          ? `Your ₹${request.amount} payment${request.note ? ' for ' + request.note : ''} is verified. The owner contact is now unlocked — open the property to view it.`
+          : `Your ₹${request.amount} payment (${request.refCode}) has been verified. Thank you!`,
+        meta: { status: 'verified', paymentId: String(request._id), refCode: request.refCode, purpose: request.purpose, propertyId: request.propertyId ? String(request.propertyId) : null },
+      });
+
       res.json({ message: 'Payment verified', request });
     } catch (err) {
       console.error('PATCH /api/admin/payments/:id/verify error:', err.message);
       res.status(500).json({ message: 'Error verifying payment' });
+    }
+  });
+
+  // Undo a verification: back to 'submitted' (proof on file) or 'pending'. A Single Property Plan unlock
+  // disappears with it (the site reads verified records); a verified promotion is switched back off.
+  app.patch('/api/admin/payments/:id/unverify', requireAdmin, requireModuleAction('payments'), async (req, res) => {
+    try {
+      const request = await PaymentRequest.findById(req.params.id);
+      if (!request) return res.status(404).json({ message: 'Payment request not found' });
+      if (request.status !== 'verified') return res.status(409).json({ message: 'Only a verified payment can be unverified' });
+
+      request.status = (request.submittedAt || request.screenshotUrl) ? 'submitted' : 'pending';
+      request.verifiedAt = null;
+      if (typeof (req.body && req.body.adminRemark) === 'string') request.adminRemark = req.body.adminRemark.trim().slice(0, 300);
+      await request.save();
+
+      if (request.purpose === 'promotion' && request.propertyId) {
+        try { await updateListingById(request.propertyId, { promoted: false }); }
+        catch (sideEffectErr) { console.error('Payment unverify side-effect error:', sideEffectErr.message); }
+      }
+      res.json({ message: 'Payment unverified', request });
+    } catch (err) {
+      console.error('PATCH /api/admin/payments/:id/unverify error:', err.message);
+      res.status(500).json({ message: 'Error unverifying payment' });
+    }
+  });
+
+  // Delete a payment record. NOTE: deleting a VERIFIED Single Property Plan payment also takes the
+  // unlock away from the customer (the site reads the verified record).
+  app.delete('/api/admin/payments/:id', requireAdmin, requireModuleAction('payments'), async (req, res) => {
+    try {
+      if (!mongoose.Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ message: 'Invalid payment id' });
+      const removed = await PaymentRequest.findByIdAndDelete(req.params.id);
+      if (!removed) return res.status(404).json({ message: 'Payment request not found' });
+      res.json({ message: 'Payment deleted' });
+    } catch (err) {
+      console.error('DELETE /api/admin/payments/:id error:', err.message);
+      res.status(500).json({ message: 'Error deleting payment' });
     }
   });
 

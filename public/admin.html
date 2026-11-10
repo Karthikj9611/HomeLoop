@@ -3960,6 +3960,11 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
       <span class="tab-btn-label" data-mobile="Referrals">Referrals</span>
       <span class="tab-count" id="tab-referrals-count">—</span>
     </button>
+    <button class="tab-btn" id="tab-payments" onclick="switchTab('payments')">
+      <i class="fas fa-credit-card"></i>
+      <span class="tab-btn-label" data-mobile="Payments">Payments</span>
+      <span class="tab-count" id="tab-payments-count">—</span>
+    </button>
     <button class="tab-btn" id="tab-partners" onclick="switchTab('partners')">
       <i class="fas fa-handshake"></i>
       <span class="tab-btn-label" data-mobile="Partners">Partners</span>
@@ -4849,6 +4854,42 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
   </div>
 
   <!-- ══ PARTNERS PANEL ══ -->
+  <div class="tab-panel" id="panel-payments">
+    <div class="card">
+      <div class="card-header gcf-card-header">
+        <div class="card-header-left">
+          <select class="col-filter-select" id="paymentStatusFilter" onchange="onPaymentStatusFilterChange(this.value)" title="Filter by status">
+            <option value="">All payments</option>
+            <option value="submitted">Awaiting review</option>
+            <option value="pending">Pending (no proof yet)</option>
+            <option value="verified">Verified</option>
+            <option value="rejected">Rejected</option>
+          </select>
+        </div>
+      </div>
+      <div class="table-wrapper">
+        <table id="paymentsTable" class="display nowrap" style="width:100%">
+          <thead>
+            <tr>
+              <th>Ref</th>
+              <th>Customer</th>
+              <th>Purpose</th>
+              <th>Property</th>
+              <th>Amount</th>
+              <th>Status</th>
+              <th>Proof</th>
+              <th>Submitted</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td colspan="9" class="empty-state"><i class="fas fa-circle-notch fa-spin"></i>Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
   <div class="tab-panel" id="panel-partners">
     <div class="bulk-toolbar" id="partnerBulkToolbar">
           <div class="bulk-toolbar-left">
@@ -5903,7 +5944,7 @@ const ACCT_LABELS = { owner:'Owner', pg:'PG Owner', broker:'Broker', agent:'Agen
 function acctLabel(t){ return ACCT_LABELS[t] || 'Tenant'; }
 const ACCT_OWNER_SIDE = ['owner', 'pg', 'broker', 'agent', 'builder']; // account types that can list properties (agent/builder are assigned by admin)
 
-let dataTable, propTable, apptTable, honestReviewsTable, userReviewsTable, partnersTable, brokersTable, referralsTable;
+let dataTable, propTable, apptTable, honestReviewsTable, userReviewsTable, partnersTable, brokersTable, referralsTable, paymentsTable;
 
 
 const BASE = 'https://www.homeloop.in';
@@ -6232,6 +6273,7 @@ const NOTIF_ICONS = {
   honest_review_submitted: { i:'fa-video',         c:'#ec4899', b:'rgba(236,72,153,0.13)' },
   referral_submitted:      { i:'fa-share-nodes',   c:'#0d9488', b:'rgba(13,148,136,0.13)' },
   partner_added:           { i:'fa-handshake',     c:'#ea580c', b:'rgba(234,88,12,0.13)' },
+  payment_submitted:       { i:'fa-credit-card',   c:'#1e8449', b:'rgba(30,132,73,0.13)' },
 };
 
 function renderNotifPanel(notifications){
@@ -6298,6 +6340,7 @@ function notifActionHtml(n){
     honest_review_submitted:  { tab: 'honest-reviews',  icon: 'fa-video',         label: 'View submission' },
     referral_submitted:       { tab: 'referrals',       icon: 'fa-share-nodes',   label: 'View referral' },
     partner_added:            { tab: 'partners',        icon: 'fa-handshake',     label: 'View partner' },
+    payment_submitted:        { tab: 'payments',        icon: 'fa-credit-card',   label: 'Review payment' },
   };
   const jump = NOTIF_JUMP_TABS[n.type];
   if(jump){
@@ -6516,6 +6559,7 @@ function refreshGridsForNotifTypes(types){
     honest_review_submitted: () => honestReviewsTable,
     referral_submitted:      () => referralsTable,
     partner_added:           () => partnersTable,
+    payment_submitted:       () => paymentsTable,
   };
   const done = new Set();
   types.forEach(t => {
@@ -6883,6 +6927,10 @@ function switchTab(tab){
   if(tab === 'referrals' && referralsTable){
     setTimeout(()=>{ referralsTable.columns.adjust().draw(false); }, 50);
   }
+  if(tab === 'payments' && paymentsTable){
+    paymentsTable.ajax.reload(null, false); // always fresh — new payments arrive while the panel is open
+    setTimeout(()=>{ paymentsTable.columns.adjust().draw(false); }, 50);
+  }
   if(tab === 'admin-access'){
     loadAdminAccessTab();
   }
@@ -6897,6 +6945,7 @@ const TAB_MODULE_MAP = {
   'properties': 'properties',
   'user-reviews': 'userReviews',
   'referrals': 'referrals',
+  'payments': 'payments',
   'partners': 'partners',
   'brokers': 'brokers',
   'appointments': 'appointments',
@@ -9897,6 +9946,73 @@ window.deleteReferral = async function(id){
     referralsTable.ajax.reload(null, false);
     const total = referralsTable.data().count();
     document.getElementById('tab-referrals-count').innerText = total;
+  } catch(err){ alert('Delete failed. Please try again.'); }
+};
+
+/* ── PAYMENTS: verify / reject ──
+   Verifying a Single Property Plan payment is all it takes to unlock that
+   listing's owner contact for the payer (the site reads the verified record). */
+let _paymentStatusFilter = '';
+const PAYMENT_PURPOSE_LABELS = { single_property:'Single Property Plan', brokerage:'Brokerage', booking:'Short Stay booking', visit_deposit:'Visit deposit', promotion:'Promotion' };
+window.onPaymentStatusFilterChange = function(value){
+  _paymentStatusFilter = value || '';
+  if(paymentsTable) paymentsTable.ajax.reload(null, false);
+};
+window.reviewPayment = async function(id, action){
+  if(blockIfViewOnly('payments')) return;
+  const row = paymentsTable.rows().data().toArray().find(r => r._id === id) || {};
+  const isVerify = action === 'verify';
+  if(action === 'unverify'){
+    const okU = await showConfirmModal({
+      title: 'Unverify this payment?',
+      message: row.purpose === 'single_property'
+        ? `${row.userName || 'The customer'} will lose access to the owner contact for ${row.note || 'this property'}. The payment goes back to review.`
+        : 'This payment goes back to review.',
+      okText: 'Unverify', variant: 'danger'
+    });
+    if(!okU) return;
+    try{
+      const resU = await fetch(`${BASE}/api/admin/payments/${id}/unverify`, { method:'PATCH', headers: authHeaders({'Content-Type':'application/json'}), body: JSON.stringify({}) });
+      const dataU = await resU.json().catch(()=>({}));
+      if(!resU.ok){ alert(dataU.message || 'Action failed'); return; }
+      paymentsTable.ajax.reload(null, false);
+    } catch(err){ alert('Action failed. Please try again.'); }
+    return;
+  }
+  const ok = await showConfirmModal({
+    title: isVerify ? 'Verify this payment?' : 'Reject this payment?',
+    message: isVerify
+      ? (row.purpose === 'single_property'
+          ? `Confirm ₹${row.amount} was received for ${row.note || 'this property'} — owner contact unlocks for ${row.userName || 'the customer'}.`
+          : `Confirm ₹${row.amount} (${PAYMENT_PURPOSE_LABELS[row.purpose] || row.purpose}) was received.`)
+      : 'The customer will not get access for this payment.',
+    okText: isVerify ? 'Verify' : 'Reject',
+    variant: isVerify ? 'info' : 'danger'
+  });
+  if(!ok) return;
+  try{
+    const res = await fetch(`${BASE}/api/admin/payments/${id}/${action}`, { method:'PATCH', headers: authHeaders({'Content-Type':'application/json'}), body: JSON.stringify({}) });
+    const data = await res.json().catch(()=>({}));
+    if(!res.ok){ alert(data.message || 'Action failed'); return; }
+    paymentsTable.ajax.reload(null, false);
+  } catch(err){ alert('Action failed. Please try again.'); }
+};
+
+window.deletePayment = async function(id){
+  if(blockIfViewOnly('payments')) return;
+  const row = paymentsTable.rows().data().toArray().find(r => r._id === id) || {};
+  const ok = await showConfirmModal({
+    title: 'Delete this payment?',
+    message: row.status === 'verified' && row.purpose === 'single_property'
+      ? 'This payment is VERIFIED — deleting it also removes the customer\'s unlock for ' + (row.note || 'this property') + '.'
+      : 'This payment record will be permanently removed.'
+  });
+  if(!ok) return;
+  try{
+    const res = await fetch(`${BASE}/api/admin/payments/${id}`, { method:'DELETE', headers: authHeaders() });
+    const data = await res.json().catch(()=>({}));
+    if(!res.ok){ alert(data.message || 'Delete failed'); return; }
+    paymentsTable.ajax.reload(null, false);
   } catch(err){ alert('Delete failed. Please try again.'); }
 };
 
@@ -13718,6 +13834,82 @@ $(document).ready(function(){
   });
   initColumnToggle('referral');
   } catch(e){ console.error('Referrals table failed to initialize:', e); }
+
+  /* ════════════════════════════════════
+     PAYMENTS — manual UPI payments awaiting review (Single Property Plan etc.)
+  ════════════════════════════════════ */
+  try{
+  paymentsTable = $('#paymentsTable').DataTable({
+    ajax:{
+      url: BASE+'/api/admin/payments',
+      data: function(d){ if(_paymentStatusFilter) d.status = _paymentStatusFilter; },
+      beforeSend: function(xhr){ xhr.setRequestHeader('x-admin-key', ADMIN_KEY); },
+      error: function(xhr){ console.error('Payments fetch failed:', xhr.status, xhr.responseText); showTableLoadError('#paymentsTable', xhr); },
+      dataSrc: function(res){
+        const payments = (res && Array.isArray(res.payments)) ? res.payments : [];
+        const waiting = payments.filter(p => p.status === 'submitted').length;
+        document.getElementById('tab-payments-count').innerText = _paymentStatusFilter ? payments.length : (waiting ? waiting + ' new' : payments.length);
+        return payments;
+      }
+    },
+    columns:[
+      /* 0 – Ref */
+      { data:'refCode', render:(d)=> escapeHtml(d||'—') },
+      /* 1 – Customer */
+      { data:null, render:(d,t,row)=>{
+          const txt = [row.userName, row.userMobile, row.userReadableId].filter(Boolean).join(' · ');
+          if(t!=='display') return txt;
+          return `${escapeHtml(row.userName||'—')}<div class="prop-sub">${row.userMobile ? `<a href="tel:${escapeHtml(row.userMobile)}">${escapeHtml(row.userMobile)}</a>` : ''}${row.userReadableId ? ' · '+escapeHtml(row.userReadableId) : ''}</div>`;
+      }},
+      /* 2 – Purpose */
+      { data:'purpose', render:(d)=> escapeHtml(PAYMENT_PURPOSE_LABELS[d] || d || '—') },
+      /* 3 – Property (note from the payment modal: "<propertyId> - <Type> - <Area>") */
+      { data:'note', render:(d)=> escapeHtml(d||'—') },
+      /* 4 – Amount */
+      { data:'amount', className:'dt-body-right', render:(d,t)=> t==='display' ? '₹'+Number(d||0).toLocaleString('en-IN') : (d||0) },
+      /* 5 – Status */
+      { data:'status', className:'dt-body-center', render:(d,t)=>{
+          if(t!=='display') return d||'';
+          const c = {pending:'#7f8c8d', submitted:'#d68910', verified:'#1e8449', rejected:'#c0392b'}[d] || '#7f8c8d';
+          const l = {pending:'Pending', submitted:'Awaiting review', verified:'Verified', rejected:'Rejected'}[d] || (d||'—');
+          return `<span style="color:${c};font-weight:600">${l}</span>`;
+      }},
+      /* 6 – Proof screenshot */
+      { data:'screenshotUrl', orderable:false, render:(d,t,row)=>{
+          if(t!=='display') return d ? 'yes' : '';
+          return d ? `<a href="${escapeHtml(BASE + d)}" target="_blank" rel="noopener">View</a>` : '<span class="prop-sub">None</span>';
+      }},
+      /* 7 – Submitted (falls back to created) */
+      { data:null, render:(d,t,row)=>{
+          const v = row.submittedAt || row.createdAt;
+          if(!v) return '—';
+          if(t!=='display') return new Date(v).getTime();
+          return formatDateTime(v);
+      }},
+      /* 8 – Action: ONE verify/unverify toggle + delete */
+      { data:null, orderable:false, render:(d,t,row)=>{
+          if(t!=='display') return '';
+          const on = row.status === 'verified';
+          const toggle = on
+            ? `<span class="pact pact-verify"><button class="btn-view" style="color:#d68910" title="Verified — click to unverify (removes the unlock)" onclick="reviewPayment('${row._id}','unverify')"><i class="fas fa-rotate-left"></i><span class="btn-label"> Unverify</span></button></span>`
+            : `<span class="pact pact-verify"><button class="btn-view" style="color:#1e8449" title="Mark paid — unlocks the plan" onclick="reviewPayment('${row._id}','verify')"><i class="fas fa-check"></i><span class="btn-label"> Verify</span></button></span>`;
+          const del = `<span class="pact pact-delete"><button class="btn-view" style="color:#c0392b" title="Delete this payment" onclick="deletePayment('${row._id}')"><i class="fas fa-trash"></i><span class="btn-label"> Delete</span></button></span>`;
+          return `<div style="display:inline-flex;gap:6px;flex-wrap:nowrap;justify-content:center">${toggle}${del}</div>`;
+      }}
+    ],
+    order:[[7,'desc']],
+    orderCellsTop:true,
+    dom:'rt<"bottom-controls"i>',
+    pageLength:-1,
+    scrollX:true,
+    language:{
+      emptyTable:'<div class="empty-state"><i class="fas fa-credit-card"></i>No payments yet</div>',
+      zeroRecords:'<div class="empty-state"><i class="fas fa-magnifying-glass"></i>No matching payments</div>',
+      info:'Showing all _TOTAL_ payments',
+      paginate:{previous:'‹ Prev',next:'Next ›'}
+    }
+  });
+  } catch(e){ console.error('Payments table failed to initialize:', e); }
 
   // Restore whichever main tab (Visits/Customers/Properties/Appointments/
   // Honest Reviews) was last selected — survives a refresh or reopening the

@@ -3565,6 +3565,7 @@ main.tab-explore .empty-state{display:none !important}
    share .add-modal-overlay's z-index:350); bump it above that so it always
    renders on top instead of behind the view modal it was opened from. */
 #scheduleModal{z-index:360}
+#paymentModal{z-index:361}
 /* The login/sign-up prompt can now pop up over a property's photo zoom
    (.lightbox-overlay, z-index:400) or its full detail view, so it needs to
    sit above both instead of its shared .add-modal-overlay z-index:350. */
@@ -7932,6 +7933,13 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
           WhatsApp
         </button>
       </div>
+      <!-- Single Property Plan: pay ₹150 to unlock this listing's owner contact (hidden once unlocked / public) -->
+      <div class="modal-actions-row" id="viewUnlockRow" style="margin-top:10px;display:none">
+        <button class="modal-btn-primary" id="viewUnlockBtn">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.5-2"/></svg>
+          <span>Unlock owner contact · ₹150</span>
+        </button>
+      </div>
       <!-- Owner numbers: each row appears only when admin switched on "Public call" for that number -->
       <div class="modal-actions-row" id="viewOwnerMainRow" style="margin-top:10px;display:none">
         <button class="modal-btn-primary" id="viewOwnerPhoneBtn">
@@ -8315,6 +8323,7 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
           <option value="booking">Short Stay booking advance</option>
           <option value="visit_deposit">Visit deposit</option>
           <option value="promotion">Promote my listing</option>
+          <option value="single_property">Single Property Plan</option>
         </select>
       </div>
       <div class="form-group">
@@ -8343,6 +8352,19 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
           <option value="contact">Verified Contact (by BHK)</option>
           <option value="other">Other</option>
         </select>
+      </div>
+
+      <!-- Single Property Plan: flat fee for ONE property's owner contact, paid by UPI/GPay number (no gateway). -->
+      <div id="paySingleBox" style="display:none">
+        <div class="form-group">
+          <label class="form-label">Which property do you want the owner's contact for?</label>
+          <select class="form-input" id="pay-single-property" onchange="handleSinglePropertyChange()"></select>
+        </div>
+        <div class="payment-detail-row" style="margin-bottom:16px">
+          <span>Amount payable (one property)</span>
+          <span class="detail-value-with-copy"><b id="pay-single-amount">₹150</b><button type="button" class="detail-copy-btn" title="Copy amount" onclick="copyCurrentAmount(this, event)"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></button></span>
+        </div>
+        <div class="identity-locked-hint" style="margin-bottom:16px">Send the amount to the UPI / GPay number below, then upload the screenshot. Once we verify it, this property's owner contact unlocks on your account.</div>
       </div>
 
       <!-- Owner brokerage: flat fixed charge, no category picker, no rent math. -->
@@ -8417,6 +8439,13 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
           <div id="paymentDetailsBox" class="payment-details-box">
             <div class="profile-loading">Loading payment details…</div>
           </div>
+
+          <!-- After paying in your UPI app: upload the payment screenshot and submit for verification -->
+          <div class="form-group" style="margin-top:16px">
+            <label class="form-label">Payment screenshot</label>
+            <input class="form-input" type="file" id="pay-screenshot" accept="image/*" />
+          </div>
+          <button class="form-submit" id="paymentSubmitBtn" onclick="submitPaymentProof()">I've paid — submit for verification</button>
 
       </div>
       </div>
@@ -8837,6 +8866,7 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
       </div>
       
       <div class="svc-price-note charges-refer-note"><strong>Note:</strong> <b>Choose one property</b>, receive the <b>owner’s contact details</b>, and arrange a visit directly. The service covers one property; each additional property costs just <b>₹150</b>.</div>
+      <button class="form-submit pay-online-btn" onclick="closeChargesModal(); openPaymentModal('single_property');">Pay ₹150 for one property</button>
 </div></div>
       </div>
       <div class="charges-or-divider">or</div>
@@ -8983,6 +9013,7 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
       </div>
       
       <div class="svc-price-note charges-refer-note"><strong>Note:</strong> <b>Choose one property</b>, receive the <b>owner’s contact details</b>, and arrange a visit directly. The service covers one property; each additional property costs just <b>₹150</b>.</div>
+      <button class="form-submit pay-online-btn" onclick="closeChargesModal(); openPaymentModal('single_property');">Pay ₹150 for one property</button>
 </div></div>
       </div>
       <div class="charges-or-divider">or</div>
@@ -14560,13 +14591,19 @@ function openDetailReal(id) {
   if (isBookedProp(p)) {
     callBtn.style.display = 'none';
     whatsappBtn.style.display = 'none';
-    ['viewActionsRow2', 'viewOwnerMainRow', 'viewOwnerAltRow', 'viewOwnerCareRow'].forEach(id => {
+    ['viewActionsRow2', 'viewUnlockRow', 'viewOwnerMainRow', 'viewOwnerAltRow', 'viewOwnerCareRow'].forEach(id => {
       document.getElementById(id).style.display = 'none';
     });
     document.getElementById('viewNavigateRow').style.display = 'none';
     actionsRow1.style.display = [...actionsRow1.children].every(c => getComputedStyle(c).display === 'none') ? 'none' : '';
   }
-  const _footerHasContent = ['viewActionsRow', 'viewActionsRow2', 'viewOwnerMainRow', 'viewOwnerAltRow', 'viewOwnerCareRow', 'viewNavigateRow']
+  // Single Property Plan: tenants/guests with no owner number visible on this listing can pay ₹150 to unlock it.
+  const _unlockRow = document.getElementById('viewUnlockRow');
+  const _canUnlock = !viewerIsOwner && !isAgentViewer() && !isBookedProp(p) && !(_mainShow || _altShow || _careShow);
+  _unlockRow.style.display = _canUnlock ? '' : 'none';
+  document.getElementById('viewUnlockBtn').onclick = () => openPaymentModal('single_property', String(p.id),
+    `${p.propertyId} - ${pTypeLabel(p)} - ${(p.location && p.location.area) || ''}`.trim().replace(/ - $/, ''));
+  const _footerHasContent = ['viewActionsRow', 'viewActionsRow2', 'viewUnlockRow', 'viewOwnerMainRow', 'viewOwnerAltRow', 'viewOwnerCareRow', 'viewNavigateRow']
     .some(id => document.getElementById(id).style.display !== 'none');
   footerEl.style.display = _footerHasContent ? 'block' : 'none';
 
@@ -17558,11 +17595,25 @@ function openPaymentModal(purpose, propertyId, propertyLabel) {
   // cross-check the amount, so we must not send a stale category value left
   // over from a previous open when this flow doesn't actually use one (e.g.
   // the owner's flat fee below).
-  CURRENT_PAY_CATEGORY_APPLICABLE = !isOwnerBrokerage;
-  document.getElementById('pay-category-group').style.display = isOwnerBrokerage ? 'none' : '';
+  const isSingle = purpose === 'single_property';
+  CURRENT_PAY_CATEGORY_APPLICABLE = !isOwnerBrokerage && !isSingle;
+  document.getElementById('pay-category-group').style.display = (isOwnerBrokerage || isSingle) ? 'none' : '';
   document.getElementById('payOwnerFlat').style.display = isOwnerBrokerage ? '' : 'none';
+  document.getElementById('paySingleBox').style.display = isSingle ? '' : 'none';
 
-  if (isOwnerBrokerage) {
+  if (isSingle) {
+    // Tenant-only flat fee for one property — locked amount, property picked in the modal.
+    document.getElementById('payRentCalc').style.display = 'none';
+    document.getElementById('paySellCalc').style.display = 'none';
+    document.getElementById('payContactFlat').style.display = 'none';
+    document.getElementById('paymentAmountEntry').style.display = 'none';
+    amtInline.value = SINGLE_PROPERTY_FEE;
+    amtInline.readOnly = true;
+    amtInline.classList.add('identity-locked');
+    document.getElementById('pay-single-amount').textContent = fmtINR(SINGLE_PROPERTY_FEE);
+    populateSinglePropertyOptions(propertyId, propertyLabel);
+    if (propertyId) handleSinglePropertyChange(); // listing already known → create the request right away
+  } else if (isOwnerBrokerage) {
     document.getElementById('payRentCalc').style.display = 'none';
     document.getElementById('paySellCalc').style.display = 'none';
     document.getElementById('payContactFlat').style.display = 'none';
@@ -17650,7 +17701,10 @@ function copyCurrentAmount(btnEl, event) {
 }
 
 function renderPaymentDetailsBox() {
-  const s = PAYMENT_SETTINGS_CACHE || {};
+  const _s0 = PAYMENT_SETTINGS_CACHE || {};
+  const _isSingle = (document.getElementById('pay-purpose') || {}).value === 'single_property';
+  // Single Property Plan: pay straight to the UPI / GPay number — never the QR/UPI ID/bank of the other flows.
+  const s = _isSingle ? { paymentPhone: _s0.singlePlanPhone || '9611459960' } : _s0;
   const box = document.getElementById('paymentDetailsBox');
   if (!s.upiId && !s.bankAccountNumber && !s.paymentPhone) {
     box.innerHTML = `<div class="profile-list-empty">Payment details haven't been set up yet. Please contact us via Help &amp; Support.</div>`;
@@ -17682,7 +17736,31 @@ function renderPaymentDetailsBox() {
 // amount field. In every case the figure feeds the same hidden
 // pay-amount-inline field, so the existing PaymentRequest/UPI-link plumbing
 // needs no changes.
+const SINGLE_PROPERTY_FEE = 150; // keep in sync with server.js SINGLE_PROPERTY_FEE
+function populateSinglePropertyOptions(selectedId, selectedLabel) {
+  const sel = document.getElementById('pay-single-property');
+  const options = payPropertyOptionsList().filter(o => {
+    const p = PROPERTIES.find(x => String(x.id) === o.id);
+    return !(p && p.singleUnlocked); // already unlocked → nothing to buy
+  });
+  if (selectedId && !options.some(o => o.id === String(selectedId))) {
+    options.unshift({ id: String(selectedId), label: selectedLabel || 'This listing' });
+  }
+  sel.innerHTML = '<option value="">Select a property…</option>' +
+    options.map(o => `<option value="${o.id}">${esc(o.label)}</option>`).join('');
+  sel.value = selectedId ? String(selectedId) : '';
+  CURRENT_PAY_PROPERTY_ID = sel.value || null;
+}
+function handleSinglePropertyChange() {
+  const sel = document.getElementById('pay-single-property');
+  CURRENT_PAY_PROPERTY_ID = sel.value || null;
+  CURRENT_PAY_PROPERTY_NOTE = sel.value ? sel.options[sel.selectedIndex].textContent : '';
+  CURRENT_PAYMENT_REQUEST = null; // property changed → fresh request for it
+  if (sel.value) handleAmountBlur();
+}
+
 function handlePayCategoryChange() {
+  document.getElementById('paySingleBox').style.display = 'none';
   const cat = document.getElementById('pay-category').value;
   const rentBox = document.getElementById('payRentCalc');
   const sellBox = document.getElementById('paySellCalc');
@@ -17907,8 +17985,10 @@ async function resumePaymentRequest(payment) {
   }
 
   CURRENT_PAYMENT_REQUEST = { id: payment._id, refCode: payment.refCode, amount: payment.amount, purpose: payment.purpose };
-  CURRENT_PAY_PROPERTY_ID = null;
+  CURRENT_PAY_PROPERTY_ID = payment.purpose === 'single_property' ? (payment.propertyId || null) : null;
   CURRENT_PAY_PROPERTY_NOTE = '';
+  document.getElementById('pay-purpose').value = payment.purpose || 'brokerage'; // keeps the details box in sync with this payment's purpose
+  document.getElementById('paySingleBox').style.display = 'none';
 
   document.getElementById('paymentModal').classList.add('open');
   lockBodyScroll();
@@ -17968,6 +18048,13 @@ function payViaUpiApp() {
 // submit without ever leaving the field), then submits the screenshot
 // proof against it.
 async function submitPaymentProof() {
+  if (document.getElementById('pay-purpose').value === 'single_property' && !CURRENT_PAY_PROPERTY_ID) {
+    showToast("Please choose the property first.", 'warning'); return;
+  }
+  if (document.getElementById('pay-purpose').value === 'single_property') {
+    const _f = document.getElementById('pay-screenshot');
+    if (!_f || !_f.files[0]) { showToast("Please upload your payment screenshot.", 'warning'); return; }
+  }
   const amount = Number(document.getElementById('pay-amount-inline').value);
   if (!amount || amount <= 0) { showToast("Please enter a valid amount.", 'warning'); return; }
 
@@ -18194,6 +18281,7 @@ function removeSavedListing(id) {
    NOTIFICATIONS MODAL
 ═══════════════════════════════════════════════ */
 let notifPollTimer = null;
+let _lastNotifUnread = null; // unread count seen by the last poll (null until the first one)
 
 // Called from updateNavAuth() — starts/stops the unread-count poll based on login state.
 function refreshNotifPolling() {
@@ -18208,6 +18296,9 @@ async function refreshNotifCount() {
     const res = await fetch('/api/user/notifications/unread-count', { headers: userAuthHeaders() });
     if (!res.ok) return;
     const data = await res.json();
+    // A new notification may be a verified payment → reload listings so the unlocked owner contact shows right away.
+    if (_lastNotifUnread !== null && (data.unreadCount || 0) > _lastNotifUnread) { try { fetchProperties(true); } catch (_) {} }
+    _lastNotifUnread = data.unreadCount || 0;
     updateNotifBadge(data.unreadCount || 0);
   } catch (err) { /* silent — badge just skips this cycle */ }
 }
@@ -18229,6 +18320,7 @@ const NOTIF_STYLE = {
   visit_cancelled:   { grad: 'linear-gradient(145deg,#fb7185,#e11d48)', glow: 'rgba(225,29,72,.55)',  bg: '#fdecef', color: '#E03A52', icon: '<rect x="3" y="4.5" width="18" height="17" rx="2.5"/><line x1="16" y1="2.5" x2="16" y2="6.5"/><line x1="8" y1="2.5" x2="8" y2="6.5"/><line x1="3" y1="10.5" x2="21" y2="10.5"/><line x1="9.8" y1="13.8" x2="14.2" y2="18.2"/><line x1="14.2" y1="13.8" x2="9.8" y2="18.2"/>' },
   visit_completed:   { grad: 'linear-gradient(145deg,#a78bfa,#6d28d9)', glow: 'rgba(109,40,217,.5)',  bg: '#eef1fc', color: '#5b7be8', icon: '<path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 1 1 16 0z"/><polyline points="8.8 10 11 12.2 15.4 7.8"/>' },
   visit_pending:     { grad: 'linear-gradient(145deg,#fbbf24,#f97316)', glow: 'rgba(249,115,22,.5)',  bg: '#fff8e6', color: '#b8860b', icon: '<circle cx="12" cy="12" r="9.5"/><polyline points="12 6.5 12 12 15.8 14"/>' },
+  payment_verified:  { grad: 'linear-gradient(145deg,#34d399,#059669)', glow: 'rgba(5,150,105,.55)',  bg: '#e8f7ef', color: '#1a9c5c', icon: '<rect x="2.5" y="5" width="19" height="14" rx="2.5"/><line x1="2.5" y1="10" x2="21.5" y2="10"/><polyline points="8.8 15 11 17.2 15.4 12.8"/>' },
   default:           { grad: 'linear-gradient(145deg,#ff8a5c,#e8365d)', glow: 'rgba(232,54,93,.5)',   bg: 'var(--brand-light)', color: 'var(--brand)', icon: '<path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>' },
 };
 function resolveNotifStyle(n) {
@@ -18328,6 +18420,7 @@ async function openNotifModal() {
     const data = await res.json();
     renderNotifications(data.notifications);
     updateNotifBadge(data.unreadCount || 0);
+    if ((data.notifications || []).some(n => n.type === 'payment_verified' && !n.read)) { try { fetchProperties(true); } catch (_) {} }
   } catch (err) {
     list.innerHTML = '<div class="notif-empty">Couldn\'t load notifications</div>';
   }
