@@ -4227,6 +4227,19 @@ main.tab-explore .empty-state{display:none !important}
 .payment-details-table tr.is-clickable b{color:var(--brand)}
 .payment-upi-pay-btn{margin-bottom:12px}
 .payment-upi-hint{font-size:11px;color:var(--text-3);text-align:center;margin:-4px 0 12px}
+.payment-details-box.is-bare{border:0;background:none;box-shadow:none;padding:0}
+.sp-trigger{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;text-align:left;cursor:pointer;white-space:normal;line-height:1.35}
+.sp-caret{flex:none;color:var(--text-3)}
+.sp-panel{margin-top:6px;border:1px solid var(--border);border-radius:12px;background:var(--bg-2,#fff);overflow:hidden}
+.sp-search{display:block;width:100%;box-sizing:border-box;border:0;border-bottom:1px solid var(--border);padding:10px 12px;font:inherit;font-size:13.5px;background:transparent;color:var(--text);outline:none}
+.sp-list{max-height:220px;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.sp-opt{padding:10px 12px;font-size:13.5px;line-height:1.35;color:var(--text);cursor:pointer;border-bottom:1px solid var(--border);overflow-wrap:anywhere}
+.sp-opt:last-child{border-bottom:none}
+.sp-opt:hover,.sp-opt.sel{background:var(--brand-light);color:var(--brand)}
+.sp-empty{padding:12px;font-size:13px;color:var(--text-3);text-align:center}
+.payment-upi-hint-lg{font-size:13px;line-height:1.5;margin:10px 4px 4px}
+.payment-upi-phone{color:var(--text-2);font-weight:600;cursor:pointer;white-space:nowrap}
+.payment-upi-phone:hover{color:var(--brand)}
 .payment-stage2-note{font-size:11.5px;color:var(--text-3);text-align:center;margin-top:12px;line-height:1.5}
 .payment-admin-remark{font-size:11px;color:var(--text-3);margin-top:5px;font-style:italic}
 .payment-amount-row{display:flex;align-items:center;gap:8px}
@@ -8358,13 +8371,13 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
       <div id="paySingleBox" style="display:none">
         <div class="form-group">
           <label class="form-label">Which property do you want the owner's contact for?</label>
-          <select class="form-input" id="pay-single-property" onchange="handleSinglePropertyChange()"></select>
+          <select id="pay-single-property" style="display:none" onchange="handleSinglePropertyChange()"></select>
+          <div id="pay-single-picker" class="sp-picker"></div>
         </div>
-        <div class="payment-detail-row" style="margin-bottom:16px">
+        <div class="payment-detail-row" style="margin-bottom:16px;display:none">
           <span>Amount payable (one property)</span>
           <span class="detail-value-with-copy"><b id="pay-single-amount">₹150</b><button type="button" class="detail-copy-btn" title="Copy amount" onclick="copyCurrentAmount(this, event)"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></button></span>
         </div>
-        <div class="identity-locked-hint" style="margin-bottom:16px">Send the amount to the UPI / GPay number below, then upload the screenshot. Once we verify it, this property's owner contact unlocks on your account.</div>
       </div>
 
       <!-- Owner brokerage: flat fixed charge, no category picker, no rent math. -->
@@ -8441,11 +8454,13 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
           </div>
 
           <!-- After paying in your UPI app: upload the payment screenshot and submit for verification -->
+          <div id="paymentProofBlock">
           <div class="form-group" style="margin-top:16px">
-            <label class="form-label">Payment screenshot</label>
+            <label class="form-label">Payment screenshot <span style="color:var(--brand)">*</span></label>
             <input class="form-input" type="file" id="pay-screenshot" accept="image/*" />
           </div>
           <button class="form-submit" id="paymentSubmitBtn" onclick="submitPaymentProof()">I've paid — submit for verification</button>
+          </div>
 
       </div>
       </div>
@@ -17533,10 +17548,21 @@ function fmtINR(n) {
 // loaded listing (PROPERTIES, already fetched site-wide on load), formatted
 // as "<propertyId> - <Type> - <Area>" e.g. "HWR123 - Rent - Whitefield".
 // Sorted by propertyId so a long list stays scannable.
+// "<propertyId> - <bhk> - <price> - <location>", e.g. "CAZ020 - 2 BHK - ₹25,000/month - Hosapalya".
+// Parts that don't apply (no BHK on PG / Short Stay, missing price) are simply left out.
+function payPropertyLabel(p) {
+  const pt = pTypeLabel(p);
+  const prop = p.property || {}, pgd = p.pg || {}, ss = p.shortStay || {};
+  const bhkNum = (pt === 'PG' || pt === 'ShortStay') ? '' : String(prop.bhk || '').replace(/\s*BHK\s*$/i, '').trim();
+  const bhk = bhkNum && parseFloat(bhkNum) > 0 ? (/rk/i.test(bhkNum) ? bhkNum : bhkNum + ' BHK') : (prop.type || pgd.type || ss.type || '');
+  const amt = Number(p.price?.rent);
+  const price = amt > 0 ? fmtINR(amt) + (pt === 'Sell' ? '' : pt === 'ShortStay' ? '/day' : '/month') : '';
+  return [p.propertyId, bhk, price, (p.location?.area || '').trim()].filter(Boolean).join(' - ');
+}
 function payPropertyOptionsList() {
   return PROPERTIES
     .filter(p => p.propertyId)
-    .map(p => ({ id: String(p.id), label: `${p.propertyId} - ${pTypeLabel(p)} - ${p.location?.area || ''}`.trim().replace(/ - $/, '') }))
+    .map(p => ({ id: String(p.id), label: payPropertyLabel(p) }))
     .sort((a, b) => a.label.localeCompare(b.label));
 }
 
@@ -17600,6 +17626,8 @@ function openPaymentModal(purpose, propertyId, propertyLabel) {
   document.getElementById('pay-category-group').style.display = (isOwnerBrokerage || isSingle) ? 'none' : '';
   document.getElementById('payOwnerFlat').style.display = isOwnerBrokerage ? '' : 'none';
   document.getElementById('paySingleBox').style.display = isSingle ? '' : 'none';
+  // Single-property: only the Pay button at first; the screenshot upload appears once they tap Pay.
+  document.getElementById('paymentProofBlock').style.display = isSingle ? 'none' : '';
 
   if (isSingle) {
     // Tenant-only flat fee for one property — locked amount, property picked in the modal.
@@ -17706,6 +17734,12 @@ function renderPaymentDetailsBox() {
   // Single Property Plan: pay straight to the UPI / GPay number — never the QR/UPI ID/bank of the other flows.
   const s = _isSingle ? { paymentPhone: _s0.singlePlanPhone || '9611459960' } : _s0;
   const box = document.getElementById('paymentDetailsBox');
+  box.classList.toggle('is-bare', _isSingle);
+  if (_isSingle) {
+    // Just one Pay button — it opens the tenant's UPI app chooser (GPay / PhonePe / Paytm / any).
+    box.innerHTML = `<button type="button" class="form-submit payment-upi-pay-btn" id="singlePayBtn" style="margin-bottom:0" onclick="payViaUpiApp()">Pay</button>`;
+    return;
+  }
   if (!s.upiId && !s.bankAccountNumber && !s.paymentPhone) {
     box.innerHTML = `<div class="profile-list-empty">Payment details haven't been set up yet. Please contact us via Help &amp; Support.</div>`;
     return;
@@ -17750,6 +17784,46 @@ function populateSinglePropertyOptions(selectedId, selectedLabel) {
     options.map(o => `<option value="${o.id}">${esc(o.label)}</option>`).join('');
   sel.value = selectedId ? String(selectedId) : '';
   CURRENT_PAY_PROPERTY_ID = sel.value || null;
+  renderSinglePropertyPicker();
+}
+// In-modal property picker. A native <select> opens its list in an OS popup that can spill
+// outside the modal, so the visible control is this inline searchable list instead; the hidden
+// <select id="pay-single-property"> stays the source of truth for all existing payment code.
+function renderSinglePropertyPicker() {
+  const sel = document.getElementById('pay-single-property');
+  const host = document.getElementById('pay-single-picker');
+  if (!sel || !host) return;
+  const opts = Array.from(sel.options);
+  const cur = sel.options[sel.selectedIndex];
+  host.innerHTML = `<button type="button" class="form-input sp-trigger" id="spTrigger" aria-haspopup="listbox" aria-expanded="false"><span>${esc(cur && cur.value ? cur.textContent : 'Select a property…')}</span><span class="sp-caret">▾</span></button>
+    <div class="sp-panel" id="spPanel" style="display:none">
+      <input class="sp-search" id="spSearch" type="search" placeholder="Search by ID, BHK, price or area…" autocomplete="off" />
+      <div class="sp-list" id="spList" role="listbox"></div>
+    </div>`;
+  const trigger = host.querySelector('#spTrigger'), panel = host.querySelector('#spPanel');
+  const search = host.querySelector('#spSearch'), list = host.querySelector('#spList');
+  const draw = q => {
+    const t = q.trim().toLowerCase();
+    const items = opts.filter(o => o.value && (!t || o.textContent.toLowerCase().includes(t)));
+    list.innerHTML = items.length
+      ? items.map(o => `<div class="sp-opt${o.value === sel.value ? ' sel' : ''}" role="option" data-id="${esc(o.value)}">${esc(o.textContent)}</div>`).join('')
+      : '<div class="sp-empty">No matching property</div>';
+  };
+  draw('');
+  trigger.onclick = () => {
+    const open = panel.style.display === 'none';
+    panel.style.display = open ? '' : 'none';
+    trigger.setAttribute('aria-expanded', String(open));
+    if (open) { search.value = ''; draw(''); const s = list.querySelector('.sel'); if (s) s.scrollIntoView({ block: 'nearest' }); }
+  };
+  search.oninput = () => draw(search.value);
+  list.onclick = e => {
+    const el = e.target.closest('.sp-opt');
+    if (!el) return;
+    sel.value = el.dataset.id;
+    handleSinglePropertyChange();
+    renderSinglePropertyPicker();
+  };
 }
 function handleSinglePropertyChange() {
   const sel = document.getElementById('pay-single-property');
@@ -18019,15 +18093,16 @@ async function resumePaymentRequest(payment) {
 // or any payment instrument, exactly like the QR code does. `tn` (transaction
 // note) is set to our reference code so it's easy to match back to this
 // PaymentRequest when reviewing the screenshot they submit after.
-function buildUpiIntentUrl(s) {
+function buildUpiIntentUrl(s, opts) {
   if (!s?.upiId || !CURRENT_PAYMENT_REQUEST?.amount) return null;
   const params = new URLSearchParams({
     pa: s.upiId,
     pn: s.bankAccountName || 'Payment',
-    am: String(CURRENT_PAYMENT_REQUEST.amount),
     cu: 'INR',
     tn: CURRENT_PAYMENT_REQUEST.refCode || '',
   });
+  // opts.noAmount: leave `am` out so the payer types the amount themselves in their UPI app.
+  if (!(opts && opts.noAmount)) params.set('am', String(CURRENT_PAYMENT_REQUEST.amount));
   return `upi://pay?${params.toString()}`;
 }
 
@@ -18036,8 +18111,36 @@ function buildUpiIntentUrl(s) {
 // desktop browsers have nothing registered to handle the upi:// scheme, so
 // this will silently do nothing there; the QR code and manual entry remain
 // as the fallback either way.
-function payViaUpiApp() {
-  const url = buildUpiIntentUrl(PAYMENT_SETTINGS_CACHE);
+async function payViaUpiApp() {
+  const isSingle = (document.getElementById('pay-purpose') || {}).value === 'single_property';
+  if (isSingle && !CURRENT_PAY_PROPERTY_ID) { showToast("Please choose the property first.", 'warning'); return; }
+  const amount = Number(document.getElementById('pay-amount-inline').value);
+  if (!amount || amount <= 0) { showToast("Please enter an amount.", 'warning'); return; }
+
+  // Make sure the PaymentRequest (and its reference code, used as the UPI note) exists.
+  // For single-property it is normally already created when the property was picked, so
+  // this returns instantly and the app hand-off still counts as a direct tap.
+  const request = await ensureCurrentPaymentRequest(amount);
+  if (!request) return;
+  if (isSingle) document.getElementById('paymentProofBlock').style.display = '';
+
+  const cfg = PAYMENT_SETTINGS_CACHE || {};
+  const upiTarget = isSingle
+    ? { upiId: cfg.singlePlanUpiId, bankAccountName: cfg.singlePlanName || 'HomeLoop' }
+    : cfg;
+
+  const _phone = cfg.singlePlanPhone || '9611459960';
+  // UPI apps only exist on phones — on a laptop/desktop the upi:// link has nothing to open.
+  if (isSingle && !/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+    showToast("UPI apps open on a phone. Open this page on your phone, or pay to " + _phone + " from any UPI app, then upload the screenshot.", 'warning');
+    return;
+  }
+  if (isSingle && !upiTarget.upiId) {
+    // Server has no UPI ID (SINGLE_PROPERTY_PAY_UPI_ID) for this number yet → can't deep-link.
+    showToast("Payment app link isn't set up yet. Please pay to " + _phone + " from any UPI app, then upload the screenshot.", 'warning');
+    return;
+  }
+  const url = buildUpiIntentUrl(upiTarget, { noAmount: isSingle }); // single-property: payer enters the amount in their app
   if (!url) { showToast("Please enter an amount.", 'warning'); return; }
   window.location.href = url;
 }

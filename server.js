@@ -3472,6 +3472,12 @@ const PaymentSettings = mongoose.model('PaymentSettings', PaymentSettingsSchema)
 // Admin verifies the payment by hand; verified payment unlocks that ONE listing's owner contact for the payer.
 const SINGLE_PROPERTY_FEE = 150;
 const SINGLE_PROPERTY_PAY_PHONE = '9611459960';
+// UPI ID (VPA) linked to the number above. Needed so the "Pay" button can open GPay/PhonePe/Paytm
+// with the amount pre-filled — a bare phone number is not a valid UPI deep-link target.
+// Set SINGLE_PROPERTY_PAY_UPI_ID in your environment (e.g. 9611459960@ybl). If empty, the button
+// falls back to copying the number so the tenant can pay manually.
+const SINGLE_PROPERTY_PAY_UPI_ID = process.env.SINGLE_PROPERTY_PAY_UPI_ID || '';
+const SINGLE_PROPERTY_PAY_NAME = process.env.SINGLE_PROPERTY_PAY_NAME || 'HomeLoop';
 const DUMMY_PAYMENT_DETAILS = {
   upiId:             '8553261336@sbi',
   qrImageUrl:        '',
@@ -3489,7 +3495,7 @@ app.get('/api/payment-settings', async (req, res) => {
     if (!settings) console.warn('⚠️  No PaymentSettings in DB — serving DUMMY_PAYMENT_DETAILS. Replace these before accepting real payments.');
     res.vary('x-user-key');
     res.set('Cache-Control', 'private, no-store'); // login-gated + payment-related: never cached
-    res.json({ ...(settings || DUMMY_PAYMENT_DETAILS), singlePlanPhone: SINGLE_PROPERTY_PAY_PHONE, singlePlanFee: SINGLE_PROPERTY_FEE });
+    res.json({ ...(settings || DUMMY_PAYMENT_DETAILS), singlePlanPhone: SINGLE_PROPERTY_PAY_PHONE, singlePlanUpiId: SINGLE_PROPERTY_PAY_UPI_ID, singlePlanName: SINGLE_PROPERTY_PAY_NAME, singlePlanFee: SINGLE_PROPERTY_FEE });
   } catch (err) {
     console.error('GET /api/payment-settings error:', err.message);
     res.status(500).json({ message: 'Error fetching payment settings' });
