@@ -7382,7 +7382,7 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
     <div class="lm-section">👤 Owner Details</div>
     <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
       <div class="form-group">
-        <label class="form-label">Owner Name</label>
+        <label class="form-label">Owner Name <span style="color:var(--brand)">*</span></label>
         <input class="form-input" type="text" id="f-ownerName" autocomplete="off" autocapitalize="words" onblur="capitalizeWordsInput(this)" oninput="capitalizeWordsInput(this)"/>
         <div class="identity-locked-hint" id="f-ownerName-hint" style="display:none">Auto-filled from your account</div>
       </div>
@@ -21140,7 +21140,7 @@ const OPTIONAL_FIELD_IDS = new Set([
   'f-imgFileInput', 'f-imgCameraInput',
   'f-amenities-extra', 'f-desc',   // description is optional
   'f-videoUrl', 'f-videoFileInput', 'f-videoCameraInput', 'f-age', 'f-area',
-  'f-ownerName', 'f-ownerAltPhone', 'f-ownerCaretakerPhone', 'f-ownerEmail', 'f-areaType', 'f-maxPersons', 'f-kitchenType',   // optional
+  'f-ownerAltPhone', 'f-ownerCaretakerPhone', 'f-ownerEmail', 'f-areaType', 'f-maxPersons', 'f-kitchenType',   // optional
   'f-maintenance', 'f-leaseMaintenance',
   'f-sellPossessionDate', 'f-sellReraId', 'f-pricePerSqft',
   // Sell-only trust/detail fields kept optional — same reasoning as

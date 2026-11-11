@@ -5229,7 +5229,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
     <div class="lm-section">👤 Owner Details</div>
     <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
       <div class="form-group">
-        <label class="form-label">Owner Name</label>
+        <label class="form-label">Owner Name <span style="color:var(--brand)">*</span></label>
         <input class="form-input" type="text" id="f-ownerName" autocapitalize="words" onblur="capitalizeWordsInput(this)" oninput="capitalizeWordsInput(this)"/>
         <div class="identity-locked-hint" id="f-ownerName-hint" style="display:none">Auto-filled from your account</div>
       </div>
@@ -18938,7 +18938,7 @@ const OPTIONAL_FIELD_IDS = new Set([
   'f-latitude', 'f-longitude', 'f-latLngDisplay',
   'f-imgFileInput', 'f-imgCameraInput',
   'f-amenities-extra', 'f-desc',   // description is optional (same as index.html)
-  'f-ownerName', 'f-ownerCaretakerPhone', 'f-ownerEmail', 'f-videoUrl', 'f-age', 'f-area',
+  'f-ownerCaretakerPhone', 'f-ownerEmail', 'f-videoUrl', 'f-age', 'f-area',
   'f-areaType', 'f-maxPersons', 'f-kitchenType',   // optional
   'f-maintenance', 'f-leaseMaintenance',
   'f-sellPossessionDate', 'f-sellReraId', 'f-pricePerSqft',

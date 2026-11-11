@@ -1599,6 +1599,7 @@ const BASE_REQUIRED_FIELDS = [
   ['location.pincode',  'Location: Pincode'],
   ['location.mapLink',  'Location: Google Maps link'],
   ['location.currentLocationLink', 'Current location link'],
+  ['owner.name',        'Owner name'],
   ['owner.phone',       'Owner phone number'],
   ['owner.contactTime', 'Preferred contact time'],
   ['owner.sameAsBuilding', 'Owner staying in same building'],
