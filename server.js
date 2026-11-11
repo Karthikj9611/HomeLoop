@@ -1591,7 +1591,7 @@ function isEmptyValue(v) {
 
 // Required for every listing type — area/price.rent are already checked (with a
 // type-specific label) right before this runs, so they're deliberately left out
-// here to avoid a duplicate message. Property Name and Building live address
+// here to avoid a duplicate message. Property Name, Owner name and Building live address
 // are optional; in Property Location only Area, Pincode and the Building
 // Location Link (currentLocationLink) are mandatory.
 const BASE_REQUIRED_FIELDS = [
@@ -1599,7 +1599,6 @@ const BASE_REQUIRED_FIELDS = [
   ['location.pincode',  'Location: Pincode'],
   ['location.mapLink',  'Location: Google Maps link'],
   ['location.currentLocationLink', 'Current location link'],
-  ['owner.name',        'Owner name'],
   ['owner.phone',       'Owner phone number'],
   ['owner.contactTime', 'Preferred contact time'],
   ['owner.sameAsBuilding', 'Owner staying in same building'],

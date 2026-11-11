@@ -230,12 +230,15 @@ ul{list-style:none}
 [id$="BookedGrid"] .prop-left-badges{display:none}
 [id$="BookedGrid"] .prop-card-top-row{top:8px;left:8px;justify-content:flex-end}
 /* Shortlisting isn't a relevant action for a quick-glance revisit strip or
-   an off-market booked listing, so the heart stays hidden in both — but the
+   an off-market booked listing, so the heart stays hidden in Booked (and on mobile Viewed) — but the
    call button is kept (re-enabled per request) so a visitor can still reach
    the agent straight from these cards. Higher specificity than the base
    .prop-heart rule so this always wins regardless of stylesheet order. */
-[id$="BookedGrid"] .prop-heart,
-#recentlyViewedStrip .prop-heart{display:none}
+[id$="BookedGrid"] .prop-heart{display:none}
+/* Viewed strip: shortlist heart shown on desktop, hidden on mobile (whole icon stack is hidden there). */
+@media (max-width:768px){
+  #recentlyViewedStrip .prop-heart{display:none}
+}
 /* Viewed strip: action buttons (views, call, WhatsApp, directions) are shown on desktop and hidden on mobile. */
 @media (max-width:768px){
   #recentlyViewedStrip .prop-right-badges,
@@ -7379,7 +7382,7 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
     <div class="lm-section">👤 Owner Details</div>
     <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
       <div class="form-group">
-        <label class="form-label">Owner Name <span style="color:var(--brand)">*</span></label>
+        <label class="form-label">Owner Name</label>
         <input class="form-input" type="text" id="f-ownerName" autocomplete="off" autocapitalize="words" onblur="capitalizeWordsInput(this)" oninput="capitalizeWordsInput(this)"/>
         <div class="identity-locked-hint" id="f-ownerName-hint" style="display:none">Auto-filled from your account</div>
       </div>
@@ -21137,7 +21140,7 @@ const OPTIONAL_FIELD_IDS = new Set([
   'f-imgFileInput', 'f-imgCameraInput',
   'f-amenities-extra', 'f-desc',   // description is optional
   'f-videoUrl', 'f-videoFileInput', 'f-videoCameraInput', 'f-age', 'f-area',
-  'f-ownerAltPhone', 'f-ownerCaretakerPhone', 'f-ownerEmail', 'f-areaType', 'f-maxPersons', 'f-kitchenType',   // optional
+  'f-ownerName', 'f-ownerAltPhone', 'f-ownerCaretakerPhone', 'f-ownerEmail', 'f-areaType', 'f-maxPersons', 'f-kitchenType',   // optional
   'f-maintenance', 'f-leaseMaintenance',
   'f-sellPossessionDate', 'f-sellReraId', 'f-pricePerSqft',
   // Sell-only trust/detail fields kept optional — same reasoning as
