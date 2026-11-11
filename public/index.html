@@ -236,6 +236,9 @@ ul{list-style:none}
    .prop-heart rule so this always wins regardless of stylesheet order. */
 [id$="BookedGrid"] .prop-heart,
 #recentlyViewedStrip .prop-heart{display:none}
+/* Viewed strip: no action buttons on the cards (views, call, WhatsApp, directions, heart). They stay on the main grid and inside the property view. */
+#recentlyViewedStrip .prop-right-badges,
+#recentlyViewedStrip .prop-icon-badge{display:none !important}
 /* View count isn't useful once a listing is off-market/booked, so the eye
    icon (and its unread-style count bubble) is hidden here too — scoped the
    same way as the heart rule above, Booked grids only. */
