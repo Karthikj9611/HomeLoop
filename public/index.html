@@ -4213,21 +4213,34 @@ main.tab-explore .empty-state{display:none !important}
 .pm-compact .pm-loc svg{width:11px;height:11px;stroke:var(--text-3);fill:none;stroke-width:2.2;flex-shrink:0}
 .pm-compact .pm-price{font-size:12.5px;font-weight:800;color:var(--brand);flex-shrink:0}
 .pm-compact .pm-per{color:var(--text-3);font-weight:500;font-size:10.5px}
+.pm-compact .pm-loc:not(:empty)::before,.pm-compact .pm-price::before{content:"-";color:var(--text-3);font-weight:500;margin-right:6px}
+.pm-compact .pm-loc:not(:empty)::before{margin-right:3px}
 .pm-compact .pm-line2 .profile-status-pill{margin:0;flex-shrink:0;font-size:10.5px;padding:2px 8px}
 .pm-compact .pm-stat{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:700;color:var(--text-2);flex-shrink:0}
 .pm-compact .pm-stat svg{width:11px;height:11px;stroke:var(--text-3);fill:none;stroke-width:2}
 .pm-compact .pm-line3{margin-top:4px;gap:10px;font-size:11px;color:var(--text-2)}
 .pm-compact .pm-d{flex-shrink:0}
+.pm-compact .pm-line3 > * + *::before{content:"-";color:var(--text-3);font-weight:500;margin-right:8px}
 .pm-compact .pm-line-phones{margin-top:5px;gap:12px;flex-wrap:wrap}
 .pm-phone{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;font-weight:700;color:#16a34a;text-decoration:none;letter-spacing:.2px}
 .pm-phone svg{width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2.2;flex-shrink:0}
 .pm-phone small{font-weight:500;color:var(--text-3)}
 .pm-phone:hover{text-decoration:underline}
-.pm-phones-act{display:none}
+.pm-phone-grp{display:inline-flex;align-items:center;gap:10px}
+.pm-wa{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:10px;background:var(--bg);border:1.5px solid #bfe8cf;flex-shrink:0;text-decoration:none;transition:background .12s,border-color .12s,transform .12s}
+.pm-wa svg{width:19px;height:19px;fill:#25D366;stroke:none}
+.pm-wa:hover{background:#e8faef;border-color:#25D366;transform:scale(1.06)}
+.pm-phones-act{display:contents}
+.profile-mini-icon-btn.pm-share{border-color:#bfd4fb}
+.profile-mini-icon-btn.pm-share svg{stroke:#2563eb;fill:none;stroke-width:2}
+.profile-mini-icon-btn.pm-share:hover{background:#eaf1ff;border-color:#2563eb}
+.profile-mini-icon-btn.pm-call{border-color:#bfe8cf;text-decoration:none}
+.profile-mini-icon-btn.pm-call svg{stroke:#16a34a;fill:none;stroke-width:2}
+.profile-mini-icon-btn.pm-call:hover{background:#e8faef;border-color:#16a34a}
 .pm-more-btn svg{fill:currentColor;stroke:none}
 /* All listing actions (View, Duplicate, Edit, Booked, Share, owner Call/WhatsApp) live behind one "More" button at every width. */
-.pm-compact .profile-mini-actions > .profile-mini-icon-btn:not(.pm-more-btn){display:none !important}
-.pm-compact .pm-more-btn{display:inline-flex !important;align-items:center;gap:6px;width:auto !important;padding:0 14px;font-size:12.5px;font-weight:700;color:var(--text-2)}
+.pm-compact .profile-mini-actions > .profile-mini-icon-btn.pm-hide{display:none !important}
+.pm-compact .profile-mini-actions{align-items:center}
 #listingActionsOverlay{z-index:9000}
 .la-title{font-size:17px;font-weight:700;margin-bottom:2px}
 .la-sub{font-size:13px;color:var(--text-3);margin-bottom:14px}
@@ -4244,18 +4257,21 @@ main.tab-explore .empty-state{display:none !important}
 .la-row.la-booked{border-color:#f3b6bf}
 @container (max-width:580px){
   .pm-compact .pm-line-phones{display:none}
-  .pm-compact .pm-phones-act{display:flex;flex-wrap:wrap;align-items:center;column-gap:12px;row-gap:2px;margin-right:auto;min-width:0}
 }
 .pm-compact .pm-d b{font-weight:700;color:var(--text-3);margin-right:2px}
 .pm-compact .pm-d-booked b{color:#e04444}
 .pm-compact .profile-mini-actions{flex-direction:row;gap:5px}
-.pm-compact .profile-mini-icon-btn{width:28px;height:28px;border-radius:8px}
-.pm-compact .profile-mini-icon-btn svg{width:13px;height:13px}
+.pm-compact .profile-mini-icon-btn,.pm-compact .pm-wa{width:34px;height:34px;border-radius:10px;box-sizing:border-box}
+.pm-compact .profile-mini-icon-btn svg,.pm-compact .pm-wa svg{width:17px;height:17px}
+.pm-compact .profile-mini-icon-btn.profile-mini-icon-whatsapp svg,.pm-compact .pm-wa svg{width:19px;height:19px}
+.pm-compact .profile-mini-icon-btn:focus{outline:none}
+.pm-compact .profile-mini-icon-btn:focus-visible,.pm-compact .pm-wa:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
 /* Narrow card (small popup / phone): text gets the full width, the 4 buttons drop to a neat row underneath */
 @container (max-width:580px){
   .pm-compact .pm-row{flex-wrap:wrap;row-gap:8px}
-  .pm-compact .profile-mini-actions{flex:1 1 100%;justify-content:flex-end;gap:8px;padding-top:8px;border-top:1px dashed var(--border)}
-  .pm-compact .profile-mini-icon-btn{width:32px;height:32px}
+  .pm-compact .profile-mini-actions{flex:1 1 100%;justify-content:stretch;gap:8px;padding-top:8px;border-top:1px dashed var(--border)}
+  .pm-compact .profile-mini-actions .profile-mini-icon-btn,.pm-compact .profile-mini-actions .pm-wa{flex:1 1 0;width:auto;min-width:0;height:38px}
+  .pm-compact .profile-mini-icon-btn,.pm-compact .pm-wa{width:34px;height:34px}
   .pm-compact .pm-line2,.pm-compact .pm-line3{flex-wrap:wrap;white-space:normal;row-gap:3px}
 }
 .profile-mini-stats{display:flex;align-items:center;gap:12px;margin-top:6px}
@@ -17451,14 +17467,12 @@ function myListingCardHtml(p) {
       <div class="profile-mini-thumb" ${thumb}>${img ? '' : 'No photo'}</div>
       <div class="profile-mini-body">
         <div class="pm-line pm-line2 pm-line-main">
-          <span class="pm-id">${esc(p.propertyId) || 'Untitled listing'}</span>
-          <span class="pm-loc"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>${esc(p.location?.area)}</span>
-          <span class="pm-price">${rent}<span class="pm-per">/mo</span></span>
-          <span class="profile-status-pill">${esc(p.basic?.status) || 'For Rent'}</span>
+          ${(p.basic?.status && p.basic.status !== 'For Rent') ? `<span class="profile-status-pill">${esc(p.basic.status)}</span>` : ''}
           ${p.booked ? `<span class="profile-status-pill booked-pill">Booked</span>` : ''}
+          <span class="pm-id">${esc(p.propertyId) || 'Untitled listing'}</span>
+          <span class="pm-loc">${esc(p.location?.area)}</span>
+          <span class="pm-price">${rent}<span class="pm-per">/M</span></span>
           ${p.visitCount > 0 ? `<span class="profile-status-pill" style="background:var(--brand-light);color:var(--brand)">${p.visitCount} visit${p.visitCount===1?'':'s'}</span>` : ''}
-          <span class="pm-stat" title="Total views"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>${p.views || 0}</span>
-          ${daysLive !== null ? `<span class="pm-stat" title="Days since posted"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>${daysLive === 0 ? 'Today' : daysLive + 'd'}</span>` : ''}
         </div>
         ${(() => {
           const _fd = v => { const t = v ? formatDateDisplay(v) : ''; return t ? esc(t) : ''; };
@@ -17466,29 +17480,30 @@ function myListingCardHtml(p) {
           const bookedD = p.booked ? _fd(p.bookedAt || p.bookedOn) : '';
           const avail = p.booked ? '' : _fd(((p.basic?.status === 'PG') ? p.pg?.available : p.property?.available) || p.property?.available || p.pg?.available);
           const parts = [];
-          if (listed) parts.push(`<span class="pm-d"><b>Listed</b> ${listed}</span>`);
-          if (bookedD) parts.push(`<span class="pm-d pm-d-booked"><b>Booked</b> ${bookedD}</span>`);
-          if (avail) parts.push(`<span class="pm-d"><b>Available</b> ${avail}</span>`);
+          const _ph = agentOwnerNumberText(p);
+          if (_ph) parts.push(_ph);
+          if (listed) parts.push(`<span class="pm-d"><b>Listed:</b> ${listed}</span>`);
+          if (bookedD) parts.push(`<span class="pm-d pm-d-booked"><b>Booked:</b> ${bookedD}</span>`);
+          if (avail) parts.push(`<span class="pm-d"><b>Available:</b> ${avail}</span>`);
           return parts.length ? `<div class="pm-line pm-line3">${parts.join('')}</div>` : '';
         })()}
-        ${agentOwnerNumbersLine(p)}
       </div>
       <div class="profile-mini-actions">
         ${agentOwnerNumbersInActions(p)}
-        <button class="profile-mini-icon-btn" title="Duplicate — start a new listing pre-filled with these details" onclick="event.stopPropagation();cloneMyListing('${p.id}', '${esc(p.propertyId||'')}')">
+        <button class="profile-mini-icon-btn" title="View listing" onclick="event.stopPropagation();openDetail('${p.id}')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+        <button class="profile-mini-icon-btn pm-hide" title="Duplicate — start a new listing pre-filled with these details" onclick="event.stopPropagation();cloneMyListing('${p.id}', '${esc(p.propertyId||'')}')">
           <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
         </button>
-        <button class="profile-mini-icon-btn" title="Edit" onclick="event.stopPropagation();editMyListing('${p.id}', '${esc(p.propertyId||'')}')">
+        <button class="profile-mini-icon-btn pm-hide" title="Edit" onclick="event.stopPropagation();editMyListing('${p.id}', '${esc(p.propertyId||'')}')">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
         </button>
         <button class="profile-mini-icon-btn${p.booked ? ' booked-active' : ''}" title="${p.booked ? 'Mark as available' : 'Mark as booked'}" onclick="event.stopPropagation();confirmToggleBooked('${p.id}', this)">
           <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
         </button>
-        <button class="profile-mini-icon-btn profile-mini-icon-whatsapp" title="Share on WhatsApp" onclick="event.stopPropagation();shareMyListingViaWhatsApp('${p.id}')">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.6 6.32A7.85 7.85 0 0 0 12.05 4c-4.37 0-7.93 3.56-7.93 7.93 0 1.4.37 2.76 1.06 3.96L4 20l4.24-1.11a7.9 7.9 0 0 0 3.8.97h.01c4.37 0 7.93-3.56 7.93-7.93 0-2.12-.82-4.11-2.38-5.61zm-5.55 12.2h-.01a6.58 6.58 0 0 1-3.35-.92l-.24-.14-2.51.66.67-2.45-.16-.25a6.58 6.58 0 0 1-1.01-3.5c0-3.64 2.96-6.6 6.61-6.6a6.57 6.57 0 0 1 6.6 6.61c0 3.64-2.97 6.6-6.61 6.6zm3.62-4.94c-.2-.1-1.17-.58-1.35-.64-.18-.07-.31-.1-.45.1-.13.2-.51.64-.62.77-.11.13-.23.15-.42.05-.2-.1-.83-.31-1.58-.98-.58-.52-.98-1.16-1.09-1.36-.11-.2-.01-.3.09-.4.09-.09.2-.23.3-.35.1-.11.13-.2.2-.33.06-.13.03-.25-.02-.35-.05-.1-.45-1.08-.61-1.48-.16-.39-.33-.33-.45-.34-.12-.01-.25-.01-.38-.01-.13 0-.35.05-.53.25-.18.2-.7.69-.7 1.67 0 .98.72 1.93.82 2.06.1.13 1.41 2.15 3.42 3.02.48.2.85.33 1.14.42.48.15.91.13 1.26.08.38-.06 1.17-.48 1.34-.94.16-.46.16-.86.11-.94-.05-.09-.18-.14-.38-.24z"/></svg>
+        <button class="profile-mini-icon-btn pm-share" title="Share listing" onclick="event.stopPropagation();shareMyListingViaWhatsApp('${p.id}')">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
         </button>
         ${agentOwnerContactBtns(p)}
-        <button class="profile-mini-icon-btn pm-more-btn" title="More actions" onclick="event.stopPropagation();openListingActions('${p.id}')"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>More</button>
       </div>
     </div></div>`;
 }
@@ -17666,14 +17681,25 @@ function closeCheckAvailability() {
   if (ov) ov.classList.remove('open');
 }
 /* Agents: show the owner's mobile number(s) right on the listing card; tapping a number dials it. */
+function agentOwnerNumberText(p) {
+  if (!isAgentUser()) return '';
+  return ownerDirectNumbers(p).map(n =>
+    `<a class="pm-phone" href="tel:+91${n.digits}" title="Call owner${n.which === 'alt' ? ' (alt)' : ''}" onclick="event.stopPropagation()">${n.digits}${n.which === 'alt' ? ' <small>(alt)</small>' : ''}</a>`
+  ).join('');
+}
 function agentOwnerNumbersHtml(p) {
   if (!isAgentUser()) return '';
   const nums = ownerDirectNumbers(p);
   if (!nums.length) return '';
   const ph = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.8 19.8 0 0 1 1.61 3.4 2 2 0 0 1 3.59 1.22h3a2 2 0 0 1 2 1.72 12.8 12.8 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 8.78a16 16 0 0 0 6.29 6.29l1.14-1.14a2 2 0 0 1 2.11-.45 12.8 12.8 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>';
-  return nums.map(n =>
-    `<a class="pm-phone" href="tel:+91${n.digits}" title="Call owner${n.which === 'alt' ? ' (alt)' : ''}" onclick="event.stopPropagation()">${ph}${n.digits}${n.which === 'alt' ? ' <small>(alt)</small>' : ''}</a>`
-  ).join('');
+  const wa = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>';
+  return nums.map(n => {
+    const alt = n.which === 'alt';
+    return `<span class="pm-phone-grp">` +
+      `<a class="pm-phone" href="tel:+91${n.digits}" title="Call owner${alt ? ' (alt)' : ''}" onclick="event.stopPropagation()">${ph}${n.digits}${alt ? ' <small>(alt)</small>' : ''}</a>` +
+      `<a class="pm-wa" href="https://wa.me/91${n.digits}" target="_blank" rel="noopener" title="WhatsApp owner${alt ? ' (alt)' : ''}" aria-label="WhatsApp owner${alt ? ' (alt)' : ''}" onclick="event.stopPropagation()">${wa}</a>` +
+      `</span>`;
+  }).join('');
 }
 /* Wide card: numbers sit on their own line under the dates. */
 function agentOwnerNumbersLine(p) {
@@ -17682,8 +17708,17 @@ function agentOwnerNumbersLine(p) {
 }
 /* Narrow card: numbers sit at the left of the button row, so that row is full instead of half empty. */
 function agentOwnerNumbersInActions(p) {
-  const h = agentOwnerNumbersHtml(p);
-  return h ? `<div class="pm-phones-act">${h}</div>` : '';
+  if (!isAgentUser()) return '';
+  const nums = ownerDirectNumbers(p);
+  if (!nums.length) return '';
+  const ph = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.8 19.8 0 0 1 1.61 3.4 2 2 0 0 1 3.59 1.22h3a2 2 0 0 1 2 1.72 12.8 12.8 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 8.78a16 16 0 0 0 6.29 6.29l1.14-1.14a2 2 0 0 1 2.11-.45 12.8 12.8 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>';
+  const wa = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>';
+  const h = nums.map(n => {
+    const tag = n.which === 'alt' ? ' (alt)' : '';
+    return `<a class="profile-mini-icon-btn pm-call" href="tel:+91${n.digits}" title="Call ${n.digits}${tag}" aria-label="Call owner${tag}" onclick="event.stopPropagation()">${ph}</a>` +
+           `<a class="pm-wa" href="https://wa.me/91${n.digits}" target="_blank" rel="noopener" title="WhatsApp ${n.digits}${tag}" aria-label="WhatsApp owner${tag}" onclick="event.stopPropagation()">${wa}</a>`;
+  }).join('');
+  return `<div class="pm-phones-act">${h}</div>`;
 }
 function agentOwnerContactBtns(p) {
   if (!isAgentUser()) return '';
@@ -17692,11 +17727,7 @@ function agentOwnerContactBtns(p) {
   const _nums = ownerDirectNumbers(p);
   const calSvg = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M9 16l2 2 4-4"/></svg>';
   const checkBtn = _nums.length ? `<button class="profile-mini-icon-btn" title="Check availability with owner" onclick="event.stopPropagation();checkAvailabilityListing('${p.id}')">${calSvg}</button>` : '';
-  return checkBtn + _nums.map(n => {
-    const tag = n.which === 'alt' ? ' (alt)' : '';
-    return `<button class="profile-mini-icon-btn" title="Call owner${tag}" onclick="event.stopPropagation();callListingOwner('${p.id}','${n.which}')">${phoneSvg}</button>` +
-           `<button class="profile-mini-icon-btn profile-mini-icon-whatsapp" title="WhatsApp owner${tag}" onclick="event.stopPropagation();whatsappListingOwner('${p.id}','${n.which}')">${waSvg}</button>`;
-  }).join('');
+  return checkBtn;
 }
 /* Mobile: one "More" button on each listing card opens this sheet with every action, labelled. */
 let _laFns = [];
@@ -17720,11 +17751,6 @@ function openListingActions(id) {
   if (isAgentUser()) {
     const nums = ownerDirectNumbers(p);
     if (nums.length) items.push({ i: ic.cal, t: 'Confirm Availability', d: 'Ask the owner if the property is still vacant', f: () => checkAvailabilityListing(id), keep: true });
-    nums.forEach(n => {
-      const tag = n.which === 'alt' ? ' (alt)' : '';
-      items.push({ i: ic.phone, t: 'Call Owner' + tag, d: n.digits, c: 'la-call', f: () => callListingOwner(id, n.which) });
-      items.push({ i: ic.wa, t: 'Message Owner on WhatsApp' + tag, d: n.digits, c: 'la-wa', f: () => whatsappListingOwner(id, n.which) });
-    });
   }
   _laFns = items.map(x => x.f);
   _laKeep = items.map(x => !!x.keep);
