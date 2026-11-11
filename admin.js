@@ -2948,7 +2948,7 @@ self.addEventListener('notificationclick', event => {
       }
 
       const displayPrice = formatPrice(fields.price.rent, status);
-      const propertyId = await nextPropertyId();
+      const propertyId = await nextPropertyId(status, fields.basic.listedBy);
 
       const ListingModel = modelForStatus(status, fields.basic.listedBy); // Broker-listed → separate 'broker' collection
       const prop = new ListingModel({

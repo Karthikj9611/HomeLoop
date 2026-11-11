@@ -1110,24 +1110,35 @@ async function nextSequenceId(prefix) {
   return `${prefix}-${String(counter.seq).padStart(6, '0')}`; // e.g. RENT-000123
 }
 
-async function nextPropertyId() {
-  // 3 random letters + a globally incrementing number (e.g. QWR001). The
-  // letters are re-randomized on every call; the number comes from a single
-  // shared Counter (key 'PROPERTY') via atomic $inc, so it keeps
-  // incrementing across all property types regardless of the letters,
-  // and never needs a collision-retry loop.
-  const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-  const randomLetters = () => {
-    let code = '';
-    for (let i = 0; i < 3; i++) code += LETTERS[Math.floor(Math.random() * LETTERS.length)];
-    return code;
-  };
-  const counter = await Counter.findOneAndUpdate(
-    { _id: 'PROPERTY' },
-    { $inc: { seq: 1 } },
-    { new: true, upsert: true }
-  );
-  return `${randomLetters()}${String(counter.seq).padStart(3, '0')}`; // e.g. QWR001
+// Property ID prefix by listing type. Broker / Builder win over the status (same idea as
+// modelForStatus: a broker-listed PG is still a Broker listing), then the status decides.
+//   Rent → RENT001 · PG & Co-living → PG001 · Lease → LEASE001 · Broker → BROKER001 · Builder → BUILDER001
+// Stored in UPPERCASE on purpose: the subscription "direct access" lookups upper-case the ids they search for.
+function propertyIdPrefix(status, listedBy) {
+  if (listedBy === 'Broker')  return 'BROKER';
+  if (listedBy === 'Builder') return 'BUILDER';
+  if (status === 'Lease')      return 'LEASE';
+  if (status === 'PG')         return 'PG';
+  return 'RENT'; // everything else: For Rent, For Sale, Short Stay, New Launch, Sold, Booked
+}
+
+async function nextPropertyId(status, listedBy) {
+  // Each prefix has its own atomic counter (key 'PROPERTY_RENT', 'PROPERTY_PG', ...), so RENT, PG, LEASE,
+  // BROKER and BUILDER each count 001, 002, 003 ... independently. $inc is atomic, so two simultaneous
+  // submissions can never get the same number. Older random ids (e.g. QWR123) are untouched.
+  const prefix = propertyIdPrefix(status, listedBy);
+  for (let attempt = 0; attempt < 10; attempt++) {
+    const counter = await Counter.findOneAndUpdate(
+      { _id: 'PROPERTY_' + prefix },
+      { $inc: { seq: 1 } },
+      { new: true, upsert: true }
+    );
+    const id = `${prefix}${String(counter.seq).padStart(3, '0')}`; // e.g. RENT001, PG012, BROKER104
+    // Safety net: skip a number if a listing already carries it (e.g. an id typed in by hand).
+    const taken = (await Promise.all(LISTING_MODEL_LIST.map(M => M.exists({ propertyId: id })))).some(Boolean);
+    if (!taken) return id;
+  }
+  throw new Error('Could not allocate a property id for ' + prefix);
 }
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -1762,7 +1773,7 @@ app.post('/api/properties', listingLimiter, requireUser, requireOwner, requireVe
     }
 
     const displayPrice = formatPrice(fields.price.rent, status);
-    const propertyId = await nextPropertyId();
+    const propertyId = await nextPropertyId(status, (fields.basic || {}).listedBy);
 
     const ListingModel = modelForStatus(status, (fields.basic || {}).listedBy); // Rent, Lease, Pg, HourlyStay, or Broker — decided by basic.status / basic.listedBy
     const prop = new ListingModel({
