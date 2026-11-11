@@ -4190,6 +4190,9 @@ main.tab-explore .empty-state{display:none !important}
 .pm-compact .profile-mini-thumb{width:46px;height:46px;border-radius:10px;font-size:8px}
 .pm-compact .pm-line{display:flex;align-items:center;gap:8px;min-width:0;overflow:hidden;white-space:nowrap}
 .pm-compact .pm-line2{margin-top:4px;gap:7px}
+.pm-compact .pm-line-main{margin-top:0;gap:7px;flex-wrap:nowrap !important;white-space:nowrap !important}
+.pm-compact .pm-line-main .pm-loc{flex:0 1 auto;min-width:0}
+@container (max-width:580px){.pm-compact .pm-line-main{gap:5px}.pm-compact .pm-line-main .pm-id{font-size:13px}}
 .pm-compact .pm-id{font-size:13.5px;font-weight:800;color:var(--text);flex-shrink:0}
 .pm-compact .pm-loc{display:flex;align-items:center;gap:3px;font-size:11.5px;color:var(--text-3);min-width:0;overflow:hidden;text-overflow:ellipsis}
 .pm-compact .pm-loc svg{width:11px;height:11px;stroke:var(--text-3);fill:none;stroke-width:2.2;flex-shrink:0}
@@ -4200,6 +4203,36 @@ main.tab-explore .empty-state{display:none !important}
 .pm-compact .pm-stat svg{width:11px;height:11px;stroke:var(--text-3);fill:none;stroke-width:2}
 .pm-compact .pm-line3{margin-top:4px;gap:10px;font-size:11px;color:var(--text-2)}
 .pm-compact .pm-d{flex-shrink:0}
+.pm-compact .pm-line-phones{margin-top:5px;gap:12px;flex-wrap:wrap}
+.pm-phone{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;font-weight:700;color:#16a34a;text-decoration:none;letter-spacing:.2px}
+.pm-phone svg{width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2.2;flex-shrink:0}
+.pm-phone small{font-weight:500;color:var(--text-3)}
+.pm-phone:hover{text-decoration:underline}
+.pm-phones-act{display:none}
+.pm-more-btn{display:none !important}
+.pm-more-btn svg{fill:currentColor;stroke:none}
+@container (max-width:580px){
+  .pm-compact .profile-mini-actions > .profile-mini-icon-btn:not(.pm-more-btn){display:none !important}
+  .pm-compact .pm-more-btn{display:inline-flex !important;align-items:center;gap:6px;width:auto !important;padding:0 14px;font-size:12.5px;font-weight:700;color:var(--text-2)}
+}
+#listingActionsOverlay{z-index:9000}
+.la-title{font-size:17px;font-weight:700;margin-bottom:2px}
+.la-sub{font-size:13px;color:var(--text-3);margin-bottom:14px}
+.la-row{display:flex;align-items:center;gap:12px;width:100%;margin-bottom:8px;padding:10px 12px;border:1.5px solid var(--border-2);border-radius:12px;background:var(--bg);color:var(--text);font-size:14px;font-weight:600;font-family:inherit;text-align:left;cursor:pointer}
+.la-row:active{transform:scale(.98)}
+.la-txt{display:flex;flex-direction:column;min-width:0;gap:1px}
+.la-t{font-size:14px;font-weight:700}
+.la-d{font-size:11.5px;font-weight:500;color:var(--text-3);line-height:1.3}
+.la-ico{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--brand-light);color:var(--brand);flex-shrink:0}
+.la-ico svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.la-row.la-wa .la-ico{background:#e8faef;color:#1ebe5a}
+.la-row.la-wa .la-ico svg{fill:currentColor;stroke:none}
+.la-row.la-call .la-ico{background:#e8f7ee;color:#16a34a}
+.la-row.la-booked{border-color:#f3b6bf}
+@container (max-width:580px){
+  .pm-compact .pm-line-phones{display:none}
+  .pm-compact .pm-phones-act{display:flex;flex-wrap:wrap;align-items:center;column-gap:12px;row-gap:2px;margin-right:auto;min-width:0}
+}
 .pm-compact .pm-d b{font-weight:700;color:var(--text-3);margin-right:2px}
 .pm-compact .pm-d-booked b{color:#e04444}
 .pm-compact .profile-mini-actions{flex-direction:row;gap:5px}
@@ -8320,7 +8353,7 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
       <!-- ── Tab: My Listings ── -->
       <div class="profile-tab-panel" id="profilePanelListings">
         <div id="myListingsSummary"></div>
-        <div class="pm-search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input id="myListingsSearch" type="search" placeholder="Search by property ID" autocomplete="off" oninput="renderMyListings()" /></div>
+        <div class="pm-search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input id="myListingsSearch" type="search" placeholder="Search by property ID or mobile number" autocomplete="off" oninput="renderMyListings()" /></div>
         <div id="myListingsContent">
           <div class="profile-loading">Loading your listings…</div>
         </div>
@@ -8329,7 +8362,7 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
       <!-- ── Tab: Booked ── -->
       <div class="profile-tab-panel" id="profilePanelBooked">
         <div id="myBookedSummary"></div>
-        <div class="pm-search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input id="myBookedSearch" type="search" placeholder="Search booked by property ID" autocomplete="off" oninput="renderMyListings()" /></div>
+        <div class="pm-search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input id="myBookedSearch" type="search" placeholder="Search booked by property ID or mobile number" autocomplete="off" oninput="renderMyListings()" /></div>
         <div id="myBookedContent">
           <div class="profile-loading">Loading booked listings…</div>
         </div>
@@ -17373,11 +17406,9 @@ function myListingCardHtml(p) {
     return `<div class="profile-mini-card pm-compact" onclick="closeProfileModal();openDetail('${p.id}')"><div class="pm-row">
       <div class="profile-mini-thumb" ${thumb}>${img ? '' : 'No photo'}</div>
       <div class="profile-mini-body">
-        <div class="pm-line">
+        <div class="pm-line pm-line2 pm-line-main">
           <span class="pm-id">${esc(p.propertyId) || 'Untitled listing'}</span>
           <span class="pm-loc"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>${esc(p.location?.area)}</span>
-        </div>
-        <div class="pm-line pm-line2">
           <span class="pm-price">${rent}<span class="pm-per">/mo</span></span>
           <span class="profile-status-pill">${esc(p.basic?.status) || 'For Rent'}</span>
           ${p.booked ? `<span class="profile-status-pill booked-pill">Booked</span>` : ''}
@@ -17396,8 +17427,10 @@ function myListingCardHtml(p) {
           if (avail) parts.push(`<span class="pm-d"><b>Available</b> ${avail}</span>`);
           return parts.length ? `<div class="pm-line pm-line3">${parts.join('')}</div>` : '';
         })()}
+        ${agentOwnerNumbersLine(p)}
       </div>
       <div class="profile-mini-actions">
+        ${agentOwnerNumbersInActions(p)}
         <button class="profile-mini-icon-btn" title="Duplicate — start a new listing pre-filled with these details" onclick="event.stopPropagation();cloneMyListing('${p.id}', '${esc(p.propertyId||'')}')">
           <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
         </button>
@@ -17411,6 +17444,7 @@ function myListingCardHtml(p) {
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.6 6.32A7.85 7.85 0 0 0 12.05 4c-4.37 0-7.93 3.56-7.93 7.93 0 1.4.37 2.76 1.06 3.96L4 20l4.24-1.11a7.9 7.9 0 0 0 3.8.97h.01c4.37 0 7.93-3.56 7.93-7.93 0-2.12-.82-4.11-2.38-5.61zm-5.55 12.2h-.01a6.58 6.58 0 0 1-3.35-.92l-.24-.14-2.51.66.67-2.45-.16-.25a6.58 6.58 0 0 1-1.01-3.5c0-3.64 2.96-6.6 6.61-6.6a6.57 6.57 0 0 1 6.6 6.61c0 3.64-2.97 6.6-6.61 6.6zm3.62-4.94c-.2-.1-1.17-.58-1.35-.64-.18-.07-.31-.1-.45.1-.13.2-.51.64-.62.77-.11.13-.23.15-.42.05-.2-.1-.83-.31-1.58-.98-.58-.52-.98-1.16-1.09-1.36-.11-.2-.01-.3.09-.4.09-.09.2-.23.3-.35.1-.11.13-.2.2-.33.06-.13.03-.25-.02-.35-.05-.1-.45-1.08-.61-1.48-.16-.39-.33-.33-.45-.34-.12-.01-.25-.01-.38-.01-.13 0-.35.05-.53.25-.18.2-.7.69-.7 1.67 0 .98.72 1.93.82 2.06.1.13 1.41 2.15 3.42 3.02.48.2.85.33 1.14.42.48.15.91.13 1.26.08.38-.06 1.17-.48 1.34-.94.16-.46.16-.86.11-.94-.05-.09-.18-.14-.38-.24z"/></svg>
         </button>
         ${agentOwnerContactBtns(p)}
+        <button class="profile-mini-icon-btn pm-more-btn" title="More actions" onclick="event.stopPropagation();openListingActions('${p.id}')"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>More</button>
       </div>
     </div></div>`;
 }
@@ -17455,12 +17489,19 @@ function renderMyListings() {
 
   const _q = ((document.getElementById('myListingsSearch') || {}).value || '').trim().toLowerCase();
   const _qb = ((document.getElementById('myBookedSearch') || {}).value || '').trim().toLowerCase();
-  const _match = (p, q) => !q || String(p.propertyId || '').toLowerCase().includes(q);
+  // Search by property ID, or (agents) by any part of the owner's mobile number, e.g. last 4 digits.
+  const _isAg = isAgentUser();
+  const _match = (p, q) => {
+    if (!q) return true;
+    if (String(p.propertyId || '').toLowerCase().includes(q)) return true;
+    const qd = q.replace(/\D/g, '');
+    return _isAg && qd.length >= 2 && ownerDirectNumbers(p).some(n => n.digits.includes(qd));
+  };
   const _active = MY_LISTINGS_CACHE.filter(p => !p.booked);
   const _bt = p => new Date(p.bookedAt || p.bookedOn || p.createdAt || 0).getTime() || 0; // when it was booked (falls back to listed date)
   const _booked = MY_LISTINGS_CACHE.filter(p => p.booked && (window._bookedSub !== 'us' || _byUs(p))).sort((a, b) => (_bt(b) - _bt(a)) || (new Date(b.createdAt || 0) - new Date(a.createdAt || 0))); // newest booking first: today, yesterday, …
   const _cnt = document.getElementById('profileBookedCount');
-  if (_cnt) _cnt.textContent = _sumBooked.length ? ' (' + _sumBooked.length + ')' : '';
+  if (_cnt) _cnt.textContent = ''; // count intentionally hidden on the Booked tab
 
   const _fill = (el, list, q, emptyMsg) => {
     if (!el) return;
@@ -17580,6 +17621,26 @@ function closeCheckAvailability() {
   const ov = document.getElementById('checkAvailOverlay');
   if (ov) ov.classList.remove('open');
 }
+/* Agents: show the owner's mobile number(s) right on the listing card; tapping a number dials it. */
+function agentOwnerNumbersHtml(p) {
+  if (!isAgentUser()) return '';
+  const nums = ownerDirectNumbers(p);
+  if (!nums.length) return '';
+  const ph = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.8 19.8 0 0 1 1.61 3.4 2 2 0 0 1 3.59 1.22h3a2 2 0 0 1 2 1.72 12.8 12.8 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 8.78a16 16 0 0 0 6.29 6.29l1.14-1.14a2 2 0 0 1 2.11-.45 12.8 12.8 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>';
+  return nums.map(n =>
+    `<a class="pm-phone" href="tel:+91${n.digits}" title="Call owner${n.which === 'alt' ? ' (alt)' : ''}" onclick="event.stopPropagation()">${ph}${n.digits}${n.which === 'alt' ? ' <small>(alt)</small>' : ''}</a>`
+  ).join('');
+}
+/* Wide card: numbers sit on their own line under the dates. */
+function agentOwnerNumbersLine(p) {
+  const h = agentOwnerNumbersHtml(p);
+  return h ? `<div class="pm-line pm-line-phones">${h}</div>` : '';
+}
+/* Narrow card: numbers sit at the left of the button row, so that row is full instead of half empty. */
+function agentOwnerNumbersInActions(p) {
+  const h = agentOwnerNumbersHtml(p);
+  return h ? `<div class="pm-phones-act">${h}</div>` : '';
+}
 function agentOwnerContactBtns(p) {
   if (!isAgentUser()) return '';
   const phoneSvg = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.8 19.8 0 0 1 1.61 3.4 2 2 0 0 1 3.59 1.22h3a2 2 0 0 1 2 1.72 12.8 12.8 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 8.78a16 16 0 0 0 6.29 6.29l1.14-1.14a2 2 0 0 1 2.11-.45 12.8 12.8 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>';
@@ -17592,6 +17653,59 @@ function agentOwnerContactBtns(p) {
     return `<button class="profile-mini-icon-btn" title="Call owner${tag}" onclick="event.stopPropagation();callListingOwner('${p.id}','${n.which}')">${phoneSvg}</button>` +
            `<button class="profile-mini-icon-btn profile-mini-icon-whatsapp" title="WhatsApp owner${tag}" onclick="event.stopPropagation();whatsappListingOwner('${p.id}','${n.which}')">${waSvg}</button>`;
   }).join('');
+}
+/* Mobile: one "More" button on each listing card opens this sheet with every action, labelled. */
+let _laFns = [];
+function openListingActions(id) {
+  const p = MY_LISTINGS_CACHE.find(x => x.id === id); if (!p) return;
+  const ic = {
+    copy:  '<svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>',
+    edit:  '<svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>',
+    lock:  '<svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>',
+    wa:    '<svg viewBox="0 0 24 24"><path d="M17.6 6.32A7.85 7.85 0 0 0 12.05 4c-4.37 0-7.93 3.56-7.93 7.93 0 1.4.37 2.76 1.06 3.96L4 20l4.24-1.11a7.9 7.9 0 0 0 3.8.97h.01c4.37 0 7.93-3.56 7.93-7.93 0-2.12-.82-4.11-2.38-5.61z"/></svg>',
+    cal:   '<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M9 16l2 2 4-4"/></svg>',
+    phone: '<svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.8 19.8 0 0 1 1.61 3.4 2 2 0 0 1 3.59 1.22h3a2 2 0 0 1 2 1.72 12.8 12.8 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 8.78a16 16 0 0 0 6.29 6.29l1.14-1.14a2 2 0 0 1 2.11-.45 12.8 12.8 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>'
+  };
+  const pid = p.propertyId || '';
+  const items = [];
+  items.push({ i: ic.copy, t: 'Duplicate Listing', d: 'Start a new listing pre-filled with these details', f: () => cloneMyListing(id, pid) });
+  items.push({ i: ic.edit, t: 'Edit Listing Details', d: 'Update price, details, photos and availability', f: () => editMyListing(id, pid) });
+  items.push({ i: ic.lock, t: p.booked ? 'Mark as Available' : 'Mark as Booked', d: p.booked ? 'Show this listing on the website again' : 'Take it off the website once a tenant is finalised', c: 'la-booked', f: () => confirmToggleBooked(id, document.createElement('button')) });
+  items.push({ i: ic.wa, t: 'Share via WhatsApp', d: 'Send the listing link to any contact', c: 'la-wa', f: () => shareMyListingViaWhatsApp(id) });
+  if (isAgentUser()) {
+    const nums = ownerDirectNumbers(p);
+    if (nums.length) items.push({ i: ic.cal, t: 'Confirm Availability', d: 'Ask the owner if the property is still vacant', f: () => checkAvailabilityListing(id) });
+    nums.forEach(n => {
+      const tag = n.which === 'alt' ? ' (alt)' : '';
+      items.push({ i: ic.phone, t: 'Call Owner' + tag, d: n.digits, c: 'la-call', f: () => callListingOwner(id, n.which) });
+      items.push({ i: ic.wa, t: 'Message Owner on WhatsApp' + tag, d: n.digits, c: 'la-wa', f: () => whatsappListingOwner(id, n.which) });
+    });
+  }
+  _laFns = items.map(x => x.f);
+  let ov = document.getElementById('listingActionsOverlay');
+  if (!ov) {
+    ov = document.createElement('div');
+    ov.id = 'listingActionsOverlay';
+    ov.className = 'add-modal-overlay';
+    ov.addEventListener('click', e => { if (e.target === ov) closeListingActions(); });
+    document.body.appendChild(ov);
+  }
+  ov.innerHTML = `<div class="add-modal" style="max-width:380px;width:100%;padding:20px;overflow-y:auto">
+    <div class="la-title">${esc(pid) || 'Listing'}</div>
+    <div class="la-sub">Select an action</div>
+    ${items.map((x, k) => `<button type="button" class="la-row ${x.c || ''}" onclick="runListingAction(${k})"><span class="la-ico">${x.i}</span><span class="la-txt"><span class="la-t">${esc(x.t)}</span>${x.d ? `<span class="la-d">${esc(x.d)}</span>` : ''}</span></button>`).join('')}
+    <button type="button" class="la-row" style="justify-content:center;color:var(--text-2);margin-bottom:0" onclick="closeListingActions()">Cancel</button>
+  </div>`;
+  ov.classList.add('open');
+}
+function closeListingActions() {
+  const ov = document.getElementById('listingActionsOverlay');
+  if (ov) ov.classList.remove('open');
+}
+function runListingAction(k) {
+  const f = _laFns[k];
+  closeListingActions();
+  if (f) f();
 }
 function shareMyListingViaWhatsApp(id) {
   const p = MY_LISTINGS_CACHE.find(x => x.id === id);
@@ -22627,6 +22741,9 @@ document.addEventListener('keydown', function(e){ if (e.key === 'Escape') closeP
 .profile-banner-close svg{stroke:#e8365d}
 .profile-banner-close:hover svg{stroke:#fff}
 .profile-card-float{box-shadow:0 14px 34px -12px rgba(190,70,60,.28);border:1px solid #f6e1d7}
+/* My Account: avatar/name/email card removed (kept in DOM so existing JS refs still work). Banner no longer needs the extra bottom space it reserved for the overlap. */
+.profile-card-float{display:none !important}
+.profile-banner{padding-bottom:16px !important}
 .profile-avatar-lg,.about-founder-avatar,.about-partner-avatar{background:var(--warm-grad)}
 .profile-avatar-lg{box-shadow:0 0 0 4px #fff,0 0 0 6px #ffd9cb}
 
