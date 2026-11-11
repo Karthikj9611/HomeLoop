@@ -8291,7 +8291,7 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
         </div>
         <div class="profile-tab" id="profileTabSaved" onclick="switchProfileTab('saved')">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-          Saved
+          Shortlist
         </div>
       </div>
 
@@ -8402,7 +8402,7 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
       <!-- ── Tab: Saved ── -->
       <div class="profile-tab-panel" id="profilePanelSaved">
         <div id="savedListingsContent">
-          <div class="profile-loading">Loading saved properties…</div>
+          <div class="profile-loading">Loading shortlist…</div>
         </div>
       </div>
 
@@ -9592,7 +9592,7 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
   </div>
   <div class="menu-list">
     <div class="menu-item" id="menuAuthItem" onclick="toggleMenuPanel(); handleMenuAuthClick();">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+      <svg id="menuAuthIcon" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
       <span id="menuAuthLabel">Log in / Sign up</span>
     </div>
     <div class="menu-item menu-item-notif" onclick="toggleMenuPanel(); openNotifModal();">
@@ -16704,7 +16704,8 @@ function updateNavAuth() {
     setAvatarContent(document.getElementById('menuAvatar'), user);
     document.getElementById('menuUserName').textContent = user.name || 'User';
     document.getElementById('menuUserSub').textContent = user.email || 'Logged in';
-    document.getElementById('menuAuthLabel').textContent = 'My Profile / Log out';
+    document.getElementById('menuAuthLabel').textContent = 'My profile';
+    const _mai = document.getElementById('menuAuthIcon'); if (_mai) _mai.innerHTML = '<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/>';
     if (qmbIcon) {
       if (user.profilePhoto) {
         qmbIcon.innerHTML = '<img src="' + esc(user.profilePhoto) + '" alt="Profile"/>';
@@ -16720,6 +16721,7 @@ function updateNavAuth() {
     document.getElementById('menuUserName').textContent = 'Guest';
     document.getElementById('menuUserSub').textContent = 'Log in to manage listings';
     document.getElementById('menuAuthLabel').textContent = 'Log in / Sign up';
+    const _mai = document.getElementById('menuAuthIcon'); if (_mai) _mai.innerHTML = '<path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/>';
     if (qmbIcon) {
       qmbIcon.textContent = '🧑\u200d💼';
       qmbIcon.classList.remove('qmb-icon-photo');
@@ -18628,7 +18630,7 @@ function loadSavedListings() {
   const ids = [...shortlisted];
   const emptyHtml = `<div class="profile-list-empty">
     <div class="profile-list-empty-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></div>
-    No saved properties yet.<br>Tap ♡ on any listing to save it here.
+    Your shortlist is empty.<br>Tap ♡ on any listing to shortlist it here.
   </div>`;
   if (!ids.length) {
     wrap.innerHTML = emptyHtml;
@@ -18669,7 +18671,7 @@ function removeSavedListing(id) {
   saveShortlistData();
   loadSavedListings();
   renderCards();
-  showToast("Removed from saved listings.");
+  showToast("Removed from shortlist.");
 }
 
 
