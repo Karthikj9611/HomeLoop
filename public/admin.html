@@ -332,7 +332,7 @@ body{
   #bulkToolbar .bulk-btn .bulk-btn-label::after{content:attr(data-short);font-size:.82rem;line-height:1.2;display:inline;font-weight:700}
   /* The expand/collapse arrow stays a plain round button */
   #bulkToolbar .bulk-btn.fab-toggle-btn{width:42px!important;min-width:42px!important;height:42px!important;padding:0!important;gap:0!important;justify-content:center!important;border-radius:50%!important}
-  #bulkCompareCount,#bulkShareTenantCount,#bulkShareLinksCount,#bulkCheckAvailabilityCount,#bulkDownloadZipCount,#bulkFullZipCount,#bulkToolbar .bulkFlagCount{
+  #bulkCompareCount,#bulkShareTenantCount,#bulkCheckAvailabilityCount,#bulkDownloadZipCount,#bulkFullZipCount,#bulkToolbar .bulkFlagCount{
     position:absolute;top:-6px;right:-6px;min-width:20px;height:20px;padding:0 5px;box-sizing:border-box;
     display:flex;align-items:center;justify-content:center;
     border-radius:10px;background:var(--ink,#1f2937);color:#fff;border:2px solid #fff;
@@ -2152,23 +2152,10 @@ body.pact-hide-booking #propertyTable .pact-booking{display:none!important}
 .add-modal.compare-modal-box{max-width:1000px}
 
 /* ══════════════════════════════════════
-   SHARE LINKS MODAL — bulk multiselect → Share Links button → this.
+   SHARED MODAL STYLES — used by the Check Availability modal.
    Reuses the .add-modal-overlay/.add-modal shell and .compare-modal-header
    classes for a consistent look with the Compare modal. ── */
 .add-modal.share-links-modal-box{max-width:640px}
-.share-links-number-row{margin-bottom:16px}
-.share-links-number-row label{
-  display:block;font-size:0.78rem;font-weight:700;color:var(--ink2);
-  margin-bottom:6px;letter-spacing:0.3px;
-}
-.share-links-number-row input{
-  width:100%;padding:11px 15px;box-sizing:border-box;
-  border:1.5px solid var(--border);border-radius:var(--radius-xs);
-  font-family:'Inter',sans-serif;font-size:0.92rem;
-  color:var(--ink);background:var(--surface2);outline:none;
-  transition:border-color 0.18s,background 0.18s;
-}
-.share-links-number-row input:focus{border-color:var(--gold);background:#fff}
 .share-links-list{
   display:flex;flex-direction:column;gap:10px;
   max-height:48vh;overflow-y:auto;margin:0 -4px;padding:0 4px 4px;
@@ -3222,7 +3209,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
   display:flex;align-items:center;justify-content:center;line-height:1;
 }
 /* Notifications modal — reuses the .add-modal-overlay/.add-modal shell (same
-   one as Compare/Share Links) so it opens centered and full-size instead of
+   one as Compare) so it opens centered and full-size instead of
    a small bell dropdown. .notif-panel-header/-actions/-list and .notif-item*
    below are unchanged from the old dropdown version and still apply as-is. */
 .add-modal.notif-modal-box{max-width:560px}
@@ -3552,37 +3539,6 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
       </div>
     </div>
     <div class="compare-table-wrap" id="adminCompareTableWrap"></div>
-  </div>
-</div>
-
-<!-- ══ SHARE LINKS MODAL (bulk multiselect → Share Links → this) ══
-     Lets the admin type a WhatsApp number once and see full context for
-     every selected property — name, location, owner name/number/alt
-     number, and a Directions link to the map location — before sending
-     one bundled message with all the property links. No cap on count. -->
-<div class="add-modal-overlay" id="shareLinksModal" role="dialog" aria-modal="true" aria-label="Share property links">
-  <div class="add-modal share-links-modal-box" id="shareLinksModalBox">
-    <div class="compare-modal-header">
-      <span class="compare-modal-title">Share Property Links</span>
-      <button class="modal-close" onclick="closeShareLinksModal()" aria-label="Close">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-      </button>
-    </div>
-    <div class="share-links-number-row">
-      <label for="shareLinksNumberInput">WhatsApp number to send to</label>
-      <input type="tel" id="shareLinksNumberInput" inputmode="numeric" placeholder="10-digit mobile, or with country code" oninput="this.value=this.value.replace(/[^0-9+]/g,'')" maxlength="15"/>
-    </div>
-    <div class="share-links-list" id="shareLinksList"></div>
-    <div style="margin:12px 0">
-      <label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px">Message that will be sent (you can edit it)</label>
-      <textarea id="shareLinksMsgText" rows="8" style="width:100%;padding:10px 12px;border:1px solid #d5d9e0;border-radius:10px;font-size:13px;font-family:inherit;resize:vertical"></textarea>
-    </div>
-    <div class="share-links-footer">
-      <button class="confirm-cancel-btn" onclick="closeShareLinksModal()" style="flex:1">Cancel</button>
-      <button class="confirm-ok-btn success" onclick="sendShareLinksToNumber()" style="flex:2">
-        <i class="fab fa-whatsapp"></i> Send (<span id="shareLinksSendCount">0</span>)
-      </button>
-    </div>
   </div>
 </div>
 
@@ -4249,9 +4205,6 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
         </button>
         <button class="bulk-btn sel-hide" id="bulkShareTenantBtn" style="display:none;background:#0ea5e9;color:#fff;border-color:#0ea5e9" onclick="shareSelectedToTenant()" title="Send the view links of all selected properties to a tenant on WhatsApp">
           <i class="fas fa-paper-plane"></i> <span class="bulk-btn-label" data-mobile="Share to Tenant" data-short="Tenant">Share to Tenant</span><span id="bulkShareTenantCount">0</span>
-        </button>
-        <button class="bulk-btn sel-hide" id="bulkShareLinksBtn" style="display:none;background:#25D366;color:#fff;border-color:#25D366" onclick="shareSelectedLinksToNumber()" title="Share links for all selected properties to a WhatsApp number you enter">
-          <i class="fab fa-whatsapp"></i> <span class="bulk-btn-label" data-mobile="Share Links" data-short="Share">Share Links</span><span id="bulkShareLinksCount">0</span>
         </button>
         <button class="bulk-btn sel-hide" id="bulkCheckAvailabilityBtn" style="display:none;background:#7c3aed;color:#fff;border-color:#7c3aed" onclick="checkAvailabilityWithOwners()" title="Review and send a WhatsApp availability check to each selected property's owner (alt number only)">
           <i class="fab fa-whatsapp"></i> <span class="bulk-btn-label" data-mobile="Check Availability" data-short="Check">Check Availability</span><span id="bulkCheckAvailabilityCount">0</span>
@@ -7025,7 +6978,7 @@ const BTN_TABLE_SEL = { properties:'#propertyTable', customers:'#bookingTable' }
 // per-button switches as the Action column, but hidden by element id instead of pact- class.
 const TOOLBAR_BTN_SEL = {
   tbAdd:'#bulkToolbar #addPropertyBtn', tbCompare:'#bulkToolbar #bulkCompareBtn',
-  tbTenant:'#bulkToolbar #bulkShareTenantBtn', tbShare:'#bulkToolbar #bulkShareLinksBtn',
+  tbTenant:'#bulkToolbar #bulkShareTenantBtn',
   tbCheck:'#bulkToolbar #bulkCheckAvailabilityBtn', tbRecalc:'#bulkToolbar #recalcDistanceBtn'
 };
 const COL_ACT_MODULE = { cust:'customers' };
@@ -7207,7 +7160,6 @@ const AA_BTN_META = {
     tbAdd:{i:'fa-plus',d:'Top toolbar: add a new property',danger:1},
     tbCompare:{i:'fa-code-compare',d:'Top toolbar: compare selected properties and share the link'},
     tbTenant:{i:'fa-paper-plane',d:'Top toolbar: send selected properties to a tenant on WhatsApp'},
-    tbShare:{i:'fa-brands fa-whatsapp',d:'Top toolbar: share links of selected properties to a number'},
     tbCheck:{i:'fa-brands fa-whatsapp',d:'Top toolbar: send availability check to owners of selected properties'},
     tbRecalc:{i:'fa-location-crosshairs',d:'Top toolbar: recalculate distance from your location'}
   },
@@ -11093,9 +11045,9 @@ window.shareListingToOwner = async function(id){
    only opens for live listings. */
 function buildTenantShareMessage(links){
   if(links.length === 1){
-    return 'Hello, greetings from HomeLoop! Here is a verified property for you. View details & photos: ' + links[0];
+    return 'We have verified property for you.\n' + links[0];
   }
-  return 'Hello, greetings from HomeLoop! Here are ' + links.length + ' verified properties for you. View details & photos:\n\n'
+  return 'We have ' + links.length + ' verified properties for you.\n'
     + links.map((l, i) => (i + 1) + '. ' + l).join('\n');
 }
 
@@ -11303,133 +11255,8 @@ window.shareListingToInstagram = async function(id){
   if(alertMsgEl) alertMsgEl.style.whiteSpace = 'pre-line';
 };
 
-/* ── SHARE SELECTED PROPERTY LINKS TO A NUMBER YOU ENTER (WhatsApp) ──
-   Bundles every currently-selected property (any count — 10, 20, however
-   many; no ADMIN_COMPARE_MAX-style ceiling, since this isn't the compare
-   modal) into one message and sends it to a WhatsApp number the admin
-   types in, rather than to whichever number is already on the listing.
-   Reuses the same _selectedPropIds set as bulk-delete/Compare, and the
-   same waDigits()/wa.me pattern as shareListingToOwner(). Opens a modal
-   (rather than window.prompt) so the admin can see each selected
-   property's name, location (with a Directions link to navigate there),
-   and owner name/number/alt number before sending. */
-window.shareSelectedLinksToNumber = function(){
-  if(blockIfViewOnly('properties')) return;
-  const ids = Array.from(_selectedPropIds);
-  if(!ids.length){ alert('Select at least one property first.'); return; }
-  renderShareLinksModal(ids);
-  document.getElementById('shareLinksModal').classList.add('open');
-  lockBodyScroll();
-  setTimeout(()=>{ const inp = document.getElementById('shareLinksNumberInput'); if(inp) inp.focus(); }, 0);
-};
-
-window.closeShareLinksModal = function(){
-  document.getElementById('shareLinksModal').classList.remove('open');
-  unlockBodyScroll();
-};
-
-function mapsDirectionsUrl(row){
-  const _bl = adminBuildingLinkUrl(row); if (_bl) return adminLinkNavUrl(_bl);
-  const lat = row.latitude, lng = row.longitude;
-  if(lat != null && lng != null && lat !== '' && lng !== ''){
-    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(lat)},${encodeURIComponent(lng)}`;
-  }
-  const q = [row.loc, row.city].filter(Boolean).join(', ') || row.title || 'property location';
-  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`;
-}
-
-function shareLinksPropDetails(row){
-  const rent = row.displayPrice || (row.rent!=null && row.rent!=='' ? `₹${row.rent}` : '') || '—';
-  const deposit = (row.deposit!=null && row.deposit!=='') ? `₹${row.deposit}` : '—';
-  const config = row.bhk || row.pgPropertyType || row.ssPropertyType || '—';
-  const toilet = row.toilet || row.toiletType || '—';
-  const carParking = (row.carparking!=null && row.carparking!=='') ? String(row.carparking) : '—';
-  const bikeParking = (row.bikeparking!=null && row.bikeparking!=='') ? String(row.bikeparking) : '—';
-  return { rent, deposit, config, toilet, carParking, bikeParking };
-}
-
-function renderShareLinksModal(ids){
-  const listEl = document.getElementById('shareLinksList');
-  const sendCountEl = document.getElementById('shareLinksSendCount');
-  sendCountEl.textContent = ids.length;
-  const msgBox = document.getElementById('shareLinksMsgText');
-  if(msgBox) msgBox.value = ids.length ? buildShareLinksMessage(ids) : '';
-
-  if(!ids.length){
-    listEl.innerHTML = `<div class="share-links-empty">No properties selected.</div>`;
-    return;
-  }
-
-  listEl.innerHTML = ids.map(id=>{
-    const row = _adminPropCache[id] || {};
-    const name = escapeHtml(row.title || row.propertyId || 'Untitled property');
-    const loc  = escapeHtml([row.loc, row.city].filter(Boolean).join(', ') || '—');
-    const dirUrl = mapsDirectionsUrl(row);
-    const ownerName = escapeHtml(row.ownerName || '—');
-    const ownerNum  = row.ownerNumber ? `<a href="tel:${escapeHtml(row.ownerNumber)}">${escapeHtml(row.ownerNumber)}</a>` : '—';
-    const ownerAlt  = row.ownerAltPhone ? `<a href="tel:${escapeHtml(row.ownerAltPhone)}">${escapeHtml(row.ownerAltPhone)}</a>` : '—';
-    const { rent, deposit, config, toilet, carParking, bikeParking } = shareLinksPropDetails(row);
-    return `<div class="share-link-card">
-      <div class="share-link-card-name">${name}</div>
-      <div class="share-link-card-loc">📍 ${loc}
-        <a href="${dirUrl}" target="_blank" rel="noopener noreferrer">🧭 Directions</a>
-      </div>
-      <div class="share-link-card-meta">
-        <span>💰 Rent: ${escapeHtml(String(rent))}</span>
-        <span>💵 Deposit: ${escapeHtml(String(deposit))}</span>
-        <span>🛏️ ${escapeHtml(String(config))}</span>
-        <span>🚻 ${escapeHtml(String(toilet))}</span>
-        <span>🚗 Car: ${escapeHtml(String(carParking))}</span>
-        <span>🏍️ Bike: ${escapeHtml(String(bikeParking))}</span>
-      </div>
-      <div class="share-link-card-owner">
-        <span>👤 ${ownerName}</span>
-        <span>📞 ${ownerNum}</span>
-        <span>☎️ Alt: ${ownerAlt}</span>
-      </div>
-    </div>`;
-  }).join('');
-}
-
-function buildShareLinksMessage(ids){
-  const lines = ids.map((id, i) => {
-    const row = _adminPropCache[id] || {};
-    const name = row.title || row.propertyId || 'Property';
-    const loc  = [row.loc, row.city].filter(Boolean).join(', ') || '—';
-    const dirUrl = mapsDirectionsUrl(row);
-    const ownerName = row.ownerName || '—';
-    const ownerNum  = row.ownerNumber || '—';
-    const ownerAlt  = row.ownerAltPhone ? ` (Alt: ${row.ownerAltPhone})` : '';
-    const { rent, config } = shareLinksPropDetails(row);
-    const link = row._id ? `${BASE}/property/${row._id}` : '';
-    return [
-      `${i + 1}. ${name} — ${loc}, ${rent}, ${config}`,
-      `Owner: ${ownerName} ${ownerNum}${ownerAlt}`,
-      link,
-      `${dirUrl}`
-    ].filter(Boolean).join('\n');
-  });
-  return `Sharing ${ids.length} propert${ids.length===1?'y':'ies'}:\n\n${lines.join('\n*******************************\n')}`;
-}
-
-window.sendShareLinksToNumber = function(){
-  if(blockIfViewOnly('properties')) return;
-  const ids = Array.from(_selectedPropIds);
-  if(!ids.length){ alert('Select at least one property first.'); return; }
-
-  const raw = document.getElementById('shareLinksNumberInput').value;
-  const num = waDigits(raw);
-  if(!num){ showAlertModal('Enter a valid WhatsApp number.', { variant:'error', title:'Number needed' }); return; }
-
-  const editedEl = document.getElementById('shareLinksMsgText');
-  const msg = (editedEl && editedEl.value.trim()) ? editedEl.value.trim() : buildShareLinksMessage(ids);
-  openWhatsAppTabs([num], encodeURIComponent(msg));
-  closeShareLinksModal();
-};
-
 /* ── BULK: CHECK AVAILABILITY WITH OWNERS (WhatsApp) ──
-   Unlike Share Links (one bundled message to a single number the admin
-   types in), this builds one personalized WhatsApp message PER selected
+   This builds one personalized WhatsApp message PER selected
    property for that property's own owner — using ONLY the owner's
    ALTERNATE number (row.ownerAltPhone). No fallback to the main owner
    number: a listing with no alt number on file is listed as skipped
@@ -11451,12 +11278,24 @@ window.sendShareLinksToNumber = function(){
 /* ── SHARED: build the availability-check message text ──
    Used by both the single-row "Check" button and the bulk review modal,
    so the wording only needs to change in one place. */
+/* Compact price: 36000 -> 36K, 150000 -> 1.5L, 12000000 -> 1.2Cr */
+function shortPrice(n){
+  n = Number(n);
+  if(!(n > 0)) return '';
+  const f = (v, s) => (Math.round(v * 10) / 10) + s;
+  return n >= 1e7 ? f(n / 1e7, 'Cr') : n >= 1e5 ? f(n / 1e5, 'L') : n >= 1e3 ? f(n / 1e3, 'K') : String(n);
+}
 function buildAvailabilityCheckMessage(row){
-  const { rent, deposit, config } = shareLinksPropDetails(row);
-  const furnish = row.furnishing || '—';
-  const locStr = [row.loc, row.city].filter(Boolean).join(', ') || 'your listed location';
   const link = row._id ? `${BASE}/property/${row._id}` : '';
-  return `Is ${row.propertyId || 'listing'}, still available? ${link}`;
+  const bhkNum = String(row.bhk || '').replace(/\s*BHK\s*$/i, '').trim();
+  const type = bhkNum && parseFloat(bhkNum) > 0 ? bhkNum + ' BHK' : (row.pgPropertyType || row.ssPropertyType || '');
+  const area = String(row.area || row.loc || '').trim();
+  const m = String(row.rent != null && row.rent !== '' ? row.rent : (row.displayPrice || '')).replace(/,/g, '').match(/\d+(?:\.\d+)?/);
+  const amt = m ? shortPrice(m[0]).replace('K', 'k') : '';
+  const price = amt ? '\u20B9' + amt + (row.status === 'For Sale' ? '' : '/month') : '';
+  const details = [[type, area].filter(Boolean).join(', '), price].filter(Boolean).join(' \u2013 ');
+  const tail = `Any other vacant or soon-to-be-vacant properties? We\u2019d be happy to list them!\nYou can also list directly at www.homeloop.in. We\u2019ll verify the property through a site visit.`;
+  return `Hi, this is HomeLoop Rental Platform.\nIs ${row.propertyId || 'listing'}${details ? ' (' + details + ')' : ''} still available?${link ? '\n' + link : ''}\n${tail}`;
 }
 
 window.checkAvailabilityForRow = async function(id){
@@ -11553,10 +11392,6 @@ window.markCheckAvailSent = function(i, linkEl){
   const card = document.getElementById(`checkAvailCard-${i}`);
   if(card) card.classList.add('sent');
 };
-
-document.getElementById('shareLinksModal').addEventListener('click', function(e){
-  if (e.target === this) closeShareLinksModal();
-});
 
 document.getElementById('subscriptionModal').addEventListener('click', function(e){
   if (e.target === this) closeSubscriptionModal();
@@ -11716,26 +11551,16 @@ function updateBulkToolbarUI(){
     if (cmpCountEl) cmpCountEl.textContent = Math.min(n, ADMIN_COMPARE_MAX);
   }
 
-  // Share Links — unlike Compare, has no ADMIN_COMPARE_MAX ceiling; any
-  // number of selected properties (10+, unlimited) can be bundled into one
-  // WhatsApp message sent to a number the admin types in.
+  // Share to Tenant — unlike Compare, has no ADMIN_COMPARE_MAX ceiling.
   const shareTenantBtn = document.getElementById('bulkShareTenantBtn');
   const shareTenantCountEl = document.getElementById('bulkShareTenantCount');
   if (shareTenantBtn){
     shareTenantBtn.style.display = n >= 1 ? 'inline-flex' : 'none'; shareTenantBtn.classList.toggle('sel-hide', !(n >= 1));
     if (shareTenantCountEl) shareTenantCountEl.textContent = n;
   }
-  const shareLinksBtn = document.getElementById('bulkShareLinksBtn');
-  const shareLinksCountEl = document.getElementById('bulkShareLinksCount');
-  if (shareLinksBtn){
-    shareLinksBtn.style.display = n >= 1 ? 'inline-flex' : 'none'; shareLinksBtn.classList.toggle('sel-hide', !(n >= 1));
-    if (shareLinksCountEl) shareLinksCountEl.textContent = n;
-  }
 
-  // Check Availability — same "any count" rule as Share Links, but each
-  // selected property gets its own WhatsApp tab/message sent to its own
-  // owner (alt number preferred), rather than one bundled message to a
-  // single number the admin types in.
+  // Check Availability — same "any count" rule; each selected property gets
+  // its own WhatsApp tab/message sent to its own owner (alt number preferred).
   const checkAvailBtn = document.getElementById('bulkCheckAvailabilityBtn');
   const checkAvailCountEl = document.getElementById('bulkCheckAvailabilityCount');
   if (checkAvailBtn){
@@ -14925,12 +14750,9 @@ function renderAdminCompareTable(){
 window.shareAdminCompareViaWhatsApp = function(){
   const ids = Array.from(_selectedPropIds).slice(0, ADMIN_COMPARE_MAX);
   if (ids.length < 2) return;
-  const rows = ids.map(id => _adminPropCache[id]).filter(Boolean);
   const compareUrl = `${BASE}/?compare=${ids.join(',')}`;
-  const names = rows.map(r => r.propertyId).join(', ');
-  const msg = `Check out this comparison of ${rows.length} properties on HomeLoop — ${names}\n\n${compareUrl}`;
-  const url = 'https://wa.me/?text=' + encodeURIComponent(msg);
-  window.open(url, '_blank', 'noopener');
+  const msg = `Compare : ${compareUrl}`;
+  window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank', 'noopener');
 };
 
 document.getElementById('adminCompareModal').addEventListener('click', function(e){

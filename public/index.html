@@ -12265,13 +12265,31 @@ function propDetailsText(p) {
   const price = rent > 0 ? '\u20B9' + rent.toLocaleString('en-IN') + (pt === 'Sell' ? '' : pt === 'ShortStay' ? '/day' : '/month') : '';
   return [type, area, price].filter(Boolean).join(', ');
 }
+/* Compact price: 36000 -> 36K, 150000 -> 1.5L, 12000000 -> 1.2Cr */
+function shortPrice(n) {
+  n = Number(n);
+  if (!(n > 0)) return '';
+  const f = (v, s) => (Math.round(v * 10) / 10) + s;
+  return n >= 1e7 ? f(n / 1e7, 'Cr') : n >= 1e5 ? f(n / 1e5, 'L') : n >= 1e3 ? f(n / 1e3, 'K') : String(n);
+}
+/* "1 BHK, Hosapalya, \u20B936K/M" - compact version of propDetailsText. */
+function propDetailsShort(p) {
+  const pt = pTypeLabel(p);
+  const prop = p.property || {}, pgd = p.pg || {}, ss = p.shortStay || {};
+  const bhk = (pt === 'PG' || pt === 'ShortStay') ? '' : String(prop.bhk || '').replace(/\s*BHK\s*$/i, '').trim();
+  const type = bhk && parseFloat(bhk) > 0 ? bhk + ' BHK' : (prop.type || pgd.type || ss.type || '');
+  const area = (p.location?.area || '').trim();
+  const amt = shortPrice(p.price?.rent);
+  const price = amt ? '\u20B9' + amt + (pt === 'Sell' ? '' : pt === 'ShortStay' ? '/D' : '/M') : '';
+  return [type, area, price].filter(Boolean).join(', ');
+}
 function buildEnquiryMessage(props) {
   const one = props.length === 1;
   const lines = props.map((p, i) => {
-    const details = propDetailsText(p);
-    return `${one ? '' : (i + 1) + '. '}${p.propertyId}${details ? ' - ' + details : ''}\n${window.location.origin}/property/${p.id}`;
+    const d = propDetailsShort(p);
+    return `${one ? '' : (i + 1) + '. '}${p.propertyId}${d ? ' - ' + d : ''} ${window.location.origin}/property/${p.id}`;
   });
-  return `Hello, I'm interested in the following ${one ? 'property' : 'properties'} on HomeLoop.\n\n${lines.join('\n\n')}`;
+  return one ? `I'm interested in ${lines[0]}` : `I'm interested in\n${lines.join('\n')}`;
 }
 function _openAgentEnquiry(phone) {
   const props = _shortlistEnquiryGroups().groups[phone];
@@ -12479,12 +12497,9 @@ function closeCompareModal() {
 function shareCompareViaWhatsApp() {
   const ids = [...compareSet];
   if (ids.length < 2) return;
-  const props = ids.map(id => PROPERTIES.find(p => p.id === id)).filter(Boolean);
-  const compareUrl = `${window.location.origin}${window.location.pathname}?compare=${ids.join(',')}`;
-  const propLines = props.map(p => `${p.propertyId} - ${window.location.origin}/property/${p.id}`).join('\n');
-  const msg = `Comparing ${props.length} properties on HomeLoop:\n${propLines}\n\nCompare together: ${compareUrl}`;
-  const url = 'https://wa.me/?text=' + encodeURIComponent(msg);
-  window.open(url, '_blank', 'noopener');
+  const compareUrl = `${window.location.origin}/?compare=${ids.join(',')}`;
+  const msg = `Compare : ${compareUrl}`;
+  window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank', 'noopener');
 }
 
 function renderCompareTable() {
@@ -15777,10 +15792,7 @@ function sharePropertyWhatsApp(propId) {
   const bhk = (isPG || isShort) ? '' : (prop.bhk || '');
   const title = bhk || ptype || 'Property';
   const kind = isSell ? 'for sale' : isShort ? 'for short stay' : isPG ? 'PG' : 'for rent';
-  const area = (p.location?.area || '').trim();
-  const rentAmt = Number(p.price?.rent);
-  const priceTxt = rentAmt > 0 ? '\u20B9' + rentAmt.toLocaleString('en-IN') + (isSell ? '' : isShort ? '/day' : '/month') : '';
-  const msg = `${title} ${kind}${area ? ', ' + area : ''}${priceTxt ? ', ' + priceTxt : ''}\n${propertyUrl}`;
+  const msg = isPG ? `PG - ${propertyUrl}` : `${title} ${kind} - ${propertyUrl}`;
   window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank', 'noopener');
 }
 
@@ -17243,8 +17255,8 @@ function openEditRestrictedModal(context, propertyLabel, isBooked) {
     let href = 'https://wa.me/919035205230';
     if (context === 'booking' && propertyLabel && !isBooked) {
       const _bp = [...(typeof MY_LISTINGS_CACHE !== 'undefined' ? MY_LISTINGS_CACHE : []), ...PROPERTIES, ...BOOKED_PROPERTIES].find(x => x.propertyId === propertyLabel);
-      const _bd = _bp ? propDetailsText(_bp) : '';
-      const msg = `Hi, property ${propertyLabel}${_bd ? ' (' + _bd + ')' : ''} is Booked. Please mark it as Booked.`;
+      const _bd = _bp ? propDetailsShort(_bp).replace(/(\d)K\b/, '$1k') : '';
+      const msg = `Hi, ${propertyLabel}${_bd ? ' - ' + _bd : ''} is Booked.`;
       href += '?text=' + encodeURIComponent(msg);
     }
     waBtn.href = href;
@@ -17599,12 +17611,17 @@ function checkAvailabilityListing(id) {
   const nums = ownerDirectNumbers(p);
   if (!nums.length) { showToast('No owner phone number on file for this listing.', 'warning'); return; }
   const _bhkNum = String(p.property?.bhk || '').replace(/\s*BHK\s*$/i, '').trim();
-  const _price = p.price?.rent != null ? fmtRupee(p.price.rent) + (p.basic?.status === 'For Sale' ? '' : '/month') : '';
-  const _details = [p.location?.area, _bhkNum ? _bhkNum + ' BHK' : '', _price].filter(Boolean).join(' | ');
+  const _isSell = p.basic?.status === 'For Sale';
+  const _amt = shortPrice(p.price?.rent).replace('K', 'k');
+  const _price = _amt ? '\u20B9' + _amt + (_isSell ? '' : '/month') : '';
+  const _type = _bhkNum && parseFloat(_bhkNum) > 0 ? _bhkNum + ' BHK' : (p.property?.type || '');
+  const _area = (p.location?.area || '').trim();
+  const _details = [[_type, _area].filter(Boolean).join(', '), _price].filter(Boolean).join(' \u2013 ');
+  const _tail = `Any other vacant or soon-to-be-vacant properties? We\u2019d be happy to list them!\nYou can also list directly at www.homeloop.in. We\u2019ll verify the property through a site visit.`;
   // Booked listing: no point asking "still available?" - only ask the owner for other vacant properties.
   const msg = p.booked
-    ? `Hi, this is from HomeLoop Rental Platform.\n\nIs any other property of yours vacant, or going to be vacated soon? Please let us know, we would like to list the property.\n\nOr you can login to www.homeloop.com and list it on your own, we just verify the property by visiting.`
-    : `Hi, this is from HomeLoop Rental Platform.\n\nIs ${p.propertyId || 'listing'} still available?` + (_details ? `\n${_details}` : '') + `\n${window.location.origin}/property/${p.id}\n\nAlso, is any other property of yours vacant, or going to be vacated soon? Please let us know, we would like to list the property.\n\nOr you can login to www.homeloop.com and list it on your own, we just verify the property by visiting.`;
+    ? `Hi, this is HomeLoop Rental Platform.\n${_tail}`
+    : `Hi, this is HomeLoop Rental Platform.\nIs ${p.propertyId || 'listing'}${_details ? ' (' + _details + ')' : ''} still available?\n${window.location.origin}/property/${p.id}\n${_tail}`;
   let ov = document.getElementById('checkAvailOverlay');
   if (!ov) {
     ov = document.createElement('div');
@@ -17723,14 +17740,10 @@ function shareMyListingViaWhatsApp(id) {
   const p = MY_LISTINGS_CACHE.find(x => x.id === id);
   if (!p) return;
   const status = p.basic?.status || 'For Rent';
-  const isSell = status === 'For Sale';
-  const isShortStay = status === 'Short Stay';
-  const rent = p.price?.rent != null ? fmtRupee(p.price.rent) : null;
   const propertyUrl = `${window.location.origin}/property/${p.id}`;
-  const priceBit = rent ? `${rent}${isSell ? '' : isShortStay ? '/day' : '/month'}, ` : '';
-  const msg = `${status} on HomeLoop\n${p.propertyId} - ${propertyUrl}`;
-  const url = 'https://wa.me/?text=' + encodeURIComponent(msg);
-  window.open(url, '_blank', 'noopener');
+  const details = propDetailsText(p);
+  const msg = `${status}\n${p.propertyId}${details ? ' - ' + details : ''} ${propertyUrl}`;
+  window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank', 'noopener');
 }
 
 /* ═══════════════════════════════════════════════
@@ -19028,7 +19041,7 @@ function shareAnywayAfterSelfReferral() {
 const INVITE_WEBSITE = "https://homeloop.in";
 function buildInviteMessage(tenantName) {
   const greeting = tenantName ? `Hi ${tenantName}! 🏠` : '🏠 Looking for a home?';
-  return `${greeting}\n\nFind verified Rentals\n${INVITE_WEBSITE}`;
+  return `${greeting}\nFind verified Rentals - ${INVITE_WEBSITE}`;
 }
 function shareToTenantWhatsApp(tenantPhone, tenantName) {
   const text = buildInviteMessage(tenantName);
