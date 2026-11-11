@@ -11278,12 +11278,12 @@ window.shareListingToInstagram = async function(id){
 /* ── SHARED: build the availability-check message text ──
    Used by both the single-row "Check" button and the bulk review modal,
    so the wording only needs to change in one place. */
-/* Compact price: 36000 -> 36K, 150000 -> 1.5L, 12000000 -> 1.2Cr */
+/* Compact price: 36000 -> 36k, 150000 -> 1.5L, 12000000 -> 120L (only k and L) */
 function shortPrice(n){
   n = Number(n);
   if(!(n > 0)) return '';
   const f = (v, s) => (Math.round(v * 10) / 10) + s;
-  return n >= 1e7 ? f(n / 1e7, 'Cr') : n >= 1e5 ? f(n / 1e5, 'L') : n >= 1e3 ? f(n / 1e3, 'K') : String(n);
+  return n >= 1e5 ? f(n / 1e5, 'L') : n >= 1e3 ? f(n / 1e3, 'k') : String(n);
 }
 function buildAvailabilityCheckMessage(row){
   const link = row._id ? `${BASE}/property/${row._id}` : '';
@@ -11291,11 +11291,11 @@ function buildAvailabilityCheckMessage(row){
   const type = bhkNum && parseFloat(bhkNum) > 0 ? bhkNum + ' BHK' : (row.pgPropertyType || row.ssPropertyType || '');
   const area = String(row.area || row.loc || '').trim();
   const m = String(row.rent != null && row.rent !== '' ? row.rent : (row.displayPrice || '')).replace(/,/g, '').match(/\d+(?:\.\d+)?/);
-  const amt = m ? shortPrice(m[0]).replace('K', 'k') : '';
-  const price = amt ? '\u20B9' + amt + (row.status === 'For Sale' ? '' : '/month') : '';
-  const details = [[type, area].filter(Boolean).join(', '), price].filter(Boolean).join(' \u2013 ');
-  const tail = `Any other vacant or soon-to-be-vacant properties? We\u2019d be happy to list them!\nYou can also list directly at www.homeloop.in. We\u2019ll verify the property through a site visit.`;
-  return `Hi, this is HomeLoop Rental Platform.\nIs ${row.propertyId || 'listing'}${details ? ' (' + details + ')' : ''} still available?${link ? '\n' + link : ''}\n${tail}`;
+  const amt = m ? shortPrice(m[0]) : '';
+  const price = amt ? '\u20B9' + amt + (row.status === 'For Sale' ? '' : row.status === 'Short Stay' ? '/D' : '/M') : '';
+  const details = [type, area, price].filter(Boolean).join(', ');
+  const tail = `Any other vacant or soon-to-be-vacant properties? We\u2019d be happy to list them!\n\nYou can also list directly at www.homeloop.in. We\u2019ll verify the property through a site visit.`;
+  return `Is ${row.propertyId || 'listing'}${details ? ' - ' + details : ''} still available?${link ? '\n' + link : ''}\n\n${tail}`;
 }
 
 window.checkAvailabilityForRow = async function(id){
