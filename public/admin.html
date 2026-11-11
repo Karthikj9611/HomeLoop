@@ -3887,12 +3887,6 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
 
   <!-- TAB BAR -->
   <div class="tab-bar">
-    <!-- Only shown to the primary admin (ADMIN_EMAIL) — see applyAdminAccessUI() -->
-    <button class="tab-btn" id="tab-admin-access" onclick="switchTab('admin-access')" style="display:none">
-      <i class="fas fa-user-shield"></i>
-      <span class="tab-btn-label" data-mobile="Access">Admin Access</span>
-      <span class="tab-count" id="tab-admin-access-count">—</span>
-    </button>
     <button class="tab-btn" id="tab-visits" onclick="switchTab('visits')">
       <i class="fas fa-globe"></i>
       <span class="tab-btn-label" data-mobile="Visits">Visits</span>
@@ -3908,30 +3902,25 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
       <span class="tab-btn-label" data-mobile="Properties">Properties</span>
       <span class="tab-count" id="tab-properties-count">—</span>
     </button>
-    <button class="tab-btn" id="tab-user-reviews" onclick="switchTab('user-reviews')">
-      <i class="fas fa-star"></i>
-      <span class="tab-btn-label" data-mobile="Ratings">Reviews</span>
-      <span class="tab-count" id="tab-user-reviews-count">—</span>
+    <button class="tab-btn" id="tab-payments" onclick="switchTab('payments')">
+      <i class="fas fa-credit-card"></i>
+      <span class="tab-btn-label" data-mobile="Payments">Payments</span>
+      <span class="tab-count" id="tab-payments-count">—</span>
     </button>
     <button class="tab-btn" id="tab-referrals" onclick="switchTab('referrals')">
       <i class="fas fa-share-nodes"></i>
       <span class="tab-btn-label" data-mobile="Referrals">Referrals</span>
       <span class="tab-count" id="tab-referrals-count">—</span>
     </button>
-    <button class="tab-btn" id="tab-payments" onclick="switchTab('payments')">
-      <i class="fas fa-credit-card"></i>
-      <span class="tab-btn-label" data-mobile="Payments">Payments</span>
-      <span class="tab-count" id="tab-payments-count">—</span>
+    <button class="tab-btn" id="tab-brokers" onclick="switchTab('brokers')">
+      <i class="fas fa-user-tie"></i>
+      <span class="tab-btn-label" data-mobile="Brokers">Brokers</span>
+      <span class="tab-count" id="tab-brokers-count">—</span>
     </button>
     <button class="tab-btn" id="tab-partners" onclick="switchTab('partners')">
       <i class="fas fa-handshake"></i>
       <span class="tab-btn-label" data-mobile="Partners">Partners</span>
       <span class="tab-count" id="tab-partners-count">—</span>
-    </button>
-    <button class="tab-btn" id="tab-brokers" onclick="switchTab('brokers')">
-      <i class="fas fa-user-tie"></i>
-      <span class="tab-btn-label" data-mobile="Brokers">Brokers</span>
-      <span class="tab-count" id="tab-brokers-count">—</span>
     </button>
     <button class="tab-btn" id="tab-appointments" onclick="switchTab('appointments')">
       <i class="fas fa-calendar-days"></i>
@@ -3942,6 +3931,17 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
       <i class="fas fa-video"></i>
       <span class="tab-btn-label" data-mobile="Reviews">Honest Reviews</span>
       <span class="tab-count" id="tab-honest-reviews-count">—</span>
+    </button>
+    <!-- Only shown to the primary admin (ADMIN_EMAIL) — see applyAdminAccessUI() -->
+    <button class="tab-btn" id="tab-admin-access" onclick="switchTab('admin-access')" style="display:none">
+      <i class="fas fa-user-shield"></i>
+      <span class="tab-btn-label" data-mobile="Access">Admin Access</span>
+      <span class="tab-count" id="tab-admin-access-count">—</span>
+    </button>
+    <button class="tab-btn" id="tab-user-reviews" onclick="switchTab('user-reviews')">
+      <i class="fas fa-star"></i>
+      <span class="tab-btn-label" data-mobile="Ratings">Reviews</span>
+      <span class="tab-count" id="tab-user-reviews-count">—</span>
     </button>
   </div>
 
