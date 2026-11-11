@@ -3572,6 +3572,13 @@ main.tab-explore .empty-state{display:none !important}
 /* Schedule Visit can be launched from inside the property view modal (both
    share .add-modal-overlay's z-index:350); bump it above that so it always
    renders on top instead of behind the view modal it was opened from. */
+/* Property view opened from My Account: sits above the account modal (350) but below Schedule Visit (360). */
+#addModal.over-profile{z-index:355}
+/* Clone / Edit pills in the property view header (own listings only) */
+.view-hdr-act{display:none;align-items:center;gap:6px;height:32px;padding:0 12px;border-radius:16px;border:1.5px solid var(--border-2);background:var(--bg);color:var(--text);font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;white-space:nowrap}
+.view-hdr-act svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;flex-shrink:0}
+.view-hdr-act:hover{border-color:var(--brand);color:var(--brand)}
+@media (max-width:420px){.view-hdr-act{padding:0;width:32px;justify-content:center}.view-hdr-act span{display:none}}
 #scheduleModal{z-index:360}
 #paymentModal{z-index:361}
 /* The login/sign-up prompt can now pop up over a property's photo zoom
@@ -4217,12 +4224,10 @@ main.tab-explore .empty-state{display:none !important}
 .pm-phone small{font-weight:500;color:var(--text-3)}
 .pm-phone:hover{text-decoration:underline}
 .pm-phones-act{display:none}
-.pm-more-btn{display:none !important}
 .pm-more-btn svg{fill:currentColor;stroke:none}
-@container (max-width:580px){
-  .pm-compact .profile-mini-actions > .profile-mini-icon-btn:not(.pm-more-btn){display:none !important}
-  .pm-compact .pm-more-btn{display:inline-flex !important;align-items:center;gap:6px;width:auto !important;padding:0 14px;font-size:12.5px;font-weight:700;color:var(--text-2)}
-}
+/* All listing actions (View, Duplicate, Edit, Booked, Share, owner Call/WhatsApp) live behind one "More" button at every width. */
+.pm-compact .profile-mini-actions > .profile-mini-icon-btn:not(.pm-more-btn){display:none !important}
+.pm-compact .pm-more-btn{display:inline-flex !important;align-items:center;gap:6px;width:auto !important;padding:0 14px;font-size:12.5px;font-weight:700;color:var(--text-2)}
 #listingActionsOverlay{z-index:9000}
 .la-title{font-size:17px;font-weight:700;margin-bottom:2px}
 .la-sub{font-size:13px;color:var(--text-3);margin-bottom:14px}
@@ -7332,6 +7337,8 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
       </div>
       <div style="display:flex;align-items:center;gap:10px">
       <button type="button" id="viewShareHeaderBtn" class="view-share-hdr" aria-label="Share" title="Share" style="display:none"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z"/></svg></button>
+      <button type="button" id="viewCloneBtn" class="view-hdr-act" title="Clone - start a new listing pre-filled with these details" style="display:none"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><span>Clone</span></button>
+      <button type="button" id="viewEditBtn" class="view-hdr-act" title="Edit this listing" style="display:none"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg><span>Edit</span></button>
       <button type="button" id="clearFormBtn" onclick="confirmClearAddModalDraft()" style="background:transparent;border:1.5px solid rgba(255,255,255,.4);color:#fff;border-radius:16px;padding:0 12px;height:32px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">Clear form</button>
       <button class="modal-close" style="position:static;background:var(--brand);border:none;color:#fff;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;box-shadow:0 3px 8px rgba(0,0,0,.25);transition:background .15s,transform .15s" onmouseover="this.style.background='var(--brand-hover)';this.style.transform='scale(1.06)'" onmouseout="this.style.background='var(--brand)';this.style.transform='scale(1)'" onclick="closeAddModal()" aria-label="Close">
         <svg viewBox="0 0 24 24" aria-hidden="true" stroke="#fff" style="width:16px;height:16px;stroke-width:2.6;stroke:#fff !important"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -14701,6 +14708,11 @@ function openDetailReal(id) {
   })();
   document.getElementById('viewUnlockBtn').onclick = () => openPaymentModal('single_property', String(p.id),
     `${p.propertyId} - ${pTypeLabel(p)} - ${(p.location && p.location.area) || ''}`.trim().replace(/ - $/, ''));
+  const _isMine = typeof MY_LISTINGS_CACHE !== 'undefined' && MY_LISTINGS_CACHE.some(x => x.id === p.id);
+  document.getElementById('viewCloneBtn').style.display = _isMine ? 'inline-flex' : 'none';
+  document.getElementById('viewEditBtn').style.display  = _isMine ? 'inline-flex' : 'none';
+  document.getElementById('viewCloneBtn').onclick = () => manageListingFromView(p.id, p.propertyId, 'clone');
+  document.getElementById('viewEditBtn').onclick  = () => manageListingFromView(p.id, p.propertyId, 'edit');
   const _footerHasContent = ['viewActionsRow', 'viewActionsRow2', 'viewUnlockRow', 'viewOwnerMainRow', 'viewOwnerAltRow', 'viewOwnerCareRow', 'viewNavigateRow']
     .some(id => document.getElementById(id).style.display !== 'none');
   footerEl.style.display = _footerHasContent ? 'block' : 'none';
@@ -14712,6 +14724,9 @@ function openDetailReal(id) {
 
   document.getElementById('addModalBox').classList.add('view-mode');
   document.getElementById('addModal').classList.add('view-mode');
+  _viewOverProfile = document.getElementById('profileModal').classList.contains('open');
+  const _laOv = document.getElementById('listingActionsOverlay');
+  document.getElementById('addModal').classList.toggle('over-profile', _viewOverProfile || !!(_laOv && _laOv.classList.contains('open')));
   document.getElementById('addModal').classList.add('open');
   lockBodyScroll();
 
@@ -15149,13 +15164,27 @@ function buildAgentFormTable(p) {
   return '<div class="detail-table-card"><table class="detail-table"><tbody>' + rows.join('') + '</tbody></table></div>';
 }
 
+/* Edit / Duplicate from inside the property view. The view and the listing form are the same modal, so the view
+   is closed first and the form opens after its deferred clean-up has run (queued after closeDetail's own). */
+let _viewOverProfile = false; // the property view was opened on top of My Account
+function manageListingFromView(id, propertyLabel, kind) {
+  closeDetail();
+  _afterPaint(function () { if (kind === 'edit') editMyListing(id, propertyLabel || ''); else cloneMyListing(id, propertyLabel || ''); });
+}
 function closeDetail() {
+  const _wasOpen = document.getElementById('addModal').classList.contains('open');
   document.getElementById('addModal').classList.remove('open');
   document.getElementById('addModal').classList.remove('view-mode');
+  document.getElementById('addModal').classList.remove('over-profile');
   propertyViewMode = false;
-  unlockBodyScroll();
+  if (_wasOpen) unlockBodyScroll();
   _afterPaint(function () {
     if (propertyViewMode) return; // a property was opened again meanwhile — don't touch it
+    if (_viewOverProfile) {
+      _viewOverProfile = false;
+      const _pm = document.getElementById('profileModal');
+      if (_pm && !_pm.classList.contains('open')) { _pm.classList.add('open'); lockBodyScroll(); }
+    }
     document.getElementById('addModalBox').classList.remove('view-mode');
     const clearBtn = document.getElementById('clearFormBtn');
     if (clearBtn) clearBtn.style.display = '';
@@ -15168,6 +15197,8 @@ function closeDetail() {
     if (sub) { sub.style.display = 'none'; sub.textContent = ''; }
     document.getElementById('viewActionsRow').style.display = 'none';
     document.getElementById('viewActionsRow2').style.display = 'none';
+    document.getElementById('viewCloneBtn').style.display = 'none';
+    document.getElementById('viewEditBtn').style.display = 'none';
     document.getElementById('viewActionsFooter').style.display = 'none';
     clearDeepLinkUrl();
   });
@@ -16135,8 +16166,9 @@ function closeAddModal() {
   // Do NOT clear the draft here — closing (even accidentally) should not
   // wipe what the user has already filled in. It's cleared only on
   // successful submission or explicit "Clear form".
+  const _addWasOpen = document.getElementById('addModal').classList.contains('open');
   document.getElementById('addModal').classList.remove('open');
-  unlockBodyScroll();
+  if (_addWasOpen) unlockBodyScroll();
   _afterPaint(saveListingDraftNow);
 }
 
@@ -17415,7 +17447,7 @@ function myListingCardHtml(p) {
     const thumb = img ? `style="background-image:url('${safeUrl(img)}')"` : '';
     const rent = p.price?.rent != null ? fmtRupee(p.price.rent) : '—';
     const daysLive = p.createdAt ? Math.max(0, Math.floor((Date.now() - new Date(p.createdAt).getTime()) / 86400000)) : null;
-    return `<div class="profile-mini-card pm-compact" onclick="closeProfileModal();openDetail('${p.id}')"><div class="pm-row">
+    return `<div class="profile-mini-card pm-compact" onclick="openDetail('${p.id}')"><div class="pm-row">
       <div class="profile-mini-thumb" ${thumb}>${img ? '' : 'No photo'}</div>
       <div class="profile-mini-body">
         <div class="pm-line pm-line2 pm-line-main">
@@ -17668,9 +17700,11 @@ function agentOwnerContactBtns(p) {
 }
 /* Mobile: one "More" button on each listing card opens this sheet with every action, labelled. */
 let _laFns = [];
+let _laKeep = [];
 function openListingActions(id) {
   const p = MY_LISTINGS_CACHE.find(x => x.id === id); if (!p) return;
   const ic = {
+    view:  '<svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>',
     copy:  '<svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>',
     edit:  '<svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>',
     lock:  '<svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>',
@@ -17680,13 +17714,12 @@ function openListingActions(id) {
   };
   const pid = p.propertyId || '';
   const items = [];
-  items.push({ i: ic.copy, t: 'Duplicate Listing', d: 'Start a new listing pre-filled with these details', f: () => cloneMyListing(id, pid) });
-  items.push({ i: ic.edit, t: 'Edit Listing Details', d: 'Update price, details, photos and availability', f: () => editMyListing(id, pid) });
+  items.push({ i: ic.view, t: 'View Listing', d: 'See the listing the way tenants see it', f: () => openDetail(id), keep: true });
   items.push({ i: ic.lock, t: p.booked ? 'Mark as Available' : 'Mark as Booked', d: p.booked ? 'Show this listing on the website again' : 'Take it off the website once a tenant is finalised', c: 'la-booked', f: () => confirmToggleBooked(id, document.createElement('button')) });
   items.push({ i: ic.wa, t: 'Share via WhatsApp', d: 'Send the listing link to any contact', c: 'la-wa', f: () => shareMyListingViaWhatsApp(id) });
   if (isAgentUser()) {
     const nums = ownerDirectNumbers(p);
-    if (nums.length) items.push({ i: ic.cal, t: 'Confirm Availability', d: 'Ask the owner if the property is still vacant', f: () => checkAvailabilityListing(id) });
+    if (nums.length) items.push({ i: ic.cal, t: 'Confirm Availability', d: 'Ask the owner if the property is still vacant', f: () => checkAvailabilityListing(id), keep: true });
     nums.forEach(n => {
       const tag = n.which === 'alt' ? ' (alt)' : '';
       items.push({ i: ic.phone, t: 'Call Owner' + tag, d: n.digits, c: 'la-call', f: () => callListingOwner(id, n.which) });
@@ -17694,6 +17727,7 @@ function openListingActions(id) {
     });
   }
   _laFns = items.map(x => x.f);
+  _laKeep = items.map(x => !!x.keep);
   let ov = document.getElementById('listingActionsOverlay');
   if (!ov) {
     ov = document.createElement('div');
@@ -17716,7 +17750,9 @@ function closeListingActions() {
 }
 function runListingAction(k) {
   const f = _laFns[k];
-  closeListingActions();
+  // Actions that open another screen (View / Clone / Edit / Confirm availability) open it ON TOP of this sheet, which stays
+  // open underneath; the others (share, call, mark booked) finish here, so the sheet closes.
+  if (!_laKeep[k]) closeListingActions();
   if (f) f();
 }
 function shareMyListingViaWhatsApp(id) {
@@ -18428,7 +18464,6 @@ function openEditListingFull(id) {
   const p = MY_LISTINGS_CACHE.find(x => x.id === id);
   if (!p) { showToast("This listing is no longer available.", 'error'); return; }
 
-  closeProfileModal();
   editingPropertyId = id;
   resetListingForm();
   unlockIdentityFieldsForEdit();
@@ -18518,17 +18553,16 @@ function openCloneListingFull(id) {
   const p = MY_LISTINGS_CACHE.find(x => x.id === id);
   if (!p) { showToast("This listing is no longer available.", 'error'); return; }
 
-  closeProfileModal();
   resetListingForm();
   applyImportedProperty(p);
-  // applyImportedProperty() copies the source listing's owner name/phone/
-  // email too. Owner name is left as copied (it's an editable field, not
-  // an account-locked one — cloning "same building, another unit" usually
-  // means the same owner). Phone/email are still overwritten back to the
-  // logged-in account and re-locked, exactly like starting any other new
-  // listing.
+  // A clone copies EVERYTHING from the source listing, including the owner's name / phone / email.
+  // lockIdentityFieldsForNewListing() would blank them for agents (or re-fill them from the login for
+  // owners), so run it only to unlock the fields and then put the copied values back.
+  const _ownerKeep = ['f-ownerName', 'f-ownerPhone', 'f-ownerEmail'].map(fid => [fid, (document.getElementById(fid) || {}).value]);
   lockIdentityFieldsForNewListing();
-  applyAvailableFromDates(true, true); // a clone always starts with today's date as "Available from" (not the source listing's date)
+  _ownerKeep.forEach(([fid, v]) => { const el = document.getElementById(fid); if (el && v) el.value = v; });
+  // "Available from" is kept as copied; it only falls back to today when blank or already in the past.
+  applyAvailableFromDates(true);
   onFTypeChange(document.getElementById('f-type').value);
 
   // Unlike editing, the type is free to change — this is a brand-new,
@@ -18577,7 +18611,7 @@ function loadSavedListings() {
     const img = (p.media?.images || [])[0];
     const thumb = img ? `style="background-image:url('${safeUrl(img)}')"` : '';
     const rent = p.price?.rent != null ? fmtRupee(p.price.rent) : '—';
-    return `<div class="profile-mini-card" onclick="closeProfileModal();openDetail('${p.id}')">
+    return `<div class="profile-mini-card" onclick="openDetail('${p.id}')">
       <div class="profile-mini-thumb" ${thumb}>${img ? '' : 'No photo'}</div>
       <div class="profile-mini-body">
         <div class="profile-mini-title">${esc(p.propertyId) || 'Untitled listing'}</div>
@@ -21746,6 +21780,7 @@ function submitListing() {
     document.getElementById('addModal').classList.remove('open');
     unlockBodyScroll();
     fetchProperties();
+    if (document.getElementById('profileModal').classList.contains('open')) loadMyListings(); // My Account stayed open underneath
     var _u = getLoggedInUser(); var _acct = (_u && _u.accountType) || '';
     var _lb2 = (newProp.basic && newProp.basic.listedBy) || '';
     showToast((_acct === 'broker' || _acct === 'builder' || _lb2 === 'Broker' || _lb2 === 'Builder' || (newProp.basic && newProp.basic.status === 'PG'))
@@ -21760,6 +21795,34 @@ function submitListing() {
     if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = isEditing ? 'Save changes' : 'Submit listing'; }
   });
 }
+
+
+/* ═══════════════════════════════════════════════
+   MODAL STACK — opening a modal never closes the ones under it, and the newest one always renders on top.
+   Closing it simply reveals the previous modal. Watches the 'open' class on every overlay, and when one
+   opens at or below an already-open overlay's z-index, lifts it just above (its own CSS z-index is kept otherwise).
+═══════════════════════════════════════════════ */
+(function () {
+  const SEL = '.add-modal-overlay, .modal-overlay, .lightbox-overlay';
+  const wasOpen = new WeakMap();
+  const isOpen = el => el.classList.contains('open');
+  const zOf = el => parseInt(getComputedStyle(el).zIndex, 10) || 0;
+  function sync(el) {
+    const now = isOpen(el), before = wasOpen.get(el) || false;
+    if (now === before) return;            // only react to open <-> closed, not other class changes
+    wasOpen.set(el, now);
+    if (!now) { el.style.zIndex = ''; return; }
+    el.style.zIndex = '';
+    let top = 0;
+    document.querySelectorAll(SEL).forEach(o => {
+      if (o !== el && isOpen(o) && getComputedStyle(o).display !== 'none') top = Math.max(top, zOf(o));
+    });
+    if (zOf(el) <= top) el.style.zIndex = String(top + 1);
+  }
+  new MutationObserver(muts => {
+    muts.forEach(m => { const el = m.target; if (el && el.matches && el.matches(SEL)) sync(el); });
+  }).observe(document.body, { subtree: true, attributes: true, attributeFilter: ['class'] });
+})();
 
 /* ═══════════════════════════════════════════════
    TOAST
