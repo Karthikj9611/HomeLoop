@@ -236,9 +236,11 @@ ul{list-style:none}
    .prop-heart rule so this always wins regardless of stylesheet order. */
 [id$="BookedGrid"] .prop-heart,
 #recentlyViewedStrip .prop-heart{display:none}
-/* Viewed strip: no action buttons on the cards (views, call, WhatsApp, directions, heart). They stay on the main grid and inside the property view. */
-#recentlyViewedStrip .prop-right-badges,
-#recentlyViewedStrip .prop-icon-badge{display:none !important}
+/* Viewed strip: action buttons (views, call, WhatsApp, directions) are shown on desktop and hidden on mobile. */
+@media (max-width:768px){
+  #recentlyViewedStrip .prop-right-badges,
+  #recentlyViewedStrip .prop-icon-badge{display:none !important}
+}
 /* View count isn't useful once a listing is off-market/booked, so the eye
    icon (and its unread-style count bubble) is hidden here too — scoped the
    same way as the heart rule above, Booked grids only. */
@@ -6499,8 +6501,7 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
       </button>
       <div class="section-divider-inner" style="flex:1;min-width:0">
         <span class="section-divider-label promoted-label">
-          <span class="hdr-ico" aria-hidden="true">🕒</span>
-          Viewed
+          <span class="hdr-ico" aria-hidden="true">🕒</span>Viewed<span class="section-divider-count" id="viewedCount"></span>
         </span>
       </div>
       <button class="recently-viewed-clear" onclick="clearRecentlyViewed()" style="flex-shrink:0" aria-label="Clear all">
@@ -10388,6 +10389,7 @@ function renderRecentlyViewed() {
     return;
   }
   section.style.display = '';
+  const _vc = document.getElementById('viewedCount'); if (_vc) _vc.textContent = ids.length;
   strip.innerHTML = ids.map(id => recentlyViewedCardHTML(recentlyViewedData[id])).join('');
   observeCardImgs(strip);
   requestAnimationFrame(syncRecentlyViewedCardWidth);
@@ -10443,11 +10445,13 @@ function syncRecentlyViewedCardWidth() {
   // Booked's markup comes first in the DOM, so without the exclusion this
   // would sample an already-shrunk Booked card and compound the shrink on
   // every resize instead of always scaling off a true full-size reference.
-  const sample = document.querySelector('.prop-grid:not([id$="BookedGrid"]) .prop-card');
+  // Viewed cards match the Rent cards exactly (same width, same card layout); Booked strips stay compact.
+  const sample = document.querySelector('#rentGrid .prop-card') || document.querySelector('.prop-grid:not([id$="BookedGrid"]) .prop-card');
   if (!sample) return;
-  const w = sample.getBoundingClientRect().width * RV_CARD_SCALE;
+  const fullW = sample.getBoundingClientRect().width;
+  const w = fullW * RV_CARD_SCALE;
   if (w <= 0) return;
-  if (strip) strip.style.setProperty('--rv-card-w', w + 'px');
+  if (strip) strip.style.setProperty('--rv-card-w', fullW + 'px');
   bookedGrids.forEach(grid => grid.style.setProperty('--rv-card-w', w + 'px'));
 }
 window.addEventListener('resize', () => { clearTimeout(window._rvWidthTimer); window._rvWidthTimer = setTimeout(syncRecentlyViewedCardWidth, 150); });
@@ -12602,7 +12606,7 @@ function renderCompareTable() {
 
     section('Media & Amenities'),
     { label: 'Video tour', get: p => p.media?.video ? '<span class="compare-yes">Available</span>' : '<span class="compare-no">Not added</span>' },
-    { label: 'Description', get: p => p.media?.desc ? `<span class="compare-desc-cell">${esc(p.media.desc)}</span>` : '—' },
+    ...(isAgentUser() ? [{ label: 'Description', get: p => p.media?.desc ? `<span class="compare-desc-cell">${esc(p.media.desc)}</span>` : '—' }] : []),
     { label: 'Amenities', get: p => {
         const list = (p.amenities?.selected || []).slice();
         if (p.amenities?.extra) list.push(...p.amenities.extra.split(',').map(s => s.trim()).filter(Boolean));
@@ -14878,8 +14882,9 @@ function buildDetailTable(p) {
     kv('Additional amenities', amenities.extra, true),
   ]);
 
-  // Description is hidden in the property view. Set HIDE_DESCRIPTION_IN_VIEW to false to show it again.
-  if (!HIDE_DESCRIPTION_IN_VIEW) {
+  // Description in the property view is for agents only (non-agents / guests never see it).
+  // HIDE_DESCRIPTION_IN_VIEW = true hides it for everyone.
+  if (!HIDE_DESCRIPTION_IN_VIEW && isAgentUser()) {
     section('📝 Description', 'sec-media-amenities', [
       kv('Description', media.desc, true),
     ]);
@@ -14914,13 +14919,17 @@ function buildAgentFormTable(p) {
   const rows = [];
   const EMPTY = '<span style="opacity:.45">—</span>';
   function section(label, rowList) {
+    // Empty fields are not shown; a section with nothing filled in is skipped entirely.
+    const list = rowList.filter(Boolean);
+    if (!list.length) return;
     rows.push('<tr class="detail-section-row sec-listing-info"><td colspan="2">' + label + '</td></tr>');
-    rows.push(...rowList);
+    rows.push(...list);
   }
   function txt(v) { return (v === null || v === undefined) ? '' : String(v).trim(); }
   function kvHtml(label, html, full) {
+    if (!html) return null; // empty field -> row is not shown
     return '<tr' + (full ? ' class="detail-row-full"' : '') + '><td class="detail-row-label">' + esc(label) +
-           '</td><td class="detail-row-value">' + (html || EMPTY) + '</td></tr>';
+           '</td><td class="detail-row-value">' + html + '</td></tr>';
   }
   function kv(label, value, full) { const t = txt(value); return kvHtml(label, t ? esc(t) : '', full); }
   // Plain external link (video, images…) — opens in a new tab.
@@ -15119,12 +15128,12 @@ function buildAgentFormTable(p) {
            n + ' ' + word + (n === 1 ? '' : 's') + '</div>';
   };
   section('📸 Media & Description', [
-    kvHtml('Images (' + imgs.length + ')', cntBadge(imgs.length, 'image') + (imgs.length
+    kvHtml('Images', cntBadge(imgs.length, 'image') + (imgs.length
       ? '<div style="display:flex;flex-wrap:wrap;gap:6px">' + imgs.map(u =>
           '<a href="' + esc(u) + '" target="_blank" rel="noopener"><img src="' + esc(u) +
           '" alt="" loading="lazy" style="width:64px;height:64px;object-fit:cover;border-radius:8px"></a>').join('') + '</div>'
       : ''), true),
-    kvHtml('Video tour (' + vidCount + ')', cntBadge(vidCount, 'video') + (vidCount
+    kvHtml('Video tour', cntBadge(vidCount, 'video') + (vidCount
       ? '<a href="' + esc(vidUrl) + '" target="_blank" rel="noopener" style="word-break:break-all;text-decoration:underline">' + esc(vidUrl) + '</a>'
       : (vidUrl ? esc(vidUrl) : '')), true),
     kv('Description', media.desc, true),
@@ -22746,6 +22755,26 @@ document.addEventListener('keydown', function(e){ if (e.key === 'Escape') closeP
 .profile-card-float{box-shadow:0 14px 34px -12px rgba(190,70,60,.28);border:1px solid #f6e1d7}
 /* My Account: avatar/name/email card removed (kept in DOM so existing JS refs still work). Banner no longer needs the extra bottom space it reserved for the overlap. */
 .profile-card-float{display:none !important}
+/* Desktop: Viewed cards look like the Rent cards (same image ratio, text sizes, spacing). Mobile keeps the compact 3-up cards. */
+@media (min-width:769px){
+  #recentlyViewedStrip .prop-img{aspect-ratio:7/6}
+  #recentlyViewedStrip .prop-body{padding:14px 15px 13px}
+  #recentlyViewedStrip .prop-title{font-size:12px;margin-top:0}
+  #recentlyViewedStrip .prop-loc{font-size:12px;margin-top:5px}
+  #recentlyViewedStrip .prop-stats{margin-top:10px;gap:0}
+  #recentlyViewedStrip .prop-stat{font-size:12px}
+  #recentlyViewedStrip .prop-stat:has(.icon-furnish){display:flex}
+  /* button stack sits at the same offset as on Rent cards (the compact Viewed offset let the red count badge touch the card's top strip) */
+  #recentlyViewedStrip .prop-card-top-row{top:12px;left:10px}
+  /* buttons at the same size as on the Rent cards */
+  #recentlyViewedStrip .prop-right-badges{gap:10px}
+  #recentlyViewedStrip .prop-icon-badge{width:26px;height:26px}
+  #recentlyViewedStrip .prop-icon-badge.prop-views-float svg{width:13px;height:13px}
+  #recentlyViewedStrip .prop-icon-badge.prop-icon-call svg{width:13px;height:13px}
+  #recentlyViewedStrip .prop-icon-badge.prop-icon-wa svg{width:15px;height:15px}
+  #recentlyViewedStrip .prop-icon-badge.prop-icon-nav svg{width:17px;height:17px}
+  #recentlyViewedStrip .prop-icon-badge.prop-views-float .prop-views-float-badge{top:-6px;left:-6px;min-width:15px;height:15px;font-size:8.5px}
+}
 .profile-banner{padding-bottom:16px !important}
 .profile-avatar-lg,.about-founder-avatar,.about-partner-avatar{background:var(--warm-grad)}
 .profile-avatar-lg{box-shadow:0 0 0 4px #fff,0 0 0 6px #ffd9cb}
