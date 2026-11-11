@@ -5793,6 +5793,7 @@ main.tab-explore .empty-state{display:none !important}
   max-height:min(92vh,calc(100vh - 32px));
   max-height:min(92vh,calc(100dvh - 32px));
 }
+@media (min-width:641px){.menu-item.menu-item-notif{display:none !important}}
 </style>
 <script>
 /* Guests can browse freely — no full-page login gate. Every same-origin /api/ call still carries
@@ -9594,7 +9595,7 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
       <span id="menuAuthLabel">Log in / Sign up</span>
     </div>
-    <div class="menu-item" onclick="toggleMenuPanel(); openNotifModal();">
+    <div class="menu-item menu-item-notif" onclick="toggleMenuPanel(); openNotifModal();">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
       Notifications
       <span class="menu-item-badge" id="menuNotifCount">0</span>
@@ -16674,6 +16675,10 @@ function userAuthHeaders(extra) {
   const user = getLoggedInUser();
   return Object.assign({ 'x-user-key': (user && user.userKey) || '' }, extra || {});
 }
+async function confirmLogout() {
+  const ok = await showConfirmDialog({ title: 'Log out?', message: 'You will need to log in again to manage your listings.', okText: 'Log out', cancelText: 'Cancel', variant: 'info' });
+  if (ok) logoutUser();
+}
 async function logoutUser() {
   const user = getLoggedInUser();
   try {
@@ -16694,7 +16699,8 @@ function updateNavAuth() {
   const navBtn = document.getElementById('navAuthBtn');
   const qmbIcon = document.getElementById('qmbProfileIcon');
   if (user) {
-    navBtn.innerHTML = '';
+    navBtn.innerHTML = '<div class="icon-btn" onclick="confirmLogout()" aria-label="Log out" title="Log out">'
+      + '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></div>';
     setAvatarContent(document.getElementById('menuAvatar'), user);
     document.getElementById('menuUserName').textContent = user.name || 'User';
     document.getElementById('menuUserSub').textContent = user.email || 'Logged in';
@@ -17556,7 +17562,7 @@ function renderMyListings() {
     const qd = q.replace(/\D/g, '');
     return _isAg && qd.length >= 2 && ownerDirectNumbers(p).some(n => n.digits.includes(qd));
   };
-  const _active = MY_LISTINGS_CACHE.filter(p => !p.booked);
+  const _active = MY_LISTINGS_CACHE.filter(p => !p.booked).sort((a, b) => (new Date(a.createdAt || 0).getTime() || 0) - (new Date(b.createdAt || 0).getTime() || 0)); // oldest listed first, newest last
   const _bt = p => new Date(p.bookedAt || p.bookedOn || p.createdAt || 0).getTime() || 0; // when it was booked (falls back to listed date)
   const _booked = MY_LISTINGS_CACHE.filter(p => p.booked && (window._bookedSub !== 'us' || _byUs(p))).sort((a, b) => (_bt(b) - _bt(a)) || (new Date(b.createdAt || 0) - new Date(a.createdAt || 0))); // newest booking first: today, yesterday, …
   const _cnt = document.getElementById('profileBookedCount');
