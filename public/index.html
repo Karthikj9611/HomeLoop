@@ -3688,6 +3688,12 @@ main.tab-explore .empty-state{display:none !important}
 .detail-rail .prop-icon-badge{width:38px;height:38px;cursor:pointer}
 .detail-rail .prop-icon-badge svg{width:19px;height:19px}
 .detail-rail .prop-icon-badge.prop-icon-wa svg{width:20px;height:20px}
+.prop-icon-badge.prop-icon-share{background:#25d366;cursor:pointer}
+.detail-gallery .detail-share{position:absolute;right:14px;bottom:14px;z-index:6;width:38px;height:38px}
+@media (max-width:700px){.detail-gallery .detail-share{right:10px;bottom:10px;width:32px;height:32px}}
+.detail-rail .prop-icon-badge.prop-icon-share svg{width:18px;height:18px}
+/* Share moved from the header into the photo rail (last icon) */
+#viewShareHeaderBtn{display:none !important}
 .detail-rail .prop-heart{width:38px;height:38px}
 .detail-rail .prop-heart svg{width:19px;height:19px}
 .detail-rail .prop-icon-badge.prop-views-float svg,.detail-rail .prop-icon-badge.prop-compare-float svg{width:19px;height:19px}
@@ -5670,6 +5676,13 @@ main.tab-explore .empty-state{display:none !important}
 .add-modal.view-mode .view-actions-footer .modal-btn-whatsapp{
   font-weight:700;letter-spacing:-.01em;border-radius:10px;padding:13px;
 }
+#viewActionsRow2 .modal-btn-primary,#viewActionsRow2 .modal-btn-whatsapp{min-width:0;white-space:nowrap}
+#viewActionsRow2 .unlock-inline{flex:1.15}
+@media (max-width:480px){
+  #viewActionsRow2{gap:6px !important}
+  #viewActionsRow2 .modal-btn-primary,#viewActionsRow2 .modal-btn-whatsapp{padding:12px 6px !important;font-size:12.5px;gap:4px}
+  #viewActionsRow2 svg{width:14px;height:14px}
+}
 .add-modal.view-mode .view-actions-footer .modal-btn-primary{
   box-shadow:0 6px 16px -6px rgba(224,58,82,.45);
 }
@@ -7278,7 +7291,7 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
         <div style="color:#fff;font-size:12px;font-weight:600;margin-top:2px;display:none" id="addModalSubtitleText"></div>
       </div>
       <div style="display:flex;align-items:center;gap:10px">
-      <button type="button" id="viewShareHeaderBtn" class="view-share-hdr" aria-label="Share on WhatsApp" title="Share on WhatsApp" style="display:none"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.6 6.32A8.86 8.86 0 0 0 12.05 4C7.4 4 3.6 7.8 3.6 12.45c0 1.6.45 3.13 1.27 4.45L4 21l4.2-1.1a8.83 8.83 0 0 0 4.07.99h.01c4.65 0 8.45-3.8 8.45-8.45a8.4 8.4 0 0 0-2.93-5.62zM12.06 19.5a7.05 7.05 0 0 1-3.6-.99l-.26-.15-2.67.7.71-2.6-.17-.27a6.99 6.99 0 0 1-1.08-3.74c0-3.86 3.15-7 7.04-7 1.88 0 3.64.73 4.97 2.06a6.96 6.96 0 0 1 2.06 4.96c0 3.87-3.16 7.03-7 7.03zm3.86-5.27c-.21-.1-1.24-.62-1.43-.68-.19-.07-.33-.1-.47.1-.14.21-.54.68-.66.81-.12.14-.24.16-.45.05-.21-.1-.87-.32-1.66-1.03-.61-.55-1.03-1.22-1.15-1.43-.12-.21-.01-.32.1-.43.1-.1.21-.26.32-.39.1-.13.14-.21.21-.36.07-.14.04-.27-.02-.38-.07-.1-.62-1.49-.85-2.04-.18-.43-.36-.37-.5-.38h-.42c-.14 0-.38.05-.58.27-.21.21-.79.77-.79 1.88 0 1.1.81 2.18.92 2.33.12.14 1.58 2.42 3.83 3.3 1.9.75 2.28.6 2.7.56.42-.04 1.36-.55 1.55-1.09.19-.53.19-.98.13-1.08-.05-.1-.21-.16-.43-.27z"/></svg></button>
+      <button type="button" id="viewShareHeaderBtn" class="view-share-hdr" aria-label="Share" title="Share" style="display:none"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z"/></svg></button>
       <button type="button" id="clearFormBtn" onclick="confirmClearAddModalDraft()" style="background:transparent;border:1.5px solid rgba(255,255,255,.4);color:#fff;border-radius:16px;padding:0 12px;height:32px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">Clear form</button>
       <button class="modal-close" style="position:static;background:var(--brand);border:none;color:#fff;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;box-shadow:0 3px 8px rgba(0,0,0,.25);transition:background .15s,transform .15s" onmouseover="this.style.background='var(--brand-hover)';this.style.transform='scale(1.06)'" onmouseout="this.style.background='var(--brand)';this.style.transform='scale(1)'" onclick="closeAddModal()" aria-label="Close">
         <svg viewBox="0 0 24 24" aria-hidden="true" stroke="#fff" style="width:16px;height:16px;stroke-width:2.6;stroke:#fff !important"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -7959,7 +7972,7 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
         </button>
         <button class="modal-btn-whatsapp" id="viewWhatsappBtn">
           <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.6 6.32A8.86 8.86 0 0 0 12.05 4C7.4 4 3.6 7.8 3.6 12.45c0 1.6.45 3.13 1.27 4.45L4 21l4.2-1.1a8.83 8.83 0 0 0 4.07.99h.01c4.65 0 8.45-3.8 8.45-8.45a8.4 8.4 0 0 0-2.93-5.62zM12.06 19.5a7.05 7.05 0 0 1-3.6-.99l-.26-.15-2.67.7.71-2.6-.17-.27a6.99 6.99 0 0 1-1.08-3.74c0-3.86 3.15-7 7.04-7 1.88 0 3.64.73 4.97 2.06a6.96 6.96 0 0 1 2.06 4.96c0 3.87-3.16 7.03-7 7.03zm3.86-5.27c-.21-.1-1.24-.62-1.43-.68-.19-.07-.33-.1-.47.1-.14.21-.54.68-.66.81-.12.14-.24.16-.45.05-.21-.1-.87-.32-1.66-1.03-.61-.55-1.03-1.22-1.15-1.43-.12-.21-.01-.32.1-.43.1-.1.21-.26.32-.39.1-.13.14-.21.21-.36.07-.14.04-.27-.02-.38-.07-.1-.62-1.49-.85-2.04-.18-.43-.36-.37-.5-.38h-.42c-.14 0-.38.05-.58.27-.21.21-.79.77-.79 1.88 0 1.1.81 2.18.92 2.33.12.14 1.58 2.42 3.83 3.3 1.9.75 2.28.6 2.7.56.42-.04 1.36-.55 1.55-1.09.19-.53.19-.98.13-1.08-.05-.1-.21-.16-.43-.27z"/></svg>
-          WhatsApp
+          <span id="viewWhatsappBtnLabel">Agent</span>
         </button>
       </div>
       <!-- Single Property Plan: pay ₹150 to unlock this listing's owner contact (hidden once unlocked / public) -->
@@ -8472,7 +8485,7 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
           <!-- After paying in your UPI app: upload the payment screenshot and submit for verification -->
           <div id="paymentProofBlock">
           <div class="form-group" style="margin-top:16px">
-            <label class="form-label">Payment screenshot <span style="color:var(--brand)">*</span></label>
+            <label class="form-label">Payment screenshot <span style="color:var(--text-3);font-weight:400">(optional)</span></label>
             <input class="form-input" type="file" id="pay-screenshot" accept="image/*" />
           </div>
           <button class="form-submit" id="paymentSubmitBtn" onclick="submitPaymentProof()">I've paid — submit for verification</button>
@@ -8852,7 +8865,7 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
           <svg class="plan-chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
         </button>
         <div class="plan-body"><div class="plan-body-inner">
-          <div class="svc-price-note charges-refer-note"><strong>Note:</strong> Pay the deposit only with the <b>owner, tenant and our Coordinator</b> present.</div>
+          <div class="svc-price-note charges-refer-note"><strong>Note:</strong> Pay the deposit only with the <b>owner, tenant and our Agent</b> present.</div>
         </div></div>
       </div>
       <div class="charges-or-divider">and</div>
@@ -9581,7 +9594,7 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
     <div class="panel-empty">No shortlisted properties yet.<br>Tap the ♥ on any listing to save it.</div>
   </div>
   <div class="panel-enquire" id="panelEnquire" hidden>
-    <div class="panel-enquire-hint">Tap ♥ on up to 6 listings, then enquire once to confirm availability with the coordinator.</div>
+    <div class="panel-enquire-hint">Tap ♥ on up to 6 listings, then enquire once to confirm availability with the agent.</div>
     <button class="panel-enquire-btn" id="panelEnquireBtn" onclick="enquireShortlistAtOnce()"></button>
     <div class="panel-enquire-agents" id="panelEnquireAgents" hidden></div>
   </div>
@@ -11233,7 +11246,7 @@ function buildImgSlider(p, fg, uidSuffix, videoSlideHtml) {
   if (_slideCount >= 2 && uidSuffix !== '-cmp') {
     dots = `<div class="card-slide-dots${_slideCount > 10 ? ' tiny' : ''}" aria-hidden="true">${Array.from({length:_slideCount},(_,i)=>`<span class="${i===0?'active':''}"></span>`).join('')}</div>`;
   }
-  return `<div class="img-slides" id="${uid}"${p.ownListing ? ' data-own="1"' : ''}>${imgSlides}${videoSlide}</div>${dots}`;
+  return `<div class="img-slides" id="${uid}"${(p.ownListing || p.singleUnlocked) ? ' data-own="1"' : ''}>${imgSlides}${videoSlide}</div>${dots}`;
 }
 
 // Loads a card's non-first slides (see the data-src comment in
@@ -11298,7 +11311,7 @@ function slideGo(uid, idx) {
   const _all = [...c.querySelectorAll('.img-slide')];
   const _photos = _all.filter(s => !s.classList.contains('video-slide'));
   const _act = _all[idx];
-  const _own = c.dataset.own === '1'; // owner viewing his own listing: nothing is locked
+  const _own = c.dataset.own === '1'; // owner viewing his own listing, or a listing unlocked by a verified Single Property Plan: nothing is locked
   const _vidLocked = !!(_act && _act.classList.contains('video-slide') && _act.dataset.vh && !_own && !hasActivePlan());
   if (_act && _act.dataset && _act.dataset.vh && (_own || hasActivePlan()) && !_act.firstElementChild) {
     _act.innerHTML = decodeURIComponent(_act.dataset.vh);
@@ -11550,7 +11563,7 @@ function openLightboxReal(propId, idx) {
   renderCards();        // reflect the new count on the card grid
   lightboxImgs = p.media.images;
   lightboxVideoHtml = buildVideoSlideHtml(p);
-  lightboxOwn = !!p.ownListing;
+  lightboxOwn = !!(p.ownListing || p.singleUnlocked); // own listing, or unlocked via a verified Single Property Plan
   lightboxPropertyMode = true;
   lightboxIdx = idx || 0;
   lightboxPreloaded.clear();
@@ -12230,12 +12243,12 @@ function enquireShortlistAtOnce() {
   const { total, groups } = _shortlistEnquiryGroups();
   if (total < ENQUIRE_MIN || total > ENQUIRE_MAX) { showToast(`You can select up to ${ENQUIRE_MAX} properties.`, 'warning'); return; }
   const phones = Object.keys(groups);
-  if (!phones.length) { showToast("A coordinator phone number is not available for these listings.", 'warning'); return; }
+  if (!phones.length) { showToast("An agent phone number is not available for these listings.", 'warning'); return; }
   if (phones.length === 1) { _openAgentEnquiry(phones[0]); return; }
   const wrap = document.getElementById('panelEnquireAgents');
   wrap.innerHTML = phones.map(ph => {
     const n = groups[ph].length;
-    return `<button class="panel-enquire-agent" onclick="_openAgentEnquiry('${ph}')">Coordinator +${ph.slice(0,2)} ${ph.slice(2,7)} ${ph.slice(7)} <span>${n} propert${n>1?'ies':'y'}</span></button>`;
+    return `<button class="panel-enquire-agent" onclick="_openAgentEnquiry('${ph}')">Agent +${ph.slice(0,2)} ${ph.slice(2,7)} ${ph.slice(7)} <span>${n} propert${n>1?'ies':'y'}</span></button>`;
   }).join('');
   wrap.hidden = false;
 }
@@ -14543,18 +14556,18 @@ function openDetailReal(id) {
   document.getElementById('viewShareHeaderBtn').onclick = () => sharePropertyWhatsApp(p.id);
   var _vsr = document.getElementById('viewShareRow'); if (_vsr) _vsr.style.display = isBookedProp(p) ? 'none' : '';
   document.getElementById('viewShareHeaderBtn').style.display = isBookedProp(p) ? 'none' : 'flex';
-  // Call button label: "Coordinator" when this listing's contact number is the fixed
+  // Call button label: "Agent" when this listing's contact number is the fixed
   // in-house agent line (9035205230), "Owner" for any other number (i.e. the
   // owner entered their own number in the agentPhone field).
   const _callLabelEl = document.getElementById('viewCallBtnLabel');
   if (_callLabelEl) {
     const _agentDigits = coordinatorDigits(p).slice(-10);
-    _callLabelEl.textContent = (_agentDigits === '9035205230') ? 'Coordinator' : 'Owner';
+    _callLabelEl.textContent = (_agentDigits === '9035205230') ? 'Agent' : 'Owner';
   }
   // Direct owner call — the server only sends ownerAltPhone when admin turned it on.
   // Each number has its own admin "Public call" toggle; the server only sends a number when its toggle is on.
   const _mainOn = !!(p.ownerPhoneCall && p.ownerPhone), _altOn = !!(p.ownerDirectCall && p.ownerAltPhone);
-  // Numbers that are the in-house Coordinator line are never shown as owner rows (the Coordinator buttons cover that line).
+  // Numbers that are the in-house Agent line are never shown as owner rows (the Agent buttons cover that line).
   const _isCoordNum = v => String(v || '').replace(/\D/g, '').slice(-10) === '9035205230';
   const _mainShow = _mainOn && !_isCoordNum(p.ownerPhone), _altShow = _altOn && !_isCoordNum(p.ownerAltPhone);
   const _careNum = publicOwnerPhone(p, 'care'), _careShow = !!_careNum && !_isCoordNum(_careNum);
@@ -14568,21 +14581,21 @@ function openDetailReal(id) {
   document.getElementById('viewOwnerPhoneWaBtn').onclick = () => openOwnerWhatsApp(p.id, 'main');
   document.getElementById('viewOwnerCallBtn').onclick    = () => openOwnerCall(p.id, 'alt');
   document.getElementById('viewOwnerCallWaBtn').onclick  = () => openOwnerWhatsApp(p.id, 'alt');
-  // Same Coordinator/Owner logic as the main Call button, applied per public-call
+  // Same Agent/Owner logic as the main Call button, applied per public-call
   // number: a number that matches the fixed in-house agent line (9035205230)
-  // is labelled "Coordinator", any other number (the owner's own) is "Owner".
-  const _mainRole = (String(p.ownerPhone || '').replace(/\D/g, '').slice(-10) === '9035205230') ? 'Coordinator' : 'Owner';
-  const _altRole  = (String(p.ownerAltPhone || '').replace(/\D/g, '').slice(-10) === '9035205230') ? 'Coordinator' : 'Alternate Number';
+  // is labelled "Agent", any other number (the owner's own) is "Owner".
+  const _mainRole = (String(p.ownerPhone || '').replace(/\D/g, '').slice(-10) === '9035205230') ? 'Agent' : 'Owner';
+  const _altRole  = (String(p.ownerAltPhone || '').replace(/\D/g, '').slice(-10) === '9035205230') ? 'Agent' : 'Alternate Number';
   document.getElementById('viewOwnerPhoneLabel').textContent = _mainRole;
   document.getElementById('viewOwnerCallLabel').textContent  = _altRole;
   document.getElementById('viewOwnerPhoneWaLabel').textContent = _mainRole;
   document.getElementById('viewOwnerCallWaLabel').textContent  = _altRole;
-  // Order: Coordinator row first, then Owner row. Re-set every time the popup opens
+  // Order: Agent row first, then Owner row. Re-set every time the popup opens
   // (the DOM is reused between listings); when both rows have the same role the
   // original order (owner number, then alt number) is kept.
   const _mainRowEl = document.getElementById('viewOwnerMainRow');
   const _altRowEl  = document.getElementById('viewOwnerAltRow');
-  if (_altRole === 'Coordinator' && _mainRole === 'Owner') _mainRowEl.parentNode.insertBefore(_altRowEl, _mainRowEl);
+  if (_altRole === 'Agent' && _mainRole === 'Owner') _mainRowEl.parentNode.insertBefore(_altRowEl, _mainRowEl);
   else _mainRowEl.parentNode.insertBefore(_mainRowEl, _altRowEl);
   // Navigate button: only for listings with a public owner number (server sends navigateUrl only then).
   document.getElementById('viewNavigateRow').style.display = ((_mainOn || _altOn) && (p.currentLocationLink || p.navigateUrl)) ? '' : 'none';
@@ -14632,6 +14645,13 @@ function openDetailReal(id) {
   const _unlockRow = document.getElementById('viewUnlockRow');
   const _canUnlock = !viewerIsOwner && !isAgentViewer() && !isBookedProp(p) && !(_mainShow || _altShow || _careShow);
   _unlockRow.style.display = _canUnlock ? '' : 'none';
+  // Unlock sits in the same row as Agent + WhatsApp when that row is visible; otherwise it keeps its own row.
+  (function(){
+    const ub = document.getElementById('viewUnlockBtn'), ul = ub.querySelector('span');
+    const inline = _canUnlock && actionsRow2.style.display !== 'none';
+    if (inline) { actionsRow2.appendChild(ub); _unlockRow.style.display = 'none'; ub.classList.add('unlock-inline'); ul.textContent = 'Unlock \u00b7 \u20b9150'; }
+    else { _unlockRow.appendChild(ub); ub.classList.remove('unlock-inline'); ul.textContent = 'Unlock owner contact \u00b7 \u20b9150'; }
+  })();
   document.getElementById('viewUnlockBtn').onclick = () => openPaymentModal('single_property', String(p.id),
     `${p.propertyId} - ${pTypeLabel(p)} - ${(p.location && p.location.area) || ''}`.trim().replace(/ - $/, ''));
   const _footerHasContent = ['viewActionsRow', 'viewActionsRow2', 'viewUnlockRow', 'viewOwnerMainRow', 'viewOwnerAltRow', 'viewOwnerCareRow', 'viewNavigateRow']
@@ -15439,9 +15459,9 @@ function capitalizeWordsInput(el) {
   try { el.setSelectionRange(s, e); } catch (_) {}
 }
 // Coordinator (agent) number for a listing. Broker-listed properties don't store an agent
-// number, so they fall back to the in-house Coordinator line.
+// number, so they fall back to the in-house Agent line.
 function coordinatorDigits(p) {
-  // Public call OFF: every Call / WhatsApp / enquiry (tenant, owner, PG, broker, builder) goes to the in-house Coordinator line.
+  // Public call OFF: every Call / WhatsApp / enquiry (tenant, owner, PG, broker, builder) goes to the in-house Agent line.
   return COORDINATOR_PHONE;
 }
 /* Tapping Call / WhatsApp / Navigate counts as a view of that listing (same server-deduped counter as opening the card), even if the visitor is then asked to log in. */
@@ -15544,7 +15564,7 @@ function cardLockedBadgesHTML(p) {
 function detailRailHTML(p) {
   if (!p) return '';
   const booked = isBookedProp(p);
-  let inner = '';
+  let inner = '', shareHtml = '';
   // Always: views (tap = who viewed). Live listings also get Compare + Shortlist.
   inner += `<div class="prop-icon-badge prop-views-float" onclick="event.stopPropagation();openViewersModal('${p.id}')" title="${getViews(p).toLocaleString('en-IN')} views &middot; tap to see who viewed"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg><span class="prop-views-float-badge">${formatViews(getViews(p))}</span></div>`;
   if (!booked) {
@@ -15559,8 +15579,10 @@ function detailRailHTML(p) {
       inner += `<div class="prop-icon-badge prop-icon-call" onclick="event.stopPropagation();openCardCall('${p.id}')" aria-label="Call" title="Call owner">${_ICON_CALL}</div>`;
     }
     inner += cardWhatsAppBadgeHTML(p) + cardNavBadgeHTML(p) + cardLockedBadgesHTML(p);
+    // Share (via WhatsApp) — pinned bottom-right of the photo, separate from the icon column.
+    shareHtml = `<div class="prop-icon-badge prop-icon-share detail-share" onclick="event.stopPropagation();sharePropertyWhatsApp('${p.id}')" aria-label="Share" title="Share"><svg viewBox="0 0 24 24" fill="#fff" aria-hidden="true"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z"/></svg></div>`;
   }
-  return inner ? `<div class="detail-rail">${inner}</div>` : '';
+  return (inner ? `<div class="detail-rail">${inner}</div>` : '') + shareHtml;
 }
 /* Shortlist heart inside the property view: same toggle as the card heart, and keeps the modal's own
    Shortlist button + the card hearts behind the modal in sync. */
@@ -17703,8 +17725,8 @@ function openPaymentModal(purpose, propertyId, propertyLabel) {
   document.getElementById('pay-category-group').style.display = (isOwnerBrokerage || isSingle) ? 'none' : '';
   document.getElementById('payOwnerFlat').style.display = isOwnerBrokerage ? '' : 'none';
   document.getElementById('paySingleBox').style.display = isSingle ? '' : 'none';
-  // Single-property: only the Pay button at first; the screenshot upload appears once they tap Pay.
-  document.getElementById('paymentProofBlock').style.display = isSingle ? 'none' : '';
+  // One modal, one screen: property → Pay → screenshot → submit are all visible together (single-property included).
+  document.getElementById('paymentProofBlock').style.display = '';
 
   if (isSingle) {
     // Tenant-only flat fee for one property — locked amount, property picked in the modal.
@@ -17906,8 +17928,7 @@ function handleSinglePropertyChange() {
   const sel = document.getElementById('pay-single-property');
   CURRENT_PAY_PROPERTY_ID = sel.value || null;
   CURRENT_PAY_PROPERTY_NOTE = sel.value ? sel.options[sel.selectedIndex].textContent : '';
-  CURRENT_PAYMENT_REQUEST = null; // property changed → fresh request for it
-  if (sel.value) handleAmountBlur();
+  CURRENT_PAYMENT_REQUEST = null; // property changed → any request is made fresh, and only when proof is submitted (no DB row on pick / Pay)
 }
 
 function handlePayCategoryChange() {
@@ -18043,8 +18064,14 @@ async function handleAmountBlur() {
 // Creates the PaymentRequest if none exists yet for this amount, or
 // re-creates it if the amount has changed since the last one was made
 // (the old in-progress request is simply abandoned, same as before).
+let _PAY_REQ_INFLIGHT = null;
 async function ensureCurrentPaymentRequest(amount) {
   if (CURRENT_PAYMENT_REQUEST && CURRENT_PAYMENT_REQUEST.amount === amount) return CURRENT_PAYMENT_REQUEST;
+  if (_PAY_REQ_INFLIGHT) return _PAY_REQ_INFLIGHT; // double-tap on Pay: share the one in-flight create
+  _PAY_REQ_INFLIGHT = _createPaymentRequestOnce(amount).finally(() => { _PAY_REQ_INFLIGHT = null; });
+  return _PAY_REQ_INFLIGHT;
+}
+async function _createPaymentRequestOnce(amount) {
   const purpose = document.getElementById('pay-purpose').value;
   // category/rentTotal let the server cross-check the amount against the
   // same 30%/50%/flat-fee rules this UI already computes — see
@@ -18171,15 +18198,16 @@ async function resumePaymentRequest(payment) {
 // note) is set to our reference code so it's easy to match back to this
 // PaymentRequest when reviewing the screenshot they submit after.
 function buildUpiIntentUrl(s, opts) {
-  if (!s?.upiId || !CURRENT_PAYMENT_REQUEST?.amount) return null;
+  const _noAmt = !!(opts && opts.noAmount);
+  if (!s?.upiId || (!_noAmt && !CURRENT_PAYMENT_REQUEST?.amount)) return null;
   const params = new URLSearchParams({
     pa: s.upiId,
     pn: s.bankAccountName || 'Payment',
     cu: 'INR',
-    tn: CURRENT_PAYMENT_REQUEST.refCode || '',
+    tn: (CURRENT_PAYMENT_REQUEST && CURRENT_PAYMENT_REQUEST.refCode) || (opts && opts.note) || '',
   });
   // opts.noAmount: leave `am` out so the payer types the amount themselves in their UPI app.
-  if (!(opts && opts.noAmount)) params.set('am', String(CURRENT_PAYMENT_REQUEST.amount));
+  if (!_noAmt) params.set('am', String(CURRENT_PAYMENT_REQUEST.amount));
   return `upi://pay?${params.toString()}`;
 }
 
@@ -18197,9 +18225,11 @@ async function payViaUpiApp() {
   // Make sure the PaymentRequest (and its reference code, used as the UPI note) exists.
   // For single-property it is normally already created when the property was picked, so
   // this returns instantly and the app hand-off still counts as a direct tap.
-  const request = await ensureCurrentPaymentRequest(amount);
-  if (!request) return;
-  if (isSingle) document.getElementById('paymentProofBlock').style.display = '';
+  // Single Property Plan: nothing is saved on Pay — the payment record is created only by "I've paid — submit for verification".
+  if (!isSingle) {
+    const request = await ensureCurrentPaymentRequest(amount);
+    if (!request) return;
+  }
 
   const cfg = PAYMENT_SETTINGS_CACHE || {};
   const upiTarget = isSingle
@@ -18214,10 +18244,13 @@ async function payViaUpiApp() {
   }
   if (isSingle && !upiTarget.upiId) {
     // Server has no UPI ID (SINGLE_PROPERTY_PAY_UPI_ID) for this number yet → can't deep-link.
-    showToast("Payment app link isn't set up yet. Please pay to " + _phone + " from any UPI app, then upload the screenshot.", 'warning');
+    // No UPI ID configured server-side → can't deep-link. Copy the number so they can paste it in any UPI app.
+    let _copied = false;
+    try { await navigator.clipboard.writeText(_phone); _copied = true; } catch (_) {}
+    showToast((_copied ? "Number " + _phone + " copied. " : "") + "Open any UPI app (GPay, PhonePe, Paytm…), pay ₹" + SINGLE_PROPERTY_FEE + " to " + _phone + ", then submit.", 'warning');
     return;
   }
-  const url = buildUpiIntentUrl(upiTarget, { noAmount: isSingle }); // single-property: payer enters the amount in their app
+  const url = buildUpiIntentUrl(upiTarget, { noAmount: isSingle, note: isSingle ? ('HomeLoop ' + String(CURRENT_PAY_PROPERTY_NOTE || '').split(' - ')[0]).trim() : '' }); // single-property: payer enters the amount in their app
   if (!url) { showToast("Please enter an amount.", 'warning'); return; }
   window.location.href = url;
 }
@@ -18230,10 +18263,6 @@ async function payViaUpiApp() {
 async function submitPaymentProof() {
   if (document.getElementById('pay-purpose').value === 'single_property' && !CURRENT_PAY_PROPERTY_ID) {
     showToast("Please choose the property first.", 'warning'); return;
-  }
-  if (document.getElementById('pay-purpose').value === 'single_property') {
-    const _f = document.getElementById('pay-screenshot');
-    if (!_f || !_f.files[0]) { showToast("Please upload your payment screenshot.", 'warning'); return; }
   }
   const amount = Number(document.getElementById('pay-amount-inline').value);
   if (!amount || amount <= 0) { showToast("Please enter a valid amount.", 'warning'); return; }

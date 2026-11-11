@@ -3455,6 +3455,60 @@ self.addEventListener('notificationclick', event => {
     }
   });
 
+  // Shared by the single and bulk verify routes: flip to verified, apply side effects, notify the payer.
+  async function markPaymentVerified(request, adminRemark) {
+    request.status = 'verified';
+    request.verifiedAt = new Date();
+    if (typeof (adminRemark) === 'string') request.adminRemark = adminRemark.trim().slice(0, 300);
+    await request.save();
+
+    await applyPaymentVerifiedSideEffects(request);
+
+    // Tell the payer — best-effort (notifyUser never throws / blocks the admin action).
+    const _single = request.purpose === 'single_property';
+    await notifyUser(request.userId, {
+      type: 'payment_verified',
+      title: 'Payment verified',
+      message: _single
+        ? `Your ₹${request.amount} payment${request.note ? ' for ' + request.note : ''} is verified. The owner contact is now unlocked — open the property to view it.`
+        : `Your ₹${request.amount} payment (${request.refCode}) has been verified. Thank you!`,
+      meta: { status: 'verified', paymentId: String(request._id), refCode: request.refCode, purpose: request.purpose, propertyId: request.propertyId ? String(request.propertyId) : null },
+    });
+  }
+
+  // Bulk actions for the Payments tab (multi-select). One request, up to 200 ids.
+  function _bulkPaymentIds(req) {
+    const ids = Array.isArray(req.body && req.body.ids) ? [...new Set(req.body.ids.map(String))] : [];
+    if (!ids.length || ids.length > 200 || !ids.every(id => mongoose.Types.ObjectId.isValid(id))) return null;
+    return ids;
+  }
+  app.post('/api/admin/payments/bulk-verify', requireAdmin, requireModuleAction('payments'), async (req, res) => {
+    try {
+      const ids = _bulkPaymentIds(req);
+      if (!ids) return res.status(400).json({ message: 'Select between 1 and 200 payments' });
+      const docs = await PaymentRequest.find({ _id: { $in: ids }, status: { $ne: 'verified' } });
+      let verified = 0, failed = 0;
+      for (const d of docs) {
+        try { await markPaymentVerified(d); verified++; } catch (e) { failed++; console.error('bulk-verify item error:', e.message); }
+      }
+      res.json({ message: 'Bulk verify done', verified, failed, skipped: ids.length - docs.length });
+    } catch (err) {
+      console.error('POST /api/admin/payments/bulk-verify error:', err.message);
+      res.status(500).json({ message: 'Error verifying payments' });
+    }
+  });
+  app.post('/api/admin/payments/bulk-delete', requireAdmin, requireModuleAction('payments'), async (req, res) => {
+    try {
+      const ids = _bulkPaymentIds(req);
+      if (!ids) return res.status(400).json({ message: 'Select between 1 and 200 payments' });
+      const r = await PaymentRequest.deleteMany({ _id: { $in: ids } });
+      res.json({ message: 'Payments deleted', deleted: r.deletedCount || 0 });
+    } catch (err) {
+      console.error('POST /api/admin/payments/bulk-delete error:', err.message);
+      res.status(500).json({ message: 'Error deleting payments' });
+    }
+  });
+
   // Verifying flips status and applies the one purpose that has an automatic
   // side effect ('promotion' → Property.promoted = true). Kept best-effort: a
   // failure to apply the side effect (e.g. the linked listing was since
@@ -3466,23 +3520,7 @@ self.addEventListener('notificationclick', event => {
       const request = await PaymentRequest.findById(req.params.id);
       if (!request) return res.status(404).json({ message: 'Payment request not found' });
 
-      request.status = 'verified';
-      request.verifiedAt = new Date();
-      if (typeof (req.body && req.body.adminRemark) === 'string') request.adminRemark = req.body.adminRemark.trim().slice(0, 300);
-      await request.save();
-
-      await applyPaymentVerifiedSideEffects(request);
-
-      // Tell the payer — best-effort (notifyUser never throws / blocks the admin action).
-      const _single = request.purpose === 'single_property';
-      await notifyUser(request.userId, {
-        type: 'payment_verified',
-        title: 'Payment verified',
-        message: _single
-          ? `Your ₹${request.amount} payment${request.note ? ' for ' + request.note : ''} is verified. The owner contact is now unlocked — open the property to view it.`
-          : `Your ₹${request.amount} payment (${request.refCode}) has been verified. Thank you!`,
-        meta: { status: 'verified', paymentId: String(request._id), refCode: request.refCode, purpose: request.purpose, propertyId: request.propertyId ? String(request.propertyId) : null },
-      });
+      await markPaymentVerified(request, req.body && req.body.adminRemark);
 
       res.json({ message: 'Payment verified', request });
     } catch (err) {

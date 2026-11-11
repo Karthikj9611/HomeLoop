@@ -115,6 +115,8 @@ body{
   box-shadow:var(--shadow);margin-bottom:24px;
   width:100%;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;
 }
+/* Appointments + Honest Reviews tabs hidden (markup/panels untouched — delete this rule and HIDDEN_TABS to bring them back) */
+#tab-appointments,#tab-honest-reviews{display:none!important}
 .tab-btn{
   display:flex;align-items:center;gap:8px;
   padding:9px 20px;border-radius:calc(var(--radius) - 4px);
@@ -4865,12 +4867,22 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
             <option value="verified">Verified</option>
             <option value="rejected">Rejected</option>
           </select>
+          <button type="button" class="bulk-selected-count" id="paySelectedCount" style="display:none" onclick="clearPaymentSelection()" title="Clear selection">
+            <i class="fas fa-check-circle bulk-selected-icon"></i> <span id="paySelectedNum" class="bulk-selected-num">0</span><span class="bulk-btn-label" data-mobile="Selected"> selected</span> <span class="bulk-selected-clear-x">X</span>
+          </button>
+          <button type="button" class="bulk-btn" id="payVerifySelectedBtn" style="display:none;color:#1e8449" onclick="verifySelectedPayments()">
+            <i class="fas fa-check"></i> <span class="bulk-btn-label" data-mobile="Verify">Verify (<span id="payVerifyCount">0</span>)</span>
+          </button>
+          <button type="button" class="bulk-btn bulk-btn-danger" id="payDeleteSelectedBtn" style="display:none" onclick="deleteSelectedPayments()">
+            <i class="fas fa-trash"></i> <span class="bulk-btn-label" data-mobile="Delete">Delete (<span id="payDeleteCount">0</span>)</span>
+          </button>
         </div>
       </div>
       <div class="table-wrapper">
         <table id="paymentsTable" class="display nowrap" style="width:100%">
           <thead>
             <tr>
+              <th><input type="checkbox" id="paymentSelectAllCheckbox" onchange="onPaymentSelectAllChange(this)"></th>
               <th>Ref</th>
               <th>Customer</th>
               <th>Purpose</th>
@@ -4883,7 +4895,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
             </tr>
           </thead>
           <tbody>
-            <tr><td colspan="9" class="empty-state"><i class="fas fa-circle-notch fa-spin"></i>Loading…</td></tr>
+            <tr><td colspan="10" class="empty-state"><i class="fas fa-circle-notch fa-spin"></i>Loading…</td></tr>
           </tbody>
         </table>
       </div>
@@ -6967,9 +6979,11 @@ let CURRENT_ADMIN = { email:'', isSuperAdmin:true, modules:{}, actions:{}, butto
 // sub-admin could land on a tab they have no access to. Captured once at page
 // load (before applyAdminAccessUI overwrites it while hiding tabs), and only
 // reopened after /api/admin/me tells us what this login may see.
+const HIDDEN_TABS = ['appointments','honest-reviews'];
 const _initialSavedTab = (function(){ try{ return localStorage.getItem('kr_admin_activeTab'); }catch(e){ return null; } })();
 let _savedTabRestored = false;
 function canViewTab(tab){
+  if(HIDDEN_TABS.includes(tab)) return false;
   if(!document.getElementById('tab-' + tab) || !document.getElementById('panel-' + tab)) return false;
   if(tab === 'admin-access') return !!CURRENT_ADMIN.isSuperAdmin;
   const key = TAB_MODULE_MAP[tab];
@@ -9998,6 +10012,82 @@ window.reviewPayment = async function(id, action){
   } catch(err){ alert('Action failed. Please try again.'); }
 };
 
+/* ── PAYMENTS: multi-select + bulk verify / delete (uses the same per-payment endpoints) ── */
+const _selectedPaymentIds = new Set();
+function _payRows(){ return paymentsTable ? paymentsTable.rows({search:'applied'}).data().toArray() : []; }
+function _payById(id){ return paymentsTable.rows().data().toArray().find(r => r._id === id); }
+window.onPaymentRowCheck = function(cb, id){
+  if(cb.checked) _selectedPaymentIds.add(id); else _selectedPaymentIds.delete(id);
+  syncPaymentSelectionUI();
+};
+window.onPaymentSelectAllChange = function(cb){
+  _payRows().forEach(r => { if(cb.checked) _selectedPaymentIds.add(r._id); else _selectedPaymentIds.delete(r._id); });
+  syncPaymentSelectionUI();
+};
+window.clearPaymentSelection = function(){ _selectedPaymentIds.clear(); syncPaymentSelectionUI(); };
+function syncPaymentSelectionUI(){
+  if(!paymentsTable) return;
+  const rows = _payRows(), live = new Set(rows.map(r => r._id));
+  [..._selectedPaymentIds].forEach(id => { if(!live.has(id)) _selectedPaymentIds.delete(id); }); // dropped by reload/filter
+  document.querySelectorAll('#paymentsTable tbody .pay-row-check').forEach(cb => {
+    const on = _selectedPaymentIds.has(cb.getAttribute('data-id'));
+    cb.checked = on;
+    const tr = cb.closest('tr'); if(tr) tr.classList.toggle('partner-row-selected', on);
+  });
+  const hdr = document.getElementById('paymentSelectAllCheckbox');
+  if(hdr){
+    const n = rows.filter(r => _selectedPaymentIds.has(r._id)).length;
+    hdr.checked = rows.length > 0 && n === rows.length;
+    hdr.indeterminate = n > 0 && n < rows.length;
+  }
+  const n = _selectedPaymentIds.size;
+  const toVerify = [..._selectedPaymentIds].filter(id => { const r = _payById(id); return r && r.status !== 'verified'; }).length;
+  const show = (id, on) => { const el = document.getElementById(id); if(el) el.style.display = on ? 'inline-flex' : 'none'; };
+  show('paySelectedCount', n > 0); show('payDeleteSelectedBtn', n > 0); show('payVerifySelectedBtn', toVerify > 0);
+  document.getElementById('paySelectedNum').textContent = n;
+  document.getElementById('payDeleteCount').textContent = n;
+  document.getElementById('payVerifyCount').textContent = toVerify;
+}
+async function _payBulkPost(action, ids, okKey){
+  try{
+    const res = await fetch(`${BASE}/api/admin/payments/${action}`, { method:'POST', headers: authHeaders({'Content-Type':'application/json'}), body: JSON.stringify({ ids }) });
+    const data = await res.json().catch(()=>({}));
+    if(!res.ok){ alert(data.message || 'Action failed'); return { ok:0, failed: ids.length }; }
+    return { ok: data[okKey] || 0, failed: data.failed || Math.max(0, ids.length - (data[okKey]||0) - (data.skipped||0)) };
+  } catch(e){ alert('Action failed. Please try again.'); return { ok:0, failed: ids.length }; }
+}
+window.verifySelectedPayments = async function(){
+  if(blockIfViewOnly('payments')) return;
+  const ids = [..._selectedPaymentIds].filter(id => { const r = _payById(id); return r && r.status !== 'verified'; });
+  if(!ids.length) return;
+  const total = ids.reduce((a, id) => a + Number((_payById(id) || {}).amount || 0), 0);
+  const ok = await showConfirmModal({
+    title: `Verify ${ids.length} payment${ids.length===1?'':'s'}?`,
+    message: `Confirm ₹${total.toLocaleString('en-IN')} was received. Owner contact unlocks for each customer's Single Property Plan listing.`,
+    okText: 'Verify', variant: 'info'
+  });
+  if(!ok) return;
+  const r = await _payBulkPost('bulk-verify', ids, 'verified');
+  _selectedPaymentIds.clear();
+  paymentsTable.ajax.reload(() => syncPaymentSelectionUI(), false);
+  if(r.failed) alert(`${r.ok} verified, ${r.failed} failed.`);
+};
+window.deleteSelectedPayments = async function(){
+  if(blockIfViewOnly('payments')) return;
+  const ids = [..._selectedPaymentIds];
+  if(!ids.length) return;
+  const verifiedSingle = ids.filter(id => { const r = _payById(id); return r && r.status === 'verified' && r.purpose === 'single_property'; }).length;
+  const ok = await showConfirmModal({
+    title: `Delete ${ids.length} payment${ids.length===1?'':'s'}?`,
+    message: 'These payment records will be permanently removed.' + (verifiedSingle ? ` ${verifiedSingle} of them ${verifiedSingle===1?'is':'are'} VERIFIED — deleting also removes the customer unlock for ${verifiedSingle===1?'that property':'those properties'}.` : '')
+  });
+  if(!ok) return;
+  const r = await _payBulkPost('bulk-delete', ids, 'deleted');
+  _selectedPaymentIds.clear();
+  paymentsTable.ajax.reload(() => syncPaymentSelectionUI(), false);
+  if(r.failed) alert(`${r.ok} deleted, ${r.failed} failed.`);
+};
+
 window.deletePayment = async function(id){
   if(blockIfViewOnly('payments')) return;
   const row = paymentsTable.rows().data().toArray().find(r => r._id === id) || {};
@@ -13853,40 +13943,45 @@ $(document).ready(function(){
       }
     },
     columns:[
-      /* 0 – Ref */
+      /* 0 – Select */
+      { data:null, orderable:false, className:'dt-body-center', render:(d,t,row)=>{
+          if(t!=='display') return '';
+          return `<input type="checkbox" class="pay-row-check" data-id="${row._id}" onchange="onPaymentRowCheck(this,'${row._id}')" ${_selectedPaymentIds.has(row._id)?'checked':''}>`;
+      }},
+      /* 1 – Ref */
       { data:'refCode', render:(d)=> escapeHtml(d||'—') },
-      /* 1 – Customer */
+      /* 2 – Customer */
       { data:null, render:(d,t,row)=>{
           const txt = [row.userName, row.userMobile, row.userReadableId].filter(Boolean).join(' · ');
           if(t!=='display') return txt;
           return `${escapeHtml(row.userName||'—')}<div class="prop-sub">${row.userMobile ? `<a href="tel:${escapeHtml(row.userMobile)}">${escapeHtml(row.userMobile)}</a>` : ''}${row.userReadableId ? ' · '+escapeHtml(row.userReadableId) : ''}</div>`;
       }},
-      /* 2 – Purpose */
+      /* 3 – Purpose */
       { data:'purpose', render:(d)=> escapeHtml(PAYMENT_PURPOSE_LABELS[d] || d || '—') },
-      /* 3 – Property (note from the payment modal: "<propertyId> - <Type> - <Area>") */
+      /* 4 – Property (note from the payment modal: "<propertyId> - <Type> - <Area>") */
       { data:'note', render:(d)=> escapeHtml(d||'—') },
-      /* 4 – Amount */
+      /* 5 – Amount */
       { data:'amount', className:'dt-body-right', render:(d,t)=> t==='display' ? '₹'+Number(d||0).toLocaleString('en-IN') : (d||0) },
-      /* 5 – Status */
+      /* 6 – Status */
       { data:'status', className:'dt-body-center', render:(d,t)=>{
           if(t!=='display') return d||'';
           const c = {pending:'#7f8c8d', submitted:'#d68910', verified:'#1e8449', rejected:'#c0392b'}[d] || '#7f8c8d';
           const l = {pending:'Pending', submitted:'Awaiting review', verified:'Verified', rejected:'Rejected'}[d] || (d||'—');
           return `<span style="color:${c};font-weight:600">${l}</span>`;
       }},
-      /* 6 – Proof screenshot */
+      /* 7 – Proof screenshot */
       { data:'screenshotUrl', orderable:false, render:(d,t,row)=>{
           if(t!=='display') return d ? 'yes' : '';
           return d ? `<a href="${escapeHtml(BASE + d)}" target="_blank" rel="noopener">View</a>` : '<span class="prop-sub">None</span>';
       }},
-      /* 7 – Submitted (falls back to created) */
+      /* 8 – Submitted (falls back to created) */
       { data:null, render:(d,t,row)=>{
           const v = row.submittedAt || row.createdAt;
           if(!v) return '—';
           if(t!=='display') return new Date(v).getTime();
           return formatDateTime(v);
       }},
-      /* 8 – Action: ONE verify/unverify toggle + delete */
+      /* 9 – Action: ONE verify/unverify toggle + delete */
       { data:null, orderable:false, render:(d,t,row)=>{
           if(t!=='display') return '';
           const on = row.status === 'verified';
@@ -13897,7 +13992,8 @@ $(document).ready(function(){
           return `<div style="display:inline-flex;gap:6px;flex-wrap:nowrap;justify-content:center">${toggle}${del}</div>`;
       }}
     ],
-    order:[[7,'desc']],
+    order:[[8,'desc']],
+    drawCallback:function(){ if(typeof syncPaymentSelectionUI==='function') syncPaymentSelectionUI(); },
     orderCellsTop:true,
     dom:'rt<"bottom-controls"i>',
     pageLength:-1,

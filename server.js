@@ -3476,7 +3476,7 @@ const SINGLE_PROPERTY_PAY_PHONE = '9611459960';
 // with the amount pre-filled — a bare phone number is not a valid UPI deep-link target.
 // Set SINGLE_PROPERTY_PAY_UPI_ID in your environment (e.g. 9611459960@ybl). If empty, the button
 // falls back to copying the number so the tenant can pay manually.
-const SINGLE_PROPERTY_PAY_UPI_ID = process.env.SINGLE_PROPERTY_PAY_UPI_ID || '';
+const SINGLE_PROPERTY_PAY_UPI_ID = process.env.SINGLE_PROPERTY_PAY_UPI_ID || 'karthikram13911@ybl'; // env var overrides this default
 const SINGLE_PROPERTY_PAY_NAME = process.env.SINGLE_PROPERTY_PAY_NAME || 'HomeLoop';
 const DUMMY_PAYMENT_DETAILS = {
   upiId:             '8553261336@sbi',
@@ -3622,6 +3622,15 @@ app.post('/api/payments/request', paymentLimiter, requireUser, requireVerified, 
       const _already = await PaymentRequest.findOne({ userId: req.userId, purpose: 'single_property', propertyId, status: 'verified' }).select('_id').lean();
       if (_already) return res.status(409).json({ message: 'You have already unlocked this property' });
       amt = SINGLE_PROPERTY_FEE;
+      // One open request per user + listing: a retry (or reopening the modal) reuses the unsent one instead of
+      // piling up duplicate 'Pending' rows, and a payment already awaiting review can't be filed twice.
+      const _open = await PaymentRequest.findOne({ userId: req.userId, purpose: 'single_property', propertyId, status: { $in: ['pending', 'submitted'] } }).sort({ createdAt: -1 });
+      if (_open) {
+        if (_open.status === 'submitted') return res.status(409).json({ message: 'Your payment for this property is already awaiting verification' });
+        if (note) _open.note = String(note).trim().slice(0, 300);
+        await _open.save();
+        return res.status(200).json({ message: 'Payment request ready', request: _open });
+      }
     }
 
     const refCode = await nextSequenceId('PAY');
