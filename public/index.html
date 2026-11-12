@@ -1867,6 +1867,36 @@ main.tab-explore .empty-state{display:none !important}
   .wish-modal-card{max-width:100%}
   .wish-modal-close{top:-12px;right:0}
 }
+/* Property promo variant: whole image is tappable, with a CTA button + "Featured" tag */
+.wish-modal-card.is-promo > img{display:none !important}
+.wish-promo-card{max-height:calc(100vh - 150px);max-height:calc(100dvh - 150px);overflow-y:auto;border-radius:var(--radius-xl,16px);box-shadow:0 24px 70px rgba(0,0,0,.35);background:#fff;scrollbar-width:none}
+.wish-promo-card::-webkit-scrollbar{display:none}
+.wish-promo-card .prop-card{margin:0;width:100%;max-width:none;box-shadow:none}
+.wish-promo-track{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;overscroll-behavior-x:contain}
+.wish-promo-track::-webkit-scrollbar{display:none}
+.wish-promo-slide{flex:0 0 calc((100% - (var(--wp-cols,1) - 1) * 16px) / var(--wp-cols,1));min-width:0;scroll-snap-align:start}
+.wish-promo-track{gap:16px;padding:2px 2px 8px}
+/* Several listings: wide popup, cards side by side like the Rent strip, gliding sideways */
+.wish-modal-card.is-multi .wish-promo-card{background:transparent;box-shadow:none;overflow:visible;max-height:none}
+.wish-modal-card.is-multi .wish-promo-card .prop-card{box-shadow:0 14px 40px rgba(0,0,0,.28)}
+.wish-modal-card.is-multi .wish-modal-tag{display:none !important}
+@media (max-width:700px){.wish-promo-slide{flex-basis:82%}}
+.wish-promo-nav{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:8px;padding:10px 0 2px}
+.wish-promo-nav button{min-width:34px;height:34px;padding:0 6px;border-radius:50%;border:0;background:#fff;color:var(--ink,#222);font:inherit;font-size:14px;font-weight:800;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 3px 10px rgba(0,0,0,.22);transition:background .2s,color .2s,transform .2s}
+.wish-promo-nav button.on{background:var(--brand);color:#fff;transform:scale(1.1)}
+.wish-modal-tag{
+  position:absolute;top:12px;left:12px;z-index:1;
+  font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;
+  padding:5px 11px;border-radius:99px;background:rgba(255,255,255,.95);color:var(--brand);
+  box-shadow:0 2px 10px rgba(0,0,0,.2);pointer-events:none;
+}
+.wish-modal-cta{
+  display:block;width:100%;margin-top:12px;padding:14px 18px;border:0;border-radius:14px;
+  background:var(--brand);color:#fff;font:inherit;font-size:15px;font-weight:700;cursor:pointer;
+  box-shadow:0 8px 24px rgba(0,0,0,.28);transition:background .15s,transform .15s;
+}
+.wish-modal-cta:hover{background:var(--brand-hover);transform:translateY(-1px)}
+.wish-modal-cta:active{transform:scale(.985)}
 
 /* ── Confirm dialog (replaces native confirm()) ── */
 #confirmOverlay{
@@ -22340,7 +22370,10 @@ document.addEventListener('keydown', function(e){ if (e.key === 'Escape') closeP
     <button class="wish-modal-close" id="wishModalClose" aria-label="Close">
       <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
     </button>
+    <span class="wish-modal-tag" id="wishModalTag" style="display:none">Featured</span>
+    <div class="wish-promo-card" id="wishPromoCard" style="display:none"></div>
     <img id="wishModalImg" src="" alt="">
+    <button type="button" class="wish-modal-cta" id="wishModalCta" style="display:none"></button>
   </div>
 </div>
 <script>
@@ -22348,20 +22381,94 @@ document.addEventListener('keydown', function(e){ if (e.key === 'Escape') closeP
   // The list comes from the admin-managed API (fetched once in <head>). Each wish
   // only shows between its own start/end dates (inclusive, visitor's local date);
   // the server already sorts newest-starting first, so the first match wins.
-  function activeWish(list){
+  function wishesInWindow(list){
     var today = (window.__hlTodayStr ? window.__hlTodayStr() : '');
+    var out = [];
     for (var i=0; i<list.length; i++){
       var w = list[i];
       if (today >= w.startDate && today <= w.endDate){
-        return { image: w.imageUrl, alt: w.alt || w.title || 'Greeting' };
+        out.push({
+          image: w.imageUrl, alt: w.alt || w.title || 'Greeting',
+          refs: w.kind === 'property'
+            ? ((Array.isArray(w.propertyRefs) && w.propertyRefs.length ? w.propertyRefs : [w.propertyRef])
+                .filter(function(r){ return /^[a-f0-9]{24}$/.test(r || ''); }))
+            : [],
+          cta: w.ctaText || 'View property'
+        });
       }
     }
-    return null;
+    return out;
+  }
+
+  // A property promo only shows while its listing is actually live on the site
+  // (present in PROPERTIES — booked / blocked / unverified-hidden ones aren't).
+  // PROPERTIES loads async, so wait for the first fetch (max ~8s) before judging.
+  function whenPropertiesReady(cb){
+    var tries = 0;
+    (function poll(){
+      if ((typeof _initialPropertiesFetchDone !== 'undefined' && _initialPropertiesFetchDone) || ++tries > 40) return cb();
+      setTimeout(poll, 200);
+    })();
+  }
+  function listingIsLive(ref){
+    return typeof PROPERTIES !== 'undefined' && PROPERTIES.some(function(p){ return p.id === ref; });
+  }
+  function pickWish(cands, cb){
+    if (!cands.length) return;
+    function choose(){
+      for (var i=0; i<cands.length; i++){
+        var c = cands[i];
+        if (!c.refs.length) return cb(c);                       // plain greeting
+        var live = c.refs.filter(listingIsLive);                // promo: only listings that are live now
+        if (live.length) { c.refs = live; return cb(c); }
+      }
+    }
+    if (cands.some(function(c){ return c.refs.length; })) whenPropertiesReady(choose); else choose();
   }
 
   function openWishModal(w){
     var overlay = document.getElementById('wishModalOverlay');
     var img = document.getElementById('wishModalImg');
+    var cta = document.getElementById('wishModalCta');
+    var tag = document.getElementById('wishModalTag');
+    var card = overlay.querySelector('.wish-modal-card');
+    promoRefs = w.refs || [];
+    promoIdx = 0;
+    var isPromo = promoRefs.length > 0;
+    card.classList.toggle('is-promo', isPromo);
+    if (!isPromo) { card.classList.remove('is-multi'); card.style.maxWidth = ''; }
+    tag.style.display = isPromo ? '' : 'none';
+    cta.style.display = isPromo ? '' : 'none';
+    cta.textContent = w.cta || 'View property';
+    var promoBox = document.getElementById('wishPromoCard');
+    promoBox.style.display = 'none'; promoBox.innerHTML = '';
+    if (isPromo) {
+      // Property promo: show each listing's real card (photo slider, details, call/WhatsApp
+      // buttons) instead of a flat image. Several listings = swipeable set with ‹ 1/3 › nav.
+      var props = promoRefs.map(function(r){ return (typeof PROPERTIES !== 'undefined') ? PROPERTIES.find(function(x){ return x.id === r; }) : null; }).filter(Boolean);
+      promoRefs = props.map(function(p){ return p.id; });
+      var cols = window.innerWidth > 1100 ? 4 : (window.innerWidth > 700 ? 3 : 1);
+      cols = Math.max(1, Math.min(props.length - 1, cols));   // never fit everything at once, so there is always something to slide to
+      card.classList.toggle('is-multi', props.length > 1);
+      if (props.length > 1) {
+        card.style.maxWidth = window.innerWidth > 700 ? Math.min(window.innerWidth - 40, cols * 300 + (cols - 1) * 16 + 4) + 'px' : '';
+        cta.style.display = 'none';   // each card carries its own buttons
+      } else card.style.maxWidth = '';
+      if (props.length && typeof cardHTML === 'function') {
+        promoBox.innerHTML = props.length === 1
+          ? cardHTML(props[0])
+          : '<div class="wish-promo-track" id="wishPromoTrack" style="--wp-cols:' + cols + '">' +
+              props.map(function(p){ return '<div class="wish-promo-slide">' + cardHTML(p) + '</div>'; }).join('') +
+            '</div>' +
+            '<div class="wish-promo-nav" id="wishPromoNav">' + props.map(function(p, i){ return '<button type="button" aria-label="Listing ' + (i + 1) + '">' + (i + 1) + '</button>'; }).join('') + '</div>';
+        promoBox.style.display = '';
+        if (props.length > 1) setupPromoNav(props.length, cols);
+        if (typeof observeCardImgs === 'function') observeCardImgs(promoBox);
+        overlay.classList.add('open');
+        lockBodyScroll();
+        return;
+      }
+    }
     var revealed = false;
     function reveal(){
       if (revealed) return;
@@ -22393,14 +22500,60 @@ document.addEventListener('keydown', function(e){ if (e.key === 'Escape') closeP
     setTimeout(function(){ if (!revealed) { img.src = preloadImg.src || w.image; reveal(); } }, 2000);
   }
 
+  var promoRefs = [], promoIdx = 0;
+  var promoTimer = null;
+  function setupPromoNav(n, cols){
+    var track = document.getElementById('wishPromoTrack');
+    var btns = document.querySelectorAll('#wishPromoNav button');
+    function stepW(){ return (track.firstElementChild ? track.firstElementChild.getBoundingClientRect().width : track.clientWidth) + 16; }
+    function first(){ return Math.max(0, Math.min(n - 1, Math.round(track.scrollLeft / stepW()))); }
+    function sync(){
+      var f = first(), atEnd = track.scrollLeft + track.clientWidth >= track.scrollWidth - 4;
+      if (atEnd) f = Math.max(0, n - cols);
+      for (var k = 0; k < btns.length; k++) btns[k].classList.toggle('on', k >= f && k < f + cols);   // numbers of the cards on screen
+    }
+    function go(i){ track.scrollTo({ left: i * stepW(), behavior: 'smooth' }); }
+    function stopAuto(){ if (promoTimer) { clearInterval(promoTimer); promoTimer = null; } }
+    stopAuto();
+    for (var k = 0; k < btns.length; k++) btns[k].onclick = (function(i){ return function(){ stopAuto(); go(i); }; })(k);
+    track.addEventListener('scroll', sync, { passive: true });
+    // Slides by itself one card every 3.5s and wraps to the start; touch/hover/click hands control to the visitor.
+    ['touchstart','mousedown','wheel','pointerenter'].forEach(function(ev){ track.addEventListener(ev, stopAuto, { passive: true }); });
+    document.getElementById('wishPromoCard').addEventListener('click', stopAuto, true);
+    promoTimer = setInterval(function(){
+      var atEnd = track.scrollLeft + track.clientWidth >= track.scrollWidth - 4;
+      track.scrollTo({ left: atEnd ? 0 : track.scrollLeft + stepW(), behavior: 'smooth' });
+    }, 3500);
+    sync();
+  }
+  function openPromoListing(){
+    var ref = promoRefs[promoIdx];
+    if (!ref) return;
+    closeWishModal();
+    if (typeof openDetail === 'function') openDetail(ref);
+  }
+
   function closeWishModal(){
     var overlay = document.getElementById('wishModalOverlay');
     if (!overlay.classList.contains('open')) return; // never opened (or already closed) — don't touch the shared scroll lock
     overlay.classList.remove('open');
+    if (promoTimer) { clearInterval(promoTimer); promoTimer = null; }
     unlockBodyScroll();
   }
 
   document.getElementById('wishModalClose').addEventListener('click', closeWishModal);
+  document.getElementById('wishModalCta').addEventListener('click', openPromoListing);
+  document.getElementById('wishModalImg').addEventListener('click', openPromoListing);
+  // Card buttons that open other modals (details, call, WhatsApp, visit, booking, viewers)
+  // would open behind this popup (higher z-index) — close the popup right after they run.
+  // Capture phase so it still fires when the card's own handler stops propagation.
+  document.getElementById('wishPromoCard').addEventListener('click', function(e){
+    var el = e.target.closest('[onclick]');
+    var oc = el ? (el.getAttribute('onclick') || '') : '';
+    if (/openDetail|openWhatsApp|openScheduleModal|openCardCall|openCall|openBookingModal|openViewersModal/.test(oc)) {
+      setTimeout(closeWishModal, 0);
+    }
+  }, true);
   document.getElementById('wishModalOverlay').addEventListener('click', function(e){
     if (e.target === this) closeWishModal();
   });
@@ -22423,8 +22576,7 @@ document.addEventListener('keydown', function(e){ if (e.key === 'Escape') closeP
   document.addEventListener('DOMContentLoaded', function(){
     if (hasIncomingDeepLink()) return;
     (window.__hlWishes || Promise.resolve([])).then(function(list){
-      var w = activeWish(list);
-      if (w) openWishModal(w);
+      pickWish(wishesInWindow(list), openWishModal);
     });
   });
 })();

@@ -10348,9 +10348,10 @@ function renderWishes(){
     const st = _wishStatus(w);
     const id = escapeHtml(w._id);
     return '<div class="wsh-card">' +
-      '<div class="wsh-thumb" onclick="openAdminLightboxArr([' + JSON.stringify(w.imageUrl).replace(/"/g,'&quot;') + '],0)" title="View full size">' +
-        '<img src="' + escapeHtml(w.imageUrl) + '" alt="' + escapeHtml(w.alt || w.title) + '" loading="lazy">' +
+      '<div class="wsh-thumb"' + (w.imageUrl ? ' onclick="openAdminLightboxArr([' + JSON.stringify(w.imageUrl).replace(/"/g,'&quot;') + '],0)" title="View full size"' : '') + '>' +
+        (w.imageUrl ? '<img src="' + escapeHtml(w.imageUrl) + '" alt="' + escapeHtml(w.alt || w.title) + '" loading="lazy">' : '<i class="fas fa-house" style="font-size:2rem;color:var(--ink2)"></i>') +
         '<span class="wsh-chip ' + st.k + '">' + st.t + '</span>' +
+        (w.kind === 'property' ? '<span class="wsh-kindchip"><i class="fas fa-house"></i> ' + (((w.propertyRefs && w.propertyRefs.length) || 1) > 1 ? w.propertyRefs.length + ' listings' : 'Promo') + '</span>' : '') +
       '</div>' +
       '<div class="wsh-body">' +
         '<div class="wsh-title">' + escapeHtml(w.title) + '</div>' +
@@ -10370,14 +10371,131 @@ function _renderWishImgPreview(url){
   const ph = document.getElementById('wishImgPlaceholder');
   const rm = document.getElementById('wishImgRemoveBtn');
   const hint = document.getElementById('wishImgHint');
+  const box = document.getElementById('wishImgBox');
   if(url){
-    img.src = url; img.style.display = 'block'; ph.style.display = 'none'; rm.style.display = '';
+    img.src = url; img.style.display = 'block'; ph.style.display = 'none'; rm.style.display = ''; box.classList.add('has');
     hint.textContent = 'Image ready. Upload again to replace it.';
   } else {
-    img.src = ''; img.style.display = 'none'; ph.style.display = ''; rm.style.display = 'none';
-    hint.textContent = 'Required. Portrait works best (shown up to ~420px wide).';
+    img.src = ''; img.style.display = 'none'; ph.style.display = ''; rm.style.display = 'none'; box.classList.remove('has');
+    hint.textContent = 'Portrait works best (shown up to ~420px wide).';
+  }
+  _renderWishPhotos();
+}
+
+/* ── Property promo (wish kind = 'property') ── */
+let _wishKind = 'greeting';
+let _wishProps = null;          // listings the admin can promote (lazy-loaded)
+let _wishPropsPromise = null;
+
+function _wishRent(n){ return (n == null || n === '') ? '' : '₹' + Number(n).toLocaleString('en-IN'); }
+function _wishProp(ref){ return (_wishProps || []).find(p => p._id === ref) || null; }
+
+function loadWishProps(){
+  if(_wishProps) return Promise.resolve(_wishProps);
+  if(_wishPropsPromise) return _wishPropsPromise;
+  _wishPropsPromise = fetch(BASE + '/api/admin/wish-properties', { headers: authHeaders() })
+    .then(r => r.json().catch(() => ({})).then(d => ({ ok: r.ok, d })))
+    .then(({ ok, d }) => {
+      if(!ok) throw new Error(d.error || d.message || 'Could not load listings');
+      _wishProps = d.properties || [];
+      return _wishProps;
+    })
+    .catch(e => {
+      _wishPropsPromise = null;
+      const list = document.getElementById('wishPropList');
+      if(list) list.innerHTML = '<div class="wsh-pempty">' + escapeHtml(e.message || 'Could not load listings') + '</div>';
+      return [];
+    })
+    .then(r => { renderWishProps(); return r; });
+  return _wishPropsPromise;
+}
+
+let _wishSel = [];   // selected listing ids, in display order
+const WISH_MAX_PROPS = 10;
+
+window.renderWishProps = function(){
+  const list = document.getElementById('wishPropList');
+  if(!list) return;
+  if(!_wishProps){ list.innerHTML = '<div class="wsh-pempty">Loading listings…</div>'; return; }
+  const top = list.scrollTop;
+  const q = (document.getElementById('wishPropSearch').value || '').trim().toLowerCase();
+  const hits = _wishProps.filter(p => !q || [p.propertyId, p.status, p.area, p.title].join(' ').toLowerCase().includes(q));
+  if(!hits.length){ list.innerHTML = '<div class="wsh-pempty">No listings match.</div>'; return; }
+  list.innerHTML = hits.slice(0, 60).map(p => {
+    const on = _wishSel.includes(p._id);
+    return '<button type="button" class="wsh-pitem' + (on ? ' sel' : '') + '" onclick="toggleWishProp(\'' + escapeHtml(p._id) + '\')" aria-pressed="' + on + '">' +
+      '<span class="wsh-ck">✓</span>' +
+      '<span class="wsh-pid">' + escapeHtml(p.propertyId || '—') + '</span>' +
+      '<span class="wsh-pmeta">' + escapeHtml([p.status, p.area, p.verified ? '' : 'yet to verify'].filter(Boolean).join(' · ')) + '</span>' +
+      '<span class="wsh-prent">' + escapeHtml(_wishRent(p.rent)) + '</span>' +
+    '</button>';
+  }).join('') + (hits.length > 60 ? '<div class="wsh-pempty">Showing 60 of ' + hits.length + ' — refine your search.</div>' : '');
+  list.scrollTop = top;
+};
+
+function _renderWishPropSelected(){
+  const box = document.getElementById('wishPropSelected');
+  if(!_wishSel.length){ box.style.display = 'none'; box.innerHTML = ''; return; }
+  box.innerHTML = _wishSel.map(id => {
+    const p = _wishProp(id);
+    return '<span class="wsh-tag">' + (p ? escapeHtml(p.propertyId || 'Listing') : 'Unavailable') +
+      '<button type="button" onclick="toggleWishProp(\'' + escapeHtml(id) + '\')" aria-label="Remove">✕</button></span>';
+  }).join('') + '<button type="button" class="wsh-selclear" onclick="clearWishProps()">Clear all</button>';
+  box.style.display = 'flex';
+}
+
+function _renderWishPhotos(){ /* promos render the listing cards themselves — no photo picker */ }
+
+// Thumbnail for the admin grid = first selected listing's first photo; title auto-fills until edited.
+function _afterWishSel(){
+  _renderWishPropSelected();
+  renderWishProps();
+  const first = _wishProp(_wishSel[0]);
+  document.getElementById('wishFormImageUrl').value = (first && first.images && first.images[0]) || '';
+  const t = document.getElementById('wishFormTitle');
+  if(!t.value.trim() || /^Featured · /.test(t.value)){
+    t.value = !_wishSel.length ? '' : _wishSel.length === 1
+      ? ('Featured · ' + ((first && first.propertyId) || '')).slice(0, 80)
+      : ('Featured · ' + _wishSel.length + ' listings');
   }
 }
+
+window.toggleWishProp = function(ref){
+  const i = _wishSel.indexOf(ref);
+  if(i >= 0) _wishSel.splice(i, 1);
+  else {
+    if(_wishSel.length >= WISH_MAX_PROPS){ alert('You can promote up to ' + WISH_MAX_PROPS + ' listings in one wish.'); return; }
+    _wishSel.push(ref);
+  }
+  _afterWishSel();
+};
+
+window.clearWishProps = function(){ _wishSel = []; _afterWishSel(); };
+
+window.setWishKind = function(k){
+  _wishKind = (k === 'property') ? 'property' : 'greeting';
+  const prop = _wishKind === 'property';
+  document.querySelectorAll('#wishSeg button').forEach(b => {
+    const on = b.dataset.k === _wishKind;
+    b.classList.toggle('on', on); b.setAttribute('aria-selected', on ? 'true' : 'false');
+  });
+  document.getElementById('wishPropWrap').style.display = prop ? '' : 'none';
+  document.getElementById('wishCtaWrap').style.display = prop ? '' : 'none';
+  document.getElementById('wishImgWrap').style.display = prop ? 'none' : '';
+  document.getElementById('wishAltWrap').style.display = prop ? 'none' : '';
+  document.getElementById('wishFormTitle').placeholder = prop ? 'e.g. Featured 2BHK, Indiranagar' : 'e.g. Diwali 2026';
+  document.getElementById('wishFormAlt').placeholder = prop ? 'e.g. 2BHK for rent in Indiranagar' : 'e.g. Happy Diwali — from Home Loop';
+  if(prop){ _renderWishPropSelected(); renderWishProps(); loadWishProps().then(() => { _renderWishPropSelected(); renderWishProps(); }); }
+};
+
+window.updateWishDur = function(){
+  const el = document.getElementById('wishDur');
+  const s = document.getElementById('wishFormStart').value;
+  const e = document.getElementById('wishFormEnd').value;
+  if(!s || !e || e < s){ el.textContent = ''; return; }
+  const days = Math.round((new Date(e + 'T00:00:00Z') - new Date(s + 'T00:00:00Z')) / 86400000) + 1;
+  el.innerHTML = '<i class="fas fa-clock"></i> Runs ' + days + (days === 1 ? ' day' : ' days');
+};
 
 window.openWishModal = function(id){
   if(!id && blockIfViewOnly('wishes')) return;
@@ -10393,7 +10511,12 @@ window.openWishModal = function(id){
   document.getElementById('wishFormAlt').value = w ? (w.alt || '') : '';
   document.getElementById('wishFormActive').checked = w ? w.active !== false : true;
   document.getElementById('wishFormImageUrl').value = w ? (w.imageUrl || '') : '';
+  document.getElementById('wishFormCta').value = w ? (w.ctaText || '') : '';
+  _wishSel = (w && w.kind === 'property') ? ((w.propertyRefs && w.propertyRefs.length) ? w.propertyRefs.slice() : (w.propertyRef ? [w.propertyRef] : [])) : [];
+  document.getElementById('wishPropSearch').value = '';
+  setWishKind(w && w.kind === 'property' ? 'property' : 'greeting');
   _renderWishImgPreview(w ? (w.imageUrl || '') : '');
+  updateWishDur();
   document.getElementById('wishModal').classList.add('open');
   document.body.style.overflow = 'hidden';
 };
@@ -10408,6 +10531,7 @@ window.onWishStartChange = function(){
   const s = document.getElementById('wishFormStart');
   const e = document.getElementById('wishFormEnd');
   if(s.value && (!e.value || e.value < s.value)) e.value = s.value;
+  updateWishDur();
 };
 
 window.uploadWishImageFromFile = async function(input){
@@ -10452,19 +10576,25 @@ window.saveWish = async function(){
   const errEl = document.getElementById('wishFormError');
   errEl.classList.remove('show'); errEl.textContent = '';
   const id = document.getElementById('wishFormId').value.trim();
+  const isProp = _wishKind === 'property';
   const payload = {
-    title:     document.getElementById('wishFormTitle').value.trim(),
-    startDate: document.getElementById('wishFormStart').value,
-    endDate:   document.getElementById('wishFormEnd').value,
-    imageUrl:  document.getElementById('wishFormImageUrl').value.trim(),
-    alt:       document.getElementById('wishFormAlt').value.trim(),
-    active:    document.getElementById('wishFormActive').checked
+    title:       document.getElementById('wishFormTitle').value.trim(),
+    startDate:   document.getElementById('wishFormStart').value,
+    endDate:     document.getElementById('wishFormEnd').value,
+    imageUrl:    document.getElementById('wishFormImageUrl').value.trim(),
+    alt:         document.getElementById('wishFormAlt').value.trim(),
+    active:      document.getElementById('wishFormActive').checked,
+    kind:        isProp ? 'property' : 'greeting',
+    propertyRef: isProp ? (_wishSel[0] || '') : '',
+    propertyRefs: isProp ? _wishSel.slice() : [],
+    ctaText:     isProp ? document.getElementById('wishFormCta').value.trim() : ''
   };
   const fail = (m) => { errEl.textContent = m; errEl.classList.add('show'); };
   if(!payload.title) return fail('Title is required.');
+  if(isProp && !payload.propertyRefs.length) return fail('Please choose at least one listing to promote.');
   if(!payload.startDate || !payload.endDate) return fail('Please choose both a start and an end date.');
   if(payload.endDate < payload.startDate) return fail('End date cannot be before the start date.');
-  if(!payload.imageUrl) return fail('Please upload a wish image.');
+  if(!isProp && !payload.imageUrl) return fail('Please upload a popup image.');
 
   const btn = document.getElementById('wishFormSaveBtn');
   btn.disabled = true;
@@ -10487,7 +10617,8 @@ window.toggleWishActive = async function(id){
   try{
     const { ok, data } = await _sendWish(id, {
       title: w.title, imageUrl: w.imageUrl, alt: w.alt || '',
-      startDate: w.startDate, endDate: w.endDate, active: w.active === false
+      startDate: w.startDate, endDate: w.endDate, active: w.active === false,
+      kind: w.kind || 'greeting', propertyRef: w.propertyRef || '', propertyRefs: (w.propertyRefs && w.propertyRefs.length) ? w.propertyRefs : (w.propertyRef ? [w.propertyRef] : []), ctaText: w.ctaText || ''
     });
     if(!ok){ alert(data.error || data.message || 'Update failed'); return; }
     loadWishes();
@@ -20311,69 +20442,173 @@ markRequiredLabels();
 .wsh-actions button{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:6px;font:inherit;font-size:.78rem;font-weight:600;padding:8px 6px;border-radius:9px;border:1px solid var(--border);background:var(--surface,#fff);color:var(--ink);cursor:pointer;transition:background .15s}
 .wsh-actions button:hover{background:var(--surface2,#f5f5f7)}
 .wsh-actions button.danger{color:#dc2626}
-.wsh-imgbox{width:96px;aspect-ratio:4/5;border-radius:10px;overflow:hidden;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.wsh-imgbox img{width:100%;height:100%;object-fit:contain;display:none}
+.wsh-kindchip{position:absolute;top:10px;right:10px;font-size:.66rem;font-weight:800;letter-spacing:.04em;text-transform:uppercase;padding:4px 9px;border-radius:999px;color:var(--brand);background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.18)}
 @media(max-width:560px){.wsh-grid{grid-template-columns:repeat(2,1fr);gap:12px;padding:12px}}
+</style>
+<style>
+/* ── Wish modal (redesign) ── */
+#wishModal .prop-modal{max-width:540px;border-radius:26px;overflow:hidden;display:flex;flex-direction:column;max-height:min(92vh,840px);max-height:min(92dvh,840px)}
+#wishModal.open .prop-modal{animation:wshPop .22s cubic-bezier(.2,.9,.3,1.2)}
+@keyframes wshPop{from{opacity:0;transform:translateY(10px) scale(.97)}to{opacity:1;transform:none}}
+#wishModal .std-hdr{padding:18px 26px;position:relative}
+#wishModal .std-hdr-sub{font-size:12px;font-weight:500;color:rgba(255,255,255,.88)}
+#wishModal .prop-modal-body{padding:22px 26px 6px;overflow-y:auto;flex:1;min-height:0;scrollbar-width:thin}
+.wsh-seg{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;background:var(--surface2);border-radius:14px;margin-bottom:22px}
+.wsh-seg button{border:0;background:transparent;padding:10px 8px;border-radius:11px;font:inherit;font-size:.82rem;font-weight:700;color:var(--ink2);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;transition:background .15s,color .15s,box-shadow .15s}
+.wsh-seg button.on{background:#fff;color:var(--brand);box-shadow:0 2px 8px rgba(0,0,0,.1)}
+.wsh-f{margin-bottom:20px}
+.wsh-lbl{display:flex;justify-content:space-between;align-items:baseline;gap:10px;font-size:.78rem;font-weight:700;color:var(--ink2);margin-bottom:8px}
+.wsh-lbl small{font-weight:500;color:var(--text-3);font-size:.72rem;text-align:right}
+#wishModal .wsh-f input[type=text],#wishModal .wsh-f input[type=date],#wishModal .wsh-f input[type=search]{width:100%;box-sizing:border-box;height:46px;padding:0 14px;border:1.5px solid var(--border);border-radius:12px;font-family:inherit;font-size:.88rem;color:var(--ink);background:#fff;outline:none;transition:border-color .15s,box-shadow .15s;-webkit-appearance:none;appearance:none}
+#wishModal .wsh-f input:focus{border-color:var(--brand);box-shadow:0 0 0 3px rgba(234,88,12,.14)}
+#wishModal .wsh-f input[type=date]{min-width:0}
+.wsh-dates2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.wsh-dur{margin-top:10px;font-size:.74rem;font-weight:700;color:var(--brand);background:var(--brand-light);display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:99px}
+.wsh-dur:empty{display:none}
+.wsh-imgrow{display:flex;gap:16px;align-items:flex-start}
+.wsh-imgbox{width:128px;aspect-ratio:4/5;border-radius:14px;overflow:hidden;background:var(--surface2);border:2px dashed var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;transition:border-color .15s,background .15s}
+.wsh-imgbox:hover{border-color:var(--brand);background:var(--brand-light)}
+.wsh-imgbox.has{border-style:solid;border-color:var(--border);background:#fff}
+.wsh-imgbox img{width:100%;height:100%;object-fit:cover;display:none}
+.wsh-imgside{display:flex;flex-direction:column;gap:10px;min-width:0;flex:1}
+.wsh-imgbtns{display:flex;gap:8px;flex-wrap:wrap}
+.wsh-imgbtns .img-btn-sec{height:38px;padding:0 14px;border-radius:10px}
+.wsh-imgside .img-hint{margin:0;line-height:1.45}
+.wsh-photos-lbl{font-size:.72rem;font-weight:700;color:var(--ink2);margin-top:2px}
+.wsh-photos{display:flex;gap:8px;flex-wrap:wrap}
+.wsh-photos button{width:44px;aspect-ratio:4/5;border-radius:8px;overflow:hidden;border:2px solid transparent;padding:0;cursor:pointer;background:var(--surface2);transition:border-color .15s,transform .15s}
+.wsh-photos button:hover{transform:translateY(-1px)}
+.wsh-photos button.on{border-color:var(--brand)}
+.wsh-photos img{width:100%;height:100%;object-fit:cover;display:block}
+.wsh-plist{margin-top:8px;max-height:196px;overflow-y:auto;border:1.5px solid var(--border);border-radius:12px;background:#fff;scrollbar-width:thin}
+.wsh-pitem{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:10px 12px;border:0;border-bottom:1px solid var(--border);background:transparent;font:inherit;font-size:.8rem;color:var(--ink);cursor:pointer}
+.wsh-pitem:last-child{border-bottom:0}
+.wsh-pitem:hover{background:var(--brand-light)}
+.wsh-pid{font-weight:800;white-space:nowrap}
+.wsh-pmeta{flex:1;min-width:0;color:var(--ink2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wsh-prent{font-weight:700;white-space:nowrap}
+.wsh-pempty{padding:16px;text-align:center;font-size:.8rem;color:var(--ink2)}
+.wsh-psel{display:flex;align-items:center;gap:12px;padding:12px 14px;border:1.5px solid var(--brand);background:var(--brand-light);border-radius:12px}
+.wsh-psel-main{flex:1;min-width:0}
+.wsh-psel-id{font-weight:800;font-size:.88rem;color:var(--ink)}
+.wsh-psel-meta{font-size:.76rem;color:var(--ink2);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wsh-psel button{border:0;background:#fff;color:var(--brand);font:inherit;font-size:.76rem;font-weight:700;padding:7px 12px;border-radius:99px;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.1)}
+.wsh-switch{display:flex;align-items:center;gap:12px;padding:12px 14px;border:1.5px solid var(--border);border-radius:12px;cursor:pointer;margin-bottom:6px}
+.wsh-switch input{position:absolute;opacity:0;pointer-events:none}
+.wsh-sw{position:relative;width:42px;height:24px;border-radius:99px;background:#cfd3da;flex-shrink:0;transition:background .18s}
+.wsh-sw::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3);transition:transform .18s}
+.wsh-switch input:checked+.wsh-sw{background:#16a34a}
+.wsh-switch input:checked+.wsh-sw::after{transform:translateX(18px)}
+.wsh-switch input:focus-visible+.wsh-sw{outline:2px solid var(--brand);outline-offset:2px}
+.wsh-switch b{display:block;font-size:.84rem;color:var(--ink)}
+.wsh-switch small{display:block;font-size:.74rem;color:var(--ink2);margin-top:1px}
+#wishModal .wsh-foot{display:flex;flex-wrap:wrap;gap:10px;justify-content:flex-end;align-items:center;margin:0;padding:14px 26px 18px;border-top:1px solid var(--border);background:#fff;flex-shrink:0}
+#wishModal .wsh-foot .hr-form-error{flex-basis:100%;margin:0 0 2px;background:rgba(220,38,38,.08);border-radius:10px;padding:9px 12px;font-weight:600}
+#wishModal .wsh-foot .hr-form-error:not(.show){display:none}
+#wishModal .wsh-foot button{padding:12px 24px;font-size:.86rem}
+#wishPropSelected{flex-wrap:wrap;gap:6px;align-items:center;padding:10px 12px;margin-bottom:8px}
+.wsh-tag{display:inline-flex;align-items:center;gap:6px;background:#fff;border:1px solid var(--brand);color:var(--ink);font-size:.76rem;font-weight:700;padding:4px 5px 4px 10px;border-radius:99px}
+.wsh-psel .wsh-tag button{border:0;background:var(--brand-light);color:var(--brand);width:18px;height:18px;padding:0;border-radius:50%;cursor:pointer;font-size:10px;line-height:1;box-shadow:none;display:inline-flex;align-items:center;justify-content:center}
+.wsh-psel .wsh-selclear{margin-left:auto}
+.wsh-ck{width:18px;height:18px;border-radius:5px;border:1.5px solid #c5cad3;display:flex;align-items:center;justify-content:center;font-size:10px;color:transparent;flex-shrink:0;background:#fff}
+.wsh-pitem.sel{background:var(--brand-light)}
+.wsh-pitem.sel .wsh-ck{background:var(--brand);border-color:var(--brand);color:#fff}
+@media(max-width:520px){
+  #wishModal .std-hdr,#wishModal .wsh-foot{padding-left:18px;padding-right:18px}
+  #wishModal .prop-modal-body{padding:18px 18px 4px}
+  .wsh-dates2{gap:10px}
+  .wsh-imgbox{width:104px}
+  .wsh-foot button{flex:1}
+}
 </style>
 <div class="prop-modal-wrap" id="wishModal" onclick="if(event.target===this)closeWishModal()">
   <div class="prop-modal">
     <div class="std-hdr">
-      <div class="std-hdr-text"><div class="std-hdr-title" id="wishModalTitle">Add Wish</div></div>
+      <div class="std-hdr-text">
+        <div class="std-hdr-title" id="wishModalTitle">Add Wish</div>
+        <div class="std-hdr-sub">Popup on the website between the dates you pick</div>
+      </div>
       <div class="std-hdr-actions"><button type="button" class="std-hdr-close" onclick="closeWishModal()" aria-label="Close">&#10005;</button></div>
     </div>
     <div class="prop-modal-body">
-      <div class="hr-form-error" id="wishFormError"></div>
       <input type="hidden" id="wishFormId">
 
-      <div class="hr-form-row">
-        <label>Title</label>
+      <div class="wsh-seg" id="wishSeg" role="tablist" aria-label="Wish type">
+        <button type="button" role="tab" data-k="greeting" class="on" onclick="setWishKind('greeting')">🎉 Greeting</button>
+        <button type="button" role="tab" data-k="property" onclick="setWishKind('property')">🏠 Promote a property</button>
+      </div>
+
+      <div class="wsh-f">
+        <div class="wsh-lbl"><span>Title</span><small>Only you see this</small></div>
         <input type="text" id="wishFormTitle" maxlength="80" placeholder="e.g. Diwali 2026">
       </div>
 
-      <div class="hr-form-grid">
-        <div class="hr-form-row">
-          <label>Show from</label>
-          <input type="date" id="wishFormStart" onchange="onWishStartChange()">
-        </div>
-        <div class="hr-form-row">
-          <label>Show until (inclusive)</label>
-          <input type="date" id="wishFormEnd">
+      <div class="wsh-f" id="wishPropWrap" style="display:none">
+        <div class="wsh-lbl"><span>Listings to promote</span><small>Tick one or more · max 10</small></div>
+        <div class="wsh-psel" id="wishPropSelected" style="display:none"></div>
+        <div id="wishPropPicker">
+          <input type="search" id="wishPropSearch" placeholder="Search by ID, area, type or name…" oninput="renderWishProps()" autocomplete="off">
+          <div class="wsh-plist" id="wishPropList"></div>
         </div>
       </div>
 
-      <div class="hr-form-row">
-        <label>Wish image</label>
-        <div style="display:flex;align-items:center;gap:14px">
-          <div class="wsh-imgbox">
-            <img id="wishImgPreview" src="" alt="">
-            <i class="fas fa-image" id="wishImgPlaceholder" style="color:var(--ink2);font-size:1.4rem"></i>
+      <div class="wsh-f">
+        <div class="wsh-dates2">
+          <div>
+            <div class="wsh-lbl"><span>Show from</span></div>
+            <input type="date" id="wishFormStart" onchange="onWishStartChange()">
           </div>
-          <div style="display:flex;flex-direction:column;gap:6px">
-            <div style="display:flex;gap:8px">
+          <div>
+            <div class="wsh-lbl"><span>Show until</span><small>inclusive</small></div>
+            <input type="date" id="wishFormEnd" onchange="updateWishDur()">
+          </div>
+        </div>
+        <div class="wsh-dur" id="wishDur"></div>
+      </div>
+
+      <div class="wsh-f" id="wishImgWrap">
+        <div class="wsh-lbl"><span>Popup image</span><small id="wishImgReq">Required</small></div>
+        <div class="wsh-imgrow">
+          <div class="wsh-imgbox" id="wishImgBox" onclick="document.getElementById('wishImgFileInput').click()" title="Click to upload">
+            <img id="wishImgPreview" src="" alt="">
+            <i class="fas fa-image" id="wishImgPlaceholder" style="color:var(--ink2);font-size:1.5rem"></i>
+          </div>
+          <div class="wsh-imgside">
+            <div class="wsh-imgbtns">
               <button type="button" class="img-btn-sec" onclick="document.getElementById('wishImgFileInput').click()">📁 Upload</button>
               <button type="button" class="img-btn-sec" id="wishImgRemoveBtn" style="display:none" onclick="removeWishImage()">✕ Remove</button>
             </div>
-            <div class="img-hint" id="wishImgHint">Required. Portrait works best (shown up to ~420px wide).</div>
+            <div class="img-hint" id="wishImgHint">Portrait works best (shown up to ~420px wide).</div>
+            <div id="wishPhotosWrap" style="display:none">
+              <div class="wsh-photos-lbl">Or use a photo from the listing</div>
+              <div class="wsh-photos" id="wishListingPhotos"></div>
+            </div>
           </div>
         </div>
         <input type="file" id="wishImgFileInput" accept="image/*" style="display:none" onchange="uploadWishImageFromFile(this)">
         <input type="hidden" id="wishFormImageUrl" value="">
       </div>
 
-      <div class="hr-form-row">
-        <label>Image description (optional)</label>
+      <div class="wsh-f" id="wishCtaWrap" style="display:none">
+        <div class="wsh-lbl"><span>Button text</span><small>Shown under the listing card</small></div>
+        <input type="text" id="wishFormCta" maxlength="40" placeholder="View property">
+      </div>
+
+      <div class="wsh-f" id="wishAltWrap">
+        <div class="wsh-lbl"><span>Image description</span><small>Optional · for accessibility</small></div>
         <input type="text" id="wishFormAlt" maxlength="140" placeholder="e.g. Happy Diwali — from Home Loop">
       </div>
 
-      <div class="hr-form-check">
+      <label class="wsh-switch" for="wishFormActive">
         <input type="checkbox" id="wishFormActive" checked>
-        <label for="wishFormActive" style="margin:0">Active (uncheck to pause without deleting)</label>
-      </div>
-
-      <div class="hr-modal-actions">
-        <button class="hr-btn-cancel" onclick="closeWishModal()">Cancel</button>
-        <button class="hr-btn-save" id="wishFormSaveBtn" onclick="saveWish()">Save</button>
-      </div>
+        <span class="wsh-sw"></span>
+        <span><b>Active</b><small>Turn off to pause without deleting</small></span>
+      </label>
+    </div>
+    <div class="hr-modal-actions wsh-foot">
+      <div class="hr-form-error" id="wishFormError"></div>
+      <button class="hr-btn-cancel" onclick="closeWishModal()">Cancel</button>
+      <button class="hr-btn-save" id="wishFormSaveBtn" onclick="saveWish()">Save</button>
     </div>
   </div>
 </div>

@@ -3288,11 +3288,61 @@ self.addEventListener('notificationclick', event => {
     const endDate   = String(body.endDate || '').trim();
     if (!title) return { error: 'Title is required' };
     if (title.length > 80) return { error: 'Title must be 80 characters or fewer' };
-    if (!WISH_IMG_RE.test(imageUrl)) return { error: 'Please upload a wish image' };
     if (!isRealWishDate(startDate) || !isRealWishDate(endDate)) return { error: 'A valid start date and end date are required' };
     if (endDate < startDate) return { error: 'End date cannot be before the start date' };
-    return { fields: { title, imageUrl, alt: alt.slice(0, 140), startDate, endDate, active: body.active !== false } };
+    const kind        = body.kind === 'property' ? 'property' : 'greeting';
+    let propertyRefs = [];
+    if (kind === 'property') {
+      const raw = Array.isArray(body.propertyRefs) ? body.propertyRefs : [body.propertyRef];
+      propertyRefs = [...new Set(raw.map(x => String(x || '').trim()).filter(Boolean))];
+      if (propertyRefs.length > 10) return { error: 'You can promote up to 10 listings in one wish' };
+      if (propertyRefs.some(r => !/^[a-f0-9]{24}$/.test(r))) return { error: 'Invalid listing selected' };
+    }
+    const propertyRef = propertyRefs[0] || '';
+    const ctaText     = kind === 'property' ? (String(body.ctaText || '').trim().slice(0, 40) || 'View property') : '';
+    if (kind === 'property' && !propertyRefs.length) return { error: 'Please choose the listing to promote' };
+    // Greetings need an uploaded image; a property promo renders the listing's own card, so its image is just an optional thumbnail.
+    if (kind === 'greeting' && !WISH_IMG_RE.test(imageUrl)) return { error: 'Please upload a wish image' };
+    if (imageUrl && !WISH_IMG_RE.test(imageUrl)) return { error: 'Invalid image' };
+    return { fields: { title, imageUrl, alt: alt.slice(0, 140), startDate, endDate, active: body.active !== false, kind, propertyRef, propertyRefs, ctaText } };
   }
+  // A property promo must point at a listing that still exists (any of the listing collections).
+  async function wishListingExists(refs) {
+    for (const ref of [].concat(refs)) {
+      const hits = await Promise.all(LISTING_MODEL_LIST.map(M => M.exists({ _id: ref })));
+      if (!hits.some(Boolean)) return false;
+    }
+    return true;
+  }
+
+  // GET /api/admin/wish-properties — listings the admin can promote in a wish popup
+  // (not booked, not blocked). Only photos stored as /uploads/<id> are offered, since
+  // those are the only image URLs a wish accepts.
+  app.get('/api/admin/wish-properties', requireAdmin, requireModule('wishes'), async (req, res) => {
+    try {
+      const arrays = await Promise.all(LISTING_MODEL_LIST.map(M =>
+        M.find({ booked: { $ne: true }, blocked: { $ne: true } })
+          .select('propertyId verified basic.status location.area owner.propertyName price.rent media.images createdAt')
+          .sort({ createdAt: -1 }).limit(1000).lean()
+      ));
+      const list = arrays.flat()
+        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+        .map(d => ({
+          _id:        String(d._id),
+          propertyId: d.propertyId || '',
+          status:     (d.basic && d.basic.status) || '',
+          area:       (d.location && d.location.area) || '',
+          title:      (d.owner && d.owner.propertyName) || '',
+          rent:       (d.price && d.price.rent != null) ? d.price.rent : null,
+          verified:   !!d.verified,
+          images:     ((d.media && d.media.images) || []).filter(u => WISH_IMG_RE.test(u || '')).slice(0, 6)
+        }));
+      res.json({ properties: list });
+    } catch (err) {
+      console.error('GET /api/admin/wish-properties error:', err.message);
+      res.status(500).json({ error: 'Could not load listings' });
+    }
+  });
 
   // GET /api/admin/wishes — every wish (live, upcoming, ended, paused) for the manage UI.
   app.get('/api/admin/wishes', requireAdmin, requireModule('wishes'), async (req, res) => {
@@ -3310,6 +3360,7 @@ self.addEventListener('notificationclick', event => {
     try {
       const { error, fields } = validateWishBody(req.body);
       if (error) return res.status(400).json({ error });
+      if (fields.kind === 'property' && !(await wishListingExists(fields.propertyRefs))) return res.status(400).json({ error: 'One of the selected listings no longer exists' });
       const wish = await Wish.create(fields);
       res.status(201).json({ wish });
     } catch (err) {
@@ -3323,6 +3374,7 @@ self.addEventListener('notificationclick', event => {
     try {
       const { error, fields } = validateWishBody(req.body);
       if (error) return res.status(400).json({ error });
+      if (fields.kind === 'property' && !(await wishListingExists(fields.propertyRefs))) return res.status(400).json({ error: 'One of the selected listings no longer exists' });
       const before = await Wish.findById(req.params.id).lean();
       if (!before) return res.status(404).json({ error: 'Wish not found' });
       const wish = await Wish.findByIdAndUpdate(req.params.id, fields, { new: true }).lean();

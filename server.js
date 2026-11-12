@@ -3243,11 +3243,16 @@ app.get('/api/partners', attachUserIfPresent, async (req, res) => {
 // from admin.js's POST /api/admin/upload-wish-image — nothing else is accepted there.
 const wishSchema = new mongoose.Schema({
   title:     { type: String, required: true, trim: true, maxlength: 80 },   // admin-side label, e.g. "Diwali 2026"
-  imageUrl:  { type: String, required: true, trim: true },
+  imageUrl:  { type: String, default: '', trim: true },   // required for greetings (checked in admin.js); optional thumbnail for property promos
   alt:       { type: String, default: '', trim: true, maxlength: 140 },     // accessibility text; falls back to title on the site
   startDate: { type: String, required: true },
   endDate:   { type: String, required: true },
   active:    { type: Boolean, default: true },
+  // 'greeting' = plain festive image; 'property' = promo popup for one listing (opens its detail view)
+  kind:        { type: String, enum: ['greeting', 'property'], default: 'greeting' },
+  propertyRef: { type: String, default: '', trim: true },                    // first promoted listing _id (24-hex) — kept for older wishes
+  propertyRefs: { type: [String], default: [] },                             // every promoted listing _id, in display order (max 10)
+  ctaText:     { type: String, default: '', trim: true, maxlength: 40 },     // button label on a property promo
   createdAt: { type: Date, default: Date.now }
 });
 wishSchema.index({ active: 1, endDate: 1, startDate: 1 });
@@ -3264,7 +3269,7 @@ app.get('/api/wishes/active', async (req, res) => {
     const to   = dateStrInTz(new Date(now + 36 * 3600 * 1000));
     const wishes = await Wish.find({ active: true, endDate: { $gte: from }, startDate: { $lte: to } })
       .sort({ startDate: -1, createdAt: -1 })
-      .select('title imageUrl alt startDate endDate')
+      .select('title imageUrl alt startDate endDate kind propertyRef propertyRefs ctaText')
       .lean();
     res.set('Cache-Control', 'public, max-age=60');
     res.json({ wishes });
