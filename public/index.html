@@ -16789,7 +16789,7 @@ function userAuthHeaders(extra) {
   return Object.assign({ 'x-user-key': (user && user.userKey) || '' }, extra || {});
 }
 async function confirmLogout() {
-  const ok = await showConfirmDialog({ title: 'Log out?', message: 'You will need to log in again to manage your listings.', okText: 'Log out', cancelText: 'Cancel', variant: 'info' });
+  const ok = await showConfirmDialog({ title: 'Log out?', message: 'You will need to log in again to manage your listings.', okText: 'Log out', cancelText: 'Cancel' });
   if (ok) logoutUser();
 }
 async function logoutUser() {
