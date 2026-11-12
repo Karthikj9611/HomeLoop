@@ -6543,6 +6543,42 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
     </div>
     <div class="prop-grid" id="sellBookedGrid"></div>
   </div>
+  <!-- Section header pills (Rent / Lease / PG / Promoted / Booked…) sit directly under the BHK filter chip:
+       same width and same left edge, also while stuck. Values mirrored from the chip into --bhk-w / --bhk-x. -->
+  <style>
+  html.bhk-aligned .section-divider .section-divider-label{box-sizing:border-box;width:var(--bhk-w) !important;min-width:0 !important;max-width:none !important;transform:none !important;justify-content:center;margin-left:var(--bhk-x,0) !important;margin-right:0 !important}
+  html.bhk-aligned .section-divider .section-divider-inner,
+  html.bhk-aligned .section-divider.is-stuck .section-divider-inner{justify-content:flex-start}
+  html.bhk-aligned .section-divider .section-divider-inner::before{display:none}
+  </style>
+  <script>
+  (function(){
+    var chip = document.getElementById('fdb-bhk'), raf = 0, root = document.documentElement;
+    if (!chip) return;
+    function sync(){
+      raf = 0;
+      var c = chip.getBoundingClientRect();
+      var d = Array.prototype.filter.call(document.querySelectorAll('.section-divider'), function(x){ return x.offsetParent !== null && x.querySelector('.section-divider-inner'); })[0];
+      var inner = d && d.querySelector('.section-divider-inner');
+      if (!inner || c.width <= 0) { root.classList.remove('bhk-aligned'); return; }   // no BHK chip on this tab → normal centered headers
+      root.style.setProperty('--bhk-w', c.width.toFixed(2) + 'px');
+      root.style.setProperty('--bhk-x', Math.max(0, c.left - inner.getBoundingClientRect().left).toFixed(2) + 'px');
+      root.classList.add('bhk-aligned');
+    }
+    function queue(){ if (!raf) raf = requestAnimationFrame(sync); }
+    queue();
+    window.addEventListener('resize', queue);
+    window.addEventListener('load', queue);
+    document.addEventListener('scroll', queue, true);       // filter row scrolls sideways → chip moves
+    document.addEventListener('click', function(){ setTimeout(queue, 60); }, true);   // tab switches show/hide the chip
+    if (window.ResizeObserver) new ResizeObserver(queue).observe(chip);
+    if (window.MutationObserver) {
+      var mo = new MutationObserver(queue);
+      document.querySelectorAll('.section-divider').forEach(function(d){ mo.observe(d, { attributes: true, attributeFilter: ['style', 'class'] }); });
+      mo.observe(document.getElementById('filterDdBar') || chip.parentNode, { attributes: true, subtree: true, attributeFilter: ['style', 'class'] });
+    }
+  })();
+  </script>
   <!-- Viewed section is hidden for now (nothing removed). To bring it back, delete this one rule. -->
   <style>#recentlyViewedSection{display:none !important}</style>
   <div id="recentlyViewedSection" class="recently-viewed-section" style="display:none">
@@ -9012,7 +9048,7 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
       <button type="button" class="plan-toggle" aria-expanded="false" onclick="togglePlan('planDirect')">
         <div class="charges-audience-head">
         <div class="charges-audience-icon"><svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg></div>
-        <div class="charges-audience-name">Direct Plan</div></div>
+        <div class="charges-audience-name">Multi Properties Plan</div></div>
         <svg class="plan-chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
       </button>
       <div class="plan-body"><div class="plan-body-inner">
@@ -9159,7 +9195,7 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
 <button type="button" class="plan-toggle" aria-expanded="false" onclick="togglePlan('planGuestTenantDirect')">
 <div class="charges-audience-head">
           <div class="charges-audience-icon"><svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg></div>
-          <div class="charges-audience-name">Direct Plan</div></div>
+          <div class="charges-audience-name">Multi Properties Plan</div></div>
 <svg class="plan-chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
 </button>
 <div class="plan-body"><div class="plan-body-inner">
@@ -11453,8 +11489,8 @@ function lockPanelHtml(kind) {
   const isVid = kind === 'video';
   return '<div class="plan-lock-icon">' + (isVid ? '\uD83C\uDFAC' : '\uD83C\uDFE1') + '</div>'
     + '<div class="plan-lock-title">' + (isVid ? 'Video tour' : 'Building photo') + '</div>'
-    + '<div class="plan-lock-sub">The Direct Plan unlocks the building photo, video tour and owner contact.</div>'
-    + '<button type="button" class="plan-lock-btn" onclick="openPlansFromLock(event)">Explore Direct Plan</button>';
+    + '<div class="plan-lock-sub">The Multi Properties Plan unlocks the building photo, video tour and owner contact.</div>'
+    + '<button type="button" class="plan-lock-btn" onclick="openPlansFromLock(event)">Explore Multi Properties Plan</button>';
 }
 function showPlansFromSwipe() {
   const u = getLoggedInUser();
