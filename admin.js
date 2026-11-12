@@ -20,7 +20,7 @@ module.exports = function registerAdminRoutes(app, deps) {
     NESTED_SECTIONS, validatePropertyFields, formatPrice,
     nextPropertyId, modelForStatus,
     notifyUser, visitCalendarMeta,
-    HonestReview, Partner, PaymentSettings, PaymentRequest,
+    HonestReview, Partner, Wish, PaymentSettings, PaymentRequest,
     SiteStat, DailyStat, todayStr, dateStrInTz, Referral,
     Review,
     ImageAsset,
@@ -185,6 +185,7 @@ module.exports = function registerAdminRoutes(app, deps) {
     reviews:       'Honest Reviews',
     userReviews:   'Reviews',
     partners:      'Partners',
+    wishes:        'Wishes',
     brokers:       'Brokers',
     referrals:     'Referrals',
     payments:      'Payments',
@@ -3263,6 +3264,132 @@ self.addEventListener('notificationclick', event => {
     } catch (err) {
       console.error('DELETE /api/admin/brokers/:id error:', err.message);
       res.status(500).json({ error: 'Could not delete broker' });
+    }
+  });
+
+  // ─────────────────────────────────────────────────────────────────
+  // ── FESTIVE WISHES ── (greeting popup on the public site; model + public
+  // GET /api/wishes/active live in server.js). Admin manages them here.
+  // ─────────────────────────────────────────────────────────────────
+  const WISH_IMG_RE  = /^\/uploads\/[a-f0-9]{24}$/;
+  const WISH_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+  const isRealWishDate = (s) => {
+    if (!WISH_DATE_RE.test(s)) return false;
+    const d = new Date(s + 'T00:00:00Z');
+    return !isNaN(d.getTime()) && d.toISOString().slice(0, 10) === s;
+  };
+  // One validator for both create and update — the admin form always sends every field.
+  function validateWishBody(body) {
+    body = body || {};
+    const title     = String(body.title || '').trim();
+    const imageUrl  = String(body.imageUrl || '').trim();
+    const alt       = String(body.alt || '').trim();
+    const startDate = String(body.startDate || '').trim();
+    const endDate   = String(body.endDate || '').trim();
+    if (!title) return { error: 'Title is required' };
+    if (title.length > 80) return { error: 'Title must be 80 characters or fewer' };
+    if (!WISH_IMG_RE.test(imageUrl)) return { error: 'Please upload a wish image' };
+    if (!isRealWishDate(startDate) || !isRealWishDate(endDate)) return { error: 'A valid start date and end date are required' };
+    if (endDate < startDate) return { error: 'End date cannot be before the start date' };
+    return { fields: { title, imageUrl, alt: alt.slice(0, 140), startDate, endDate, active: body.active !== false } };
+  }
+
+  // GET /api/admin/wishes — every wish (live, upcoming, ended, paused) for the manage UI.
+  app.get('/api/admin/wishes', requireAdmin, requireModule('wishes'), async (req, res) => {
+    try {
+      const wishes = await Wish.find({}).sort({ startDate: -1, createdAt: -1 }).lean();
+      res.json({ wishes });
+    } catch (err) {
+      console.error('GET /api/admin/wishes error:', err.message);
+      res.status(500).json({ error: 'Could not load wishes' });
+    }
+  });
+
+  // POST /api/admin/wishes — add a wish
+  app.post('/api/admin/wishes', requireAdmin, requireModuleAction('wishes'), async (req, res) => {
+    try {
+      const { error, fields } = validateWishBody(req.body);
+      if (error) return res.status(400).json({ error });
+      const wish = await Wish.create(fields);
+      res.status(201).json({ wish });
+    } catch (err) {
+      console.error('POST /api/admin/wishes error:', err.message);
+      res.status(500).json({ error: 'Could not save wish' });
+    }
+  });
+
+  // PUT /api/admin/wishes/:id — edit a wish (also used for the Pause/Resume toggle)
+  app.put('/api/admin/wishes/:id', requireAdmin, requireModuleAction('wishes'), async (req, res) => {
+    try {
+      const { error, fields } = validateWishBody(req.body);
+      if (error) return res.status(400).json({ error });
+      const before = await Wish.findById(req.params.id).lean();
+      if (!before) return res.status(404).json({ error: 'Wish not found' });
+      const wish = await Wish.findByIdAndUpdate(req.params.id, fields, { new: true }).lean();
+      // Image was swapped — drop the old one so replaced uploads don't pile up in Mongo.
+      if (before.imageUrl && before.imageUrl !== fields.imageUrl) {
+        await dropWishImageIfUnused(before.imageUrl);
+      }
+      res.json({ wish });
+    } catch (err) {
+      console.error('PUT /api/admin/wishes/:id error:', err.message);
+      res.status(500).json({ error: 'Could not update wish' });
+    }
+  });
+
+  // DELETE /api/admin/wishes/:id
+  app.delete('/api/admin/wishes/:id', requireAdmin, requireModuleAction('wishes'), async (req, res) => {
+    try {
+      const deleted = await Wish.findByIdAndDelete(req.params.id).lean();
+      if (!deleted) return res.status(404).json({ error: 'Wish not found' });
+      await dropWishImageIfUnused(deleted.imageUrl);
+      res.json({ message: 'Wish deleted' });
+    } catch (err) {
+      console.error('DELETE /api/admin/wishes/:id error:', err.message);
+      res.status(500).json({ error: 'Could not delete wish' });
+    }
+  });
+
+  // Best-effort cleanup of the stored image once no wish points at it any more.
+  async function dropWishImageIfUnused(url) {
+    try {
+      if (!WISH_IMG_RE.test(url || '')) return;
+      if (await Wish.exists({ imageUrl: url })) return;
+      await ImageAsset.deleteOne({ _id: url.split('/').pop() });
+    } catch (e) { /* cleanup only — never fail the request over it */ }
+  }
+
+  // POST /api/admin/upload-wish-image — single greeting image. Same sharp→WebP
+  // pipeline as the other admin uploads, but kept large (greeting art is shown
+  // full-size in a popup) and with transparency preserved (WebP keeps alpha).
+  const uploadWishImage = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 8 * 1024 * 1024 },
+    fileFilter: (req, file, cb) => {
+      const ok = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/heic', 'image/heif'].includes(file.mimetype);
+      cb(ok ? null : new Error('Only image files are allowed'), ok);
+    },
+  });
+  // multer errors (wrong file type, over 8 MB) would otherwise fall through to the generic 500 handler —
+  // answer with a readable 400 instead, since the admin form shows this message as-is.
+  const wishImageSingle = (req, res, next) => uploadWishImage.single('image')(req, res, (err) => {
+    if (!err) return next();
+    const tooBig = err.code === 'LIMIT_FILE_SIZE';
+    res.status(400).json({ message: tooBig ? 'Image is too large (max 8 MB).' : (err.message || 'Could not read that image.') });
+  });
+  app.post('/api/admin/upload-wish-image', requireAdmin, requireModuleAction('wishes'), bookingUploadLimiter, wishImageSingle, async (req, res) => {
+    try {
+      if (!req.file) return res.status(400).json({ message: 'No image uploaded' });
+      const webpBuffer = await sharp(req.file.buffer)
+        .rotate()
+        .resize({ width: 1400, height: 1800, fit: 'inside', withoutEnlargement: true })
+        .webp({ quality: 85 })
+        .toBuffer();
+      const doc = await ImageAsset.create({ data: webpBuffer, contentType: 'image/webp' });
+      res.status(201).json({ message: 'Image uploaded successfully', url: `/uploads/${doc._id}` });
+    } catch (err) {
+      console.error('POST /api/admin/upload-wish-image error:', err);
+      res.status(500).json({ message: 'Error uploading image' });
     }
   });
 

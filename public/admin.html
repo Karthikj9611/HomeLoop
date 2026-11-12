@@ -3922,6 +3922,11 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
       <span class="tab-btn-label" data-mobile="Partners">Partners</span>
       <span class="tab-count" id="tab-partners-count">—</span>
     </button>
+    <button class="tab-btn" id="tab-wishes" onclick="switchTab('wishes')">
+      <i class="fas fa-gift"></i>
+      <span class="tab-btn-label" data-mobile="Wishes">Wishes</span>
+      <span class="tab-count" id="tab-wishes-count">—</span>
+    </button>
     <button class="tab-btn" id="tab-appointments" onclick="switchTab('appointments')">
       <i class="fas fa-calendar-days"></i>
       <span class="tab-btn-label" data-mobile="Appts">Appointments</span>
@@ -4851,6 +4856,23 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
             <tr><td colspan="10" class="empty-state"><i class="fas fa-circle-notch fa-spin"></i>Loading…</td></tr>
           </tbody>
         </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ WISHES PANEL ══ -->
+  <div class="tab-panel" id="panel-wishes">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-header-left">
+          <div class="wsh-intro"><b>Festive wishes</b> — a greeting image shown as a popup on the website from the start date to the end date.</div>
+        </div>
+        <button class="bulk-btn" id="addWishBtn" onclick="openWishModal()" title="Add wish" aria-label="Add wish" style="background:var(--brand);color:#fff;border-color:var(--brand)">
+          <i class="fas fa-plus"></i> <span class="bulk-btn-label" data-mobile="Add">Add wish</span>
+        </button>
+      </div>
+      <div class="wsh-grid" id="wishGrid">
+        <div class="empty-state"><i class="fas fa-circle-notch fa-spin"></i>Loading…</div>
       </div>
     </div>
   </div>
@@ -6896,6 +6918,9 @@ function switchTab(tab){
     paymentsTable.ajax.reload(null, false); // always fresh — new payments arrive while the panel is open
     setTimeout(()=>{ paymentsTable.columns.adjust().draw(false); }, 50);
   }
+  if(tab === 'wishes'){
+    loadWishes();
+  }
   if(tab === 'admin-access'){
     loadAdminAccessTab();
   }
@@ -6912,6 +6937,7 @@ const TAB_MODULE_MAP = {
   'referrals': 'referrals',
   'payments': 'payments',
   'partners': 'partners',
+  'wishes': 'wishes',
   'brokers': 'brokers',
   'appointments': 'appointments',
   'honest-reviews': 'reviews',
@@ -6920,7 +6946,7 @@ const TAB_MODULE_MAP = {
 // icon used for that feature's own tab button in the main nav where one exists.
 const MODULE_ICONS = {
   visits: 'fa-globe', customers: 'fa-users', properties: 'fa-building',
-  appointments: 'fa-calendar-days', reviews: 'fa-video', userReviews: 'fa-star', partners: 'fa-handshake', brokers: 'fa-user-tie',
+  appointments: 'fa-calendar-days', reviews: 'fa-video', userReviews: 'fa-star', partners: 'fa-handshake', wishes: 'fa-gift', brokers: 'fa-user-tie',
   referrals: 'fa-share-nodes', payments: 'fa-credit-card',
   stats: 'fa-chart-line', notifications: 'fa-bell',
 };
@@ -7040,6 +7066,7 @@ async function loadAdminMe(){
     // Whether /me succeeded or not, now (and only now) reopen the last tab —
     // after applyAdminAccessUI has hidden anything this login can't see.
     restoreSavedTab();
+    if(typeof loadWishes === 'function') loadWishes(); // fills the tab count; harmless if this login has no access
   }
 }
 
@@ -7067,6 +7094,7 @@ function applyAdminAccessUI(){
       'properties':     '#panel-properties .btn-add-review, #panel-properties #addPropertyBtn',
       'honest-reviews': '#panel-honest-reviews #addHonestReviewBtn',
       'partners':       '#panel-partners #addPartnerBtn',
+      'wishes':         '#panel-wishes #addWishBtn',
       'brokers':        '#panel-brokers #addBrokerBtn',
     };
     const bulkDeleteBtnByPanel = {
@@ -10262,6 +10290,223 @@ window.savePartner = async function(){
   } finally {
     saveBtn.disabled = false;
   }
+};
+
+/* ════════════════════════════════════
+   WISHES: festive greeting popup (admin side)
+   Public site reads GET /api/wishes/active and shows the image between
+   the start and end dates (inclusive).
+════════════════════════════════════ */
+let _wishesCache = [];
+const _WISH_MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+function _wishToday(){
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+function _wishFmt(s){
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s || '');
+  return m ? (+m[3]) + ' ' + _WISH_MONTHS[+m[2]-1] + ' ' + m[1] : (s || '');
+}
+function _wishRange(w){
+  return w.startDate === w.endDate ? _wishFmt(w.startDate) : _wishFmt(w.startDate) + ' – ' + _wishFmt(w.endDate);
+}
+function _wishStatus(w){
+  if(w.active === false) return { k:'paused',   t:'Paused' };
+  const t = _wishToday();
+  if(t < w.startDate)    return { k:'upcoming', t:'Upcoming' };
+  if(t > w.endDate)      return { k:'ended',    t:'Ended' };
+  return { k:'live', t:'Live now' };
+}
+
+async function loadWishes(){
+  const grid = document.getElementById('wishGrid');
+  try{
+    const res = await fetch(BASE + '/api/admin/wishes', { headers: authHeaders() });
+    const data = await res.json().catch(()=>({}));
+    if(!res.ok){
+      if(grid) grid.innerHTML = '<div class="empty-state">' + escapeHtml(data.message || data.error || 'Could not load wishes') + '</div>';
+      return;
+    }
+    _wishesCache = data.wishes || [];
+    const cnt = document.getElementById('tab-wishes-count');
+    if(cnt) cnt.innerText = _wishesCache.length;
+    renderWishes();
+  } catch(e){
+    if(grid) grid.innerHTML = '<div class="empty-state">Could not load wishes. Please try again.</div>';
+  }
+}
+
+function renderWishes(){
+  const grid = document.getElementById('wishGrid');
+  if(!grid) return;
+  if(!_wishesCache.length){
+    grid.innerHTML = '<div class="empty-state"><i class="fas fa-gift"></i>No wishes yet — click “Add wish” to schedule your first greeting.</div>';
+    return;
+  }
+  grid.innerHTML = _wishesCache.map(w => {
+    const st = _wishStatus(w);
+    const id = escapeHtml(w._id);
+    return '<div class="wsh-card">' +
+      '<div class="wsh-thumb" onclick="openAdminLightboxArr([' + JSON.stringify(w.imageUrl).replace(/"/g,'&quot;') + '],0)" title="View full size">' +
+        '<img src="' + escapeHtml(w.imageUrl) + '" alt="' + escapeHtml(w.alt || w.title) + '" loading="lazy">' +
+        '<span class="wsh-chip ' + st.k + '">' + st.t + '</span>' +
+      '</div>' +
+      '<div class="wsh-body">' +
+        '<div class="wsh-title">' + escapeHtml(w.title) + '</div>' +
+        '<div class="wsh-dates"><i class="fas fa-calendar-days"></i>' + escapeHtml(_wishRange(w)) + '</div>' +
+        '<div class="wsh-actions">' +
+          '<button type="button" onclick="openWishModal(\'' + id + '\')"><i class="fas fa-pen"></i> Edit</button>' +
+          '<button type="button" onclick="toggleWishActive(\'' + id + '\')">' + (w.active === false ? '<i class="fas fa-play"></i> Resume' : '<i class="fas fa-pause"></i> Pause') + '</button>' +
+          '<button type="button" class="danger" onclick="deleteWish(\'' + id + '\')" aria-label="Delete wish"><i class="fas fa-trash"></i></button>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function _renderWishImgPreview(url){
+  const img = document.getElementById('wishImgPreview');
+  const ph = document.getElementById('wishImgPlaceholder');
+  const rm = document.getElementById('wishImgRemoveBtn');
+  const hint = document.getElementById('wishImgHint');
+  if(url){
+    img.src = url; img.style.display = 'block'; ph.style.display = 'none'; rm.style.display = '';
+    hint.textContent = 'Image ready. Upload again to replace it.';
+  } else {
+    img.src = ''; img.style.display = 'none'; ph.style.display = ''; rm.style.display = 'none';
+    hint.textContent = 'Required. Portrait works best (shown up to ~420px wide).';
+  }
+}
+
+window.openWishModal = function(id){
+  if(!id && blockIfViewOnly('wishes')) return;
+  const errEl = document.getElementById('wishFormError');
+  errEl.classList.remove('show'); errEl.textContent = '';
+  const w = id ? _wishesCache.find(x => x._id === id) : null;
+  document.getElementById('wishModalTitle').textContent = w ? 'Edit Wish' : 'Add Wish';
+  document.getElementById('wishFormId').value = w ? w._id : '';
+  document.getElementById('wishFormTitle').value = w ? (w.title || '') : '';
+  const today = _wishToday();
+  document.getElementById('wishFormStart').value = w ? w.startDate : today;
+  document.getElementById('wishFormEnd').value = w ? w.endDate : today;
+  document.getElementById('wishFormAlt').value = w ? (w.alt || '') : '';
+  document.getElementById('wishFormActive').checked = w ? w.active !== false : true;
+  document.getElementById('wishFormImageUrl').value = w ? (w.imageUrl || '') : '';
+  _renderWishImgPreview(w ? (w.imageUrl || '') : '');
+  document.getElementById('wishModal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+};
+
+function closeWishModal(){
+  document.getElementById('wishModal').classList.remove('open');
+  document.body.style.overflow = '';
+}
+window.closeWishModal = closeWishModal;
+
+window.onWishStartChange = function(){
+  const s = document.getElementById('wishFormStart');
+  const e = document.getElementById('wishFormEnd');
+  if(s.value && (!e.value || e.value < s.value)) e.value = s.value;
+};
+
+window.uploadWishImageFromFile = async function(input){
+  const file = (input.files || [])[0];
+  input.value = '';
+  if(!file) return;
+  if(!/^image\//.test(file.type)){ alert('Please choose an image file.'); return; }
+  if(file.size > 8 * 1024 * 1024){ alert('Image is too large (max 8 MB).'); return; }
+  const hint = document.getElementById('wishImgHint');
+  hint.textContent = 'Uploading…';
+  const form = new FormData();
+  form.append('image', file, file.name || 'wish.jpg');
+  try{
+    const res = await fetch(`${BASE}/api/admin/upload-wish-image`, { method:'POST', body: form, headers: authHeaders() });
+    const data = await res.json().catch(()=>({}));
+    if(!res.ok) throw new Error(data.message || 'Upload failed');
+    document.getElementById('wishFormImageUrl').value = data.url;
+    _renderWishImgPreview(data.url);
+  } catch(err){
+    alert(err.message || 'Could not upload image. Please try again.');
+    _renderWishImgPreview(document.getElementById('wishFormImageUrl').value);
+  }
+};
+
+window.removeWishImage = function(){
+  document.getElementById('wishFormImageUrl').value = '';
+  _renderWishImgPreview('');
+};
+
+async function _sendWish(id, payload){
+  const res = await fetch(id ? `${BASE}/api/admin/wishes/${id}` : `${BASE}/api/admin/wishes`, {
+    method: id ? 'PUT' : 'POST',
+    headers: authHeaders({'Content-Type':'application/json'}),
+    body: JSON.stringify(payload)
+  });
+  const data = await res.json().catch(()=>({}));
+  return { ok: res.ok, data };
+}
+
+window.saveWish = async function(){
+  if(blockIfViewOnly('wishes')) return;
+  const errEl = document.getElementById('wishFormError');
+  errEl.classList.remove('show'); errEl.textContent = '';
+  const id = document.getElementById('wishFormId').value.trim();
+  const payload = {
+    title:     document.getElementById('wishFormTitle').value.trim(),
+    startDate: document.getElementById('wishFormStart').value,
+    endDate:   document.getElementById('wishFormEnd').value,
+    imageUrl:  document.getElementById('wishFormImageUrl').value.trim(),
+    alt:       document.getElementById('wishFormAlt').value.trim(),
+    active:    document.getElementById('wishFormActive').checked
+  };
+  const fail = (m) => { errEl.textContent = m; errEl.classList.add('show'); };
+  if(!payload.title) return fail('Title is required.');
+  if(!payload.startDate || !payload.endDate) return fail('Please choose both a start and an end date.');
+  if(payload.endDate < payload.startDate) return fail('End date cannot be before the start date.');
+  if(!payload.imageUrl) return fail('Please upload a wish image.');
+
+  const btn = document.getElementById('wishFormSaveBtn');
+  btn.disabled = true;
+  try{
+    const { ok, data } = await _sendWish(id, payload);
+    if(!ok) return fail(data.error || data.message || 'Save failed');
+    closeWishModal();
+    loadWishes();
+  } catch(e){
+    fail('Save failed. Please try again.');
+  } finally {
+    btn.disabled = false;
+  }
+};
+
+window.toggleWishActive = async function(id){
+  if(blockIfViewOnly('wishes')) return;
+  const w = _wishesCache.find(x => x._id === id);
+  if(!w) return;
+  try{
+    const { ok, data } = await _sendWish(id, {
+      title: w.title, imageUrl: w.imageUrl, alt: w.alt || '',
+      startDate: w.startDate, endDate: w.endDate, active: w.active === false
+    });
+    if(!ok){ alert(data.error || data.message || 'Update failed'); return; }
+    loadWishes();
+  } catch(e){ alert('Update failed. Please try again.'); }
+};
+
+window.deleteWish = async function(id){
+  if(blockIfViewOnly('wishes')) return;
+  const w = _wishesCache.find(x => x._id === id);
+  if(!await showConfirmModal({
+    title: 'Delete this wish?',
+    message: (w ? '“' + w.title + '” will be removed' : 'This wish will be removed') + ' and will no longer show on the website. This cannot be undone.'
+  })) return;
+  try{
+    const res = await fetch(`${BASE}/api/admin/wishes/${id}`, { method:'DELETE', headers: authHeaders() });
+    const data = await res.json().catch(()=>({}));
+    if(!res.ok){ alert(data.error || data.message || 'Delete failed'); return; }
+    loadWishes();
+  } catch(e){ alert('Delete failed. Please try again.'); }
 };
 
 /* ════════════════════════════════════
@@ -20045,6 +20290,92 @@ markRequiredLabels();
 
   </div>
 
+</div>
+
+<!-- ═════════ WISH ADD/EDIT MODAL ═════════ -->
+<style>
+.wsh-intro{font-size:.84rem;color:var(--ink2);line-height:1.4}
+.wsh-intro b{color:var(--ink)}
+.wsh-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:16px;padding:18px}
+.wsh-grid>.empty-state{grid-column:1/-1}
+.wsh-card{background:var(--surface,#fff);border:1px solid var(--border);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 1px 3px rgba(0,0,0,.05)}
+.wsh-thumb{position:relative;aspect-ratio:4/5;background:var(--surface2,#f5f5f7);display:flex;align-items:center;justify-content:center;cursor:zoom-in}
+.wsh-thumb img{width:100%;height:100%;object-fit:contain;display:block}
+.wsh-chip{position:absolute;top:10px;left:10px;font-size:.68rem;font-weight:800;letter-spacing:.04em;text-transform:uppercase;padding:4px 9px;border-radius:999px;color:#fff;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+.wsh-chip.live{background:#16a34a}.wsh-chip.upcoming{background:#2563eb}.wsh-chip.ended{background:#6b7280}.wsh-chip.paused{background:#d97706}
+.wsh-body{padding:12px 14px 14px;display:flex;flex-direction:column;gap:4px}
+.wsh-title{font-weight:700;color:var(--ink);font-size:.95rem;word-break:break-word}
+.wsh-dates{font-size:.8rem;color:var(--ink2)}
+.wsh-dates i{margin-right:5px}
+.wsh-actions{display:flex;gap:8px;margin-top:10px}
+.wsh-actions button{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:6px;font:inherit;font-size:.78rem;font-weight:600;padding:8px 6px;border-radius:9px;border:1px solid var(--border);background:var(--surface,#fff);color:var(--ink);cursor:pointer;transition:background .15s}
+.wsh-actions button:hover{background:var(--surface2,#f5f5f7)}
+.wsh-actions button.danger{color:#dc2626}
+.wsh-imgbox{width:96px;aspect-ratio:4/5;border-radius:10px;overflow:hidden;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.wsh-imgbox img{width:100%;height:100%;object-fit:contain;display:none}
+@media(max-width:560px){.wsh-grid{grid-template-columns:repeat(2,1fr);gap:12px;padding:12px}}
+</style>
+<div class="prop-modal-wrap" id="wishModal" onclick="if(event.target===this)closeWishModal()">
+  <div class="prop-modal">
+    <div class="std-hdr">
+      <div class="std-hdr-text"><div class="std-hdr-title" id="wishModalTitle">Add Wish</div></div>
+      <div class="std-hdr-actions"><button type="button" class="std-hdr-close" onclick="closeWishModal()" aria-label="Close">&#10005;</button></div>
+    </div>
+    <div class="prop-modal-body">
+      <div class="hr-form-error" id="wishFormError"></div>
+      <input type="hidden" id="wishFormId">
+
+      <div class="hr-form-row">
+        <label>Title</label>
+        <input type="text" id="wishFormTitle" maxlength="80" placeholder="e.g. Diwali 2026">
+      </div>
+
+      <div class="hr-form-grid">
+        <div class="hr-form-row">
+          <label>Show from</label>
+          <input type="date" id="wishFormStart" onchange="onWishStartChange()">
+        </div>
+        <div class="hr-form-row">
+          <label>Show until (inclusive)</label>
+          <input type="date" id="wishFormEnd">
+        </div>
+      </div>
+
+      <div class="hr-form-row">
+        <label>Wish image</label>
+        <div style="display:flex;align-items:center;gap:14px">
+          <div class="wsh-imgbox">
+            <img id="wishImgPreview" src="" alt="">
+            <i class="fas fa-image" id="wishImgPlaceholder" style="color:var(--ink2);font-size:1.4rem"></i>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <div style="display:flex;gap:8px">
+              <button type="button" class="img-btn-sec" onclick="document.getElementById('wishImgFileInput').click()">📁 Upload</button>
+              <button type="button" class="img-btn-sec" id="wishImgRemoveBtn" style="display:none" onclick="removeWishImage()">✕ Remove</button>
+            </div>
+            <div class="img-hint" id="wishImgHint">Required. Portrait works best (shown up to ~420px wide).</div>
+          </div>
+        </div>
+        <input type="file" id="wishImgFileInput" accept="image/*" style="display:none" onchange="uploadWishImageFromFile(this)">
+        <input type="hidden" id="wishFormImageUrl" value="">
+      </div>
+
+      <div class="hr-form-row">
+        <label>Image description (optional)</label>
+        <input type="text" id="wishFormAlt" maxlength="140" placeholder="e.g. Happy Diwali — from Home Loop">
+      </div>
+
+      <div class="hr-form-check">
+        <input type="checkbox" id="wishFormActive" checked>
+        <label for="wishFormActive" style="margin:0">Active (uncheck to pause without deleting)</label>
+      </div>
+
+      <div class="hr-modal-actions">
+        <button class="hr-btn-cancel" onclick="closeWishModal()">Cancel</button>
+        <button class="hr-btn-save" id="wishFormSaveBtn" onclick="saveWish()">Save</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- BROKER ADD MODAL -->

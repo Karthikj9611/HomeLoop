@@ -3237,6 +3237,43 @@ app.get('/api/partners', attachUserIfPresent, async (req, res) => {
   }
 });
 
+// ── Festive wishes (greeting popup on the public site, managed from admin → Wishes tab) ──
+// Each wish is a greeting image shown as a popup on every page load between its
+// startDate and endDate (inclusive, 'YYYY-MM-DD'). imageUrl is '/uploads/<ImageAsset id>'
+// from admin.js's POST /api/admin/upload-wish-image — nothing else is accepted there.
+const wishSchema = new mongoose.Schema({
+  title:     { type: String, required: true, trim: true, maxlength: 80 },   // admin-side label, e.g. "Diwali 2026"
+  imageUrl:  { type: String, required: true, trim: true },
+  alt:       { type: String, default: '', trim: true, maxlength: 140 },     // accessibility text; falls back to title on the site
+  startDate: { type: String, required: true },
+  endDate:   { type: String, required: true },
+  active:    { type: Boolean, default: true },
+  createdAt: { type: Date, default: Date.now }
+});
+wishSchema.index({ active: 1, endDate: 1, startDate: 1 });
+const Wish = mongoose.model('Wish', wishSchema);
+
+// GET /api/wishes/active — public. Returns wishes whose date window is at (or within a
+// day and a half of) today, newest-starting first. The browser makes the exact call with
+// the visitor's own local date (same as before this moved to the admin panel), so the
+// extra cushion just stops a visitor in another time zone from missing their "today".
+app.get('/api/wishes/active', async (req, res) => {
+  try {
+    const now  = Date.now();
+    const from = dateStrInTz(new Date(now - 36 * 3600 * 1000));
+    const to   = dateStrInTz(new Date(now + 36 * 3600 * 1000));
+    const wishes = await Wish.find({ active: true, endDate: { $gte: from }, startDate: { $lte: to } })
+      .sort({ startDate: -1, createdAt: -1 })
+      .select('title imageUrl alt startDate endDate')
+      .lean();
+    res.set('Cache-Control', 'public, max-age=60');
+    res.json({ wishes });
+  } catch (err) {
+    console.error('GET /api/wishes/active error:', err.message);
+    res.status(500).json({ wishes: [] });
+  }
+});
+
 // Accepts any number of images (multipart/form-data, field name 'images'), converts
 // each to WebP (max 1200px on the long edge, quality 80) via sharp, and saves
 // the resulting bytes as a document in MongoDB (not the local disk — Render's
@@ -4020,7 +4057,7 @@ app.get('/api/stats', async (req, res) => {
   NESTED_SECTIONS, validatePropertyFields, formatPrice,
   nextPropertyId, modelForStatus,
   notifyUser, visitCalendarMeta,
-  HonestReview, Partner, PaymentSettings, PaymentRequest,
+  HonestReview, Partner, Wish, PaymentSettings, PaymentRequest,
   SiteStat, DailyStat, todayStr, dateStrInTz, Referral,
   Review, // star reviews (Owner/Tenant Reviews) — admin "Reviews" tab
   ImageAsset, // Booking Details modal's Agreement/Proof uploads reuse this store
