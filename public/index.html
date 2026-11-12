@@ -4732,9 +4732,20 @@ main.tab-explore .empty-state{display:none !important}
 #chargesModal .svc-price-note.charges-refer-note.charges-refer-bonus{background:linear-gradient(135deg,#fffbeb,#fef3c7);border:1px solid #fcd34d;color:#78350f;box-shadow:0 4px 12px rgba(245,158,11,.18)}
 #chargesModal .svc-price-note.charges-refer-note.charges-refer-bonus strong{color:#b45309;font-weight:800}
 
+/* Notice button (after the Note) + notice modal items */
+#chargesModal .charges-notice-btn{width:100%;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:10px;padding:13px 16px;border-radius:14px;border:1.5px solid #e8365d;background:#fff;color:#e8365d;font:700 14.5px/1 inherit;font-family:inherit;cursor:pointer;transition:background .15s,color .15s,transform .15s}
+#chargesModal .charges-notice-btn svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+#chargesModal .charges-notice-btn:hover{background:#e8365d;color:#fff}
+#chargesModal .charges-notice-btn:active{transform:scale(.98)}
+#chargesModal .charges-notice-item+.charges-notice-item{margin-top:16px}
+#chargesModal .charges-notice-item>.charges-audience-head{margin:0 0 8px}
 /* Notice tab — same layout as the plan tabs */
 #chargesModal #chargesNoticePanel{display:flex;flex-direction:column;gap:10px;padding-bottom:4px}
 #chargesModal .charges-refer-note b{color:#fff;font-weight:700}
+#chargesModal .charges-note-list{margin:8px 0 0;padding-left:18px;list-style:disc}
+#chargesModal .charges-note-list li{margin:0 0 5px;line-height:1.45}
+#chargesModal .charges-note-list li:last-child{margin-bottom:0}
+#chargesModal .charges-note-list li::marker{color:#fde68a}
 #chargesModal .charges-refer-bonus b{color:#b45309;font-weight:700}
 #chargesModal .charges-refer-bonus a{color:#b45309;font-weight:700;text-decoration:underline;text-underline-offset:2px}
 
@@ -8828,11 +8839,7 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
         <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
         Brokers
       </button>
-      <button type="button" class="charges-audience-tab" id="chargesTabBtn-notice" role="tab" onclick="switchChargesAudience('notice')">
-        <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>
-        Notice
-      </button>
-    </div>
+      </div>
 
     <!-- One shared call button for every plan (same number everywhere) -->
 <!-- One shared call button for every plan (same number everywhere) -->
@@ -8860,7 +8867,12 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
           <div class="charges-mini-example">From the date listed</div>
         </div>
       </div>
-      <div class="svc-price-note charges-refer-note"><strong>Note:</strong> Goes live in the <b>Brokers tab</b> after payment and verification. Tenants contact you directly; you set your commission. Misbehaviour with tenants gets you <b>blacklisted</b>.</div>
+      <div class="svc-price-note charges-refer-note"><strong>Note:</strong>
+<ul class="charges-note-list">
+<li>Goes live in the <b>Brokers tab</b> after payment and verification.</li>
+<li>Tenants contact you directly; you set your commission.</li>
+<li>Misbehaviour with tenants gets you <b>blacklisted</b>.</li>
+</ul></div>
 </div></div>
       </div>
     </div>
@@ -8887,7 +8899,11 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
           <div class="charges-mini-example">From the date listed</div>
         </div>
       </div>
-      <div class="svc-price-note charges-refer-note"><strong>Note:</strong> Goes live in the <b>PG &amp; Coliving tab</b> after payment and verification. Tenants contact you directly.</div>
+      <div class="svc-price-note charges-refer-note"><strong>Note:</strong>
+<ul class="charges-note-list">
+<li>Goes live in the <b>PG &amp; Coliving tab</b> after payment and verification.</li>
+<li>Tenants contact you directly.</li>
+</ul></div>
 </div></div>
       </div>
     </div>
@@ -8916,7 +8932,11 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
             <div class="charges-mini-example">Flat fee — same for every flat size</div>
           </div>
         </div>
-        <div class="svc-price-note charges-refer-note"><strong>Note:</strong> Promoted for <b>a month</b>. Verified tenants can call or WhatsApp you anytime.</div>
+        <div class="svc-price-note charges-refer-note"><strong>Note:</strong>
+<ul class="charges-note-list">
+<li>Promoted for <b>a month</b>.</li>
+<li>Verified tenants can call or WhatsApp you anytime.</li>
+</ul></div>
 
 
 </div></div>
@@ -8943,7 +8963,12 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
           </div>
         </div>
 
-        <div class="svc-price-note charges-refer-note"><strong>Note:</strong> We handle visits, paperwork and tenant shortlisting. We keep a <b>5% fee</b> when the tenant pays the deposit; the tenant pays the rest to you. <b>Promoted properties</b> get priority, then by <b>listed date</b>.</div>
+        <div class="svc-price-note charges-refer-note"><strong>Note:</strong>
+<ul class="charges-note-list">
+<li>We handle visits, paperwork and tenant shortlisting.</li>
+<li>We keep a <b>5% fee</b> when the tenant pays the deposit; the tenant pays the rest to you.</li>
+<li><b>Promoted properties</b> get priority, then by <b>listed date</b>.</li>
+</ul></div>
 </div></div>
 </div>
     </div>
@@ -8956,7 +8981,10 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
           <svg class="plan-chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
         </button>
         <div class="plan-body"><div class="plan-body-inner">
-          <div class="svc-price-note charges-refer-note"><strong>Note:</strong> Pay the deposit only with the <b>owner, tenant and our Agent</b> present.</div>
+          <div class="svc-price-note charges-refer-note"><strong>Note:</strong>
+<ul class="charges-note-list">
+<li>Pay the deposit only with the <b>owner, tenant and our Agent</b> present.</li>
+</ul></div>
         </div></div>
       </div>
       <div class="charges-or-divider">and</div>
@@ -8966,7 +8994,11 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
           <svg class="plan-chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
         </button>
         <div class="plan-body"><div class="plan-body-inner">
-          <div class="svc-price-note charges-refer-note"><strong>Note:</strong> Never pay brokerage to property staff. <a href="javascript:void(0)" onclick="closeChargesModal(); openHelpModal();" style="color:#fbbf24;font-weight:700;text-decoration:underline;text-underline-offset:2px">Report it</a> — we’ll <b>blacklist that property</b>.</div>
+          <div class="svc-price-note charges-refer-note"><strong>Note:</strong>
+<ul class="charges-note-list">
+<li>Never pay brokerage to property staff.</li>
+<li><a href="javascript:void(0)" onclick="closeChargesModal(); openHelpModal();" style="color:#fbbf24;font-weight:700;text-decoration:underline;text-underline-offset:2px">Report it</a> — we’ll <b>blacklist that property</b>.</li>
+</ul></div>
         </div></div>
       </div>
       <div class="charges-or-divider">and</div>
@@ -8976,7 +9008,11 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
           <svg class="plan-chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
         </button>
         <div class="plan-body"><div class="plan-body-inner">
-          <div class="svc-price-note charges-refer-note"><strong>Note:</strong> Brokers are verified, but you deal with them directly — <b>HomeLoop is not responsible</b>. <b>Pay only when satisfied</b> and keep receipts.</div>
+          <div class="svc-price-note charges-refer-note"><strong>Note:</strong>
+<ul class="charges-note-list">
+<li>Brokers are verified, but you deal with them directly — <b>HomeLoop is not responsible</b>.</li>
+<li><b>Pay only when satisfied</b> and keep receipts.</li>
+</ul></div>
         </div></div>
       </div>
     </div>
@@ -9000,7 +9036,11 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
         </div>
       </div>
       
-      <div class="svc-price-note charges-refer-note"><strong>Note:</strong> <b>Choose one property</b>, receive the <b>owner’s contact details</b>, and arrange a visit directly. The service covers one property; each additional property costs just <b>₹150</b>.</div>
+      <div class="svc-price-note charges-refer-note"><strong>Note:</strong>
+<ul class="charges-note-list">
+<li><b>Choose one property</b>, receive the <b>owner’s contact details</b>, and arrange a visit directly.</li>
+<li>The service covers one property; each additional property costs just <b>₹150</b>.</li>
+</ul></div>
       <button class="form-submit pay-online-btn" onclick="closeChargesModal(); openPaymentModal('single_property');">Pay ₹150 for one property</button>
 </div></div>
       </div>
@@ -9024,7 +9064,12 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
         </div>
       </div>
       
-      <div class="svc-price-note charges-refer-note"><strong>Note:</strong> Based on your requirements, we’ll enable <b>direct contact</b> with property owners, allowing you to <b>call or WhatsApp owners</b>, connect with them directly, and visit properties at your convenience. This service is valid for <b>2 days</b> from the date of payment.</div>
+      <div class="svc-price-note charges-refer-note"><strong>Note:</strong>
+<ul class="charges-note-list">
+<li>Based on your requirements, we’ll enable <b>direct contact</b> with property owners.</li>
+<li>You can <b>call or WhatsApp owners</b>, connect with them directly, and visit properties at your convenience.</li>
+<li>This service is valid for <b>2 days</b> from the date of payment.</li>
+</ul></div>
 </div></div>
       </div>
 
@@ -9059,11 +9104,23 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
       </div>
       
 
-<div class="svc-price-note charges-refer-note"><strong>Note:</strong> <b>Shortlist up to 6 properties</b> and meet us. Pay <b>₹2,000 only after the meeting</b>. We’ll arrange guided visits for your selected properties. This <b>₹2,000 is adjusted</b> against the 20% service fee, and you pay the <b>remaining balance only after the deal is closed</b>. <b>Everything is included</b> — we also try to help you negotiate the rent with the owner, and we help with the rental agreement too.</div>
+<div class="svc-price-note charges-refer-note"><strong>Note:</strong>
+<ul class="charges-note-list">
+<li><b>Shortlist up to 6 properties</b> and meet us.</li>
+<li>Pay <b>₹2,000 only after the meeting</b>.</li>
+<li>We’ll arrange guided visits for your selected properties.</li>
+<li><b>Everything is included</b> — we also help you negotiate the rent with the owner and with the rental agreement.</li>
+<li>This <b>₹2,000 is adjusted</b> against the 20% service fee.</li>
+<li>Pay the <b>remaining balance only after the deal is closed</b>.</li>
+</ul></div>
 </div></div>
       </div>
 
-      <div class="svc-price-note charges-refer-note"><strong>Note:</strong> <b>Rental agreement preparation</b> is available at an affordable additional cost across all plans.</div>
+      <div class="svc-price-note charges-refer-note"><strong>Note:</strong>
+<ul class="charges-note-list">
+<li><b>Rental agreement preparation</b> is available at an affordable additional cost across all plans.</li>
+</ul></div>
+      <button type="button" class="charges-notice-btn" onclick="openChargesNoticeModal()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>Payment Safety Notice</button>
 
 
       <button class="form-submit pay-online-btn" onclick="closeChargesModal(); openPaymentModal('brokerage');">Pay brokerage online</button>
@@ -9093,7 +9150,11 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
           <div class="charges-mini-example">Flat fee — same for every flat size</div>
         </div>
       </div>
-      <div class="svc-price-note charges-refer-note"><strong>Note:</strong> Promoted for <b>a month</b>. Verified tenants can call or WhatsApp you anytime.</div>
+      <div class="svc-price-note charges-refer-note"><strong>Note:</strong>
+<ul class="charges-note-list">
+<li>Promoted for <b>a month</b>.</li>
+<li>Verified tenants can call or WhatsApp you anytime.</li>
+</ul></div>
 
 
 </div></div>
@@ -9120,7 +9181,12 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
         </div>
       </div>
 
-      <div class="svc-price-note charges-refer-note"><strong>Note:</strong> We handle visits, paperwork and tenant shortlisting. We keep a <b>5% fee</b> when the tenant pays the deposit; the tenant pays the rest to you. <b>Promoted properties</b> get priority, then by <b>listed date</b>.</div>
+      <div class="svc-price-note charges-refer-note"><strong>Note:</strong>
+<ul class="charges-note-list">
+<li>We handle visits, paperwork and tenant shortlisting.</li>
+<li>We keep a <b>5% fee</b> when the tenant pays the deposit; the tenant pays the rest to you.</li>
+<li><b>Promoted properties</b> get priority, then by <b>listed date</b>.</li>
+</ul></div>
 </div></div>
 </div>
 
@@ -9147,7 +9213,11 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
         </div>
       </div>
       
-      <div class="svc-price-note charges-refer-note"><strong>Note:</strong> <b>Choose one property</b>, receive the <b>owner’s contact details</b>, and arrange a visit directly. The service covers one property; each additional property costs just <b>₹150</b>.</div>
+      <div class="svc-price-note charges-refer-note"><strong>Note:</strong>
+<ul class="charges-note-list">
+<li><b>Choose one property</b>, receive the <b>owner’s contact details</b>, and arrange a visit directly.</li>
+<li>The service covers one property; each additional property costs just <b>₹150</b>.</li>
+</ul></div>
       <button class="form-submit pay-online-btn" onclick="closeChargesModal(); openPaymentModal('single_property');">Pay ₹150 for one property</button>
 </div></div>
       </div>
@@ -9171,7 +9241,12 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
         </div>
       </div>
         
-        <div class="svc-price-note charges-refer-note"><strong>Note:</strong> Based on your requirements, we’ll enable <b>direct contact</b> with property owners, allowing you to <b>call or WhatsApp owners</b>, connect with them directly, and visit properties at your convenience. This service is valid for <b>2 days</b> from the date of payment.</div>
+        <div class="svc-price-note charges-refer-note"><strong>Note:</strong>
+<ul class="charges-note-list">
+<li>Based on your requirements, we’ll enable <b>direct contact</b> with property owners.</li>
+<li>You can <b>call or WhatsApp owners</b>, connect with them directly, and visit properties at your convenience.</li>
+<li>This service is valid for <b>2 days</b> from the date of payment.</li>
+</ul></div>
 </div></div>
 </div>
         <div class="charges-or-divider">or</div>
@@ -9205,10 +9280,22 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
       </div>
         
 
-<div class="svc-price-note charges-refer-note"><strong>Note:</strong> <b>Shortlist up to 6 properties</b> and meet us. Pay <b>₹2,000 only after the meeting</b>. We’ll arrange guided visits for your selected properties. This <b>₹2,000 is adjusted</b> against the 20% service fee, and you pay the <b>remaining balance only after the deal is closed</b>. <b>Everything is included</b> — we also try to help you negotiate the rent with the owner, and we help with the rental agreement too.</div>
+<div class="svc-price-note charges-refer-note"><strong>Note:</strong>
+<ul class="charges-note-list">
+<li><b>Shortlist up to 6 properties</b> and meet us.</li>
+<li>Pay <b>₹2,000 only after the meeting</b>.</li>
+<li>We’ll arrange guided visits for your selected properties.</li>
+<li><b>Everything is included</b> — we also help you negotiate the rent with the owner and with the rental agreement.</li>
+<li>This <b>₹2,000 is adjusted</b> against the 20% service fee.</li>
+<li>Pay the <b>remaining balance only after the deal is closed</b>.</li>
+</ul></div>
 </div></div>
 </div>
-        <div class="svc-price-note charges-refer-note"><strong>Note:</strong> <b>Rental agreement preparation</b> is available at an affordable additional cost across all plans.</div>
+        <div class="svc-price-note charges-refer-note"><strong>Note:</strong>
+<ul class="charges-note-list">
+<li><b>Rental agreement preparation</b> is available at an affordable additional cost across all plans.</li>
+</ul></div>
+      <button type="button" class="charges-notice-btn" onclick="openChargesNoticeModal()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>Payment Safety Notice</button>
 
       </div>
 
@@ -9235,7 +9322,11 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
             <div class="charges-mini-example">Flat fee — same for every flat size</div>
           </div>
         </div>
-        <div class="svc-price-note charges-refer-note"><strong>Note:</strong> Promoted for <b>a month</b>. Verified tenants can call or WhatsApp you anytime.</div>
+        <div class="svc-price-note charges-refer-note"><strong>Note:</strong>
+<ul class="charges-note-list">
+<li>Promoted for <b>a month</b>.</li>
+<li>Verified tenants can call or WhatsApp you anytime.</li>
+</ul></div>
 
 
 </div></div>
@@ -9262,7 +9353,12 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
           </div>
         </div>
 
-        <div class="svc-price-note charges-refer-note"><strong>Note:</strong> We handle visits, paperwork and tenant shortlisting. We keep a <b>5% fee</b> when the tenant pays the deposit; the tenant pays the rest to you. <b>Promoted properties</b> get priority, then by <b>listed date</b>.</div>
+        <div class="svc-price-note charges-refer-note"><strong>Note:</strong>
+<ul class="charges-note-list">
+<li>We handle visits, paperwork and tenant shortlisting.</li>
+<li>We keep a <b>5% fee</b> when the tenant pays the deposit; the tenant pays the rest to you.</li>
+<li><b>Promoted properties</b> get priority, then by <b>listed date</b>.</li>
+</ul></div>
 </div></div>
 </div>
       </div>
@@ -19156,21 +19252,29 @@ function openChargesModal(tab, fromLink) {
 }
 function showChargesModal(tab, fromLink) {
   const user = getLoggedInUser();
-  const acct = !user ? null : ((user.accountType === 'broker' || user.accountType === 'agent') ? 'broker' : ACCT_OWNER_SIDE.includes(user.accountType) ? 'owner' : 'tenant');
+  // Charges audience for the logged-in account type (each login sees ONLY its own charges):
+  //   tenant -> Tenants | owner -> Owners | pg -> PG | builder -> Owners (builders use owner charges) | broker/agent -> Brokers
+  const isAgent = !!user && user.accountType === 'agent'; // agents see ALL charges
+  const acct = !user ? null
+    : isAgent ? 'agent'
+    : user.accountType === 'broker' ? 'broker'
+    : user.accountType === 'pg' ? 'pg'
+    : (user.accountType === 'owner' || user.accountType === 'builder') ? 'owner'
+    : 'tenant';
   // Which tabs this viewer sees:
-  //  - opened from a shared link (?charges=...): only the shared audience (Notice rides along with Tenants)
-  //  - logged-in tenant: Tenants + Notice | owner: Owners only | broker: Brokers only
+  //  - logged in: only their own audience (tenant+Notice | owner/builder: Owners | pg: PG | broker/agent: Brokers), even via a shared link
+  //  - guest opening a shared link (?charges=...): only the shared audience (or all tabs for the common link)
   //  - guest (no link): everything
   let visible;
-  if (fromLink && tab === 'all') { visible = ['tenant', 'owner', 'pg', 'builder', 'broker', 'notice']; tab = acct || 'tenant'; } // common share link: everyone sees every tab
-  else if (fromLink && tab) visible = (tab === 'notice' || tab === 'tenant') ? ['tenant', 'notice'] : [tab];
-  else if (acct === 'tenant') visible = ['tenant', 'notice'];
-  else if (acct === 'owner')  visible = ['owner', 'pg', 'builder'];
-  else if (acct === 'broker') visible = ['broker'];
-  else visible = ['tenant', 'owner', 'pg', 'builder', 'broker', 'notice'];
+  var openNotice = (tab === 'notice'); if (openNotice) tab = 'tenant';
+  if (acct === 'agent') { visible = ['tenant', 'owner', 'pg', 'builder', 'broker']; tab = (tab && visible.includes(tab) && tab !== 'all') ? tab : 'tenant'; } // agent: all charges
+  else if (acct) { visible = [acct]; tab = acct; } // logged in (even via a shared link): only that account type's own charges
+  else if (fromLink && tab === 'all') { visible = ['tenant', 'owner', 'pg', 'builder', 'broker']; tab = 'tenant'; } // common share link (guest): every tab
+  else if (fromLink && tab) visible = [tab];
+  else visible = ['tenant', 'owner', 'pg', 'builder', 'broker'];
   // Builders charges tab hidden for now - delete this line to re-enable
-  visible = visible.filter(k => k !== 'builder'); if (!visible.length) { visible = ['tenant', 'notice']; tab = null; }
-  ['tenant', 'owner', 'pg', 'builder', 'broker', 'notice'].forEach(k => {
+  visible = visible.filter(k => k !== 'builder'); if (!visible.length) { visible = ['tenant']; tab = null; }
+  ['tenant', 'owner', 'pg', 'builder', 'broker'].forEach(k => {
     document.getElementById('chargesTabBtn-' + k).style.display = visible.includes(k) ? '' : 'none';
   });
   const bar = document.getElementById('chargesTabs');
@@ -19178,6 +19282,7 @@ function showChargesModal(tab, fromLink) {
   switchChargesAudience(tab && visible.includes(tab) ? tab : visible[0]);
   document.getElementById('chargesModal').classList.add('open');
   lockBodyScroll();
+  if (openNotice && (!acct || acct === 'tenant' || acct === 'agent')) openChargesNoticeModal(); // the safety notice is tenant-related: never shown to owner/pg/builder/broker logins
 }
 function closeChargesModal() {
   closePlanPopup();
@@ -19234,6 +19339,36 @@ function togglePlan(id) {
   host.appendChild(pop);
   requestAnimationFrame(function () { pop.classList.add('open'); });
 }
+function openChargesNoticeModal() {
+  var src = document.getElementById('chargesNoticePanel');
+  var host = document.getElementById('chargesModal');
+  if (!src || !host) return;
+  closePlanPopup();
+  var items = '';
+  src.querySelectorAll('.plan-panel').forEach(function (panel) {
+    var head = panel.querySelector('.charges-audience-head');
+    var inner = panel.querySelector('.plan-body-inner');
+    if (head && inner) items += '<div class="charges-notice-item">' + head.outerHTML + inner.innerHTML + '</div>';
+  });
+  var pop = document.createElement('div');
+  pop.className = 'plan-popup';
+  pop.id = 'planPopup';
+  pop.setAttribute('role', 'dialog');
+  pop.setAttribute('aria-modal', 'true');
+  pop.innerHTML =
+    '<div class="plan-panel plan-managed open plan-popup-card">' +
+      '<div class="plan-popup-head">' +
+        '<div class="charges-audience-head"><div class="charges-audience-icon"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg></div><div class="charges-audience-name">Payment Safety Notice</div></div>' +
+        '<button type="button" class="plan-popup-close" aria-label="Close" onclick="closePlanPopup()">' +
+          '<svg viewBox="0 0 24 24"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>' +
+        '</button>' +
+      '</div>' +
+      '<div class="plan-body"><div class="plan-body-inner">' + items + '</div></div>' +
+    '</div>';
+  pop.addEventListener('click', function (ev) { if (ev.target === pop) closePlanPopup(); });
+  host.appendChild(pop);
+  requestAnimationFrame(function () { pop.classList.add('open'); });
+}
 function closePlanPopup() {
   var pop = document.getElementById('planPopup');
   if (pop) pop.remove();
@@ -19252,7 +19387,7 @@ function switchChargesAudience(which) {
   const user = getLoggedInUser();
   const isOwner = !!user && (ACCT_OWNER_SIDE.includes(user.accountType));
   const isTenant = !!user && (!ACCT_OWNER_SIDE.includes(user.accountType));
-  ['tenant', 'owner', 'pg', 'builder', 'broker', 'notice'].forEach(k => {
+  ['tenant', 'owner', 'pg', 'builder', 'broker'].forEach(k => {
     document.getElementById('chargesTabBtn-' + k).classList.toggle('active', k === which);
   });
   ['tenant', 'owner'].forEach(k => {
@@ -19261,11 +19396,10 @@ function switchChargesAudience(which) {
   document.getElementById('chargesTenantView').style.display = (isTenant && which === 'tenant') ? '' : 'none';
   document.getElementById('chargesOwnerView').style.display  = (isOwner  && which === 'owner')  ? '' : 'none';
   // Guest view doubles as the read-only view for anyone looking at an audience that isn't theirs (e.g. an owner opening the Tenants tab).
-  document.getElementById('chargesGuestView').style.display  = (which !== 'notice' && which !== 'broker' && which !== 'pg' && which !== 'builder' && !(isTenant && which === 'tenant') && !(isOwner && which === 'owner')) ? '' : 'none';
+  document.getElementById('chargesGuestView').style.display  = (which !== 'broker' && which !== 'pg' && which !== 'builder' && !(isTenant && which === 'tenant') && !(isOwner && which === 'owner')) ? '' : 'none';
   document.getElementById('chargesBrokerPanel').style.display = which === 'broker' ? '' : 'none';
   document.getElementById('chargesPgPanel').style.display = which === 'pg' ? '' : 'none';
   document.getElementById('chargesBuilderPanel').style.display = which === 'builder' ? 'flex' : 'none';
-  document.getElementById('chargesNoticePanel').style.display = which === 'notice' ? '' : 'none';
   const box = document.getElementById('chargesModalBox');
   if (box) box.scrollTop = 0;
 }
