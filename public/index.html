@@ -5931,15 +5931,12 @@ main.tab-explore .empty-state{display:none !important}
 </script>
 <style id="hl-fast-modals">
 /* Full-screen blur is expensive to repaint on every open/close — the dim colour is enough. */
-.modal-overlay,.add-modal-overlay,.preav-overlay,.wish-modal-overlay,.fm-overlay,.fab-picker-backdrop,.sort-backdrop,.lightbox-overlay,#confirmOverlay,#hlNotice{
-  backdrop-filter:none !important;-webkit-backdrop-filter:none !important;
-}
-/* Tap = act immediately (no double-tap wait / grey flash) on close buttons and other controls. */
+.modal-overlay,.add-modal-overlay,.preav-overlay,.wish-modal-overlay,.fm-overlay,.fab-picker-backdrop,.sort-backdrop,.lightbox-overlay,#confirmOverlay,/* Tap = act immediately (no double-tap wait / grey flash) on close buttons and other controls. */
 button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-close,.panel-close,.fm-close{
   touch-action:manipulation;-webkit-tap-highlight-color:transparent;
 }
 </style>
-<style>#hlNotice .hln-tag{border-radius:16px !important}#hlNotice .hln-tag i{flex-shrink:0}</style>
+<style></style>
 </head>
 <body>
 
@@ -11005,9 +11002,7 @@ function renderCards() {
 // Renders the read-only "Booked" bucket under Promoted/Rent/Lease/PG. Source
 // data is BOOKED_PROPERTIES (fetched separately — see fetchBookedProperties()
 // — since the main /api/properties response never includes booked listings).
-// Each tab's bucket is scoped to match what that tab actually shows:
-// Promoted's bucket is only booked listings that were promoted (p.promoted),
-// same as Rent/Lease/PG each showing only their own type's booked listings.
+// All booked listings, of every type, are shown only under the Rent tab (other tabs have none).
 // Respects search/filter state (same getFiltered pipeline as available
 // listings), and only one bucket is ever populated at a time, matching whichever tab is active.
 function renderBookedSections(fsIn) {
@@ -11021,22 +11016,14 @@ function renderBookedSections(fsIn) {
     const v = _fsB[k];
     return Array.isArray(v) ? v.length > 0 : v !== null && v !== undefined;
   });
-  const booked = (_filterActive || searchQuery) ? [] : getFiltered(BOOKED_PROPERTIES, _fsB); // search also hides Booked
+  const booked = (_filterActive || searchQuery) ? [] : (currentTab === 'Rent' ? getFiltered(BOOKED_PROPERTIES, _fsB, 'All') : []); // search also hides Booked; 'All' = every type
   // Booked section order: most recently booked first (today → past), whatever the grid sort is.
   const _bt = (p) => { const t = new Date(p.bookedAt || p.createdAt).getTime(); return isNaN(t) ? 0 : t; };
   booked.sort((a, b) => _bt(b) - _bt(a));
-  if (currentTab === 'Promoted') {
-    groups.promoted = booked.filter(p => p.promoted);
-  } else if (currentTab === 'Broker') {
-    groups.promoted = booked.filter(p => p.basic?.listedBy === 'Broker');
-  } else if (currentTab === 'Rent') {
-    groups.rent = booked.filter(p => sectionKeyFor(p) === 'rent');
-  } else if (currentTab === 'Lease') {
-    groups.lease = booked.filter(p => sectionKeyFor(p) === 'lease');
-  } else if (currentTab === 'PG') {
-    groups.pg = booked.filter(p => sectionKeyFor(p) === 'pg');
-  } else if (currentTab === 'Sell') {
-    groups.sell = booked.filter(p => sectionKeyFor(p) === 'sell');
+  // Every booked listing (Rent, Lease, PG, Sell, Promoted, Broker) lives in ONE place: the Rent tab's
+  // Booked strip. All other tabs show no Booked section.
+  if (currentTab === 'Rent') {
+    groups.rent = booked;
   }
   // Any other tab (e.g. "All"/Explore) leaves every bucket empty — that tab
   // hides the whole bookedSection wrapper anyway (see updateAllOnlySections()).
@@ -14222,7 +14209,7 @@ const SELL_ENABLED = false;
 // card rendering are all untouched.
 const PG_ENABLED = true;
 
-function getFiltered(source = PROPERTIES, fsIn) {
+function getFiltered(source = PROPERTIES, fsIn, tabOverride) {
   const fs = fsIn || getFilterState(); // callers rendering twice pass it in to avoid re-reading the DOM
   const hasFilters = Object.keys(fs).some(k => {
     const v = fs[k];
@@ -14233,7 +14220,7 @@ function getFiltered(source = PROPERTIES, fsIn) {
     if (!SHORT_STAY_ENABLED && pTypeLabel(p) === 'ShortStay') return false;
     if (!SELL_ENABLED && pTypeLabel(p) === 'Sell') return false;
     if (!PG_ENABLED && pTypeLabel(p) === 'PG') return false;
-    if (!matchesTab(p, currentTab)) return false;
+    if (!matchesTab(p, tabOverride || currentTab)) return false;   // tabOverride: Booked strip lists every type under Rent
     // NOTE: pType was previously used further down (Rent/Lease/PG-specific
     // filter checks) without ever being declared in this scope, which threw
     // a ReferenceError the moment any filter was selected — silently
@@ -22583,31 +22570,8 @@ document.addEventListener('keydown', function(e){ if (e.key === 'Escape') closeP
 </script>
 
 
-<!-- ══ Site notice: upgrade in progress ══ -->
-<style>
-#hlNotice{position:fixed;top:0;left:0;right:0;bottom:0;width:100%;height:100%;box-sizing:border-box;z-index:2147482000;display:none;place-items:center;padding:20px;margin:0;background:rgba(36,44,60,.38);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);opacity:0;transition:opacity .35s ease}
-#hlNotice.show{display:grid}
-#hlNotice.in{opacity:1}
-#hlNotice .hln-card{position:relative;box-sizing:border-box;width:100%;max-width:400px;margin:auto;max-height:calc(100vh - 40px);max-height:calc(100dvh - 40px);overflow:auto;padding:44px 30px 30px;text-align:center;color:#2b3340;border-radius:28px;background:linear-gradient(180deg,#f3f8ff 0%,#fff 42%);box-shadow:0 24px 60px rgba(30,41,59,.22),0 2px 6px rgba(30,41,59,.06);transform:translateY(10px) scale(.985);transition:transform .45s cubic-bezier(.2,.8,.2,1)}
-#hlNotice.in .hln-card{transform:none}
-#hlNotice .hln-x{position:absolute;top:14px;right:14px;width:34px;height:34px;display:grid;place-items:center;border:none;border-radius:50%;background:rgba(100,116,139,.1);color:#3b4656;cursor:pointer;transition:background .15s,color .15s}
-#hlNotice .hln-x:hover{background:rgba(100,116,139,.18);color:#334155}
-#hlNotice .hln-x svg{width:16px;height:16px}
-#hlNotice .hln-ic{width:68px;height:68px;margin:0 auto 20px;border-radius:50%;display:grid;place-items:center;color:#5b8def;background:linear-gradient(145deg,#e8f1ff,#dff5ee);box-shadow:0 0 0 8px rgba(91,141,239,.07)}
-#hlNotice .hln-ic svg{width:30px;height:30px}
-#hlNotice .hln-label{display:block;margin-bottom:8px;font-size:11.5px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#4a5668}
-#hlNotice h2{margin:0 0 12px;font-size:23px;line-height:1.3;font-weight:650;letter-spacing:-.01em;color:#1f2937}
-#hlNotice .hln-d{margin:0 auto;max-width:320px;font-size:15.5px;line-height:1.75;color:#5f6b7c}
-#hlNotice .hln-tag{max-width:100%;box-sizing:border-box;text-align:left;line-height:1.4;display:inline-flex;align-items:center;gap:7px;margin:20px 0 26px;padding:7px 14px;border-radius:99px;font-size:13px;font-weight:600;color:#3f7d62;background:#e8f6ef}
-#hlNotice .hln-tag i{width:7px;height:7px;border-radius:50%;background:#5cb88c;animation:hlnBreathe 2.8s ease-in-out infinite}
-@keyframes hlnBreathe{0%,100%{opacity:.45;transform:scale(.85)}50%{opacity:1;transform:scale(1.1)}}
-#hlNotice .hln-btn{display:block;width:100%;padding:14px 18px;border:none;border-radius:14px;font:inherit;font-size:15.5px;font-weight:600;color:#fff;background:#e03a52;cursor:pointer;box-shadow:0 6px 16px rgba(224,58,82,.22);transition:background .15s,transform .15s,box-shadow .15s}
-#hlNotice .hln-btn:hover{background:#c72e43;box-shadow:0 8px 20px rgba(224,58,82,.28)}
-#hlNotice .hln-btn:active{transform:scale(.98)}
-#hlNotice .hln-btn:focus-visible,#hlNotice .hln-x:focus-visible{outline:2px solid #5b8def;outline-offset:3px}
-@media (max-width:480px){#hlNotice{padding:16px}#hlNotice .hln-card{padding:40px 22px 24px;border-radius:24px}#hlNotice h2{font-size:21px}#hlNotice .hln-d{font-size:15px}}
-@media (prefers-reduced-motion:reduce){#hlNotice,#hlNotice .hln-card{transition:none}#hlNotice .hln-tag i{animation:none}}
 
+<style>
 /* ═══ Calm modal theme — same soft look as the Filters modal ═══
    Soft rose → lilac → periwinkle tint, frosted overlay, rounded corners, white fields.
    Delete this whole block to revert. */
@@ -22633,49 +22597,9 @@ document.addEventListener('keydown', function(e){ if (e.key === 'Escape') closeP
 .confirm-card .confirm-icon{background:#fff;box-shadow:0 2px 10px rgba(224,58,82,.15)}
 
 /* Service notice polish: no stray focus ring, calmer button, tighter spacing so it fits without scrolling */
-#hlNotice .hln-card{outline:none;padding:40px 28px 32px;scrollbar-width:none}
-#hlNotice .hln-card::-webkit-scrollbar{display:none}
-#hlNotice .hln-ic{width:58px;height:58px;margin-bottom:16px}
-#hlNotice .hln-ic svg{width:26px;height:26px}
-#hlNotice .hln-tag{margin:16px 0 22px}
-#hlNotice .hln-btn{background:linear-gradient(135deg,#5b8def,#4a78d8);box-shadow:0 8px 18px -6px rgba(74,120,216,.55)}
-#hlNotice .hln-btn:hover{background:linear-gradient(135deg,#4f82e6,#3f6dcc);box-shadow:0 10px 22px -6px rgba(74,120,216,.6)}
-#hlNotice .hln-btn:focus:not(:focus-visible){outline:none}
-@media (max-width:480px){#hlNotice .hln-card{padding:36px 20px 28px}}
-
 /* Service notice enhancements: soft glow, floating icon, gentle entrance, arrow button */
-#hlNotice .hln-card{background:radial-gradient(120% 60% at 50% 0%,#e9f1ff 0%,rgba(233,241,255,0) 70%),linear-gradient(180deg,#f6faff 0%,#fff 55%);border:1px solid rgba(91,141,239,.14);box-shadow:0 30px 70px -20px rgba(40,60,110,.35),0 4px 14px rgba(40,60,110,.08)}
-#hlNotice .hln-ic{position:relative;animation:hlnFloat 5s ease-in-out infinite;box-shadow:0 0 0 8px rgba(91,141,239,.07),0 0 0 18px rgba(91,141,239,.04),0 12px 28px -8px rgba(91,141,239,.35)}
-#hlNotice .hln-ic svg{animation:hlnTwinkle 3.2s ease-in-out infinite}
-#hlNotice h2{text-wrap:balance;font-weight:700}
-#hlNotice .hln-d{text-wrap:pretty}
-#hlNotice .hln-tag{border:1px solid rgba(92,184,140,.28)}
-#hlNotice .hln-btn{display:flex;align-items:center;justify-content:center;gap:8px}
-#hlNotice .hln-btn::after{content:"→";font-size:17px;line-height:1;transition:transform .2s}
-#hlNotice .hln-btn:hover{transform:translateY(-1px)}
-#hlNotice .hln-btn:hover::after{transform:translateX(4px)}
-#hlNotice .hln-count{font-size:.85em;font-weight:600;opacity:.85;font-variant-numeric:tabular-nums;background:rgba(255,255,255,.2);border-radius:999px;padding:1px 8px;line-height:1.5}
-#hlNotice .hln-count:empty{display:none}
-#hlNotice .hln-x:hover{transform:rotate(90deg)}
-#hlNotice .hln-x{transition:background .15s,color .15s,transform .25s}
-@keyframes hlnFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
 @keyframes hlnTwinkle{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.75;transform:scale(1.08)}}
-@media (prefers-reduced-motion:reduce){#hlNotice .hln-ic,#hlNotice .hln-ic svg{animation:none}#hlNotice .hln-btn:hover,#hlNotice .hln-x:hover{transform:none}}
-
 /* Service notice → matched to the site's modals (same tint, red accents, buttons) */
-#hlNotice{background:rgba(30,20,35,.42);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
-#hlNotice .hln-card{background:var(--calm-grad);border:1px solid rgba(255,255,255,.7);border-radius:22px;box-shadow:var(--calm-shadow)}
-#hlNotice .hln-x{background:var(--brand);color:#fff;box-shadow:0 2px 10px rgba(224,58,82,.30)}
-#hlNotice .hln-x:hover{background:var(--brand-hover);color:#fff}
-#hlNotice .hln-ic{color:var(--brand);background:#fff;box-shadow:0 0 0 8px rgba(224,58,82,.07),0 0 0 18px rgba(224,58,82,.04),0 12px 28px -8px rgba(224,58,82,.30)}
-#hlNotice .hln-label{color:var(--brand);opacity:.85}
-#hlNotice h2{color:var(--text)}
-#hlNotice .hln-d{color:var(--text-2)}
-#hlNotice .hln-tag{color:var(--brand-hover);background:#fff;border:1px solid rgba(224,58,82,.18);box-shadow:0 1px 4px rgba(224,58,82,.10)}
-#hlNotice .hln-tag i{background:var(--brand)}
-#hlNotice .hln-btn,#hlNotice .hln-btn:hover{border-radius:12px;background:var(--brand);box-shadow:0 6px 16px -6px rgba(224,58,82,.55)}
-#hlNotice .hln-btn:hover{background:var(--brand-hover)}
-#hlNotice .hln-btn:focus-visible,#hlNotice .hln-x:focus-visible{outline-color:rgba(224,58,82,.45)}
 /* ─── Auth modal: warm ivory card + coral-rose gradient action (scoped to #authModal) ─── */
 #authModal #authModalBox{
   background:
@@ -23222,50 +23146,7 @@ body{
 .rv-card{background:linear-gradient(180deg,#fff 0%,#fffaf6 100%);border:1px solid rgba(255,190,160,.55)}
 .rv-card:hover{box-shadow:0 14px 26px -12px rgba(190,70,60,.35)}
 /* ─── Service notice: "what's changing" points ─── */
-#hlNotice .hln-points{list-style:none;margin:18px auto 0;padding:0;max-width:340px;display:flex;flex-direction:column;gap:9px;text-align:left}
-#hlNotice .hln-points li{
-  display:flex;align-items:flex-start;gap:11px;padding:10px 12px;
-  background:#fff;border:1px solid #f6e1d7;border-radius:12px;
-  box-shadow:0 6px 14px -10px rgba(190,70,60,.35);
-  font-size:14px;line-height:1.45;color:#5c433b;font-weight:500;
-}
-#hlNotice .hln-points li i{
-  flex:0 0 22px;width:22px;height:22px;border-radius:50%;margin-top:1px;
-  display:grid;place-items:center;background:var(--warm-grad);color:#fff;
-  box-shadow:0 4px 10px -4px rgba(232,54,93,.6);
-}
-#hlNotice .hln-points li i svg{width:12px;height:12px}
-#hlNotice .hln-tag{margin-top:18px}
-#hlNotice .hln-why{margin:0 auto 20px;max-width:330px;font-size:13.5px;line-height:1.6;color:#4a2f27}
-#hlNotice .hln-tag{margin:18px 0 22px}
 /* Service notice: compact height (desktop + mobile) */
-#hlNotice .hln-card{padding:30px 26px 22px;max-width:380px}
-#hlNotice .hln-ic{width:48px;height:48px;margin:0 auto 12px}
-#hlNotice .hln-ic svg{width:22px;height:22px}
-#hlNotice .hln-label{margin-bottom:5px;font-size:11px}
-#hlNotice h2{margin:0 0 6px;font-size:21px;line-height:1.25}
-#hlNotice .hln-d{font-size:14px;line-height:1.4}
-#hlNotice .hln-points{margin:10px auto 0;gap:6px}
-#hlNotice .hln-points li{padding:7px 11px;font-size:13.5px;line-height:1.35;border-radius:11px}
-#hlNotice .hln-points li i{flex-basis:20px;width:20px;height:20px;margin-top:0;align-self:center}
-#hlNotice .hln-points li i svg{width:11px;height:11px}
-#hlNotice .hln-tag{margin:12px 0 14px;padding:6px 12px;font-size:12.5px}
-#hlNotice .hln-btn{padding:11px 16px;font-size:15px}
-#hlNotice .hln-points li span{display:block;min-width:0}
-#hlNotice .hln-sub{display:block;margin-top:1px;font-size:11.5px;line-height:1.35;font-weight:400;color:#5c433b}
-#hlNotice .hln-x{top:12px;right:12px;width:30px;height:30px}
-@media (max-width:480px){
-  #hlNotice .hln-card{padding:24px 18px 18px;max-width:none}
-  #hlNotice .hln-ic{width:42px;height:42px;margin-bottom:10px}
-  #hlNotice .hln-ic svg{width:20px;height:20px}
-  #hlNotice h2{font-size:19px;margin-bottom:4px}
-  #hlNotice .hln-d{font-size:13.5px}
-  #hlNotice .hln-points{margin-top:8px;gap:5px}
-  #hlNotice .hln-points li{padding:6px 10px;font-size:13px}
-  #hlNotice .hln-tag{margin:10px 0 12px;font-size:12px}
-  #hlNotice .hln-btn{padding:10px 14px;font-size:14.5px}
-  #hlNotice .hln-sub{font-size:11px}
-}
 /* ─── Sticky section pill (RENT 68 etc.): warm style, floating pill only (no band) ─── */
 .section-divider.is-stuck{background:transparent !important;backdrop-filter:none !important;-webkit-backdrop-filter:none !important}
 .section-divider.is-stuck .section-divider-label{
@@ -23502,7 +23383,7 @@ body{background:radial-gradient(80% 50% at 100% 0%,rgba(255,150,110,.26) 0%,rgba
 .fd-btn:hover,.fd-btn.open{color:#c9264b}
 .fd-btn.has-sel,.fd-btn.has-sel.open{color:#fff}
 .fd-pop-label,.site-footer-bottom,.reviews-overview-count,.reviews-bar-row span:last-child,.review-card-date,.review-card-rating-num,.notif-modal-sub{color:#5c433b}
-#hlNotice .hln-why,.reviews-loadmore-btn{color:#4a2f27}
+.reviews-loadmore-btn{color:#4a2f27}
 .prop-loc,.prop-loc-area,.prop-stat{color:#2b1d1a}
 .prop-stat.is-off{color:#5a5a5a}
 .prop-stat.is-off .prop-stat-icon{opacity:.6;filter:none}
@@ -23632,56 +23513,6 @@ body{background:radial-gradient(80% 50% at 100% 0%,rgba(255,150,110,.26) 0%,rgba
 #detailGallerySlot .img-slide{background:transparent !important;z-index:1;object-fit:cover !important;object-position:center}
 #detailGallerySlot .img-slide.video-slide{background:#000 !important}
 </style>
-<div id="hlNotice" role="dialog" aria-modal="true" aria-labelledby="hlNoticeTitle" aria-describedby="hlNoticeLead">
-  <div class="hln-card" id="hlNoticeCard" tabindex="-1">
-    <button type="button" class="hln-x" id="hlNoticeX" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
-    <div class="hln-body">
-    <div class="hln-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 4.6L18.5 9l-4.6 1.9L12 15.5l-1.9-4.6L5.5 9l4.6-1.4z"/><path d="M19 15l.8 1.9 1.7.7-1.7.7L19 20l-.8-1.7-1.7-.7 1.7-.7z"/></svg></div>
-    <span class="hln-label">Service notice</span>
-    <h2 id="hlNoticeTitle">We’re upgrading HomeLoop</h2>
-    <p class="hln-d" id="hlNoticeLead">Here’s what we’re working on:</p>
-    <ul class="hln-points" aria-label="What we are working on">
-      <li><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg></i><span>Upgrading the User Interface (UI)<span class="hln-sub">A cleaner, faster look and feel.</span></span></li>
-      <li><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg></i><span>Enhancing existing features<span class="hln-sub">Smoother search, filters and listings.</span></span></li>
-      <li><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg></i><span>Building new features<span class="hln-sub">New features for Owners, Tenants, Agents, Builders and Brokers.</span></span></li>
-    </ul>
-    </div>
-    <button type="button" class="hln-btn" id="hlNoticeOk">Continue to website<span class="hln-count" id="hlNoticeCount" aria-hidden="true"></span></button>
-  </div>
-</div>
-<script>
-(function(){
-  var el=document.getElementById('hlNotice'); if(!el) return;
-  /* Once the visitor closes this notice it stays away for the rest of that day (device's local date); it comes back the next day. */
-  var DISMISS_KEY='hl_service_notice_closed_on';
-  function todayStr(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
-  try{ if(localStorage.getItem(DISMISS_KEY)===todayStr()){ el.parentNode.removeChild(el); return; } }catch(e){ /* storage unavailable — just show it */ }
-  var ok=document.getElementById('hlNoticeOk'), x=document.getElementById('hlNoticeX'), prevFocus=null, autoTimer=null, countEl=document.getElementById('hlNoticeCount');
-  function open(){
-    prevFocus=document.activeElement;
-    el.classList.add('show'); document.body.style.overflow='hidden';
-    requestAnimationFrame(function(){ el.classList.add('in'); });
-    setTimeout(function(){ var c=document.getElementById('hlNoticeCard'); (c||ok).focus({preventScroll:true}); },50);
-  }
-  function close(){
-    clearInterval(autoTimer);
-    if(countEl) countEl.textContent='';
-    if(!el.classList.contains('show')) return; /* already closed (e.g. manual close before the timer fired) */
-    try{ localStorage.setItem(DISMISS_KEY,todayStr()); }catch(e){ /* ignore */ }
-    el.classList.remove('in'); document.body.style.overflow='';
-    setTimeout(function(){ el.classList.remove('show'); },250);
-    if(prevFocus&&prevFocus.focus) try{ prevFocus.focus(); }catch(e){}
-  }
-  ok.addEventListener('click',close); x.addEventListener('click',close);
-  el.addEventListener('click',function(e){ if(e.target===el) close(); });
-  document.addEventListener('keydown',function(e){
-    if(!el.classList.contains('show')) return;
-    if(e.key==='Escape') close();
-    if(e.key==='Tab'){ var f=[x,ok], i=f.indexOf(document.activeElement); e.preventDefault(); f[(i+(e.shiftKey?-1:1)+f.length)%f.length].focus(); }
-  });
-  { if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',function(){ setTimeout(open,400); }); else setTimeout(open,400); }
-})();
-</script>
 <script>
 /* Adds data-ico to each listing-form label (icon is drawn by CSS ::before; text is untouched). */
 (function(){
@@ -23942,69 +23773,37 @@ main.main.empty-with-booked:has(> .empty-state.show) > .empty-state.show{positio
 
 
 /* Service notice: owner note in green */
-#hlNotice .hln-tag{color:#1f7a4d;background:#eaf7f0;border:1px solid rgba(46,160,103,.35);box-shadow:0 1px 4px rgba(46,160,103,.12)}
-#hlNotice .hln-tag i{background:#2ea067}
 
 /* Service notice: wider card on desktop and mobile */
-#hlNotice .hln-card{max-width:520px}
-#hlNotice .hln-points li{padding-left:14px;padding-right:14px}
-@media (max-width:480px){
-  #hlNotice{padding:8px}
-  #hlNotice .hln-card{max-width:none;width:100%;padding:24px 12px 18px}
-}
-
 /* Service notice: let the points list fill the full card width (was capped at 340px) */
-#hlNotice .hln-points{max-width:none;width:100%}
-#hlNotice .hln-tag{display:flex;width:100%}
-#hlNotice .hln-card{padding-left:20px;padding-right:20px}
-#hlNotice .hln-points li{padding-left:12px;padding-right:12px}
 
 /* Service notice: header + list scroll inside the card; button stays pinned and never overlaps */
-#hlNotice .hln-card{display:flex;flex-direction:column;overflow:hidden;padding-top:24px;padding-bottom:18px}
-#hlNotice .hln-body{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:8px 2px 4px;scrollbar-width:none}
-#hlNotice .hln-body::-webkit-scrollbar{display:none}
-#hlNotice .hln-btn{flex:0 0 auto;margin-top:14px}
-#hlNotice .hln-label{padding-top:2px}
-@media (max-height:640px){
-  #hlNotice .hln-ic{display:none}
-  #hlNotice .hln-card{padding-top:20px}
-  #hlNotice .hln-x{top:10px;right:10px}
-}
-
 /* Service notice: points in green */
-#hlNotice .hln-points li{border-color:rgba(46,160,103,.28);background:#f4fbf7;box-shadow:0 6px 14px -10px rgba(46,160,103,.35)}
-#hlNotice .hln-points li i{background:linear-gradient(135deg,#43c383,#2ea067);box-shadow:0 4px 10px -4px rgba(46,160,103,.6)}
-#hlNotice .hln-points li{color:#1f5f43}
-#hlNotice .hln-sub{color:#3d7d5f}
 
 /* Service notice: "listings paused" point in red */
-#hlNotice .hln-points li:last-child{border-color:rgba(224,58,82,.32);background:#fff5f6;box-shadow:0 6px 14px -10px rgba(224,58,82,.4);color:#a61e33}
-#hlNotice .hln-points li:last-child i{background:linear-gradient(135deg,#ef5a70,#d62f48);box-shadow:0 4px 10px -4px rgba(224,58,82,.6)}
-#hlNotice .hln-points li:last-child .hln-sub{color:#b8465a}
 
 /* Property VIEW modal: narrower card. Desktop caps at 640px; mobile gets wider side gaps. */
 #addModalBox.view-mode{width:100% !important;max-width:640px !important}
 /* MOBILE: every modal = 5% gap left, 90% width, 5% gap right */
 @media (max-width:700px){
   .sort-modal,.modal-overlay,.preav-overlay,.wish-modal-overlay,#confirmOverlay,
-  .fm-overlay,.add-modal-overlay,#hlNotice,#addModal:has(#addModalBox.view-mode){
+  .fm-overlay,.add-modal-overlay,#addModal:has(#addModalBox.view-mode){
     padding-left:5% !important;padding-right:5% !important;
     padding-top:16px !important;padding-bottom:16px !important;
     box-sizing:border-box !important;
   }
   .modal,.add-modal,.compare-modal,.viewers-modal,.profile-modal-box,.hours-modal,
   .preav-modal,.fm-box,.fm-sub .fm-box,.sort-sheet,.wish-modal-card,.confirm-card,
-  #hlNotice .hln-card,#comingSoonModal .cs-card,#chargesModal .add-modal,
+  #comingSoonModal .cs-card,#chargesModal .add-modal,
   #addModalBox,#addModalBox.view-mode{
     width:100% !important;max-width:none !important;min-width:0 !important;
     margin-left:auto !important;margin-right:auto !important;
     box-sizing:border-box !important;
   }
-}
-</style>
-<!-- ══ Modal queue: service notice → This Week's Listings → greeting, one at a time, with full background blur ══ -->
+}</style>
+<!-- ══ Modal queue: This Week's Listings → greeting, one at a time, with full background blur ══ -->
 <style>
-#hlNotice,#wishModalOverlay{
+#wishModalOverlay{
   background:rgba(30,20,35,.5) !important;
   -webkit-backdrop-filter:blur(18px) saturate(1.05) !important;backdrop-filter:blur(18px) saturate(1.05) !important;
 }
@@ -24013,7 +23812,6 @@ main.main.empty-with-booked:has(> .empty-state.show) > .empty-state.show{positio
 <script>
 (function(){
   var Q=[
-    {id:'hlNotice',cls:'show'},
     {id:'preavOverlay',cls:'open'},
     {id:'wishModalOverlay',cls:'open'}
   ];
