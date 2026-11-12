@@ -4549,6 +4549,7 @@ main.tab-explore .empty-state{display:none !important}
   color:var(--text-3);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;
 }
 .charges-or-divider::before,.charges-or-divider::after{content:'';flex:1;height:1px;background:var(--border-2)}
+#chargesModal .plan-panel ~ .plan-panel{margin-top:12px}
 #chargesModal .charges-audience-head{margin:0 0 8px}
 #chargesModal .charges-audience-name{font-size:13px}
 
@@ -8941,7 +8942,6 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
 
 </div></div>
 </div>
-        <div class="charges-or-divider">or</div>
 
         <!-- ─ Option 2: full service (we find & manage your tenant) ─ -->
         <div class="plan-panel plan-managed" id="planBuilderManaged">
@@ -9038,13 +9038,12 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
       
       <div class="svc-price-note charges-refer-note"><strong>Note:</strong>
 <ul class="charges-note-list">
-<li><b>Choose one property</b>, receive the <b>owner’s contact details</b>, and arrange a visit directly.</li>
+<li><b>Choose one property</b>, we’ll enable <b>direct contact with property owners</b>. You can <b>call or WhatsApp owners</b>, connect with them directly, and visit properties at your convenience.</li>
 <li>The service covers one property; each additional property costs just <b>₹150</b>.</li>
 </ul></div>
       <button class="form-submit pay-online-btn" onclick="closeChargesModal(); openPaymentModal('single_property');">Pay ₹150 for one property</button>
 </div></div>
       </div>
-      <div class="charges-or-divider">or</div>
 
 
       <!-- ─ Option 2: contact-only (pay a flat fee, get owner details) ─ -->
@@ -9066,14 +9065,12 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
       
       <div class="svc-price-note charges-refer-note"><strong>Note:</strong>
 <ul class="charges-note-list">
-<li>Based on your requirements, we’ll enable <b>direct contact</b> with property owners.</li>
-<li>You can <b>call or WhatsApp owners</b>, connect with them directly, and visit properties at your convenience.</li>
+<li>Based on your requirements, we’ll enable <b>direct contact</b> with property owners. You can <b>call or WhatsApp owners</b>, connect with them directly, and visit properties at your convenience.</li>
 <li>This service is valid for <b>2 days</b> from the date of payment.</li>
 </ul></div>
 </div></div>
       </div>
 
-      <div class="charges-or-divider">or</div>
 
       <!-- ─ Option 3: full service (agent shortlists & shows homes) ─ -->
       <div class="plan-panel plan-managed" id="planManaged">
@@ -9159,7 +9156,6 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
 
 </div></div>
 </div>
-      <div class="charges-or-divider">or</div>
 
       <!-- ─ Option 2: full service (we find & manage your tenant) ─ -->
       <div class="plan-panel plan-managed" id="planOwnerManaged">
@@ -9215,13 +9211,12 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
       
       <div class="svc-price-note charges-refer-note"><strong>Note:</strong>
 <ul class="charges-note-list">
-<li><b>Choose one property</b>, receive the <b>owner’s contact details</b>, and arrange a visit directly.</li>
+<li><b>Choose one property</b>, we’ll enable <b>direct contact with property owners</b>. You can <b>call or WhatsApp owners</b>, connect with them directly, and visit properties at your convenience.</li>
 <li>The service covers one property; each additional property costs just <b>₹150</b>.</li>
 </ul></div>
       <button class="form-submit pay-online-btn" onclick="closeChargesModal(); openPaymentModal('single_property');">Pay ₹150 for one property</button>
 </div></div>
       </div>
-      <div class="charges-or-divider">or</div>
 
 
         <!-- ─ Option 2: contact-only (pay a flat fee, get owner details) ─ -->
@@ -9243,13 +9238,11 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
         
         <div class="svc-price-note charges-refer-note"><strong>Note:</strong>
 <ul class="charges-note-list">
-<li>Based on your requirements, we’ll enable <b>direct contact</b> with property owners.</li>
-<li>You can <b>call or WhatsApp owners</b>, connect with them directly, and visit properties at your convenience.</li>
+<li>Based on your requirements, we’ll enable <b>direct contact</b> with property owners. You can <b>call or WhatsApp owners</b>, connect with them directly, and visit properties at your convenience.</li>
 <li>This service is valid for <b>2 days</b> from the date of payment.</li>
 </ul></div>
 </div></div>
 </div>
-        <div class="charges-or-divider">or</div>
 
         <!-- ─ Option 3: full service (agent shortlists & shows homes) ─ -->
         <div class="plan-panel plan-managed" id="planGuestTenantManaged">
@@ -9331,7 +9324,6 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
 
 </div></div>
 </div>
-        <div class="charges-or-divider">or</div>
 
         <!-- ─ Option 2: full service (we find & manage your tenant) ─ -->
         <div class="plan-panel plan-managed" id="planGuestOwnerManaged">
