@@ -3930,15 +3930,28 @@ self.addEventListener('notificationclick', event => {
         : [];
       const viewedBy = new Map(viewedAgg.map(x => [String(x._id), x.count]));
 
+      // Guests: properties opened from this device (PropertyView rows are keyed by the same device fingerprint)
+      const guestFps = [...new Set(rows.filter(v => !v.userId && v.fingerprint).map(v => v.fingerprint))];
+      const guestViewAgg = guestFps.length
+        ? await PropertyView.aggregate([
+            { $match: { fingerprint: { $in: guestFps } } },
+            { $group: { _id: '$fingerprint', count: { $sum: 1 } } },
+          ])
+        : [];
+      const guestViewBy = new Map(guestViewAgg.map(x => [x._id, x.count]));
+
       const visitors = rows.map(v => {
         const u = v.userId ? byId.get(String(v.userId)) : null;
         const ref = String(v.visitorId || v.fingerprint || '').slice(0, 6).toUpperCase();
         return {
           ref,
+          vid: String(v._id),
+          guestViews: v.userId ? 0 : (guestViewBy.get(v.fingerprint) || 0),
           firstSeenAt: v.firstSeenAt,
           // First visit of "today" for the today scope; otherwise the first visit ever.
           visitedAt: scope === 'today' ? (v.dayFirstAt || v.lastSeenAt || v.firstSeenAt) : v.firstSeenAt,
           lastSeenAt: v.lastSeenAt,
+          visits: Math.max(1, v.visitsTotal || 1),   // all-time visit days for this device (shown in both Today and All)
           isNew: !!(v.firstSeenAt && v.lastSeenDate === date && dateStrInTz(new Date(v.firstSeenAt)) === date),
           device: parseDeviceInfo(v.userAgent),
           // userId set but account since deleted → removed:true so the UI can say so.
@@ -3960,6 +3973,47 @@ self.addEventListener('notificationclick', event => {
     } catch (err) {
       console.error('GET /api/admin/visitors error:', err.message);
       res.status(500).json({ message: 'Error fetching visitors' });
+    }
+  });
+
+  // GET /api/admin/visitors/:vid/viewed-properties — which listings a GUEST device has opened
+  // (same response shape as /api/users/:id/viewed-properties so the same modal renders it).
+  app.get('/api/admin/visitors/:vid/viewed-properties', requireAdmin, requireAnyModule('stats', 'visits'), async (req, res) => {
+    try {
+      const { vid } = req.params;
+      if (!mongoose.Types.ObjectId.isValid(vid)) return res.status(400).json({ message: 'Invalid visitor id' });
+      const visitor = await Visitor.findById(vid).select('fingerprint userId').lean();
+      if (!visitor || !visitor.fingerprint) return res.json([]);
+      const rows = await PropertyView.find({ fingerprint: visitor.fingerprint })
+        .sort({ createdAt: -1 }).limit(500).select('propertyId createdAt').lean();
+      const ids = rows.map(r => r.propertyId).filter(pid => mongoose.Types.ObjectId.isValid(pid));
+      const found = {};
+      if (ids.length) {
+        const docs = (await Promise.all(LISTING_MODEL_LIST.map(M =>
+          M.find({ _id: { $in: ids } })
+            .select('propertyId basic.status location.area location.city property.type property.bhk price.rent').lean()
+        ))).flat();
+        docs.forEach(d => { found[String(d._id)] = d; });
+      }
+      res.json(rows.map(r => {
+        const d = found[String(r.propertyId)];
+        return {
+          _id:           String(r.propertyId),
+          propertyId:    d ? (d.propertyId || '') : '',
+          removed:       !d,
+          status:        d && d.basic ? (d.basic.status || '') : '',
+          type:          d && d.property ? [d.property.bhk, d.property.type].filter(Boolean).join(' ') : '',
+          area:          d && d.location ? (d.location.area || '') : '',
+          city:          d && d.location ? (d.location.city || '') : '',
+          displayPrice:  d && d.price && d.price.rent != null && d.price.rent !== ''
+                           ? formatPrice(d.price.rent, d.basic && d.basic.status) : '',
+          firstViewedAt: r.createdAt,
+          lastViewedAt:  r.createdAt,
+        };
+      }));
+    } catch (err) {
+      console.error('GET /api/admin/visitors/:vid/viewed-properties error:', err.message);
+      res.status(500).json({ message: 'Error fetching viewed properties' });
     }
   });
 

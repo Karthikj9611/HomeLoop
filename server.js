@@ -3805,6 +3805,9 @@ const VisitorSchema = new mongoose.Schema({
   userId:       { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null, index: true },
   userAgent:    { type: String, default: '' },   // truncated UA, parsed into "Mobile · Chrome · Android" for the admin popup
   dayFirstAt:   { type: Date, default: null },   // when this visitor first showed up on lastSeenDate (their first visit of that day)
+  // Real visit counters (guests and logged-in users alike). A "visit" = a day the visitor came back on.
+  visitsToday:  { type: Number, default: 0 },   // always 1 for today's visitors
+  visitsTotal:  { type: Number, default: 0 },   // visits ever
 });
 const Visitor = mongoose.model('Visitor', VisitorSchema);
 
@@ -3981,6 +3984,10 @@ app.post('/api/stats/visit', visitLimiterStats, attachUserIfPresent, async (req,
       // bump the all-time counter again. Only bump "today" if this is the
       // first time we've seen them today.
       const isNewDay = visitor.lastSeenDate !== today;
+      if (isNewDay) {   // one visit per day: only a return on a new day counts
+        visitor.visitsToday = 1;
+        visitor.visitsTotal = (visitor.visitsTotal || 1) + 1;
+      }
       visitor.visitorId    = cookieVid || visitor.visitorId; // backfill if browser had no cookie yet
       visitor.fingerprint   = fingerprint;
       visitor.lastSeenAt    = new Date();
@@ -4005,6 +4012,8 @@ app.post('/api/stats/visit', visitLimiterStats, attachUserIfPresent, async (req,
         dayFirstAt:   new Date(),
         userId:       visitUserId,
         userAgent,
+        visitsToday:  1,
+        visitsTotal:  1,
       });
 
       const doc = await SiteStat.findOneAndUpdate(

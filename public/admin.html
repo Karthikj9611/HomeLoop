@@ -17086,13 +17086,14 @@ window.closeUserPropsModal = closeUserPropsModal;
 /* "N viewed" chip on a registration card: loads that person's viewed properties (cached per modal open) and shows them in the popup. */
 const _trViews = {};
 async function openRegViews(btn){
-  const uid = btn.dataset.uid, name = btn.dataset.name || 'Properties viewed';
+  const isGuest = !btn.dataset.uid && !!btn.dataset.vid;
+  const uid = isGuest ? 'g' + btn.dataset.vid : btn.dataset.uid, name = btn.dataset.name || 'Properties viewed';
   const count = (btn.textContent.match(/\d+/) || ['0'])[0];
   const sub = count + (count === '1' ? ' property viewed' : ' properties viewed');
   if(_trViews[uid]){ openUserPropsModal(null, name, _trViews[uid], sub); return; }
   openUserPropsModal(null, name, '<div class="trv-msg"><i class="fas fa-circle-notch fa-spin"></i> Loading…</div>', sub);
   try{
-    const res = await fetch(BASE + '/api/users/' + encodeURIComponent(uid) + '/viewed-properties', { headers: authHeaders() });
+    const res = await fetch(BASE + (isGuest ? '/api/admin/visitors/' + encodeURIComponent(btn.dataset.vid) + '/viewed-properties' : '/api/users/' + encodeURIComponent(uid) + '/viewed-properties'), { headers: authHeaders() });
     if(res.status === 403) throw new Error('You do not have access to customer details.');
     if(!res.ok) throw new Error('Could not load the list.');
     const list = await res.json();
@@ -17363,17 +17364,24 @@ function renderSiteVisitors(){
           ? '<button type="button" class="sv-chip trv-btn" data-uid="' + _adminModalEsc(u._id) + '" data-name="' + _adminModalEsc(name) + '" onclick="openRegViews(this)" title="Show properties viewed"><i class="fas fa-eye"></i>' + nv + ' viewed<i class="fas fa-chevron-right trv-caret"></i></button>'
           : '<span class="sv-chip trv-none"><i class="fas fa-eye-slash"></i>No views yet</span>');
       }
-      if(v.visitCount > 1) chips.push('<span class="sv-chip"><i class="fas fa-repeat"></i>' + v.visitCount + (_svScope === 'today' ? ' visits' : ' devices') + '</span>');
+      if(guest){
+        const gv = Number(v.guestViews || 0);
+        chips.push(gv > 0
+          ? '<button type="button" class="sv-chip trv-btn" data-vid="' + _adminModalEsc(v.vid || '') + '" data-name="' + _adminModalEsc('Guest · Device ' + (v.ref || '')) + '" onclick="openRegViews(this)" title="Show properties viewed"><i class="fas fa-eye"></i>' + gv + ' viewed<i class="fas fa-chevron-right trv-caret"></i></button>'
+          : '<span class="sv-chip trv-none"><i class="fas fa-eye-slash"></i>No views yet</span>');
+      }
+      const _vc = v.visitCount || v.visits || 1;
+      chips.push('<span class="sv-chip"><i class="fas fa-repeat"></i>' + _vc + (_vc === 1 ? ' visit' : ' visits') + '</span>');
       const first = _svWhen(v.visitedAt), last = _svWhen(v.lastSeenAt);
       if(first) chips.push('<span class="sv-chip t1"><i class="fas fa-arrow-right-to-bracket"></i>' + (_svScope === 'today' ? 'First visit ' : 'First seen ') + _adminModalEsc(first) + '</span>');
-      if(last && last !== first) chips.push('<span class="sv-chip t2"><i class="fas fa-clock"></i>Last seen ' + _adminModalEsc(last) + '</span>');
+      if(last) chips.push('<span class="sv-chip t2"><i class="fas fa-clock"></i>' + (_svScope === 'today' ? 'Last visit ' : 'Last seen ') + _adminModalEsc(last) + '</span>');
       const newTag = v.isNew ? '<span class="vx-tag new"><i class="fas fa-star"></i>New</span>' : '';
       return '<div class="vx-row' + (owner ? ' sale' : '') + (guest ? ' guest' : '') + (!guest && u.removed ? ' gone' : '') + '" style="animation-delay:' + Math.min(i, 10) * 35 + 'ms">' +
         '<div class="sv-av">' + avatar + '<em class="sv-rank">' + (i + 1) + '</em></div>' +
         '<div class="vx-main"><div class="vx-pid"><span class="sv-name">' + _adminModalEsc(name) + '</span>' + newTag + '</div>' +
           contact +
           (chips.length ? '<div class="sv-chips">' + chips.join('') + '</div>' : '') + '</div>' +
-        (guest || u.removed ? '' : _tpvCallBtn(u.mobile, name)) + '</div>';
+        '</div>';
     }).join('') + '</div></div>';
   }
   box.innerHTML = dist + '<div class="pv-tabs">' + tabs + '</div>' + body + notes;
@@ -17406,8 +17414,8 @@ async function openSiteVisitorsModal(scope){
       const uid = v.user && !v.user.removed && v.user._id;
       if(!uid){ merged.push(v); return; }
       const m = byUser.get(uid);
-      if(!m){ const c = Object.assign({}, v, { visitCount: 1 }); byUser.set(uid, c); merged.push(c); return; }
-      m.visitCount++;
+      if(!m){ const c = Object.assign({}, v, { visitCount: v.visits || 1 }); byUser.set(uid, c); merged.push(c); return; }
+      m.visitCount += (v.visits || 1);
       if(v.visitedAt  && (!m.visitedAt  || new Date(v.visitedAt)  < new Date(m.visitedAt)))  m.visitedAt  = v.visitedAt;
       if(v.lastSeenAt && (!m.lastSeenAt || new Date(v.lastSeenAt) > new Date(m.lastSeenAt))) m.lastSeenAt = v.lastSeenAt;
       if(v.isNew) m.isNew = true;
