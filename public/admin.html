@@ -300,6 +300,18 @@ body{
   #reviewBulkToolbar .dt-button i,#partnerBulkToolbar .dt-button i,#brokerBulkToolbar .dt-button i{font-size:1.05rem!important;margin:0!important}
   #reviewBulkToolbar .dt-button .bulk-btn-label,#partnerBulkToolbar .dt-button .bulk-btn-label,#brokerBulkToolbar .dt-button .bulk-btn-label{display:none!important}
 }
+/* Wishes: same floating bottom-right Add button as Partners */
+#wishBulkToolbar{position:fixed!important;right:16px;bottom:16px;z-index:900;width:auto!important;max-width:none!important;flex-direction:column!important;align-items:flex-end!important;gap:8px!important;padding:0!important;margin:0!important;background:transparent!important;border:none!important;box-shadow:none!important;overflow:visible!important}
+#wishBulkToolbar .bulk-toolbar-left{display:flex;flex-direction:column!important;align-items:flex-end!important;gap:8px!important;flex-wrap:nowrap!important}
+#wishBulkToolbar .bulk-btn{width:auto!important;min-width:0!important;height:38px!important;flex-direction:row!important;gap:6px!important;padding:0 14px!important;white-space:nowrap;justify-content:flex-start!important;box-shadow:0 4px 14px rgba(0,0,0,.22)}
+#wishBulkToolbar .bulk-btn-label{font-size:0!important;line-height:0!important}
+#wishBulkToolbar .bulk-btn-label::after{content:attr(data-mobile);font-size:.82rem;line-height:1.2;display:inline;font-weight:700}
+@media(max-width:768px){
+  #wishBulkToolbar{right:14px;bottom:14px}
+  #wishBulkToolbar .bulk-btn{position:relative;width:46px!important;min-width:46px!important;height:46px!important;padding:0!important;gap:0!important;justify-content:center!important;align-items:center!important;border-radius:50%!important}
+  #wishBulkToolbar .bulk-btn i{font-size:1.05rem!important;margin:0!important}
+  #wishBulkToolbar .bulk-btn .bulk-btn-label{display:none!important}
+}
 /* Selection-only actions: stay hidden until JS clears .sel-hide (beats mobile display:inline-flex!important) */
 #bulkToolbar .bulk-btn.sel-hide{display:none!important}
 /* Uniform column: every button same width, left-aligned, one under the other */
@@ -4862,15 +4874,14 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
 
   <!-- ══ WISHES PANEL ══ -->
   <div class="tab-panel" id="panel-wishes">
-    <div class="card">
-      <div class="card-header">
-        <div class="card-header-left">
-          <div class="wsh-intro"><b>Festive wishes</b> — a greeting image shown as a popup on the website from the start date to the end date.</div>
-        </div>
+    <div class="bulk-toolbar" id="wishBulkToolbar">
+      <div class="bulk-toolbar-left">
         <button class="bulk-btn" id="addWishBtn" onclick="openWishModal()" title="Add wish" aria-label="Add wish" style="background:var(--brand);color:#fff;border-color:var(--brand)">
           <i class="fas fa-plus"></i> <span class="bulk-btn-label" data-mobile="Add">Add wish</span>
         </button>
       </div>
+    </div>
+    <div class="card">
       <div class="wsh-grid" id="wishGrid">
         <div class="empty-state"><i class="fas fa-circle-notch fa-spin"></i>Loading…</div>
       </div>
@@ -10482,9 +10493,7 @@ window.setWishKind = function(k){
   document.getElementById('wishPropWrap').style.display = prop ? '' : 'none';
   document.getElementById('wishCtaWrap').style.display = prop ? '' : 'none';
   document.getElementById('wishImgWrap').style.display = prop ? 'none' : '';
-  document.getElementById('wishAltWrap').style.display = prop ? 'none' : '';
   document.getElementById('wishFormTitle').placeholder = prop ? 'e.g. Featured 2BHK, Indiranagar' : 'e.g. Diwali 2026';
-  document.getElementById('wishFormAlt').placeholder = prop ? 'e.g. 2BHK for rent in Indiranagar' : 'e.g. Happy Diwali — from Home Loop';
   if(prop){ _renderWishPropSelected(); renderWishProps(); loadWishProps().then(() => { _renderWishPropSelected(); renderWishProps(); }); }
 };
 
@@ -10508,7 +10517,6 @@ window.openWishModal = function(id){
   const today = _wishToday();
   document.getElementById('wishFormStart').value = w ? w.startDate : today;
   document.getElementById('wishFormEnd').value = w ? w.endDate : today;
-  document.getElementById('wishFormAlt').value = w ? (w.alt || '') : '';
   document.getElementById('wishFormActive').checked = w ? w.active !== false : true;
   document.getElementById('wishFormImageUrl').value = w ? (w.imageUrl || '') : '';
   document.getElementById('wishFormCta').value = w ? (w.ctaText || '') : '';
@@ -10582,7 +10590,6 @@ window.saveWish = async function(){
     startDate:   document.getElementById('wishFormStart').value,
     endDate:     document.getElementById('wishFormEnd').value,
     imageUrl:    document.getElementById('wishFormImageUrl').value.trim(),
-    alt:         document.getElementById('wishFormAlt').value.trim(),
     active:      document.getElementById('wishFormActive').checked,
     kind:        isProp ? 'property' : 'greeting',
     propertyRef: isProp ? (_wishSel[0] || '') : '',
@@ -10616,7 +10623,7 @@ window.toggleWishActive = async function(id){
   if(!w) return;
   try{
     const { ok, data } = await _sendWish(id, {
-      title: w.title, imageUrl: w.imageUrl, alt: w.alt || '',
+      title: w.title, imageUrl: w.imageUrl,
       startDate: w.startDate, endDate: w.endDate, active: w.active === false,
       kind: w.kind || 'greeting', propertyRef: w.propertyRef || '', propertyRefs: (w.propertyRefs && w.propertyRefs.length) ? w.propertyRefs : (w.propertyRef ? [w.propertyRef] : []), ctaText: w.ctaText || ''
     });
@@ -15158,7 +15165,9 @@ function openAdminLightboxArr(urls, idx, pid, key){
   _renderAdminLightbox();
   document.getElementById('adminLightboxOverlay').classList.add('open');
 }
+let _lightboxClosedAt = 0;
 function closeAdminLightbox(){
+  _lightboxClosedAt = Date.now();
   document.getElementById('adminLightboxOverlay').classList.remove('open');
 }
 function _renderAdminLightbox(){
@@ -20140,8 +20149,15 @@ document.getElementById('addModal').addEventListener('change', function(e){
   _listingFormDirty = true;
   scheduleListingDraftSave();
 });
+let _addModalDownOnBackdrop = false;
+document.getElementById('addModal').addEventListener('mousedown', function(e){ _addModalDownOnBackdrop = (e.target === this); });
+document.getElementById('addModal').addEventListener('touchstart', function(e){ _addModalDownOnBackdrop = (e.target === this); }, {passive:true});
 document.getElementById('addModal').addEventListener('click', function(e) {
-  if (e.target === this) closeAdminEditModal();
+  // Closing the image viewer (or a drag that started inside the form) must never also close this modal
+  if (Date.now() - _lightboxClosedAt < 600) return;
+  if (document.getElementById('adminLightboxOverlay').classList.contains('open')) return;
+  if (e.target === this && _addModalDownOnBackdrop) closeAdminEditModal();
+  _addModalDownOnBackdrop = false;
 });
 markRequiredLabels();
 
@@ -20434,11 +20450,11 @@ markRequiredLabels();
 .wsh-thumb img{width:100%;height:100%;object-fit:contain;display:block}
 .wsh-chip{position:absolute;top:10px;left:10px;font-size:.68rem;font-weight:800;letter-spacing:.04em;text-transform:uppercase;padding:4px 9px;border-radius:999px;color:#fff;box-shadow:0 2px 8px rgba(0,0,0,.2)}
 .wsh-chip.live{background:#16a34a}.wsh-chip.upcoming{background:#2563eb}.wsh-chip.ended{background:#6b7280}.wsh-chip.paused{background:#d97706}
-.wsh-body{padding:12px 14px 14px;display:flex;flex-direction:column;gap:4px}
+.wsh-body{padding:12px 14px 14px;display:flex;flex-direction:column;gap:4px;flex:1 1 auto}
 .wsh-title{font-weight:700;color:var(--ink);font-size:.95rem;word-break:break-word}
 .wsh-dates{font-size:.8rem;color:var(--ink2)}
 .wsh-dates i{margin-right:5px}
-.wsh-actions{display:flex;gap:8px;margin-top:10px}
+.wsh-actions{display:flex;gap:8px;margin-top:auto;padding-top:10px}
 .wsh-actions button{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:6px;font:inherit;font-size:.78rem;font-weight:600;padding:8px 6px;border-radius:9px;border:1px solid var(--border);background:var(--surface,#fff);color:var(--ink);cursor:pointer;transition:background .15s}
 .wsh-actions button:hover{background:var(--surface2,#f5f5f7)}
 .wsh-actions button.danger{color:#dc2626}
@@ -20592,11 +20608,6 @@ markRequiredLabels();
       <div class="wsh-f" id="wishCtaWrap" style="display:none">
         <div class="wsh-lbl"><span>Button text</span><small>Shown under the listing card</small></div>
         <input type="text" id="wishFormCta" maxlength="40" placeholder="View property">
-      </div>
-
-      <div class="wsh-f" id="wishAltWrap">
-        <div class="wsh-lbl"><span>Image description</span><small>Optional · for accessibility</small></div>
-        <input type="text" id="wishFormAlt" maxlength="140" placeholder="e.g. Happy Diwali — from Home Loop">
       </div>
 
       <label class="wsh-switch" for="wishFormActive">
