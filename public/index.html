@@ -1847,7 +1847,7 @@ main.tab-explore .empty-state{display:none !important}
   width:fit-content;min-width:min(300px,100%);max-width:min(420px,100%);
   animation:modalIn .25s cubic-bezier(.2,.7,.3,1);
 }
-.wish-modal-card img{
+.wish-modal-card > img{
   display:block;width:auto;max-width:100%;height:auto;margin:0 auto;
   max-height:82vh;object-fit:contain;
   border-radius:var(--radius-xl, 16px);
@@ -3607,6 +3607,7 @@ main.tab-explore .empty-state{display:none !important}
    renders on top instead of behind the view modal it was opened from. */
 /* Property view opened from My Account: sits above the account modal (350) but below Schedule Visit (360). */
 #addModal.over-profile{z-index:355}
+#wishModalOverlay.wish-under{z-index:300 !important}
 /* Clone / Edit pills in the property view header (own listings only) */
 .view-hdr-act{display:none;align-items:center;gap:6px;height:32px;padding:0 12px;border-radius:16px;border:1.5px solid var(--border-2);background:var(--bg);color:var(--text);font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;white-space:nowrap}
 .view-hdr-act svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;flex-shrink:0}
@@ -11597,7 +11598,7 @@ function slideSwipe(uid, dir) {
   document.addEventListener('touchstart', function(e){
     const el = e.target.closest('.img-slides');
     if (!el || !el.id) { active = null; return; }
-    if (el.closest('.recently-viewed-strip, [id$="BookedGrid"]')) { active = null; return; }
+    if (el.closest('.recently-viewed-strip, [id$="BookedGrid"], .wish-promo-track.is-scroll')) { active = null; return; }   // in the sliding wish popup a swipe moves the cards, not each card's photo
     if (el.querySelectorAll('.img-slide').length < 2) { active = null; return; }
     active = el;
     sx = e.touches[0].clientX;
@@ -11677,6 +11678,7 @@ function slideSwipe(uid, dir) {
   document.addEventListener('mousedown', function(e){
     const el = e.target.closest('.img-slides');
     if (!el || !el.id) { active = null; return; }
+    if (el.closest('.wish-promo-track.is-scroll')) { active = null; return; }
     if (el.querySelectorAll('.img-slide').length < 2) { active = null; return; }
     active = el;
     mx = e.clientX;
@@ -22610,7 +22612,7 @@ document.addEventListener('keydown', function(e){ if (e.key === 'Escape') closeP
       if (props.length && typeof cardHTML === 'function') {
         promoBox.innerHTML = props.length === 1
           ? cardHTML(props[0])
-          : '<div class="wish-promo-track" id="wishPromoTrack" style="--wp-cols:' + cols + '">' +
+          : '<div class="wish-promo-track' + (fitsAll ? '' : ' is-scroll') + '" id="wishPromoTrack" style="--wp-cols:' + cols + '">' +
               props.map(function(p){ return '<div class="wish-promo-slide">' + cardHTML(p) + '</div>'; }).join('') +
             '</div>' +
             (fitsAll ? '' : '<div class="wish-promo-nav" id="wishPromoNav">' + props.map(function(p, i){ return '<button type="button" aria-label="Listing ' + (i + 1) + '">' + (i + 1) + '</button>'; }).join('') + '</div>');
@@ -22703,7 +22705,11 @@ document.addEventListener('keydown', function(e){ if (e.key === 'Escape') closeP
   document.getElementById('wishPromoCard').addEventListener('click', function(e){
     var el = e.target.closest('[onclick]');
     var oc = el ? (el.getAttribute('onclick') || '') : '';
-    if (/openDetail|openWhatsApp|openScheduleModal|openCardCall|openCall|openBookingModal|openViewersModal/.test(oc)) {
+    if (/openDetail/.test(oc)) {
+      // Property view (or the login prompt in front of it) opens ON TOP of this popup; this popup stays underneath and is back when they close
+      document.getElementById('wishModalOverlay').classList.add('wish-under');
+      setTimeout(function(){ var w=document.getElementById('wishModalOverlay'); if (!document.getElementById('addModal').classList.contains('open') && !document.getElementById('authModal').classList.contains('open')) w.classList.remove('wish-under'); }, 500);   // nothing opened — restore
+    } else if (/openWhatsApp|openScheduleModal|openCardCall|openCall|openBookingModal|openViewersModal/.test(oc)) {
       setTimeout(closeWishModal, 0);
     }
   }, true);
@@ -22711,8 +22717,19 @@ document.addEventListener('keydown', function(e){ if (e.key === 'Escape') closeP
     if (e.target === this) closeWishModal();
   });
   document.addEventListener('keydown', function(e){
-    if (e.key === 'Escape') closeWishModal();
+    if (e.key !== 'Escape') return;
+    if (document.getElementById('wishModalOverlay').classList.contains('wish-under')) return;   // Esc closes the property view / login first, not this popup
+    closeWishModal();
   });
+  // Bring the popup back to the front once neither the property view nor the login prompt is open
+  (function(){
+    var wo = document.getElementById('wishModalOverlay'), mods = ['addModal','authModal'].map(function(i){ return document.getElementById(i); }).filter(Boolean);
+    function check(){
+      if (!wo.classList.contains('wish-under')) return;
+      if (!mods.some(function(m){ return m.classList.contains('open'); })) wo.classList.remove('wish-under');
+    }
+    mods.forEach(function(m){ new MutationObserver(function(){ setTimeout(check, 60); }).observe(m, {attributes:true, attributeFilter:['class']}); });
+  })();
 
   // Don't stack the festive popup on top of a deep-linked view (a shared
   // compare link, a shared property link, or /property/:id) — whoever the

@@ -20446,8 +20446,8 @@ markRequiredLabels();
 .wsh-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:16px;padding:18px}
 .wsh-grid>.empty-state{grid-column:1/-1}
 .wsh-card{background:var(--surface,#fff);border:1px solid var(--border);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 1px 3px rgba(0,0,0,.05)}
-.wsh-thumb{position:relative;aspect-ratio:4/5;background:var(--surface2,#f5f5f7);display:flex;align-items:center;justify-content:center;cursor:zoom-in}
-.wsh-thumb img{width:100%;height:100%;object-fit:contain;display:block}
+.wsh-thumb{position:relative;aspect-ratio:4/5;flex:0 0 auto;overflow:hidden;background:var(--surface2,#f5f5f7);display:flex;align-items:center;justify-content:center;cursor:zoom-in}
+.wsh-thumb img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;display:block}
 .wsh-chip{position:absolute;top:10px;left:10px;font-size:.68rem;font-weight:800;letter-spacing:.04em;text-transform:uppercase;padding:4px 9px;border-radius:999px;color:#fff;box-shadow:0 2px 8px rgba(0,0,0,.2)}
 .wsh-chip.live{background:#16a34a}.wsh-chip.upcoming{background:#2563eb}.wsh-chip.ended{background:#6b7280}.wsh-chip.paused{background:#d97706}
 .wsh-body{padding:12px 14px 14px;display:flex;flex-direction:column;gap:4px;flex:1 1 auto}
