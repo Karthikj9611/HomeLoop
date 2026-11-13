@@ -5974,6 +5974,10 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
       <span class="nav-tab-icon">🔑</span>
       Rent
     </div>
+    <div class="nav-tab" data-tab="Upcoming" role="tab" onclick="switchTab(this)" tabindex="0">
+      <span class="nav-tab-icon">⏳</span>
+      Upcoming
+    </div>
     <div class="nav-tab" data-tab="Lease" role="tab" onclick="switchTab(this)" tabindex="0" style="display:none"><!-- Lease hidden for now: remove style="display:none" to bring it back -->
       <span class="nav-tab-icon">📜</span>
       Lease
@@ -6873,6 +6877,7 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
         <li><span onclick="document.querySelector('.nav-tab[data-tab=&quot;All&quot;]').click(); window.scrollTo({top:0,behavior:'smooth'})">All Properties</span></li>
         <li><span onclick="document.querySelector('.nav-tab[data-tab=&quot;Promoted&quot;]').click(); window.scrollTo({top:0,behavior:'smooth'})">Promoted</span></li>
         <li><span onclick="document.querySelector('.nav-tab[data-tab=&quot;Rent&quot;]').click(); window.scrollTo({top:0,behavior:'smooth'})">Rent</span></li>
+        <li><span onclick="document.querySelector('.nav-tab[data-tab=&quot;Upcoming&quot;]').click(); window.scrollTo({top:0,behavior:'smooth'})">Upcoming</span></li>
         <li><span onclick="document.querySelector('.nav-tab[data-tab=&quot;Lease&quot;]').click(); window.scrollTo({top:0,behavior:'smooth'})">Lease</span></li>
         <li style="display:none"><span onclick="document.querySelector('.nav-tab[data-tab=&quot;Sell&quot;]').click(); window.scrollTo({top:0,behavior:'smooth'})">Sell</span></li>
         <li><span onclick="document.querySelector('.nav-tab[data-tab=&quot;Broker&quot;]').click(); window.scrollTo({top:0,behavior:'smooth'})">Brokers</span></li>
@@ -7098,9 +7103,9 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
     <span class="bottom-tab-icon">🔑</span>
     Rent
   </div>
-  <div class="bottom-tab bottom-tab-wide" data-tab="Maintenance" onclick="switchTabMobile(this)">
-    <span class="bottom-tab-icon">🛏️</span>
-    PG &amp; Coliving
+  <div class="bottom-tab" data-tab="Upcoming" onclick="switchTabMobile(this)">
+    <span class="bottom-tab-icon">⏳</span>
+    Upcoming
   </div>
   <div class="bottom-tab bottom-tab-add" id="bottomTabAdd" onclick="openFabPicker()" role="button" aria-label="List your property">
     <span class="bottom-add-btn"><svg viewBox="0 0 24 24" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>
@@ -7114,7 +7119,11 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
     <span class="bottom-tab-icon">🏗️</span>
     Builders
   </div>
-  <div class="bottom-tab" data-tab="All" onclick="switchTabMobile(this)">
+  <div class="bottom-tab bottom-tab-wide" data-tab="Maintenance" onclick="switchTabMobile(this)">
+    <span class="bottom-tab-icon">🛏️</span>
+    PG &amp; Coliving
+  </div>
+  <div class="bottom-tab" data-tab="All" onclick="switchTabMobile(this)" style="display:none"><!-- Review hidden from the mobile bar (replaced by PG &amp; Coliving): remove style="display:none" to bring it back -->
     <span class="bottom-tab-icon">⭐</span>
     Review
   </div>
@@ -10657,7 +10666,7 @@ function availableDateOnly(v) {
   const d = parseFlexibleDate(v);
   return isNaN(d) ? null : new Date(d.getFullYear(), d.getMonth(), d.getDate());
 }
-function upcomingActive() { return currentTab === 'Rent' || currentTab === 'Promoted' || currentTab === 'All'; }
+function upcomingActive() { return currentTab === 'Upcoming' || currentTab === 'Promoted' || currentTab === 'All'; }
 function isUpcomingRent(p) {
   if (p.basic?.status !== 'For Rent') return false;
   const d = availableDateOnly(p.property?.available);
@@ -10683,6 +10692,7 @@ function sectionKeyFor(p) {
 const TAB_EMPTY_LABEL = {
   Promoted: 'promoted listings',
   Rent: 'rental listings',
+  Upcoming: 'upcoming listings',
   Lease: 'lease listings',
   PG: 'PG listings',
   ShortStay: 'short stay listings',
@@ -10713,6 +10723,7 @@ function tabRawCount(tab) {
 const EMPTY_PITCH = {
   All:         { t: 'No Listings Yet \u2014 List Your Property', x: 'Owners, brokers and builders can post their properties on HomeLoop and connect directly with potential buyers and tenants.', add: '' },
   Rent:        { t: 'Rent \u2014 List Your Property', x: 'Owners and brokers can post their rental homes on HomeLoop and connect directly with genuine tenants.', add: 'Rent' },
+  Upcoming:    { t: 'Upcoming \u2014 List Your Property', x: 'Owners and brokers can list rental homes that will be available soon and connect with tenants early.', add: 'Rent' },
   Lease:       { t: 'Lease \u2014 List Your Property', x: 'Owners can post their properties for lease on HomeLoop and connect directly with serious lessees.', add: 'Lease' },
   PG:          { t: 'PG \u2014 List Your PG', x: 'PG owners can list their rooms and beds on HomeLoop and connect directly with students and working professionals.', add: 'PG' },
   ShortStay:   { t: 'Short Stay \u2014 List Your Stay', x: 'Hosts can list short stay homes and rooms on HomeLoop and connect directly with guests.', add: 'ShortStay' },
@@ -10902,7 +10913,7 @@ function setupPromoSlider() {
 function setupUpcomingSlider() {
   const grid = document.getElementById('upcomingGrid');
   if (!grid) return;
-  const on = upcomingActive() && !isListView && !!grid.firstElementChild && !grid.querySelector('.pre-avail-empty');
+  const on = upcomingActive() && currentTab !== 'Upcoming' && !isListView && !!grid.firstElementChild && !grid.querySelector('.pre-avail-empty');
   grid.classList.toggle('promo-slider', on);
   if (!on) glideClear(grid);
   setupBookedSliders();
@@ -10934,7 +10945,7 @@ function renderCards() {
     // Keep the category's horizontal line (e.g. "Sell 0") visible above the
     // "No listings" message, so the empty state doesn't look like it belongs
     // to the BOOKED section sitting above it.
-    const _emptyKey = { Promoted:'promoted', Rent:'rent', Lease:'lease', PG:'pg', ShortStay:'shortstay', Sell:'sell' }[currentTab];
+    const _emptyKey = { Promoted:'promoted', Rent:'rent', Upcoming:'upcoming', Lease:'lease', PG:'pg', ShortStay:'shortstay', Sell:'sell' }[currentTab];
     if (_emptyKey && _initialPropertiesFetchDone) {
       const _d = document.getElementById(_emptyKey + 'Divider'), _c = document.getElementById(_emptyKey + 'Count');
       if (_d) _d.style.display = '';
@@ -10979,7 +10990,7 @@ function renderCards() {
     (propertyListedAt(b) - propertyListedAt(a));
 
   // Brokers tab: promoted broker listings go in the Promoted strip (one horizontal line) only.
-  const promoted = currentTab === 'Promoted' ? [] : list.filter(p => p.promoted && !(currentTab === 'Rent' && isUpcomingRent(p))).sort(byPromotedPriority);
+  const promoted = (currentTab === 'Promoted' || currentTab === 'Upcoming') ? [] : list.filter(p => p.promoted && !(currentTab === 'Rent' && isUpcomingRent(p))).sort(byPromotedPriority);
   // On a single-type tab (Rent/Lease/PG/ShortStay), `list` is already
   // scoped to just that type, so the "promoted" and typed buckets below
   // would otherwise be drawing from the exact same set — showing every
@@ -11017,7 +11028,7 @@ function renderCards() {
   // only one populated, so pagination just adds noise — show every
   // matching listing on one page with no page controls. All/Promoted
   // still page normally since multiple sections stack together there.
-  const noPagination = ['Rent', 'Lease', 'PG', 'ShortStay', 'Sell', 'Builder', 'Maintenance'].includes(currentTab);
+  const noPagination = ['Rent', 'Upcoming', 'Lease', 'PG', 'ShortStay', 'Sell', 'Builder', 'Maintenance'].includes(currentTab);
 
   SECTIONS.forEach(key => {
     const items = groups[key];
@@ -11028,7 +11039,7 @@ function renderCards() {
     if (items.length === 0) {
       // Upcoming stays visible on the Rent tab even when empty, so it's
       // clear the section exists and what qualifies for it.
-      if (key === 'upcoming' && currentTab === 'Rent') {
+      if (key === 'upcoming' && currentTab === 'Upcoming') {
         divider.style.display = '';
         document.getElementById('upcomingCount').textContent = '0';
         grid.innerHTML = '<div class="pre-avail-empty"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg><div class="pre-avail-empty-title">No pre-available properties right now</div><div class="pre-avail-empty-sub">Homes with a future available date will show here.</div></div>';
@@ -11235,7 +11246,7 @@ function paginationHTML(section, page, total) {
 
 function sectionItems(section) {
   const list = getFiltered();
-  if (section === 'promoted') return list.filter(p => p.promoted && !(currentTab === 'Rent' && isUpcomingRent(p)));
+  if (section === 'promoted') return currentTab === 'Upcoming' ? [] : list.filter(p => p.promoted && !(currentTab === 'Rent' && isUpcomingRent(p)));
   const dedupe = ['Rent', 'Lease', 'PG', 'ShortStay', 'Sell', 'Broker', 'Builder', 'Maintenance'].includes(currentTab);
   if (section === 'upcoming') return upcomingActive() ? list.filter(p => sectionKeyFor(p) === 'rent' && isUpcomingRent(p)) : [];
   if (section === 'rent' && upcomingActive()) return list.filter(p => (!dedupe || !p.promoted) && sectionKeyFor(p) === 'rent' && !isUpcomingRent(p));
@@ -11934,6 +11945,9 @@ function matchesTab(p, tab) {
   if (tab === 'Broker') return p.basic?.listedBy === 'Broker';
   if (tab === 'Builder') return p.basic?.listedBy === 'Builder';
   if (tab === 'Maintenance') return pTypeLabel(p) === 'PG'; // the "PG & Coliving" nav tab
+  // Rent vs Upcoming: a rental whose Available-from date is today or later lives ONLY in the Upcoming tab.
+  if (tab === 'Rent') return pTypeLabel(p) === 'Rent' && !isUpcomingRent(p);
+  if (tab === 'Upcoming') return pTypeLabel(p) === 'Rent' && isUpcomingRent(p);
   return pTypeLabel(p) === tab;
 }
 
@@ -12097,7 +12111,7 @@ function _cardHTMLRaw(p, compact, extraLeftBadge, showAvail) {
         <div class="prop-left-badges">
           ${(roleTagProp(p) && !isBookedProp(p)) ? roleTagHTML(roleTagProp(p)) : ''}
           ${(isDirectProp(p) && !isBookedProp(p) && !(p.basic && (p.basic.listedBy === 'Broker' || p.basic.listedBy === 'Builder'))) ? '<div class="prop-badge-direct" title="Owner — contact the owner directly, no brokerage"><span class="pbd-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.6"/><path d="M4.8 20c.6-3.8 3.6-6 7.2-6s6.6 2.2 7.2 6"/></svg></span><span class="pbd-txt">Owner</span></div>' : ''}
-          ${(!compact && !['Rent','Lease','PG','ShortStay'].includes(currentTab)) ? `<span class="prop-badge-type-letter${pTypeLetter.length>1?' wide':''} badge-${pType.toLowerCase()}" title="${pType}">${pTypeLetter}</span>` : ''}
+          ${(!compact && !['Rent','Upcoming','Lease','PG','ShortStay'].includes(currentTab)) ? `<span class="prop-badge-type-letter${pTypeLetter.length>1?' wide':''} badge-${pType.toLowerCase()}" title="${pType}">${pTypeLetter}</span>` : ''}
           ${(!p.verified && !isBookedProp(p)) ? '<div class="prop-unverified" title="Unverified — yet to be verified by our team"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5"/><path d="M12 16.3h.01"/></svg>Yet to verify</div>' : ''}
         </div>
         <div class="prop-right-badges">
@@ -12974,7 +12988,7 @@ function updateAllOnlySections() {
   const adBannerEl = document.getElementById('adBanner');
   if (rh) {
     // Ad banner shows on Sell, Promoted, Rent, Lease and Broker — hidden on the Review ('All') tab.
-    const adTab = ['Sell', 'Promoted', 'Rent', 'Lease', 'Broker'].includes(currentTab);
+    const adTab = ['Sell', 'Promoted', 'Rent', 'Upcoming', 'Lease', 'Broker'].includes(currentTab);
     const gridTab = false; // banner sits above the grid on every tab, so keep the normal top gap
     rh.style.display = adTab ? '' : 'none';
     if (resultsCountEl) resultsCountEl.style.display = show ? '' : 'none';
@@ -13516,7 +13530,7 @@ function syncFdBar() {
   const bar = document.getElementById('filterDdBar');
   if (!bar) return;
   bar.classList.remove('tab-all','tab-rent','tab-lease','tab-pg','tab-promoted','tab-shortstay','tab-sell','tab-broker');
-  bar.classList.add('tab-' + currentTab.toLowerCase());
+  bar.classList.add('tab-' + (currentTab === 'Upcoming' ? 'rent' : currentTab.toLowerCase()));
 }
 
 /* Toggle a dropdown open/closed */
