@@ -6874,13 +6874,15 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
     <div class="sf-col">
       <div class="sf-col-title">Quick Links</div>
       <ul class="sf-links">
-        <li><span onclick="document.querySelector('.nav-tab[data-tab=&quot;All&quot;]').click(); window.scrollTo({top:0,behavior:'smooth'})">All Properties</span></li>
         <li><span onclick="document.querySelector('.nav-tab[data-tab=&quot;Promoted&quot;]').click(); window.scrollTo({top:0,behavior:'smooth'})">Promoted</span></li>
         <li><span onclick="document.querySelector('.nav-tab[data-tab=&quot;Rent&quot;]').click(); window.scrollTo({top:0,behavior:'smooth'})">Rent</span></li>
         <li><span onclick="document.querySelector('.nav-tab[data-tab=&quot;Upcoming&quot;]').click(); window.scrollTo({top:0,behavior:'smooth'})">Upcoming</span></li>
-        <li><span onclick="document.querySelector('.nav-tab[data-tab=&quot;Lease&quot;]').click(); window.scrollTo({top:0,behavior:'smooth'})">Lease</span></li>
-        <li style="display:none"><span onclick="document.querySelector('.nav-tab[data-tab=&quot;Sell&quot;]').click(); window.scrollTo({top:0,behavior:'smooth'})">Sell</span></li>
         <li><span onclick="document.querySelector('.nav-tab[data-tab=&quot;Broker&quot;]').click(); window.scrollTo({top:0,behavior:'smooth'})">Brokers</span></li>
+        <li><span onclick="document.querySelector('.nav-tab[data-tab=&quot;Builder&quot;]').click(); window.scrollTo({top:0,behavior:'smooth'})">Builders</span></li>
+        <li><span onclick="document.querySelector('.nav-tab[data-tab=&quot;Maintenance&quot;]').click(); window.scrollTo({top:0,behavior:'smooth'})">PG &amp; Coliving</span></li>
+        <li><span onclick="document.querySelector('.nav-tab[data-tab=&quot;All&quot;]').click(); window.scrollTo({top:0,behavior:'smooth'})">Review</span></li>
+        <li style="display:none"><span onclick="document.querySelector('.nav-tab[data-tab=&quot;Lease&quot;]').click(); window.scrollTo({top:0,behavior:'smooth'})">Lease</span></li>
+        <li style="display:none"><span onclick="document.querySelector('.nav-tab[data-tab=&quot;Sell&quot;]').click(); window.scrollTo({top:0,behavior:'smooth'})">Sell</span></li>
       </ul>
     </div>
 
@@ -10759,9 +10761,9 @@ function setEmptyStateContent() {
   const showPitch = (pitch) => {
     title.textContent = pitch.t;
     text.textContent = pitch.x;
-    if (pitch.add === null) { actions.style.display = 'none'; return; }
-    actions.innerHTML = '<button class="empty-state-btn primary" onclick="openAddModal(' + (pitch.add ? "'" + pitch.add + "'" : '') + ')">List your property</button>';
-    actions.style.display = '';
+    // Pitch text only: the floating "+ List property" button (and the mobile + tab) already offer listing,
+    // so a second button here would be a duplicate.
+    actions.style.display = 'none';
   };
 
   // Builders / Management tabs have no listings yet — "list your properties" pitch.
