@@ -15137,9 +15137,6 @@ function buildAgentFormTable(p) {
   }
   const money = (n, suffix) => (n != null && n !== '' && !isNaN(Number(n))) ? fmtRupee(n) + (suffix || '') : '';
 
-  rows.push('<tr class="detail-section-row sec-listing-info"><td colspan="2" style="text-transform:none">' +
-            '🔒 Agent view — complete listing form, including fields hidden from the public</td></tr>');
-
   section('📋 Basic Information', [
     kv('Listing type', typeLabel),
     kv('Listed by', basic.listedBy),
