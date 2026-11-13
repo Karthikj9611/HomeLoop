@@ -6006,7 +6006,7 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
       <span class="nav-tab-icon">🏨</span>
       Short Stay
     </div>
-	<div class="nav-tab" data-tab="All" role="tab" onclick="switchTab(this)" tabindex="0">
+	<div class="nav-tab" data-tab="All" role="tab" onclick="switchTab(this)" tabindex="0" style="display:none"><!-- Review hidden for now: remove style="display:none" (and set REVIEW_ENABLED = true) to bring it back -->
       <span class="nav-tab-icon">⭐</span>
       Review
     </div>
@@ -6880,7 +6880,7 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
         <li><span onclick="document.querySelector('.nav-tab[data-tab=&quot;Broker&quot;]').click(); window.scrollTo({top:0,behavior:'smooth'})">Brokers</span></li>
         <li><span onclick="document.querySelector('.nav-tab[data-tab=&quot;Builder&quot;]').click(); window.scrollTo({top:0,behavior:'smooth'})">Builders</span></li>
         <li><span onclick="document.querySelector('.nav-tab[data-tab=&quot;Maintenance&quot;]').click(); window.scrollTo({top:0,behavior:'smooth'})">PG &amp; Coliving</span></li>
-        <li><span onclick="document.querySelector('.nav-tab[data-tab=&quot;All&quot;]').click(); window.scrollTo({top:0,behavior:'smooth'})">Review</span></li>
+        <li style="display:none"><span onclick="document.querySelector('.nav-tab[data-tab=&quot;All&quot;]').click(); window.scrollTo({top:0,behavior:'smooth'})">Review</span></li>
         <li style="display:none"><span onclick="document.querySelector('.nav-tab[data-tab=&quot;Lease&quot;]').click(); window.scrollTo({top:0,behavior:'smooth'})">Lease</span></li>
         <li style="display:none"><span onclick="document.querySelector('.nav-tab[data-tab=&quot;Sell&quot;]').click(); window.scrollTo({top:0,behavior:'smooth'})">Sell</span></li>
       </ul>
@@ -9734,11 +9734,7 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
     <div class="menu-section-label" id="menuManageLabel">Manage</div>
     <div class="menu-item" id="menuListRent" onclick="toggleMenuPanel(); openAddModal('Rent');">
       <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-      List Rent Property
-    </div>
-    <div class="menu-item" id="menuListPG" onclick="toggleMenuPanel(); openAddModal('PG');">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-      List PG &amp; Coliving
+      List Property
     </div>
     <div class="menu-item" id="menuListSell" onclick="toggleMenuPanel(); openAddModal('Sell');" style="display:none"><!-- SELL_ENABLED -->
       <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -14169,7 +14165,8 @@ function restoreFilterStateBeforeBuild() {
     !!document.querySelector(`.nav-tab[data-tab="${saved.tab}"]`) &&
     !(saved.tab === 'PG' && !PG_ENABLED) &&
     !(saved.tab === 'ShortStay' && !SHORT_STAY_ENABLED) &&
-    !(saved.tab === 'Sell' && !SELL_ENABLED)
+    !(saved.tab === 'Sell' && !SELL_ENABLED) &&
+    !(saved.tab === 'All' && !REVIEW_ENABLED)
   );
   if (!_tabUsable) {
     try { localStorage.removeItem(filterStateKey()); } catch (e) {}
@@ -14327,6 +14324,7 @@ const SHORT_STAY_ENABLED = false;
 // set to true and remove the inline display:none / hidden on those elements
 // (search for SELL_ENABLED) to bring it back.
 const SELL_ENABLED = false;
+const REVIEW_ENABLED = false; // Review tab hidden for now (nav, mobile bar, footer link)
 
 // PG is on ice for now too, same pattern as Short Stay above (Sell has taken
 // its spot in the main nav) — flip this back to true (and re-show the nav
@@ -16904,7 +16902,7 @@ function updateAdBannerAudience() {
 function updateListPropertyVisibility(user) {
   const canList = !user || (ACCT_OWNER_SIDE.includes(user.accountType));
   const display = canList ? '' : 'none';
-  ['fabAdd', 'bottomTabAdd', 'fabInlineAdd', 'menuManageLabel', 'menuListRent', 'menuSupportDivider', 'menuListPG']  /* menuListSell intentionally excluded: stays hidden (see SELL_ENABLED) */
+  ['fabAdd', 'bottomTabAdd', 'fabInlineAdd', 'menuManageLabel', 'menuListRent', 'menuSupportDivider']  /* menuListSell intentionally excluded: stays hidden (see SELL_ENABLED) */
     .forEach(id => { const el = document.getElementById(id); if (el) el.style.display = display; });
   const _sellMenu = document.getElementById('menuListSell');
   if (_sellMenu) _sellMenu.style.display = (SELL_ENABLED && canList) ? '' : 'none';
