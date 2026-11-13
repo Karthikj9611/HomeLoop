@@ -5796,8 +5796,13 @@ main.tab-explore .empty-state{display:none !important}
 .plan-lock-title{font-size:16px;font-weight:700;letter-spacing:-.01em;line-height:1.2}
 .plan-lock-sub{font-size:12.5px;opacity:.85;max-width:240px;line-height:1.4}
 .plan-lock-btn{margin-top:4px;padding:10px 18px;border:none;border-radius:999px;background:#5f9488;color:#fff;font-weight:600;font-size:13px;cursor:pointer;box-shadow:0 8px 18px -10px rgba(60,110,98,.7);display:inline-flex;align-items:center;gap:6px;white-space:nowrap;transition:transform .15s}
-.plan-lock-btn::after{content:"\203A";font-size:1.25em;line-height:1}
+.plan-lock-btn::after{content:none}
 .plan-lock-btn:active{transform:scale(.96)}
+.plan-lock-btn-alt{margin-top:0;background:rgba(255,255,255,.9);color:#3f6f64;border:1.5px solid #5f9488;box-shadow:none}
+.plan-lock-btn-alt::after{content:none}
+.prop-img .img-slides > .plan-lock .plan-lock-btn-alt{margin-top:0;padding:5px 12px;font-size:clamp(10.5px,3.8cqw,12px)}
+.compare-col-img .plan-lock .plan-lock-btn-alt{display:none}
+@media (max-width:600px){.plan-lock-btn-alt{padding:2cqw 4cqw;font-size:3.8cqw;margin-top:0}}
 /* On property cards the lock covers the photo only: the price strip, badges, eye/compare/heart buttons
    and top accent bar stay visible and in place, so the card looks the same as every other card. */
 .prop-img .img-slides > .plan-lock{z-index:1;inset:0 0 var(--rib-h,0px) 0;gap:6px;padding:10px 14px 24px}
@@ -11417,7 +11422,7 @@ function buildImgSlider(p, fg, uidSuffix, videoSlideHtml) {
   if (_slideCount >= 2 && uidSuffix !== '-cmp') {
     dots = `<div class="card-slide-dots${_slideCount > 10 ? ' tiny' : ''}" aria-hidden="true">${Array.from({length:_slideCount},(_,i)=>`<span class="${i===0?'active':''}"></span>`).join('')}</div>`;
   }
-  return `<div class="img-slides" id="${uid}"${(p.ownListing || p.singleUnlocked) ? ' data-own="1"' : ''}>${imgSlides}${videoSlide}</div>${dots}`;
+  return `<div class="img-slides" id="${uid}" data-pid="${p.id}"${(p.ownListing || p.singleUnlocked) ? ' data-own="1"' : ''}>${imgSlides}${videoSlide}</div>${dots}`;
 }
 
 // Loads a card's non-first slides (see the data-src comment in
@@ -11491,7 +11496,7 @@ function slideGo(uid, idx) {
   if (_photoLocked || _vidLocked) {
     const lk = document.createElement('div');
     lk.className = 'plan-lock';
-    lk.innerHTML = lockPanelHtml(_vidLocked ? 'video' : 'photo');
+    lk.innerHTML = lockPanelHtml(_vidLocked ? 'video' : 'photo', c.dataset.pid);
     lk.addEventListener('click', function(e){ e.stopPropagation(); });
     c.appendChild(lk);
   }
@@ -11536,12 +11541,25 @@ function openPlansFromLock(ev) {
   closeLightbox();
   showPlansFromSwipe();
 }
-function lockPanelHtml(kind) {
+function lockPanelHtml(kind, propId) {
   const isVid = kind === 'video';
   return '<div class="plan-lock-icon">' + (isVid ? '\uD83C\uDFAC' : '\uD83C\uDFE1') + '</div>'
-    + '<div class="plan-lock-title">' + (isVid ? 'Video tour' : 'Building photo') + '</div>'
-    + '<div class="plan-lock-sub">The Multi Properties Plan unlocks the building photo, video tour and owner contact.</div>'
-    + '<button type="button" class="plan-lock-btn" onclick="openPlansFromLock(event)">Explore Multi Properties Plan</button>';
+    + '<div class="plan-lock-sub">Unlock the building photo, video tour, owner contact and directions.</div>'
+    + singlePayBtnHtml(propId);
+}
+/* Single Property Plan shortcut on the lock panel: pay once (SINGLE_PROPERTY_FEE) for THIS listing only.
+   Shown only where the existing rules allow a single-property unlock (canUnlockContact). */
+function singlePayBtnHtml(propId) {
+  if (!propId) return '';
+  const p = PROPERTIES.find(x => String(x.id) === String(propId)) || BOOKED_PROPERTIES.find(x => String(x.id) === String(propId));
+  if (!p || !canUnlockContact(p)) return '';
+  return '<button type="button" class="plan-lock-btn" onclick="openSinglePayFromLock(event,\'' + String(propId).replace(/'/g, '') + '\')">Unlock for \u20b9' + SINGLE_PROPERTY_FEE + '</button>';
+}
+function openSinglePayFromLock(ev, propId) {
+  if (ev) { ev.stopPropagation(); ev.preventDefault(); }
+  if (Date.now() - (window._lastSwipeTs || 0) < 500) return;   // a swipe, not a tap
+  closeLightbox();
+  openUnlockPayment(String(propId));   // existing Single Property Plan pay modal
 }
 function showPlansFromSwipe() {
   const u = getLoggedInUser();
@@ -11679,6 +11697,7 @@ let lightboxImgs = [];
 let lightboxIdx = 0;
 let lightboxVideoHtml = ''; // '' when this property has no (valid) video tour
 let lightboxOwn = false; // true when the property being zoomed is the logged-in owner's own listing (nothing locked)
+let lightboxPropId = null; // property being zoomed (lets the lock panel offer the Single Property pay shortcut)
 let lightboxPropertyMode = false; // true only for property photos (not the About-modal partner photos)
 
 // The lightbox swaps a single <img>'s src on each swipe instead of
@@ -11736,6 +11755,7 @@ function openLightboxReal(propId, idx) {
   lightboxVideoHtml = buildVideoSlideHtml(p);
   lightboxOwn = !!(p.ownListing || p.singleUnlocked); // own listing, or unlocked via a verified Single Property Plan
   lightboxPropertyMode = true;
+  lightboxPropId = String(propId);
   lightboxIdx = idx || 0;
   lightboxPreloaded.clear();
   renderLightbox();
@@ -11756,6 +11776,7 @@ function openLightboxSimple(urls, idx) {
   lightboxVideoHtml = '';
   lightboxOwn = false;
   lightboxPropertyMode = false;
+  lightboxPropId = null;
   lightboxIdx = idx || 0;
   lightboxPreloaded.clear();
   renderLightbox();
@@ -11807,11 +11828,11 @@ function renderLightbox() {
     lockEl.id = 'lightboxLock';
     lockEl.className = 'plan-lock plan-lock-lightbox';
     lockEl.style.display = 'none';
-    lockEl.innerHTML = lockPanelHtml();
+    lockEl.innerHTML = lockPanelHtml('photo', lightboxPropId);
     stageEl.appendChild(lockEl);
   }
   const vidLocked = isVideo && lightboxVideoLocked();
-  if (lockEl) lockEl.innerHTML = lockPanelHtml(vidLocked ? 'video' : 'photo');
+  if (lockEl) lockEl.innerHTML = lockPanelHtml(vidLocked ? 'video' : 'photo', lightboxPropId);
   if (lightboxIdx === lockedIdx || vidLocked) {
     imgEl.style.display = 'none';
     imgEl.removeAttribute('src');          // never load the locked photo
