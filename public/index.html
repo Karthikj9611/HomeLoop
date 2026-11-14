@@ -8215,8 +8215,12 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
       </div>
       <div id="authLoginContactField">
         <div class="form-group">
-          <label class="form-label">Phone or email</label>
-          <input class="form-input" type="text" id="auth-contact" inputmode="text" autocomplete="username" oninput="sanitizeContactInput(this)" />
+          <label class="form-label">Phone number <span style="color:var(--brand)">*</span></label>
+          <input class="form-input" type="tel" id="auth-contact" inputmode="numeric" maxlength="10" autocomplete="tel-national" oninput="sanitizeMobileInput(this)" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email <span style="color:var(--brand)">*</span></label>
+          <input class="form-input" type="email" id="auth-login-email" autocomplete="email" />
         </div>
       </div>
       <div id="authSignupContactFields" style="display:none">
@@ -17057,10 +17061,13 @@ async function submitAuth() {
   let body;
 
   if (isLogin) {
-    const contact = document.getElementById('auth-contact').value.trim();
-    if (!contact) { showToast("Please enter your mobile number.", 'warning'); return; }
-    if (!contact.includes('@') && !isValidIndianMobile(contact)) { showToast("Please enter a valid 10-digit mobile number starting with 6, 7, 8 or 9.", 'warning'); return; }
-    body = { contact };
+    const mobile = document.getElementById('auth-contact').value.trim();
+    const email  = document.getElementById('auth-login-email').value.trim();
+    if (!mobile) { showToast("Please enter your phone number.", 'warning'); return; }
+    if (!isValidIndianMobile(mobile)) { showToast("Please enter a valid 10-digit mobile number starting with 6, 7, 8 or 9.", 'warning'); return; }
+    if (!email)  { showToast("Please enter your email address.", 'warning'); return; }
+    if (!/^[A-Za-z0-9._%+\-]+@[A-Za-z0-9\-]+(?:\.[A-Za-z0-9\-]+)*\.[A-Za-z]{2,}$/.test(email)) { showToast("Please enter a valid email address.", 'warning'); return; }
+    body = { mobile, email };
   } else {
     if (!selectedAccountType) {
       document.getElementById('authTypeTabsRow').classList.add('has-error');
@@ -17068,8 +17075,9 @@ async function submitAuth() {
       document.getElementById('authTypeTabsRow').scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
     }
-    const firstName       = document.getElementById('auth-firstname').value.trim();
-    const lastName        = document.getElementById('auth-lastname').value.trim();
+    const capFirst = s => s.charAt(0).toUpperCase() + s.slice(1);
+    const firstName       = capFirst(document.getElementById('auth-firstname').value.trim());
+    const lastName        = capFirst(document.getElementById('auth-lastname').value.trim());
     const email            = document.getElementById('auth-email').value.trim();
     const mobile            = document.getElementById('auth-mobile').value.trim();
 
@@ -17108,13 +17116,10 @@ async function submitAuth() {
       // — carrying over what they typed into the matching field (mobile vs
       // email) so they don't have to retype it.
       if (isLogin && /no account found/i.test(msg)) {
-        const contactTyped = body.contact;
+        const typedMobile = body.mobile, typedEmail = body.email;
         switchAuthTab('signup');
-        if (isValidIndianMobile(contactTyped)) {
-          document.getElementById('auth-mobile').value = contactTyped;
-        } else {
-          document.getElementById('auth-email').value = contactTyped;
-        }
+        document.getElementById('auth-mobile').value = typedMobile || '';
+        document.getElementById('auth-email').value  = typedEmail  || '';
         saveSignupDraft();
       }
       return;
@@ -17270,7 +17275,7 @@ function openForgotPassword() {
   resetForgotPasswordView();
   // Carry over whatever was already typed into the login "Phone or email"
   // field, if it looks like an email — saves retyping it.
-  const contact = (document.getElementById('auth-contact').value || '').trim();
+  const contact = (document.getElementById('auth-login-email').value || '').trim();
   if (contact.includes('@')) document.getElementById('forgot-email').value = contact;
   document.getElementById('authFormStep').style.display = 'none';
   document.getElementById('authForgotStep').style.display = '';
@@ -17395,7 +17400,7 @@ async function submitNewPassword() {
     showToast(data.message);
     cancelForgotPassword();
     switchAuthTab('login');
-    document.getElementById('auth-contact').value = forgotEmail || '';
+    document.getElementById('auth-login-email').value = forgotEmail || '';
   } catch (err) {
     showToast("Unable to connect. Please check your internet connection and try again.", 'error');
   } finally {
@@ -22077,7 +22082,8 @@ function sanitizeMobileInput(el) {
 
 /* ── Name validation: English letters A–Z / a–z only — no spaces, digits or special characters. First name needs at least 3 letters. ── */
 function sanitizeNameInput(el) {
-  el.value = el.value.replace(/[^A-Za-z]/g, '').slice(0, 30);
+  let v = el.value.replace(/[^A-Za-z]/g, '').slice(0, 30);
+  el.value = v.charAt(0).toUpperCase() + v.slice(1); // first letter always capital
 }
 function isValidName(v, min) { return new RegExp('^[A-Za-z]{' + (min || 1) + ',30}$').test((v || '').trim()); }
 

@@ -587,10 +587,12 @@ app.post('/api/user/signup', userAuthLimiter, async (req, res) => {
       : '';
 
     const userId = await nextSequenceId('USER');
-    const cleanLastName = lastName ? String(lastName).trim() : '';
-    const name = `${String(firstName).trim()} ${cleanLastName}`.trim();
+    const capFirst = s => s.charAt(0).toUpperCase() + s.slice(1);
+    const cleanFirstName = capFirst(String(firstName).trim());
+    const cleanLastName = lastName ? capFirst(String(lastName).trim()) : '';
+    const name = `${cleanFirstName} ${cleanLastName}`.trim();
     const user = await User.create({
-      firstName: String(firstName).trim(),
+      firstName: cleanFirstName,
       lastName:  cleanLastName,
       name,
       email:     cleanEmail,
@@ -627,18 +629,18 @@ app.post('/api/user/signup', userAuthLimiter, async (req, res) => {
 // ── User Login ──
 app.post('/api/user/login', userAuthLimiter, async (req, res) => {
   try {
-    const { contact } = req.body || {};
-    if (!contact) return res.status(400).json({ message: 'Please enter your mobile number' });
+    const { mobile, email } = req.body || {};
+    if (!mobile || !String(mobile).trim()) return res.status(400).json({ message: 'Please enter your phone number' });
+    if (!email  || !String(email).trim())  return res.status(400).json({ message: 'Please enter your email address' });
 
-    // 'contact' is whatever the person typed into the single "Phone or email"
-    // field — figure out which one it is and match the corresponding column.
-    const identifier = String(contact).toLowerCase().trim();
-    const cleanMobile = normalizeMobile(identifier);
-    // With no password, a malformed identifier must never reach the query (e.g. '' matching a legacy blank-mobile row).
-    if (!identifier.includes('@') && !/^\d{10}$/.test(cleanMobile)) return res.status(400).json({ message: 'Please enter a valid 10-digit mobile number' });
-    const query = identifier.includes('@') ? { email: identifier } : { mobile: cleanMobile };
-    const user = await User.findOne(query);
-    // Passwordless login: the number/email just has to exist in the DB.
+    // Both phone AND email are required, and both must belong to the same account.
+    const cleanMobile = normalizeMobile(mobile);
+    const cleanEmail  = String(email).toLowerCase().trim();
+    // A malformed value must never reach the query (e.g. '' matching a legacy blank-mobile row).
+    if (!/^\d{10}$/.test(cleanMobile)) return res.status(400).json({ message: 'Please enter a valid 10-digit mobile number' });
+    if (!EMAIL_FORMAT_RE.test(cleanEmail)) return res.status(400).json({ message: 'Please enter a valid email address' });
+    const user = await User.findOne({ mobile: cleanMobile, email: cleanEmail });
+    // Passwordless login: the phone + email pair just has to match an existing account.
     if (!user) return res.status(401).json({ message: 'No account found. Please sign up.' });
 
     // Blocked by admin — checked before the single-device check so they always see this message.
