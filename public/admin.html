@@ -7060,7 +7060,7 @@ function ocRowsHtml(g){
   return g.props.slice().sort((a, b) => (Date.parse(b.createdAt) || 0) - (Date.parse(a.createdAt) || 0)).map(p => {
       const isNew = g.newIds.has(ocPid(p));
       const type = p.bhk || p.pgPropertyType || p.ssPropertyType || p.type || '—';
-      const place = [p.loc, p.city].filter(Boolean).join(', ') || '—';
+      const place = [p.loc, /^\s*(bangalore|bengaluru)\s*$/i.test(p.city || '') ? '' : p.city].filter(Boolean).join(', ') || '—';
       const pidAttr = escapeHtml(String(p._id || ''));
       const acts = `<td class="oc-sticky oc-sticky-act"><button type="button" class="oc-pbtn" data-oc="pview" data-id="${pidAttr}" title="View property (edit / clone from there)"><i class="fas fa-eye"></i></button></td>`;
       return `<tr class="${isNew ? 'is-new' : ''}"><td><b>${escapeHtml(p.propertyId || '—')}</b>${isNew ? ' <span class="oc-pill new">NEW</span>' : ''}</td>
