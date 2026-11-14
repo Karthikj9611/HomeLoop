@@ -540,7 +540,7 @@ table.dataTable thead tr.col-filter-row th{
 .oc-search{flex:1 1 260px;min-width:180px}
 .oc-summary{margin-left:auto;font-size:.8rem;font-weight:700;color:var(--ink2)}
 .oc-list{padding:12px 16px;display:flex;flex-direction:column;gap:10px}
-.oc-card{border:1px solid var(--border);border-radius:14px;background:var(--surface);overflow:hidden}
+.oc-card{cursor:pointer;border:1px solid var(--border);border-radius:14px;background:var(--surface);overflow:hidden}
 .oc-card.has-new{border-color:#f59e0b;box-shadow:0 0 0 2px rgba(245,158,11,.15)}
 .oc-head{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:12px 14px;cursor:pointer}
 .oc-who{flex:1 1 200px;min-width:0}
@@ -552,15 +552,23 @@ table.dataTable thead tr.col-filter-row th{
 .oc-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .oc-call{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:999px;background:#059669;color:#fff!important;font-weight:800;font-size:.84rem;text-decoration:none;border:0;cursor:pointer}
 .oc-call.alt{background:#fff;color:#059669!important;border:1.5px solid #059669}
-.oc-wa{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;background:#25d366;color:#fff!important;text-decoration:none}
+.oc-wa{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:8px 14px;font-weight:800;font-size:.84rem;white-space:nowrap;border-radius:999px;background:#25d366;color:#fff!important;text-decoration:none}
 .oc-done{padding:8px 12px;border-radius:999px;border:1.5px solid var(--border);background:#fff;color:var(--ink);font-weight:700;font-size:.8rem;cursor:pointer}
 .oc-done:hover{border-color:#059669;color:#059669}
 .oc-body{display:none;border-top:1px solid var(--border);padding:8px 14px 12px;overflow-x:auto}
 .oc-card.open .oc-body{display:block}
+.oc-modal-ov{display:none;position:fixed;inset:0;z-index:9000;background:rgba(12,13,16,.55);align-items:center;justify-content:center;padding:16px}
+.oc-modal{background:#fff;border-radius:18px;width:100%;max-width:1000px;max-height:88vh;display:flex;flex-direction:column;box-shadow:0 24px 60px rgba(0,0,0,.35);overflow:hidden}
+.oc-mhead{display:flex;flex-wrap:wrap;gap:12px;align-items:center;padding:16px 18px;border-bottom:1px solid var(--border)}
+.oc-mhead .oc-who{flex:1 1 200px;min-width:0}
+.oc-mclose{width:36px;height:36px;border-radius:50%;border:1.5px solid var(--border);background:#fff;font-size:1.3rem;line-height:1;cursor:pointer;color:var(--ink)}
+.oc-mclose:hover{background:var(--surface2)}
+.oc-mbody{padding:8px 18px 18px;overflow:auto}
 .oc-tbl{width:100%;border-collapse:collapse;font-size:.82rem}
 .oc-tbl th{text-align:left;padding:6px 10px;font-size:.7rem;letter-spacing:.06em;text-transform:uppercase;color:var(--gold-dark)}
 .oc-tbl td{padding:7px 10px;border-top:1px solid var(--border);white-space:nowrap}
 .oc-tbl tr.is-new td{background:#fffbeb}
+.oc-view{display:inline-flex;align-items:center;gap:6px;font-size:.8rem;font-weight:700;color:var(--ink2);white-space:nowrap}
 .oc-chev{transition:transform .15s;color:var(--ink2)}
 .oc-card.open .oc-chev{transform:rotate(180deg)}
 @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
@@ -7014,12 +7022,27 @@ function ocRender(){
   if(!rows.length){ list.innerHTML = '<div class="empty-state">' + (_ocTab === 'called' ? 'No called owners yet.' : 'Nobody left to call.') + '</div>'; return; }
   list.innerHTML = rows.map(g => {
     const hasNum = g.key !== 'none';
-    const open = _ocOpen.has(g.key);
     const last = g.rec && g.rec.ts ? plainDateTime(g.rec.ts) : '';
-    const call = hasNum ? `<a class="oc-call" href="tel:${escapeHtml(g.number)}" data-oc="call" data-key="${g.key}"><i class="fas fa-phone"></i> ${escapeHtml(g.number)}</a>` : '<span class="oc-pill">No number</span>';
-    const alts = Array.from(g.alts).map(a => `<a class="oc-call alt" href="tel:${escapeHtml(a)}" data-oc="call" data-key="${g.key}" title="Alternate number"><i class="fas fa-phone"></i> ${escapeHtml(a)}</a>`).join('');
-    const wa = hasNum ? `<a class="oc-wa" href="https://wa.me/91${ocDigits(g.number)}" target="_blank" rel="noopener" title="WhatsApp"><i class="fab fa-whatsapp"></i></a>` : '';
-    const rowsHtml = g.props.slice().sort((a, b) => (Date.parse(b.createdAt) || 0) - (Date.parse(a.createdAt) || 0)).map(p => {
+    const call = hasNum ? `<a class="oc-call" href="tel:${escapeHtml(g.number)}" data-oc="call" data-key="${g.key}" title="Call this owner"><i class="fas fa-phone"></i> ${escapeHtml(g.number)}</a>` : '<span class="oc-pill">No number</span>';
+    const alts = Array.from(g.alts).map(a => `<a class="oc-call alt" href="tel:${escapeHtml(a)}" data-oc="call" data-key="${g.key}" title="Call alternate number"><i class="fas fa-phone"></i> ${escapeHtml(a)}</a>`).join('');
+    const wa = hasNum ? `<a class="oc-wa" href="https://wa.me/91${ocDigits(g.number)}" target="_blank" rel="noopener" title="Chat on WhatsApp"><i class="fab fa-whatsapp"></i> WhatsApp</a>` : '';
+    return `<div class="oc-card ${g.newProps.length ? 'has-new' : ''}" data-oc="toggle" data-key="${g.key}">
+      <div class="oc-head" data-oc="toggle" data-key="${g.key}">
+        <div class="oc-who"><div class="oc-name">${escapeHtml(g.name || 'Unnamed owner')}</div>
+          <div class="oc-sub">${g.props.length} propert${g.props.length === 1 ? 'y' : 'ies'}${last ? ' · last called ' + last : ' · never called'}</div></div>
+        ${g.newProps.length ? `<span class="oc-pill new"><i class="fas fa-bell"></i> ${g.newProps.length} new</span>` : ''}
+        <div class="oc-actions">${call}${alts}${wa}
+          ${_ocTab === 'called'
+            ? `<button type="button" class="oc-done" data-oc="undo" data-key="${g.key}" title="Move this owner back to the To Call list">↩ Move to To Call</button>`
+            : `<button type="button" class="oc-done" data-oc="done" data-key="${g.key}" title="Mark as called and reviewed. Moves the owner to Called.">✓ Mark called</button>`}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+/* Owner details modal: all property IDs of one owner, with call buttons and Booked toggles. */
+let _ocModalKey = null;
+function ocRowsHtml(g){
+  return g.props.slice().sort((a, b) => (Date.parse(b.createdAt) || 0) - (Date.parse(a.createdAt) || 0)).map(p => {
       const isNew = g.newIds.has(ocPid(p));
       const type = p.bhk || p.pgPropertyType || p.ssPropertyType || p.type || '—';
       const place = [p.loc, p.city].filter(Boolean).join(', ') || '—';
@@ -7032,28 +7055,56 @@ function ocRender(){
           ${p.booked ? '<span class="oc-pill ok">Booked</span>' : '<span class="oc-pill">Available</span>'}</label></td>
         <td>${p.createdAt ? plainDateTime(p.createdAt) : '—'}</td></tr>`;
     }).join('');
-    return `<div class="oc-card ${open ? 'open' : ''} ${g.newProps.length ? 'has-new' : ''}" data-key="${g.key}">
-      <div class="oc-head" data-oc="toggle" data-key="${g.key}">
-        <div class="oc-who"><div class="oc-name">${escapeHtml(g.name || 'Unnamed owner')}</div>
-          <div class="oc-sub">${g.props.length} propert${g.props.length === 1 ? 'y' : 'ies'}${last ? ' · last called ' + last : ' · never called'}</div></div>
-        ${g.newProps.length ? `<span class="oc-pill new"><i class="fas fa-bell"></i> ${g.newProps.length} new</span>` : ''}
-        <div class="oc-actions">${call}${alts}${wa}
-          ${_ocTab === 'called'
-            ? `<button type="button" class="oc-done" data-oc="undo" data-key="${g.key}" title="Move back to To Call">↩ To call</button>`
-            : `<button type="button" class="oc-done" data-oc="done" data-key="${g.key}" title="Mark called and reviewed">✓ Done</button>`}</div>
-        <i class="fas fa-chevron-down oc-chev"></i>
-      </div>
-      <div class="oc-body"><table class="oc-tbl"><thead><tr><th>Property ID</th><th>Title</th><th>Status</th><th>Type</th><th>Price</th><th>Location</th><th>Availability</th><th>Listed on</th></tr></thead><tbody>${rowsHtml}</tbody></table></div>
-    </div>`;
-  }).join('');
 }
+function ocModalHtml(g){
+  const hasNum = g.key !== 'none';
+  const last = g.rec && g.rec.ts ? plainDateTime(g.rec.ts) : '';
+  const call = hasNum ? `<a class="oc-call" href="tel:${escapeHtml(g.number)}" data-oc="call" data-key="${g.key}" title="Call this owner"><i class="fas fa-phone"></i> ${escapeHtml(g.number)}</a>` : '<span class="oc-pill">No number</span>';
+  const alts = Array.from(g.alts).map(a => `<a class="oc-call alt" href="tel:${escapeHtml(a)}" data-oc="call" data-key="${g.key}" title="Call alternate number"><i class="fas fa-phone"></i> ${escapeHtml(a)}</a>`).join('');
+  const wa = hasNum ? `<a class="oc-wa" href="https://wa.me/91${ocDigits(g.number)}" target="_blank" rel="noopener" title="Chat on WhatsApp"><i class="fab fa-whatsapp"></i> WhatsApp</a>` : '';
+  return `<div class="oc-mhead">
+      <div class="oc-who"><div class="oc-name">${escapeHtml(g.name || 'Unnamed owner')}</div>
+        <div class="oc-sub">${g.props.length} propert${g.props.length === 1 ? 'y' : 'ies'}${last ? ' · last called ' + last : ' · never called'}</div></div>
+      <div class="oc-actions">${call}${alts}${wa}${(g.rec && !g.newProps.length)
+        ? `<button type="button" class="oc-done" data-oc="undo" data-key="${g.key}" title="Move this owner back to the To Call list">↩ Move to To Call</button>`
+        : `<button type="button" class="oc-done" data-oc="done" data-key="${g.key}" title="Mark as called and reviewed. Moves the owner to Called.">✓ Mark called</button>`}</div>
+      <button type="button" class="oc-mclose" data-oc="close" title="Close">&times;</button>
+    </div>
+    <div class="oc-mbody"><table class="oc-tbl"><thead><tr><th>Property ID</th><th>Title</th><th>Status</th><th>Type</th><th>Price</th><th>Location</th><th>Availability</th><th>Listed on</th></tr></thead><tbody>${ocRowsHtml(g)}</tbody></table></div>`;
+}
+function ocOpenModal(key){
+  const g = ocGroups().find(x => x.key === key); if(!g) return;
+  _ocModalKey = key;
+  let ov = document.getElementById('ocModalOv');
+  if(!ov){
+    ov = document.createElement('div');
+    ov.id = 'ocModalOv'; ov.className = 'oc-modal-ov';
+    ov.onclick = function(e){ if(e.target === ov) ocCloseModal(); };
+    ov.innerHTML = '<div class="oc-modal" id="ocModalBox"></div>';
+    document.body.appendChild(ov);
+  }
+  document.getElementById('ocModalBox').innerHTML = ocModalHtml(g);
+  ov.style.display = 'flex';
+}
+function ocRefreshModal(){
+  if(!_ocModalKey) return;
+  const g = ocGroups().find(x => x.key === _ocModalKey);
+  const box = document.getElementById('ocModalBox');
+  if(!g || !box){ ocCloseModal(); return; }
+  box.innerHTML = ocModalHtml(g);
+}
+function ocCloseModal(){
+  _ocModalKey = null;
+  const ov = document.getElementById('ocModalOv'); if(ov) ov.style.display = 'none';
+}
+document.addEventListener('keydown', function(e){ if(e.key === 'Escape' && _ocModalKey) ocCloseModal(); });
 // Booked toggle inside the owner's property list. Reuses the Properties tab's
 // togglePropFlag (confirm → PATCH → updates the Properties table), then syncs this view.
 async function ocToggleBooked(id, el){
   try{ await window.togglePropFlag(id, 'booked', el); }catch(e){ console.error(e); }
   const p = _ocProps.find(x => String(x._id) === String(id));
   if(p) p.booked = el.checked;     // togglePropFlag reverts el.checked on cancel/failure
-  ocRender();
+  ocRender(); ocRefreshModal();
 }
 function ocReload(){
   if(typeof propTable !== 'undefined' && propTable && propTable.ajax) propTable.ajax.reload(null, false);
@@ -7061,35 +7112,34 @@ function ocReload(){
 function ownerCallsRefresh(res){
   _ocProps = Array.isArray(res) ? res : [];
   _ocLoaded = true;
+  ocRefreshModal();
   const panel = document.getElementById('panel-owner-calls');
   if(panel && panel.classList.contains('active')) ocRender();
   else ocRender();
 }
 document.addEventListener('click', function(e){
   const el = e.target.closest('[data-oc]');
-  if(!el || !el.closest('#ocList')) return;
+  if(!el || !(el.closest('#ocList') || el.closest('#ocModalOv'))) return;
   const act = el.getAttribute('data-oc'), key = el.getAttribute('data-key');
   if(act === 'call'){
     e.stopPropagation();
     const log = ocLog(); log[key] = Object.assign({}, log[key], { ts: Date.now() }); ocSave();
-    setTimeout(ocRender, 600);                // let tel: open first, then move the owner to Called
+    setTimeout(function(){ ocRender(); ocRefreshModal(); }, 600);                // let tel: open first, then move the owner to Called
     return;
   }
   if(e.target.closest('a')) return;           // WhatsApp link etc.
   if(act === 'undo'){
     e.stopPropagation();
-    delete ocLog()[key]; ocSave(); ocRender(); return;
+    delete ocLog()[key]; ocSave(); ocRender(); ocRefreshModal(); return;
   }
   if(act === 'done'){
     e.stopPropagation();
     const g = ocGroups().find(x => x.key === key); if(!g) return;
     const log = ocLog(); log[key] = { ts: Date.now(), ids: g.props.map(ocPid) }; ocSave();
-    ocRender(); return;
+    ocRender(); if(el.closest('#ocModalOv')) ocCloseModal(); return;
   }
-  if(act === 'toggle'){
-    if(_ocOpen.has(key)) _ocOpen.delete(key); else _ocOpen.add(key);
-    const card = el.closest('.oc-card'); if(card) card.classList.toggle('open');
-  }
+  if(act === 'toggle') ocOpenModal(key);
+  if(act === 'close') ocCloseModal();
 });
 
 /* ── TAB SWITCHING ── */
