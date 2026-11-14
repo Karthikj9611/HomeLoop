@@ -22521,11 +22521,16 @@ function preavAutoStop() {}
 function preavAutoPause() {}
 document.getElementById('preavClose').addEventListener('click', closePreAvailModal);
 document.getElementById('preavBackdrop').addEventListener('click', closePreAvailModal);
-// Card click opens detail (inline onclick); close the panel so detail sits on top cleanly.
-document.getElementById('preavGrid').addEventListener('click', function(e){
-  if (e.target.closest('.prop-card')) setTimeout(closePreAvailModal, 0);
-});
-document.addEventListener('keydown', function(e){ if (e.key === 'Escape') closePreAvailModal(); });
+// Card click opens the detail modal (inline onclick). The panel stays open underneath
+// (the detail modal's z-index is higher), so closing the detail returns to This Week's Listings.
+// Escape: when the detail modal is open it should close first, leaving the panel alone.
+// Capture phase so we see the modal's state before the global Escape handler closes it.
+document.addEventListener('keydown', function(e){
+  if (e.key !== 'Escape') return;
+  var dm = document.getElementById('addModal');
+  if (dm && dm.classList.contains('open')) return;
+  closePreAvailModal();
+}, true);
 </script>
 
 <!-- ── Festive Wish Modal ──
