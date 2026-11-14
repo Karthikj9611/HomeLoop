@@ -555,6 +555,11 @@ table.dataTable thead tr.col-filter-row th{
 .oc-wa{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:8px 14px;font-weight:800;font-size:.84rem;white-space:nowrap;border-radius:999px;background:#25d366;color:#fff!important;text-decoration:none}
 .oc-done{padding:8px 12px;border-radius:999px;border:1.5px solid var(--border);background:#fff;color:var(--ink);font-weight:700;font-size:.8rem;cursor:pointer}
 .oc-done:hover{border-color:#059669;color:#059669}
+@media(max-width:768px){
+  .oc-actions{flex:1 1 100%;flex-wrap:nowrap;gap:6px}
+  .oc-actions>.oc-call,.oc-actions>.oc-wa,.oc-actions>.oc-done{flex:1 1 auto;min-width:0;justify-content:center;gap:4px;padding:8px 6px;font-size:.74rem;white-space:nowrap}
+  .oc-actions>.oc-call{flex-grow:1.3}
+}
 .oc-body{display:none;border-top:1px solid var(--border);padding:8px 14px 12px;overflow-x:auto}
 .oc-card.open .oc-body{display:block}
 .oc-modal-ov{display:none;position:fixed;inset:0;z-index:9000;background:rgba(12,13,16,.55);align-items:center;justify-content:center;padding:16px}
@@ -563,6 +568,12 @@ table.dataTable thead tr.col-filter-row th{
 .oc-mhead .oc-who{flex:1 1 200px;min-width:0}
 .oc-mclose{width:36px;height:36px;border-radius:50%;border:1.5px solid var(--border);background:#fff;font-size:1.3rem;line-height:1;cursor:pointer;color:var(--ink)}
 .oc-mclose:hover{background:var(--surface2)}
+@media(max-width:768px){
+  .oc-mhead{position:relative;gap:10px;padding:14px 14px 12px}
+  .oc-mhead .oc-who{flex:1 1 100%;padding-right:46px}
+  .oc-mhead .oc-mclose{position:absolute;top:12px;right:12px;width:34px;height:34px}
+  .oc-mhead .oc-actions{flex:1 1 100%;flex-wrap:nowrap;gap:6px}
+}
 .oc-mbody{padding:8px 18px 18px;overflow:auto}
 .oc-tbl{width:100%;border-collapse:collapse;font-size:.82rem}
 .oc-tbl th{text-align:left;padding:6px 10px;font-size:.7rem;letter-spacing:.06em;text-transform:uppercase;color:var(--gold-dark)}
