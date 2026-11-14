@@ -17796,12 +17796,19 @@ function checkAvailabilityListing(id) {
   const p = MY_LISTINGS_CACHE.find(x => x.id === id); if (!p) return;
   const nums = ownerDirectNumbers(p);
   if (!nums.length) { showToast('No owner phone number on file for this listing.', 'warning'); return; }
-  const _details = propDetailsShort(p);
-  const _tail = `Any other vacant or soon-to-be-vacant properties? We\u2019d be happy to list them!\n\nYou can also list directly at www.homeloop.in. We\u2019ll verify the property through a site visit.`;
-  // Booked listing: no point asking "still available?" - only ask the owner for other vacant properties.
+  const _pt = pTypeLabel(p);
+  const _prop = p.property || {}, _pgd = p.pg || {}, _ss = p.shortStay || {};
+  const _bhk = (_pt === 'PG' || _pt === 'ShortStay') ? '' : String(_prop.bhk || '').replace(/\s*BHK\s*$/i, '').trim();
+  const _type = _bhk && parseFloat(_bhk) > 0 ? _bhk + ' BHK' : (_prop.type || _pgd.type || _ss.type || '');
+  const _loc = String(p.location?.area || '').trim();
+  const _amt = shortPrice(p.price?.rent).replace('k', 'K');
+  const _price = _amt ? '\u20B9' + _amt + (_pt === 'Sell' ? '' : _pt === 'ShortStay' ? '/day' : '/month') : '';
+  const _details = [_type, _loc, _price].filter(Boolean).join(', ');
+  const _tail = `Any other vacant properties? List free at www.homeloop.in \u2013 we\u2019ll verify them!`;
+  // Booked listing: no point asking "available?" - only ask the owner for other vacant properties.
   const msg = p.booked
-    ? _tail
-    : `Is ${p.propertyId || 'listing'}${_details ? ' - ' + _details : ''} still available?\n${window.location.origin}/property/${p.id}\n\n${_tail}`;
+    ? `Hi! ${_tail}`
+    : `Hi! Is ${p.propertyId || 'listing'}${_details ? ' (' + _details + ')' : ''} available?\n${_tail}`;
 
   let ov = document.getElementById('checkAvailOverlay');
   if (!ov) {

@@ -11669,16 +11669,14 @@ function shortPrice(n){
   return n >= 1e5 ? f(n / 1e5, 'L') : n >= 1e3 ? f(n / 1e3, 'k') : String(n);
 }
 function buildAvailabilityCheckMessage(row){
-  const link = row._id ? `${BASE}/property/${row._id}` : '';
   const bhkNum = String(row.bhk || '').replace(/\s*BHK\s*$/i, '').trim();
   const type = bhkNum && parseFloat(bhkNum) > 0 ? bhkNum + ' BHK' : (row.pgPropertyType || row.ssPropertyType || '');
-  const area = String(row.area || row.loc || '').trim();
+  const location = String(row.loc || '').trim();
   const m = String(row.rent != null && row.rent !== '' ? row.rent : (row.displayPrice || '')).replace(/,/g, '').match(/\d+(?:\.\d+)?/);
-  const amt = m ? shortPrice(m[0]) : '';
-  const price = amt ? '\u20B9' + amt + (row.status === 'For Sale' ? '' : row.status === 'Short Stay' ? '/D' : '/M') : '';
-  const details = [type, area, price].filter(Boolean).join(', ');
-  const tail = `Any other vacant or soon-to-be-vacant properties? We\u2019d be happy to list them!\n\nYou can also list directly at www.homeloop.in. We\u2019ll verify the property through a site visit.`;
-  return `Is ${row.propertyId || 'listing'}${details ? ' - ' + details : ''} still available?${link ? '\n' + link : ''}\n\n${tail}`;
+  const amt = m ? shortPrice(m[0]).replace('k', 'K') : '';
+  const price = amt ? '\u20B9' + amt + (row.status === 'For Sale' ? '' : row.status === 'Short Stay' ? '/day' : '/month') : '';
+  const details = [type, location, price].filter(Boolean).join(', ');
+  return `Hi! Is ${row.propertyId || 'listing'}${details ? ' (' + details + ')' : ''} available?\nAny other vacant properties? List free at www.homeloop.in \u2013 we\u2019ll verify them!`;
 }
 
 window.checkAvailabilityForRow = async function(id){
