@@ -2967,6 +2967,10 @@ self.addEventListener('notificationclick', event => {
         media:     fields.media,
         pg:        status === 'PG' ? fields.pg : undefined,
         shortStay: status === 'Short Stay' ? fields.shortStay : undefined,
+        // New admin listings (including clones of an existing property) always start with Public call OFF;
+        // the admin switches it on deliberately from the Properties grid.
+        ownerPhoneCall:  false,
+        ownerDirectCall: false,
       });
       await prop.save();
 

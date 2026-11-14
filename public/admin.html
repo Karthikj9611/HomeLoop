@@ -556,9 +556,9 @@ table.dataTable thead tr.col-filter-row th{
 .oc-done{padding:8px 12px;border-radius:999px;border:1.5px solid var(--border);background:#fff;color:var(--ink);font-weight:700;font-size:.8rem;cursor:pointer}
 .oc-done:hover{border-color:#059669;color:#059669}
 @media(max-width:768px){
-  .oc-actions{flex:1 1 100%;flex-wrap:nowrap;gap:6px}
-  .oc-actions>.oc-call,.oc-actions>.oc-wa,.oc-actions>.oc-done{flex:1 1 auto;min-width:0;justify-content:center;gap:4px;padding:8px 6px;font-size:.74rem;white-space:nowrap}
-  .oc-actions>.oc-call{flex-grow:1.3}
+  .oc-actions{flex:1 1 100%;min-width:0;flex-wrap:nowrap;gap:6px;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;scrollbar-width:none}
+  .oc-actions::-webkit-scrollbar{display:none}
+  .oc-actions>.oc-call,.oc-actions>.oc-wa,.oc-actions>.oc-done{flex:1 0 auto;justify-content:center;gap:4px;padding:8px 10px;font-size:.76rem;white-space:nowrap}
 }
 .oc-body{display:none;border-top:1px solid var(--border);padding:8px 14px 12px;overflow-x:auto}
 .oc-card.open .oc-body{display:block}
@@ -572,13 +572,17 @@ table.dataTable thead tr.col-filter-row th{
   .oc-mhead{position:relative;gap:10px;padding:14px 14px 12px}
   .oc-mhead .oc-who{flex:1 1 100%;padding-right:46px}
   .oc-mhead .oc-mclose{position:absolute;top:12px;right:12px;width:34px;height:34px}
-  .oc-mhead .oc-actions{flex:1 1 100%;flex-wrap:nowrap;gap:6px}
+  .oc-mhead .oc-actions{flex:1 1 100%;min-width:0}
 }
 .oc-mbody{padding:8px 18px 18px;overflow:auto}
 .oc-tbl{width:100%;border-collapse:collapse;font-size:.82rem}
 .oc-tbl th{text-align:left;padding:6px 10px;font-size:.7rem;letter-spacing:.06em;text-transform:uppercase;color:var(--gold-dark)}
 .oc-tbl td{padding:7px 10px;border-top:1px solid var(--border);white-space:nowrap}
 .oc-tbl tr.is-new td{background:#fffbeb}
+.oc-pact{display:inline-flex;gap:6px}
+.oc-tbl .oc-sticky-act{text-align:center}
+.oc-pbtn{width:30px;height:30px;border-radius:50%;border:1.5px solid var(--border);background:#fff;color:var(--ink);cursor:pointer;font-size:.78rem;display:inline-flex;align-items:center;justify-content:center;padding:0}
+.oc-pbtn:hover{border-color:#059669;color:#059669}
 .oc-view{display:inline-flex;align-items:center;gap:6px;font-size:.8rem;font-weight:700;color:var(--ink2);white-space:nowrap}
 .oc-chev{transition:transform .15s;color:var(--ink2)}
 .oc-card.open .oc-chev{transform:rotate(180deg)}
@@ -7057,15 +7061,38 @@ function ocRowsHtml(g){
       const isNew = g.newIds.has(ocPid(p));
       const type = p.bhk || p.pgPropertyType || p.ssPropertyType || p.type || '—';
       const place = [p.loc, p.city].filter(Boolean).join(', ') || '—';
+      const pidAttr = escapeHtml(String(p._id || ''));
+      const acts = `<td class="oc-sticky oc-sticky-act"><button type="button" class="oc-pbtn" data-oc="pview" data-id="${pidAttr}" title="View property (edit / clone from there)"><i class="fas fa-eye"></i></button></td>`;
       return `<tr class="${isNew ? 'is-new' : ''}"><td><b>${escapeHtml(p.propertyId || '—')}</b>${isNew ? ' <span class="oc-pill new">NEW</span>' : ''}</td>
         <td>${escapeHtml(p.title || 'Untitled')}</td><td>${statusBadge(p.status)}</td><td>${escapeHtml(String(type))}</td>
         <td>${escapeHtml(String(p.displayPrice || '—'))}</td><td>${escapeHtml(place)}</td>
-        <td><label class="mini-toggle-wrap" style="display:inline-flex;align-items:center;gap:8px;cursor:pointer"><span class="mini-toggle booked-toggle">
+        <td>${p.createdAt ? plainDateTime(p.createdAt) : '—'}</td>
+        <td class="oc-sticky oc-sticky-av"><label class="mini-toggle-wrap" style="display:inline-flex;align-items:center;gap:8px;cursor:pointer"><span class="mini-toggle booked-toggle">
           <input type="checkbox" ${p.booked ? 'checked' : ''} ${canAct('properties') ? '' : 'disabled'} onchange="ocToggleBooked('${escapeHtml(String(p._id || ''))}', this)">
           <span class="slider"></span></span>
-          ${p.booked ? '<span class="oc-pill ok">Booked</span>' : '<span class="oc-pill">Available</span>'}</label></td>
-        <td>${p.createdAt ? plainDateTime(p.createdAt) : '—'}</td></tr>`;
+          ${p.booked ? '<span class="oc-pill ok">Booked</span>' : '<span class="oc-pill">Available</span>'}</label></td>${acts}</tr>`;
     }).join('');
+}
+/* View / Edit / Clone a property from the owner popup — reuses the Properties tab's modal. */
+async function ocOpenProp(id, mode){
+  if(!id) return;
+  if(mode !== 'view' && typeof blockIfViewOnly === 'function' && blockIfViewOnly('properties')) return;
+  try{
+    if(!_adminPropCache[id] || !_adminPropCache[id].full){
+      const src = _ocProps.find(x => String(x._id) === String(id));
+      if(src && src.full) _adminPropCache[id] = src;
+    }
+    if(!_adminPropCache[id] || !_adminPropCache[id].full){
+      const res = await fetch(BASE + '/api/admin/properties', { headers: authHeaders() });
+      if(!res.ok) throw new Error('bad status');
+      const all = await res.json();
+      (Array.isArray(all) ? all : []).forEach(p => { if(p && p._id) _adminPropCache[p._id] = p; });
+    }
+  }catch(err){ alert('Could not load that listing'); return; }
+  if(!_adminPropCache[id]){ alert('Could not find that listing'); return; }
+  ocCloseModal();                                   // listing modal sits underneath the owner popup otherwise
+  if(mode === 'clone') cloneAdminProperty(id);
+  else openAdminListingModal(id, mode);             // 'view' or 'edit'
 }
 function ocModalHtml(g){
   const hasNum = g.key !== 'none';
@@ -7081,7 +7108,7 @@ function ocModalHtml(g){
         : `<button type="button" class="oc-done" data-oc="done" data-key="${g.key}" title="Mark as called and reviewed. Moves the owner to Called.">✓ Mark called</button>`}</div>
       <button type="button" class="oc-mclose" data-oc="close" title="Close">&times;</button>
     </div>
-    <div class="oc-mbody"><table class="oc-tbl"><thead><tr><th>Property ID</th><th>Title</th><th>Status</th><th>Type</th><th>Price</th><th>Location</th><th>Availability</th><th>Listed on</th></tr></thead><tbody>${ocRowsHtml(g)}</tbody></table></div>`;
+    <div class="oc-mbody"><table class="oc-tbl"><thead><tr><th>Property ID</th><th>Title</th><th>Status</th><th>Type</th><th>Price</th><th>Location</th><th>Listed on</th><th class="oc-sticky oc-sticky-av">Booked</th><th class="oc-sticky oc-sticky-act">Actions</th></tr></thead><tbody>${ocRowsHtml(g)}</tbody></table></div>`;
 }
 function ocOpenModal(key){
   const g = ocGroups().find(x => x.key === key); if(!g) return;
@@ -7148,6 +7175,9 @@ document.addEventListener('click', function(e){
     const g = ocGroups().find(x => x.key === key); if(!g) return;
     const log = ocLog(); log[key] = { ts: Date.now(), ids: g.props.map(ocPid) }; ocSave();
     ocRender(); if(el.closest('#ocModalOv')) ocCloseModal(); return;
+  }
+  if(act === 'pview' || act === 'pedit' || act === 'pclone'){
+    e.stopPropagation(); ocOpenProp(el.getAttribute('data-id'), act.slice(1)); return;
   }
   if(act === 'toggle') ocOpenModal(key);
   if(act === 'close') ocCloseModal();

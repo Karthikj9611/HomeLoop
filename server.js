@@ -1801,6 +1801,10 @@ app.post('/api/properties', listingLimiter, requireUser, requireOwner, requireVe
       pg:        status === 'PG' ? fields.pg : undefined,
       shortStay: status === 'Short Stay' ? fields.shortStay : undefined,
       sale:      status === 'For Sale' ? fields.sale : undefined,
+      // Every new listing (including a clone of an existing one) starts with Public call OFF;
+      // only an admin switches it on, from the Properties grid. Never taken from the request body.
+      ownerPhoneCall:  false,
+      ownerDirectCall: false,
     });
     await prop.save();
 
