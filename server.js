@@ -2006,6 +2006,9 @@ app.get('/api/properties', attachUserIfPresent, async (req, res) => {
         if (!_oid) return;
         const _only = _pubOwners.get(_oid);
         if (_only && !_only.has(String(d.propertyId || '').toUpperCase())) return;
+        // Logged-out visitors must log in first: no owner numbers / navigate link are sent to them,
+        // only a flag so the page can show the Call / WhatsApp / Navigate icons that ask for login.
+        if (!req.userId) { d.contactNeedsLogin = true; return; }
         d.ownerPhoneCall = true; d.ownerDirectCall = true;
       });
     }

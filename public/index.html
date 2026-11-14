@@ -15720,7 +15720,7 @@ function countContactView(propId) {
 }
 /* A "public call" listing: the owner's number and/or the navigate link is exposed on it. Only these need a login to Call / WhatsApp / Navigate. */
 function isPublicCallProp(p) {
-  return !!p && (cardCallOn(p) || !!(p.currentLocationLink || p.navigateUrl));
+  return !!p && (cardCallOn(p) || !!(p.currentLocationLink || p.navigateUrl || p.contactNeedsLogin));
 }
 function openCall(propId) {
   countContactView(propId);
@@ -15845,7 +15845,7 @@ function cardExtraSlotHTML(p) {
   return '<div class="prop-icon-badge prop-icon-slot" aria-hidden="true"></div>';
 }
 function cardNavBadgeHTML(p) {
-  if (!p || isBookedProp(p) || !(p.currentLocationLink || p.navigateUrl)) return '';
+  if (!p || isBookedProp(p) || !(p.currentLocationLink || p.navigateUrl || p.contactNeedsLogin)) return '';
   return `<div class="prop-icon-badge prop-icon-nav" onclick="event.stopPropagation();openPropertyNavigate('${p.id}')" aria-label="Navigate" title="Navigate to property"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.6 21.4 12 12 21.4 2.6 12Z" fill="#fff" stroke="#fff" stroke-width="2" stroke-linejoin="round"/><path d="M8.6 15.2v-3.1c0-.8.6-1.4 1.4-1.4h4.6" fill="none" stroke="#1a73e8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M12.9 8.6l2.6 2.1-2.6 2.1" fill="none" stroke="#1a73e8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>`;
 }
 
@@ -15859,7 +15859,7 @@ function cardCallOn(p) {
   // Show the card call button only when a Public call number is actually available for this listing
   // (server sends ownerPhone / ownerAltPhone only when admin switched Public call on).
   if (!p || isBookedProp(p)) return false;
-  return !!((p.ownerPhoneCall && p.ownerPhone) || (p.ownerDirectCall && p.ownerAltPhone));
+  return !!((p.ownerPhoneCall && p.ownerPhone) || (p.ownerDirectCall && p.ownerAltPhone) || p.contactNeedsLogin); // contactNeedsLogin: public-call listing seen by a guest — icons shown, tap asks for login
 }
 function openCardCall(propId) {
   countContactView(propId);
