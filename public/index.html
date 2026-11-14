@@ -17808,7 +17808,7 @@ function checkAvailabilityListing(id) {
   // Booked listing: no point asking "available?" - only ask the owner for other vacant properties.
   const msg = p.booked
     ? `Hi! ${_tail}`
-    : `Hi! Is ${p.propertyId || 'listing'}${_details ? ' (' + _details + ')' : ''} available?\n${_tail}`;
+    : `Hi! Is ${p.propertyId || 'listing'}${_details ? ' (' + _details + ')' : ''} available?\n${window.location.origin}/property/${p.id}\n\n${_tail}`;
 
   let ov = document.getElementById('checkAvailOverlay');
   if (!ov) {
