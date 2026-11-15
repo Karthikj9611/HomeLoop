@@ -5392,7 +5392,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
         </div>
       </div>
       <div class="form-group">
-        <label class="form-label">Agent Area</label>
+        <label class="form-label">Agent Name</label>
         <input class="form-input" type="text" id="f-agentArea" value="Prashanth B, Singasandra" autocapitalize="words" />
       </div>
     </div>
@@ -5403,22 +5403,6 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
       <label class="form-label">Property Name</label>
       <input class="form-input" type="text" id="f-title" autocapitalize="words" onblur="capitalizeWordsInput(this)" oninput="capitalizeWordsInput(this)" />
     </div>
-      <div class="form-group" id="fullAddressGroup" style="grid-column:1 / -1">
-        <label class="form-label">Building Live Address</label>
-        <div style="display:flex;gap:7px;align-items:stretch">
-          <textarea class="form-input" id="f-fullAddress" autocapitalize="words" rows="1" style="flex:1;min-width:0;resize:none;overflow:hidden" oninput="capitalizeWordsInput(this); onFullAddressInput(this.value)" onblur="capitalizeWordsInput(this); onFullAddressBlur(this.value)"></textarea>
-          <button type="button" onclick="fCaptureLocation()" class="loc-act-btn" aria-label="Capture live location" title="Capture live location" style="display:inline-flex;align-items:center;justify-content:center;gap:6px;flex-shrink:0;padding:0 12px;border-radius:9px;border:1.5px solid var(--text);background:var(--bg);color:var(--text);font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M1 12h4M19 12h4"/></svg><span id="f-locBtnTxt" class="loc-btn-txt">Live</span></button>
-        </div>
-        <div id="f-locStatus" style="font-size:11px;color:var(--text-2);min-height:14px;margin-top:2px"></div>
-      </div>
-      <div class="form-group auto-hidden" id="latLngGroup">
-        <label class="form-label">Latitude / Longitude</label>
-        <input class="form-input" type="text" id="f-latLngDisplay" readonly />
-      </div>
-      <div class="form-group auto-hidden" id="mapsLinkGroup">
-        <label class="form-label">Google Maps Link</label>
-        <input class="form-input" type="url" id="f-googleMapsLink" />
-      </div>
       <div class="form-group" id="currentLocGroup" style="grid-column:1 / -1">
         <label class="form-label">Building Location Link <span style="color:var(--brand)">*</span></label>
         <div style="display:flex;gap:7px;align-items:stretch">
@@ -5919,13 +5903,15 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
     <div class="lm-section" id="mediaSectionHeader">📸 Media &amp; Description</div>
     <div class="form-group" id="videoUrlGroup">
       <label class="form-label">Video Tour</label>
-      <input class="form-input" type="text" inputmode="url" id="f-videoUrl" placeholder="Paste a YouTube / Vimeo link, or upload a video below" oninput="updateVideoUploadUI()" />
+      <input class="form-input" type="text" inputmode="url" id="f-videoUrl" oninput="updateVideoUploadUI()" />
       <div class="img-row" id="videoUploadRow" style="margin-top:8px">
         <div class="img-btns">
-          <button type="button" class="img-btn-sec" id="f-videoUploadBtn" onclick="document.getElementById('f-videoFileInput').click()">Upload video</button>
-          <button type="button" class="img-btn-sec" id="f-videoRemoveBtn" style="display:none" onclick="removeUploadedVideo()">Remove video</button>
+          <button type="button" class="img-btn-sec" id="f-videoUploadBtn" onclick="document.getElementById('f-videoFileInput').click()">🎥 Upload</button>
+          <button type="button" class="img-btn-sec" id="f-videoRecordBtn" onclick="document.getElementById('f-videoCameraInput').click()">🔴 Record</button>
+          <button type="button" class="img-btn-sec" id="f-videoRemoveBtn" style="display:none" onclick="removeUploadedVideo()">✕ Remove video</button>
         </div>
         <input type="file" id="f-videoFileInput" accept="video/mp4,video/webm,video/quicktime,video/ogg" style="display:none" onchange="uploadListingVideo(this)"/>
+        <input type="file" id="f-videoCameraInput" accept="video/*" capture="environment" style="display:none" onchange="uploadListingVideo(this)"/>
       </div>
       <div id="f-videoStatus" style="font-size:12px;color:var(--text-3);margin-top:6px"></div>
       <div id="f-videoPreview" class="f-video-preview" style="display:none"></div>
@@ -18180,6 +18166,9 @@ function cloneAdminProperty(id) {
   _cloningListing = true;
   resetListingForm();
   applyImportedProperty(full);
+  // Of the location details a clone keeps ONLY the Building Location Link (and Property Name).
+  ['f-location', 'f-pincode', 'f-latitude', 'f-longitude']
+    .forEach(fid => { const el = document.getElementById(fid); if (el) el.value = ''; });
   onFTypeChange(document.getElementById('f-type').value);
 
   document.getElementById('addModalBox').classList.remove('view-mode');
@@ -18423,14 +18412,9 @@ function applyImportedProperty(p) {
 
   sv('f-location', location.area);
   sv('f-city', location.city || 'Bangalore');
-  sv('f-fullAddress', location.address);
   if (location.pincode) sv('f-pincode', location.pincode);
   if (location.lat != null) sv('f-latitude', location.lat);
   if (location.lng != null) sv('f-longitude', location.lng);
-  if (location.lat != null && location.lng != null) {
-    sv('f-latLngDisplay', Number(location.lat).toFixed(6) + '° N, ' + Number(location.lng).toFixed(6) + '° E');
-  }
-  sv('f-googleMapsLink', location.mapLink);
   sv('f-currentLocationLink', location.currentLocationLink);
 
   sv('f-title', owner.propertyName);
@@ -18597,7 +18581,7 @@ var WA_KEY_MAP = {
   listedby: 'f-listedBy',
   propertyname: 'f-title', buildingname: 'f-title', title: 'f-title',
   area: 'f-location', locality: 'f-location', city: 'f-city',
-  fulladdress: 'f-fullAddress', buildingaddress: 'f-fullAddress', pincode: 'f-pincode', pin: 'f-pincode',
+  pincode: 'f-pincode', pin: 'f-pincode',
   googlemapslocationlink: 'f-currentLocationLink', googlemapslink: 'f-currentLocationLink',
   locationlink: 'f-currentLocationLink', currentlocationlink: 'f-currentLocationLink', maplink: 'f-currentLocationLink',
   ownername: 'f-ownerName', name: 'f-ownerName', phone: 'f-ownerPhone', phonenumber: 'f-ownerPhone', mobile: 'f-ownerPhone',
@@ -18618,7 +18602,7 @@ var WA_KEY_MAP = {
   amenities: 'amenities', videotourlink: 'f-videoUrl', videolink: 'f-videoUrl', description: 'f-desc'
 };
 var WA_LABELS = {
-  'f-listedBy': 'Listed by', 'f-title': 'Property name', 'f-location': 'Area', 'f-city': 'City', 'f-fullAddress': 'Full address', 'f-pincode': 'Pincode',
+  'f-listedBy': 'Listed by', 'f-title': 'Property name', 'f-location': 'Area', 'f-city': 'City', 'f-pincode': 'Pincode',
   'f-currentLocationLink': 'Location link', 'f-ownerName': 'Owner name', 'f-ownerPhone': 'Phone', 'f-ownerAltPhone': 'Alternate number',
   'f-ownerCaretakerPhone': 'Caretaker number', 'f-ownerEmail': 'Email', 'f-contactTime': 'Contact time', 'f-sameAsBuildingAddress': 'Owner in same building',
   'f-rent': 'Monthly rent', 'f-deposit': 'Security deposit', 'f-maintenance': 'Maintenance', 'f-escalation': 'Escalation',
@@ -19048,97 +19032,9 @@ function capitalizeSentencesInput(el) {
   el.value = out;
   try { el.setSelectionRange(s, e); } catch (_) {}
 }
-function onFullAddressInput(value) {
-  if (!pincodeManuallyEdited) {
-    const guess = extractPincodeFromAddress(value);
-    if (guess) document.getElementById('f-pincode').value = guess;
-  }
-  // Re-resolve lat/lng (and the Google Maps link) from the address text itself
-  // whenever it's hand-edited — debounced so we don't geocode on every keystroke.
-  clearTimeout(addressGeocodeTimer);
-  addressGeocodeTimer = setTimeout(() => geocodeAddressText(value), 900);
-}
-
-// Matches only a link this form generated itself from raw coordinates — avoids
-// clobbering a link that was deliberately pasted/customised.
-const AUTO_MAPS_LINK_RE = /^https:\/\/www\.google\.com\/maps\?q=-?\d+(\.\d+)?,-?\d+(\.\d+)?$/;
-
-// Fires when leaving the address field — skips the debounce so the edit lands immediately.
-function onFullAddressBlur(value) {
-  clearTimeout(addressGeocodeTimer);
-  geocodeAddressText(value);
-}
-
-let addressGeocodeTimer = null;
-function geocodeAddressText(value) {
-  const trimmed = String(value || '').trim();
-  const status = document.getElementById('f-locStatus');
-  if (trimmed.length < 8) return; // too short/likely mid-typing to bother geocoding
-  if (status) status.textContent = 'Updating coordinates from address...';
-  fetch('https://nominatim.openstreetmap.org/search?q=' + encodeURIComponent(trimmed) + '&format=json&limit=1&accept-language=en')
-    .then(r => r.json())
-    .then(results => {
-      if (!results || !results.length) {
-        if (status) status.textContent = 'Could not match address to a location.';
-        return;
-      }
-      const lat = parseFloat(results[0].lat), lon = parseFloat(results[0].lon);
-      document.getElementById('f-latitude').value = lat;
-      document.getElementById('f-longitude').value = lon;
-      document.getElementById('f-latLngDisplay').value = lat.toFixed(6) + '° N, ' + lon.toFixed(6) + '° E';
-      const mapsLinkEl = document.getElementById('f-googleMapsLink');
-      if (mapsLinkEl && (!mapsLinkEl.value || AUTO_MAPS_LINK_RE.test(mapsLinkEl.value))) {
-        mapsLinkEl.value = 'https://www.google.com/maps?q=' + lat + ',' + lon;
-      }
-      if (status) status.textContent = 'Coordinates updated from edited address.';
-    })
-    .catch(() => { if (status) status.textContent = 'Coordinate lookup failed.'; });
-}
-
 function onPincodeInput(el) {
   el.value = el.value.replace(/\D/g, '').slice(0, 6);
   pincodeManuallyEdited = true;
-}
-
-function onLatLngDisplayInput(value) {
-  // Accepts free-typed formats like "12.345678° N, 77.123456° E" or a
-  // plain "12.345678, 77.123456" pair and keeps the hidden f-latitude /
-  // f-longitude inputs (the values actually saved) in sync.
-  const nums = (value.match(/-?\d+(\.\d+)?/g) || []).map(Number);
-  const latEl = document.getElementById('f-latitude');
-  const lngEl = document.getElementById('f-longitude');
-  if (nums.length >= 2 && Math.abs(nums[0]) <= 90 && Math.abs(nums[1]) <= 180) {
-    latEl.value = nums[0];
-    lngEl.value = nums[1];
-  } else {
-    latEl.value = '';
-    lngEl.value = '';
-  }
-}
-
-function fCaptureLocation() {
-  const btnTxt = document.getElementById('f-locBtnTxt');
-  const status = document.getElementById('f-locStatus');
-  if (!navigator.geolocation) { status.textContent = 'Not supported on this device/browser'; return; }
-  btnTxt.textContent = '...'; status.textContent = 'Getting location...';
-  navigator.geolocation.getCurrentPosition(function(pos) {
-    const lat = pos.coords.latitude, lon = pos.coords.longitude;
-    document.getElementById('f-latitude').value = lat;
-    document.getElementById('f-longitude').value = lon;
-    document.getElementById('f-latLngDisplay').value = lat.toFixed(6) + '° N, ' + lon.toFixed(6) + '° E';
-    btnTxt.textContent = 'OK';
-    // Auto-fill Google Maps link from the same coordinates as the Building
-    // Live Address — a plain pin link that opens straight to this spot.
-    document.getElementById('f-googleMapsLink').value = 'https://www.google.com/maps?q=' + lat + ',' + lon;
-    fetch('https://nominatim.openstreetmap.org/reverse?lat=' + lat + '&lon=' + lon + '&format=json&accept-language=en')
-      .then(r => r.json())
-      .then(d => {
-        document.getElementById('f-fullAddress').value = d.display_name || '';
-        pincodeManuallyEdited = false; // fresh capture — a prior manual edit no longer applies
-        document.getElementById('f-pincode').value = (d.address && d.address.postcode) || extractPincodeFromAddress(d.display_name);
-        status.textContent = 'Address captured · Enter Location / Area manually';
-      }).catch(() => { status.textContent = 'Coordinates saved.'; });
-  }, function() { btnTxt.textContent = 'Live'; status.textContent = 'Permission denied.'; });
 }
 
 /* ── Tenant preference multi-select dropdown (mirrors amenities pattern) ── */
@@ -19630,8 +19526,8 @@ async function watermarkImageFile(file) {
 const OPTIONAL_FIELD_IDS = new Set([
   'f-importFile', 'f-importText',
   // Property Location: only Area, Pincode and Building Location Link are mandatory
-  'f-title', 'f-fullAddress', 'f-googleMapsLink',
-  'f-latitude', 'f-longitude', 'f-latLngDisplay',
+  'f-title',
+  'f-latitude', 'f-longitude',
   'f-imgFileInput', 'f-imgCameraInput',
   'f-amenities-extra', 'f-desc',   // description is optional (same as index.html)
   'f-ownerCaretakerPhone', 'f-ownerEmail', 'f-videoUrl', 'f-age', 'f-area',
@@ -19832,31 +19728,6 @@ function confirmListingReview() {
   if (fn) fn(); // real submit re-validates, then POST/PUT
 }
 
-// ── Building Live Address: look/size like every other field ─────────
-// Starts one line tall (same height as the other inputs) and grows to fit the
-// text, including when Live / a saved listing fills it programmatically.
-(function initAddressAutosize() {
-  function setup() {
-    const el = document.getElementById('f-fullAddress');
-    if (!el || el._autosizeReady) return;
-    el._autosizeReady = true;
-    const grow = () => {
-      if (!el.offsetParent) return;            // hidden modal: measure once visible
-      el.style.height = 'auto';
-      el.style.height = el.scrollHeight + 2 + 'px';
-    };
-    const d = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value');
-    Object.defineProperty(el, 'value', {
-      get() { return d.get.call(this); },
-      set(v) { d.set.call(this, v); grow(); },
-      configurable: true
-    });
-    el.addEventListener('input', grow);
-    if (window.ResizeObserver) new ResizeObserver(grow).observe(el);  // fires when the modal opens / width changes
-    grow();
-  }
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', setup); else setup();
-})();
 
 /* ═══════════ Ported from index.html: listing-form accordion, video upload, building-link autofill ═══════════ */
 // Admin has its own draft autosave; index's listing form calls this name.
@@ -19932,7 +19803,7 @@ function updateVideoUploadUI() {
   status.textContent = isUploaded ? '✅ Video uploaded' : '';
   status.style.color = isUploaded ? 'var(--green, #16a34a)' : 'var(--text-3)';
   if (removeBtn) removeBtn.style.display = isUploaded ? '' : 'none';
-  if (uploadBtn) uploadBtn.textContent = isUploaded ? 'Replace video' : 'Upload video';
+  if (uploadBtn) uploadBtn.textContent = isUploaded ? '🎥 Replace' : '🎥 Upload';
   renderVideoPreview();
 }
 
@@ -19978,6 +19849,8 @@ function uploadListingVideo(fileInput) {
 
   _videoUploading = true;
   if (uploadBtn) uploadBtn.disabled = true;
+  const recordBtn = document.getElementById('f-videoRecordBtn');
+  if (recordBtn) recordBtn.disabled = true;
   if (status) { status.style.color = 'var(--text-3)'; status.textContent = 'Uploading… 0%'; }
 
   const form = new FormData();
@@ -19993,6 +19866,7 @@ function uploadListingVideo(fileInput) {
   const finish = function (ok, msg) {
     _videoUploading = false;
     if (uploadBtn) uploadBtn.disabled = false;
+    if (recordBtn) recordBtn.disabled = false;
     if (!ok) {
       if (status) { status.textContent = ''; }
       showToast(msg || 'Could not upload the video. Please try again.', 'error');
@@ -20028,27 +19902,9 @@ function coordsFromMapsLink(url) {
          || String(url || '').match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/);
   return m ? { lat: parseFloat(m[1]), lng: parseFloat(m[2]) } : null;
 }
-// Building Location Link pasted → fill any still-empty address / area / pincode from its coordinates.
-function onBuildingLinkChange(el) {
-  const v = (el.value || '').trim();
-  if (!v || !isGoogleMapsShareLink(v)) return;
-  const c = coordsFromMapsLink(v);
-  if (!c) {
-    if (/goo\.gl|share\.google/i.test(v)) showToast('Details cannot be read from a short link. Please use the Live button or enter the area manually.', 'info');
-    return;
-  }
-  document.getElementById('f-latitude').value = c.lat;
-  document.getElementById('f-longitude').value = c.lng;
-  document.getElementById('f-latLngDisplay').value = c.lat.toFixed(6) + '° N, ' + c.lng.toFixed(6) + '° E';
-  fetch('https://nominatim.openstreetmap.org/reverse?lat=' + c.lat + '&lon=' + c.lng + '&format=json&accept-language=en')
-    .then(r => r.json())
-    .then(d => {
-      const addr = document.getElementById('f-fullAddress'), area = document.getElementById('f-location'), pin = document.getElementById('f-pincode');
-      // Building Live Address is no longer auto-filled from the pasted link (not required)
-      if (area && !area.value.trim()) { area.value = pickAreaFromGeocode(d); if (typeof capitalizeWordsInput === 'function') capitalizeWordsInput(area); }
-      if (pin && !pin.value.trim()) pin.value = (d.address && d.address.postcode) || extractPincodeFromAddress(d.display_name);
-    }).catch(() => {});
-}
+// Building Location Link pasted: nothing else is filled or captured — Area and Pincode are always entered by hand
+// (same as the user "List property" form), and lat/lng / Google Maps link are not stored.
+function onBuildingLinkChange(el) { /* intentionally empty */ }
 
 function validateListingForm() {
   lmAccExpandAll(); // collapsed fields would otherwise skip required-checks
@@ -20245,11 +20101,9 @@ async function adminSubmitListing() {
     location: {
       area:    loc,
       city:    document.getElementById('f-city').value.trim() || 'Bangalore',
-      address: document.getElementById('f-fullAddress').value.trim(),
       pincode: gv('f-pincode') || null,
-      lat:     parseFloat(document.getElementById('f-latitude').value) || null,
-      lng:     parseFloat(document.getElementById('f-longitude').value) || null,
-      mapLink: gv('f-googleMapsLink') || null,
+      // address / lat / lng / mapLink are not collected or sent (same as the user form): new listings
+      // store them empty, and on edit the server merge keeps whatever the listing already has.
       currentLocationLink: gv('f-currentLocationLink'),
     },
     owner: {
