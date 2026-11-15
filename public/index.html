@@ -10311,6 +10311,7 @@ function renderViewersModal(data) {
 ═══════════════════════════════════════════════ */
 let currentTab = 'Rent'; // default tab shown on load
 const SHOW_VERIFIED_BADGE = false; // verified badge hidden on cards for now — flip to true to bring it back
+const SHOW_OWNER_BADGE = false; // green OWNER tag hidden on cards for now — flip to true to bring it back
 let currentSort = 'newest';
 let userCoords = null;      // {lat, lng} once geolocation succeeds, used for "Near me first" sort
 let nearbyAreaName = '';    // reverse-geocoded locality name — secondary fallback for
@@ -12137,7 +12138,7 @@ function _cardHTMLRaw(p, compact, extraLeftBadge, showAvail) {
         <div class="prop-left-badges">
           ${(roleTagProp(p) && !isBookedProp(p)) ? roleTagHTML(roleTagProp(p)) : ''}
           ${propDistanceBadgeHTML(p)}
-          ${(isDirectProp(p) && !isBookedProp(p) && !(p.basic && (p.basic.listedBy === 'Broker' || p.basic.listedBy === 'Builder'))) ? '<div class="prop-badge-direct" title="Owner — contact the owner directly, no brokerage"><span class="pbd-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.6"/><path d="M4.8 20c.6-3.8 3.6-6 7.2-6s6.6 2.2 7.2 6"/></svg></span><span class="pbd-txt">Owner</span></div>' : ''}
+          ${(SHOW_OWNER_BADGE && isDirectProp(p) && !isBookedProp(p) && !(p.basic && (p.basic.listedBy === 'Broker' || p.basic.listedBy === 'Builder'))) ? '<div class="prop-badge-direct" title="Owner — contact the owner directly, no brokerage"><span class="pbd-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.6"/><path d="M4.8 20c.6-3.8 3.6-6 7.2-6s6.6 2.2 7.2 6"/></svg></span><span class="pbd-txt">Owner</span></div>' : ''}
           ${(!compact && !['Rent','Upcoming','Lease','PG','ShortStay'].includes(currentTab)) ? `<span class="prop-badge-type-letter${pTypeLetter.length>1?' wide':''} badge-${pType.toLowerCase()}" title="${pType}">${pTypeLetter}</span>` : ''}
           ${(!p.verified && !isBookedProp(p)) ? '<div class="prop-unverified" title="Unverified — yet to be verified by our team"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5"/><path d="M12 16.3h.01"/></svg>Yet to verify</div>' : ''}
         </div>
