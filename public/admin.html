@@ -2674,6 +2674,15 @@ body.pact-hide-booking #propertyTable .pact-booking{display:none!important}
   position:absolute;bottom:3px;left:3px;background:rgba(0,0,0,.65);color:#fff;
   font-size:9px;font-weight:600;padding:1px 5px;border-radius:4px;pointer-events:none;letter-spacing:.2px;
 }
+.img-thumb-mv{
+  position:absolute;bottom:3px;width:24px;height:24px;padding:0;
+  background:rgba(0,0,0,.65);color:#fff;border:none;border-radius:50%;
+  font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;
+}
+.img-thumb-mv.l{left:3px}
+.img-thumb-mv.r{right:3px}
+.img-thumb-mv:hover{background:var(--brand)}
+.add-modal.view-mode .img-thumb-mv{display:none}
 .img-thumb-del{
   position:absolute;top:3px;right:3px;width:18px;height:18px;
   background:rgba(0,0,0,.65);color:#fff;border:none;border-radius:50%;
@@ -5336,13 +5345,13 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
     <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
       <div class="form-group">
         <label class="form-label">Owner Name <span style="color:var(--brand)">*</span></label>
-        <input class="form-input" type="text" id="f-ownerName" autocapitalize="words" onblur="capitalizeWordsInput(this)" oninput="capitalizeWordsInput(this)"/>
+        <input class="form-input" type="text" id="f-ownerName" autocomplete="off" autocapitalize="words" onblur="capitalizeWordsInput(this)" oninput="capitalizeWordsInput(this)"/>
         <div class="identity-locked-hint" id="f-ownerName-hint" style="display:none">Auto-filled from your account</div>
       </div>
       <div class="form-group" id="f-ownerPhone-group">
         <label class="form-label">Owner Number <span style="color:var(--brand)">*</span></label>
         <div class="input-icon-wrap">
-          <input class="form-input" type="tel" id="f-ownerPhone" inputmode="numeric" maxlength="10" oninput="sanitizeMobileInput(this)"/>
+          <input class="form-input" type="tel" id="f-ownerPhone" autocomplete="off" inputmode="numeric" maxlength="10" oninput="sanitizeMobileInput(this)"/>
           <button type="button" class="contact-pick-btn" id="f-ownerPhone-pickBtn" onclick="pickContactFromDevice('f-ownerPhone','f-ownerName')" title="Pick from contacts">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
           </button>
@@ -5369,7 +5378,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
       </div>
       <div class="form-group">
         <label class="form-label">Email</label>
-        <input class="form-input" type="email" id="f-ownerEmail"/>
+        <input class="form-input" type="email" id="f-ownerEmail" autocomplete="off"/>
         <div class="identity-locked-hint" id="f-ownerEmail-hint" style="display:none">Auto-filled from your account</div>
       </div>
       <div class="form-group">
@@ -5388,12 +5397,12 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
       <div class="form-group">
         <label class="form-label">Agent Phone</label>
         <div class="input-icon-wrap">
-          <input class="form-input" type="tel" id="f-agentPhone" inputmode="numeric" maxlength="10" value="9035205230" oninput="this.value=this.value.replace(/\D/g,'').slice(0,10)" />
+          <input class="form-input" type="tel" id="f-agentPhone" inputmode="numeric" maxlength="10" oninput="this.value=this.value.replace(/\D/g,'').slice(0,10)" />
         </div>
       </div>
       <div class="form-group">
         <label class="form-label">Agent Name</label>
-        <input class="form-input" type="text" id="f-agentArea" value="Prashanth B, Singasandra" autocapitalize="words" />
+        <input class="form-input" type="text" id="f-agentArea" autocapitalize="words" />
       </div>
     </div>
     </div>
@@ -5920,15 +5929,15 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
       <label class="form-label">Property Images</label>
       <div class="img-row" id="imgAddControls">
         <div class="img-btns">
-          <button type="button" class="img-btn-sec" onclick="document.getElementById('f-imgFileInput').click()">Upload</button>
-          <button type="button" class="img-btn-sec" onclick="document.getElementById('f-imgCameraInput').click()">Camera</button>
+          <button type="button" class="img-btn-sec" onclick="document.getElementById('f-imgFileInput').click()">📁 Upload</button>
+          <button type="button" class="img-btn-sec" onclick="document.getElementById('f-imgCameraInput').click()">📷 Camera</button>
         </div>
         <input type="file" id="f-imgFileInput" accept="image/*" multiple style="display:none" onchange="addImagesFromFiles(this)"/>
         <input type="file" id="f-imgCameraInput" accept="image/*" capture="environment" style="display:none" onchange="addImagesFromFiles(this)"/>
       </div>
       <div class="img-thumb-grid" id="fImgGrid"></div>
       <div class="img-hint" id="fImgHint">No images added yet.</div>
-      <div class="img-hint" id="fImgOrderHint" style="display:none">Drag to reorder — first photo is the cover image shown on cards.</div>
+      <div class="img-hint" id="fImgOrderHint" style="display:none">Drag a photo, or tap ‹ › to reorder — the first photo is the cover image shown on cards.</div>
     </div>
     <div class="form-group">
       <label class="form-label">Description</label>
@@ -6004,8 +6013,8 @@ const ACCT_OWNER_SIDE = ['owner', 'pg', 'broker', 'agent', 'builder']; // accoun
 let dataTable, propTable, apptTable, honestReviewsTable, userReviewsTable, partnersTable, brokersTable, referralsTable, paymentsTable;
 
 
-const BASE = 'https://www.homeloop.in';
-//const BASE = 'http://localhost:5000';
+//const BASE = 'https://www.homeloop.in';
+const BASE = 'http://localhost:5000';
 
 
 /* ── ADMIN KEY – set after login ──
@@ -19309,12 +19318,23 @@ function renderFImages() {
       '<img src="' + src + '" alt="img" draggable="false"/>' +
       (i === 0 ? '<span class="img-thumb-cover">Cover</span>' : '') +
       '<button type="button" class="img-thumb-del" onclick="event.stopPropagation();removeFImage(' + i + ')">✕</button>' +
+      (i > 0 ? '<button type="button" class="img-thumb-mv l" aria-label="Move photo left" title="Move left" onclick="event.stopPropagation();moveFImage(' + i + ',-1)">‹</button>' : '') +
+      (i < fImages.length - 1 ? '<button type="button" class="img-thumb-mv r" aria-label="Move photo right" title="Move right" onclick="event.stopPropagation();moveFImage(' + i + ',1)">›</button>' : '') +
     '</div>'
   ).join('');
   hint.style.display = fImages.length ? 'none' : 'block';
   if (fImages.length) { const g = document.getElementById('imgFormGroup'); if (g && g.classList.contains('has-error')) { g.classList.remove('has-error'); const m = g.querySelector('.field-error-text'); if (m) m.remove(); } }
   if (orderHint) orderHint.style.display = fImages.length > 1 ? 'block' : 'none';
   scheduleListingDraftSave();
+}
+// Tap alternative to dragging: shift a photo one place left/right (position 1 = cover).
+function moveFImage(i, dir) {
+  const j = i + dir;
+  if (j < 0 || j >= fImages.length) return;
+  const item = fImages.splice(i, 1)[0];
+  fImages.splice(j, 0, item);
+  _listingFormDirty = true;
+  renderFImages();
 }
 function removeFImage(i) {
   fImages.splice(i, 1);
@@ -19327,7 +19347,7 @@ function removeFImage(i) {
 // Safari. The first thumbnail after reordering becomes the "Cover" image,
 // which is what shows on property cards, compare, and shortlist.
 function fImgPointerDown(e, i) {
-  if (e.target.closest('.img-thumb-del')) return;
+  if (e.target.closest('.img-thumb-del, .img-thumb-mv')) return;
   e.preventDefault();
   const grid = document.getElementById('fImgGrid');
   const el = grid.querySelector('.img-thumb[data-idx="' + i + '"]');
