@@ -1742,7 +1742,9 @@ app.post('/api/properties', listingLimiter, requireUser, requireOwner, requireVe
     { const _lb = await requiredListedBy(req.userId);
       if (_lb === 'Agent') { // agents (employees) list on behalf of others: they choose Owner / Broker / Builder / Agent; a Broker pick lands in the Brokers tab
         if (!['Owner', 'Broker', 'Builder', 'Agent'].includes(fields.basic.listedBy)) fields.basic.listedBy = 'Agent';
-      } else if (_lb) fields.basic.listedBy = _lb; } // owner / broker / builder accounts stay locked to their own type
+      } else if (_lb) fields.basic.listedBy = _lb; // owner / broker / builder accounts stay locked to their own type
+      if (_lb !== 'Agent') delete fields.media.video; // Video Tour is agent-only — ignore any video sent by other account types
+    }
     const validationError = validatePropertyFields(fields);
     if (validationError) return res.status(400).json({ message: validationError });
 
@@ -3418,7 +3420,18 @@ const videoUploadLimiter = rateLimit({
 });
 
 // Same account rules as creating a listing: logged in, and an owner/broker/agent/builder account.
-app.post('/api/upload-video', videoUploadLimiter, requireUser, requireOwner, uploadVideo.single('video'), async (req, res) => {
+// Video Tour is agent-only (mirrors the hidden field in the listing form).
+async function requireAgentForVideo(req, res, next) {
+  try {
+    const user = await User.findById(req.userId).select('accountType').lean();
+    if (user && user.accountType === 'agent') return next();
+    return res.status(403).json({ message: 'Video upload is only available to our team.' });
+  } catch (err) {
+    console.error('requireAgentForVideo error:', err);
+    res.status(500).json({ message: 'Server error. Please try again.' });
+  }
+}
+app.post('/api/upload-video', videoUploadLimiter, requireUser, requireOwner, requireAgentForVideo, uploadVideo.single('video'), async (req, res) => {
   try {
     const file = req.file;
     if (!file) return res.status(400).json({ message: 'No video uploaded' });

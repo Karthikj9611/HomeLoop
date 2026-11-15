@@ -16266,6 +16266,9 @@ function unlockIdentityFieldsForEdit() {
 const LISTED_BY_BY_ACCOUNT = { owner: 'Owner', broker: 'Broker', agent: 'Agent', builder: 'Builder' };
 function lockListedByToAccount() {
   const u = getLoggedInUser();
+  // Video Tour (URL / Upload / Record) is for agent accounts only — hidden for everyone else.
+  // The value, if a listing already has one, stays in the field and is still saved untouched.
+  { const vg = document.getElementById('videoUrlGroup'); if (vg) vg.style.display = (u && u.accountType === 'agent') ? '' : 'none'; }
   const sel = document.getElementById('f-listedBy');
   if (!u || !sel) return;
   const locked = LISTED_BY_BY_ACCOUNT[u.accountType];
