@@ -18764,6 +18764,9 @@ function openCloneListingFull(id) {
 
   resetListingForm();
   applyImportedProperty(p);
+  // Of the location details, a clone keeps ONLY the Building Location Link (and the Property Name).
+  // Area and Pincode are left blank for the new listing (lat/lng/map link are not stored for new listings).
+  ['f-location', 'f-pincode', 'f-latitude', 'f-longitude'].forEach(fid => { const el = document.getElementById(fid); if (el) el.value = ''; });
   // A clone copies EVERYTHING from the source listing, including the owner's name / phone / email.
   // lockIdentityFieldsForNewListing() would blank them for agents (or re-fill them from the login for
   // owners), so run it only to unlock the fields and then put the copied values back.
@@ -21792,16 +21795,9 @@ function buildListingPayload() {
       area:    loc,
       city:    document.getElementById('f-city').value.trim() || 'Bangalore',
       pincode: document.getElementById('f-pincode').value.trim() || null,
-      // address / lat / lng / mapLink are no longer collected on this form. They are only sent when
-      // there is a real value (lat/lng come silently from the pasted link), so on edit the server's
-      // merge keeps whatever an existing listing already has instead of blanking it.
-      ...(parseFloat(document.getElementById('f-latitude').value) && parseFloat(document.getElementById('f-longitude').value) ? {
-        lat: parseFloat(document.getElementById('f-latitude').value),
-        lng: parseFloat(document.getElementById('f-longitude').value),
-      } : {}),
-      // New listings: the server still requires location.mapLink, so reuse the Building Location Link.
-      // On edit it is left out, so the stored value is kept.
-      ...(editingPropertyId ? {} : { mapLink: gv('f-currentLocationLink') }),
+      // address / lat / lng / mapLink are not collected on this form, so they are NOT sent: new listings
+      // store them empty (navigation uses the Building Location Link), and on edit the server's merge
+      // keeps whatever an existing listing already has.
       currentLocationLink: gv('f-currentLocationLink'),
     },
     owner: {

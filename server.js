@@ -1607,7 +1607,6 @@ function isEmptyValue(v) {
 const BASE_REQUIRED_FIELDS = [
   ['location.city',     'Location: City'],
   ['location.pincode',  'Location: Pincode'],
-  ['location.mapLink',  'Location: Google Maps link'],
   ['location.currentLocationLink', 'Current location link'],
   ['owner.name',        'Owner name'],
   ['owner.phone',       'Owner phone number'],
