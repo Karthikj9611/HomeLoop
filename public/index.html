@@ -14639,18 +14639,18 @@ function haversineKm(lat1, lon1, lat2, lon2) {
 }
 
 /* Distance chip on cards: straight-line km from the visitor's position (userCoords) to the listing.
-   Uses exact lat/lng when the viewer receives it (agent accounts), otherwise the server's rounded
-   approxLat/approxLng (~1 km precision), so the label is approximate ("~3 km"). Empty until geolocation resolves. */
+   Uses the listing's exact position (lat/lng for agent accounts, otherwise distLat/distLng, which the server sends only
+   for contact-public listings). Road distance (ROAD_KM) replaces this straight-line estimate when it arrives. */
 function propDistanceText(p) {
   if (!userCoords) return '';
   const rk = ROAD_KM[String(p.id)];
-  if (rk != null) return (rk < 1 ? '<1' : rk) + ' km';
+  if (rk != null) return rk.toFixed(1) + ' km';
   const l = (p && p.location) || {};
   let la = parseFloat(l.lat), ln = parseFloat(l.lng);
-  if (isNaN(la) || isNaN(ln) || (!la && !ln)) { la = parseFloat(l.approxLat); ln = parseFloat(l.approxLng); }
+  if (isNaN(la) || isNaN(ln) || (!la && !ln)) { la = parseFloat(l.distLat); ln = parseFloat(l.distLng); }
   if (isNaN(la) || isNaN(ln) || (!la && !ln)) return '';
   const d = haversineKm(userCoords.lat, userCoords.lng, la, ln);
-  return d < 1 ? '<1 km' : '~' + Math.round(d) + ' km';
+  return '~' + d.toFixed(1) + ' km';
 }
 /* Distance is shown only where the Call / WhatsApp / Navigate icons show (Public call on, active
    subscription or unlock) and never on booked listings. Used by cards, shortlist, compare and the view modal. */
@@ -14693,14 +14693,14 @@ async function maybeFetchRoadDistances() {
   if (_roadBusy || !userCoords || !Array.isArray(PROPERTIES) || !PROPERTIES.length) return;
   _roadBusy = true;
   try {
-    const cand = PROPERTIES.filter(p => p && p.id && !_roadRequested.has(String(p.id)) && p.location && !isNaN(parseFloat(p.location.approxLat)))
-      .map(p => ({ id: String(p.id), d: haversineKm(userCoords.lat, userCoords.lng, parseFloat(p.location.approxLat), parseFloat(p.location.approxLng)) }))
+    const cand = PROPERTIES.filter(p => p && p.id && !_roadRequested.has(String(p.id)) && p.location && !isNaN(parseFloat(p.location.distLat)) && p.distTok)
+      .map(p => ({ id: String(p.id), tok: p.distTok, d: haversineKm(userCoords.lat, userCoords.lng, parseFloat(p.location.distLat), parseFloat(p.location.distLng)) }))
       .sort((a, b) => a.d - b.d).slice(0, 300);
     for (let i = 0; i < cand.length; i += 60) {
-      const ids = cand.slice(i, i + 60).map(x => x.id);
-      ids.forEach(id => _roadRequested.add(id));
+      const items = cand.slice(i, i + 60).map(x => ({ id: x.id, tok: x.tok }));
+      items.forEach(x => _roadRequested.add(x.id));
       try {
-        const res = await fetch('/api/properties/road-distance', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ lat: userCoords.lat, lng: userCoords.lng, ids }) });
+        const res = await fetch('/api/properties/road-distance', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ lat: userCoords.lat, lng: userCoords.lng, items }) });
         if (!res.ok) continue;
         const data = await res.json();
         if (data && data.distances) { Object.assign(ROAD_KM, data.distances); renderCards(); refreshDistancePills(); }
@@ -14749,7 +14749,7 @@ function initNearbyLocation() {
         .catch(err => console.error('[nearby-location] reverse geocode error:', err));
     },
     (err) => console.error('[nearby-location] geolocation error:', err.message),
-    { enableHighAccuracy: true, timeout: 12000, maximumAge: 5 * 60 * 1000 }
+    { enableHighAccuracy: true, timeout: 12000, maximumAge: 30 * 1000 }
   );
 }
 
