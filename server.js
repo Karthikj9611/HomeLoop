@@ -120,6 +120,8 @@ const UserSchema = new mongoose.Schema({
   // (or later via PUT /api/user/me) using the same image pipeline as listing
   // photos. Empty string means "no photo", and the UI falls back to initials.
   profilePhoto: { type: String, trim: true, default: '' },
+  // Agent accounts only: service area shown as "Agent Area" when they list a property (Agent Phone = their mobile).
+  agentArea: { type: String, trim: true, default: '', maxlength: 120 },
   // Which of the two signup paths the person picked — drives what admin sees
   // and can later drive customer- vs owner-specific UI. Defaults to
   // 'customer' for any pre-existing accounts created before this field existed.
@@ -554,20 +556,23 @@ app.post('/api/user/signup', userAuthLimiter, async (req, res) => {
     // Names: English letters only (no spaces/digits/specials); first name 3–30 letters, last name optional (max 30).
     if (!/^[A-Za-z]{3,30}$/.test(String(firstName).trim())) return res.status(400).json({ message: 'Please enter a valid first name' });
     if (lastName && String(lastName).trim() && !/^[A-Za-z]{1,30}$/.test(String(lastName).trim())) return res.status(400).json({ message: 'Please enter a valid last name' });
-    if (!email     || !String(email).trim())     return res.status(400).json({ message: 'Email is required' });
-    if (!EMAIL_FORMAT_RE.test(String(email).trim())) return res.status(400).json({ message: 'Please enter a valid email address' });
-    if (!(await emailDomainCanReceiveMail(String(email).trim()))) return res.status(400).json({ message: 'Email domain not found. Please check your email address.' });
+    // Email is optional — only validated when provided.
+    const hasEmail = !!(email && String(email).trim());
+    if (hasEmail) {
+      if (!EMAIL_FORMAT_RE.test(String(email).trim())) return res.status(400).json({ message: 'Please enter a valid email address' });
+      if (!(await emailDomainCanReceiveMail(String(email).trim()))) return res.status(400).json({ message: 'Email domain not found. Please check your email address.' });
+    }
     if (!mobile    || !String(mobile).trim())    return res.status(400).json({ message: 'Mobile number is required' });
     if (!/^[\d+\-\s]{7,15}$/.test(String(mobile).trim())) return res.status(400).json({ message: 'Please enter a valid mobile number' });
 
     const cleanAccountType = (accountType === 'owner' || accountType === 'pg' || accountType === 'broker' || accountType === 'builder') ? accountType : 'customer';
 
-    const cleanEmail  = String(email).toLowerCase().trim();
+    const cleanEmail  = hasEmail ? String(email).toLowerCase().trim() : '';
     const cleanMobile = normalizeMobile(mobile);
     if (!/^\d{10}$/.test(cleanMobile)) return res.status(400).json({ message: 'Please enter a valid 10-digit mobile number' });
 
     const [existingEmail, existingMobile] = await Promise.all([
-      User.findOne({ email: cleanEmail }),
+      hasEmail ? User.findOne({ email: cleanEmail }) : null,
       User.findOne({ mobile: cleanMobile }),
     ]);
     if (existingEmail)  return res.status(409).json({ message: 'Account already exists for this email. Please log in.' });
@@ -595,7 +600,8 @@ app.post('/api/user/signup', userAuthLimiter, async (req, res) => {
       firstName: cleanFirstName,
       lastName:  cleanLastName,
       name,
-      email:     cleanEmail,
+      // Omit the field entirely when no email was given (email index is sparse+unique, so "" would collide)
+      ...(hasEmail ? { email: cleanEmail } : {}),
       mobile:    cleanMobile,
       accountType: cleanAccountType,
       profilePhoto: cleanProfilePhoto,
@@ -603,7 +609,7 @@ app.post('/api/user/signup', userAuthLimiter, async (req, res) => {
     });
     const userKey = await issueUserSession(user);
     linkVisitorToUser(req, user._id); // fire-and-forget: tag this device's visitor record with the account
-    await EmailOtp.deleteOne({ email: cleanEmail }); // one-time use — clear it now that the account exists
+    if (hasEmail) await EmailOtp.deleteOne({ email: cleanEmail }); // one-time use — clear it now that the account exists
     bumpDailyStat('registration'); // fire-and-forget; doesn't block the response
     notifyAdmin({
       type:    'user_registered',
@@ -629,18 +635,15 @@ app.post('/api/user/signup', userAuthLimiter, async (req, res) => {
 // ── User Login ──
 app.post('/api/user/login', userAuthLimiter, async (req, res) => {
   try {
-    const { mobile, email } = req.body || {};
+    const { mobile } = req.body || {};
     if (!mobile || !String(mobile).trim()) return res.status(400).json({ message: 'Please enter your phone number' });
-    if (!email  || !String(email).trim())  return res.status(400).json({ message: 'Please enter your email address' });
 
-    // Both phone AND email are required, and both must belong to the same account.
+    // Mobile-number-only login (email no longer required).
     const cleanMobile = normalizeMobile(mobile);
-    const cleanEmail  = String(email).toLowerCase().trim();
     // A malformed value must never reach the query (e.g. '' matching a legacy blank-mobile row).
     if (!/^\d{10}$/.test(cleanMobile)) return res.status(400).json({ message: 'Please enter a valid 10-digit mobile number' });
-    if (!EMAIL_FORMAT_RE.test(cleanEmail)) return res.status(400).json({ message: 'Please enter a valid email address' });
-    const user = await User.findOne({ mobile: cleanMobile, email: cleanEmail });
-    // Passwordless login: the phone + email pair just has to match an existing account.
+    const user = await User.findOne({ mobile: cleanMobile });
+    // Passwordless login: the mobile number just has to match an existing account.
     if (!user) return res.status(401).json({ message: 'No account found. Please sign up.' });
 
     // Blocked by admin — checked before the single-device check so they always see this message.
@@ -664,6 +667,7 @@ app.post('/api/user/login', userAuthLimiter, async (req, res) => {
       firstName: user.firstName, lastName: user.lastName, name: user.name,
       email: user.email, mobile: user.mobile, accountType: user.accountType,
       profilePhoto: user.profilePhoto || '',
+      agentArea: user.agentArea || '',
       isVerified: !!user.isVerified,
       userKey,
     });
@@ -695,6 +699,7 @@ app.get('/api/user/me', requireUser, async (req, res) => {
       firstName: user.firstName || '', lastName: user.lastName || '', name: user.name || '',
       email: user.email || '', mobile: user.mobile || '',
       profilePhoto: user.profilePhoto || '',
+      agentArea: user.agentArea || '',
       accountType: user.accountType || 'customer',
       isVerified: !!user.isVerified,
       subscriptionFrom: user.subscriptionFrom || user.subscriptionAt || null,
@@ -722,16 +727,19 @@ app.get('/api/user/me', requireUser, async (req, res) => {
 // ── UPDATE current user profile (name / email / mobile) ──
 app.put('/api/user/me', profileUpdateLimiter, requireUser, requireAgent, async (req, res) => {
   try {
-    const { name, email, mobile, profilePhoto } = req.body || {};
+    const { name, email, mobile, profilePhoto, agentArea } = req.body || {};
     const update = {};
+    if (agentArea !== undefined) update.agentArea = String(agentArea).trim().slice(0, 120);
+    let unsetEmail = false;
     if (name !== undefined) update.name = String(name).trim();
     if (email !== undefined) {
       const cleanEmail = String(email).toLowerCase().trim();
-      if (!cleanEmail) return res.status(400).json({ message: 'Email cannot be empty' });
+      if (!cleanEmail) { unsetEmail = true; } else {
       if (!/^[^\s@"'<>\\]+@[^\s@"'<>\\]+\.[^\s@"'<>\\]+$/.test(cleanEmail)) return res.status(400).json({ message: 'Please enter a valid email address' });
       const existing = await User.findOne({ email: cleanEmail, _id: { $ne: req.userId } });
       if (existing) return res.status(409).json({ message: 'That email is already in use by another account' });
       update.email = cleanEmail;
+      }
     }
     if (mobile !== undefined) {
       const cleanMobile = normalizeMobile(mobile);
@@ -751,7 +759,7 @@ app.put('/api/user/me', profileUpdateLimiter, requireUser, requireAgent, async (
         return res.status(400).json({ message: 'Invalid profile photo' });
       }
     }
-    const user = await User.findByIdAndUpdate(req.userId, update, { new: true });
+    const user = await User.findByIdAndUpdate(req.userId, unsetEmail ? { ...update, $unset: { email: 1 } } : update, { new: true });
     if (!user) return res.status(404).json({ message: 'User not found' });
     res.json({ message: 'Profile updated', _id: user._id, name: user.name || '', email: user.email || '', mobile: user.mobile || '', profilePhoto: user.profilePhoto || '' });
   } catch (err) {
@@ -1697,7 +1705,7 @@ function findMissingRequiredFields(fields, status) {
     required = required.filter(([path]) => !landExempt.has(path));
   }
   if ((fields.basic || {}).listedBy === 'Agent') {
-    required.push(['owner.agentPhone', 'Agent phone number'], ['owner.agentArea', 'Agent service area']);
+    required.push(['owner.agentPhone', 'Agent phone number'], ['owner.agentArea', 'Agent name']);
   }
   // Broker listings use the same form as Owner listings — no separate brokerage-fee fields are required.
   const missing = required.filter(([path]) => isEmptyValue(getPath(fields, path)));

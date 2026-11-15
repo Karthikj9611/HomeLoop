@@ -7520,12 +7520,12 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
       <div class="form-group">
         <label class="form-label">Agent Phone</label>
         <div class="input-icon-wrap">
-          <input class="form-input" type="tel" id="f-agentPhone" inputmode="numeric" maxlength="10" value="9035205230" oninput="this.value=this.value.replace(/\D/g,'').slice(0,10)" />
+          <input class="form-input" type="tel" id="f-agentPhone" inputmode="numeric" maxlength="10" oninput="this.value=this.value.replace(/\D/g,'').slice(0,10)" />
         </div>
       </div>
       <div class="form-group">
-        <label class="form-label">Agent Area</label>
-        <input class="form-input" type="text" id="f-agentArea" value="Prashanth B, Singasandra" autocapitalize="words" />
+        <label class="form-label">Agent Name</label>
+        <input class="form-input" type="text" id="f-agentArea" autocapitalize="words" />
       </div>
     </div>
     </div>
@@ -8218,20 +8218,17 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
           <label class="form-label">Phone number <span style="color:var(--brand)">*</span></label>
           <input class="form-input" type="tel" id="auth-contact" inputmode="numeric" maxlength="10" autocomplete="tel-national" oninput="sanitizeMobileInput(this)" />
         </div>
-        <div class="form-group">
-          <label class="form-label">Email <span style="color:var(--brand)">*</span></label>
-          <input class="form-input" type="email" id="auth-login-email" autocomplete="email" />
-        </div>
+        <input type="hidden" id="auth-login-email" />
       </div>
       <div id="authSignupContactFields" style="display:none">
         <div class="form-row">
           <div class="form-group">
-            <label class="form-label">Email <span style="color:var(--brand)">*</span></label>
-            <input class="form-input" type="email" id="auth-email" oninput="saveSignupDraft()" />
-          </div>
-          <div class="form-group">
             <label class="form-label">Mobile number <span style="color:var(--brand)">*</span></label>
             <input class="form-input" type="tel" id="auth-mobile" inputmode="numeric" maxlength="10" oninput="sanitizeMobileInput(this); saveSignupDraft()" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email</label>
+            <input class="form-input" type="email" id="auth-email" oninput="saveSignupDraft()" />
           </div>
         </div>
       </div>
@@ -8411,7 +8408,7 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
             <input class="form-input" type="text" id="profile-edit-name" />
           </div>
           <div class="form-group">
-            <label class="form-label">Email</label>
+            <label class="form-label">Email <span style="font-weight:500;opacity:.6">(optional)</span></label>
             <input class="form-input" type="email" id="profile-edit-email" />
           </div>
           <div class="form-group">
@@ -15172,7 +15169,7 @@ function buildAgentFormTable(p) {
   if (basic.listedBy === 'Agent' || owner.agentPhone || owner.agentArea) {
     section('🧑‍💼 Agent Details', [
       kvPhone('Agent Phone', owner.agentPhone),
-      kv('Agent Area', owner.agentArea),
+      kv('Agent Name', owner.agentArea),
     ]);
   }
 
@@ -16002,12 +15999,9 @@ function resetListingForm() {
   // cleared back to blank.
   const cityField = document.getElementById('f-city');
   if (cityField) cityField.value = 'Bangalore';
-  // Re-apply the fixed agent contact details (non-editable) which the
-  // blanket reset above just cleared back to blank.
-  const agentPhoneField = document.getElementById('f-agentPhone');
-  const agentAreaField = document.getElementById('f-agentArea');
-  if (agentPhoneField) agentPhoneField.value = '9035205230';
-  if (agentAreaField) agentAreaField.value = 'Prashanth B, Singasandra';
+  // Re-load the agent's own details from their account (DB) — the blanket
+  // reset above just cleared them back to blank.
+  applyAgentDetailsFromAccount(true);
   // Re-apply default Tenant Rules (Pets allowed = No, Non-veg allowed = Yes)
   // which the blanket reset above just cleared back to the placeholder.
   // Still fully editable — these are just sensible starting values.
@@ -16123,6 +16117,7 @@ function saveListingDraftNow() {
       else fields[el.id] = el.value;
     });
     if (fields['f-listedBy'] === 'Agent') { delete fields['f-ownerName']; delete fields['f-ownerPhone']; delete fields['f-ownerEmail']; }
+    delete fields['f-agentPhone']; delete fields['f-agentArea']; // always loaded from the agent's account, never from a saved draft
     const draft = { fields, fImages: fImages.slice(), savedAt: Date.now() };
     localStorage.setItem(LISTING_DRAFT_KEY, JSON.stringify(draft));
   } catch (e) { /* localStorage unavailable/full — fail silently */ }
@@ -16149,6 +16144,7 @@ function restoreListingDraft() {
   if (!draft || !draft.fields) return false;
 
   Object.keys(draft.fields).forEach(id => {
+    if (id === 'f-agentPhone' || id === 'f-agentArea') return; // old drafts saved the hardcoded defaults — ignore them
     const el = document.getElementById(id);
     if (!el) return;
     if (el.type === 'checkbox') el.checked = !!draft.fields[id];
@@ -16202,6 +16198,28 @@ function applyAvailableFromDates(isNew, forceToday) {
     el.min = today;
     if (isNew && (forceToday || !el.value || el.value < today)) el.value = today;
   });
+}
+/* Agent Phone / Agent Area come from the logged-in AGENT account in the DB:
+   phone = the agent's mobile, area = user.agentArea. overwrite=true replaces whatever is
+   in the fields (used right after the form is reset); false only fills blanks. Cached login
+   data may be stale, so a /api/user/me refresh fills anything still blank (never overwrites typing). */
+function applyAgentDetailsFromAccount(overwrite) {
+  const u = getLoggedInUser();
+  if (!u || u.accountType !== 'agent') return;
+  const phoneEl = document.getElementById('f-agentPhone'), nameEl = document.getElementById('f-agentArea'); // f-agentArea now holds the agent's NAME
+  const tenDigits = m => String(m || '').replace(/\D/g, '').slice(-10);
+  const fullName = x => `${x.firstName || ''} ${x.lastName || ''}`.trim() || x.name || '';
+  const fill = (el, v, force) => { if (el && v && (force || !el.value.trim())) el.value = v; };
+  // Both fields are read-only: they always reflect the logged-in agent's own account.
+  [phoneEl, nameEl].forEach(el => { if (el) { el.readOnly = true; el.classList.add('identity-locked'); } });
+  fill(phoneEl, tenDigits(u.mobile), overwrite);
+  fill(nameEl, fullName(u), overwrite);
+  if (!u.userKey) return;
+  fetch('/api/user/me', { headers: userAuthHeaders() }).then(r => r.ok ? r.json() : null).then(d => {
+    if (!d) return;
+    fill(phoneEl, tenDigits(d.mobile), false);
+    fill(nameEl, fullName(d), false);
+  }).catch(() => {});
 }
 function lockIdentityFieldsForNewListing() {
   const user = getLoggedInUser();
@@ -16310,6 +16328,7 @@ function openAddModalForm(presetType) {
   // a restored draft — so the listing's contact identity can't drift from
   // the signed-up account, and lock the fields so it can't be edited away.
   lockIdentityFieldsForNewListing();
+  applyAgentDetailsFromAccount(false); // fills Agent Phone / Area from the agent's account (also after a restored draft)
   applyAvailableFromDates(true);
   lockListedByToAccount();
   document.getElementById('addModal').classList.add('open');
@@ -16374,9 +16393,10 @@ function applyImportedProperty(p) {
   sv('f-contactTime', owner.contactTime);
   // Older listings stored an address instead of the Yes/No flag — same address as the building means Yes.
   { const _sa = document.getElementById('f-sameAsBuildingAddress'); if (_sa) _sa.value = owner.sameAsBuilding || ((owner.address && owner.address === location.address) ? 'Yes' : 'No'); }
-  // Agent contact is editable — show what was saved, falling back to the default.
-  sv('f-agentPhone', owner.agentPhone || '9035205230');
-  sv('f-agentArea', owner.agentArea || 'Prashanth B, Singasandra');
+  // Agent contact is editable — show what was saved, falling back to the logged-in agent's account details.
+  sv('f-agentPhone', owner.agentPhone || '');
+  sv('f-agentArea', owner.agentArea || '');
+  applyAgentDetailsFromAccount(false);
 
   // Pricing
   if (isLease) {
@@ -17062,12 +17082,9 @@ async function submitAuth() {
 
   if (isLogin) {
     const mobile = document.getElementById('auth-contact').value.trim();
-    const email  = document.getElementById('auth-login-email').value.trim();
     if (!mobile) { showToast("Please enter your phone number.", 'warning'); return; }
     if (!isValidIndianMobile(mobile)) { showToast("Please enter a valid 10-digit mobile number starting with 6, 7, 8 or 9.", 'warning'); return; }
-    if (!email)  { showToast("Please enter your email address.", 'warning'); return; }
-    if (!/^[A-Za-z0-9._%+\-]+@[A-Za-z0-9\-]+(?:\.[A-Za-z0-9\-]+)*\.[A-Za-z]{2,}$/.test(email)) { showToast("Please enter a valid email address.", 'warning'); return; }
-    body = { mobile, email };
+    body = { mobile };
   } else {
     if (!selectedAccountType) {
       document.getElementById('authTypeTabsRow').classList.add('has-error');
@@ -17084,8 +17101,7 @@ async function submitAuth() {
     if (!firstName) { showToast("Please enter your first name.", 'warning'); return; }
     if (!isValidName(firstName, 3)) { showToast("Please enter a valid first name.", 'warning'); return; }
     if (lastName && !isValidName(lastName)) { showToast("Please enter a valid last name.", 'warning'); return; }
-    if (!email)  { showToast("Please enter your email address.", 'warning'); return; }
-    if (!/^[A-Za-z0-9._%+\-]+@[A-Za-z0-9\-]+(?:\.[A-Za-z0-9\-]+)*\.[A-Za-z]{2,}$/.test(email)) { showToast("Please enter a valid email address.", 'warning'); return; }
+    if (email && !/^[A-Za-z0-9._%+\-]+@[A-Za-z0-9\-]+(?:\.[A-Za-z0-9\-]+)*\.[A-Za-z]{2,}$/.test(email)) { showToast("Please enter a valid email address.", 'warning'); return; }
     if (!mobile) { showToast("Please enter your mobile number.", 'warning'); return; }
     if (!isValidIndianMobile(mobile)) { showToast("Please enter a valid 10-digit mobile number starting with 6, 7, 8 or 9.", 'warning'); return; }
     body = { firstName, lastName, email, mobile, accountType: selectedAccountType, profilePic: authProfilePicUrl || null };
@@ -17141,6 +17157,7 @@ function finishAuthSuccess(data) {
     firstName: data.firstName, lastName: data.lastName, name: data.name,
     email: data.email, mobile: data.mobile, accountType: data.accountType,
     profilePhoto: data.profilePhoto || '',
+    agentArea: data.agentArea || '',
     isVerified: !!data.isVerified,
     userKey: data.userKey
   }));
@@ -17513,7 +17530,7 @@ async function saveProfileEdits() {
   const name   = document.getElementById('profile-edit-name').value.trim();
   const email  = document.getElementById('profile-edit-email').value.trim();
   const mobile = document.getElementById('profile-edit-mobile').value.trim();
-  if (!email)  { showToast("Email address is required.", 'warning'); return; }
+  if (email && !/^[^\s@"'<>\\]+@[^\s@"'<>\\]+\.[^\s@"'<>\\]+$/.test(email)) { showToast("Please enter a valid email address.", 'warning'); return; }
   if (!mobile) { showToast("Mobile number is required.", 'warning'); return; }
   if (!isValidIndianMobile(mobile)) { showToast("Please enter a valid 10-digit mobile number starting with 6, 7, 8 or 9.", 'warning'); return; }
 
