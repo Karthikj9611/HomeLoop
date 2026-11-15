@@ -2052,6 +2052,8 @@ app.get('/api/properties', attachUserIfPresent, async (req, res) => {
     // listing with a parseable pincode in its address now surfaces it: the
     // Pincode filter dropdown, "near me" priority-boost, and pincode search
     // all fed off this field and were silently missing these listings.
+    await warmShortLinks(docs); // resolve short Google Maps links once so cards get a position
+    await warmGeo(docs);        // area-centre fallback for listings that still have no position
     docs.forEach(doc => {
       if (!doc.location) return;
       if (!doc.location.pincode) {
@@ -2095,17 +2097,15 @@ app.get('/api/properties', attachUserIfPresent, async (req, res) => {
         // Exact position for the card's distance pill + a signed token for /api/properties/road-distance. Only listings whose owner contact is public (same gate as navigateUrl, which already exposes this destination).
         // Source order matches the admin Navigate button: Building Location Link first (full Google Maps links
         // carry coordinates; short maps.app.goo.gl links don't), then the saved lat/lng.
-        { let _la = NaN, _ln = NaN;
-          const _lk = String(doc.location.currentLocationLink || '').trim();
-          if (/^https?:\/\//i.test(_lk)) {
-            try {
-              const _d = decodeURIComponent(_lk);
-              const _m = _d.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/) || _d.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/) || _d.match(/[?&](?:q|query|destination|ll)=(-?\d+\.\d+),\s*(-?\d+\.\d+)/);
-              if (_m) { _la = parseFloat(_m[1]); _ln = parseFloat(_m[2]); }
-            } catch (_) {}
-          }
-          if (isNaN(_la) || isNaN(_ln)) { _la = parseFloat(doc.location.lat); _ln = parseFloat(doc.location.lng); }
-          if (!isNaN(_la) && !isNaN(_ln) && (_la !== 0 || _ln !== 0)) { doc.location.distLat = _la; doc.location.distLng = _ln; doc.distTok = distToken(doc._id, req.userId); } }
+        { const _c = resolveDocPosition(doc);
+          if (_c && _c.exact) { doc.location.distLat = _c.lat; doc.location.distLng = _c.lng; doc.distTok = distToken(doc._id, req.userId); }
+          else if (_c) { doc.location.distLat = Math.round(_c.lat * 100) / 100; doc.location.distLng = Math.round(_c.lng * 100) / 100; doc.distApprox = true; } // area centre only
+        }
+      } else if (!_viewerIsAgentAcct) {
+        // Contact not public: still give the card an APPROXIMATE position (2 decimals ≈ 1.1 km, no token, no road routing)
+        // so it can show "~N km". Exact lat/lng / link / address stay hidden.
+        const _c = resolveDocPosition(doc);
+        if (_c) { doc.location.distLat = Math.round(_c.lat * 100) / 100; doc.location.distLng = Math.round(_c.lng * 100) / 100; doc.distApprox = true; }
       }
       // Full free-text address itself is still never sent to the public
       // frontend — only the derived pincode above survives past this point.
@@ -2229,15 +2229,120 @@ const DIST_SECRET = process.env.DIST_SECRET || crypto.randomBytes(32).toString('
 function distToken(id, viewerId) { return crypto.createHmac('sha256', DIST_SECRET).update(String(id) + '|' + String(viewerId || 'guest')).digest('hex').slice(0, 24); }
 const _roadCache = new Map(); // `${userLat3},${userLng3}|${id}` -> { km, t }
 const ROAD_CACHE_TTL = 6 * 60 * 60 * 1000;
+function coordsFromMapUrl(str) {
+  let d = String(str || '');
+  try { d = decodeURIComponent(d); } catch (_) {}
+  const m = d.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/) || d.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/) || d.match(/[?&](?:q|query|destination|ll|center)=(-?\d+\.\d+),\s*(-?\d+\.\d+)/);
+  return m ? { lat: parseFloat(m[1]), lng: parseFloat(m[2]) } : null;
+}
+// Short Google links (maps.app.goo.gl/…, goo.gl/maps/…) carry no coordinates in their text. Open each ONE time,
+// follow the redirect and read the coordinates from the final URL; kept in memory (failures retried after 10 min).
+const SHORT_MAP_RE = /^https?:\/\/(maps\.app\.goo\.gl|goo\.gl\/maps|g\.co\/kgs)/i;
+const _shortLinkCache = new Map(); // url -> { c: {lat,lng}|null, t }
+async function resolveShortMapLink(url) {
+  const ac = new AbortController(); const to = setTimeout(() => ac.abort(), 4000);
+  let c = null;
+  try {
+    const r = await fetch(url, { redirect: 'follow', signal: ac.signal, headers: { 'User-Agent': 'Mozilla/5.0 (compatible; HomeLoop/1.0)', 'Accept-Language': 'en' } });
+    c = coordsFromMapUrl(r.url);
+    if (!c) c = coordsFromMapUrl(String(await r.text()).slice(0, 300000));
+  } catch (_) { /* network/timeout → cached as unresolved for a while */ }
+  finally { clearTimeout(to); }
+  _shortLinkCache.set(url, { c, t: Date.now() });
+  return c;
+}
+async function warmShortLinks(docs) {
+  const todo = new Set();
+  (docs || []).forEach(d => {
+    const lk = String(d && d.location && d.location.currentLocationLink || '').trim();
+    if (!SHORT_MAP_RE.test(lk)) return;
+    const hit = _shortLinkCache.get(lk);
+    if (hit && (hit.c || Date.now() - hit.t < 10 * 60 * 1000)) return;
+    todo.add(lk);
+  });
+  if (!todo.size) return;
+  await Promise.race([Promise.all([...todo].slice(0, 40).map(resolveShortMapLink)), new Promise(r => setTimeout(r, 5000))]);
+}
+// ── Area-level fallback position ──────────────────────────────────────────────────────────────────────
+// Listings with no usable coordinates (no/unparseable location link, no lat/lng) get the centre of their AREA
+// (e.g. "Harlur, Bengaluru") from OpenStreetMap Nominatim — looked up once per area, one request per ~1.1 s
+// (Nominatim's usage policy), cached in memory and in geo-cache.json so restarts don't repeat it. The card then shows an
+// approximate "~N km" (rounded position, no token, no road routing).
+const GEO_CACHE_FILE = path.join(__dirname, 'geo-cache.json');
+const _geoCache = new Map(); // key -> { c:{lat,lng}|null, t }
+try { Object.entries(JSON.parse(fs.readFileSync(GEO_CACHE_FILE, 'utf8'))).forEach(([k, v]) => _geoCache.set(k, v)); } catch (_) {}
+let _geoSaveTimer = null;
+function _geoSaveSoon() { if (_geoSaveTimer) return; _geoSaveTimer = setTimeout(() => { _geoSaveTimer = null; try { fs.writeFileSync(GEO_CACHE_FILE, JSON.stringify(Object.fromEntries(_geoCache))); } catch (_) {} }, 2000); }
+function geoKey(loc) {
+  loc = loc || {};
+  const area = String(loc.area || '').trim().toLowerCase();
+  const city = String(loc.city || 'Bengaluru').trim().toLowerCase();
+  const pin = String(loc.pincode || '').trim();
+  if (!area && !pin) return '';
+  return 'v2|' + area + '|' + city + '|' + pin; // "v2": ignores earlier, less strict lookups already stored in geo-cache.json
+}
+const _geoQueue = []; let _geoRunning = false; const _geoFailUntil = new Map();
+function _geoEnqueue(key, loc) { if (!_geoQueue.some(x => x.key === key)) _geoQueue.push({ key, loc }); if (!_geoRunning) _geoRun(); }
+async function _geoRun() {
+  _geoRunning = true;
+  while (_geoQueue.length) {
+    const { key, loc } = _geoQueue.shift();
+    try {
+      const blr = !loc.city || /bengaluru|bangalore/i.test(String(loc.city));
+      const variants = [];
+      if (loc.area && loc.pincode) variants.push([loc.area, loc.pincode, loc.city || 'Bengaluru', 'Karnataka', 'India']);
+      if (loc.area) variants.push([loc.area, loc.city || 'Bengaluru', 'Karnataka', 'India']);
+      if (loc.pincode) variants.push([loc.pincode, loc.city || 'Bengaluru', 'Karnataka', 'India']);
+      let c = null, ok = false;
+      for (const v of variants) {
+        const ac = new AbortController(); const to = setTimeout(() => ac.abort(), 6000);
+        const url = 'https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=in&q=' + encodeURIComponent(v.join(', '))
+          + (blr ? '&viewbox=77.35,13.25,77.85,12.70&bounded=1' : ''); // Bengaluru listings: only accept matches inside the city box
+        const r = await fetch(url, { signal: ac.signal, headers: { 'User-Agent': 'HomeLoop/1.0 (property listings distance)', 'Accept-Language': 'en' } });
+        clearTimeout(to);
+        if (!r.ok) { ok = false; break; }
+        ok = true;
+        const j = await r.json();
+        if (Array.isArray(j) && j[0] && isFinite(parseFloat(j[0].lat))) { c = { lat: parseFloat(j[0].lat), lng: parseFloat(j[0].lon) }; break; }
+        await new Promise(res => setTimeout(res, 1100)); // stay under 1 request/second
+      }
+      if (ok) { _geoCache.set(key, { c, t: Date.now() }); _geoSaveSoon(); } else { _geoFailUntil.set(key, Date.now() + 5 * 60 * 1000); }
+    } catch (_) { _geoFailUntil.set(key, Date.now() + 5 * 60 * 1000); }
+    await new Promise(res => setTimeout(res, 1100));
+  }
+  _geoRunning = false;
+}
+// Queue every area that still lacks a position; wait briefly (max ~3 s) so the first response already has the first few.
+async function warmGeo(docs) {
+  const wait = [];
+  const seen = new Set();
+  (docs || []).forEach(d => {
+    const loc = d && d.location; if (!loc || listingCoordsFromLoc(loc)) return;
+    const key = geoKey(loc); if (!key || seen.has(key)) return; seen.add(key);
+    const hit = _geoCache.get(key);
+    if (hit && (hit.c || Date.now() - hit.t < 7 * 24 * 3600 * 1000)) return;
+    if ((_geoFailUntil.get(key) || 0) > Date.now()) return;
+    _geoEnqueue(key, { area: loc.area, city: loc.city, pincode: loc.pincode });
+    wait.push(key);
+  });
+  if (!wait.length) return;
+  const t0 = Date.now();
+  while (Date.now() - t0 < 3000 && wait.some(k => !_geoCache.has(k))) await new Promise(res => setTimeout(res, 150));
+}
+function areaCoordsFromCache(loc) { const h = _geoCache.get(geoKey(loc)); return h && h.c ? h.c : null; }
+// Position for a card: { lat, lng, exact } — exact from link/lat/lng, otherwise the area centre (exact:false).
+function resolveDocPosition(doc) {
+  const c = listingCoordsFromLoc(doc && doc.location);
+  if (c) return { lat: c.lat, lng: c.lng, exact: true };
+  const a = areaCoordsFromCache(doc && doc.location);
+  return a ? { lat: a.lat, lng: a.lng, exact: false } : null;
+}
 function listingCoordsFromLoc(loc) {
   loc = loc || {};
   const lk = String(loc.currentLocationLink || '').trim();
   if (/^https?:\/\//i.test(lk)) {
-    try {
-      const d = decodeURIComponent(lk);
-      const m = d.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/) || d.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/) || d.match(/[?&](?:q|query|destination|ll)=(-?\d+\.\d+),\s*(-?\d+\.\d+)/);
-      if (m) return { lat: parseFloat(m[1]), lng: parseFloat(m[2]) };
-    } catch (_) {}
+    const c = coordsFromMapUrl(lk) || (SHORT_MAP_RE.test(lk) && _shortLinkCache.get(lk) && _shortLinkCache.get(lk).c) || null;
+    if (c) return c;
   }
   const la = parseFloat(loc.lat), ln = parseFloat(loc.lng);
   if (!isNaN(la) && !isNaN(ln) && (la !== 0 || ln !== 0)) return { lat: la, lng: ln };
@@ -2265,6 +2370,7 @@ app.post('/api/properties/road-distance', roadDistanceLimiter, attachUserIfPrese
       const filter = { _id: { $in: todo }, booked: { $ne: true }, blocked: { $ne: true },
         $or: [{ verified: true }, { 'basic.listedBy': { $in: ['Owner', 'Agent', null] }, 'basic.status': { $ne: 'PG' } }] };
       const arrays = await Promise.all(LISTING_MODEL_LIST.map(M => M.find(filter).select('location.lat location.lng location.currentLocationLink').lean()));
+      await warmShortLinks(arrays.flat());
       const pts = arrays.flat().map(d => ({ id: String(d._id), c: listingCoordsFromLoc(d.location) })).filter(x => x.c);
       for (let i = 0; i < pts.length; i += 90) {
         const chunk = pts.slice(i, i + 90);

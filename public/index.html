@@ -14646,17 +14646,20 @@ function propDistanceText(p) {
   if (!userCoords) return '';
   const rk = ROAD_KM[String(p.id)];
   if (rk != null) return rk.toFixed(1) + ' km';
+  if (_roadPending.has(String(p.id))) return '';
   const l = (p && p.location) || {};
   let la = parseFloat(l.lat), ln = parseFloat(l.lng);
   if (isNaN(la) || isNaN(ln) || (!la && !ln)) { la = parseFloat(l.distLat); ln = parseFloat(l.distLng); }
   if (isNaN(la) || isNaN(ln) || (!la && !ln)) return '';
   const d = haversineKm(userCoords.lat, userCoords.lng, la, ln);
+  if (p.distApprox) return d < 1 ? '<1 km' : '~' + Math.round(d) + ' km'; // coarse position (~1 km): whole km only
   return '~' + d.toFixed(1) + ' km';
 }
-/* Distance is shown only where the Call / WhatsApp / Navigate icons show (Public call on, active
-   subscription or unlock) and never on booked listings. Used by cards, shortlist, compare and the view modal. */
+/* Distance is shown on every non-booked listing that has a position: exact + road distance where the owner contact is
+   public (Call/WhatsApp/Navigate icons), otherwise an approximate whole-km straight-line value. Used by cards,
+   shortlist, compare and the view modal. */
 function propDistanceGated(p) {
-  return !!p && !isBookedProp(p) && !!(cardCallOn(p) || p.currentLocationLink || p.navigateUrl);
+  return !!p && !isBookedProp(p) && !!(cardCallOn(p) || p.currentLocationLink || p.navigateUrl || (p.location && p.location.distLat != null));
 }
 function propDistanceBadgeHTML(p) {
   if (!propDistanceGated(p)) return '';
@@ -14690,6 +14693,7 @@ function refreshDistancePills() {
    the straight-line "~N km" estimate. Safe to call repeatedly (each listing is requested once per position). */
 const ROAD_KM = {};
 let _roadRequested = new Set(), _roadBusy = false;
+const _roadPending = new Set(); // listings whose road distance is still on its way — no straight-line pill meanwhile (avoids the number jumping)
 async function maybeFetchRoadDistances() {
   if (_roadBusy || !userCoords || !Array.isArray(PROPERTIES) || !PROPERTIES.length) return;
   _roadBusy = true;
@@ -14697,15 +14701,17 @@ async function maybeFetchRoadDistances() {
     const cand = PROPERTIES.filter(p => p && p.id && !_roadRequested.has(String(p.id)) && p.location && !isNaN(parseFloat(p.location.distLat)) && p.distTok)
       .map(p => ({ id: String(p.id), tok: p.distTok, d: haversineKm(userCoords.lat, userCoords.lng, parseFloat(p.location.distLat), parseFloat(p.location.distLng)) }))
       .sort((a, b) => a.d - b.d).slice(0, 300);
+    cand.forEach(x => _roadPending.add(x.id));
     for (let i = 0; i < cand.length; i += 60) {
       const items = cand.slice(i, i + 60).map(x => ({ id: x.id, tok: x.tok }));
       items.forEach(x => _roadRequested.add(x.id));
       try {
         const res = await fetch('/api/properties/road-distance', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ lat: userCoords.lat, lng: userCoords.lng, items }) });
-        if (!res.ok) continue;
-        const data = await res.json();
+        const data = res.ok ? await res.json() : null; // a failed batch must still clear its pending state below
         if (data && data.distances) { Object.assign(ROAD_KM, data.distances); renderCards(); refreshDistancePills(); }
       } catch (_) { /* keep straight-line estimate */ }
+      items.forEach(x => _roadPending.delete(x.id));
+      refreshDistancePills();
     }
   } finally { _roadBusy = false; }
 }
@@ -14720,6 +14726,7 @@ function initNearbyLocation() {
       // picked a sort yet. But if currentSort is already 'nearby' — either
       // from that auto-switch or because they picked it manually before we
       // had coordinates — re-render now that we finally have a position.
+      maybeFetchRoadDistances(); // sets the pending state first, so the first render shows no straight-line value
       if (!sortSetByUser) {
         currentSort = 'nearby';
         document.querySelectorAll('.sort-option').forEach(o => o.classList.remove('active'));
@@ -14728,7 +14735,6 @@ function initNearbyLocation() {
       }
       renderCards(); // always: cards show distance from the visitor once a position is known
       refreshDistancePills();
-      maybeFetchRoadDistances();
       // Reverse-geocode via Nominatim — the same source used to capture
       // each listing's address/pincode when it was added, so the postcode
       // format lines up on both sides. Feeds nearbyPincode and
