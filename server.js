@@ -2092,6 +2092,20 @@ app.get('/api/properties', attachUserIfPresent, async (req, res) => {
         } else if (/^https?:\/\//i.test(String(doc.location.mapLink || ''))) {
           doc.navigateUrl = String(doc.location.mapLink);
         }
+        // Coarse position (2 decimals ≈ 1 km) for the card's distance pill — only listings whose owner contact is public (same gate as navigateUrl).
+        // Source order matches the admin Navigate button: Building Location Link first (full Google Maps links
+        // carry coordinates; short maps.app.goo.gl links don't), then the saved lat/lng.
+        { let _la = NaN, _ln = NaN;
+          const _lk = String(doc.location.currentLocationLink || '').trim();
+          if (/^https?:\/\//i.test(_lk)) {
+            try {
+              const _d = decodeURIComponent(_lk);
+              const _m = _d.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/) || _d.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/) || _d.match(/[?&](?:q|query|destination|ll)=(-?\d+\.\d+),\s*(-?\d+\.\d+)/);
+              if (_m) { _la = parseFloat(_m[1]); _ln = parseFloat(_m[2]); }
+            } catch (_) {}
+          }
+          if (isNaN(_la) || isNaN(_ln)) { _la = parseFloat(doc.location.lat); _ln = parseFloat(doc.location.lng); }
+          if (!isNaN(_la) && !isNaN(_ln) && (_la !== 0 || _ln !== 0)) { doc.location.approxLat = Math.round(_la * 100) / 100; doc.location.approxLng = Math.round(_ln * 100) / 100; } }
       }
       // Full free-text address itself is still never sent to the public
       // frontend — only the derived pincode above survives past this point.
@@ -2202,6 +2216,78 @@ app.get('/api/properties', attachUserIfPresent, async (req, res) => {
 // every fresh incognito window, so a device could inflate a listing's count
 // just by opening it privately under the old, client-only dedup. This is
 // what admin's per-listing / reset-all views actions operate on.
+
+/* ── Bike/road distance from the visitor to listings ────────────────────────────────────────────────
+   POST /api/properties/road-distance  { lat, lng, ids:[listing _id,…] }  →  { distances: { <id>: km } }
+   Exact coordinates stay on the server: it reads each listing's Building Location Link (then lat/lng),
+   asks an OSRM-compatible routing service for the bike route length, and returns ONLY the distance
+   rounded to the nearest 0.5 km. Routing service is configurable (ROUTING_BASE_URL); default is the
+   public OSM bike server — for heavy traffic point it at your own OSRM/ORS instance. Listings that
+   can't be routed are simply omitted (the frontend keeps its straight-line estimate). */
+const ROUTING_BASE_URL = (process.env.ROUTING_BASE_URL || 'https://routing.openstreetmap.de/routed-bike').replace(/\/+$/, '');
+const _roadCache = new Map(); // `${userLat3},${userLng3}|${id}` -> { km, t }
+const ROAD_CACHE_TTL = 6 * 60 * 60 * 1000;
+function listingCoordsFromLoc(loc) {
+  loc = loc || {};
+  const lk = String(loc.currentLocationLink || '').trim();
+  if (/^https?:\/\//i.test(lk)) {
+    try {
+      const d = decodeURIComponent(lk);
+      const m = d.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/) || d.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/) || d.match(/[?&](?:q|query|destination|ll)=(-?\d+\.\d+),\s*(-?\d+\.\d+)/);
+      if (m) return { lat: parseFloat(m[1]), lng: parseFloat(m[2]) };
+    } catch (_) {}
+  }
+  const la = parseFloat(loc.lat), ln = parseFloat(loc.lng);
+  if (!isNaN(la) && !isNaN(ln) && (la !== 0 || ln !== 0)) return { lat: la, lng: ln };
+  return null;
+}
+const roadDistanceLimiter = rateLimit({
+  windowMs: 60 * 1000, max: 20,
+  standardHeaders: true, legacyHeaders: false,
+  message: { message: 'Too many requests. Please try again later.' }
+});
+app.post('/api/properties/road-distance', roadDistanceLimiter, async (req, res) => {
+  try {
+    const uLat = Number(req.body && req.body.lat), uLng = Number(req.body && req.body.lng);
+    if (!isFinite(uLat) || !isFinite(uLng) || Math.abs(uLat) > 90 || Math.abs(uLng) > 180) return res.status(400).json({ message: 'Invalid position' });
+    const ids = [...new Set((Array.isArray(req.body.ids) ? req.body.ids : []).map(String))].filter(i => mongoose.isValidObjectId(i)).slice(0, 60);
+    if (!ids.length || typeof fetch !== 'function') return res.json({ distances: {} });
+    const cellKey = uLat.toFixed(3) + ',' + uLng.toFixed(3);
+    const out = {}; const now = Date.now(); const todo = [];
+    ids.forEach(id => { const c = _roadCache.get(cellKey + '|' + id); if (c && now - c.t < ROAD_CACHE_TTL) { if (c.km != null) out[id] = c.km; } else todo.push(id); });
+    if (todo.length) {
+      // Same public-visibility rules as GET /api/properties: never reveal anything about hidden/booked/blocked listings.
+      const filter = { _id: { $in: todo }, booked: { $ne: true }, blocked: { $ne: true },
+        $or: [{ verified: true }, { 'basic.listedBy': { $in: ['Owner', 'Agent', null] }, 'basic.status': { $ne: 'PG' } }] };
+      const arrays = await Promise.all(LISTING_MODEL_LIST.map(M => M.find(filter).select('location.lat location.lng location.currentLocationLink').lean()));
+      const pts = arrays.flat().map(d => ({ id: String(d._id), c: listingCoordsFromLoc(d.location) })).filter(x => x.c);
+      for (let i = 0; i < pts.length; i += 90) {
+        const chunk = pts.slice(i, i + 90);
+        const coords = [uLng + ',' + uLat].concat(chunk.map(x => x.c.lng + ',' + x.c.lat)).join(';');
+        const url = ROUTING_BASE_URL + '/table/v1/driving/' + coords + '?sources=0&annotations=distance';
+        const ac = new AbortController(); const to = setTimeout(() => ac.abort(), 8000);
+        try {
+          const r = await fetch(url, { signal: ac.signal });
+          const j = r.ok ? await r.json() : null;
+          const row = j && j.code === 'Ok' && j.distances && j.distances[0];
+          if (row) chunk.forEach((x, k) => {
+            const m = row[k + 1];
+            const km = (typeof m === 'number' && isFinite(m)) ? Math.round(m / 500) / 2 : null; // nearest 0.5 km
+            _roadCache.set(cellKey + '|' + x.id, { km, t: now });
+            if (km != null) out[x.id] = km;
+          });
+        } catch (_) { /* routing service down/slow → frontend keeps the straight-line estimate */ }
+        finally { clearTimeout(to); }
+      }
+      if (_roadCache.size > 20000) _roadCache.clear();
+    }
+    res.json({ distances: out });
+  } catch (err) {
+    console.error('road-distance error:', err.message);
+    res.status(500).json({ message: 'Could not compute distances' });
+  }
+});
+
 const viewLimiter = rateLimit({
   windowMs: 60 * 1000, max: 60,
   standardHeaders: true, legacyHeaders: false,

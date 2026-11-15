@@ -1362,6 +1362,26 @@ main.tab-explore .empty-state{display:none !important}
    for .prop-loc-area below) so the property-card title-row location also
    collapses to the part before the first comma on mobile, full text on desktop. */
 .prop-title-buildtype .prop-loc-short{display:none}
+.prop-dist-badge{
+  order:4;position:relative;overflow:hidden;isolation:isolate;
+  display:inline-flex;align-items:center;gap:5px;flex-shrink:0;height:26px;box-sizing:border-box;
+  margin-left:-10px;padding:0 11px 0 9px;border-radius:0 99px 99px 0;
+  background:linear-gradient(135deg,#34d37a 0%,#12a455 50%,#0b7d3e 100%);color:#fff;
+  border:1px solid rgba(255,255,255,.75);border-left:0;
+  font-size:11.5px;font-weight:800;letter-spacing:.03em;line-height:1;white-space:nowrap;
+  text-shadow:0 1px 2px rgba(0,60,25,.45);
+  box-shadow:0 2px 8px rgba(18,164,85,.5),inset 0 1px 0 rgba(255,255,255,.5),inset 0 -2px 4px rgba(0,70,30,.25);
+  pointer-events:none;
+}
+.prop-dist-badge::before{content:'';position:absolute;left:0;right:0;top:0;height:48%;z-index:-1;background:linear-gradient(180deg,rgba(255,255,255,.38),rgba(255,255,255,0))}
+.prop-dist-badge .pdb-ico{width:20px;height:20px;border-radius:50%;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;background:#fff;box-shadow:0 1px 3px rgba(0,60,25,.35)}
+.prop-dist-badge .pdb-ico svg{width:12px;height:12px;fill:none;stroke:#0b7d3e;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
+.prop-dist-badge .pdb-txt{position:relative}
+@media(max-width:640px){
+  .prop-dist-badge{height:20px;font-size:9.5px;padding:0 8px 0 5px;gap:4px}
+  .prop-dist-badge .pdb-ico{width:15px;height:15px}
+  .prop-dist-badge .pdb-ico svg{width:9px;height:9px}
+}
 .prop-card.prop-card-promoted .prop-title-buildtype{
   background:none;box-shadow:none;
 }
@@ -12116,6 +12136,7 @@ function _cardHTMLRaw(p, compact, extraLeftBadge, showAvail) {
       <div class="prop-card-top-row">
         <div class="prop-left-badges">
           ${(roleTagProp(p) && !isBookedProp(p)) ? roleTagHTML(roleTagProp(p)) : ''}
+          ${propDistanceBadgeHTML(p)}
           ${(isDirectProp(p) && !isBookedProp(p) && !(p.basic && (p.basic.listedBy === 'Broker' || p.basic.listedBy === 'Builder'))) ? '<div class="prop-badge-direct" title="Owner — contact the owner directly, no brokerage"><span class="pbd-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.6"/><path d="M4.8 20c.6-3.8 3.6-6 7.2-6s6.6 2.2 7.2 6"/></svg></span><span class="pbd-txt">Owner</span></div>' : ''}
           ${(!compact && !['Rent','Upcoming','Lease','PG','ShortStay'].includes(currentTab)) ? `<span class="prop-badge-type-letter${pTypeLetter.length>1?' wide':''} badge-${pType.toLowerCase()}" title="${pType}">${pTypeLetter}</span>` : ''}
           ${(!p.verified && !isBookedProp(p)) ? '<div class="prop-unverified" title="Unverified — yet to be verified by our team"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5"/><path d="M12 16.3h.01"/></svg>Yet to verify</div>' : ''}
@@ -12269,6 +12290,7 @@ function shortlistCardHTML(p) {
       ${buildImgSlider(p, fg, '-sl')}
       ${priceChipsHTML(p, pType, deposit, maintenance, leaseDur, {ribbon:true})}
       <div class="prop-card-top-row" style="justify-content:flex-end">
+        ${propDistanceBadgeHTML(p) ? '<div class="prop-left-badges" style="margin-right:auto">' + propDistanceBadgeHTML(p) + '</div>' : ''}
         ${(!p.verified && !isBookedProp(p)) ? '<div class="prop-unverified prop-unverified-abs" title="Unverified — yet to be verified by our team"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5"/><path d="M12 16.3h.01"/></svg>Yet to verify</div>' : ''}
         <div class="prop-right-badges">
           ${(SHOW_VERIFIED_BADGE && p.verified) ? '<div class="prop-icon-badge prop-icon-verified" title="Verified"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.5" fill="#fff"/><path d="M8 12.3l2.6 2.6 5.4-5.8" stroke="#1a73e8" stroke-width="2.1" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>' : ''}
@@ -12687,6 +12709,7 @@ function renderCompareTable() {
     section('Listing Info'),
     { label: 'Location', get: p => dash(p.location?.area) },
     { label: 'City', get: p => dash(p.location?.city) },
+    ...(props.some(propDistanceGated) ? [{ label: 'Distance from you', get: p => dash(propDistanceGated(p) ? propDistanceText(p) : '') }] : []),
 
     section('Pricing'),
     // Label flips to "Price" when every compared listing is a sale — "Rent /
@@ -14615,6 +14638,77 @@ function haversineKm(lat1, lon1, lat2, lon2) {
   return 2 * R * Math.asin(Math.sqrt(a));
 }
 
+/* Distance chip on cards: straight-line km from the visitor's position (userCoords) to the listing.
+   Uses exact lat/lng when the viewer receives it (agent accounts), otherwise the server's rounded
+   approxLat/approxLng (~1 km precision), so the label is approximate ("~3 km"). Empty until geolocation resolves. */
+function propDistanceText(p) {
+  if (!userCoords) return '';
+  const rk = ROAD_KM[String(p.id)];
+  if (rk != null) return (rk < 1 ? '<1' : rk) + ' km';
+  const l = (p && p.location) || {};
+  let la = parseFloat(l.lat), ln = parseFloat(l.lng);
+  if (isNaN(la) || isNaN(ln) || (!la && !ln)) { la = parseFloat(l.approxLat); ln = parseFloat(l.approxLng); }
+  if (isNaN(la) || isNaN(ln) || (!la && !ln)) return '';
+  const d = haversineKm(userCoords.lat, userCoords.lng, la, ln);
+  return d < 1 ? '<1 km' : '~' + Math.round(d) + ' km';
+}
+/* Distance is shown only where the Call / WhatsApp / Navigate icons show (Public call on, active
+   subscription or unlock) and never on booked listings. Used by cards, shortlist, compare and the view modal. */
+function propDistanceGated(p) {
+  return !!p && !isBookedProp(p) && !!(cardCallOn(p) || p.currentLocationLink || p.navigateUrl);
+}
+function propDistanceBadgeHTML(p) {
+  if (!propDistanceGated(p)) return '';
+  const t = propDistanceText(p);
+  return t ? '<div class="prop-dist-badge" title="Approx. distance from your location"><span class="pdb-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.4"/></svg></span><span class="pdb-txt">' + esc(t) + '</span></div>' : '';
+}
+/* Cards already on screen (grid, This Week's panel, shortlist) were rendered before the position / road
+   distances arrived — add or update their pill in place instead of re-rendering everything. */
+function refreshDistancePills() {
+  document.querySelectorAll('.prop-card[data-property-id]').forEach(card => {
+    const id = card.getAttribute('data-property-id');
+    const p = PROPERTIES.find(x => String(x.id) === id) || (typeof shortlistedData !== 'undefined' && shortlistedData[id]);
+    if (!p) return;
+    const html = propDistanceBadgeHTML(p);
+    const el = card.querySelector('.prop-dist-badge');
+    if (el) { if (html) el.outerHTML = html; else el.remove(); return; }
+    if (!html) return;
+    let host = card.querySelector('.prop-left-badges');
+    if (!host) {
+      const top = card.querySelector('.prop-card-top-row');
+      if (!top) return;
+      host = document.createElement('div'); host.className = 'prop-left-badges'; host.style.marginRight = 'auto';
+      top.insertBefore(host, top.firstChild);
+    }
+    host.insertAdjacentHTML('beforeend', html);
+  });
+}
+
+/* Bike distance: asks the server (which holds the exact coordinates) for road distance, nearest listings first,
+   60 per request, up to 300 listings. Results land in ROAD_KM and cards re-render; anything not returned keeps
+   the straight-line "~N km" estimate. Safe to call repeatedly (each listing is requested once per position). */
+const ROAD_KM = {};
+let _roadRequested = new Set(), _roadBusy = false;
+async function maybeFetchRoadDistances() {
+  if (_roadBusy || !userCoords || !Array.isArray(PROPERTIES) || !PROPERTIES.length) return;
+  _roadBusy = true;
+  try {
+    const cand = PROPERTIES.filter(p => p && p.id && !_roadRequested.has(String(p.id)) && p.location && !isNaN(parseFloat(p.location.approxLat)))
+      .map(p => ({ id: String(p.id), d: haversineKm(userCoords.lat, userCoords.lng, parseFloat(p.location.approxLat), parseFloat(p.location.approxLng)) }))
+      .sort((a, b) => a.d - b.d).slice(0, 300);
+    for (let i = 0; i < cand.length; i += 60) {
+      const ids = cand.slice(i, i + 60).map(x => x.id);
+      ids.forEach(id => _roadRequested.add(id));
+      try {
+        const res = await fetch('/api/properties/road-distance', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ lat: userCoords.lat, lng: userCoords.lng, ids }) });
+        if (!res.ok) continue;
+        const data = await res.json();
+        if (data && data.distances) { Object.assign(ROAD_KM, data.distances); renderCards(); refreshDistancePills(); }
+      } catch (_) { /* keep straight-line estimate */ }
+    }
+  } finally { _roadBusy = false; }
+}
+
 function initNearbyLocation() {
   if (!('geolocation' in navigator)) { console.log('[nearby-location] geolocation not supported on this browser/device'); return; }
   navigator.geolocation.getCurrentPosition(
@@ -14631,7 +14725,9 @@ function initNearbyLocation() {
         const opt = document.querySelector('.sort-option[data-sort="nearby"]');
         if (opt) opt.classList.add('active');
       }
-      if (currentSort === 'nearby') renderCards();
+      renderCards(); // always: cards show distance from the visitor once a position is known
+      refreshDistancePills();
+      maybeFetchRoadDistances();
       // Reverse-geocode via Nominatim — the same source used to capture
       // each listing's address/pincode when it was added, so the postcode
       // format lines up on both sides. Feeds nearbyPincode and
@@ -14738,7 +14834,7 @@ function openDetailReal(id) {
 
   document.getElementById('addModalTitleText').textContent = p.propertyId || 'Property details';
   const sub = document.getElementById('addModalSubtitleText');
-  const subArea = p.location?.area || '';
+  const subArea = [p.location?.area || '', propDistanceGated(p) ? propDistanceText(p) : ''].filter(Boolean).join(' · ');
   if (sub) { sub.textContent = subArea; sub.style.display = subArea ? '' : 'none'; }
 
   // Render the same photo slider used on the property card (large image,
@@ -20399,6 +20495,7 @@ async function fetchProperties(renderAfter = true) {
     syncViewedWithSubscription(data.subscriptionFrom, data.subscriptionTo); // reset "Viewed" at plan start and at plan end
     if (data.properties && (data.properties.length > 0 || data.subscriptionFrom)) {   // a subscribed viewer with an empty result must still replace the old list
       PROPERTIES = data.properties;
+      maybeFetchRoadDistances(); // no-op until the visitor's position is known
       // One-time migration: backfill shortlistedData for ids saved before
       // the full-object storage existed, so old shortlists keep working.
       let migrated = false;
