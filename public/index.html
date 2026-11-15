@@ -9779,9 +9779,15 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
 <aside class="shortlist-panel" id="shortlistPanel" aria-label="Shortlisted properties">
   <div class="panel-header">
     <div class="panel-title">Shortlisted <span id="panelCount">0</span></div>
-    <button class="panel-close" onclick="toggleShortlistPanel()" aria-label="Close shortlist panel">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-    </button>
+    <div class="panel-hdr-actions">
+      <button class="panel-share-btn" id="panelShareBtn" onclick="enquireShortlistAtOnce()" aria-label="Check availability on WhatsApp" title="Check availability on WhatsApp">
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.6 6.32A8.86 8.86 0 0 0 12.05 4C7.4 4 3.6 7.8 3.6 12.45c0 1.6.45 3.13 1.27 4.45L4 21l4.2-1.1a8.83 8.83 0 0 0 4.07.99h.01c4.65 0 8.45-3.8 8.45-8.45a8.4 8.4 0 0 0-2.93-5.62zM12.06 19.5a7.05 7.05 0 0 1-3.6-.99l-.26-.15-2.67.7.71-2.6-.17-.27a6.99 6.99 0 0 1-1.08-3.74c0-3.86 3.15-7 7.04-7 1.88 0 3.64.73 4.97 2.06a6.96 6.96 0 0 1 2.06 4.96c0 3.87-3.16 7.03-7 7.03zm3.86-5.27c-.21-.1-1.24-.62-1.43-.68-.19-.07-.33-.1-.47.1-.14.21-.54.68-.66.81-.12.14-.24.16-.45.05-.21-.1-.87-.32-1.66-1.03-.61-.55-1.03-1.22-1.15-1.43-.12-.21-.01-.32.1-.43.1-.1.21-.26.32-.39.1-.13.14-.21.21-.36.07-.14.04-.27-.02-.38-.07-.1-.62-1.49-.85-2.04-.18-.43-.36-.37-.5-.38h-.42c-.14 0-.38.05-.58.27-.21.21-.79.77-.79 1.88 0 1.1.81 2.18.92 2.33.12.14 1.58 2.42 3.83 3.3 1.9.75 2.28.6 2.7.56.42-.04 1.36-.55 1.55-1.09.19-.53.19-.98.13-1.08-.05-.1-.21-.16-.43-.27z"/></svg>
+        <span class="panel-share-q" aria-hidden="true">?</span>
+      </button>
+      <button class="panel-close" onclick="toggleShortlistPanel()" aria-label="Close shortlist panel">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
   </div>
   <div class="panel-list" id="panelList">
     <div class="panel-empty">No shortlisted properties yet.<br>Tap the ♥ on any listing to save it.</div>
@@ -12350,6 +12356,7 @@ function shortlistCardHTML(p) {
 /* ═══════════════════════════════════════════════
    SHORTLIST
 ═══════════════════════════════════════════════ */
+const SHORTLIST_MAX = 6;
 function toggleShortlist(id, el) {
   id = String(id);
   if (shortlisted.has(id)) {
@@ -12358,6 +12365,7 @@ function toggleShortlist(id, el) {
     el.classList.remove('liked');
     showToast("Removed from shortlist.");
   } else {
+    if (shortlisted.size >= SHORTLIST_MAX) { showToast(`You can shortlist up to ${SHORTLIST_MAX} properties only.`, 'warning'); return; }
     shortlisted.add(id);
     const p = PROPERTIES.find(x => String(x.id) === id);
     if (p) shortlistedData[id] = p;
@@ -12449,7 +12457,7 @@ function buildEnquiryMessage(props) {
     const d = propDetailsShort(p);
     return `${one ? '' : (i + 1) + '. '}${p.propertyId}${d ? ' - ' + d : ''} ${window.location.origin}/property/${p.id}`;
   });
-  return one ? `I'm interested in ${lines[0]}` : `I'm interested in\n${lines.join('\n')}`;
+  return one ? `I'm interested in ${lines[0]}` : `I'm interested in\n\n${lines.join('\n\n')}`;
 }
 function _openAgentEnquiry(phone) {
   const props = _shortlistEnquiryGroups().groups[phone];
@@ -12466,7 +12474,7 @@ function enquireShortlistAtOnce() {
   const wrap = document.getElementById('panelEnquireAgents');
   wrap.innerHTML = phones.map(ph => {
     const n = groups[ph].length;
-    return `<button class="panel-enquire-agent" onclick="_openAgentEnquiry('${ph}')">Agent +${ph.slice(0,2)} ${ph.slice(2,7)} ${ph.slice(7)} <span>${n} propert${n>1?'ies':'y'}</span></button>`;
+    return `<button class="panel-enquire-agent" onclick="_openAgentEnquiry('${ph}')">Coordinator +${ph.slice(0,2)} ${ph.slice(2,7)} ${ph.slice(7)} <span>${n} propert${n>1?'ies':'y'}</span></button>`;
   }).join('');
   wrap.hidden = false;
 }
@@ -15454,6 +15462,7 @@ function toggleShortlistFromModal(id) {
     document.getElementById('modal-save-btn-label').textContent = 'Shortlist';
     showToast("Removed from shortlist.");
   } else {
+    if (shortlisted.size >= SHORTLIST_MAX) { showToast(`You can shortlist up to ${SHORTLIST_MAX} properties only.`, 'warning'); return; }
     shortlisted.add(id);
     const p = PROPERTIES.find(x => String(x.id) === id);
     if (p) shortlistedData[id] = p;
@@ -24201,6 +24210,24 @@ main.main.empty-with-booked:has(> .empty-state.show) > .empty-state.show{positio
 #chargesModal .charges-call-shared{background:#fff !important;border:1.5px solid #25d366 !important;color:#16a34a !important;box-shadow:none !important}
 #chargesModal .charges-call-shared svg{fill:#25d366 !important;color:#25d366}
 #chargesModal .charges-call-shared:hover{background:#e8faef !important;color:#16a34a !important}
+
+/* Shortlist panel: Enquire bar removed; WhatsApp share sits next to close */
+#panelEnquire .panel-enquire-hint,#panelEnquireBtn{display:none !important}
+.panel-hdr-actions{display:flex;align-items:center;gap:8px;position:relative;z-index:1}
+.panel-share-btn{width:34px;height:34px;border-radius:50%;border:none;background:#25d366;color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 8px rgba(24,158,80,.35);transition:transform .12s}
+.panel-share-btn:hover{transform:scale(1.06);background:#1ebe5a}
+.panel-share-btn svg{width:17px;height:17px;fill:#fff}
+
+.panel-share-btn{position:relative;overflow:visible}
+.panel-share-q{position:absolute;top:-5px;right:-5px;width:17px;height:17px;border-radius:50%;background:#fff;color:#16a34a;border:1.5px solid #25d366;font-size:11px;font-weight:800;line-height:14px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+
+/* Card icon stack (main grid): bigger buttons — drop the extra .86 shrink, full-size stack */
+.prop-grid:not(.list-view):not([id$="BookedGrid"]) .prop-right-badges{scale:none !important}
+@media(max-width:640px){
+  .prop-grid:not(.list-view):not([id$="BookedGrid"]) .prop-img{height:232px}
+  .prop-grid:not(.list-view):not([id$="BookedGrid"]) .prop-right-badges{transform:scale(1.04) !important;gap:5px}
+  .prop-grid:not(.list-view):not([id$="BookedGrid"]) .prop-right-badges:has(.prop-icon-wa){gap:4px}
+}
 </style>
 </body>
 </html>
