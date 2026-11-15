@@ -536,6 +536,10 @@ table.dataTable thead tr.col-filter-row th{
 .tab-panel.active{display:block;animation:fadeIn 0.2s ease}
 
 /* ── OWNER CALLS TAB ── */
+#checkAvailabilityModal{z-index:9100}
+.oc-tbl .oc-selcol{width:34px;padding-right:0}
+.oc-tbl tr.psel td{background:#f5f0ff}
+.oc-sel{width:18px;height:18px;accent-color:#7c3aed;cursor:pointer;flex:0 0 auto}
 .oc-toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:14px 16px;border-bottom:1px solid var(--border)}
 .oc-search{flex:1 1 260px;min-width:180px}
 .oc-summary{margin-left:auto;font-size:.8rem;font-weight:700;color:var(--ink2)}
@@ -6962,6 +6966,7 @@ let _ocProps = [];
 let _ocLog = null;
 let _ocTab = 'todo';
 let _ocLoaded = false;
+const _ocPropSel = new Set();   // property _ids ticked inside the owner popup
 function ocSwitch(t){
   _ocTab = t;
   document.querySelectorAll('#ocTabs .cat-tab-btn').forEach(b => b.classList.toggle('active', b.getAttribute('data-tab') === t));
@@ -7058,14 +7063,13 @@ function ocRowsHtml(g){
       const place = [p.loc, /^\s*(bangalore|bengaluru)\s*$/i.test(p.city || '') ? '' : p.city].filter(Boolean).join(', ') || '—';
       const pidAttr = escapeHtml(String(p._id || ''));
       const acts = `<td class="oc-sticky oc-sticky-act"><button type="button" class="oc-pbtn" data-oc="pview" data-id="${pidAttr}" title="View property (edit / clone from there)"><i class="fas fa-eye"></i></button></td>`;
-      return `<tr class="${isNew ? 'is-new' : ''}"><td><b>${escapeHtml(p.propertyId || '—')}</b>${isNew ? ' <span class="oc-pill new">NEW</span>' : ''}</td>
+      return `<tr class="${isNew ? 'is-new' : ''} ${_ocPropSel.has(String(p._id || '')) ? 'psel' : ''}"><td class="oc-selcol"><input type="checkbox" class="oc-sel" data-oc="psel" data-id="${pidAttr}" ${_ocPropSel.has(String(p._id || '')) ? 'checked' : ''} aria-label="Select ${escapeHtml(p.propertyId || 'property')}"></td><td><b>${escapeHtml(p.propertyId || '—')}</b>${isNew ? ' <span class="oc-pill new">NEW</span>' : ''}</td>
         <td>${escapeHtml(p.title || 'Untitled')}</td><td>${statusBadge(p.status)}</td><td>${escapeHtml(String(type))}</td>
         <td>${escapeHtml(String(p.displayPrice || '—'))}</td><td>${escapeHtml(place)}</td>
         <td>${p.createdAt ? plainDateTime(p.createdAt) : '—'}</td>
-        <td class="oc-sticky oc-sticky-av"><label class="mini-toggle-wrap" style="display:inline-flex;align-items:center;gap:8px;cursor:pointer"><span class="mini-toggle booked-toggle">
+        <td class="oc-sticky oc-sticky-av"><label class="mini-toggle-wrap" title="${p.booked ? 'Booked' : 'Available'} — switch on to mark as booked" style="display:inline-flex;align-items:center;gap:8px;cursor:pointer"><span class="mini-toggle booked-toggle">
           <input type="checkbox" ${p.booked ? 'checked' : ''} ${canAct('properties') ? '' : 'disabled'} onchange="ocToggleBooked('${escapeHtml(String(p._id || ''))}', this)">
-          <span class="slider"></span></span>
-          ${p.booked ? '<span class="oc-pill ok">Booked</span>' : '<span class="oc-pill">Available</span>'}</label></td>${acts}</tr>`;
+          <span class="slider"></span></span></label></td>${acts}</tr>`;
     }).join('');
 }
 /* View / Edit / Clone a property from the owner popup — reuses the Properties tab's modal. */
@@ -7098,16 +7102,17 @@ function ocModalHtml(g){
   return `<div class="oc-mhead">
       <div class="oc-who"><div class="oc-name">${escapeHtml(g.name || 'Unnamed owner')}</div>
         <div class="oc-sub">${g.props.length} propert${g.props.length === 1 ? 'y' : 'ies'}${last ? ' · last called ' + last : ' · never called'}</div></div>
-      <div class="oc-actions">${call}${alts}${wa}${(g.rec && !g.newProps.length)
+      <div class="oc-actions"><button type="button" class="bulk-btn" id="ocPCheckBtn" data-oc="pcheck" data-key="${g.key}" style="background:#7c3aed;color:#fff;border-color:#7c3aed" title="Ask this owner about all their available properties on WhatsApp right now — or tick some first"><i class="fab fa-whatsapp"></i> Check availability <span id="ocPCheckCount"></span></button>${call}${alts}${wa}${(g.rec && !g.newProps.length)
         ? `<button type="button" class="oc-done" data-oc="undo" data-key="${g.key}" title="Move this owner back to the To Call list">↩ Move to To Call</button>`
         : `<button type="button" class="oc-done" data-oc="done" data-key="${g.key}" title="Mark as called and reviewed. Moves the owner to Called.">✓ Mark called</button>`}</div>
       <button type="button" class="oc-mclose" data-oc="close" title="Close">&times;</button>
     </div>
-    <div class="oc-mbody"><table class="oc-tbl"><thead><tr><th>Property ID</th><th>Title</th><th>Status</th><th>Type</th><th>Price</th><th>Location</th><th>Listed on</th><th class="oc-sticky oc-sticky-av">Booked</th><th class="oc-sticky oc-sticky-act">Actions</th></tr></thead><tbody>${ocRowsHtml(g)}</tbody></table></div>`;
+    <div class="oc-mbody"><table class="oc-tbl"><thead><tr><th class="oc-selcol"><input type="checkbox" class="oc-sel" id="ocPAll" data-oc="pall" title="Select all available (not booked) properties" aria-label="Select all available properties"></th><th>Property ID</th><th>Title</th><th>Status</th><th>Type</th><th>Price</th><th>Location</th><th>Listed on</th><th class="oc-sticky oc-sticky-av">Booked</th><th class="oc-sticky oc-sticky-act">Actions</th></tr></thead><tbody>${ocRowsHtml(g)}</tbody></table></div>`;
 }
 function ocOpenModal(key){
   const g = ocGroups().find(x => x.key === key); if(!g) return;
   _ocModalKey = key;
+  _ocPropSel.clear();
   let ov = document.getElementById('ocModalOv');
   if(!ov){
     ov = document.createElement('div');
@@ -7117,6 +7122,7 @@ function ocOpenModal(key){
     document.body.appendChild(ov);
   }
   document.getElementById('ocModalBox').innerHTML = ocModalHtml(g);
+  ocPUpdateUI();
   ov.style.display = 'flex';
 }
 function ocRefreshModal(){
@@ -7125,6 +7131,7 @@ function ocRefreshModal(){
   const box = document.getElementById('ocModalBox');
   if(!g || !box){ ocCloseModal(); return; }
   box.innerHTML = ocModalHtml(g);
+  ocPUpdateUI();
 }
 function ocCloseModal(){
   _ocModalKey = null;
@@ -7138,6 +7145,42 @@ async function ocToggleBooked(id, el){
   const p = _ocProps.find(x => String(x._id) === String(id));
   if(p) p.booked = el.checked;     // togglePropFlag reverts el.checked on cancel/failure
   ocRender(); ocRefreshModal();
+}
+/* Owner popup: tick several of THIS owner's properties → one WhatsApp message asking about all of them. */
+function ocPUpdateUI(){
+  const g = _ocModalKey ? ocGroups().find(x => x.key === _ocModalKey) : null;
+  const ids = g ? new Set(g.props.map(p => String(p._id || ''))) : new Set();
+  Array.from(_ocPropSel).forEach(id => { if(!ids.has(id)) _ocPropSel.delete(id); });
+  const n = _ocPropSel.size;
+  const btn = document.getElementById('ocPCheckBtn'); if(btn) btn.title = n ? 'Ask this owner about the ticked properties on WhatsApp' : 'Ask this owner about all their available properties on WhatsApp right now — or tick some first';
+  const c = document.getElementById('ocPCheckCount'); if(c) c.textContent = n ? '(' + n + ')' : '';
+  const avail = g ? g.props.filter(p => !p.booked).map(p => String(p._id || '')) : [];
+  const all = document.getElementById('ocPAll');
+  if(all) all.checked = avail.length > 0 && avail.every(id => _ocPropSel.has(id));
+}
+function ocPSelectAll(on){
+  const g = ocGroups().find(x => x.key === _ocModalKey); if(!g) return;
+  g.props.forEach(p => { const id = String(p._id || ''); if(on && !p.booked) _ocPropSel.add(id); else _ocPropSel.delete(id); });
+  document.querySelectorAll('#ocModalBox input[data-oc="psel"]').forEach(cb => {
+    const on2 = _ocPropSel.has(cb.getAttribute('data-id')); cb.checked = on2;
+    const tr = cb.closest('tr'); if(tr) tr.classList.toggle('psel', on2);
+  });
+  ocPUpdateUI();
+}
+function ocCheckSelectedProps(key){
+  if(typeof blockIfViewOnly === 'function' && blockIfViewOnly('properties')) return;
+  const g = ocGroups().find(x => x.key === key); if(!g) return;
+  // Ticked properties → ask about those; nothing ticked → ask about ALL of this owner's not-booked properties.
+  // Always straight to WhatsApp, no review step.
+  const ticked = g.props.filter(p => _ocPropSel.has(String(p._id || '')));
+  // Same order as the popup table (newest listing first), not alphabetical by ID.
+  const rows = (ticked.length ? ticked : g.props.filter(p => !p.booked)).slice()
+    .sort((a, b) => (Date.parse(b.createdAt) || 0) - (Date.parse(a.createdAt) || 0));
+  if(!rows.length){ showAlertModal('All of this owner’s properties are booked — nothing to check.', { variant:'error', title:'Nothing to send' }); return; }
+  const alt = Array.from(g.alts)[0];
+  const digits = g.key !== 'none' ? ocDigits(g.number) : ocDigits(alt);
+  if(!digits){ showAlertModal('No phone number on file for this owner.', { variant:'error', title:'Nothing to send' }); return; }
+  window.open(`https://wa.me/91${digits}?text=${encodeURIComponent(buildOwnerAvailabilityMessage(rows))}`, '_blank', 'noopener');
 }
 function ocReload(){
   if(typeof propTable !== 'undefined' && propTable && propTable.ajax) propTable.ajax.reload(null, false);
@@ -7161,6 +7204,15 @@ document.addEventListener('click', function(e){
     return;
   }
   if(e.target.closest('a')) return;           // WhatsApp link etc.
+  if(act === 'psel'){
+    e.stopPropagation();
+    const id = el.getAttribute('data-id');
+    if(el.checked) _ocPropSel.add(id); else _ocPropSel.delete(id);
+    const tr = el.closest('tr'); if(tr) tr.classList.toggle('psel', el.checked);
+    ocPUpdateUI(); return;
+  }
+  if(act === 'pall'){ e.stopPropagation(); ocPSelectAll(el.checked); return; }
+  if(act === 'pcheck'){ e.stopPropagation(); ocCheckSelectedProps(key); return; }
   if(act === 'undo'){
     e.stopPropagation();
     delete ocLog()[key]; ocSave(); ocRender(); ocRefreshModal(); return;
@@ -11966,16 +12018,32 @@ function shortPrice(n){
   const f = (v, s) => (Math.round(v * 10) / 10) + s;
   return n >= 1e5 ? f(n / 1e5, 'L') : n >= 1e3 ? f(n / 1e3, 'k') : String(n);
 }
-function buildAvailabilityCheckMessage(row){
-  const link = row._id ? `https://www.homeloop.in/property/${row._id}` : '';
+function availabilityDetails(row){
   const bhkNum = String(row.bhk || '').replace(/\s*BHK\s*$/i, '').trim();
   const type = bhkNum && parseFloat(bhkNum) > 0 ? bhkNum + ' BHK' : (row.pgPropertyType || row.ssPropertyType || '');
   const location = String(row.loc || '').trim();
-  const m = String(row.rent != null && row.rent !== '' ? row.rent : (row.displayPrice || '')).replace(/,/g, '').match(/\d+(?:\.\d+)?/);
-  const amt = m ? shortPrice(m[0]).replace('k', 'K') : '';
+  // Price may be a plain number (rent: 25000) or display text ("15K/Month", "1.5L") — honour the K / L / Cr suffix.
+  const m = String(row.rent != null && row.rent !== '' ? row.rent : (row.displayPrice || '')).replace(/,/g, '').match(/(\d+(?:\.\d+)?)\s*(k|l|lac|lakhs?|cr)?/i);
+  let n = m ? parseFloat(m[1]) : 0;
+  if(m && m[2]){ const u = m[2].toLowerCase(); n *= u === 'k' ? 1e3 : u === 'cr' ? 1e7 : 1e5; }
+  const amt = n > 0 ? shortPrice(n).replace('k', 'K') : '';
   const price = amt ? '\u20B9' + amt + (row.status === 'For Sale' ? '' : row.status === 'Short Stay' ? '/day' : '/month') : '';
-  const details = [type, location, price].filter(Boolean).join(', ');
+  return [type, location, price].filter(Boolean).join(', ');
+}
+function buildAvailabilityCheckMessage(row){
+  const link = row._id ? `https://www.homeloop.in/property/${row._id}` : '';
+  const details = availabilityDetails(row);
   return `Hi! Is ${row.propertyId || 'listing'}${details ? ' (' + details + ')' : ''} available?${link ? '\n' + link : ''}\n\nAny other vacant properties? List free at www.homeloop.in \u2013 we\u2019ll verify them!`;
+}
+// One message for several properties of the same owner (Owner Calls tab).
+function buildOwnerAvailabilityMessage(rows){
+  if(rows.length === 1) return buildAvailabilityCheckMessage(rows[0]);
+  const lines = rows.map((row, i) => {
+    const d = availabilityDetails(row);
+    const link = row._id ? `https://www.homeloop.in/property/${row._id}` : '';
+    return `${i + 1}. ${row.propertyId || 'Listing'}${d ? ' (' + d + ')' : ''}${link ? '\n' + link : ''}`;
+  });
+  return `Hi! Are these properties still available?\n\n${lines.join('\n\n')}\n\nAny other vacant properties? List free at www.homeloop.in \u2013 we\u2019ll verify them!`;
 }
 
 window.checkAvailabilityForRow = async function(id){
@@ -12047,13 +12115,13 @@ function renderCheckAvailabilityModal(){
       return `<div class="share-link-card checkavail-card skipped">
         <div class="share-link-card-name">${escapeHtml(p.title)}${p.propertyId ? ` (${escapeHtml(p.propertyId)})` : ''}</div>
         <div class="share-link-card-loc">📍 ${escapeHtml(p.loc)}</div>
-        <div class="checkavail-skip-note">Skipped — no owner alternate number on file.</div>
+        <div class="checkavail-skip-note">${escapeHtml(p.skip || 'Skipped — no owner alternate number on file.')}</div>
       </div>`;
     }
     return `<div class="share-link-card checkavail-card" id="checkAvailCard-${i}">
       <div class="share-link-card-name">${escapeHtml(p.title)}${p.propertyId ? ` (${escapeHtml(p.propertyId)})` : ''}</div>
-      <div class="share-link-card-loc">📍 ${escapeHtml(p.loc)} · Alt: ${escapeHtml(p.num)}</div>
-      <textarea id="checkAvailMsg-${i}" rows="2" style="width:100%;padding:8px 10px;border:1px solid #d5d9e0;border-radius:8px;font-size:12px;font-family:inherit;resize:vertical;margin:6px 0">${escapeHtml(p.msg || '')}</textarea>
+      <div class="share-link-card-loc">📍 ${escapeHtml(p.loc)} · ${escapeHtml(p.numLabel || 'Alt')}: ${escapeHtml(p.num)}</div>
+      <textarea id="checkAvailMsg-${i}" rows="${p.rows || 2}" style="width:100%;padding:8px 10px;border:1px solid #d5d9e0;border-radius:8px;font-size:12px;font-family:inherit;resize:vertical;margin:6px 0">${escapeHtml(p.msg || '')}</textarea>
       <a class="checkavail-send-btn" href="${p.href}" target="_blank" rel="noopener noreferrer" onclick="markCheckAvailSent(${i}, this)">
         <i class="fab fa-whatsapp"></i> Send
       </a>
