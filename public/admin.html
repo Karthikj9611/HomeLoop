@@ -117,6 +117,10 @@ body{
 }
 /* Appointments + Honest Reviews tabs hidden (markup/panels untouched — delete this rule and HIDDEN_TABS to bring them back) */
 #tab-appointments,#tab-honest-reviews{display:none!important}
+/* Two-level nav: #groupBar = main groups, #subTabBar = the original tab buttons, filtered to the active group */
+#groupBar{margin-bottom:10px}
+.tab-btn.grp-off{display:none!important}
+#subTabBar.sub-solo{display:none}
 .tab-btn{
   display:flex;align-items:center;gap:8px;
   padding:9px 20px;border-radius:calc(var(--radius) - 4px);
@@ -1963,6 +1967,7 @@ footer i{color:var(--gold)}
 /* Action-column buttons: wrapper is layout-neutral; the Columns menu hides one by adding body.pact-hide-<key> */
 .pact{display:contents}
 body.pact-hide-publiccall #propertyTable .pact-publiccall{display:none!important}
+body.pact-hide-message #propertyTable .pact-message{display:none!important}
 body.pact-hide-check #propertyTable .pact-check{display:none!important}
 body.pact-hide-share #propertyTable .pact-share{display:none!important}
 body.pact-hide-tenant #propertyTable .pact-tenant{display:none!important}
@@ -3962,8 +3967,52 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
   </div>
 </div>
 
-  <!-- TAB BAR -->
-  <div class="tab-bar">
+  <!-- GROUP BAR (main nav) -->
+  <div class="tab-bar" id="groupBar">
+    <button class="tab-btn grp-btn" id="grp-analytics" onclick="switchGroup('analytics')">
+      <i class="fas fa-globe"></i>
+      <span class="tab-btn-label" data-mobile="Visits">Visits</span>
+      <span class="tab-count" id="grp-analytics-count">—</span>
+    </button>
+    <button class="tab-btn grp-btn" id="grp-customers" onclick="switchGroup('customers')">
+      <i class="fas fa-users"></i>
+      <span class="tab-btn-label" data-mobile="Customers">Customers</span>
+      <span class="tab-count" id="grp-customers-count">—</span>
+    </button>
+    <button class="tab-btn grp-btn active" id="grp-properties" onclick="switchGroup('properties')">
+      <i class="fas fa-building"></i>
+      <span class="tab-btn-label" data-mobile="Properties">Properties</span>
+      <span class="tab-count" id="grp-properties-count">—</span>
+    </button>
+    <button class="tab-btn grp-btn" id="grp-leads" onclick="switchGroup('leads')">
+      <i class="fas fa-phone-volume"></i>
+      <span class="tab-btn-label" data-mobile="Leads">Leads</span>
+      <span class="tab-count" id="grp-leads-count">—</span>
+    </button>
+    <button class="tab-btn grp-btn" id="grp-payments" onclick="switchGroup('payments')">
+      <i class="fas fa-credit-card"></i>
+      <span class="tab-btn-label" data-mobile="Payments">Payments</span>
+      <span class="tab-count" id="grp-payments-count">—</span>
+    </button>
+    <button class="tab-btn grp-btn" id="grp-marketing" onclick="switchGroup('marketing')">
+      <i class="fas fa-bullhorn"></i>
+      <span class="tab-btn-label" data-mobile="Marketing">Marketing</span>
+      <span class="tab-count" id="grp-marketing-count">—</span>
+    </button>
+    <button class="tab-btn grp-btn" id="grp-reviews" onclick="switchGroup('reviews')">
+      <i class="fas fa-star"></i>
+      <span class="tab-btn-label" data-mobile="Reviews">Reviews</span>
+      <span class="tab-count" id="grp-reviews-count">—</span>
+    </button>
+    <button class="tab-btn grp-btn" id="grp-admin-access" onclick="switchGroup('admin-access')" style="display:none">
+      <i class="fas fa-user-shield"></i>
+      <span class="tab-btn-label" data-mobile="Access">Admin Access</span>
+      <span class="tab-count" id="grp-admin-access-count">—</span>
+    </button>
+  </div>
+
+  <!-- TAB BAR (sub-tabs: only the active group's tabs are shown) -->
+  <div class="tab-bar" id="subTabBar">
     <button class="tab-btn" id="tab-visits" onclick="switchTab('visits')">
       <i class="fas fa-globe"></i>
       <span class="tab-btn-label" data-mobile="Visits">Visits</span>
@@ -4287,14 +4336,8 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
         <button class="bulk-btn" id="addPropertyBtn" onclick="openAdminAddPropertyModal()" title="Add property" aria-label="Add property" style="background:var(--brand);color:#fff;border-color:var(--brand)">
           <i class="fas fa-plus"></i> <span class="bulk-btn-label" data-mobile="Add Property" data-short="Add">Add Property</span>
         </button>
-        <button class="bulk-btn sel-hide" id="bulkCompareBtn" style="display:none;background:var(--brand);color:#fff;border-color:var(--brand)" onclick="openAdminCompareModal()" title="Compare the selected properties and share the link with a customer">
-          <i class="fas fa-code-compare"></i> <span class="bulk-btn-label" data-mobile="Compare Properties" data-short="Compare">Compare Properties</span><span id="bulkCompareCount">0</span>
-        </button>
-        <button class="bulk-btn sel-hide" id="bulkShareTenantBtn" style="display:none;background:#0ea5e9;color:#fff;border-color:#0ea5e9" onclick="shareSelectedToTenant()" title="Send the view links of all selected properties to a tenant on WhatsApp">
-          <i class="fas fa-paper-plane"></i> <span class="bulk-btn-label" data-mobile="Share to Tenant" data-short="Tenant">Share to Tenant</span><span id="bulkShareTenantCount">0</span>
-        </button>
-        <button class="bulk-btn sel-hide" id="bulkCheckAvailabilityBtn" style="display:none;background:#7c3aed;color:#fff;border-color:#7c3aed" onclick="checkAvailabilityWithOwners()" title="Review and send a WhatsApp availability check to each selected property's owner (alt number only)">
-          <i class="fab fa-whatsapp"></i> <span class="bulk-btn-label" data-mobile="Check Availability" data-short="Check">Check Availability</span><span id="bulkCheckAvailabilityCount">0</span>
+        <button class="bulk-btn sel-hide" id="bulkShareTenantBtn" style="display:none;background:#0ea5e9;color:#fff;border-color:#0ea5e9" onclick="openSendMessage(Array.from(_selectedPropIds))" title="WhatsApp the live link to the owners of the selected properties">
+          <i class="fab fa-whatsapp"></i> <span class="bulk-btn-label" data-mobile="Send message" data-short="Message">Send message</span><span id="bulkShareTenantCount">0</span>
         </button>
         <button class="bulk-btn sel-hide" id="bulkDownloadZipBtn" style="display:none;background:#334155;color:#fff;border-color:#334155" onclick="downloadSelectedPropertiesZip()" title="Download photos + data (.txt) of all selected properties as one zip">
           <i class="fas fa-file-zipper"></i> <span class="bulk-btn-label" data-mobile="Download Zip" data-short="Zip">Download Zip</span><span id="bulkDownloadZipCount">0</span>
@@ -4323,9 +4366,6 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
         </button>
       </div>
       <div class="bulk-toolbar-right">
-        <button class="bulk-btn" id="recalcDistanceBtn" onclick="recalculateUserLocation()" title="Re-fetch your current location and recalculate the distance shown on every Directions button">
-          <i class="fas fa-location-crosshairs"></i> <span class="bulk-btn-label" data-mobile="Recalculate Distance" data-short="Distance">Recalculate Distance</span>
-        </button>
       </div>
       <button type="button" id="fabToggleBtn" class="bulk-btn fab-toggle-btn" onclick="toggleFabStack()" aria-label="Show actions" aria-expanded="false" title="Show actions"><i class="fas fa-chevron-up"></i></button>
     </div>
@@ -6222,7 +6262,7 @@ async function doLogin(){
 function alignThreeRowsAsColumns(){
   // every tab row in the admin: main bar + the sub-tab bar of each panel
   var bars = [document.querySelector('.tab-bar'), document.getElementById('propCatTabs'),
-              document.getElementById('custTypeTabs'), document.getElementById('custStatusTabs'), document.getElementById('poStatusTabs'), document.getElementById('visitsCatTabs')].filter(Boolean);
+              document.getElementById('custTypeTabs'), document.getElementById('custStatusTabs'), document.getElementById('poStatusTabs'), document.getElementById('visitsCatTabs'), document.getElementById('subTabBar')].filter(Boolean);
   if(!bars.length) return;
   // clear any old inline sizing from earlier versions of this function
   bars.forEach(function(bar){
@@ -7230,6 +7270,67 @@ document.addEventListener('click', function(e){
   if(act === 'close') ocCloseModal();
 });
 
+/* ── TAB GROUPS (two-level nav) ──
+   Every original tab button/panel/count keeps its id, so permissions, notifications and
+   loaders are unchanged. Group buttons just pick which tabs the second row shows. */
+var TAB_GROUPS = {
+  'analytics':    ['visits'],
+  'customers':    ['customers'],
+  'properties':   ['properties'],
+  'leads':        ['owner-calls','brokers','appointments'],
+  'payments':     ['payments'],
+  'marketing':    ['referrals','partners','wishes'],
+  'reviews':      ['user-reviews','honest-reviews'],
+  'admin-access': ['admin-access']
+};
+var _lastTabInGroup = {};
+function _activeTabId(){
+  var b = document.querySelector('.tab-btn.active:not(.grp-btn)');
+  return b ? b.id.replace(/^tab-/, '') : 'properties';
+}
+function _tabUsable(tab){ try{ return canViewTab(tab); }catch(e){ return true; } }
+function syncGroupUI(tab){
+  try{
+    var g = Object.keys(TAB_GROUPS).filter(function(k){ return TAB_GROUPS[k].indexOf(tab) > -1; })[0];
+    if(g) _lastTabInGroup[g] = tab;
+    Object.keys(TAB_GROUPS).forEach(function(k){
+      var kids = TAB_GROUPS[k], usable = kids.filter(_tabUsable);
+      var btn = document.getElementById('grp-' + k); if(!btn) return;
+      btn.style.display = usable.length ? '' : 'none';
+      btn.classList.toggle('active', k === g);
+      var total = 0, any = false;
+      usable.forEach(function(t){
+        var el = document.getElementById('tab-' + t + '-count');
+        var n = el ? parseInt(el.textContent, 10) : NaN;
+        if(!isNaN(n)){ total += n; any = true; }
+      });
+      var c = document.getElementById('grp-' + k + '-count'); if(c) c.textContent = any ? total : '\u2014';
+      kids.forEach(function(t){ var b = document.getElementById('tab-' + t); if(b) b.classList.toggle('grp-off', k !== g); });
+    });
+    var bar = document.getElementById('subTabBar');
+    if(bar) bar.classList.toggle('sub-solo', ((TAB_GROUPS[g] || []).filter(_tabUsable)).length < 2);
+    setTimeout(alignThreeRowsAsColumns, 0);
+  }catch(e){}
+}
+function switchGroup(k){
+  var kids = TAB_GROUPS[k] || [];
+  if(kids.indexOf(_activeTabId()) > -1) return;
+  var back = _lastTabInGroup[k];
+  var target = (back && _tabUsable(back)) ? back : kids.filter(_tabUsable)[0];
+  if(target) switchTab(target);
+}
+(function(){
+  function init(){
+    var obs = new MutationObserver(function(){ syncGroupUI(_activeTabId()); }); // keep group counts in step with the tab counts
+    Object.keys(TAB_GROUPS).forEach(function(k){ TAB_GROUPS[k].forEach(function(t){
+      var el = document.getElementById('tab-' + t + '-count');
+      if(el) obs.observe(el, { childList:true, characterData:true, subtree:true });
+    }); });
+    syncGroupUI(_activeTabId());
+  }
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+})();
+
 /* ── TAB SWITCHING ── */
 function switchTab(tab){
   localStorage.setItem('kr_admin_activeTab', tab);
@@ -7242,6 +7343,7 @@ function switchTab(tab){
   document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.remove('active'));
   document.getElementById('panel-'+tab).classList.add('active');
   setTimeout(alignThreeRowsAsColumns, 0);   // size the newly visible panel's tab row
+  syncGroupUI(tab);
 
   // Adjust DataTable columns when switching (fixes column widths)
   if(tab === 'properties' && propTable){
@@ -7379,7 +7481,7 @@ function applyButtonAccess(){
     // (instead of rendering it greyed-out). Only View (and the Verified status
     // badge on Customers) stay visible.
     const VIEW_ONLY_HIDE = {
-      properties: ['publiccall','block','check','share','tenant','navigate','directions','facebook','instagram','delete','booking'],
+      properties: ['publiccall','block','check','share','tenant','message','navigate','directions','facebook','instagram','delete','booking'],
       customers:  ['edit','subscription','delete','logout','block','resetviews','publiccall'],
     };
     Object.keys(VIEW_ONLY_HIDE).forEach(mod => {
@@ -7501,6 +7603,7 @@ function applyAdminAccessUI(){
 
   // Notifications isn't a nav tab — it's the bell icon in the header — so it
   // needs its own hide rule here rather than going through TAB_MODULE_MAP.
+  if(typeof syncGroupUI === 'function') syncGroupUI(_activeTabId()); // re-evaluate which groups this login can see
   const notifWrap = document.getElementById('notifBellWrap');
   if(notifWrap) notifWrap.style.display = (isSuper || modules.notifications !== false) ? '' : 'none';
 }
@@ -11799,9 +11902,9 @@ function _normTenants(rows){
     .filter(t => t.mobile.length >= 10)
     .sort((a, b) => a.name.localeCompare(b.name));
 }
-function initTenantPicker(phoneEl, errEl){
-  const search = document.getElementById('shareTenantSearch');
-  const list   = document.getElementById('shareTenantList');
+function initTenantPicker(phoneEl, errEl, searchEl, listEl){
+  const search = searchEl || document.getElementById('shareTenantSearch');
+  const list   = listEl || document.getElementById('shareTenantList');
   search.value = ''; list.style.display = 'none'; list.innerHTML = '';
 
   let tenants = [];
@@ -11917,6 +12020,130 @@ window.shareSelectedToTenant = function(){
   if(!ids.length){ alert('Select at least one property first.'); return; }
   openTenantShareModal(ids);
 };
+
+/* ── UNIFIED "SEND MESSAGE" POPUP (WhatsApp) ──
+   One popup for: Live link (owner/alt), Availability check (owner/alt), Tenant properties.
+   Works for one listing (row "Message" button) or many (toolbar). Templates live in SM_TPLS;
+   each is gated by the same per-button permission the old buttons used (share / check / tenant).
+   Nothing is sent until the admin taps Send; owner cards each have their own Send (own user gesture). */
+var SM_TPLS = [
+  { key:'live',   label:'Live link',          perm:'share'  }
+];
+var _sm = { ids:[], tpl:'', rows:[] };
+function _smEl(id){ return document.getElementById(id); }
+function _smBuild(){
+  if(_smEl('sendMsgOverlay')) return;
+  var d = document.createElement('div');
+  d.id = 'sendMsgOverlay';
+  d.style.cssText = 'display:none;position:fixed;inset:0;z-index:1100;background:rgba(0,0,0,.5);align-items:center;justify-content:center;padding:16px';
+  d.innerHTML =
+    '<div style="background:var(--bg,#fff);color:var(--text,#222);border-radius:16px;width:100%;max-width:560px;max-height:92vh;overflow:auto;padding:18px 20px;box-shadow:0 12px 40px rgba(0,0,0,.3)">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">' +
+        '<div style="font-size:16px;font-weight:800"><i class="fab fa-whatsapp" style="color:#25D366"></i> Send message <span id="smCount" style="font-weight:600;font-size:12px;color:#777"></span></div>' +
+        '<button type="button" id="smClose" aria-label="Close" style="background:none;border:none;font-size:20px;cursor:pointer;line-height:1">\u2715</button>' +
+      '</div>' +
+      '<div id="smTpl" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px"></div>' +
+      '<div id="smNote" style="font-size:12px;color:#777;margin-bottom:8px"></div>' +
+      '<div id="smBody"></div>' +
+      '<div id="smErr" style="color:#dc2626;font-size:12.5px;font-weight:600;min-height:16px;margin-top:6px"></div>' +
+      '<div style="display:flex;gap:8px;margin-top:10px"><button type="button" id="smSend" class="confirm-ok-btn success" style="flex:1"><i class="fab fa-whatsapp"></i> Send on WhatsApp</button></div>' +
+    '</div>';
+  document.body.appendChild(d);
+  _smEl('smClose').onclick = smClose;
+  d.addEventListener('click', function(e){ if(e.target === d) smClose(); });
+  document.addEventListener('keydown', function(e){ if(e.key === 'Escape' && d.style.display !== 'none' && !/TEXTAREA|INPUT/.test((document.activeElement||{}).tagName||'')) smClose(); });
+}
+function smClose(){ var o = _smEl('sendMsgOverlay'); if(o) o.style.display = 'none'; }
+window.openSendMessage = function(ids, tpl){
+  if(blockIfViewOnly('properties')) return;
+  var rows = (ids || []).map(function(id){ return _adminPropCache[id]; }).filter(Boolean);
+  if(!rows.length){ alert('Listing details not loaded yet \u2014 please retry.'); return; }
+  var allowed = SM_TPLS.filter(function(t){ return canBtn('properties', t.perm); });
+  if(!allowed.length){ alert('You do not have access to any message type.'); return; }
+  _smBuild();
+  _sm.rows = rows;
+  var want = tpl || 'live';
+  if(!allowed.some(function(t){ return t.key === want; })) want = allowed[0].key;
+  _smEl('smCount').textContent = rows.length > 1 ? '(' + rows.length + ' properties)' : '';
+  _smEl('smTpl').innerHTML = allowed.map(function(t){
+    return '<button type="button" class="sm-pill" data-t="' + t.key + '" style="border:1.5px solid #d5d9e0;border-radius:99px;padding:6px 14px;font-size:12.5px;font-weight:700;cursor:pointer;background:#fff;color:#333">' + t.label + '</button>';
+  }).join('');
+  Array.prototype.forEach.call(_smEl('smTpl').querySelectorAll('.sm-pill'), function(b){ b.onclick = function(){ smRender(b.getAttribute('data-t')); }; });
+  _smEl('smTpl').style.display = allowed.length > 1 ? 'flex' : 'none';
+  _smEl('sendMsgOverlay').style.display = 'flex';
+  smRender(want);
+};
+function smRender(tpl){
+  _sm.tpl = tpl;
+  Array.prototype.forEach.call(_smEl('smTpl').querySelectorAll('.sm-pill'), function(b){
+    var on = b.getAttribute('data-t') === tpl;
+    b.style.background = on ? '#25D366' : '#fff'; b.style.color = on ? '#fff' : '#333'; b.style.borderColor = on ? '#25D366' : '#d5d9e0';
+  });
+  var body = _smEl('smBody'), note = _smEl('smNote'), err = _smEl('smErr'), send = _smEl('smSend');
+  err.textContent = ''; note.textContent = '';
+  var rows = _sm.rows;
+  if(tpl === 'tenant'){
+    var ok = rows.filter(function(r){ return r.verified; });
+    if(!ok.length){ body.innerHTML = ''; send.style.display = 'none'; err.textContent = "None of the selected listings are verified yet \u2014 verify them first."; return; }
+    var links = ok.map(function(r){ return BASE + '/property/' + r._id; });
+    if(rows.length !== ok.length) note.textContent = (rows.length - ok.length) + ' unverified listing(s) left out.';
+    send.style.display = '';
+    body.innerHTML =
+      '<input id="smTSearch" type="text" placeholder="Find tenant by name or number" autocomplete="off" style="width:100%;padding:9px 10px;border:1px solid #d5d9e0;border-radius:8px;font-size:13px;margin-bottom:4px">' +
+      '<div id="smTList" style="display:none;max-height:160px;overflow:auto;border:1px solid #d5d9e0;border-radius:8px;margin-bottom:6px"></div>' +
+      '<input id="smTPhone" type="tel" inputmode="numeric" placeholder="WhatsApp number (10 digits)" style="width:100%;padding:9px 10px;border:1px solid #d5d9e0;border-radius:8px;font-size:13px;margin-bottom:6px">' +
+      '<textarea id="smTMsg" rows="' + Math.min(14, Math.max(3, links.length + 4)) + '" style="width:100%;padding:8px 10px;border:1px solid #d5d9e0;border-radius:8px;font-size:12.5px;font-family:inherit;resize:vertical"></textarea>';
+    _smEl('smTMsg').value = buildTenantShareMessage(links);
+    initTenantPicker(_smEl('smTPhone'), err, _smEl('smTSearch'), _smEl('smTList'));
+    send.onclick = function(){
+      var digits = String(_smEl('smTPhone').value || '').replace(/\D/g, ''), num = waDigits(digits);
+      if(!/^\d{10,15}$/.test(digits) || num.length < 12){ err.textContent = 'Enter a valid 10-digit mobile number.'; return; }
+      window.open('https://wa.me/' + num + '?text=' + encodeURIComponent(_smEl('smTMsg').value.trim() || buildTenantShareMessage(links)), '_blank');
+      smClose();
+    };
+    return;
+  }
+  // Owner templates: one card per listing, own number choice + own Send.
+  send.style.display = 'none';
+  var cards = [], skipped = 0;
+  rows.forEach(function(r){
+    var o = waDigits(r.ownerNumber), a = waDigits(r.ownerAltPhone);
+    if((tpl === 'live' && !r.verified) || (!o && !a)){ skipped++; return; }
+    var msg = tpl === 'live' ? 'Your property is live on HomeLoop: ' + BASE + '/property/' + r._id : buildAvailabilityCheckMessage(r);
+    var oDef = tpl === 'live' ? !!o : (!a && !!o), aDef = tpl === 'live' ? !!a : !!a;
+    cards.push({ r: r, o: o, a: a, msg: msg, oDef: oDef, aDef: aDef });
+  });
+  if(skipped) note.textContent = skipped + ' listing(s) skipped (' + (tpl === 'live' ? 'not verified or ' : '') + 'no owner number on file).';
+  if(!cards.length){ body.innerHTML = ''; err.textContent = 'Nothing to send for the selected listings.'; return; }
+  body.innerHTML = cards.map(function(c, i){
+    return '<div id="smCard' + i + '" style="border:1px solid #e3e6ec;border-radius:10px;padding:10px 12px;margin-bottom:8px">' +
+      '<div style="font-weight:700;font-size:13px">' + escapeHtml(c.r.propertyId || c.r.title || 'Property') + ' <span style="font-weight:500;color:#777">' + escapeHtml([c.r.loc, c.r.city].filter(Boolean).join(', ')) + '</span></div>' +
+      '<div style="display:flex;gap:14px;flex-wrap:wrap;margin:6px 0;font-size:12.5px">' +
+        (c.o ? '<label><input type="checkbox" id="smO' + i + '"' + (c.oDef ? ' checked' : '') + '> ' + escapeHtml(c.r.ownerNumber) + '</label>' : '') +
+        (c.a ? '<label><input type="checkbox" id="smA' + i + '"' + (c.aDef ? ' checked' : '') + '> ' + escapeHtml(c.r.ownerAltPhone) + ' (alt)</label>' : '') +
+      '</div>' +
+      '<textarea id="smM' + i + '" rows="' + (tpl === 'avail' ? 4 : 2) + '" style="width:100%;padding:8px 10px;border:1px solid #d5d9e0;border-radius:8px;font-size:12.5px;font-family:inherit;resize:vertical"></textarea>' +
+      '<button type="button" class="confirm-ok-btn success" id="smS' + i + '" style="margin-top:6px"><i class="fab fa-whatsapp"></i> Send</button></div>';
+  }).join('');
+  cards.forEach(function(c, i){
+    _smEl('smM' + i).value = c.msg;
+    _smEl('smS' + i).onclick = function(){
+      var nums = [];
+      if(c.o && _smEl('smO' + i) && _smEl('smO' + i).checked) nums.push(c.o);
+      if(c.a && _smEl('smA' + i) && _smEl('smA' + i).checked) nums.push(c.a);
+      if(!nums.length){ err.textContent = 'Tick at least one number for ' + (c.r.propertyId || 'this listing') + '.'; return; }
+      err.textContent = '';
+      openWhatsAppTabs(nums, encodeURIComponent(_smEl('smM' + i).value.trim() || c.msg));
+      _smEl('smCard' + i).style.opacity = '.55';
+    };
+  });
+}
+// Old entry points now open the same popup (old code stays in the file but is no longer reached).
+window.addEventListener('load', function(){
+  window.shareListingToOwner       = function(id){ openSendMessage([id], 'live'); };
+  window.shareListingToTenant      = function(id){ openSendMessage([id], 'tenant'); };
+  window.shareSelectedToTenant     = function(){ openSendMessage(Array.from(_selectedPropIds), 'tenant'); };
+});
 
 /* ── SHARE VERIFIED LISTING TO FACEBOOK / INSTAGRAM (company account) ──
    Manual-assist versions — there's no server-side Meta Graph API app/Page
@@ -13670,6 +13897,10 @@ $(document).ready(function(){
           const checkAvailBtn = ((row.ownerNumber || row.ownerAltPhone) && !viewOnly)
             ? `<button class="btn-view" style="background:#25D366;border-color:#25D366;color:#fff" title="Ask the owner (alt number) via WhatsApp whether this listing is still available" onclick="checkAvailabilityForRow('${row._id}')"><i class="fas fa-circle-question"></i><span class="btn-label"> Check</span></button>`
             : disabledBtn('fas fa-circle-question', 'Check', viewOnly ? 'View-only access — ask the primary admin to enable actions' : 'No owner phone number on file for this listing');
+          const _msgAllowed = canBtn('properties','share');
+          const msgBtn = (!viewOnly && _msgAllowed && row.verified)
+            ? `<button class="btn-view" style="background:#25D366;border-color:#25D366;color:#fff" title="WhatsApp the live link to the owner" onclick="openSendMessage(['${row._id}'])"><i class="fab fa-whatsapp"></i><span class="btn-label"> Message</span></button>`
+            : disabledBtn('fab fa-whatsapp', 'Message', viewOnly ? 'View-only access — ask the primary admin to enable actions' : (!row.verified ? 'Verify this listing first to enable sharing' : 'Not allowed for this login'));
           const mapsUrl = propertyMapsUrl(row);
           const navigateBtn = (mapsUrl && !viewOnly)
             ? `<button class="btn-view" style="background:#4285F4;border-color:#4285F4;color:#fff" title="Open this property's location in Google Maps" onclick="window.open('${mapsUrl.replace(/'/g, "\\'")}', '_blank', 'noopener')"><i class="fas fa-location-arrow"></i><span class="btn-label"> Navigate</span></button>`
@@ -13692,12 +13923,8 @@ $(document).ready(function(){
             </span><span class="altcall-label">Public call</span></label>`;
           return `<div style="display:inline-flex;gap:6px;flex-wrap:nowrap;justify-content:flex-start;align-items:center">
             <span class="pact pact-publiccall">${publicCallToggle}</span>
-            <span class="pact pact-check">${checkAvailBtn}</span>
-            <span class="pact pact-share">${shareBtn}</span>
-            <span class="pact pact-tenant">${tenantShareBtn}</span>
+            <span class="pact pact-message">${msgBtn}</span>
             <span class="pact pact-view"><button class="btn-view" onclick="openAdminPropModal('${row._id}')"><i class="fas fa-eye"></i><span class="btn-label"> View</span></button></span>
-            <span class="pact pact-navigate">${navigateBtn}</span>
-            <span class="pact pact-directions">${directionsBtn}</span>
             <span class="pact pact-facebook">${fbShareBtn}</span>
             <span class="pact pact-instagram">${igShareBtn}</span>
             <span class="pact pact-block">${blockBtn}</span>
@@ -16109,12 +16336,8 @@ function loadPropColVisibility(){
 const PROP_ACTION_BTNS = [
   {key:'publiccall', label:'Public call toggle'},
   {key:'block',      label:'Block / Unblock'},
-  {key:'check',      label:'Check availability'},
-  {key:'share',      label:'Share (WhatsApp)'},
-  {key:'tenant',     label:'Tenant share'},
+  {key:'message',    label:'Message (WhatsApp)'},
   {key:'view',       label:'View'},
-  {key:'navigate',   label:'Navigate'},
-  {key:'directions', label:'Directions'},
   {key:'facebook',   label:'Facebook'},
   {key:'instagram',  label:'Instagram'},
   {key:'delete',     label:'Delete'},
