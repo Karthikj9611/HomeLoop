@@ -9072,7 +9072,7 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
       
       <div class="svc-price-note charges-refer-note"><strong>Note:</strong>
 <ul class="charges-note-list">
-<li><b>Choose one property</b>, we’ll enable <b>direct contact with property owners</b>. You can <b>call or WhatsApp owners</b>, connect with them directly, and visit properties at your convenience.</li>
+<li><b>Choose a property</b> to unlock <b>direct owner contact</b> via <b>call or WhatsApp</b> and schedule visits at your convenience.</li>
 <li>The service covers one property; each additional property costs just <b>₹150</b>.</li>
 </ul></div>
       <button class="form-submit pay-online-btn" onclick="closeChargesModal(); openPaymentModal('single_property');">Pay ₹150 for one property</button>
@@ -9099,7 +9099,7 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
       
       <div class="svc-price-note charges-refer-note"><strong>Note:</strong>
 <ul class="charges-note-list">
-<li>Based on your requirements, we’ll enable <b>direct contact</b> with property owners. You can <b>call or WhatsApp owners</b>, connect with them directly, and visit properties at your convenience.</li>
+<li>Based on your requirements, we’ll unlock <b>direct owner contact</b> via <b>call or WhatsApp</b> and you can schedule visits at your convenience.</li>
 <li>This service is valid for <b>2 days</b> from the date of payment.</li>
 </ul></div>
 </div></div>
@@ -9137,7 +9137,7 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
 
 <div class="svc-price-note charges-refer-note"><strong>Note:</strong>
 <ul class="charges-note-list">
-<li><b>Shortlist up to 6 properties</b> and meet us.</li>
+<li><b>Shortlist up to 6 properties</b> and share the links with us on <b>WhatsApp</b>. We’ll check with the owners if they’re available.</li>
 <li>Pay <b>₹2,000 only after the meeting</b>.</li>
 <li>We’ll arrange guided visits for your selected properties.</li>
 <li><b>Everything is included</b> — we also help you negotiate the rent with the owner and with the rental agreement.</li>
@@ -9245,7 +9245,7 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
       
       <div class="svc-price-note charges-refer-note"><strong>Note:</strong>
 <ul class="charges-note-list">
-<li><b>Choose one property</b>, we’ll enable <b>direct contact with property owners</b>. You can <b>call or WhatsApp owners</b>, connect with them directly, and visit properties at your convenience.</li>
+<li><b>Choose a property</b> to unlock <b>direct owner contact</b> via <b>call or WhatsApp</b> and schedule visits at your convenience.</li>
 <li>The service covers one property; each additional property costs just <b>₹150</b>.</li>
 </ul></div>
       <button class="form-submit pay-online-btn" onclick="closeChargesModal(); openPaymentModal('single_property');">Pay ₹150 for one property</button>
@@ -9272,7 +9272,7 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
         
         <div class="svc-price-note charges-refer-note"><strong>Note:</strong>
 <ul class="charges-note-list">
-<li>Based on your requirements, we’ll enable <b>direct contact</b> with property owners. You can <b>call or WhatsApp owners</b>, connect with them directly, and visit properties at your convenience.</li>
+<li>Based on your requirements, we’ll unlock <b>direct owner contact</b> via <b>call or WhatsApp</b> and you can schedule visits at your convenience.</li>
 <li>This service is valid for <b>2 days</b> from the date of payment.</li>
 </ul></div>
 </div></div>
@@ -9309,7 +9309,7 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
 
 <div class="svc-price-note charges-refer-note"><strong>Note:</strong>
 <ul class="charges-note-list">
-<li><b>Shortlist up to 6 properties</b> and meet us.</li>
+<li><b>Shortlist up to 6 properties</b> and share the links with us on <b>WhatsApp</b>. We’ll check with the owners if they’re available.</li>
 <li>Pay <b>₹2,000 only after the meeting</b>.</li>
 <li>We’ll arrange guided visits for your selected properties.</li>
 <li><b>Everything is included</b> — we also help you negotiate the rent with the owner and with the rental agreement.</li>
@@ -19450,14 +19450,14 @@ function closeChargesModal() {
 }
 var _chargesTab = 'tenant';
 function shareChargesLink() {
-  // One common link for everyone, whichever tab/audience the sharer is on:
-  // whoever opens it sees all the charges tabs (Tenants, Owners, Brokers, Notice).
-  var url = window.location.origin + '/?charges=all';
+  // Always the Tenants charges link, whichever account/tab the sharer is on.
+  var url = window.location.origin + '/?charges=tenant';
   var title = 'Our Charges - HomeLoop';
+  var text = 'Choose any plan : ';
   if (navigator.share) {
-    navigator.share({ title: title, text: title, url: url }).catch(function () {});
+    navigator.share({ title: title, text: text, url: url }).catch(function () {});
   } else if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(title + '\n' + url).then(function () { showToast("Link copied."); });
+    navigator.clipboard.writeText(text + '\n' + url).then(function () { showToast("Link copied."); });
   } else {
     showToast('Unable to copy automatically. Link: ' + url, 'info');
   }
