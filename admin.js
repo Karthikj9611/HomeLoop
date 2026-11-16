@@ -873,6 +873,38 @@ self.addEventListener('notificationclick', event => {
     }
   });
 
+  // GET /api/admin/notifications/counts — unread count + newest unread time per
+  // type. Drives the red count badges on the admin tabs (one tiny aggregate, polled).
+  app.get('/api/admin/notifications/counts', requireAdmin, requireModule('notifications'), async (req, res) => {
+    try {
+      const rows = await AdminNotification.aggregate([
+        { $match: { read: false } },
+        { $group: { _id: '$type', count: { $sum: 1 }, latest: { $max: '$createdAt' } } },
+      ]);
+      const counts = {};
+      rows.forEach(r => { counts[r._id] = { count: r.count, latest: r.latest }; });
+      res.json({ counts });
+    } catch (err) {
+      console.error('GET /api/admin/notifications/counts error:', err.message);
+      res.status(500).json({ message: 'Error fetching notification counts' });
+    }
+  });
+
+  // POST /api/admin/notifications/mark-read-by-type { types: [...] } — called when an
+  // admin opens a tab, so that tab's badge clears.
+  app.post('/api/admin/notifications/mark-read-by-type', requireAdmin, requireModule('notifications'), async (req, res) => {
+    try {
+      const types = Array.isArray(req.body && req.body.types)
+        ? req.body.types.filter(t => typeof t === 'string').slice(0, 20) : [];
+      if (!types.length) return res.status(400).json({ message: 'types required' });
+      await AdminNotification.updateMany({ type: { $in: types }, read: false }, { $set: { read: true } });
+      res.json({ message: 'Marked as read' });
+    } catch (err) {
+      console.error('POST /api/admin/notifications/mark-read-by-type error:', err.message);
+      res.status(500).json({ message: 'Error updating notifications' });
+    }
+  });
+
   // PATCH /api/admin/notifications/:id/read — mark one notification as read.
   app.patch('/api/admin/notifications/:id/read', requireAdmin, requireModuleAction('notifications'), async (req, res) => {
     try {

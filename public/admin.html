@@ -3285,101 +3285,13 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
   font-size:0.95rem;transition:all 0.18s;
 }
 .notif-bell-btn:hover{background:var(--red-light);color:var(--ink);border-color:var(--border)}
-.notif-badge{
-  position:absolute;top:-4px;right:-4px;min-width:17px;height:17px;padding:0 4px;
-  background:var(--red);color:#fff;border-radius:99px;font-size:0.62rem;font-weight:700;
-  display:flex;align-items:center;justify-content:center;line-height:1;
-}
-/* Notifications modal — reuses the .add-modal-overlay/.add-modal shell (same
-   one as Compare) so it opens centered and full-size instead of
-   a small bell dropdown. .notif-panel-header/-actions/-list and .notif-item*
-   below are unchanged from the old dropdown version and still apply as-is. */
-.add-modal.notif-modal-box{max-width:560px}
-.notif-modal-box .notif-panel-list{max-height:62vh;padding:2px 2px 4px;scrollbar-width:thin}
-.notif-panel-header{
-  display:flex;align-items:center;justify-content:space-between;gap:8px;
-  padding-bottom:14px;border-bottom:1px solid var(--border);
-  font-weight:800;font-size:1.02rem;margin-bottom:12px;
-}
-.notif-panel-header > span{display:inline-flex;align-items:center;gap:8px}
-.notif-count-pill{
-  background:var(--red);color:#fff;border-radius:99px;font-size:0.68rem;font-weight:700;
-  padding:2px 8px;line-height:1.4;
-}
-.notif-count-pill:empty{display:none}
-.notif-panel-actions{display:flex;gap:6px;margin-right:44px} /* keep clear of the absolute-positioned close (X) button */
-.notif-panel-actions button{
-  display:inline-flex;align-items:center;gap:6px;
-  background:var(--surface2,#f4f4f7);border:1px solid var(--border);color:var(--ink2);
-  cursor:pointer;padding:6px 11px;border-radius:99px;font-size:0.73rem;font-weight:600;
-  font-family:inherit;transition:all 0.15s;
-}
-.notif-panel-actions button:hover{background:var(--red-light);color:var(--ink)}
-@media(max-width:480px){.notif-panel-actions .lbl{display:none}.notif-panel-actions button{padding:7px 10px}}
-.notif-panel-list{max-height:380px;overflow-y:auto}
-.notif-empty{padding:38px 14px;text-align:center;color:var(--ink2);font-size:0.85rem}
-.notif-empty i{display:block;font-size:1.6rem;margin-bottom:10px;opacity:0.35}
-.notif-item{
-  position:relative;display:flex;gap:12px;align-items:flex-start;
-  padding:12px 8px 12px 14px;margin:0 0 8px;
-  border:1px solid var(--border);border-radius:14px;background:var(--surface,#fff);
-  cursor:pointer;transition:box-shadow 0.15s,transform 0.15s,background 0.15s;
-}
-.notif-item:last-child{margin-bottom:0}
-.notif-item:hover{box-shadow:0 6px 18px rgba(20,20,40,0.08);transform:translateY(-1px)}
-.notif-item.unread{
-  background:linear-gradient(rgba(224,68,68,0.05),rgba(224,68,68,0.05)),var(--surface,#fff);
-  border-color:rgba(224,68,68,0.22);
-}
-.notif-item.read{opacity:0.85}
-.notif-ico-wrap{position:relative;flex:none}
-.notif-ico{
-  width:38px;height:38px;border-radius:12px;background:var(--nb,rgba(120,120,140,0.12));
-  color:var(--nc,var(--ink2));display:flex;align-items:center;justify-content:center;font-size:0.9rem;
-}
-.notif-item-dot{
-  position:absolute;top:-3px;right:-3px;width:11px;height:11px;border-radius:50%;
-  background:var(--red);border:2px solid var(--surface,#fff);
-}
-.notif-item.read .notif-item-dot{display:none}
-.notif-item-body{flex:1;min-width:0}
-.notif-item-title{font-size:0.86rem;font-weight:700;color:var(--ink)}
-.notif-item.read .notif-item-title{font-weight:600}
-.notif-item-msg{font-size:0.78rem;color:var(--ink2);margin-top:2px;line-height:1.35}
-.notif-item-time{display:flex;align-items:center;gap:5px;font-size:0.7rem;color:var(--ink2);margin-top:6px;opacity:0.8}
-.notif-item-time i{font-size:0.62rem}
-.notif-item-actions{display:flex;align-items:stretch;gap:8px;margin-top:12px}
-.notif-item-action,.notif-item-tools{display:contents} /* all buttons become direct children of the row */
-/* every button takes an equal share of the row */
-.notif-item-actions > *,
-.notif-item-actions .notif-action-btn,
-.notif-item-actions .notif-tool-btn{flex:1 1 0;min-width:0;justify-content:center;white-space:nowrap}
-.notif-item-actions .notif-action-done{margin:0;flex:1 1 0;min-width:0;justify-content:center}
-.notif-tool-btn{
-  display:inline-flex;align-items:center;gap:6px;
-  background:var(--surface2,#f4f4f7);color:var(--ink2);border:1px solid var(--border);border-radius:99px;
-  padding:7px 10px;font-size:0.76rem;font-weight:700;cursor:pointer;font-family:inherit;
-  transition:all 0.15s;
-}
-.notif-tool-btn:hover{background:var(--red-light);color:var(--ink);transform:translateY(-1px)}
-.notif-tool-btn.notif-del-btn:hover{background:var(--red);border-color:var(--red);color:#fff}
-.notif-item.read .notif-mark-btn{display:none}
-.notif-action-btn{
-  display:inline-flex;align-items:center;gap:6px;
-  background:var(--green);color:#fff;border:none;border-radius:99px;
-  padding:7px 14px;font-size:0.76rem;font-weight:700;cursor:pointer;
-  transition:all 0.15s;font-family:inherit;box-shadow:0 2px 8px rgba(5,150,105,0.25);
-}
-.notif-action-btn:hover{filter:brightness(0.92);transform:translateY(-1px)}
-.notif-action-btn:disabled{opacity:0.6;cursor:default;transform:none}
-.notif-action-done{
-  display:inline-flex;align-items:center;gap:6px;margin-top:8px;
-  color:var(--green,#1e9e57);font-size:0.75rem;font-weight:700;
-}
-@media(max-width:480px){
-  .notif-item{padding:11px;gap:10px}
-  .notif-item-icon{width:36px;height:36px;font-size:0.9rem}
-}
+/* Unread-count badge on tabs (replaces the old notification list) */
+.tab-new{display:none;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 5px;margin-left:4px;
+  border-radius:99px;background:var(--red,#dc2626);color:#fff;font-size:0.64rem;font-weight:800;line-height:1;
+  box-shadow:0 0 0 2px var(--surface,#fff)}
+.tab-new.on{display:inline-flex;animation:tabNewPop .35s ease}
+@keyframes tabNewPop{0%{transform:scale(.4)}70%{transform:scale(1.2)}100%{transform:scale(1)}}
+.notif-bell-btn.push-on{color:var(--green,#1e9e57);border-color:var(--green,#1e9e57)}
 
 /* ── CONFIRM MODAL ── */
 #confirmOverlay,#alertOverlay,#sharePickOverlay{
@@ -3477,7 +3389,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
     max-height:calc(100vh - 24px)!important;max-height:calc(100dvh - 24px)!important;
   }
   .add-modal,.prop-modal{width:100%;max-width:100%;box-sizing:border-box}
-  .add-modal.share-links-modal-box,.add-modal.notif-modal-box,.add-modal.compare-modal-box{max-width:100%}
+  .add-modal.share-links-modal-box,.add-modal.compare-modal-box{max-width:100%}
   .confirm-card{max-width:380px}
 }
 
@@ -3875,34 +3787,12 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
       <div class="header-badge"><i class="fas fa-circle-dot"></i> Live &nbsp;·&nbsp; <span id="adminNameBadge">—</span></div>
       <div class="notif-bell-wrap" id="notifBellWrap">
-        <button class="notif-bell-btn" id="notifPushBtn" onclick="togglePush()" title="Phone/desktop alerts: off" style="margin-right:6px"><i class="fas fa-tower-broadcast"></i></button>
-        <button class="notif-bell-btn notif-sound-btn" id="notifSoundBtn" onclick="toggleNotifSound()" title="Notification sound: on" style="margin-right:6px"><i class="fas fa-volume-high"></i></button>
-        <button class="notif-bell-btn" id="notifBellBtn" onclick="openNotifModal()" title="Notifications" aria-haspopup="dialog" aria-expanded="false">
-          <i class="fas fa-bell"></i>
-          <span class="notif-badge" id="notifBadge" style="display:none">0</span>
-        </button>
+        <button class="notif-bell-btn" id="notifPushBtn" onclick="togglePush()" title="Phone/desktop alerts: off" style="margin-right:6px"><i class="fas fa-bell-slash"></i></button>
+        <button class="notif-bell-btn notif-sound-btn" id="notifSoundBtn" onclick="toggleNotifSound()" title="Notification sound: on"><i class="fas fa-volume-high"></i></button>
       </div>
       <button class="logout-btn" onclick="doLogout()"><i class="fas fa-right-from-bracket"></i><span class="logout-btn-label"> Sign Out</span></button>
     </div>
   </div>
-
-<div class="add-modal-overlay" id="notifModal" role="dialog" aria-modal="true" aria-label="Notifications">
-  <div class="add-modal notif-modal-box" id="notifModalBox">
-    <button class="modal-close" onclick="closeNotifModal()" aria-label="Close">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-    </button>
-    <div class="notif-panel-header">
-      <span>Notifications <span class="notif-count-pill" id="notifHeaderCount"></span></span>
-      <div class="notif-panel-actions">
-        <button onclick="markAllNotificationsRead()" title="Mark all as read"><i class="fas fa-check-double"></i><span class="lbl">Mark all read</span></button>
-        <button onclick="clearAllNotifications()" title="Clear all"><i class="fas fa-trash"></i><span class="lbl">Clear all</span></button>
-      </div>
-    </div>
-    <div class="notif-panel-list" id="notifPanelList">
-      <div class="notif-empty">Loading…</div>
-    </div>
-  </div>
-</div>
 
 <!-- Admin Access — per-admin permissions modal (opened from the Admin Access tab's admin list) -->
 <div class="add-modal-overlay" id="aaModal">
@@ -6354,249 +6244,61 @@ async function doLogout(){
   location.reload();
 }
 
-/* ── ADMIN NOTIFICATIONS (bell icon) ──
-   Polls GET /api/admin/notifications every 5s and whenever the panel is
-   opened. Notifications are raised server-side (see admin.js's notifyAdmin)
-   for: a user registering, a property being listed, a new appointment
-   (visit request), a new star review, a new honest-review (video
-   testimonial) submission, a new referral, and a new partner being added. */
+/* ── ADMIN NOTIFICATIONS → TAB BADGES ──
+   Polls GET /api/admin/notifications/counts every 5s. Each notification type
+   maps to the tab that shows its rows; unread counts appear as a red badge on
+   that tab (and summed on its group button). Opening a tab marks its type(s)
+   read. The bell in the header is only the phone/desktop push toggle. */
 let notifPollTimer = null;
-let notifPanelOpen = false;
+const NOTIF_TYPE_TAB = {
+  user_registered:         'customers',
+  property_listed:         'properties',
+  appointment_booked:      'appointments',
+  review_posted:           'user-reviews',
+  honest_review_submitted: 'honest-reviews',
+  referral_submitted:      'referrals',
+  partner_added:           'partners',
+  payment_submitted:       'payments',
+};
+const NOTIF_TAB_TYPES = {};
+Object.keys(NOTIF_TYPE_TAB).forEach(t => { (NOTIF_TAB_TYPES[NOTIF_TYPE_TAB[t]] = NOTIF_TAB_TYPES[NOTIF_TYPE_TAB[t]] || []).push(t); });
+let tabUnread = {};   // tab id -> unread count
 
-function timeAgo(dateStr){
-  const diffMs = Date.now() - new Date(dateStr).getTime();
-  const mins = Math.floor(diffMs / 60000);
-  if(mins < 1) return 'just now';
-  if(mins < 60) return mins + 'm ago';
-  const hrs = Math.floor(mins / 60);
-  if(hrs < 24) return hrs + 'h ago';
-  const days = Math.floor(hrs / 24);
-  return days + 'd ago';
+function ensureTabNewBadge(btnId){
+  const btn = document.getElementById(btnId);
+  if(!btn) return null;
+  let el = btn.querySelector(':scope > .tab-new');
+  if(!el){ el = document.createElement('span'); el.className = 'tab-new'; btn.appendChild(el); }
+  return el;
+}
+function setBadge(btnId, n){
+  const el = ensureTabNewBadge(btnId);
+  if(!el) return;
+  if(n > 0){ const txt = n > 99 ? '99+' : String(n); if(el.textContent !== txt){ el.textContent = txt; } el.title = n + ' new'; el.classList.add('on'); }
+  else { el.classList.remove('on'); el.textContent = ''; }
+}
+function renderTabBadges(){
+  Object.keys(NOTIF_TAB_TYPES).forEach(tab => {
+    const usable = (typeof canViewTab === 'function') ? canViewTab(tab) : true;
+    setBadge('tab-' + tab, usable ? (tabUnread[tab] || 0) : 0);
+  });
+  Object.keys(TAB_GROUPS).forEach(g => {
+    const sum = TAB_GROUPS[g].reduce((s, t) => s + (((typeof canViewTab === 'function') ? canViewTab(t) : true) ? (tabUnread[t] || 0) : 0), 0);
+    setBadge('grp-' + g, sum);
+  });
 }
 
-const NOTIF_EMPTY_HTML = '<div class="notif-empty"><i class="fas fa-bell-slash"></i>No notifications yet.</div>';
-const NOTIF_ICONS = {
-  user_registered:         { i:'fa-user-plus',     c:'#3b82f6', b:'rgba(59,130,246,0.13)' },
-  property_listed:         { i:'fa-building',      c:'#16a34a', b:'rgba(22,163,74,0.13)' },
-  appointment_booked:      { i:'fa-calendar-days', c:'#8b5cf6', b:'rgba(139,92,246,0.13)' },
-  review_posted:           { i:'fa-star',          c:'#d97706', b:'rgba(217,119,6,0.14)' },
-  honest_review_submitted: { i:'fa-video',         c:'#ec4899', b:'rgba(236,72,153,0.13)' },
-  referral_submitted:      { i:'fa-share-nodes',   c:'#0d9488', b:'rgba(13,148,136,0.13)' },
-  partner_added:           { i:'fa-handshake',     c:'#ea580c', b:'rgba(234,88,12,0.13)' },
-  payment_submitted:       { i:'fa-credit-card',   c:'#1e8449', b:'rgba(30,132,73,0.13)' },
-};
-
-function renderNotifPanel(notifications){
-  const list = document.getElementById('notifPanelList');
-  const pill = document.getElementById('notifHeaderCount');
-  const unread = (notifications || []).filter(n => !n.read).length;
-  if(pill) pill.textContent = unread ? (unread > 99 ? '99+' : unread + ' new') : '';
-  if(!notifications || !notifications.length){
-    list.innerHTML = NOTIF_EMPTY_HTML;
-    return;
-  }
-  list.innerHTML = notifications.map(n => {
-    const ic = NOTIF_ICONS[n.type] || { i:'fa-bell', c:'#64748b', b:'rgba(100,116,139,0.13)' };
-    return `
-    <div class="notif-item ${n.read ? 'read' : 'unread'}" data-id="${n._id}" onclick="onNotifItemClick('${n._id}', ${!!n.read})">
-      <div class="notif-ico-wrap">
-        <div class="notif-ico" style="--nc:${ic.c};--nb:${ic.b}"><i class="fas ${ic.i}"></i></div>
-        <div class="notif-item-dot"></div>
-      </div>
-      <div class="notif-item-body">
-        <div class="notif-item-title">${escapeHtmlNotif(n.title)}</div>
-        ${n.message ? `<div class="notif-item-msg">${escapeHtmlNotif(n.message)}</div>` : ''}
-        <div class="notif-item-time"><i class="far fa-clock"></i>${timeAgo(n.createdAt)}</div>
-        <div class="notif-item-actions">
-          ${notifActionHtml(n)}
-          <div class="notif-item-tools">
-            <button class="notif-tool-btn notif-mark-btn" title="Mark as read" onclick="event.stopPropagation();markOneNotifRead('${n._id}')"><i class="fas fa-check"></i> Mark read</button>
-            <button class="notif-tool-btn notif-del-btn" title="Delete" onclick="event.stopPropagation();deleteOneNotif('${n._id}')"><i class="fas fa-trash"></i> Delete</button>
-          </div>
-        </div>
-      </div>
-    </div>`;
-  }).join('');
-}
-
-// Type-specific inline action button — lets the admin verify the user/property
-// the notification is about without leaving the modal. meta.userId (Mongo _id)
-// comes from the user_registered notifyAdmin() call in server.js; meta.mongoId
-// (Mongo _id, distinct from the human-readable meta.propertyId code) comes
-// from the property_listed one. Falls back to no button if the id is missing
-// (e.g. an older notification saved before mongoId was added to meta).
-function notifActionHtml(n){
-  const meta = n.meta || {};
-  if(n.type === 'user_registered' && meta.userId){
-    return `<div class="notif-item-action">
-      <button class="notif-action-btn" onclick="event.stopPropagation();verifyUserFromNotif('${meta.userId}', '${n._id}', this)">
-        <i class="fas fa-check"></i> Verify user
-      </button>
-    </div>`;
-  }
-  if(n.type === 'property_listed' && meta.mongoId){
-    return `<div class="notif-item-action">
-      <button class="notif-action-btn" onclick="event.stopPropagation();verifyPropertyFromNotif('${meta.mongoId}', '${n._id}', this)">
-        <i class="fas fa-check"></i> Verify property
-      </button>
-    </div>`;
-  }
-  // Simple "jump to the tab that shows this" actions — these five don't have
-  // an inline verify/approve step like the two above, they just take the
-  // admin straight to the grid where the new row lives.
-  const NOTIF_JUMP_TABS = {
-    appointment_booked:       { tab: 'appointments',    icon: 'fa-calendar-days', label: 'View appointment' },
-    review_posted:            { tab: 'user-reviews',    icon: 'fa-star',          label: 'View review' },
-    honest_review_submitted:  { tab: 'honest-reviews',  icon: 'fa-video',         label: 'View submission' },
-    referral_submitted:       { tab: 'referrals',       icon: 'fa-share-nodes',   label: 'View referral' },
-    partner_added:            { tab: 'partners',        icon: 'fa-handshake',     label: 'View partner' },
-    payment_submitted:        { tab: 'payments',        icon: 'fa-credit-card',   label: 'Review payment' },
-  };
-  const jump = NOTIF_JUMP_TABS[n.type];
-  if(jump){
-    return `<div class="notif-item-action">
-      <button class="notif-action-btn" onclick="event.stopPropagation();goToNotifTab('${jump.tab}', '${n._id}')">
-        <i class="fas ${jump.icon}"></i> ${jump.label}
-      </button>
-    </div>`;
-  }
-  return '';
-}
-
-// Marks the notification read and takes the admin straight to the tab that
-// shows the new row (appointments/reviews/referrals/partners/honest reviews)
-// — used by the NOTIF_JUMP_TABS actions in notifActionHtml() above.
-window.goToNotifTab = function(tab, notifId){
-  markNotifReadLocally(notifId);
-  closeNotifModal();
-  switchTab(tab);
-};
-
-// Marks a notification read straight in the DOM + a fire-and-forget PATCH,
-// instead of calling fetchNotifications() (which would re-render the whole
-// panel from server data and wipe out the "✓ Verified" swap the caller just
-// made in the DOM — the server has no "verified via notif" flag to restore it).
-function markNotifReadLocally(notifId){
-  fetch(BASE + '/api/admin/notifications/' + notifId + '/read', { method:'PATCH', headers: authHeaders() }).catch(()=>{});
-  const item = document.querySelector('.notif-item[data-id="' + notifId + '"]');
-  if(item && item.classList.contains('unread')){
-    item.classList.remove('unread');
-    item.classList.add('read');
-    const badge = document.getElementById('notifBadge');
-    const current = parseInt(badge.textContent, 10);
-    if(!isNaN(current)){
-      const next = Math.max(0, current - 1);
-      if(next > 0){ badge.textContent = next; } else { badge.style.display = 'none'; }
-    }
-  }
-}
-
-// Per-notification "mark as read" (check icon).
-window.markOneNotifRead = async function(id){
-  if(blockIfViewOnly('notifications')) return;
-  const ok = await showConfirmModal({
-    title: 'Mark as read?',
-    message: 'This notification will be marked as read.',
-    okText: 'Mark read',
-    variant: 'info'
-  });
-  if(!ok) return;
-  markNotifReadLocally(id);
-};
-
-// Per-notification delete (trash icon) — removes it from the DB and the list.
-window.deleteOneNotif = async function(id){
-  if(blockIfViewOnly('notifications')) return;
-  const ok = await showConfirmModal({
-    title: 'Delete this notification?',
-    message: 'Only this notification is removed. Users, listings and other records are not affected.',
-    okText: 'Delete'
-  });
-  if(!ok) return;
-  try {
-    const res = await fetch(BASE + '/api/admin/notifications/' + id, { method:'DELETE', headers: authHeaders() });
-    if(!res.ok) return;
-    const item = document.querySelector('.notif-item[data-id="' + id + '"]');
-    if(item){
-      if(item.classList.contains('unread')){
-        const badge = document.getElementById('notifBadge');
-        const current = parseInt(badge.textContent, 10);
-        if(!isNaN(current)){
-          const next = Math.max(0, current - 1);
-          if(next > 0){ badge.textContent = next; } else { badge.style.display = 'none'; }
-        }
-      }
-      item.remove();
-    }
-    if(notifSeenIds) notifSeenIds.delete(String(id));
-    const list = document.getElementById('notifPanelList');
-    if(list && !list.querySelector('.notif-item')) list.innerHTML = NOTIF_EMPTY_HTML;
-    fetchNotifications();
-  } catch(e){}
-};
-
-// Verifies straight from the notification — same PATCH /api/users/:id/verify
-// endpoint (and confirm-modal UX) as the Customers grid's own Verify action.
-window.verifyUserFromNotif = async function(userId, notifId, btnEl){
-  const ok = await showConfirmModal({
-    title: 'Verify this customer?',
-    message: 'They\'ll be able to submit listings, visit requests, bookings, reviews, and payments once verified.',
-    okText: 'Verify',
-    variant: 'success'
-  });
-  if(!ok) return;
-  btnEl.disabled = true;
-  try{
-    const res = await fetch(`${BASE}/api/users/${userId}/verify`, {
-      method: 'PATCH',
-      headers: authHeaders({ 'Content-Type': 'application/json' }),
-      body: JSON.stringify({ verified: true })
-    });
-    const data = await res.json().catch(()=>({}));
-    if(!res.ok){ alert(data.message || 'Error verifying customer'); btnEl.disabled = false; return; }
-    btnEl.outerHTML = '<span class="notif-action-done"><i class="fas fa-check-circle"></i> Verified</span>';
-    markNotifReadLocally(notifId);
-    if(typeof dataTable !== 'undefined' && dataTable) dataTable.ajax.reload(null, false);
-  } catch(err){
-    alert('Network error. Please try again.');
-    btnEl.disabled = false;
-  }
-};
-
-// Same idea for properties — PATCH /api/properties/:id/verified, same
-// endpoint the Properties grid's Verified checkbox uses.
-window.verifyPropertyFromNotif = async function(mongoId, notifId, btnEl){
-  const ok = await showConfirmModal({
-    title: 'Verify this property?',
-    message: 'This will set "verified" to ON for this listing and make it visible on the public site.',
-    okText: 'Verify',
-    variant: 'success'
-  });
-  if(!ok) return;
-  btnEl.disabled = true;
-  try{
-    const res = await fetch(`${BASE}/api/properties/${mongoId}/verified`, {
-      method: 'PATCH',
-      headers: authHeaders({ 'Content-Type': 'application/json' }),
-      body: JSON.stringify({ verified: true })
-    });
-    const data = await res.json().catch(()=>({}));
-    if(!res.ok){ alert(data.message || 'Error verifying property'); btnEl.disabled = false; return; }
-    btnEl.outerHTML = '<span class="notif-action-done"><i class="fas fa-check-circle"></i> Verified</span>';
-    markNotifReadLocally(notifId);
-    if(typeof propTable !== 'undefined' && propTable) propTable.ajax.reload(null, false);
-  } catch(err){
-    alert('Network error. Please try again.');
-    btnEl.disabled = false;
-  }
-};
-
-// Local escaper (kept self-contained so this feature doesn't depend on
-// whichever esc()/escapeHtml() helper happens to live elsewhere in this file).
-function escapeHtmlNotif(str){
-  return String(str == null ? '' : str)
-    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+// Opening a tab = "seen": clear its badge locally and tell the server.
+function markTabSeen(tab){
+  const types = NOTIF_TAB_TYPES[tab];
+  if(!types || !ADMIN_KEY) return;
+  if(!tabUnread[tab]) return;
+  tabUnread[tab] = 0;
+  renderTabBadges();
+  fetch(BASE + '/api/admin/notifications/mark-read-by-type', {
+    method:'POST', headers: authHeaders({ 'Content-Type':'application/json' }),
+    body: JSON.stringify({ types })
+  }).catch(()=>{});
 }
 
 /* ── NOTIFICATION SOUND ──
@@ -6606,8 +6308,6 @@ function escapeHtmlNotif(str){
    Browsers block audio until the page has had a click/keypress, so the
    AudioContext is unlocked on the first user gesture. Mute state is remembered. */
 let notifAudioCtx = null;
-let notifSeenIds = null;      // null until first poll seeds it
-let notifLastUnread = 0;
 let notifSoundOn = localStorage.getItem('kr_notif_sound') !== 'off';
 
 function unlockNotifAudio(){
@@ -6659,7 +6359,7 @@ function playNotifSound(){
 }
 
 // Which grid a new notification affects — reloaded in place (page kept, no
-// flicker) so the new row/count shows up without a manual refresh.
+// flicker) so the new row shows up without a manual refresh.
 function refreshGridsForNotifTypes(types){
   const map = {
     user_registered:         () => dataTable,
@@ -6682,22 +6382,25 @@ function refreshGridsForNotifTypes(types){
   });
 }
 
-function detectNewNotifications(data){
-  const list = data.notifications || [];
-  const unread = list.filter(n => !n.read);
-  const unreadCount = data.unreadCount || 0;
-  if(notifSeenIds === null){
-    notifSeenIds = new Set(unread.map(n => String(n._id)));
+// A type is "new" when its newest unread notification is later than the one
+// seen on the previous poll. The first poll after load only seeds this, so
+// existing unread items don't chime on every refresh.
+let notifLatestByType = null;
+function detectNewNotifications(counts){
+  const fresh = [];
+  if(notifLatestByType === null){
+    notifLatestByType = {};
   } else {
-    const fresh = unread.filter(n => !notifSeenIds.has(String(n._id)));
-    unread.forEach(n => notifSeenIds.add(String(n._id)));
-    const hasNew = fresh.length > 0 || (!unread.length && unreadCount > notifLastUnread);
-    if(hasNew){
-      playNotifSound();
-      refreshGridsForNotifTypes(fresh.map(n => n.type));
-    }
+    Object.keys(counts).forEach(t => {
+      const prev = notifLatestByType[t];
+      if(!prev || new Date(counts[t].latest) > new Date(prev)) fresh.push(t);
+    });
   }
-  notifLastUnread = unreadCount;
+  Object.keys(counts).forEach(t => { notifLatestByType[t] = counts[t].latest; });
+  if(fresh.length){
+    playNotifSound();
+    refreshGridsForNotifTypes(fresh);
+  }
 }
 
 window.toggleNotifSound = function(){
@@ -6717,68 +6420,25 @@ updateNotifSoundBtn();
 async function fetchNotifications(){
   if(!ADMIN_KEY) return;
   try {
-    const res = await fetch(BASE + '/api/admin/notifications', { headers: authHeaders() });
+    const res = await fetch(BASE + '/api/admin/notifications/counts', { headers: authHeaders() });
     if(!res.ok) return;
     const data = await res.json();
-    detectNewNotifications(data);
-    const badge = document.getElementById('notifBadge');
-    if(data.unreadCount > 0){
-      badge.style.display = 'flex';
-      badge.textContent = data.unreadCount > 99 ? '99+' : data.unreadCount;
-    } else {
-      badge.style.display = 'none';
+    const counts = data.counts || {};
+    detectNewNotifications(counts);
+    const next = {};
+    Object.keys(counts).forEach(t => {
+      const tab = NOTIF_TYPE_TAB[t];
+      if(tab) next[tab] = (next[tab] || 0) + counts[t].count;
+    });
+    tabUnread = next;
+    // The admin is already looking at this tab (and the grid just refreshed),
+    // so it counts as seen — no badge.
+    if(!document.hidden){
+      const active = (typeof _activeTabId === 'function') ? _activeTabId() : null;
+      if(active && tabUnread[active]) markTabSeen(active);
     }
-    if(notifPanelOpen) renderNotifPanel(data.notifications);
+    renderTabBadges();
   } catch(e){ /* ignore — next poll will retry */ }
-}
-
-function openNotifModal(){
-  notifPanelOpen = true;
-  document.getElementById('notifModal').classList.add('open');
-  document.getElementById('notifBellBtn').setAttribute('aria-expanded', 'true');
-  fetchNotifications();
-}
-
-function closeNotifModal(){
-  notifPanelOpen = false;
-  document.getElementById('notifModal').classList.remove('open');
-  document.getElementById('notifBellBtn').setAttribute('aria-expanded', 'false');
-}
-
-document.getElementById('notifModal').addEventListener('click', function(e){
-  if (e.target === this) closeNotifModal();
-});
-
-async function onNotifItemClick(id, alreadyRead){
-  if(alreadyRead) return;
-  try {
-    await fetch(BASE + '/api/admin/notifications/' + id + '/read', { method:'PATCH', headers: authHeaders() });
-    fetchNotifications();
-  } catch(e){}
-}
-
-async function markAllNotificationsRead(){
-  if(blockIfViewOnly('notifications')) return;
-  const ok = await showConfirmModal({
-    title: 'Mark all as read?',
-    message: 'Every notification will be marked as read.',
-    okText: 'Mark all read',
-    variant: 'info'
-  });
-  if(!ok) return;
-  try {
-    await fetch(BASE + '/api/admin/notifications/mark-all-read', { method:'POST', headers: authHeaders() });
-    fetchNotifications();
-  } catch(e){}
-}
-
-async function clearAllNotifications(){
-  if(blockIfViewOnly('notifications')) return;
-  if(!await showConfirmModal({ title:'Clear all notifications?', message:'This removes every notification. This cannot be undone.', okText:'Clear all' })) return;
-  try {
-    await fetch(BASE + '/api/admin/notifications/clear-all', { method:'POST', headers: authHeaders() });
-    fetchNotifications();
-  } catch(e){}
 }
 
 document.addEventListener('visibilitychange', () => { if(!document.hidden) fetchNotifications(); });
@@ -6799,8 +6459,8 @@ function setPushBtn(on){
   if(!b) return;
   b.style.display = '';
   b.title = 'Phone/desktop alerts: ' + (on ? 'on (click to turn off)' : 'off (click to turn on)');
-  b.style.color = on ? 'var(--green,#1e9e57)' : '';
-  b.style.borderColor = on ? 'var(--green,#1e9e57)' : '';
+  b.classList.toggle('push-on', !!on);
+  b.innerHTML = '<i class="fas ' + (on ? 'fa-bell' : 'fa-bell-slash') + '"></i>';
 }
 async function pushSaveSub(sub){
   const res = await fetch(BASE + '/api/admin/push/subscribe', {
@@ -6873,7 +6533,7 @@ window.togglePush = async function(){
 
 function startNotifPolling(){
   initPush();
-  notifSeenIds = null;
+  notifLatestByType = null;
   fetchNotifications();
   if(notifPollTimer) clearInterval(notifPollTimer);
   notifPollTimer = setInterval(fetchNotifications, 5000);
@@ -7344,6 +7004,7 @@ function switchTab(tab){
   document.getElementById('panel-'+tab).classList.add('active');
   setTimeout(alignThreeRowsAsColumns, 0);   // size the newly visible panel's tab row
   syncGroupUI(tab);
+  if(typeof markTabSeen === 'function') markTabSeen(tab);
 
   // Adjust DataTable columns when switching (fixes column widths)
   if(tab === 'properties' && propTable){
