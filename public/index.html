@@ -6091,7 +6091,26 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
 
 
 
-  
+  <!-- ALL TYPES: Distance — max straight-line/road km from the visitor's position (same value shown on the card's distance pill) -->
+  <div class="fd-btn fd-rent fd-lease fd-pg fd-shortstay fd-sell" id="fdb-distance" onclick="toggleFd('distance',this)">
+    <span class="fd-icon">📍</span>
+    <span class="fd-label">Distance</span> <span class="fd-badge" id="fdbc-distance" style="display:none"></span>
+    <svg class="chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+    <div class="fd-pop" id="fdp-distance" onclick="event.stopPropagation()">
+      <div class="fd-pop-label">Distance (km)</div>
+      <div class="fd-range-inputs">
+        <input class="fd-range-input" type="number" min="0" step="0.5" inputmode="decimal" placeholder="Min" id="fd-distance-min" oninput="refreshFdRangeBtn('distance')">
+        <span class="fd-range-sep">–</span>
+        <input class="fd-range-input" type="number" min="0" step="0.5" inputmode="decimal" placeholder="Max" id="fd-distance-max" oninput="refreshFdRangeBtn('distance')">
+      </div>
+      <div class="fd-range-hint">From your current location, e.g. 2 – 6</div>
+      <div class="fd-pop-footer">
+        <button class="fd-clear-btn" onclick="clearFdRange('distance')">Clear</button>
+        <button class="fd-apply-btn" onclick="applyFdRange('distance')">Apply</button>
+      </div>
+    </div>
+  </div>
+
     <!-- Property ID — for owners to quickly find a specific listing among
        many by its code (e.g. "QWR001"). Options are built dynamically from
        whatever property ids actually exist (see fdCollectPropertyIds), same
@@ -13742,7 +13761,7 @@ function clearFilters() {
    price.maintenance) across every property type — Rent, Lease, PG, and
    Short Stay — instead of type-specific preset buckets. The user types
    any custom range, e.g. 0–10000, or leaves Max blank for "0 and above". */
-const FD_RANGE_IDS = ['price', 'deposit', 'maintenance', 'persons']; // 'persons' only has a Min input
+const FD_RANGE_IDS = ['distance', 'price', 'deposit', 'maintenance', 'persons']; // 'persons' only has a Min input
 
 function fdActiveRangeCount() {
   let n = 0;
@@ -13769,6 +13788,7 @@ function refreshFdRangeBtn(id, skipRender) {
     badge.textContent = '1';
     badge.style.display = hasAny ? '' : 'none';
   }
+  if (id === 'distance' && hasAny && !userCoords && !window._distLocAsked) { window._distLocAsked = true; initNearbyLocation(); }
   refreshTotalBadge();
   if (!skipRender) renderFiltersSoon(150); // typing in Min/Max: debounce instead of re-rendering per keystroke
 }
@@ -14191,7 +14211,8 @@ function restoreFilterStateBeforeBuild() {
     _priceMin: ['price', 'min'], _priceMax: ['price', 'max'],
     _depositMin: ['deposit', 'min'], _depositMax: ['deposit', 'max'],
     _maintenanceMin: ['maintenance', 'min'], _maintenanceMax: ['maintenance', 'max'],
-    _personsMin: ['persons', 'min']
+    _personsMin: ['persons', 'min'],
+    _distanceMin: ['distance', 'min'], _distanceMax: ['distance', 'max']
   };
   Object.keys(RANGE_MAP).forEach(k => {
     const val = sel[k];
@@ -14255,6 +14276,7 @@ function getFilterState() {
   [state._depositMin, state._depositMax] = fdRange('deposit');
   [state._maintenanceMin, state._maintenanceMax] = fdRange('maintenance');
   state._personsMin = fdRange('persons')[0];
+  [state._distanceMin, state._distanceMax] = fdRange('distance');
 
   return state;
 }
@@ -14451,6 +14473,15 @@ function getFiltered(source = PROPERTIES, fsIn, tabOverride) {
     if (fs._maintenanceMin != null && fdPriceNum(p.price?.maintenance) < fs._maintenanceMin) return false;
     if (fs._maintenanceMax != null && fdPriceNum(p.price?.maintenance) > fs._maintenanceMax) return false;
 
+    // Distance — min/max km from the visitor. Needs their position (requested when the value is entered);
+    // until it arrives the filter is a no-op. Listings with no usable position are dropped once active.
+    if ((fs._distanceMin != null || fs._distanceMax != null) && userCoords) {
+      const dk = propDistanceKm(p);
+      if (dk == null) return false;
+      if (fs._distanceMin != null && dk < fs._distanceMin) return false;
+      if (fs._distanceMax != null && dk > fs._distanceMax) return false;
+    }
+
     // No. of persons allowed — Rent/Lease only. Keeps listings that allow at
     // least the requested number of people; listings with no limit entered
     // are kept too (no restriction stated).
@@ -14620,6 +14651,16 @@ function propDistanceText(p) {
 /* Distance is shown on every non-booked listing that has a position: exact + road distance where the owner contact is
    public (Call/WhatsApp/Navigate icons), otherwise an approximate whole-km straight-line value. Used by cards,
    shortlist, compare and the view modal. */
+function propDistanceKm(p) {
+  if (!userCoords || !p) return null;
+  const rk = ROAD_KM[String(p.id)];
+  if (rk != null) return rk;
+  const l = p.location || {};
+  let la = parseFloat(l.lat), ln = parseFloat(l.lng);
+  if (isNaN(la) || isNaN(ln) || (!la && !ln)) { la = parseFloat(l.distLat); ln = parseFloat(l.distLng); }
+  if (isNaN(la) || isNaN(ln) || (!la && !ln)) return null;
+  return haversineKm(userCoords.lat, userCoords.lng, la, ln);
+}
 function propDistanceGated(p) {
   return !!p && !isBookedProp(p) && !!(cardCallOn(p) || p.currentLocationLink || p.navigateUrl || (p.location && p.location.distLat != null));
 }
