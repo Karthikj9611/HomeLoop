@@ -14855,6 +14855,7 @@ let editingPropertyId = null;
 // logged-out visitors, but it is SKIPPABLE: dismissing it (X, backdrop, Escape) opens the
 // property as a guest (see closeAuthModal), and logging in opens it after the reload.
 function openDetail(id) {
+  if (window.__hlHandedOff) return; // this tab's link was handed to an already-open tab
   if (!getLoggedInUser()) {
     try { sessionStorage.setItem('homeloop_open_after_login', String(id)); } catch (e) { /* ignore */ }
     pendingBrowseAction = () => openDetailReal(id);
@@ -24264,5 +24265,77 @@ main.main.empty-with-booked:has(> .empty-state.show) > .empty-state.show{positio
 #chargesModal .charges-share-btn{right:62px !important}
 #chargesModal .charges-share-btn svg{width:18px !important;height:18px !important}
 </style>
+<script>
+/* ── One tab only ─────────────────────────────────────────────────────────────
+   Links opened from WhatsApp always arrive in a NEW tab (a website can't change that).
+   So the new tab asks an already-open HomeLoop tab to show the property instead.
+   Fixes vs. the old version:
+   - the existing tab now waits until PROPERTIES has loaded before answering, so the
+     property really opens (before, it could ack too early and show nothing);
+   - if it can't open the property, it does NOT ack, so the new tab keeps working normally;
+   - the new tab tries to close itself, and if the browser refuses it shows a clear notice. */
+(function () {
+  try {
+    if (!('BroadcastChannel' in window)) return;
+    var bc = new BroadcastChannel('homeloop_tabs');
+    var me = Math.random().toString(36).slice(2);
+    var m = location.pathname.match(/^\/property\/([a-fA-F0-9]{24})$/);
+    var propId = m ? m[1] : new URLSearchParams(location.search).get('property');
+    var stay = false;
+    try { stay = sessionStorage.getItem('hl_stay') === '1'; } catch (e) {}
+
+    function findProp(id) {
+      try {
+        return PROPERTIES.find(function (x) { return String(x.id) === id; }) ||
+               BOOKED_PROPERTIES.find(function (x) { return String(x.id) === id; });
+      } catch (e) { return null; }
+    }
+    function whenLoaded(id, cb, n) {            // wait up to ~10s for listings to load
+      var p = findProp(id);
+      if (p) return cb(p);
+      if ((n || 0) >= 40) return cb(null);
+      setTimeout(function () { whenLoaded(id, cb, (n || 0) + 1); }, 250);
+    }
+    function attention() {                       // a background tab can't be focused by script
+      var t = document.title;
+      document.title = '● Property opened — ' + t;
+      setTimeout(function () { document.title = t; }, 5000);
+      try { window.focus(); } catch (err) {}
+    }
+
+    bc.onmessage = function (e) {
+      var d = e.data || {};
+      if (d.type === 'open' && d.from !== me && !window.__hlHandedOff && document.readyState === 'complete') {
+        if (d.propId) {
+          whenLoaded(d.propId, function (p) {
+            if (!p || typeof openDetail !== 'function') return;   // can't show it → stay silent, new tab keeps it
+            bc.postMessage({ type: 'ack', to: d.from, from: me });
+            openDetail(p.id);
+            attention();
+          });
+        } else if (d.url && d.url !== '/' && d.url !== location.pathname + location.search) {
+          bc.postMessage({ type: 'ack', to: d.from, from: me });
+          location.href = d.url;                                   // compare / charges / other deep link
+        }
+      } else if (d.type === 'ack' && d.to === me && !window.__hlHandedOff) {
+        window.__hlHandedOff = true;
+        try { window.close(); } catch (err) {}
+        var o = document.createElement('div');
+        o.style.cssText = 'position:fixed;inset:0;z-index:2147483647;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:24px;text-align:center;font:600 16px Inter,system-ui,sans-serif;color:#20201d';
+        o.innerHTML = '<div>Opened in your other HomeLoop tab.<br><span style="font-weight:500;color:#666">You can close this one.</span></div>' +
+          '<button id="hlStayHere" style="background:#E03A52;color:#fff;border:0;border-radius:11px;padding:12px 20px;font:700 14px Inter,system-ui,sans-serif;cursor:pointer">Open here instead</button>';
+        document.body.appendChild(o);
+        document.getElementById('hlStayHere').onclick = function () {
+          try { sessionStorage.setItem('hl_stay', '1'); } catch (err) {}
+          location.reload();
+        };
+      }
+    };
+
+    if (!stay) bc.postMessage({ type: 'open', from: me, propId: propId, url: location.pathname + location.search });
+    try { if (stay) sessionStorage.removeItem('hl_stay'); } catch (e) {}
+  } catch (e) { /* never break the page */ }
+})();
+</script>
 </body>
 </html>
