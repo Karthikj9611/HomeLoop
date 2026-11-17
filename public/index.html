@@ -1781,6 +1781,13 @@ main.tab-explore .empty-state{display:none !important}
 .empty-state-icon svg{width:30px;height:30px;stroke:var(--brand);fill:none;stroke-width:1.6}
 .empty-state h3{font-size:17px;font-weight:800;color:var(--text);margin-bottom:6px;letter-spacing:-.2px}
 .empty-state p{font-size:13.5px;line-height:1.5;color:var(--text-3);max-width:300px;margin:0 auto}
+.empty-state-charges{display:grid;grid-template-columns:1fr 1fr;width:100%;max-width:340px;margin:18px auto 0;background:linear-gradient(135deg,rgba(255,107,53,.07),rgba(224,58,82,.07));border:1px solid var(--border-2);border-radius:16px;text-align:center;flex:0 0 auto;height:auto;min-height:max-content}
+.empty-state-charge{display:flex;flex-direction:column;align-items:center;gap:3px;padding:14px 10px 16px;min-width:0;flex-shrink:0}
+.empty-state-charge+.empty-state-charge{border-left:1px solid var(--border-2)}
+.empty-state-charge-label{font-size:10.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--text-3)}
+.empty-state-charge-value{font-size:22px;font-weight:800;line-height:1.15;color:var(--brand);letter-spacing:-.3px}
+.empty-state-charge-note{font-size:11.5px;color:var(--text-3);line-height:1.3}
+.empty-state>*{flex-shrink:0}
 .empty-state-actions{display:flex;align-items:center;gap:10px;margin-top:20px;flex-wrap:wrap;justify-content:center}
 .empty-state-btn{
   font-size:13px;font-weight:700;border-radius:10px;padding:9px 18px;cursor:pointer;
@@ -6705,6 +6712,7 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
     </div>
     <h3 id="emptyStateTitle">No properties found</h3>
     <p id="emptyStateText">We couldn't find anything matching your filters. Try widening your search or clearing a few filters.</p>
+    <div class="empty-state-charges" id="emptyStateCharges" style="display:none"></div>
     <div class="empty-state-actions" id="emptyStateActions">
       <button class="empty-state-btn primary" onclick="clearFilters()">Clear filters</button>
     </div>
@@ -10737,21 +10745,24 @@ function tabRawCount(tab) {
 // add = preset for the list form ('' = account's own type, null = no button).
 const EMPTY_PITCH = {
   All:         { t: 'No Listings Yet \u2014 List Your Property', x: 'Owners, brokers and builders can post their properties on HomeLoop and connect directly with potential buyers and tenants.', add: '' },
-  Rent:        { t: 'Rent \u2014 List Your Property', x: 'Owners and brokers can post their rental homes on HomeLoop and connect directly with genuine tenants.', add: 'Rent' },
+  Rent:        { t: 'Rent \u2014 List Your Property', x: 'Owners and brokers can post their rental homes on HomeLoop and connect directly with genuine tenants.', add: 'Rent', charges: [['Direct plan', '\u20b91,000', 'promoted for a month'], ['Managed plan', '10% rent', 'per placement']] },
+  Promoted:    { t: 'Promoted \u2014 List Your Property', x: 'Owners and brokers can promote their listings on HomeLoop and get noticed first by genuine tenants.', add: 'Rent', charges: [['Direct plan', '\u20b91,000', 'promoted for a month'], ['Managed plan', '10% rent', 'per placement']] },
   Upcoming:    { t: 'Upcoming \u2014 List Your Property', x: 'Owners and brokers can list rental homes that will be available soon and connect with tenants early.', add: 'Rent' },
   Lease:       { t: 'Lease \u2014 List Your Property', x: 'Owners can post their properties for lease on HomeLoop and connect directly with serious lessees.', add: 'Lease' },
-  PG:          { t: 'PG \u2014 List Your PG', x: 'PG owners can list their rooms and beds on HomeLoop and connect directly with students and working professionals.', add: 'PG' },
+  PG:          { t: 'PG \u2014 List Your PG', x: 'PG owners can list their rooms and beds on HomeLoop and connect directly with students and working professionals.', add: 'PG', charges: [['Listing fee', '\u20b9500', 'per listing'], ['Live for', '3 months', 'from date listed']] },
   ShortStay:   { t: 'Short Stay \u2014 List Your Stay', x: 'Hosts can list short stay homes and rooms on HomeLoop and connect directly with guests.', add: 'ShortStay' },
   Sell:        { t: 'Sell \u2014 List Your Property', x: 'Owners, brokers and builders can post their properties for sale on HomeLoop and connect directly with genuine buyers.', add: 'Sell' },
-  Broker:      { t: 'Brokers \u2014 List Your Properties', x: 'Brokers can post their listings on HomeLoop and connect directly with potential buyers and tenants.', add: '' },
-  Builder:     { t: 'Builders \u2014 List Your Properties', x: 'Builders can post their properties on HomeLoop and connect directly with potential buyers and tenants.', add: '' },
-  Maintenance: { t: 'PG & Coliving \u2014 List Your Space', x: 'PG and co-living operators can list their rooms and beds on HomeLoop and connect directly with students and working professionals.', add: 'PG' },
+  Broker:      { t: 'Brokers \u2014 List Your Properties', x: 'Brokers can post their listings on HomeLoop and connect directly with potential buyers and tenants.', add: '', charges: [['Listing fee', '\u20b91,000', 'per listing'], ['Live for', '1 month', 'from date listed']] },
+  Builder:     { t: 'Builders \u2014 List Your Properties', x: 'Builders can post their properties on HomeLoop and connect directly with potential buyers and tenants.', add: '', charges: [['Promote listing', '\u20b91,000', 'flat fee'], ['Promoted for', '1 month', 'from date listed']] },
+  Maintenance: { t: 'PG & Coliving \u2014 List Your Space', x: 'PG and co-living operators can list their rooms and beds on HomeLoop and connect directly with students and working professionals.', add: 'PG', charges: [['Listing fee', '\u20b9500', 'per listing'], ['Live for', '3 months', 'from date listed']] },
 };
 
 function setEmptyStateContent() {
   const title = document.getElementById('emptyStateTitle');
   const text = document.getElementById('emptyStateText');
   const actions = document.getElementById('emptyStateActions');
+  const chargesEl = document.getElementById('emptyStateCharges');
+  if (chargesEl) { chargesEl.style.display = 'none'; chargesEl.innerHTML = ''; }
   if (!title || !text || !actions) return;
 
   // The very first renderCards() call fires synchronously on page load,
@@ -10780,6 +10791,10 @@ function setEmptyStateContent() {
       '<a class="empty-state-btn primary" href="tel:+91' + COORDINATOR_PHONE + '" style="text-decoration:none">Call us</a>' +
       '<a class="empty-state-btn secondary" href="https://wa.me/91' + COORDINATOR_PHONE + '" target="_blank" rel="noopener" style="text-decoration:none">WhatsApp</a>';
     actions.style.display = '';
+    if (chargesEl && pitch.charges) {
+      chargesEl.innerHTML = pitch.charges.map(c => '<div class="empty-state-charge"><span class="empty-state-charge-label">' + c[0] + '</span><span class="empty-state-charge-value">' + c[1] + '</span><span class="empty-state-charge-note">' + c[2] + '</span></div>').join('');
+      chargesEl.style.display = '';
+    }
   };
 
   // Builders / Management tabs have no listings yet — "list your properties" pitch.
