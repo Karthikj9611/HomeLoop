@@ -9025,7 +9025,7 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
               <svg viewBox="0 0 24 24"><path d="M6 3h12"/><path d="M6 8h12"/><path d="M6 13l8.5 8"/><path d="M6 13h3a5 5 0 0 0 0-10"/></svg>
             </div>
             <div class="charges-mini-label">For every placement</div>
-            <div class="charges-mini-amount">10% rent</div>
+            <div class="charges-mini-amount">5% rent</div>
             <div class="charges-mini-example">e.g. ₹10k rent → ₹1,000</div>
           </div>
         </div>
@@ -9033,7 +9033,7 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
         <div class="svc-price-note charges-refer-note"><strong>Note:</strong>
 <ul class="charges-note-list">
 <li>We handle tenant shortlisting and visits.</li>
-<li>We keep a <b>10% fee</b> when the tenant pays the deposit; the tenant pays the rest to you.</li>
+<li>We keep a <b>5% fee</b> when the tenant pays the deposit; the tenant pays the rest to you.</li>
 <li><b>Promoted properties</b> get priority, then by <b>listed date</b>.</li>
 </ul></div>
 </div></div>
@@ -9238,7 +9238,7 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
             <svg viewBox="0 0 24 24"><path d="M6 3h12"/><path d="M6 8h12"/><path d="M6 13l8.5 8"/><path d="M6 13h3a5 5 0 0 0 0-10"/></svg>
           </div>
           <div class="charges-mini-label">For every placement</div>
-          <div class="charges-mini-amount">10% rent</div>
+          <div class="charges-mini-amount">5% rent</div>
           <div class="charges-mini-example">e.g. ₹10k rent → ₹1,000</div>
         </div>
       </div>
@@ -9246,7 +9246,7 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
       <div class="svc-price-note charges-refer-note"><strong>Note:</strong>
 <ul class="charges-note-list">
 <li>We handle tenant shortlisting and visits.</li>
-<li>We keep a <b>10% fee</b> when the tenant pays the deposit; the tenant pays the rest to you.</li>
+<li>We keep a <b>5% fee</b> when the tenant pays the deposit; the tenant pays the rest to you.</li>
 <li><b>Promoted properties</b> get priority, then by <b>listed date</b>.</li>
 </ul></div>
 </div></div>
@@ -9405,7 +9405,7 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
               <svg viewBox="0 0 24 24"><path d="M6 3h12"/><path d="M6 8h12"/><path d="M6 13l8.5 8"/><path d="M6 13h3a5 5 0 0 0 0-10"/></svg>
             </div>
             <div class="charges-mini-label">For every placement</div>
-            <div class="charges-mini-amount">10% rent</div>
+            <div class="charges-mini-amount">5% rent</div>
             <div class="charges-mini-example">e.g. ₹10k rent → ₹1,000</div>
           </div>
         </div>
@@ -9413,7 +9413,7 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
         <div class="svc-price-note charges-refer-note"><strong>Note:</strong>
 <ul class="charges-note-list">
 <li>We handle tenant shortlisting and visits.</li>
-<li>We keep a <b>10% fee</b> when the tenant pays the deposit; the tenant pays the rest to you.</li>
+<li>We keep a <b>5% fee</b> when the tenant pays the deposit; the tenant pays the rest to you.</li>
 <li><b>Promoted properties</b> get priority, then by <b>listed date</b>.</li>
 </ul></div>
 </div></div>
@@ -10763,9 +10763,9 @@ function tabRawCount(tab) {
 // add = preset for the list form ('' = account's own type, null = no button).
 const EMPTY_PITCH = {
   All:         { t: 'No Listings Yet \u2014 List Your Property', x: 'Owners, brokers and builders can post their properties on HomeLoop. Tenants and buyers contact you directly.', add: '' },
-  Rent:        { t: 'Rent \u2014 List Your Property', x: 'Owners and brokers can post their rental homes on HomeLoop. Tenants contact you directly.', add: 'Rent' },
+  Rent:        { t: 'Rent \u2014 List Your Property', x: 'Owners and brokers can post their rental homes on HomeLoop. Tenants contact you directly.', add: 'Rent', charges: [['Listing & live', 'Free', 'no charge'], ['Once we fill it', '5% rent', 'per placement']] },
   Promoted:    { t: 'Promoted \u2014 List Your Property', x: 'Owners and brokers can promote their listings on HomeLoop and get noticed first. Tenants contact you directly.', add: 'Rent', charges: [['Promote only', '\u20b9500', 'promoted for a month'], ['Promote + contact', '\u20b91,000', 'promoted for a month']] },
-  Upcoming:    { t: 'Upcoming \u2014 List Your Property', x: 'Owners and brokers can list rental homes that will be available soon. Tenants contact you directly.', add: 'Rent' },
+  Upcoming:    { t: 'Upcoming \u2014 List Your Property', x: 'Owners and brokers can list rental homes that will be available soon. Tenants contact you directly.', add: 'Rent', charges: [['Listing & live', 'Free', 'no charge'], ['Once we fill it', '5% rent', 'per placement']] },
   Lease:       { t: 'Lease \u2014 List Your Property', x: 'Owners can post their properties for lease on HomeLoop. Tenants contact you directly.', add: 'Lease' },
   PG:          { t: 'PG \u2014 List Your PG', x: 'PG owners can list their rooms and beds on HomeLoop. Tenants contact you directly.', add: 'PG', charges: [['Listing fee', '\u20b91,000', 'per listing'], ['Live for', '3 months', 'from date listed']] },
   ShortStay:   { t: 'Short Stay \u2014 List Your Stay', x: 'Hosts can list short stay homes and rooms on HomeLoop. Guests contact you directly.', add: 'ShortStay' },
