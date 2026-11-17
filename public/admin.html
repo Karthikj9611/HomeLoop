@@ -1964,13 +1964,52 @@ footer i{color:var(--gold)}
   #bookingDetailsModal .hr-modal-actions button{flex:1;padding:12px 16px;font-size:.86rem}
 }
 
+
+/* ── SEND MESSAGE (WhatsApp) modal — modern look ── */
+#sendMsgOverlay{backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);background:rgba(15,23,42,.55)!important;animation:smFade .18s ease}
+@keyframes smFade{from{opacity:0}to{opacity:1}}
+@keyframes smPop{from{opacity:0;transform:translateY(14px) scale(.97)}to{opacity:1;transform:none}}
+#sendMsgOverlay .sm-dialog{background:#fff;color:#0f172a;border-radius:22px;width:100%;max-width:500px;max-height:92vh;overflow:auto;box-shadow:0 28px 70px rgba(15,23,42,.38);animation:smPop .24s cubic-bezier(.2,.9,.3,1.15)}
+#sendMsgOverlay .sm-head{display:flex;align-items:center;gap:12px;padding:20px 22px 16px;background:linear-gradient(135deg,#e7faf0,#f7fffb);border-bottom:1px solid #dff3e8}
+#sendMsgOverlay .sm-badge{width:46px;height:46px;flex:none;border-radius:15px;background:linear-gradient(135deg,#25D366,#128C7E);color:#fff;display:flex;align-items:center;justify-content:center;font-size:24px;box-shadow:0 8px 18px rgba(37,211,102,.38)}
+#sendMsgOverlay .sm-title{font-size:17px;font-weight:800;color:#0f172a;line-height:1.2}
+#sendMsgOverlay .sm-sub{font-size:12px;color:#64748b;margin-top:2px}
+#sendMsgOverlay .sm-close{margin-left:auto;flex:none;width:34px;height:34px;border-radius:50%;border:none;background:rgba(15,23,42,.07);color:#334155;font-size:15px;line-height:1;cursor:pointer;transition:background .15s}
+#sendMsgOverlay .sm-close:hover{background:rgba(15,23,42,.14)}
+#sendMsgOverlay .sm-body{padding:16px 22px 22px}
+#sendMsgOverlay #smTpl{margin-bottom:12px!important}
+#sendMsgOverlay #smNote{font-size:12px;color:#64748b;margin-bottom:10px}
+#sendMsgOverlay #smErr{color:#dc2626;font-size:12.5px;font-weight:600;min-height:0;margin-top:2px}
+#sendMsgOverlay #smErr:empty{display:none}
+#sendMsgOverlay .sm-card{border:1px solid #e5e9f0;border-radius:18px;padding:14px 14px 16px;margin-bottom:12px;background:#fff;box-shadow:0 3px 14px rgba(15,23,42,.06);transition:opacity .2s}
+#sendMsgOverlay .sm-card-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+#sendMsgOverlay .sm-pid{background:#0f172a;color:#fff;font-weight:700;font-size:12px;padding:4px 11px;border-radius:999px;letter-spacing:.4px}
+#sendMsgOverlay .sm-loc{color:#64748b;font-size:12.5px;display:inline-flex;align-items:center;gap:5px}
+#sendMsgOverlay .sm-label{font-size:10.5px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;color:#94a3b8;margin:0 0 6px}
+#sendMsgOverlay .sm-nums{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+#sendMsgOverlay .sm-chip{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border:1.5px solid #dbe1ea;border-radius:999px;font-size:13px;font-weight:600;color:#334155;cursor:pointer;background:#fff;transition:all .15s;user-select:none}
+#sendMsgOverlay .sm-chip:hover{border-color:#9be3b7}
+#sendMsgOverlay .sm-chip input{display:none}
+#sendMsgOverlay .sm-chip .off{color:#cbd5e1;font-size:15px}
+#sendMsgOverlay .sm-chip .on{display:none;color:#25D366;font-size:15px}
+#sendMsgOverlay .sm-chip:has(input:checked){border-color:#25D366;background:#ecfdf3;color:#0f5132}
+#sendMsgOverlay .sm-chip:has(input:checked) .on{display:inline}
+#sendMsgOverlay .sm-chip:has(input:checked) .off{display:none}
+#sendMsgOverlay .sm-alt{font-weight:500;font-size:11px;color:#94a3b8}
+#sendMsgOverlay .sm-msg{width:100%;box-sizing:border-box;padding:12px 14px;border:1px solid #cfe9d9;background:#f0faf4;border-radius:16px 16px 16px 4px;font-size:13.5px;line-height:1.55;font-family:inherit;color:#0f172a;resize:vertical;outline:none;transition:border-color .15s,box-shadow .15s}
+#sendMsgOverlay .sm-msg:focus{border-color:#25D366;box-shadow:0 0 0 3px rgba(37,211,102,.18)}
+#sendMsgOverlay .sm-send{width:100%;margin-top:12px;padding:12px 16px;border:none;border-radius:13px;background:linear-gradient(135deg,#25D366,#128C7E);color:#fff;font-weight:700;font-size:14px;font-family:inherit;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 8px 18px rgba(18,140,126,.3);transition:transform .12s,box-shadow .12s}
+#sendMsgOverlay .sm-send:hover{transform:translateY(-1px);box-shadow:0 10px 22px rgba(18,140,126,.36)}
+#sendMsgOverlay .sm-send:active{transform:none}
+#sendMsgOverlay #smBody input[type=text],#sendMsgOverlay #smBody input[type=tel]{width:100%;box-sizing:border-box;padding:11px 14px!important;border:1px solid #dbe1ea!important;border-radius:12px!important;font-size:13.5px!important;outline:none}
+#sendMsgOverlay #smBody input[type=text]:focus,#sendMsgOverlay #smBody input[type=tel]:focus{border-color:#25D366!important;box-shadow:0 0 0 3px rgba(37,211,102,.18)}
+
 /* Action-column buttons: wrapper is layout-neutral; the Columns menu hides one by adding body.pact-hide-<key> */
 .pact{display:contents}
 body.pact-hide-publiccall #propertyTable .pact-publiccall{display:none!important}
 body.pact-hide-message #propertyTable .pact-message{display:none!important}
 body.pact-hide-check #propertyTable .pact-check{display:none!important}
 body.pact-hide-share #propertyTable .pact-share{display:none!important}
-body.pact-hide-tenant #propertyTable .pact-tenant{display:none!important}
 body.pact-hide-view #propertyTable .pact-view{display:none!important}
 body.pact-hide-navigate #propertyTable .pact-navigate{display:none!important}
 body.pact-hide-directions #propertyTable .pact-directions{display:none!important}
@@ -1979,6 +2018,10 @@ body.pact-hide-instagram #propertyTable .pact-instagram{display:none!important}
 body.pact-hide-delete #propertyTable .pact-delete{display:none!important}
 body.pact-hide-block #propertyTable .pact-block{display:none!important}
 body.pact-hide-booking #propertyTable .pact-booking{display:none!important}
+body.pact-hide-promoted #propertyTable .pact-promoted{display:none!important}
+body.pact-hide-verified #propertyTable .pact-verified{display:none!important}
+body.pact-hide-priority #propertyTable .pact-priority{display:none!important}
+body.pact-hide-booked #propertyTable .pact-booked{display:none!important}
 
 /* ── MODERN DATE FIELD (Booked On) ── */
 .bd-date-wrap{position:relative}
@@ -3379,7 +3422,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
    than the screen on phones with a collapsing browser bar, which pushed tall modals off-centre)
    and use margin:auto so a short card stays in the middle and a tall one scrolls inside itself. */
 @media(max-width:768px){
-  .add-modal-overlay,.prop-modal-wrap,#confirmOverlay,#alertOverlay,#sharePickOverlay,#shareTenantOverlay,#loginOverlay{
+  .add-modal-overlay,.prop-modal-wrap,#confirmOverlay,#alertOverlay,#sharePickOverlay,#loginOverlay{
     align-items:center!important;justify-content:center!important;
     padding:12px!important;box-sizing:border-box;
     overflow-y:auto;overscroll-behavior:contain;
@@ -3487,28 +3530,6 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
       <button class="confirm-ok-btn success" id="sharePickAltBtn" style="flex:1 1 100%">Alternate number</button>
       <button class="confirm-ok-btn success" id="sharePickBothBtn" style="flex:1 1 100%">Both numbers</button>
       <button class="confirm-cancel-btn" id="sharePickCancelBtn" style="flex:1 1 100%">Cancel</button>
-    </div>
-  </div>
-</div>
-
-<!-- ══ SHARE PROPERTY TO TENANT (WhatsApp) ══ -->
-<div id="shareTenantOverlay" style="display:none;position:fixed;inset:0;z-index:100000;align-items:center;justify-content:center;background:rgba(15,17,21,.55);padding:16px">
-  <div class="confirm-card" style="max-width:460px;width:100%;text-align:left">
-    <div class="confirm-icon info" style="margin:0 auto 10px"><i class="fas fa-paper-plane"></i></div>
-    <div class="confirm-title" style="text-align:center">Share property with tenant</div>
-    <div class="confirm-msg" style="text-align:center;margin-bottom:14px">Pick a tenant from the list, or type a WhatsApp number. A short HomeLoop message with the property view link(s) is sent on WhatsApp.</div>
-    <div id="shareTenantNote" style="display:none;font-size:12px;color:#0369a1;background:#e0f2fe;border-radius:8px;padding:6px 10px;margin-bottom:10px"></div>
-    <label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px">Find tenant <span style="font-weight:400;color:#6b7280">(name or number)</span></label>
-    <input type="text" id="shareTenantSearch" autocomplete="off" placeholder="Search tenants…" style="width:100%;padding:10px 12px;border:1px solid #d5d9e0;border-radius:10px;font-size:14px;margin-bottom:4px">
-    <div id="shareTenantList" style="display:none;max-height:190px;overflow-y:auto;border:1px solid #d5d9e0;border-radius:10px;background:#fff;margin-bottom:8px"></div>
-    <label style="font-size:12px;font-weight:600;display:block;margin:8px 0 4px">Tenant mobile number</label>
-    <input type="tel" id="shareTenantPhone" inputmode="numeric" maxlength="15" placeholder="10-digit mobile number" style="width:100%;padding:10px 12px;border:1px solid #d5d9e0;border-radius:10px;font-size:14px;margin-bottom:6px">
-    <div id="shareTenantErr" style="color:#c0392b;font-size:12px;min-height:16px;margin-bottom:6px"></div>
-    <label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px">Message (you can edit it)</label>
-    <textarea id="shareTenantMsg" rows="3" style="width:100%;padding:10px 12px;border:1px solid #d5d9e0;border-radius:10px;font-size:13px;font-family:inherit;resize:vertical;margin-bottom:14px"></textarea>
-    <div class="confirm-actions" style="flex-wrap:wrap">
-      <button class="confirm-ok-btn success" id="shareTenantSendBtn" style="flex:1 1 100%"><i class="fab fa-whatsapp"></i> Send on WhatsApp</button>
-      <button class="confirm-cancel-btn" id="shareTenantCancelBtn" style="flex:1 1 100%">Cancel</button>
     </div>
   </div>
 </div>
@@ -7142,7 +7163,7 @@ function applyButtonAccess(){
     // (instead of rendering it greyed-out). Only View (and the Verified status
     // badge on Customers) stay visible.
     const VIEW_ONLY_HIDE = {
-      properties: ['publiccall','block','check','share','tenant','message','navigate','directions','facebook','instagram','delete','booking'],
+      properties: ['publiccall','block','check','share','message','navigate','directions','facebook','instagram','delete','booking'],
       customers:  ['edit','subscription','delete','logout','block','resetviews','publiccall'],
     };
     Object.keys(VIEW_ONLY_HIDE).forEach(mod => {
@@ -11170,7 +11191,7 @@ window.togglePropFlag = async function(id, field, checkboxEl){
     if(_adminPropCache[id]) _adminPropCache[id][field] = confirmedVal;
     propTable.rows().every(function(){
       const rd = this.data();
-      if(rd && rd._id === id){ rd[field] = confirmedVal; }
+      if(rd && rd._id === id){ rd[field] = confirmedVal; if(field === 'promoted'){ if(!confirmedVal && rd.full) rd.full.promotedPriority = 0; this.invalidate(); } }
     });
     updatePropCategoryCounts(propTable.rows().data().toArray());
     // Booked now affects visibility in every tab (All, Promoted, Rent/Lease/PG/
@@ -11183,7 +11204,12 @@ window.togglePropFlag = async function(id, field, checkboxEl){
     // wa.me tabs since the original click's user-gesture window can lapse;
     // the Share button in the Action column is the reliable fallback.
     if(field === 'verified' && confirmedVal === true){
-      const shareNow = confirm('Listing verified and live! Share the link with the owner via WhatsApp now?');
+      const shareNow = await showConfirmModal({
+        title: 'Listing verified and live!',
+        message: 'Send "Your property is live on HomeLoop: <link>" to the owner on WhatsApp now?',
+        okText: 'Send on WhatsApp',
+        variant: 'info'
+      });
       if(shareNow) shareListingToOwner(id);
     }
   } catch(err){
@@ -11350,6 +11376,11 @@ window.togglePropBlock = async function(id, blocked){
    or not Promoted is on yet, so a position can be set in advance. Saves on
    blur/change (no confirm modal, since it's a plain reorder rather than a
    visibility change). */
+window.syncPriorityInput = function(promotedEl){
+  const cell = promotedEl.closest('td'); if(!cell) return;
+  const inp = cell.querySelector('.promoted-priority-input'); if(!inp) return;
+  inp.disabled = !promotedEl.checked || !canAct('properties');
+};
 window.setPromotedPriority = async function(id, inputEl){
   if(blockIfViewOnly('properties')) return;
   const raw = inputEl.value.trim();
@@ -11365,6 +11396,18 @@ window.setPromotedPriority = async function(id, inputEl){
   }
   const prevPos = inputEl.dataset.prev !== undefined ? inputEl.dataset.prev : inputEl.defaultValue;
   if(String(prevPos) === String(value)) return; // unchanged — nothing to save
+  if(value > 0){
+    let clashId = null;
+    propTable.rows().every(function(){
+      const rd = this.data();
+      if(rd && rd._id !== id && rd.promoted && rd.full && Number(rd.full.promotedPriority) === value) clashId = rd.propertyId || 'another listing';
+    });
+    if(clashId){
+      showAlertModal('Position ' + value + ' is already used by ' + clashId + '. Choose a different position.', { variant: 'error', title: 'Duplicate position' });
+      inputEl.value = prevPos;
+      return;
+    }
+  }
   const okPos = await showConfirmModal({
     title: 'Set promoted position to ' + value + '?',
     message: value === 0 ? 'This listing will be reset to unranked.' : 'This listing will move to position ' + value + ' among promoted listings.',
@@ -11390,7 +11433,7 @@ window.setPromotedPriority = async function(id, inputEl){
     if(_adminPropCache[id] && _adminPropCache[id].full) _adminPropCache[id].full.promotedPriority = confirmedVal;
     propTable.rows().every(function(){
       const rd = this.data();
-      if(rd && rd._id === id && rd.full){ rd.full.promotedPriority = confirmedVal; }
+      if(rd && rd._id === id && rd.full){ rd.full.promotedPriority = confirmedVal; this.invalidate(); }
     });
     // Re-sort/redraw so the new position is reflected immediately if the
     // table happens to be sorted by this column. Also, for a reset to 0,
@@ -11514,7 +11557,7 @@ window.shareListingToOwner = async function(id){
   if(!row.verified){ alert("This listing isn't verified yet — verify it first, then share."); return; }
 
   const link = `${BASE}/property/${id}`;
-  const msg = `Your property is live on HomeLoop: ${link}`;
+  const msg = buildLiveMessage(row);
   const text = encodeURIComponent(msg);
 
   const ownerNum = waDigits(row.ownerNumber);
@@ -11536,183 +11579,30 @@ window.shareListingToOwner = async function(id){
   openWhatsAppTabs(numbers, encodeURIComponent(picked.text.trim() || msg));
 };
 
-/* ── SHARE PROPERTY LINK TO A TENANT (WhatsApp) ──
-   Admin types the tenant's number and sends just the property view link
-   through WhatsApp. Gated on row.verified because the link
-   only opens for live listings. */
-function buildTenantShareMessage(links){
-  if(links.length === 1){
-    return 'We have verified property for you.\n' + links[0];
-  }
-  return 'We have ' + links.length + ' verified properties for you.\n'
-    + links.map((l, i) => (i + 1) + '. ' + l).join('\n');
-}
-
-/* Tenant picker for the share popup: lists every tenant (owners and Lost Leads
-   are left out) as "Name – number". Typing filters by name or number; tapping
-   one fills the mobile field. Typing a number by hand still works. */
-function _normTenants(rows){
-  return (rows || [])
-    .filter(r => r && (r.accountType || 'customer') === 'customer' && !isLeadRow(r))
-    .map(r => {
-      let m = String(r.mobile || '').replace(/\D/g, '');
-      if(m.length === 12 && m.indexOf('91') === 0) m = m.slice(2);
-      const name = (r.name || ((r.firstName || '') + ' ' + (r.lastName || '')).trim() || 'Unnamed').trim();
-      return { name, mobile: m };
-    })
-    .filter(t => t.mobile.length >= 10)
-    .sort((a, b) => a.name.localeCompare(b.name));
-}
-function initTenantPicker(phoneEl, errEl, searchEl, listEl){
-  const search = searchEl || document.getElementById('shareTenantSearch');
-  const list   = listEl || document.getElementById('shareTenantList');
-  search.value = ''; list.style.display = 'none'; list.innerHTML = '';
-
-  let tenants = [];
-  try{ if(typeof dataTable !== 'undefined' && dataTable) tenants = _normTenants(dataTable.rows().data().toArray()); }catch(e){}
-  let loaded = tenants.length > 0;
-  async function ensureLoaded(){
-    if(loaded) return;
-    loaded = true;
-    try{
-      const res = await fetch(`${BASE}/api/users`, { headers: authHeaders() });
-      if(res.ok){ const d = await res.json(); if(Array.isArray(d)) tenants = _normTenants(d); }
-    }catch(e){}
-  }
-
-  let hits = [];
-  function render(){
-    const q  = search.value.trim().toLowerCase();
-    const qd = q.replace(/\D/g, '');
-    hits = tenants.filter(t => !q || t.name.toLowerCase().includes(q) || (qd && t.mobile.includes(qd))).slice(0, 80);
-    list.innerHTML = hits.length
-      ? hits.map((t, i) => `<div class="tp-item" data-i="${i}"><b>${escapeHtml(t.name)}</b> – ${escapeHtml(t.mobile)}</div>`).join('')
-      : '<div class="tp-empty">No matching tenant — type the number below.</div>';
-    list.style.display = 'block';
-  }
-  search.onfocus = async function(){ await ensureLoaded(); render(); };
-  search.oninput = async function(){ await ensureLoaded(); render(); };
-  search.onblur  = function(){ list.style.display = 'none'; };
-  list.onmousedown = function(e){ e.preventDefault(); };   // keep focus so the click lands
-  list.onclick = function(e){
-    const el = e.target.closest('.tp-item');
-    if(!el) return;
-    const t = hits[Number(el.getAttribute('data-i'))];
-    if(!t) return;
-    phoneEl.value = t.mobile;
-    search.value = t.name + ' – ' + t.mobile;
-    errEl.textContent = '';
-    list.style.display = 'none';
-  };
-}
-
-// Opens the tenant-share popup for one or many listings (only verified
-// ones are included, since the link opens only for live listings).
-function openTenantShareModal(ids){
-  const rows = ids.map(id => _adminPropCache[id]).filter(Boolean);
-  if(!rows.length){ alert('Listing details not loaded yet — please retry.'); return; }
-  const verifiedRows = rows.filter(r => r.verified);
-  if(!verifiedRows.length){
-    alert(rows.length === 1
-      ? "This listing isn't verified yet — verify it first, then share."
-      : "None of the selected listings are verified yet — verify them first, then share.");
-    return;
-  }
-  const skipped = rows.length - verifiedRows.length;
-  const links = verifiedRows.map(r => `${BASE}/property/${r._id}`);
-
-  const overlay = document.getElementById('shareTenantOverlay');
-  const phoneEl = document.getElementById('shareTenantPhone');
-  const msgEl   = document.getElementById('shareTenantMsg');
-  const errEl   = document.getElementById('shareTenantErr');
-  const noteEl  = document.getElementById('shareTenantNote');
-  const sendBtn = document.getElementById('shareTenantSendBtn');
-  const cancelBtn = document.getElementById('shareTenantCancelBtn');
-
-  phoneEl.value = '';
-  errEl.textContent = '';
-  initTenantPicker(phoneEl, errEl);
-  noteEl.textContent = (verifiedRows.length > 1 ? verifiedRows.length + ' property links included. ' : '')
-    + (skipped ? skipped + ' unverified listing' + (skipped > 1 ? 's were' : ' was') + ' left out.' : '');
-  noteEl.style.display = noteEl.textContent ? 'block' : 'none';
-  msgEl.value = buildTenantShareMessage(links);
-  msgEl.rows = Math.min(14, Math.max(3, links.length + 4));
-
-  function close(){
-    overlay.style.display = 'none';
-    sendBtn.removeEventListener('click', onSend);
-    cancelBtn.removeEventListener('click', close);
-    overlay.removeEventListener('click', onOverlay);
-    document.removeEventListener('keydown', onKey);
-  }
-  function onOverlay(e){ if(e.target === overlay) close(); }
-  function onKey(e){ if(e.key === 'Escape') close(); }
-  function onSend(){
-    const digits = String(phoneEl.value || '').replace(/\D/g, '');
-    const num = waDigits(digits);
-    if(!/^\d{10,15}$/.test(digits) || num.length < 12){
-      errEl.textContent = 'Enter a valid 10-digit mobile number.';
-      phoneEl.focus();
-      return;
-    }
-    const text = encodeURIComponent(msgEl.value.trim() || buildTenantShareMessage(links));
-    window.open(`https://wa.me/${num}?text=${text}`, '_blank');
-    close();
-  }
-
-  sendBtn.addEventListener('click', onSend);
-  cancelBtn.addEventListener('click', close);
-  overlay.addEventListener('click', onOverlay);
-  document.addEventListener('keydown', onKey);
-  overlay.style.display = 'flex';
-  phoneEl.focus();   // search list opens only when the Find tenant box is tapped
-}
-
-// Row "Tenant" button — one listing.
-window.shareListingToTenant = function(id){
-  if(blockIfViewOnly('properties')) return;
-  openTenantShareModal([id]);
-};
-
-// Toolbar "Share to Tenant" button — every selected listing in one message.
-window.shareSelectedToTenant = function(){
-  if(blockIfViewOnly('properties')) return;
-  const ids = Array.from(_selectedPropIds);
-  if(!ids.length){ alert('Select at least one property first.'); return; }
-  openTenantShareModal(ids);
-};
-
 /* ── UNIFIED "SEND MESSAGE" POPUP (WhatsApp) ──
-   One popup for: Live link (owner/alt), Availability check (owner/alt), Tenant properties.
+   One popup for: Live link (owner/alt), Availability check (owner/alt).
    Works for one listing (row "Message" button) or many (toolbar). Templates live in SM_TPLS;
-   each is gated by the same per-button permission the old buttons used (share / check / tenant).
+   each is gated by the same per-button permission the old buttons used (share / check).
    Nothing is sent until the admin taps Send; owner cards each have their own Send (own user gesture). */
-var SM_TPLS = [
-  { key:'live',   label:'Live link',          perm:'share'  }
-];
-var _sm = { ids:[], tpl:'', rows:[] };
-function _smEl(id){ return document.getElementById(id); }
-function _smBuild(){
-  if(_smEl('sendMsgOverlay')) return;
-  var d = document.createElement('div');
-  d.id = 'sendMsgOverlay';
-  d.style.cssText = 'display:none;position:fixed;inset:0;z-index:1100;background:rgba(0,0,0,.5);align-items:center;justify-content:center;padding:16px';
-  d.innerHTML =
-    '<div style="background:var(--bg,#fff);color:var(--text,#222);border-radius:16px;width:100%;max-width:560px;max-height:92vh;overflow:auto;padding:18px 20px;box-shadow:0 12px 40px rgba(0,0,0,.3)">' +
-      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">' +
-        '<div style="font-size:16px;font-weight:800"><i class="fab fa-whatsapp" style="color:#25D366"></i> Send message <span id="smCount" style="font-weight:600;font-size:12px;color:#777"></span></div>' +
-        '<button type="button" id="smClose" aria-label="Close" style="background:none;border:none;font-size:20px;cursor:pointer;line-height:1">\u2715</button>' +
-      '</div>' +
-      '<div id="smTpl" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px"></div>' +
-      '<div id="smNote" style="font-size:12px;color:#777;margin-bottom:8px"></div>' +
-      '<div id="smBody"></div>' +
-      '<div id="smErr" style="color:#dc2626;font-size:12.5px;font-weight:600;min-height:16px;margin-top:6px"></div>' +
-      '<div style="display:flex;gap:8px;margin-top:10px"><button type="button" id="smSend" class="confirm-ok-btn success" style="flex:1"><i class="fab fa-whatsapp"></i> Send on WhatsApp</button></div>' +
-    '</div>';
-  document.body.appendChild(d);
-  _smEl('smClose').onclick = smClose;
-  d.addEventListener('click', function(e){ if(e.target === d) smClose(); });
-  document.addEventListener('keydown', function(e){ if(e.key === 'Escape' && d.style.display !== 'none' && !/TEXTAREA|INPUT/.test((document.activeElement||{}).tagName||'')) smClose(); });
+function propertyDetailLines(r){
+  var money = function(v){
+    if(v == null || v === '') return '';
+    var n = Number(String(v).replace(/[^\d.]/g, ''));
+    return (isFinite(n) && n > 0 && /^[\s\u20B9,\d.]+$/.test(String(v))) ? '\u20B9' + n.toLocaleString('en-IN') : String(v);
+  };
+  var priceLabel = /sell|sale/i.test(r.status || '') ? 'Price' : 'Rent';
+  var loc = [r.loc, r.city].filter(Boolean).join(', ');
+  var lines = [];
+  if(r.title)        lines.push('\uD83C\uDFE0 Property: ' + r.title);
+  if(r.bhk)          lines.push('\uD83D\uDECF\uFE0F BHK: ' + r.bhk);
+  if(r.displayPrice) lines.push('\uD83D\uDCB0 ' + priceLabel + ': ' + r.displayPrice);
+  if(r.deposit != null && r.deposit !== '') lines.push('\uD83D\uDD10 Deposit: ' + money(r.deposit));
+  if(loc)            lines.push('\uD83D\uDCCD Location: ' + loc);
+  if(r.propertyId)   lines.push('\uD83C\uDD94 Property ID: ' + r.propertyId);
+  return lines;
+}
+function buildLiveMessage(r){
+  return ['Your property is live on HomeLoop! \uD83C\uDF89', ''].concat(propertyDetailLines(r), ['', '\uD83D\uDD17 ' + BASE + '/property/' + r._id]).join('\n');
 }
 function smClose(){ var o = _smEl('sendMsgOverlay'); if(o) o.style.display = 'none'; }
 window.openSendMessage = function(ids, tpl){
@@ -11743,48 +11633,29 @@ function smRender(tpl){
   var body = _smEl('smBody'), note = _smEl('smNote'), err = _smEl('smErr'), send = _smEl('smSend');
   err.textContent = ''; note.textContent = '';
   var rows = _sm.rows;
-  if(tpl === 'tenant'){
-    var ok = rows.filter(function(r){ return r.verified; });
-    if(!ok.length){ body.innerHTML = ''; send.style.display = 'none'; err.textContent = "None of the selected listings are verified yet \u2014 verify them first."; return; }
-    var links = ok.map(function(r){ return BASE + '/property/' + r._id; });
-    if(rows.length !== ok.length) note.textContent = (rows.length - ok.length) + ' unverified listing(s) left out.';
-    send.style.display = '';
-    body.innerHTML =
-      '<input id="smTSearch" type="text" placeholder="Find tenant by name or number" autocomplete="off" style="width:100%;padding:9px 10px;border:1px solid #d5d9e0;border-radius:8px;font-size:13px;margin-bottom:4px">' +
-      '<div id="smTList" style="display:none;max-height:160px;overflow:auto;border:1px solid #d5d9e0;border-radius:8px;margin-bottom:6px"></div>' +
-      '<input id="smTPhone" type="tel" inputmode="numeric" placeholder="WhatsApp number (10 digits)" style="width:100%;padding:9px 10px;border:1px solid #d5d9e0;border-radius:8px;font-size:13px;margin-bottom:6px">' +
-      '<textarea id="smTMsg" rows="' + Math.min(14, Math.max(3, links.length + 4)) + '" style="width:100%;padding:8px 10px;border:1px solid #d5d9e0;border-radius:8px;font-size:12.5px;font-family:inherit;resize:vertical"></textarea>';
-    _smEl('smTMsg').value = buildTenantShareMessage(links);
-    initTenantPicker(_smEl('smTPhone'), err, _smEl('smTSearch'), _smEl('smTList'));
-    send.onclick = function(){
-      var digits = String(_smEl('smTPhone').value || '').replace(/\D/g, ''), num = waDigits(digits);
-      if(!/^\d{10,15}$/.test(digits) || num.length < 12){ err.textContent = 'Enter a valid 10-digit mobile number.'; return; }
-      window.open('https://wa.me/' + num + '?text=' + encodeURIComponent(_smEl('smTMsg').value.trim() || buildTenantShareMessage(links)), '_blank');
-      smClose();
-    };
-    return;
-  }
   // Owner templates: one card per listing, own number choice + own Send.
   send.style.display = 'none';
   var cards = [], skipped = 0;
   rows.forEach(function(r){
     var o = waDigits(r.ownerNumber), a = waDigits(r.ownerAltPhone);
     if((tpl === 'live' && !r.verified) || (!o && !a)){ skipped++; return; }
-    var msg = tpl === 'live' ? 'Your property is live on HomeLoop: ' + BASE + '/property/' + r._id : buildAvailabilityCheckMessage(r);
+    var msg = tpl === 'live' ? buildLiveMessage(r) : buildAvailabilityCheckMessage(r);
     var oDef = tpl === 'live' ? !!o : (!a && !!o), aDef = tpl === 'live' ? !!a : !!a;
     cards.push({ r: r, o: o, a: a, msg: msg, oDef: oDef, aDef: aDef });
   });
   if(skipped) note.textContent = skipped + ' listing(s) skipped (' + (tpl === 'live' ? 'not verified or ' : '') + 'no owner number on file).';
   if(!cards.length){ body.innerHTML = ''; err.textContent = 'Nothing to send for the selected listings.'; return; }
   body.innerHTML = cards.map(function(c, i){
-    return '<div id="smCard' + i + '" style="border:1px solid #e3e6ec;border-radius:10px;padding:10px 12px;margin-bottom:8px">' +
-      '<div style="font-weight:700;font-size:13px">' + escapeHtml(c.r.propertyId || c.r.title || 'Property') + ' <span style="font-weight:500;color:#777">' + escapeHtml([c.r.loc, c.r.city].filter(Boolean).join(', ')) + '</span></div>' +
-      '<div style="display:flex;gap:14px;flex-wrap:wrap;margin:6px 0;font-size:12.5px">' +
-        (c.o ? '<label><input type="checkbox" id="smO' + i + '"' + (c.oDef ? ' checked' : '') + '> ' + escapeHtml(c.r.ownerNumber) + '</label>' : '') +
-        (c.a ? '<label><input type="checkbox" id="smA' + i + '"' + (c.aDef ? ' checked' : '') + '> ' + escapeHtml(c.r.ownerAltPhone) + ' (alt)</label>' : '') +
-      '</div>' +
-      '<textarea id="smM' + i + '" rows="' + (tpl === 'avail' ? 4 : 2) + '" style="width:100%;padding:8px 10px;border:1px solid #d5d9e0;border-radius:8px;font-size:12.5px;font-family:inherit;resize:vertical"></textarea>' +
-      '<button type="button" class="confirm-ok-btn success" id="smS' + i + '" style="margin-top:6px"><i class="fab fa-whatsapp"></i> Send</button></div>';
+    var chip = function(id, num, checked, alt){
+      return '<label class="sm-chip"><input type="checkbox" id="' + id + i + '"' + (checked ? ' checked' : '') + '><i class="fas fa-circle-check on"></i><i class="far fa-circle off"></i>' + escapeHtml(num) + (alt ? ' <span class="sm-alt">alt</span>' : '') + '</label>';
+    };
+    var loc = [c.r.loc, c.r.city].filter(Boolean).join(', ');
+    return '<div class="sm-card" id="smCard' + i + '">' +
+      '<div class="sm-label">Send to</div>' +
+      '<div class="sm-nums">' + (c.o ? chip('smO', c.r.ownerNumber, c.oDef, false) : '') + (c.a ? chip('smA', c.r.ownerAltPhone, c.aDef, true) : '') + '</div>' +
+      '<div class="sm-label">Message</div>' +
+      '<textarea class="sm-msg" id="smM' + i + '" rows="' + (tpl === 'avail' ? 4 : 10) + '"></textarea>' +
+      '<button type="button" class="sm-send" id="smS' + i + '"><i class="fab fa-whatsapp"></i> Send on WhatsApp</button></div>';
   }).join('');
   cards.forEach(function(c, i){
     _smEl('smM' + i).value = c.msg;
@@ -11795,15 +11666,14 @@ function smRender(tpl){
       if(!nums.length){ err.textContent = 'Tick at least one number for ' + (c.r.propertyId || 'this listing') + '.'; return; }
       err.textContent = '';
       openWhatsAppTabs(nums, encodeURIComponent(_smEl('smM' + i).value.trim() || c.msg));
-      _smEl('smCard' + i).style.opacity = '.55';
+      _smEl('smCard' + i).style.opacity = '.6';
+      _smEl('smS' + i).innerHTML = '<i class="fas fa-check"></i> Sent \u2014 send again';
     };
   });
 }
 // Old entry points now open the same popup (old code stays in the file but is no longer reached).
 window.addEventListener('load', function(){
   window.shareListingToOwner       = function(id){ openSendMessage([id], 'live'); };
-  window.shareListingToTenant      = function(id){ openSendMessage([id], 'tenant'); };
-  window.shareSelectedToTenant     = function(){ openSendMessage(Array.from(_selectedPropIds), 'tenant'); };
 });
 
 /* ── SHARE VERIFIED LISTING TO FACEBOOK / INSTAGRAM (company account) ──
@@ -11920,18 +11790,20 @@ function availabilityDetails(row){
 }
 function buildAvailabilityCheckMessage(row){
   const link = row._id ? `https://www.homeloop.in/property/${row._id}` : '';
-  const details = availabilityDetails(row);
-  return `Hi! Is ${row.propertyId || 'listing'}${details ? ' (' + details + ')' : ''} available?${link ? '\n' + link : ''}\n\nAny other vacant properties? List free at www.homeloop.in \u2013 we\u2019ll verify them!`;
+  const lines = propertyDetailLines(row);
+  const block = lines.length ? lines.join('\n') : (row.propertyId || 'listing');
+  return `Hi! Is this property still available?\n\n${block}${link ? '\n\n\uD83D\uDD17 ' + link : ''}\n\nAny other vacant properties? List free at www.homeloop.in \u2013 we\u2019ll verify them!`;
 }
 // One message for several properties of the same owner (Owner Calls tab).
 function buildOwnerAvailabilityMessage(rows){
   if(rows.length === 1) return buildAvailabilityCheckMessage(rows[0]);
-  const lines = rows.map((row, i) => {
-    const d = availabilityDetails(row);
+  const items = rows.map((row, i) => {
     const link = row._id ? `https://www.homeloop.in/property/${row._id}` : '';
-    return `${i + 1}. ${row.propertyId || 'Listing'}${d ? ' (' + d + ')' : ''}${link ? '\n' + link : ''}`;
+    const lines = propertyDetailLines(row);
+    const block = lines.length ? lines.join('\n') : (row.propertyId || 'Listing');
+    return `${i + 1}.\n${block}${link ? '\n\uD83D\uDD17 ' + link : ''}`;
   });
-  return `Hi! Are these properties still available?\n\n${lines.join('\n\n')}\n\nAny other vacant properties? List free at www.homeloop.in \u2013 we\u2019ll verify them!`;
+  return `Hi! Are these properties still available?\n\n${items.join('\n\n')}\n\nAny other vacant properties? List free at www.homeloop.in \u2013 we\u2019ll verify them!`;
 }
 
 window.checkAvailabilityForRow = async function(id){
@@ -13288,7 +13160,7 @@ $(document).ready(function(){
           return (row.title||'').trim();
       }},
       /* 2 – Promoted (toggle) */
-      { data:'promoted', orderable:false, className:'dt-body-center', render:(d,t,row)=>{
+      { data:'promoted', orderable:false, visible:false, className:'dt-body-center', render:(d,t,row)=>{
           if(t!=='display') return d ? 'Yes' : 'No';
           return `<label class="mini-toggle-wrap"><span class="mini-toggle promoted-toggle">
             <input type="checkbox" ${d?'checked':''} ${canAct('properties')?'':'disabled'} onchange="togglePropFlag('${row._id}','promoted',this)">
@@ -13296,7 +13168,7 @@ $(document).ready(function(){
           </span></label>`;
       }},
       /* 3 – Verified (toggle) */
-      { data:'verified', orderable:false, className:'dt-body-center', render:(d,t,row)=>{
+      { data:'verified', orderable:false, visible:false, className:'dt-body-center', render:(d,t,row)=>{
           if(t!=='display') return d ? 'Yes' : 'No';
           return `<label class="mini-toggle-wrap"><span class="mini-toggle verified-toggle">
             <input type="checkbox" ${d?'checked':''} ${canAct('properties')?'':'disabled'} onchange="togglePropFlag('${row._id}','verified',this)">
@@ -13304,7 +13176,7 @@ $(document).ready(function(){
           </span></label>`;
       }},
       /* 4 – Booked (toggle) */
-      { data:'booked', orderable:false, className:'dt-body-center', render:(d,t,row)=>{
+      { data:'booked', orderable:false, visible:false, className:'dt-body-center', render:(d,t,row)=>{
           if(t!=='display') return d ? 'Yes' : 'No';
           return `<label class="mini-toggle-wrap"><span class="mini-toggle booked-toggle">
             <input type="checkbox" ${d?'checked':''} ${canAct('properties')?'':'disabled'} onchange="togglePropFlag('${row._id}','booked',this)">
@@ -13465,13 +13337,15 @@ $(document).ready(function(){
          sharing a number fall back to newest-first. Editable here — doesn't
          require Promoted to already be on, so a position can be queued up in
          advance and take effect the moment the toggle flips on.) */
-      { data:null, orderable:true, className:'dt-body-center', render:(d,t,row)=>{
+      { data:null, orderable:true, visible:false, className:'dt-body-center', render:(d,t,row)=>{
           const raw = row.full && row.full.promotedPriority;
           // 0 is the schema default for "not manually ranked yet" and is
           // also what typing 0 into this box explicitly resets it to — show
           // it blank (with the "pos" placeholder) either way, rather than
           // literally displaying "0" as if it were a real position.
           const p = (raw != null && raw > 0) ? raw : null;
+          // Sort: promoted listings with a priority come first, ascending (1,2,3…); everything else after them.
+          if(t==='sort' || t==='type') return (row.promoted && p!=null) ? p : Number.MAX_SAFE_INTEGER;
           if(t!=='display') return (p!=null ? p : '');
           return `<input type="number" min="0" step="1" class="promoted-priority-input"
             style="width:64px;text-align:center" placeholder="pos"
@@ -13546,9 +13420,6 @@ $(document).ready(function(){
           const shareBtn = (row.verified && !viewOnly)
             ? `<button class="btn-view" style="background:#25D366;border-color:#25D366;color:#fff" title="Share the live link with the owner (and alt number) via WhatsApp" onclick="shareListingToOwner('${row._id}')"><i class="fab fa-whatsapp"></i><span class="btn-label"> Share</span></button>`
             : disabledBtn('fab fa-whatsapp', 'Share', viewOnly ? 'View-only access — ask the primary admin to enable actions' : 'Verify this listing first to enable sharing');
-          const tenantShareBtn = (row.verified && !viewOnly)
-            ? `<button class="btn-view" style="background:#0ea5e9;border-color:#0ea5e9;color:#fff" title="Send this property's view link to a tenant on WhatsApp" onclick="shareListingToTenant('${row._id}')"><i class="fas fa-paper-plane"></i><span class="btn-label"> Tenant</span></button>`
-            : disabledBtn('fas fa-paper-plane', 'Tenant', viewOnly ? 'View-only access — ask the primary admin to enable actions' : 'Verify this listing first to enable sharing');
           const fbShareBtn = (row.verified && !viewOnly)
             ? `<button class="btn-view" style="background:#1877F2;border-color:#1877F2;color:#fff" title="Share this listing to HomeLoop's Facebook Page" onclick="shareListingToFacebook('${row._id}')"><i class="fab fa-facebook"></i><span class="btn-label"> Facebook</span></button>`
             : disabledBtn('fab fa-facebook', 'Facebook', viewOnly ? 'View-only access — ask the primary admin to enable actions' : 'Verify this listing first to enable sharing');
@@ -13578,11 +13449,25 @@ $(document).ready(function(){
             ? disabledBtn('fas fa-trash', 'Delete', 'View-only access — ask the primary admin to enable actions')
             : `<button class="btn-view" style="color:#c0392b" title="Delete this listing" onclick="deleteProperty('${row._id}')"><i class="fas fa-trash"></i><span class="btn-label"> Delete</span></button>`;
           const hasAnyOwnerNo = !!(row.ownerNumber || row.ownerAltPhone);
-          const publicCallToggle = `<label class="mini-toggle-wrap altcall-wrap" title="${hasAnyOwnerNo ? 'When ON, visitors on the site get a Call owner button that dials the owner number(s) on this listing' : 'No owner phone number on file for this listing'}" style="${hasAnyOwnerNo?'':'opacity:.4;cursor:not-allowed'}"><span class="mini-toggle altcall-toggle">
+          const publicCallToggle = `<label class="mini-toggle-wrap altcall-wrap" title="${hasAnyOwnerNo ? 'When ON, visitors on the site get a Call owner button that dials the owner number(s) on this listing' : 'No owner phone number on file for this listing'}" style="${hasAnyOwnerNo?'':'opacity:.4;cursor:not-allowed'}"><span class="altcall-label">Public call</span><span class="mini-toggle altcall-toggle">
               <input type="checkbox" ${(row.ownerPhoneCall||row.ownerDirectCall)?'checked':''} ${(!viewOnly && hasAnyOwnerNo)?'':'disabled'} onchange="togglePropPublicCall('${row._id}',this)">
               <span class="slider"></span>
-            </span><span class="altcall-label">Public call</span></label>`;
+            </span></label>`;
+          const flagToggle = (field, cls, label) => `<label class="mini-toggle-wrap altcall-wrap"><span class="altcall-label">${label}</span><span class="mini-toggle ${cls}">
+              <input type="checkbox" ${row[field]?'checked':''} ${viewOnly?'disabled':''} onchange="${field==='promoted' ? `togglePropFlag('${row._id}','promoted',this).finally(()=>syncPriorityInput(this))` : `togglePropFlag('${row._id}','${field}',this)`}">
+              <span class="slider"></span>
+            </span></label>`;
+          const _pp = row.full && row.full.promotedPriority;
+          const priorityInput = `<span class="altcall-wrap" style="display:inline-flex;align-items:center;gap:6px"><span class="altcall-label">Priority</span><input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="4" class="promoted-priority-input"
+              style="width:64px;text-align:center" title="Turn Promoted ON to set the priority (1 = first)"
+              oninput="this.value=this.value.replace(/[^0-9]/g,'')"
+              value="${(_pp!=null && _pp>0) ? escapeHtml(String(_pp)) : ''}" ${(viewOnly || !row.promoted)?'disabled':''}
+              onchange="setPromotedPriority('${row._id}', this)"></span>`;
           return `<div style="display:inline-flex;gap:6px;flex-wrap:nowrap;justify-content:flex-start;align-items:center">
+            <span class="pact pact-verified">${flagToggle('verified','verified-toggle','Verified')}</span>
+            <span class="pact pact-promoted">${flagToggle('promoted','promoted-toggle','Promoted')}</span>
+            <span class="pact pact-priority">${priorityInput}</span>
+            <span class="pact pact-booked">${flagToggle('booked','booked-toggle','Booked')}</span>
             <span class="pact pact-publiccall">${publicCallToggle}</span>
             <span class="pact pact-message">${msgBtn}</span>
             <span class="pact pact-view"><button class="btn-view" onclick="openAdminPropModal('${row._id}')"><i class="fas fa-eye"></i><span class="btn-label"> View</span></button></span>
@@ -13594,7 +13479,7 @@ $(document).ready(function(){
           </div>`;
       }}
     ],
-    order:[[47,'asc']], // Listed On (createdAt) — oldest to newest
+    order:[[44,'asc'],[47,'asc']], // Promoted priority (1,2,3… promoted only) first, then Listed On oldest → newest
     orderCellsTop:true,
     pageLength:-1,
     scrollX:true,
@@ -15834,7 +15719,7 @@ function applyBookedOrder(){
     propTable.order([[50, 'desc']]);
   } else {
     const cur = propTable.order();
-    if(cur.length && cur[0][0] === 50) propTable.order([[47, 'asc']]);
+    if(cur.length && cur[0][0] === 50) propTable.order([[44, 'asc'],[47, 'asc']]);
   }
 }
 function syncBookedSubTabs(){
@@ -15910,8 +15795,7 @@ const PROP_COL_GROUPS = [
     {idx:45, label:'Amenities'}
   ]},
   { label:'Listing Status', cols:[
-    {idx:11, label:'Status'}, {idx:3, label:'Promoted'}, {idx:44, label:'Promoted Priority'},
-    {idx:4, label:'Verified'}, {idx:5, label:'Booked'}, {idx:47, label:'Listed On'}, {idx:48, label:'Reason'}, {idx:49, label:'Remarks'}
+    {idx:11, label:'Status'}, {idx:47, label:'Listed On'}, {idx:48, label:'Reason'}, {idx:49, label:'Remarks'}
   ]},
   { label:'Traffic', cols:[
     {idx:36, label:'Visits'}, {idx:37, label:'Views'}
@@ -15987,7 +15871,9 @@ function loadPropColVisibility(){
     if(!raw) return;
     const state = JSON.parse(raw);
     Object.keys(state).forEach(idx=>{
-      propTable.column(parseInt(idx,10)).visible(!!state[idx], false);
+      const i = parseInt(idx,10);
+      if(i===3 || i===4 || i===5 || i===44) return;   // Promoted/Verified/Booked/Priority live in Action only
+      propTable.column(i).visible(!!state[idx], false);
     });
     propTable.columns.adjust();
   }catch(e){}
@@ -15995,6 +15881,10 @@ function loadPropColVisibility(){
 
 /* ── ACTION BUTTONS show/hide (Columns menu -> "Actions") ── */
 const PROP_ACTION_BTNS = [
+  {key:'verified',   label:'Verified toggle'},
+  {key:'promoted',   label:'Promoted toggle'},
+  {key:'priority',   label:'Promoted priority'},
+  {key:'booked',     label:'Booked toggle'},
   {key:'publiccall', label:'Public call toggle'},
   {key:'block',      label:'Block / Unblock'},
   {key:'message',    label:'Message (WhatsApp)'},

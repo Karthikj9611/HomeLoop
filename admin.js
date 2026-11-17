@@ -2500,9 +2500,10 @@ self.addEventListener('notificationclick', event => {
       if (typeof promoted !== 'boolean') {
         return res.status(400).json({ message: 'promoted must be a boolean' });
       }
-      const prop = await updateListingById(req.params.id, { promoted }, { new: true });
+      // Un-promoting also clears the priority position (0 = unranked), freeing it for other listings.
+      const prop = await updateListingById(req.params.id, promoted ? { promoted } : { promoted, promotedPriority: 0 }, { new: true });
       if (!prop) return res.status(404).json({ message: 'Property not found' });
-      res.json({ message: 'Promoted status updated', promoted: prop.promoted });
+      res.json({ message: 'Promoted status updated', promoted: prop.promoted, promotedPriority: prop.promotedPriority != null ? prop.promotedPriority : 0 });
     } catch (err) {
       console.error('PATCH /api/properties/:id/promoted error:', err);
       res.status(500).json({ message: 'Error updating promoted status' });
@@ -2521,6 +2522,13 @@ self.addEventListener('notificationclick', event => {
       if (typeof promotedPriority !== 'number' || !Number.isFinite(promotedPriority) ||
           !Number.isInteger(promotedPriority) || promotedPriority < 0) {
         return res.status(400).json({ message: 'promotedPriority must be a whole number, 0 or higher (0 = unranked, 1 = first place)' });
+      }
+      // Two promoted listings can't share a position (0 = unranked is exempt).
+      if(promotedPriority > 0){
+        const clashes = await Promise.all(LISTING_MODEL_LIST.map(M =>
+          M.findOne({ promoted: true, promotedPriority, _id: { $ne: req.params.id } }).select('propertyId').lean()));
+        const clash = clashes.find(Boolean);
+        if(clash) return res.status(409).json({ message: `Position ${promotedPriority} is already used by ${clash.propertyId || 'another listing'}. Choose a different position.` });
       }
       const prop = await updateListingById(req.params.id, { promotedPriority }, { new: true });
       if (!prop) return res.status(404).json({ message: 'Property not found' });
@@ -2879,6 +2887,7 @@ self.addEventListener('notificationclick', event => {
         }
       }
       if (!Object.keys(update).length) return res.status(400).json({ message: 'No changes provided' });
+      if (update.promoted === false) update.promotedPriority = 0;   // un-promoting clears the priority position
       const validIds = ids.filter(id => mongoose.Types.ObjectId.isValid(id));
       if (!validIds.length) return res.status(400).json({ message: 'No valid property ids provided' });
 
