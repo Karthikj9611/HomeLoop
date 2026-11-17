@@ -8097,7 +8097,7 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
       </div>
       <div class="img-thumb-grid" id="fImgGrid"></div>
       <div class="img-hint" id="fImgHint">No images added yet.</div>
-      <div class="img-hint" id="fImgOrderHint" style="display:none">Drag a photo, or tap ‹ › to reorder — the first photo is the cover image shown on cards.</div>
+      <div class="img-hint" id="fImgOrderHint" style="display:none">Drag a photo to reorder — the first photo is the cover image shown on cards.</div>
     </div>
     <div class="form-group">
       <label class="form-label">Description</label>
@@ -12458,9 +12458,9 @@ function buildEnquiryMessage(props) {
   const one = props.length === 1;
   const lines = props.map((p, i) => {
     const d = propDetailsShort(p);
-    return `${one ? '' : (i + 1) + '. '}${p.propertyId}${d ? ' - ' + d : ''} ${window.location.origin}/property/${p.id}`;
+    return `${one ? '' : (i + 1) + '. '}${p.propertyId}${d ? ' - ' + d : ''}\n${window.location.origin}/property/${p.id}`;
   });
-  return one ? `I'm interested in ${lines[0]}` : `I'm interested in\n\n${lines.join('\n\n')}`;
+  return one ? `I'm interested in\n${lines[0]}` : `I'm interested in\n\n${lines.join('\n\n')}`;
 }
 function _openAgentEnquiry(phone) {
   const props = _shortlistEnquiryGroups().groups[phone];
@@ -14984,7 +14984,7 @@ function openDetailReal(id) {
   })();
   document.getElementById('viewUnlockBtn').onclick = () => openPaymentModal('single_property', String(p.id),
     `${p.propertyId} - ${pTypeLabel(p)} - ${(p.location && p.location.area) || ''}`.trim().replace(/ - $/, ''));
-  const _isMine = typeof MY_LISTINGS_CACHE !== 'undefined' && MY_LISTINGS_CACHE.some(x => x.id === p.id);
+  const _isMine = isAgentUser() || (typeof MY_LISTINGS_CACHE !== 'undefined' && MY_LISTINGS_CACHE.some(x => x.id === p.id)); // agents (HomeLoop employees) can edit / clone ANY listing
   document.getElementById('viewCloneBtn').style.display = _isMine ? 'inline-flex' : 'none';
   document.getElementById('viewEditBtn').style.display  = _isMine ? 'inline-flex' : 'none';
   document.getElementById('viewCloneBtn').onclick = () => manageListingFromView(p.id, p.propertyId, 'clone');
@@ -15442,7 +15442,17 @@ function buildAgentFormTable(p) {
 let _viewOverProfile = false; // the property view was opened on top of My Account
 function manageListingFromView(id, propertyLabel, kind) {
   closeDetail();
-  _afterPaint(function () { if (kind === 'edit') editMyListing(id, propertyLabel || ''); else cloneMyListing(id, propertyLabel || ''); });
+  _afterPaint(async function () {
+    // Agents can edit / clone any listing, but the "my listings" cache is only filled when the profile is opened - load it silently first.
+    if (isAgentUser() && !MY_LISTINGS_CACHE.some(x => x.id === id)) {
+      try {
+        const res = await fetch('/api/user/my-listings', { headers: userAuthHeaders() });
+        const data = await res.json();
+        if (res.ok) MY_LISTINGS_CACHE = data.properties || [];
+      } catch (err) { /* falls through to the "no longer available" toast */ }
+    }
+    if (kind === 'edit') editMyListing(id, propertyLabel || ''); else cloneMyListing(id, propertyLabel || '');
+  });
 }
 function closeDetail() {
   const _wasOpen = document.getElementById('addModal').classList.contains('open');
@@ -16092,7 +16102,7 @@ function sharePropertyWhatsApp(propId) {
   // Format: "For Rent - 2 BHK, Koramangala, \u20B936k/M https://.../property/abc123"
   const status = p.basic?.status || 'For Rent';
   const details = propDetailsShort(p);
-  const msg = `${status}${details ? ' - ' + details : ''} ${propertyUrl}`;
+  const msg = `${status}${details ? ' - ' + details : ''}\n${propertyUrl}`;
   window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank', 'noopener');
 }
 
@@ -17786,7 +17796,6 @@ function myListingCardHtml(p) {
       </div>
       <div class="profile-mini-actions">
         ${agentOwnerNumbersInActions(p)}
-        <button class="profile-mini-icon-btn" title="View listing" onclick="event.stopPropagation();openDetail('${p.id}')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
         <button class="profile-mini-icon-btn pm-hide" title="Duplicate — start a new listing pre-filled with these details" onclick="event.stopPropagation();cloneMyListing('${p.id}', '${esc(p.propertyId||'')}')">
           <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
         </button>
@@ -17796,10 +17805,6 @@ function myListingCardHtml(p) {
         <button class="profile-mini-icon-btn${p.booked ? ' booked-active' : ''}" title="${p.booked ? 'Mark as available' : 'Mark as booked'}" onclick="event.stopPropagation();confirmToggleBooked('${p.id}', this)">
           <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
         </button>
-        <button class="profile-mini-icon-btn pm-share" title="Share listing" onclick="event.stopPropagation();shareMyListingViaWhatsApp('${p.id}')">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-        </button>
-        ${agentOwnerContactBtns(p)}
       </div>
     </div></div>`;
 }
@@ -17934,55 +17939,6 @@ function whatsappListingOwner(id, which) {
   const n = ownerDirectNumbers(p).find(o => o.which === which); if (!n) { showToast("Owner number not available.", 'warning'); return; }
   window.open('https://wa.me/91' + n.digits, '_blank', 'noopener');
 }
-/* Agent: check availability with the owner (same message as the admin panel's "Check" button).
-   One WhatsApp "Send" button per owner number - each is its own real click, so nothing gets popup-blocked. */
-function checkAvailabilityListing(id) {
-  if (!isAgentUser()) return;
-  const p = MY_LISTINGS_CACHE.find(x => x.id === id); if (!p) return;
-  const nums = ownerDirectNumbers(p);
-  if (!nums.length) { showToast('No owner phone number on file for this listing.', 'warning'); return; }
-  const _pt = pTypeLabel(p);
-  const _prop = p.property || {}, _pgd = p.pg || {}, _ss = p.shortStay || {};
-  const _bhk = (_pt === 'PG' || _pt === 'ShortStay') ? '' : String(_prop.bhk || '').replace(/\s*BHK\s*$/i, '').trim();
-  const _type = _bhk && parseFloat(_bhk) > 0 ? _bhk + ' BHK' : (_prop.type || _pgd.type || _ss.type || '');
-  const _loc = String(p.location?.area || '').trim();
-  const _amt = shortPrice(p.price?.rent).replace('k', 'K');
-  const _price = _amt ? '\u20B9' + _amt + (_pt === 'Sell' ? '' : _pt === 'ShortStay' ? '/day' : '/month') : '';
-  const _details = [_type, _loc, _price].filter(Boolean).join(', ');
-  const _tail = `Any other vacant properties? List free at www.homeloop.in \u2013 we\u2019ll verify them!`;
-  // Booked listing: no point asking "available?" - only ask the owner for other vacant properties.
-  const msg = p.booked
-    ? `Hi! ${_tail}`
-    : `Hi! Is ${p.propertyId || 'listing'}${_details ? ' (' + _details + ')' : ''} available?\n${window.location.origin}/property/${p.id}\n\n${_tail}`;
-
-  let ov = document.getElementById('checkAvailOverlay');
-  if (!ov) {
-    ov = document.createElement('div');
-    ov.id = 'checkAvailOverlay';
-    ov.className = 'add-modal-overlay';
-    ov.style.zIndex = '9000';
-    ov.addEventListener('click', e => { if (e.target === ov) closeCheckAvailability(); });
-    document.body.appendChild(ov);
-  }
-  const waSvg = '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" style="fill:#fff;vertical-align:-3px;margin-right:6px"><path d="M17.6 6.32A7.85 7.85 0 0 0 12.05 4c-4.37 0-7.93 3.56-7.93 7.93 0 1.4.37 2.76 1.06 3.96L4 20l4.24-1.11a7.9 7.9 0 0 0 3.8.97h.01c4.37 0 7.93-3.56 7.93-7.93 0-2.12-.82-4.11-2.38-5.61z"/></svg>';
-  ov.innerHTML = `<div class="add-modal" style="max-width:400px;padding:22px">
-    <div style="font-size:17px;font-weight:700;margin-bottom:2px">Check availability</div>
-    <div style="font-size:13px;color:var(--text-3);margin-bottom:12px">${esc(p.propertyId || '')} &middot; pick a number to ask. Nothing is sent until you tap one.</div>
-    <textarea id="checkAvailMsg" rows="9" style="width:100%;box-sizing:border-box;padding:9px 11px;border:1.5px solid var(--border-2);border-radius:9px;font-size:16px;font-family:inherit;resize:vertical;margin-bottom:12px">${esc(msg)}</textarea>
-    ${nums.map(n => `<button type="button" onclick="sendCheckAvailability('${n.digits}')" style="display:block;width:100%;margin-bottom:8px;padding:10px 12px;border:0;border-radius:10px;background:#25D366;color:#fff;font-size:14px;font-weight:700;cursor:pointer">${waSvg}${n.digits}${n.which === 'alt' ? ' (alt)' : ''}</button>`).join('')}
-    <button type="button" onclick="closeCheckAvailability()" style="display:block;width:100%;padding:10px 12px;border:1.5px solid var(--border-2);border-radius:10px;background:var(--bg);color:var(--text-2);font-size:14px;font-weight:600;cursor:pointer">Cancel</button>
-  </div>`;
-  ov.classList.add('open');
-}
-function sendCheckAvailability(digits) {
-  const box = document.getElementById('checkAvailMsg');
-  const text = box ? box.value.trim() : '';
-  window.open('https://wa.me/91' + digits + (text ? '?text=' + encodeURIComponent(text) : ''), '_blank', 'noopener');
-}
-function closeCheckAvailability() {
-  const ov = document.getElementById('checkAvailOverlay');
-  if (ov) ov.classList.remove('open');
-}
 /* Agents: show the owner's mobile number(s) right on the listing card; tapping a number dials it. */
 function agentOwnerNumberText(p) {
   if (!isAgentUser()) return '';
@@ -18023,15 +17979,6 @@ function agentOwnerNumbersInActions(p) {
   }).join('');
   return `<div class="pm-phones-act">${h}</div>`;
 }
-function agentOwnerContactBtns(p) {
-  if (!isAgentUser()) return '';
-  const phoneSvg = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.8 19.8 0 0 1 1.61 3.4 2 2 0 0 1 3.59 1.22h3a2 2 0 0 1 2 1.72 12.8 12.8 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 8.78a16 16 0 0 0 6.29 6.29l1.14-1.14a2 2 0 0 1 2.11-.45 12.8 12.8 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>';
-  const waSvg = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.6 6.32A7.85 7.85 0 0 0 12.05 4c-4.37 0-7.93 3.56-7.93 7.93 0 1.4.37 2.76 1.06 3.96L4 20l4.24-1.11a7.9 7.9 0 0 0 3.8.97h.01c4.37 0 7.93-3.56 7.93-7.93 0-2.12-.82-4.11-2.38-5.61z"/></svg>';
-  const _nums = ownerDirectNumbers(p);
-  const calSvg = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M9 16l2 2 4-4"/></svg>';
-  const checkBtn = _nums.length ? `<button class="profile-mini-icon-btn" title="Check availability with owner" onclick="event.stopPropagation();checkAvailabilityListing('${p.id}')">${calSvg}</button>` : '';
-  return checkBtn;
-}
 /* Mobile: one "More" button on each listing card opens this sheet with every action, labelled. */
 let _laFns = [];
 let _laKeep = [];
@@ -18043,18 +17990,11 @@ function openListingActions(id) {
     edit:  '<svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>',
     lock:  '<svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>',
     wa:    '<svg viewBox="0 0 24 24"><path d="M17.6 6.32A7.85 7.85 0 0 0 12.05 4c-4.37 0-7.93 3.56-7.93 7.93 0 1.4.37 2.76 1.06 3.96L4 20l4.24-1.11a7.9 7.9 0 0 0 3.8.97h.01c4.37 0 7.93-3.56 7.93-7.93 0-2.12-.82-4.11-2.38-5.61z"/></svg>',
-    cal:   '<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M9 16l2 2 4-4"/></svg>',
     phone: '<svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.8 19.8 0 0 1 1.61 3.4 2 2 0 0 1 3.59 1.22h3a2 2 0 0 1 2 1.72 12.8 12.8 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 8.78a16 16 0 0 0 6.29 6.29l1.14-1.14a2 2 0 0 1 2.11-.45 12.8 12.8 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>'
   };
   const pid = p.propertyId || '';
   const items = [];
-  items.push({ i: ic.view, t: 'View Listing', d: 'See the listing the way tenants see it', f: () => openDetail(id), keep: true });
   items.push({ i: ic.lock, t: p.booked ? 'Mark as Available' : 'Mark as Booked', d: p.booked ? 'Show this listing on the website again' : 'Take it off the website once a tenant is finalised', c: 'la-booked', f: () => confirmToggleBooked(id, document.createElement('button')) });
-  items.push({ i: ic.wa, t: 'Share via WhatsApp', d: 'Send the listing link to any contact', c: 'la-wa', f: () => shareMyListingViaWhatsApp(id) });
-  if (isAgentUser()) {
-    const nums = ownerDirectNumbers(p);
-    if (nums.length) items.push({ i: ic.cal, t: 'Confirm Availability', d: 'Ask the owner if the property is still vacant', f: () => checkAvailabilityListing(id), keep: true });
-  }
   _laFns = items.map(x => x.f);
   _laKeep = items.map(x => !!x.keep);
   let ov = document.getElementById('listingActionsOverlay');
@@ -18079,19 +18019,10 @@ function closeListingActions() {
 }
 function runListingAction(k) {
   const f = _laFns[k];
-  // Actions that open another screen (View / Clone / Edit / Confirm availability) open it ON TOP of this sheet, which stays
+  // Actions that open another screen (View / Clone / Edit) open it ON TOP of this sheet, which stays
   // open underneath; the others (share, call, mark booked) finish here, so the sheet closes.
   if (!_laKeep[k]) closeListingActions();
   if (f) f();
-}
-function shareMyListingViaWhatsApp(id) {
-  const p = MY_LISTINGS_CACHE.find(x => x.id === id);
-  if (!p) return;
-  const status = p.basic?.status || 'For Rent';
-  const propertyUrl = `${window.location.origin}/property/${p.id}`;
-  const details = propDetailsShort(p);
-  const msg = `${status}${details ? ' - ' + details : ''} ${propertyUrl}`;
-  window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank', 'noopener');
 }
 
 /* ═══════════════════════════════════════════════
@@ -21134,8 +21065,6 @@ function renderFImages() {
       '<img src="' + src + '" alt="img" draggable="false"/>' +
       (i === 0 ? '<span class="img-thumb-cover">Cover</span>' : '') +
       '<button type="button" class="img-thumb-del" onclick="event.stopPropagation();removeFImage(' + i + ')">✕</button>' +
-      (i > 0 ? '<button type="button" class="img-thumb-mv l" aria-label="Move photo left" title="Move left" onclick="event.stopPropagation();moveFImage(' + i + ',-1)">‹</button>' : '') +
-      (i < fImages.length - 1 ? '<button type="button" class="img-thumb-mv r" aria-label="Move photo right" title="Move right" onclick="event.stopPropagation();moveFImage(' + i + ',1)">›</button>' : '') +
     '</div>'
   ).join('');
   hint.style.display = fImages.length ? 'none' : 'block';

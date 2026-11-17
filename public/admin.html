@@ -5892,7 +5892,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
       </div>
       <div class="img-thumb-grid" id="fImgGrid"></div>
       <div class="img-hint" id="fImgHint">No images added yet.</div>
-      <div class="img-hint" id="fImgOrderHint" style="display:none">Drag a photo, or tap ‹ › to reorder — the first photo is the cover image shown on cards.</div>
+      <div class="img-hint" id="fImgOrderHint" style="display:none">Drag a photo to reorder — the first photo is the cover image shown on cards.</div>
     </div>
     <div class="form-group">
       <label class="form-label">Description</label>
@@ -11792,7 +11792,7 @@ function buildAvailabilityCheckMessage(row){
   const link = row._id ? `https://www.homeloop.in/property/${row._id}` : '';
   const lines = propertyDetailLines(row);
   const block = lines.length ? lines.join('\n') : (row.propertyId || 'listing');
-  return `Hi! Is this property still available?\n\n${block}${link ? '\n\n\uD83D\uDD17 ' + link : ''}\n\nAny other vacant properties? List free at www.homeloop.in \u2013 we\u2019ll verify them!`;
+  return `Hi! Is this property still available?\n\n${block}\n\nAny other vacant properties? List free at www.homeloop.in \u2013 we\u2019ll verify them!${link ? '\n\n\uD83D\uDD17 ' + link : ''}`;
 }
 // One message for several properties of the same owner (Owner Calls tab).
 function buildOwnerAvailabilityMessage(rows){
@@ -19160,8 +19160,6 @@ function renderFImages() {
       '<img src="' + src + '" alt="img" draggable="false"/>' +
       (i === 0 ? '<span class="img-thumb-cover">Cover</span>' : '') +
       '<button type="button" class="img-thumb-del" onclick="event.stopPropagation();removeFImage(' + i + ')">✕</button>' +
-      (i > 0 ? '<button type="button" class="img-thumb-mv l" aria-label="Move photo left" title="Move left" onclick="event.stopPropagation();moveFImage(' + i + ',-1)">‹</button>' : '') +
-      (i < fImages.length - 1 ? '<button type="button" class="img-thumb-mv r" aria-label="Move photo right" title="Move right" onclick="event.stopPropagation();moveFImage(' + i + ',1)">›</button>' : '') +
     '</div>'
   ).join('');
   hint.style.display = fImages.length ? 'none' : 'block';
