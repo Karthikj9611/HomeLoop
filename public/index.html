@@ -3994,6 +3994,10 @@ main.tab-explore .empty-state{display:none !important}
 #authModal .form-label{font-size:12px;font-weight:700;color:var(--text-2);letter-spacing:.01em;margin-bottom:7px}
 #authModal .form-group{margin-bottom:16px}
 #authModal .form-row{gap:14px}
+/* Mobile: signup Mobile number and Email each get their own full-width row */
+@media (max-width:1024px), (pointer:coarse){
+  #authSignupContactFields .form-row{grid-template-columns:1fr!important}
+}
 #authModal .form-input{
   color:var(--text);
   border:1.5px solid var(--border);
