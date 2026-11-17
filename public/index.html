@@ -11386,7 +11386,7 @@ function toggleGalleryVideo(wrap) {
 function handleCardImgClick(el, id, idx) {
   // Inside the property view modal itself, a photo tap zooms (lightbox).
   // Everywhere else (cards in any grid/strip), a photo tap opens the property view first.
-  // No login prompt here: the visitor already passed (or skipped) it to open the property view.
+  // Login is enforced inside openDetail() for guests.
   if (el.closest('#detailGallerySlot')) {
     openLightboxReal(id, idx);
   } else {
@@ -14815,11 +14815,13 @@ let editingPropertyId = null;
 // prompt FIRST, before the property view actually opens; see openLightbox()
 // above for how the guest-continues / logs-in paths are resolved.
 function openDetail(id) {
-  // Login is optional: logged-out visitors are asked to log in every time they
-  // open a property card, but can skip/close the prompt and continue as a guest.
-  // closeAuthModal() runs pendingBrowseAction when the prompt is dismissed.
+  // Login is REQUIRED to view a property. Logged-out visitors get the login/sign-up
+  // prompt only; closing it does NOT open the property. The clicked id is remembered
+  // so that, after a successful login (page reloads), the property opens automatically
+  // (see the "resume after login" block in the init/deep-link code).
   if (!getLoggedInUser()) {
-    pendingBrowseAction = () => openDetailReal(id);
+    try { sessionStorage.setItem('homeloop_open_after_login', String(id)); } catch (e) { /* ignore */ }
+    showToast('Please log in to view property details', 'warning');
     openAuthModal();
     return;
   }
@@ -16750,14 +16752,9 @@ function closeAuthModal() {
   if (!getLoggedInUser()) {
     try { localStorage.setItem('homeloop_auth_skipped', '1'); } catch (e) { /* ignore */ }
     clearTimeout(_authSkipTimer);
-    // Dismissed instead of logging in — continue as a guest into whatever
-    // they originally clicked (a photo zoom or a property's detail view),
-    // if this close was gating one. Run once, then clear it.
-    if (pendingBrowseAction) {
-      const action = pendingBrowseAction;
-      pendingBrowseAction = null;
-      action();
-    }
+    // Dismissed without logging in — the property they clicked stays closed.
+    pendingBrowseAction = null;
+    try { sessionStorage.removeItem('homeloop_open_after_login'); } catch (e) { /* ignore */ }
   } else {
     pendingBrowseAction = null;
   }
@@ -20606,6 +20603,18 @@ document.addEventListener('DOMContentLoaded', function() {
 
     if (!ok) return;
     initNearbyLocation(); // ask for location once listings are in, so "Near me first" has data to sort
+
+    // ── Resume after login: open the property the visitor clicked before logging in ──
+    try {
+      const _afterLoginId = sessionStorage.getItem('homeloop_open_after_login');
+      if (_afterLoginId) {
+        sessionStorage.removeItem('homeloop_open_after_login');
+        if (getLoggedInUser()) {
+          const _alProp = PROPERTIES.find(x => String(x.id) === _afterLoginId) || BOOKED_PROPERTIES.find(x => String(x.id) === _afterLoginId);
+          if (_alProp) openDetailReal(_alProp.id);
+        }
+      }
+    } catch (e) { /* ignore */ }
 
     // ── Deep-link: auto-open property from URL ──
     // Supports both the current `/property/:id` path (server-rendered, used
