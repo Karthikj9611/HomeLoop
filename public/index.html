@@ -14851,17 +14851,13 @@ let propertyViewMode = false;
 // means the form is in its normal "create a new listing" mode.
 let editingPropertyId = null;
 
-// Public entry point — gated. A logged-out visitor gets the login/sign-up
-// prompt FIRST, before the property view actually opens; see openLightbox()
-// above for how the guest-continues / logs-in paths are resolved.
+// Public entry point. Every property view first shows the login/sign-up prompt to
+// logged-out visitors, but it is SKIPPABLE: dismissing it (X, backdrop, Escape) opens the
+// property as a guest (see closeAuthModal), and logging in opens it after the reload.
 function openDetail(id) {
-  // Login is REQUIRED to view a property. Logged-out visitors get the login/sign-up
-  // prompt only; closing it does NOT open the property. The clicked id is remembered
-  // so that, after a successful login (page reloads), the property opens automatically
-  // (see the "resume after login" block in the init/deep-link code).
   if (!getLoggedInUser()) {
     try { sessionStorage.setItem('homeloop_open_after_login', String(id)); } catch (e) { /* ignore */ }
-    showToast('Please log in to view property details', 'warning');
+    pendingBrowseAction = () => openDetailReal(id);
     openAuthModal();
     return;
   }
@@ -16797,9 +16793,11 @@ function closeAuthModal() {
   if (!getLoggedInUser()) {
     try { localStorage.setItem('homeloop_auth_skipped', '1'); } catch (e) { /* ignore */ }
     clearTimeout(_authSkipTimer);
-    // Dismissed without logging in — the property they clicked stays closed.
-    pendingBrowseAction = null;
+    // Dismissed without logging in — continue as a guest: open the property they clicked.
     try { sessionStorage.removeItem('homeloop_open_after_login'); } catch (e) { /* ignore */ }
+    const _pending = pendingBrowseAction;
+    pendingBrowseAction = null;
+    if (typeof _pending === 'function') { try { _pending(); } catch (e) { console.error(e); } }
   } else {
     pendingBrowseAction = null;
   }
