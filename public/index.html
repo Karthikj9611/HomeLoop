@@ -13644,6 +13644,23 @@ function unlockBodyScroll() {
   }
 }
 
+// Self-heal: some modals can be closed by paths that never call unlockBodyScroll(), which leaves the
+// counter > 0 and the body pinned (position:fixed) — the page then can't scroll or be pulled to refresh.
+// If the body is pinned but no modal/overlay is actually open, reset the counter and release it.
+function _healScrollLock() {
+  try {
+    if (document.body.style.position !== 'fixed' && _scrollLockCount === 0) return;
+    if (document.querySelector('[class*="overlay"].open, [class*="modal"].open, [role="dialog"].open')) return;
+    _scrollLockCount = 0;
+    _applyBodyUnlock();
+  } catch (e) {}
+}
+['pointerdown', 'touchstart', 'wheel', 'keydown'].forEach(function (ev) {
+  window.addEventListener(ev, _healScrollLock, { passive: true, capture: true });
+});
+document.addEventListener('visibilitychange', _healScrollLock);
+setInterval(_healScrollLock, 1500);
+
 function toggleFd(id, btnEl) {
   const pop = document.getElementById('fdp-' + id);
   if (!pop) return;
