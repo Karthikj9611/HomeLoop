@@ -7485,7 +7485,7 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
       <div class="form-group" id="f-typeWrap">
         <label class="form-label">Status <span style="color:var(--brand)">*</span></label>
         <select class="form-select" id="f-type" onchange="onFTypeChange(this.value)">
-          <option value="Lease">Lease</option><option selected value="Rent">Rent</option><option value="PG">PG &amp; Coliving</option><option value="Sell" hidden>Sell</option>
+          <option value="Lease" hidden>Lease</option><option selected value="Rent">Rent</option><option value="PG">PG &amp; Coliving</option><option value="Sell" hidden>Sell</option>
         </select>
       </div>
       <div class="form-group">
@@ -10770,9 +10770,12 @@ function setEmptyStateContent() {
   const showPitch = (pitch) => {
     title.textContent = pitch.t;
     text.textContent = pitch.x;
-    // Pitch text only: the floating "+ List property" button (and the mobile + tab) already offer listing,
-    // so a second button here would be a duplicate.
-    actions.style.display = 'none';
+    // The floating "+ List property" button (and the mobile + tab) already offer listing,
+    // so this only adds a way to contact HomeLoop: Call + WhatsApp on the in-house line.
+    actions.innerHTML =
+      '<a class="empty-state-btn primary" href="tel:+91' + COORDINATOR_PHONE + '" style="text-decoration:none">Call us</a>' +
+      '<a class="empty-state-btn secondary" href="https://wa.me/91' + COORDINATOR_PHONE + '" target="_blank" rel="noopener" style="text-decoration:none">WhatsApp</a>';
+    actions.style.display = '';
   };
 
   // Builders / Management tabs have no listings yet — "list your properties" pitch.
@@ -16404,6 +16407,11 @@ function lockListedByToAccount() {
   const sel = document.getElementById('f-listedBy');
   if (!u || !sel) return;
   const locked = LISTED_BY_BY_ACCOUNT[u.accountType];
+  // The "Agent" choice exists ONLY for agent accounts; every other account never sees it.
+  { const _isAgentAcct = u.accountType === 'agent';
+    Array.from(sel.options).forEach(o => { if (o.value === 'Agent') { o.hidden = !_isAgentAcct; o.disabled = !_isAgentAcct; } });
+    if (!_isAgentAcct && sel.value === 'Agent') sel.value = locked || 'Owner';
+  }
   if (editingPropertyId && u.accountType === 'agent') { // employee editing any listing: keep its own "Listed by"
     sel.disabled = true;
     sel.title = 'Listed by cannot be changed while editing';
