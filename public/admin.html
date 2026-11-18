@@ -724,6 +724,14 @@ table.dataTable.no-footer{border-bottom:none!important}
 #propertyTable tbody tr.prop-row-selected td:first-child{
   box-shadow:inset 3px 0 0 var(--gold);
 }
+/* Customers grid: user currently has a live login session → whole row green */
+#bookingTable tbody tr.cust-row-online td,
+#bookingTable tbody tr.cust-row-online:hover td{
+  background:rgba(34,197,94,0.20)!important;
+}
+#bookingTable tbody tr.cust-row-online td:first-child{
+  box-shadow:inset 4px 0 0 #16a34a;
+}
 /* Same full-row selected highlight, applied to every other admin grid that
    has a row checkbox (Customers/Appointments/Reviews/User Reviews/Partners)
    so a ticked row reads the same way everywhere in admin, not just on the
@@ -5952,8 +5960,8 @@ const ACCT_OWNER_SIDE = ['owner', 'pg', 'broker', 'agent', 'builder']; // accoun
 let dataTable, propTable, apptTable, honestReviewsTable, userReviewsTable, partnersTable, brokersTable, referralsTable, paymentsTable;
 
 
-const BASE = 'https://www.homeloop.in';
-//const BASE = 'http://localhost:5000';
+//const BASE = 'https://www.homeloop.in';
+const BASE = 'http://localhost:5000';
 
 
 /* ── ADMIN KEY – set after login ──
@@ -8918,6 +8926,7 @@ window.forceLogoutUser = async function(id){
   const data = await res.json().catch(()=>({}));
   if(res.ok){
     alert(data.message || 'Done');
+    try{ dataTable.ajax.reload(null,false); }catch(e){}
   } else {
     alert(data.message || 'Error clearing session');
   }
@@ -8950,6 +8959,7 @@ window.toggleBlockUser = async function(id, blocked){
       if(rd && rd._id === id){ rd.isBlocked = !!data.isBlocked; this.invalidate(); }
     });
     dataTable.draw(false);
+    try{ dataTable.ajax.reload(null,false); }catch(e){} // blocking clears sessions → drop the green row
   }catch(e){
     alert('Network error updating block status');
   }
@@ -13106,6 +13116,10 @@ $(document).ready(function(){
         }
       }
     ],
+    createdRow:function(row, data){
+      if(data && data.isLoggedIn) row.classList.add('cust-row-online');
+      row.title = (data && data.isLoggedIn) ? 'Currently logged in' : '';
+    },
     drawCallback:function(){
       try{ syncCustSelectionUI(); }catch(e){ /* table not fully initialized yet */ }
       try{

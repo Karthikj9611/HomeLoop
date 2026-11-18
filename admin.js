@@ -1007,6 +1007,12 @@ self.addEventListener('notificationclick', event => {
       const users = await User.find({}).sort({ createdAt: -1 }).lean();
       const userIds = users.map(u => u._id);
 
+      // "Logged in" = has at least one unexpired UserSession (same test the login route uses
+      // to block a second device). One distinct() query covers every user.
+      const liveSessionIds = new Set(
+        (await UserSession.distinct('userObjectId', { expiresAt: { $gt: new Date() } })).map(String)
+      );
+
       // Same 10-digit normalisation the rest of the app uses for mobiles.
       const normMobile = (raw) => {
         let d = String(raw || '').replace(/\D/g, '');
@@ -1092,6 +1098,7 @@ self.addEventListener('notificationclick', event => {
         viewsCount:    viewsMap[String(u._id)] || 0,   // total views on this customer's listings
         propertiesViewed: viewedMap[String(u._id)] || 0, // distinct listings this customer has opened
         createdAt:     u.createdAt,
+        isLoggedIn:    liveSessionIds.has(String(u._id)), // has a live session right now
       }));
 
       res.json(rows);
