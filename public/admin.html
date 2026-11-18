@@ -592,6 +592,34 @@ table.dataTable thead tr.col-filter-row th{
 .oc-pbtn{width:30px;height:30px;border-radius:50%;border:1.5px solid var(--border);background:#fff;color:var(--ink);cursor:pointer;font-size:.78rem;display:inline-flex;align-items:center;justify-content:center;padding:0}
 .oc-pbtn:hover{border-color:#059669;color:#059669}
 .oc-view{display:inline-flex;align-items:center;gap:6px;font-size:.8rem;font-weight:700;color:var(--ink2);white-space:nowrap}
+.oc-modal{max-width:1120px}
+.oc-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:12px 18px 0}
+.oc-stat{border:1px solid var(--border);border-radius:12px;padding:8px 12px;background:var(--surface2);display:flex;flex-direction:column;line-height:1.15}
+.oc-stat b{font-size:1.25rem;font-weight:800;color:var(--ink)}
+.oc-stat span{font-size:.7rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--ink2)}
+.oc-stat.ok{background:#ecfdf5;border-color:#a7f3d0}.oc-stat.ok b{color:#047857}
+.oc-stat.bk{background:#fef2f2;border-color:#fecaca}.oc-stat.bk b{color:#b91c1c}
+.oc-stat.nw{background:#fffbeb;border-color:#fde68a}.oc-stat.nw b{color:#b45309}
+.oc-mtools{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:12px 18px 4px}
+.oc-chips{display:flex;gap:6px;flex-wrap:wrap}
+.oc-chip{border:1.5px solid var(--border);background:#fff;color:var(--ink2);border-radius:999px;padding:5px 12px;font-size:.78rem;font-weight:700;cursor:pointer}
+.oc-chip b{margin-left:4px;color:var(--ink)}
+.oc-chip.on{background:#111;border-color:#111;color:#fff}.oc-chip.on b{color:#fff}
+.oc-msearch{flex:1 1 200px;min-width:160px;padding:7px 12px;border:1.5px solid var(--border);border-radius:999px;font-size:.82rem;outline:none}
+.oc-msearch:focus{border-color:#7c3aed}
+.oc-msort{padding:7px 10px;border:1.5px solid var(--border);border-radius:999px;font-size:.8rem;background:#fff;font-weight:600}
+.oc-tbl thead th{position:sticky;top:0;background:#fff;z-index:2;box-shadow:0 1px 0 var(--border)}
+.oc-tbl tbody tr:hover td{background:#faf7f2}
+.oc-tbl tr.is-booked td{opacity:.72}
+.oc-tbl tr.is-booked td.oc-sticky{opacity:1}
+.oc-title{max-width:200px;overflow:hidden;text-overflow:ellipsis}
+.oc-ago{font-size:.68rem;font-weight:700;color:var(--ink2);margin-top:1px}
+.oc-copy{border:0;background:none;color:var(--ink2);cursor:pointer;font-size:.72rem;padding:2px 4px;border-radius:6px;opacity:.55}
+.oc-copy:hover{opacity:1;background:var(--surface2)}.oc-copy.done{color:#059669;opacity:1}
+.oc-pbtn.wa{color:#16a34a}.oc-pbtn.wa:hover{border-color:#16a34a;background:#f0fdf4}
+.oc-pbtn:disabled{opacity:.35;cursor:not-allowed}
+.oc-empty{text-align:center;padding:28px 10px!important;color:var(--ink2);font-weight:700}
+@media(max-width:640px){.oc-stats{grid-template-columns:repeat(2,1fr);padding:10px 14px 0}.oc-mtools{padding:10px 14px 2px}}
 .oc-chev{transition:transform .15s;color:var(--ink2)}
 .oc-card.open .oc-chev{transform:rotate(180deg)}
 @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
@@ -6769,21 +6797,88 @@ function ocRender(){
 }
 /* Owner details modal: all property IDs of one owner, with call buttons and Booked toggles. */
 let _ocModalKey = null;
+let _ocFilter = 'all', _ocQ = '', _ocSortBy = 'new';
+function ocAgo(ts){
+  const t = Date.parse(ts); if(!t) return '';
+  const d = Math.floor((Date.now() - t) / 86400000);
+  if(d <= 0) return 'today'; if(d === 1) return 'yesterday'; if(d < 30) return d + 'd ago';
+  if(d < 365) return Math.floor(d / 30) + 'mo ago'; return Math.floor(d / 365) + 'y ago';
+}
+function ocVisibleProps(g){
+  const q = _ocQ.trim().toLowerCase();
+  const rows = g.props.filter(p => {
+    if(_ocFilter === 'avail' && p.booked) return false;
+    if(_ocFilter === 'booked' && !p.booked) return false;
+    if(_ocFilter === 'new' && !g.newIds.has(ocPid(p))) return false;
+    if(q && ![p.propertyId, p.title, p.loc, p.city, p.displayPrice, p.bhk, p.status].join(' ').toLowerCase().includes(q)) return false;
+    return true;
+  });
+  const t = p => Date.parse(p.createdAt) || 0;
+  if(_ocSortBy === 'old') rows.sort((a, b) => t(a) - t(b));
+  else if(_ocSortBy === 'id') rows.sort((a, b) => String(a.propertyId || '').localeCompare(String(b.propertyId || '')));
+  else rows.sort((a, b) => t(b) - t(a));
+  return rows;
+}
 function ocRowsHtml(g){
-  return g.props.slice().sort((a, b) => (Date.parse(b.createdAt) || 0) - (Date.parse(a.createdAt) || 0)).map(p => {
+  const rows = ocVisibleProps(g);
+  if(!rows.length) return '<tr><td colspan="10" class="oc-empty"><i class="fas fa-filter-circle-xmark"></i> No properties match this filter.</td></tr>';
+  return rows.map(p => {
       const isNew = g.newIds.has(ocPid(p));
       const type = p.bhk || p.pgPropertyType || p.ssPropertyType || p.type || '—';
       const place = [p.loc, /^\s*(bangalore|bengaluru)\s*$/i.test(p.city || '') ? '' : p.city].filter(Boolean).join(', ') || '—';
       const pidAttr = escapeHtml(String(p._id || ''));
-      const acts = `<td class="oc-sticky oc-sticky-act"><button type="button" class="oc-pbtn" data-oc="pview" data-id="${pidAttr}" title="View property (edit / clone from there)"><i class="fas fa-eye"></i></button></td>`;
-      return `<tr class="${isNew ? 'is-new' : ''} ${_ocPropSel.has(String(p._id || '')) ? 'psel' : ''}"><td class="oc-selcol"><input type="checkbox" class="oc-sel" data-oc="psel" data-id="${pidAttr}" ${_ocPropSel.has(String(p._id || '')) ? 'checked' : ''} aria-label="Select ${escapeHtml(p.propertyId || 'property')}"></td><td><b>${escapeHtml(p.propertyId || '—')}</b>${isNew ? ' <span class="oc-pill new">NEW</span>' : ''}</td>
-        <td>${escapeHtml(p.title || 'Untitled')}</td><td>${statusBadge(p.status)}</td><td>${escapeHtml(String(type))}</td>
-        <td>${escapeHtml(String(p.displayPrice || '—'))}</td><td>${escapeHtml(place)}</td>
-        <td>${p.createdAt ? plainDateTime(p.createdAt) : '—'}</td>
+      const sel = _ocPropSel.has(String(p._id || ''));
+      const acts = `<td class="oc-sticky oc-sticky-act"><span class="oc-pact">
+        <button type="button" class="oc-pbtn" data-oc="pview" data-id="${pidAttr}" title="View property"><i class="fas fa-eye"></i></button>
+        <button type="button" class="oc-pbtn" data-oc="pedit" data-id="${pidAttr}" title="Edit property"><i class="fas fa-pen"></i></button>
+        <button type="button" class="oc-pbtn wa" data-oc="pwa" data-id="${pidAttr}" data-key="${g.key}" title="Ask owner about just this property on WhatsApp"${p.booked ? ' disabled' : ''}><i class="fab fa-whatsapp"></i></button></span></td>`;
+      return `<tr class="${isNew ? 'is-new' : ''} ${sel ? 'psel' : ''} ${p.booked ? 'is-booked' : ''}"><td class="oc-selcol"><input type="checkbox" class="oc-sel" data-oc="psel" data-id="${pidAttr}" ${sel ? 'checked' : ''} aria-label="Select ${escapeHtml(p.propertyId || 'property')}"></td>
+        <td><b>${escapeHtml(p.propertyId || '—')}</b> <button type="button" class="oc-copy" data-oc="pcopy" data-pid="${escapeHtml(p.propertyId || '')}" title="Copy property ID"><i class="far fa-copy"></i></button>${isNew ? ' <span class="oc-pill new">NEW</span>' : ''}</td>
+        <td class="oc-title">${escapeHtml(p.title || 'Untitled')}</td><td>${statusBadge(p.status)}</td><td>${escapeHtml(String(type))}</td>
+        <td><b>${escapeHtml(String(p.displayPrice || '—'))}</b></td><td>${escapeHtml(place)}</td>
+        <td>${p.createdAt ? plainDateTime(p.createdAt) : '—'}<div class="oc-ago">${escapeHtml(ocAgo(p.createdAt))}</div></td>
         <td class="oc-sticky oc-sticky-av"><label class="mini-toggle-wrap" title="${p.booked ? 'Booked' : 'Available'} — switch on to mark as booked" style="display:inline-flex;align-items:center;gap:8px;cursor:pointer"><span class="mini-toggle booked-toggle">
           <input type="checkbox" ${p.booked ? 'checked' : ''} ${canAct('properties') ? '' : 'disabled'} onchange="ocToggleBooked('${escapeHtml(String(p._id || ''))}', this)">
           <span class="slider"></span></span></label></td>${acts}</tr>`;
     }).join('');
+}
+/* Stat tiles + filter chips + search/sort above the owner popup's table. */
+function ocModalExtras(g){
+  const tot = g.props.length, bk = g.props.filter(p => p.booked).length, av = tot - bk, nw = g.newProps.length;
+  const chip = (k, label, n) => `<button type="button" class="oc-chip${_ocFilter === k ? ' on' : ''}" data-oc="ofilter" data-val="${k}">${label} <b>${n}</b></button>`;
+  return `<div class="oc-stats">
+      <div class="oc-stat"><b>${tot}</b><span>Total</span></div>
+      <div class="oc-stat ok"><b>${av}</b><span>Available</span></div>
+      <div class="oc-stat bk"><b>${bk}</b><span>Booked</span></div>
+      <div class="oc-stat nw"><b>${nw}</b><span>New since call</span></div>
+    </div>
+    <div class="oc-mtools">
+      <div class="oc-chips">${chip('all', 'All', tot)}${chip('avail', 'Available', av)}${chip('booked', 'Booked', bk)}${nw ? chip('new', 'New', nw) : ''}</div>
+      <input type="search" class="oc-msearch" id="ocMSearch" placeholder="Search ID, title, location…" value="${escapeHtml(_ocQ)}" oninput="ocSetView({q:this.value})">
+      <select class="oc-msort" onchange="ocSetView({sort:this.value})" title="Sort">
+        <option value="new"${_ocSortBy === 'new' ? ' selected' : ''}>Newest first</option>
+        <option value="old"${_ocSortBy === 'old' ? ' selected' : ''}>Oldest first</option>
+        <option value="id"${_ocSortBy === 'id' ? ' selected' : ''}>Property ID</option>
+      </select>
+    </div>`;
+}
+/* Filter / search / sort: redraw only the rows + chip highlights, so typing in the search box keeps focus. */
+function ocSetView(o){
+  if(o.filter !== undefined) _ocFilter = o.filter;
+  if(o.q !== undefined) _ocQ = o.q;
+  if(o.sort !== undefined) _ocSortBy = o.sort;
+  const g = ocGroups().find(x => x.key === _ocModalKey); if(!g) return;
+  const tb = document.querySelector('#ocModalBox .oc-tbl tbody'); if(tb) tb.innerHTML = ocRowsHtml(g);
+  document.querySelectorAll('#ocModalBox .oc-chip').forEach(c => c.classList.toggle('on', c.getAttribute('data-val') === _ocFilter));
+  ocPUpdateUI();
+}
+function ocCheckOne(id, key){
+  if(typeof blockIfViewOnly === 'function' && blockIfViewOnly('properties')) return;
+  const g = ocGroups().find(x => x.key === key); if(!g) return;
+  const p = g.props.find(x => String(x._id) === String(id)); if(!p) return;
+  const digits = g.key !== 'none' ? ocDigits(g.number) : ocDigits(Array.from(g.alts)[0]);
+  if(!digits){ showAlertModal('No phone number on file for this owner.', { variant:'error', title:'Nothing to send' }); return; }
+  window.open(`https://wa.me/91${digits}?text=${encodeURIComponent(buildOwnerAvailabilityMessage([p]))}`, '_blank', 'noopener');
 }
 /* View / Edit / Clone a property from the owner popup — reuses the Properties tab's modal. */
 async function ocOpenProp(id, mode){
@@ -6820,12 +6915,14 @@ function ocModalHtml(g){
         : `<button type="button" class="oc-done" data-oc="done" data-key="${g.key}" title="Mark as called and reviewed. Moves the owner to Called.">✓ Mark called</button>`}</div>
       <button type="button" class="oc-mclose" data-oc="close" title="Close">&times;</button>
     </div>
+    ${ocModalExtras(g)}
     <div class="oc-mbody"><table class="oc-tbl"><thead><tr><th class="oc-selcol"><input type="checkbox" class="oc-sel" id="ocPAll" data-oc="pall" title="Select all available (not booked) properties" aria-label="Select all available properties"></th><th>Property ID</th><th>Title</th><th>Status</th><th>Type</th><th>Price</th><th>Location</th><th>Listed on</th><th class="oc-sticky oc-sticky-av">Booked</th><th class="oc-sticky oc-sticky-act">Actions</th></tr></thead><tbody>${ocRowsHtml(g)}</tbody></table></div>`;
 }
 function ocOpenModal(key){
   const g = ocGroups().find(x => x.key === key); if(!g) return;
   _ocModalKey = key;
   _ocPropSel.clear();
+  _ocFilter = 'all'; _ocQ = ''; _ocSortBy = 'new';
   let ov = document.getElementById('ocModalOv');
   if(!ov){
     ov = document.createElement('div');
@@ -6935,6 +7032,15 @@ document.addEventListener('click', function(e){
     const g = ocGroups().find(x => x.key === key); if(!g) return;
     const log = ocLog(); log[key] = { ts: Date.now(), ids: g.props.map(ocPid) }; ocSave();
     ocRender(); if(el.closest('#ocModalOv')) ocCloseModal(); return;
+  }
+  if(act === 'ofilter'){ e.stopPropagation(); ocSetView({ filter: el.getAttribute('data-val') }); return; }
+  if(act === 'pwa'){ e.stopPropagation(); ocCheckOne(el.getAttribute('data-id'), key); return; }
+  if(act === 'pcopy'){
+    e.stopPropagation();
+    const v = el.getAttribute('data-pid') || '';
+    try{ navigator.clipboard.writeText(v); }catch(err){}
+    el.classList.add('done'); el.innerHTML = '<i class="fas fa-check"></i>';
+    setTimeout(function(){ el.classList.remove('done'); el.innerHTML = '<i class="far fa-copy"></i>'; }, 1200); return;
   }
   if(act === 'pview' || act === 'pedit' || act === 'pclone'){
     e.stopPropagation(); ocOpenProp(el.getAttribute('data-id'), act.slice(1)); return;
