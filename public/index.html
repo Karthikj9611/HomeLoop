@@ -647,7 +647,8 @@ ul{list-style:none}
 .filter-dd-bar.tab-all{display:none}
 .filter-dd-bar.tab-rent .fd-rent{display:inline-flex}
 .filter-dd-bar.tab-lease .fd-lease{display:inline-flex}
-.filter-dd-bar.tab-pg .fd-pg{display:inline-flex}
+.filter-dd-bar.tab-pg .fd-pg,
+.filter-dd-bar.tab-maintenance .fd-pg{display:inline-flex}   /* "PG & Coliving" nav tab */
 .filter-dd-bar.tab-shortstay .fd-shortstay{display:inline-flex}
 .filter-dd-bar.tab-sell .fd-sell{display:inline-flex}
 /* Promoted crosses all listing types, so show the same full filter set as "All" */
@@ -656,12 +657,9 @@ ul{list-style:none}
 .filter-dd-bar.tab-promoted .fd-pg,
 .filter-dd-bar.tab-promoted .fd-shortstay,
 .filter-dd-bar.tab-promoted .fd-sell{display:inline-flex}
-/* Broker crosses all listing types (agent-listed), same full filter set as Promoted */
+/* Brokers and Builders use the same filter set as the Rent tab */
 .filter-dd-bar.tab-broker .fd-rent,
-.filter-dd-bar.tab-broker .fd-lease,
-.filter-dd-bar.tab-broker .fd-pg,
-.filter-dd-bar.tab-broker .fd-shortstay,
-.filter-dd-bar.tab-broker .fd-sell{display:inline-flex}
+.filter-dd-bar.tab-builder .fd-rent{display:inline-flex}
 .sort-modal{
   position:fixed;inset:0;z-index:200;
   display:none;align-items:center;justify-content:center;padding:16px;
@@ -6706,6 +6704,11 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
     </div>
     <div class="prop-grid" id="shortstayGrid"></div>
   </div>
+  <div class="section-divider" id="emptyTabDivider" style="display:none">
+    <div class="section-divider-inner">
+      <span class="section-divider-label promoted-label"><span class="hdr-ico" id="emptyTabIco" aria-hidden="true"></span><span id="emptyTabName"></span><span class="section-divider-count" id="emptyTabCount">0</span></span>
+    </div>
+  </div>
   <div class="empty-state" id="emptyState">
     <div class="empty-state-icon">
       <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -10987,6 +10990,7 @@ function renderCards() {
   document.getElementById('resultCount').textContent = list.length;
 
   const SECTIONS = ['promoted', 'rent', 'upcoming', 'lease', 'pg', 'shortstay', 'sell'];
+  { const _etd = document.getElementById('emptyTabDivider'); if (_etd) _etd.style.display = 'none'; }
 
   if (list.length === 0) {
     SECTIONS.forEach(key => {
@@ -11001,6 +11005,16 @@ function renderCards() {
       const _d = document.getElementById(_emptyKey + 'Divider'), _c = document.getElementById(_emptyKey + 'Count');
       if (_d) _d.style.display = '';
       if (_c) _c.textContent = '0';
+    }
+    // Brokers / Builders / PG & Coliving have no section of their own, so give them the same header line.
+    const _extra = { Broker:['🤝','Brokers'], Builder:['🏗️','Builders'], Maintenance:['🛏️','PG & Coliving'] }[currentTab];
+    const _ed = document.getElementById('emptyTabDivider');
+    if (_ed) {
+      if (_extra && _initialPropertiesFetchDone) {
+        document.getElementById('emptyTabIco').textContent = _extra[0];
+        document.getElementById('emptyTabName').textContent = _extra[1];
+        _ed.style.display = '';
+      } else _ed.style.display = 'none';
     }
     setEmptyStateContent();
     empty.classList.add('show');
@@ -13586,7 +13600,7 @@ function buildFilterOptions() {
 function syncFdBar() {
   const bar = document.getElementById('filterDdBar');
   if (!bar) return;
-  bar.classList.remove('tab-all','tab-rent','tab-lease','tab-pg','tab-promoted','tab-shortstay','tab-sell','tab-broker');
+  bar.classList.remove('tab-all','tab-rent','tab-lease','tab-pg','tab-promoted','tab-shortstay','tab-sell','tab-broker','tab-builder','tab-maintenance');
   bar.classList.add('tab-' + (currentTab === 'Upcoming' ? 'rent' : currentTab.toLowerCase()));
 }
 
