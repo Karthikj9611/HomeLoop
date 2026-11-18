@@ -13921,10 +13921,13 @@ function priceChipsHTML(p, pType, deposit, maintenance, leaseDur, opts) {
   const rentSvg = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M9 21v-6h6v6"/></svg>';
   const depositSvg = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="6" width="20" height="13" rx="2"/><circle cx="12" cy="12.5" r="2.5"/></svg>';
 
+  const inRibbon = !!(opts && opts.ribbon);
+  const maintInline = '';
+  const hasRibbonMaint = (inRibbon && pType !== 'ShortStay' && pType !== 'Sell');
   const rentChip = `<div class="prop-chip price-chip price-chip-rent">
     <span class="price-ico-3d">${rentSvg}</span>
     <span class="price-text-stack">
-      <span class="prop-price"><span class="rs">₹</span>${fmtRupeeResponsive(p.price?.rent||0, true)}${pType === 'Sell' ? '' : `<span class="prop-price-unit">/ <span class="unit-full">${rentUnit}</span><span class="unit-short">${rentUnitShort}</span></span>`}</span>
+      <span class="prop-price"><span class="rs">₹</span>${fmtRupeeResponsive(p.price?.rent||0, true)}${pType === 'Sell' ? '' : `<span class="prop-price-unit">/ <span class="unit-full">${rentUnit}</span><span class="unit-short">${rentUnitShort}</span></span>`}${maintInline}</span>
     </span>
   </div>`;
   const maintChip = maintenance > 0 ? `<div class="prop-chip price-chip" title="Monthly maintenance">
@@ -13942,19 +13945,24 @@ function priceChipsHTML(p, pType, deposit, maintenance, leaseDur, opts) {
     </span>
   </div>` : '';
 
-  const inRibbon = !!(opts && opts.ribbon);
+  const ribbonMaintChip = maintenance > 0 ? `<div class="prop-chip price-chip" title="Monthly maintenance">
+    <span class="price-text-stack">
+      <span class="prop-deposit-val"><span class="rs">₹</span>${fmtRupeeResponsive(maintenance, true)}</span>
+      <span class="prop-deposit-lbl">/ M</span>
+    </span>
+  </div>` : '';
   const chips = [rentChip];
   if (pType === 'ShortStay') {
     // rent only
   } else if (pType === 'Lease') {
-    if (maintChip && !inRibbon) chips.push(maintChip);
+    if (maintChip) chips.push(inRibbon ? ribbonMaintChip : maintChip);
   } else {
-    if (maintChip && !inRibbon) chips.push(maintChip);
+    if (maintChip) chips.push(inRibbon ? ribbonMaintChip : maintChip);
     if (depositChip) chips.push(depositChip);
   }
   const gridCols = chips.length >= 2 ? `repeat(${chips.length},1fr)` : `repeat(${chips.length},auto)`;
   const equalClass = chips.length >= 2 ? ' price-chips-equal' : '';
-  const scrollClass = chips.length > 2 ? ' price-chips-scroll' : '';
+  const scrollClass = (chips.length > 2 && !inRibbon) ? ' price-chips-scroll' : '';
   const inner = `<div class="prop-price-chips${scrollClass}${equalClass}" style="grid-template-columns:${gridCols}">${chips.join('')}</div>`;
   if (opts && opts.ribbon) {
     // Ribbon mode: only a single chip (rent alone, e.g. Short Stay) hugs its
@@ -24165,7 +24173,41 @@ main.main.empty-with-booked:has(> .empty-state.show) > .empty-state.show{positio
     margin-left:auto !important;margin-right:auto !important;
     box-sizing:border-box !important;
   }
-}</style>
+}
+
+/* Narrow cards: shrink ribbon text so rent + maintenance + deposit never collide */
+/* container queries below resolve against .prop-img-box (the image width) */
+@container prop-img-box (min-width:0px){
+  .prop-img-price .prop-price-chips .price-chip{min-width:0;white-space:nowrap}
+  .prop-img-price .prop-price-chips.price-chips-equal .price-ico-3d{display:none !important}
+  .prop-img-price .prop-price-chips.price-chips-equal .price-chip-rent{padding:0 4px 0 0 !important}
+  .prop-img-price .prop-price-chips.price-chips-equal .price-chip-rent .prop-price{font-size:13px !important}
+  .prop-img-price .prop-price-chips.price-chips-equal .prop-price-unit{font-size:8px !important;margin-left:1px !important}
+  .prop-img-price .prop-price-chips.price-chips-equal .prop-deposit-val{font-size:12px !important}
+  .prop-img-price .prop-price-chips.price-chips-equal .prop-deposit-lbl{font-size:8px !important;margin-left:2px !important;letter-spacing:0 !important}
+  .prop-img-price .prop-price-chips.price-chips-equal .price-chip:not(.price-chip-rent){padding-left:3px !important;padding-right:3px !important;justify-content:center;gap:0 !important}
+  .prop-img-price .prop-price-chips.price-chips-equal .price-chip .rs{font-size:.8em !important;margin-right:1px !important}
+  .prop-img-price .prop-price-chips.price-chips-equal .price-text-stack{white-space:nowrap}
+}
+@container prop-img-box (min-width:250px){
+  .prop-img-price .prop-price-chips.price-chips-equal .price-chip[title="Security deposit"] .unit-full{display:inline !important}
+  .prop-img-price .prop-price-chips.price-chips-equal .price-chip[title="Security deposit"] .unit-short{display:none !important}
+}
+@container prop-img-box (max-width:249px){
+  .prop-img-price .prop-price-chips.price-chips-equal .price-chip[title="Security deposit"] .unit-full{display:none !important}
+  .prop-img-price .prop-price-chips.price-chips-equal .price-chip[title="Security deposit"] .unit-short{display:inline !important}
+}
+@container prop-img-box (max-width:339px){
+  .prop-img-price .prop-price-chips.price-chips-equal .price-chip-rent .prop-price-unit .unit-full{display:none !important}
+  .prop-img-price .prop-price-chips.price-chips-equal .price-chip-rent .prop-price-unit .unit-short{display:inline !important}
+}
+@container prop-img-box (min-width:340px){
+  .prop-img-price .prop-price-chips.price-chips-equal .price-chip-rent .unit-full,
+  .prop-img-price .prop-price-chips.price-chips-equal .price-chip[title="Security deposit"] .unit-full{display:inline !important}
+  .prop-img-price .prop-price-chips.price-chips-equal .price-chip-rent .unit-short,
+  .prop-img-price .prop-price-chips.price-chips-equal .price-chip[title="Security deposit"] .unit-short{display:none !important}
+}
+</style>
 <!-- ══ Modal queue: This Month's Listings → greeting, one at a time, with full background blur ══ -->
 <style>
 #wishModalOverlay{
