@@ -2513,10 +2513,17 @@ app.post('/api/properties/:id/view', viewLimiter, attachUserIfPresent, async (re
 // With logged-out visitors no longer counted in POST /view above, a "guest"
 // entry here only ever means a view recorded before that change shipped —
 // there is no path to a new one from this point on.
-app.get('/api/properties/:id/viewers', async (req, res) => {
+app.get('/api/properties/:id/viewers', attachUserIfPresent, async (req, res) => {
   try {
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
       return res.status(400).json({ message: 'Invalid property id' });
+    }
+    // AGENT accounts (HomeLoop employees) also get each viewer's mobile number so they can call them.
+    // Everyone else (guests, tenants, owners) gets exactly the same response as before — no numbers.
+    let _isAgent = false;
+    if (req.userId) {
+      const _me = await User.findById(req.userId).select('accountType').lean();
+      _isAgent = !!(_me && _me.accountType === 'agent');
     }
     const rawViewers = await PropertyViewer.find({ propertyId: req.params.id })
       .sort({ lastViewedAt: -1 })
@@ -2539,6 +2546,15 @@ app.get('/api/properties/:id/viewers', async (req, res) => {
     const { doc: property } = await findListingById(req.params.id, { lean: true });
     const totalViews = property ? (property.views || 0) : 0;
 
+    // Agents only: look up the viewers' mobile numbers in ONE query (never stored on PropertyViewer, so a
+    // changed number is always current).
+    let _mobiles = {};
+    if (_isAgent && viewers.length) {
+      const _users = await User.find({ _id: { $in: viewers.map(v => v.userId) } }).select('mobile').lean();
+      _users.forEach(u => { _mobiles[String(u._id)] = u.mobile || ''; });
+    }
+    res.set('Cache-Control', _isAgent ? 'private, no-store' : 'no-cache');
+
     res.json({
       viewers: viewers.map(v => ({
         userId:       String(v.userId),
@@ -2550,6 +2566,7 @@ app.get('/api/properties/:id/viewers', async (req, res) => {
         accountType:  v.userAccountType === 'owner' ? 'owner' : 'customer',
         firstViewed:  v.firstViewedAt,
         lastViewed:   v.lastViewedAt,
+        ...(_isAgent ? { mobile: _mobiles[String(v.userId)] || '' } : {}),
       })),
       namedCount: viewers.length,
       totalViews,
