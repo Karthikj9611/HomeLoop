@@ -24400,6 +24400,40 @@ main.main.empty-with-booked:has(> .empty-state.show) > .empty-state.show{positio
   .prop-img-price .prop-price-chips.price-chips-equal .price-chip[title="Security deposit"] .unit-short{display:none !important}
 }
 </style>
+<style id="mobile-viewed-booked-rent-deposit-only">
+/* MOBILE Viewed + Booked cards: same ribbon as the main cards —
+   "₹20K / Mo" | divider | "₹60K SD", two equal halves. No ID badge, no maintenance.
+   :is() gives id-level specificity so this beats earlier !important ribbon rules. */
+@media (max-width:768px){
+  :is(#recentlyViewedStrip,[id$="BookedGrid"]) .prop-img-id-badge{display:none !important}
+  :is(#recentlyViewedStrip,[id$="BookedGrid"]) .prop-img-price .price-chip[title="Monthly maintenance"]{display:none !important}
+  :is(#recentlyViewedStrip,[id$="BookedGrid"]) .prop-img-price{left:0 !important;right:0 !important;width:100% !important;max-width:100% !important;padding:7px 0 !important;box-sizing:border-box;overflow:hidden}
+  :is(#recentlyViewedStrip,[id$="BookedGrid"]) .prop-img-price .prop-price-chips{display:flex !important;flex-wrap:nowrap;align-items:center;width:100%}
+  :is(#recentlyViewedStrip,[id$="BookedGrid"]) .prop-img-price .prop-price-chips .price-chip{display:flex !important;flex:1 1 0 !important;min-width:0;gap:0 !important;align-items:center;justify-content:flex-start !important;position:relative;white-space:nowrap}
+  :is(#recentlyViewedStrip,[id$="BookedGrid"]) .prop-img-price .prop-price-chips .price-chip-rent{padding:0 4px 0 8px !important}
+  :is(#recentlyViewedStrip,[id$="BookedGrid"]) .prop-img-price .prop-price-chips .price-chip[title="Security deposit"]{padding:0 4px 0 10px !important}
+  :is(#recentlyViewedStrip,[id$="BookedGrid"]) .prop-img-price .prop-price-chips .price-chip:not(:first-child)::before{display:block !important;content:'';position:absolute;left:0;top:50%;transform:translateY(-50%);width:1px;height:24px;background:linear-gradient(to bottom,transparent,rgba(255,255,255,.55),transparent)}
+  :is(#recentlyViewedStrip,[id$="BookedGrid"]) .prop-img-price .price-ico-3d{display:none !important}
+  :is(#recentlyViewedStrip,[id$="BookedGrid"]) .prop-img-price .price-text-stack{display:block;white-space:nowrap;text-align:left !important}
+  /* rent: ₹20K / Mo */
+  :is(#recentlyViewedStrip,[id$="BookedGrid"]) .prop-img-price .prop-price-chips .price-chip-rent .prop-price{font-size:14px !important}
+  :is(#recentlyViewedStrip,[id$="BookedGrid"]) .prop-img-price .prop-price-chips .price-chip-rent .prop-price-unit{font-size:9px !important;margin-left:3px !important}
+  :is(#recentlyViewedStrip,[id$="BookedGrid"]) .prop-img-price .prop-price-chips .price-chip-rent .prop-price-unit .unit-full{display:none !important}
+  :is(#recentlyViewedStrip,[id$="BookedGrid"]) .prop-img-price .prop-price-chips .price-chip-rent .prop-price-unit .unit-short{display:inline !important}
+  /* deposit: ₹60K SD */
+  :is(#recentlyViewedStrip,[id$="BookedGrid"]) .prop-img-price .prop-price-chips .price-chip[title="Security deposit"] .prop-deposit-val{font-size:14px !important;font-weight:800}
+  :is(#recentlyViewedStrip,[id$="BookedGrid"]) .prop-img-price .prop-price-chips .price-chip[title="Security deposit"] .prop-deposit-lbl{font-size:9px !important;margin-left:3px !important}
+  :is(#recentlyViewedStrip,[id$="BookedGrid"]) .prop-img-price .prop-price-chips .price-chip[title="Security deposit"] .unit-full{display:none !important}
+  :is(#recentlyViewedStrip,[id$="BookedGrid"]) .prop-img-price .prop-price-chips .price-chip[title="Security deposit"] .unit-short{display:inline !important}
+  /* kill the old rule that appended an extra "M" after the unit (caused "MoM") */
+  :is(#recentlyViewedStrip,[id$="BookedGrid"]) .prop-img-price .prop-price-chips .prop-price-unit::after{content:none !important;display:none !important}
+  :is(#recentlyViewedStrip,[id$="BookedGrid"]) .prop-img-price .prop-price-chips .price-chip{overflow:hidden}
+  :is(#recentlyViewedStrip,[id$="BookedGrid"]) .prop-img-price .prop-price-chips .price-chip-rent{padding:0 3px 0 6px !important}
+  :is(#recentlyViewedStrip,[id$="BookedGrid"]) .prop-img-price .prop-price-chips .price-chip[title="Security deposit"]{padding:0 3px 0 9px !important}
+  :is(#recentlyViewedStrip,[id$="BookedGrid"]) .prop-img-price .prop-price-chips .price-chip-rent .prop-price,:is(#recentlyViewedStrip,[id$="BookedGrid"]) .prop-img-price .prop-price-chips .price-chip[title="Security deposit"] .prop-deposit-val{font-size:12.5px !important}
+  :is(#recentlyViewedStrip,[id$="BookedGrid"]) .prop-img-price .prop-price-chips .price-chip-rent .prop-price-unit,:is(#recentlyViewedStrip,[id$="BookedGrid"]) .prop-img-price .prop-price-chips .price-chip[title="Security deposit"] .prop-deposit-lbl{font-size:8px !important;margin-left:2px !important}
+}
+</style>
 <!-- ══ Modal queue: This Month's Listings → greeting, one at a time, with full background blur ══ -->
 <style>
 #wishModalOverlay{
