@@ -837,11 +837,11 @@ table.dataTable.no-footer{border-bottom:none!important}
 .col-toggle-item:hover{background:var(--surface2)}
 .col-toggle-item input{width:14px;height:14px;cursor:pointer;accent-color:var(--ink)}
 .col-toggle-footer{
-  display:flex;justify-content:space-between;gap:8px;
+  display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;
   padding:8px 8px 2px;margin-top:4px;border-top:1px solid var(--border);
 }
 .col-toggle-footer button{
-  flex:1;padding:7px 10px;border-radius:8px;border:1px solid var(--border);
+  flex:1 1 30%;padding:7px 10px;border-radius:8px;border:1px solid var(--border);
   background:var(--surface2);color:var(--ink2);font-size:0.74rem;font-weight:700;
   cursor:pointer;transition:all 0.15s;
 }
@@ -8018,8 +8018,19 @@ window.switchCustType = function(type){
   if(isPO){
     if(window.alignThreeRowsAsColumns) alignThreeRowsAsColumns();
     if(_propOwnersTable){ _propOwnersTable.draw(false); _propOwnersTable.columns.adjust(); }
-  } else if(dataTable) dataTable.draw();
+  } else if(dataTable){ applyCustTypeColumns(); dataTable.draw(); }
 };
+// Tenants don't list properties: force-hide the Listings column (idx 7) on the Tenants tab; every other tab follows the saved Columns choice.
+function applyCustTypeColumns(){
+  if(!dataTable) return;
+  let show = true;
+  if(_custTypeTab === 'customer') show = false;
+  else { try{ const st = JSON.parse(localStorage.getItem(COL_TOGGLE_CONFIGS.cust.storageKey)||'{}'); if(st[7] === false) show = false; }catch(e){} }
+  dataTable.column(7).visible(show, false);
+  dataTable.column(8).visible(false, false);   // Visits: appointments no longer used — always hidden, not in Columns menu
+  dataTable.columns.adjust();
+  try{ buildColumnToggle('cust'); }catch(e){}
+}
 window.switchCustStatus = function(status){
   _custStatusTab = status;
   try{ localStorage.setItem('kr_admin_custStatus', status); }catch(e){}
@@ -13138,6 +13149,7 @@ $(document).ready(function(){
   $custTopControls.find('.dt-buttons').prependTo('#custBulkToolbar .bulk-toolbar-left');
   $custTopControls.remove();
   initColumnToggle('cust');
+  applyCustTypeColumns();
   restoreFilterInputsUI('bookingTable_wrapper', _custColumnFilters);
   updateFilterBadge(_custColumnFilters, 'custFilterBadge', 'custFilterCount', 'custClearFiltersBtn');
   } catch(e){ console.error('Customers table failed to initialize:', e); }
@@ -16051,11 +16063,13 @@ const COL_TOGGLE_CONFIGS = {
     getTable: ()=>dataTable,
     cols: [
       {idx:3, label:'Type'}, {idx:4, label:'User ID'}, {idx:5, label:'Phone'},
-      {idx:6, label:'Email'}, {idx:7, label:'Property Listings'}, {idx:8, label:'Visit Requests'},
+      {idx:6, label:'Email'}, {idx:7, label:'Property Listings'},
       {idx:9, label:'Views'}, {idx:10, label:'Registered'}, {idx:11, label:'Reason'}, {idx:12, label:'Remarks'}
     ],
     menuId:'custColToggleMenu', btnId:'custColToggleBtn', wrapId:'custColToggleWrap',
-    storageKey:'rip_admin_custColVisibility',
+    storageKey:'rip_admin_custColVisibility_v2',
+    // Default grid = essentials only (Customer, Phone, Listings, Views, Registered, Action). Rest via Columns menu.
+    defaultHidden:[3,4,6,8,11,12],   // Type, User ID, Email, Visits, Reason, Remarks
     tableSel:'#bookingTable', actionStorageKey:'rip_admin_custActionVisibility_v1',
     actions:[
       {key:'verified',     label:'Verified badge'},
@@ -16198,6 +16212,9 @@ function apptExportColumnIndices(){
   return idxs;
 }
 
+// Columns that don't apply to the current tab (Tenants have no listings) — left out of the menu and ignored by Show/Hide all.
+function colNotApplicable(key, idx){ return key === 'cust' && idx === 7 && _custTypeTab === 'customer'; }
+
 function buildColumnToggle(key){
   const cfg = COL_TOGGLE_CONFIGS[key];
   const table = cfg.getTable();
@@ -16205,6 +16222,7 @@ function buildColumnToggle(key){
   if(!menu || !table) return;
   let html = '';
   cfg.cols.forEach(c=>{
+    if(colNotApplicable(key, c.idx)) return;
     const visible = table.column(c.idx).visible();
     html += `<label class="col-toggle-item">
       <input type="checkbox" data-col-idx="${c.idx}" ${visible?'checked':''} onchange="onColToggleChange('${key}',this)">
@@ -16224,6 +16242,7 @@ function buildColumnToggle(key){
     });
   }
   html += `<div class="col-toggle-footer">
+    ${cfg.defaultHidden?`<button type="button" onclick="showEssentialColumns('${key}')" title="Show only the important columns">Essentials</button>`:''}
     <button type="button" onclick="setAllColumns('${key}',true)">Show all</button>
     <button type="button" onclick="setAllColumns('${key}',false)">Hide all</button>
     <button type="button" onclick="toggleColMenu('${key}')">Done</button>
@@ -16243,6 +16262,17 @@ window.onColToggleChange = function(key, inputEl){
   saveColVisibility(key);
 };
 
+// "Essentials": only the important columns (cfg.defaultHidden are hidden). Action buttons are left as they are.
+window.showEssentialColumns = function(key){
+  const cfg = COL_TOGGLE_CONFIGS[key];
+  const table = cfg.getTable();
+  if(!table || !cfg.defaultHidden) return;
+  cfg.cols.forEach(c=>{ if(colNotApplicable(key, c.idx)) return; table.column(c.idx).visible(!cfg.defaultHidden.includes(c.idx), false); });
+  table.columns.adjust();
+  buildColumnToggle(key);
+  saveColVisibility(key);
+};
+
 window.setAllColumns = function(key, show){
   const cfg = COL_TOGGLE_CONFIGS[key];
   const table = cfg.getTable();
@@ -16254,7 +16284,7 @@ window.setAllColumns = function(key, show){
     saveColActionVisibility(key);
     applyColActionVisibility(key);
   }
-  cfg.cols.forEach(c=>{ table.column(c.idx).visible(show, false); });
+  cfg.cols.forEach(c=>{ if(colNotApplicable(key, c.idx)) return; table.column(c.idx).visible(show, false); });
   table.columns.adjust();
   buildColumnToggle(key);
   saveColVisibility(key);
@@ -16321,6 +16351,10 @@ function saveColVisibility(key){
   if(!table) return;
   const state = {};
   cfg.cols.forEach(c=>{ state[c.idx] = table.column(c.idx).visible(); });
+  if(key === 'cust' && _custTypeTab === 'customer'){   // Listings is forced hidden on Tenants — keep the user's saved choice for other tabs
+    let prev = {}; try{ prev = JSON.parse(localStorage.getItem(cfg.storageKey)||'{}'); }catch(e){}
+    state[7] = (prev[7] !== false);
+  }
   try{ localStorage.setItem(cfg.storageKey, JSON.stringify(state)); }catch(e){}
 }
 
@@ -16330,7 +16364,10 @@ function loadColVisibility(key){
   if(!table) return;
   try{
     const raw = localStorage.getItem(cfg.storageKey);
-    if(!raw) return;
+    if(!raw){
+      if(cfg.defaultHidden){ cfg.defaultHidden.forEach(i=>table.column(i).visible(false, false)); table.columns.adjust(); }
+      return;
+    }
     const state = JSON.parse(raw);
     Object.keys(state).forEach(idx=>{
       table.column(parseInt(idx,10)).visible(!!state[idx], false);
@@ -17030,6 +17067,11 @@ async function viewOwnedProperty(id){
 async function openOwnedPropsModal(key){
   const c = _customerCache[key];
   if(!c) return;
+  // Prefer the Leads-style owner popup (call / WhatsApp / Check availability / Mark called + Booked toggles) when this owner's listings are loaded there.
+  try{
+    const ok = ocDigits(c.mobile);
+    if(_ocLoaded && ok && ocGroups().some(g => g.key === ok)){ ocOpenModal(ok); return; }
+  }catch(e){ console.error(e); }
   const modal = document.getElementById('viewedPropsModal');
   _vmTheme(modal, 'cust');
   const box = document.getElementById('viewedPropsModalBox');
