@@ -570,6 +570,9 @@ table.dataTable thead tr.col-filter-row th{
 }
 .oc-body{display:none;border-top:1px solid var(--border);padding:8px 14px 12px;overflow-x:auto}
 .oc-card.open .oc-body{display:block}
+#addModalBookedBtn.is-booked{background:#fff !important;color:#b91c1c !important;border-color:#fff !important}
+body.oc-stacked #addModal{z-index:9050}
+body.oc-stacked #listingReviewModal{z-index:9060 !important}
 .oc-modal-ov{display:none;position:fixed;inset:0;z-index:9000;background:rgba(12,13,16,.55);align-items:center;justify-content:center;padding:16px}
 .oc-modal{background:#fff;border-radius:18px;width:100%;max-width:1000px;max-height:88vh;display:flex;flex-direction:column;box-shadow:0 24px 60px rgba(0,0,0,.35);overflow:hidden}
 .oc-mhead{display:flex;flex-wrap:wrap;gap:12px;align-items:center;padding:16px 18px;border-bottom:1px solid var(--border)}
@@ -624,6 +627,7 @@ table.dataTable thead tr.col-filter-row th{
 #ownerCallsTable tr.has-new td{background:#fffbeb}
 #ownerCallsTable .oc-call,#ownerCallsTable .oc-wa{padding:5px 11px;font-size:.78rem}
 #ownerCallsTable .oc-done{padding:5px 10px;font-size:.76rem}
+#ownerCallsTable .oc-rowact .oc-wa,#ownerCallsTable .oc-rowact .oc-done{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;padding:0;border-radius:50%;font-size:1rem}
 .oc-rowact{display:inline-flex;gap:6px;align-items:center;flex-wrap:nowrap}
 .oc-pill.bk{background:#fee2e2;color:#991b1b}
 .oc-chev{transition:transform .15s;color:var(--ink2)}
@@ -4945,10 +4949,10 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
             </button>
             <div class="col-toggle-menu" id="ownerCallColToggleMenu"></div>
           </div>
-          <button class="bulk-btn bulk-btn-clear" id="ocClearFiltersBtn" style="display:none" onclick="clearGcf('ownerCall')" title="Clear all filters">
+          <button class="bulk-btn bulk-btn-clear" id="ocClearFiltersBtn" style="display:none" onclick="clearGcf('ownerCall')">
             <i class="fas fa-filter-circle-xmark"></i> <span class="bulk-btn-label" data-mobile="Clear">Clear filters</span>
           </button>
-          <button type="button" class="bulk-btn" onclick="ocReload()" title="Reload properties"><i class="fas fa-rotate"></i> <span class="bulk-btn-label" data-mobile="Reload">Reload</span></button>
+          <button type="button" class="bulk-btn" onclick="ocReload()"><i class="fas fa-rotate"></i> <span class="bulk-btn-label" data-mobile="Reload">Reload</span></button>
         </div>
         <span class="oc-summary" id="ocSummary"></span>
       </div>
@@ -4960,7 +4964,7 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
               <th></th>
               <th><input type="text" class="col-filter-input" data-gcf-key="ownerCall" placeholder="Search…" oninput="onGcfFilter('ownerCall',1,this.value,this)"></th>
               <th><input type="text" class="col-filter-input" data-gcf-key="ownerCall" placeholder="Search…" oninput="onGcfFilter('ownerCall',2,this.value,this)"></th>
-              <th><input type="text" class="col-filter-input" data-gcf-key="ownerCall" placeholder="ID / title / area…" title="Search property ID, title or location" oninput="onGcfFilter('ownerCall',3,this.value,this)"></th>
+              <th><input type="text" class="col-filter-input" data-gcf-key="ownerCall" placeholder="ID / title / area…" oninput="onGcfFilter('ownerCall',3,this.value,this)"></th>
               <th><input type="text" class="col-filter-input" data-gcf-key="ownerCall" placeholder="e.g. 2" oninput="onGcfFilter('ownerCall',4,this.value,this)"></th>
               <th><input type="text" class="col-filter-input" data-gcf-key="ownerCall" placeholder="e.g. 0" oninput="onGcfFilter('ownerCall',5,this.value,this)"></th>
               <th><input type="text" class="col-filter-input" data-gcf-key="ownerCall" placeholder="Never / date…" oninput="onGcfFilter('ownerCall',6,this.value,this)"></th>
@@ -5206,6 +5210,11 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
         style="display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.4);color:#fff;border-radius:99px;padding:7px 14px;font-size:12.5px;font-weight:700;cursor:pointer;transition:background .15s"
         onmouseover="this.style.background='rgba(255,255,255,.28)'" onmouseout="this.style.background='rgba(255,255,255,.16)'">
         <i class="fas fa-pen" style="font-size:11px"></i> Edit
+      </button>
+      <button type="button" class="ae-hdr-btn" id="addModalBookedBtn" onclick="adminToggleBookedFromModal()" aria-label="Mark as booked" title="Mark as booked"
+        style="display:none;align-items:center;gap:6px;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.4);color:#fff;border-radius:99px;padding:7px 14px;font-size:12.5px;font-weight:700;cursor:pointer;transition:background .15s"
+        onmouseover="this.style.background='rgba(255,255,255,.28)'" onmouseout="this.style.background=''">
+        <i class="fas fa-lock" style="font-size:11px"></i> Booked
       </button>
       <button class="modal-close" style="position:static;background:var(--brand);border:none;color:#fff;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;box-shadow:0 3px 8px rgba(0,0,0,.25);transition:background .15s,transform .15s" onmouseover="this.style.background='var(--brand-hover)';this.style.transform='scale(1.06)'" onmouseout="this.style.background='var(--brand)';this.style.transform='scale(1)'" onclick="closeAdminEditModal()" aria-label="Close">
         <svg viewBox="0 0 24 24" aria-hidden="true" stroke="#fff" style="width:16px;height:16px;stroke-width:2.6;stroke:#fff !important"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -6804,13 +6813,13 @@ function ocBuildTable(){
           const nums = [g.key !== 'none' ? g.number : ''].concat(Array.from(g.alts)).filter(Boolean);
           if(t !== 'display') return nums.join(' ');
           if(!nums.length) return '<span class="oc-pill">No number</span>';
-          return nums.map((n, i) => '<a class="oc-call' + (i ? ' alt' : '') + '" href="tel:' + escapeHtml(n) + '" data-oc="call" data-key="' + g.key + '" title="' + (i ? 'Call alternate number' : 'Call this owner') + '"><i class="fas fa-phone"></i> ' + escapeHtml(n) + '</a>').join(' ');
+          return nums.map((n, i) => '<a class="oc-call' + (i ? ' alt' : '') + '" href="tel:' + escapeHtml(n) + '" data-oc="call" data-key="' + g.key + '"><i class="fas fa-phone"></i> ' + escapeHtml(n) + '</a>').join(' ');
       }},
       /* 3 – Properties (opens the owner popup) */
       { data:null, className:'dt-body-center', render:(d,t,g)=>{
           if(t === 'filter') return g.props.map(p => [p.propertyId, p.title, p.loc, p.city].join(' ')).join(' ');
           if(t !== 'display') return g.props.length;
-          return '<button type="button" class="views-badge" data-oc="toggle" data-key="' + g.key + '" title="Open this owner\'s properties"><i class="fas fa-house"></i><span>' + g.props.length + '</span></button>';
+          return '<button type="button" class="views-badge" data-oc="toggle" data-key="' + g.key + '" aria-label="Open this owner\'s properties"><i class="fas fa-house"></i><span>' + g.props.length + '</span></button>';
       }},
       /* 4 – Available */
       { data:null, className:'dt-body-center', render:(d,t,g)=>{ const n = g.props.filter(p => !p.booked).length; return t === 'display' ? '<span class="oc-pill ok">' + n + '</span>' : n; }},
@@ -6826,11 +6835,11 @@ function ocBuildTable(){
       /* 7 – Action */
       { data:null, orderable:false, className:'dt-body-center', render:(d,t,g)=>{
           if(t !== 'display') return '';
-          const wa = g.key !== 'none' ? '<a class="oc-wa" href="https://wa.me/91' + ocDigits(g.number) + '" target="_blank" rel="noopener" title="Chat on WhatsApp"><i class="fab fa-whatsapp"></i> WhatsApp</a>' : '';
+          const wa = g.key !== 'none' ? '<a class="oc-wa" href="https://wa.me/91' + ocDigits(g.number) + '" target="_blank" rel="noopener" aria-label="WhatsApp"><i class="fab fa-whatsapp"></i></a>' : '';
           const done = _ocTab === 'called'
-            ? '<button type="button" class="oc-done" data-oc="undo" data-key="' + g.key + '" title="Move this owner back to the To Call list">↩ To Call</button>'
-            : '<button type="button" class="oc-done" data-oc="done" data-key="' + g.key + '" title="Mark as called and reviewed. Moves the owner to Called.">✓ Mark called</button>';
-          return '<div class="oc-rowact">' + wa + done + '<button type="button" class="oc-pbtn" data-oc="toggle" data-key="' + g.key + '" title="View properties"><i class="fas fa-eye"></i></button></div>';
+            ? '<button type="button" class="oc-done" data-oc="undo" data-key="' + g.key + '" aria-label="Move to To Call"><i class="fas fa-rotate-left"></i></button>'
+            : '<button type="button" class="oc-done" data-oc="done" data-key="' + g.key + '" aria-label="Mark called"><i class="fas fa-check"></i></button>';
+          return '<div class="oc-rowact">' + wa + done + '<button type="button" class="oc-pbtn" data-oc="toggle" data-key="' + g.key + '" aria-label="View properties"><i class="fas fa-eye"></i></button></div>';
       }}
     ],
     order:[],
@@ -6907,15 +6916,13 @@ function ocRowsHtml(g){
       const pidAttr = escapeHtml(String(p._id || ''));
       const sel = _ocPropSel.has(String(p._id || ''));
       const acts = `<td class="oc-sticky oc-sticky-act"><span class="oc-pact">
-        <button type="button" class="oc-pbtn" data-oc="pview" data-id="${pidAttr}" title="View property"><i class="fas fa-eye"></i></button>
-        <button type="button" class="oc-pbtn" data-oc="pedit" data-id="${pidAttr}" title="Edit property"><i class="fas fa-pen"></i></button>
-        <button type="button" class="oc-pbtn wa" data-oc="pwa" data-id="${pidAttr}" data-key="${g.key}" title="Ask owner about just this property on WhatsApp"${p.booked ? ' disabled' : ''}><i class="fab fa-whatsapp"></i></button></span></td>`;
+        <button type="button" class="oc-pbtn" data-oc="pview" data-id="${pidAttr}" aria-label="View property"><i class="fas fa-eye"></i></button></span></td>`;
       return `<tr class="${isNew ? 'is-new' : ''} ${sel ? 'psel' : ''} ${p.booked ? 'is-booked' : ''}"><td class="oc-selcol"><input type="checkbox" class="oc-sel" data-oc="psel" data-id="${pidAttr}" ${sel ? 'checked' : ''} aria-label="Select ${escapeHtml(p.propertyId || 'property')}"></td>
-        <td><b>${escapeHtml(p.propertyId || '—')}</b> <button type="button" class="oc-copy" data-oc="pcopy" data-pid="${escapeHtml(p.propertyId || '')}" title="Copy property ID"><i class="far fa-copy"></i></button>${isNew ? ' <span class="oc-pill new">NEW</span>' : ''}</td>
+        <td><b>${escapeHtml(p.propertyId || '—')}</b> <button type="button" class="oc-copy" data-oc="pcopy" data-pid="${escapeHtml(p.propertyId || '')}" aria-label="Copy property ID"><i class="far fa-copy"></i></button>${isNew ? ' <span class="oc-pill new">NEW</span>' : ''}</td>
         <td class="oc-title">${escapeHtml(p.title || 'Untitled')}</td><td>${statusBadge(p.status)}</td><td>${escapeHtml(String(type))}</td>
         <td><b>${escapeHtml(String(p.displayPrice || '—'))}</b></td><td>${escapeHtml(place)}</td>
         <td>${p.createdAt ? plainDateTime(p.createdAt) : '—'}<div class="oc-ago">${escapeHtml(ocAgo(p.createdAt))}</div></td>
-        <td class="oc-sticky oc-sticky-av"><label class="mini-toggle-wrap" title="${p.booked ? 'Booked' : 'Available'} — switch on to mark as booked" style="display:inline-flex;align-items:center;gap:8px;cursor:pointer"><span class="mini-toggle booked-toggle">
+        <td class="oc-sticky oc-sticky-av"><label class="mini-toggle-wrap" style="display:inline-flex;align-items:center;gap:8px;cursor:pointer"><span class="mini-toggle booked-toggle">
           <input type="checkbox" ${p.booked ? 'checked' : ''} ${canAct('properties') ? '' : 'disabled'} onchange="ocToggleBooked('${escapeHtml(String(p._id || ''))}', this)">
           <span class="slider"></span></span></label></td>${acts}</tr>`;
     }).join('');
@@ -6933,7 +6940,7 @@ function ocModalExtras(g){
     <div class="oc-mtools">
       <div class="oc-chips">${chip('all', 'All', tot)}${chip('avail', 'Available', av)}${chip('booked', 'Booked', bk)}${nw ? chip('new', 'New', nw) : ''}</div>
       <input type="search" class="oc-msearch" id="ocMSearch" placeholder="Search ID, title, location…" value="${escapeHtml(_ocQ)}" oninput="ocSetView({q:this.value})">
-      <select class="oc-msort" onchange="ocSetView({sort:this.value})" title="Sort">
+      <select class="oc-msort" onchange="ocSetView({sort:this.value})">
         <option value="new"${_ocSortBy === 'new' ? ' selected' : ''}>Newest first</option>
         <option value="old"${_ocSortBy === 'old' ? ' selected' : ''}>Oldest first</option>
         <option value="id"${_ocSortBy === 'id' ? ' selected' : ''}>Property ID</option>
@@ -6975,26 +6982,28 @@ async function ocOpenProp(id, mode){
     }
   }catch(err){ alert('Could not load that listing'); return; }
   if(!_adminPropCache[id]){ alert('Could not find that listing'); return; }
-  ocCloseModal();                                   // listing modal sits underneath the owner popup otherwise
+  // Modal stack: keep the owner popup open underneath; the property modal stacks on top of it,
+  // so closing the property modal lands back on the owner popup (reverse of the open order).
+  if(mode !== 'clone') document.body.classList.add('oc-stacked');
   if(mode === 'clone') cloneAdminProperty(id);
   else openAdminListingModal(id, mode);             // 'view' or 'edit'
 }
 function ocModalHtml(g){
   const hasNum = g.key !== 'none';
   const last = g.rec && g.rec.ts ? plainDateTime(g.rec.ts) : '';
-  const call = hasNum ? `<a class="oc-call" href="tel:${escapeHtml(g.number)}" data-oc="call" data-key="${g.key}" title="Call this owner"><i class="fas fa-phone"></i> ${escapeHtml(g.number)}</a>` : '<span class="oc-pill">No number</span>';
-  const alts = Array.from(g.alts).map(a => `<a class="oc-call alt" href="tel:${escapeHtml(a)}" data-oc="call" data-key="${g.key}" title="Call alternate number"><i class="fas fa-phone"></i> ${escapeHtml(a)}</a>`).join('');
-  const wa = hasNum ? `<a class="oc-wa" href="https://wa.me/91${ocDigits(g.number)}" target="_blank" rel="noopener" title="Chat on WhatsApp"><i class="fab fa-whatsapp"></i> WhatsApp</a>` : '';
+  const call = hasNum ? `<a class="oc-call" href="tel:${escapeHtml(g.number)}" data-oc="call" data-key="${g.key}"><i class="fas fa-phone"></i> ${escapeHtml(g.number)}</a>` : '<span class="oc-pill">No number</span>';
+  const alts = Array.from(g.alts).map(a => `<a class="oc-call alt" href="tel:${escapeHtml(a)}" data-oc="call" data-key="${g.key}"><i class="fas fa-phone"></i> ${escapeHtml(a)}</a>`).join('');
+  const wa = hasNum ? `<a class="oc-wa" href="https://wa.me/91${ocDigits(g.number)}" target="_blank" rel="noopener"><i class="fab fa-whatsapp"></i> WhatsApp</a>` : '';
   return `<div class="oc-mhead">
       <div class="oc-who"><div class="oc-name">${escapeHtml(g.name || 'Unnamed owner')}</div>
         <div class="oc-sub">${g.props.length} propert${g.props.length === 1 ? 'y' : 'ies'}${last ? ' · last called ' + last : ' · never called'}</div></div>
-      <div class="oc-actions"><button type="button" class="bulk-btn" id="ocPCheckBtn" data-oc="pcheck" data-key="${g.key}" style="background:#7c3aed;color:#fff;border-color:#7c3aed" title="Ask this owner about all their available properties on WhatsApp right now — or tick some first"><i class="fab fa-whatsapp"></i> Check availability <span id="ocPCheckCount"></span></button>${call}${alts}${wa}${(g.rec && !g.newProps.length)
-        ? `<button type="button" class="oc-done" data-oc="undo" data-key="${g.key}" title="Move this owner back to the To Call list">↩ Move to To Call</button>`
-        : `<button type="button" class="oc-done" data-oc="done" data-key="${g.key}" title="Mark as called and reviewed. Moves the owner to Called.">✓ Mark called</button>`}</div>
-      <button type="button" class="oc-mclose" data-oc="close" title="Close">&times;</button>
+      <div class="oc-actions"><button type="button" class="bulk-btn" id="ocPCheckBtn" data-oc="pcheck" data-key="${g.key}" style="background:#7c3aed;color:#fff;border-color:#7c3aed"><i class="fab fa-whatsapp"></i> Check availability <span id="ocPCheckCount"></span></button>${call}${alts}${wa}${(g.rec && !g.newProps.length)
+        ? `<button type="button" class="oc-done" data-oc="undo" data-key="${g.key}">↩ Move to To Call</button>`
+        : `<button type="button" class="oc-done" data-oc="done" data-key="${g.key}">✓ Mark called</button>`}</div>
+      <button type="button" class="oc-mclose" data-oc="close" aria-label="Close">&times;</button>
     </div>
     ${ocModalExtras(g)}
-    <div class="oc-mbody"><table class="oc-tbl"><thead><tr><th class="oc-selcol"><input type="checkbox" class="oc-sel" id="ocPAll" data-oc="pall" title="Select all available (not booked) properties" aria-label="Select all available properties"></th><th>Property ID</th><th>Title</th><th>Status</th><th>Type</th><th>Price</th><th>Location</th><th>Listed on</th><th class="oc-sticky oc-sticky-av">Booked</th><th class="oc-sticky oc-sticky-act">Actions</th></tr></thead><tbody>${ocRowsHtml(g)}</tbody></table></div>`;
+    <div class="oc-mbody"><table class="oc-tbl"><thead><tr><th class="oc-selcol"><input type="checkbox" class="oc-sel" id="ocPAll" data-oc="pall" aria-label="Select all available properties"></th><th>Property ID</th><th>Title</th><th>Status</th><th>Type</th><th>Price</th><th>Location</th><th>Listed on</th><th class="oc-sticky oc-sticky-av">Booked</th><th class="oc-sticky oc-sticky-act">Actions</th></tr></thead><tbody>${ocRowsHtml(g)}</tbody></table></div>`;
 }
 function ocOpenModal(key){
   const g = ocGroups().find(x => x.key === key); if(!g) return;
@@ -7025,7 +7034,14 @@ function ocCloseModal(){
   _ocModalKey = null;
   const ov = document.getElementById('ocModalOv'); if(ov) ov.style.display = 'none';
 }
-document.addEventListener('keydown', function(e){ if(e.key === 'Escape' && _ocModalKey) ocCloseModal(); });
+document.addEventListener('keydown', function(e){
+  if(e.key !== 'Escape' || !_ocModalKey) return;
+  const c = document.getElementById('confirmOverlay');
+  if(c && getComputedStyle(c).display !== 'none') return;          // a confirm prompt handles its own Esc
+  const am = document.getElementById('addModal');
+  if(am && am.classList.contains('open')){ closeAdminEditModal(); return; }   // property modal is on top: close it first
+  ocCloseModal();
+});
 // Booked toggle inside the owner's property list. Reuses the Properties tab's
 // togglePropFlag (confirm → PATCH → updates the Properties table), then syncs this view.
 async function ocToggleBooked(id, el){
@@ -7040,7 +7056,7 @@ function ocPUpdateUI(){
   const ids = g ? new Set(g.props.map(p => String(p._id || ''))) : new Set();
   Array.from(_ocPropSel).forEach(id => { if(!ids.has(id)) _ocPropSel.delete(id); });
   const n = _ocPropSel.size;
-  const btn = document.getElementById('ocPCheckBtn'); if(btn) btn.title = n ? 'Ask this owner about the ticked properties on WhatsApp' : 'Ask this owner about all their available properties on WhatsApp right now — or tick some first';
+  const btn = document.getElementById('ocPCheckBtn'); if(btn) btn.removeAttribute('title');
   const c = document.getElementById('ocPCheckCount'); if(c) c.textContent = n ? '(' + n + ')' : '';
   const avail = g ? g.props.filter(p => !p.booked).map(p => String(p._id || '')) : [];
   const all = document.getElementById('ocPAll');
@@ -18237,6 +18253,7 @@ function cloneAdminProperty(id) {
   if (toggleBtn) toggleBtn.style.display = 'none';
   const cloneBtn = document.getElementById('addModalCloneBtn');
   if (cloneBtn) cloneBtn.style.display = 'none';
+  { const bb = document.getElementById('addModalBookedBtn'); if (bb) bb.style.display = 'none'; }
   document.getElementById('addModalTitleText').textContent = 'Clone property';
   const sub = document.getElementById('addModalSubtitleText');
   if (sub) { sub.textContent = 'Copy of ' + (p.propertyId || p.title || 'property') + ' — saved as a new listing'; sub.style.display = ''; }
@@ -18270,6 +18287,36 @@ function openPropOwnerView(id) {
   openAdminListingModal(id, 'view', { fromPO: true });
 }
 
+/* Booked / Available button in the property view header (same as the agent view).
+   Reuses togglePropFlag (confirm -> PATCH -> table update) through a detached checkbox. */
+function _syncAdminBookedBtn(){
+  const b = document.getElementById('addModalBookedBtn'); if(!b) return;
+  const p = editingPropertyId ? _adminPropCache[editingPropertyId] : null;
+  const inView = document.getElementById('addModalBox').classList.contains('view-mode');
+  const show = !!p && inView && !_cloningListing && (typeof canAct !== 'function' || canAct('properties'));
+  b.style.display = show ? 'flex' : 'none';
+  if(!show) return;
+  const isB = !!p.booked;
+  b.classList.toggle('is-booked', isB);
+  b.title = isB ? 'Mark as available again' : 'Mark as booked';
+  b.setAttribute('aria-label', b.title);
+  b.innerHTML = isB ? '<i class="fas fa-lock-open" style="font-size:11px"></i> Available'
+                    : '<i class="fas fa-lock" style="font-size:11px"></i> Booked';
+}
+async function adminToggleBookedFromModal(){
+  const id = editingPropertyId, p = id && _adminPropCache[id]; if(!p) return;
+  const btn = document.getElementById('addModalBookedBtn');
+  const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = !p.booked;   // the value we want
+  if(btn) btn.disabled = true;
+  try{ await window.togglePropFlag(id, 'booked', cb); }catch(e){ console.error(e); }
+  finally{ if(btn) btn.disabled = false; }
+  if(editingPropertyId !== id) return;          // modal was closed / switched meanwhile
+  p.booked = cb.checked;                        // togglePropFlag reverts cb on cancel / failure
+  if(typeof _ocProps !== 'undefined'){ const op = _ocProps.find(x => String(x._id) === String(id)); if(op) op.booked = cb.checked; }
+  _syncAdminBookedBtn();
+  if(typeof ocRender === 'function'){ try{ ocRender(); ocRefreshModal(); }catch(e){ console.error(e); } }   // keep the owner popup's counts/toggles in sync
+}
+
 // Confirms before discarding unsaved edits — draft persistence only covers
 // an accidental *refresh*; without this, simply clicking ✕ or clicking
 // outside the modal would silently throw away everything just as easily.
@@ -18285,6 +18332,8 @@ async function closeAdminEditModal() {
     if (!ok) return;
   }
   document.getElementById('addModal').classList.remove('open');
+  document.body.classList.remove('oc-stacked');
+  { const bb = document.getElementById('addModalBookedBtn'); if (bb) bb.style.display = 'none'; }
   unlockBodyScroll();
   editingPropertyId = null;
   _adminModalFromPO = false; _cloningListing = false;
@@ -18336,6 +18385,8 @@ function _setAdminListingMode(mode){
 
   const cloneBtn = document.getElementById('addModalCloneBtn');
   if (cloneBtn) cloneBtn.style.display = (isView && !_adminModalFromPO) ? 'flex' : 'none';
+
+  _syncAdminBookedBtn();
 
   const toggleBtn = document.getElementById('addModalModeToggleBtn');
   if (toggleBtn){
