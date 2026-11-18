@@ -4290,7 +4290,43 @@ main.tab-explore .empty-state{display:none !important}
 .pm-compact .pm-stat svg{width:11px;height:11px;stroke:var(--text-3);fill:none;stroke-width:2}
 .pm-compact .pm-line3{margin-top:4px;gap:10px;font-size:11px;color:var(--text-2)}
 .pm-compact .pm-d{flex-shrink:0}
-.pm-compact .pm-line3 > * + *::before{content:"-";color:var(--text-3);font-weight:500;margin-right:8px}
+.pm-compact .pm-nm{font-size:11.5px;font-weight:600;color:var(--text-2);min-width:0;overflow:hidden;text-overflow:ellipsis;flex:0 1 auto}
+.pm-compact .pm-bhk{flex-shrink:0;font-weight:700}
+.pm-compact .pm-line-main > .pm-nm::before,.pm-compact .pm-line-main > .pm-bhk::before{content:"-";color:var(--text-3);font-weight:500;margin-right:6px}
+.pm-compact .pm-rent{font-weight:800;color:var(--brand)}
+.pm-compact .pm-desc{margin-top:5px;font-size:11.5px;line-height:1.4;color:var(--text-2);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;white-space:normal;word-break:break-word}
+.pm-compact .pm-d{display:inline-flex;align-items:center;gap:4px}
+.pm-compact .pm-line3{font-size:11.5px}
+/* Rent / Deposit / Maintenance / Bike / Car: five equal columns, label on top, value below */
+.pm-compact .pm-line3{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px 0;white-space:normal;overflow:visible;align-items:start}
+.pm-compact .pm-line3 > .pm-d{display:flex;flex-direction:column;align-items:flex-start;gap:3px;min-width:0;padding:0 8px}
+.pm-compact .pm-line3 > .pm-d:first-child{padding-left:0}
+.pm-compact .pm-line3 > .pm-d + .pm-d{border-left:1px solid var(--border)}
+.pm-compact .pm-line3 > .pm-d::after{content:none !important}
+.pm-compact .pm-d .pm-k{display:inline-flex;align-items:center;gap:4px;min-width:0;max-width:100%;white-space:nowrap}
+.pm-compact .pm-d .pm-k b{margin:0;overflow:hidden;text-overflow:ellipsis}
+.pm-compact .pm-d .pm-v{font-size:13px;font-weight:700;color:var(--text);line-height:1.2}
+.pm-compact .pm-ls{display:none}
+/* Rent / Deposit / Maintenance / Bike / Car: five equal centred cells (desktop + mobile): emoji, value, small label */
+.pm-compact .pm-line3{grid-template-columns:repeat(5,minmax(0,1fr));gap:0}
+.pm-compact .pm-line3 > .pm-d{align-items:center;text-align:center;gap:2px;padding:0 4px}
+.pm-compact .pm-line3 > .pm-d:first-child{padding-left:4px}
+.pm-compact .pm-d .pm-k{display:contents}
+.pm-compact .pm-d .pm-emo{order:0;font-size:18px}
+.pm-compact .pm-d .pm-v{order:1;font-size:13px}
+.pm-compact .pm-d .pm-k b{order:2;font-size:10.5px;font-weight:600;color:var(--text-3);max-width:100%;white-space:nowrap}
+.pm-compact .pm-line3 > .pm-d-booked{grid-column:1/-1;flex-direction:row;justify-content:flex-start;border-left:0;padding:6px 0 0}
+@media(max-width:640px){
+  .pm-compact .pm-line3 > .pm-d{padding:0 2px}
+  .pm-compact .pm-line3 > .pm-d:first-child{padding-left:2px}
+  .pm-compact .pm-d .pm-emo{font-size:17px}
+  .pm-compact .pm-d .pm-v{font-size:12.5px}
+  .pm-compact .pm-d .pm-k b{font-size:9.5px}
+  .pm-compact .pm-lf{display:none}
+  .pm-compact .pm-ls{display:inline}
+}
+.pm-compact .pm-emo{font-size:14px;line-height:1;flex-shrink:0;filter:drop-shadow(0 1px 1.5px rgba(0,0,0,.22))}
+
 .pm-compact .pm-line-phones{margin-top:5px;gap:12px;flex-wrap:wrap}
 .pm-phone{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;font-weight:700;color:#16a34a;text-decoration:none;letter-spacing:.2px}
 .pm-phone svg{width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2.2;flex-shrink:0}
@@ -9818,6 +9854,10 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
   <div class="panel-header">
     <div class="panel-title">Shortlisted <span id="panelCount">0</span></div>
     <div class="panel-hdr-actions">
+      <button class="panel-clear-btn" id="panelClearBtn" onclick="clearShortlist()" aria-label="Clear all shortlisted properties" title="Clear shortlist" hidden>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+        <span>Clear all</span>
+      </button>
       <button class="panel-share-btn" id="panelShareBtn" onclick="enquireShortlistAtOnce()" aria-label="Check availability on WhatsApp" title="Check availability on WhatsApp">
         <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.6 6.32A8.86 8.86 0 0 0 12.05 4C7.4 4 3.6 7.8 3.6 12.45c0 1.6.45 3.13 1.27 4.45L4 21l4.2-1.1a8.83 8.83 0 0 0 4.07.99h.01c4.65 0 8.45-3.8 8.45-8.45a8.4 8.4 0 0 0-2.93-5.62zM12.06 19.5a7.05 7.05 0 0 1-3.6-.99l-.26-.15-2.67.7.71-2.6-.17-.27a6.99 6.99 0 0 1-1.08-3.74c0-3.86 3.15-7 7.04-7 1.88 0 3.64.73 4.97 2.06a6.96 6.96 0 0 1 2.06 4.96c0 3.87-3.16 7.03-7 7.03zm3.86-5.27c-.21-.1-1.24-.62-1.43-.68-.19-.07-.33-.1-.47.1-.14.21-.54.68-.66.81-.12.14-.24.16-.45.05-.21-.1-.87-.32-1.66-1.03-.61-.55-1.03-1.22-1.15-1.43-.12-.21-.01-.32.1-.43.1-.1.21-.26.32-.39.1-.13.14-.21.21-.36.07-.14.04-.27-.02-.38-.07-.1-.62-1.49-.85-2.04-.18-.43-.36-.37-.5-.38h-.42c-.14 0-.38.05-.58.27-.21.21-.79.77-.79 1.88 0 1.1.81 2.18.92 2.33.12.14 1.58 2.42 3.83 3.3 1.9.75 2.28.6 2.7.56.42-.04 1.36-.55 1.55-1.09.19-.53.19-.98.13-1.08-.05-.1-.21-.16-.43-.27z"/></svg>
         <span class="panel-share-q" aria-hidden="true">?</span>
@@ -12424,7 +12464,7 @@ function toggleShortlist(id, el) {
     el.classList.remove('liked');
     showToast("Removed from shortlist.");
   } else {
-    if (shortlisted.size >= SHORTLIST_MAX) { showToast(`You can shortlist up to ${SHORTLIST_MAX} properties only.`, 'warning'); return; }
+    if (!isAgentUser() && shortlisted.size >= SHORTLIST_MAX) { showToast(`You can shortlist up to ${SHORTLIST_MAX} properties only.`, 'warning'); return; }
     shortlisted.add(id);
     const p = PROPERTIES.find(x => String(x.id) === id);
     if (p) shortlistedData[id] = p;
@@ -12482,11 +12522,11 @@ function updateShortlistEnquire() {
   const btn = document.getElementById('panelEnquireBtn');
   document.getElementById('panelEnquireAgents').hidden = true;
   box.hidden = total < 1;
-  const ok = total >= ENQUIRE_MIN && total <= ENQUIRE_MAX;
+  const ok = total >= ENQUIRE_MIN && (total <= ENQUIRE_MAX || isAgentUser()); // agents: no upper limit
   btn.disabled = !ok;
   btn.style.opacity = ok ? '' : '.55';
   btn.style.cursor = ok ? '' : 'not-allowed';
-  btn.textContent = ok ? (total === 1 ? 'Enquire' : `Enquire (${total})`)
+  btn.textContent = ok ? (isAgentUser() ? (total === 1 ? 'Share' : `Share (${total})`) : (total === 1 ? 'Enquire' : `Enquire (${total})`))
     : total < ENQUIRE_MIN ? 'Shortlist a property' : `You can select up to ${ENQUIRE_MAX} properties.`;
   btn.style.background = ok ? '' : '#9aa0a6';
 }
@@ -12510,12 +12550,13 @@ function propDetailsShort(p) {
   const price = amt ? '\u20B9' + amt + (pt === 'Sell' ? '' : pt === 'ShortStay' ? '/D' : '/M') : '';
   return [type, area, price].filter(Boolean).join(', ');
 }
-function buildEnquiryMessage(props) {
+function buildEnquiryMessage(props, forAgent) {
   const one = props.length === 1;
   const lines = props.map((p, i) => {
     const d = propDetailsShort(p);
     return `${one ? '' : (i + 1) + '. '}${p.propertyId}${d ? ' - ' + d : ''}\n${window.location.origin}/property/${p.id}`;
   });
+  if (forAgent) return `Here are the properties,\n\n${lines.join('\n\n')}`; // agent sharing with a customer
   return one ? `I'm interested in\n${lines[0]}` : `I'm interested in\n\n${lines.join('\n\n')}`;
 }
 function _openAgentEnquiry(phone) {
@@ -12526,7 +12567,13 @@ function _openAgentEnquiry(phone) {
 }
 function enquireShortlistAtOnce() {
   const { total, groups } = _shortlistEnquiryGroups();
-  if (total < ENQUIRE_MIN || total > ENQUIRE_MAX) { showToast(`You can select up to ${ENQUIRE_MAX} properties.`, 'warning'); return; }
+  if (total < ENQUIRE_MIN || (total > ENQUIRE_MAX && !isAgentUser())) { showToast(`You can select up to ${ENQUIRE_MAX} properties.`, 'warning'); return; }
+  if (isAgentUser()) { // agents share the shortlist with a customer: no fixed number, they pick the chat in WhatsApp
+    const props = [...shortlisted].map(id => shortlistedData[id]).filter(p => p && matchesTab(p, currentTab) && !isBookedProp(p));
+    if (!props.length) return;
+    window.open('https://wa.me/?text=' + encodeURIComponent(buildEnquiryMessage(props, true)), '_blank', 'noopener');
+    return;
+  }
   const phones = Object.keys(groups);
   if (!phones.length) { showToast("An agent phone number is not available for these listings.", 'warning'); return; }
   if (phones.length === 1) { _openAgentEnquiry(phones[0]); return; }
@@ -12548,6 +12595,8 @@ function renderShortlistPanel() {
   // never disagrees with the list below it (e.g. "Shortlisted (2)" while only
   // 1 Lease card is shown because the other saved item is a Rent listing).
   document.getElementById('panelCount').textContent = ids.length;
+  const clearBtn = document.getElementById('panelClearBtn');
+  if (clearBtn) clearBtn.hidden = shortlisted.size === 0;
   updateShortlistEnquire();
   if (ids.length === 0) {
     list.innerHTML = shortlisted.size === 0
@@ -12559,6 +12608,34 @@ function renderShortlistPanel() {
   observeCardImgs(list);
 }
 
+
+/* Clear the whole shortlist (all tabs). Same for guests and logged-in users —
+   the shortlist lives only in localStorage, so no session/auth is involved. */
+async function clearShortlist() {
+  if (!shortlisted.size) return;
+  const ok = await showConfirmDialog({
+    title: 'Clear shortlist?',
+    message: `Remove all ${shortlisted.size} shortlisted ${shortlisted.size === 1 ? 'property' : 'properties'}?`,
+    okText: 'Clear all',
+    cancelText: 'Cancel'
+  });
+  if (!ok) return;
+  shortlisted.clear();
+  Object.keys(shortlistedData).forEach(k => delete shortlistedData[k]);
+  saveShortlist();
+  saveShortlistData();
+  document.querySelectorAll('.prop-heart.liked').forEach(h => h.classList.remove('liked'));
+  const saveBtn = document.getElementById('modal-save-btn');
+  if (saveBtn) {
+    saveBtn.classList.remove('liked');
+    const lbl = document.getElementById('modal-save-btn-label');
+    if (lbl) lbl.textContent = 'Shortlist';
+  }
+  updateShortlistCount();
+  renderShortlistPanel();
+  renderCards();
+  showToast('Shortlist cleared.');
+}
 
 function removeShortlist(id) {
   id = String(id);
@@ -15621,7 +15698,7 @@ function toggleShortlistFromModal(id) {
     document.getElementById('modal-save-btn-label').textContent = 'Shortlist';
     showToast("Removed from shortlist.");
   } else {
-    if (shortlisted.size >= SHORTLIST_MAX) { showToast(`You can shortlist up to ${SHORTLIST_MAX} properties only.`, 'warning'); return; }
+    if (!isAgentUser() && shortlisted.size >= SHORTLIST_MAX) { showToast(`You can shortlist up to ${SHORTLIST_MAX} properties only.`, 'warning'); return; }
     shortlisted.add(id);
     const p = PROPERTIES.find(x => String(x.id) === id);
     if (p) shortlistedData[id] = p;
@@ -17902,23 +17979,29 @@ function myListingCardHtml(p) {
           ${(p.basic?.status && p.basic.status !== 'For Rent') ? `<span class="profile-status-pill">${esc(p.basic.status)}</span>` : ''}
           ${p.booked ? `<span class="profile-status-pill booked-pill">Booked</span>` : ''}
           <span class="pm-id">${esc(p.propertyId) || 'Untitled listing'}</span>
+          ${(() => { const _nm = p.owner?.propertyName; return _nm ? `<span class="pm-nm">${esc(_nm)}</span>` : ''; })()}
           <span class="pm-loc">${esc(p.location?.area)}</span>
-          <span class="pm-price">${rent}<span class="pm-per">/M</span></span>
+          ${(() => { const _b = String(p.property?.bhk || '').replace(/\s*BHK\s*$/i, '').trim(); return _b ? `<span class="pm-nm pm-bhk">${esc(_b)} BHK</span>` : ''; })()}
           ${p.visitCount > 0 ? `<span class="profile-status-pill" style="background:var(--brand-light);color:var(--brand)">${p.visitCount} visit${p.visitCount===1?'':'s'}</span>` : ''}
         </div>
         ${(() => {
           const _fd = v => { const t = v ? formatDateDisplay(v) : ''; return t ? esc(t) : ''; };
-          const listed = _fd(p.createdAt);
           const bookedD = p.booked ? _fd(p.bookedAt || p.bookedOn) : '';
-          const avail = p.booked ? '' : _fd(((p.basic?.status === 'PG') ? p.pg?.available : p.property?.available) || p.property?.available || p.pg?.available);
+          const _isPG = p.basic?.status === 'PG';
+          const _bike = parseInt(_isPG ? p.pg?.bike : p.property?.bike, 10) || 0;
+          const _car = parseInt(_isPG ? p.pg?.car : p.property?.car, 10) || 0;
+          const _money = v => (v != null && v !== '' && Number(v) > 0) ? fmtRupee(v) : '—';
           const parts = [];
-          const _ph = agentOwnerNumberText(p);
-          if (_ph) parts.push(_ph);
-          if (listed) parts.push(`<span class="pm-d"><b>Listed:</b> ${listed}</span>`);
+          const _e = ch => `<span class="pm-emo" aria-hidden="true">${ch}</span>`;
+          parts.push(`<span class="pm-d" title="Rent"><span class="pm-k">${_e('🏠')}<b>Rent</b></span><span class="pm-v"><span class="pm-rent">${rent}</span></span></span>`);
+          parts.push(`<span class="pm-d" title="Deposit"><span class="pm-k">${_e('💰')}<b>Deposit</b></span><span class="pm-v">${_money(p.price?.deposit)}</span></span>`);
+          parts.push(`<span class="pm-d" title="Maintenance"><span class="pm-k">${_e('🛠️')}<b><span class="pm-lf">Maintenance</span><span class="pm-ls">Maint</span></b></span><span class="pm-v">${_money(p.price?.maintenance)}</span></span>`);
+          parts.push(`<span class="pm-d" title="Bike parking"><span class="pm-k">${_e('🏍️')}<b>Bike</b></span><span class="pm-v">${_bike}</span></span>`);
+          parts.push(`<span class="pm-d" title="Car parking"><span class="pm-k">${_e('🚗')}<b>Car</b></span><span class="pm-v">${_car}</span></span>`);
           if (bookedD) parts.push(`<span class="pm-d pm-d-booked"><b>Booked:</b> ${bookedD}</span>`);
-          if (avail) parts.push(`<span class="pm-d"><b>Available:</b> ${avail}</span>`);
           return parts.length ? `<div class="pm-line pm-line3">${parts.join('')}</div>` : '';
         })()}
+        ${p.media?.desc ? `<div class="pm-desc">${esc(p.media.desc)}</div>` : ''}
       </div>
       <div class="profile-mini-actions">
         ${agentOwnerNumbersInActions(p)}
@@ -24362,6 +24445,11 @@ main.main.empty-with-booked:has(> .empty-state.show) > .empty-state.show{positio
 .panel-share-btn{width:34px;height:34px;border-radius:50%;border:none;background:#25d366;color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 8px rgba(24,158,80,.35);transition:transform .12s}
 .panel-share-btn:hover{transform:scale(1.06);background:#1ebe5a}
 .panel-share-btn svg{width:17px;height:17px;fill:#fff}
+.panel-clear-btn{height:34px;padding:0 12px;border-radius:99px;border:1.5px solid rgba(220,38,38,.35);background:#fff;color:#dc2626;display:inline-flex;align-items:center;gap:6px;font:700 12.5px/1 inherit;font-family:inherit;cursor:pointer;transition:transform .12s,background .12s}
+.panel-clear-btn[hidden]{display:none}
+.panel-clear-btn:hover{background:#fef2f2;transform:scale(1.04)}
+.panel-clear-btn svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+@media(max-width:640px){.panel-clear-btn{padding:0 10px}.panel-clear-btn span{display:none}.panel-clear-btn{width:34px;padding:0;justify-content:center}}
 
 .panel-share-btn{position:relative;overflow:visible}
 .panel-share-q{position:absolute;top:-5px;right:-5px;width:17px;height:17px;border-radius:50%;background:#fff;color:#16a34a;border:1.5px solid #25d366;font-size:11px;font-weight:800;line-height:14px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.2)}
