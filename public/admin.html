@@ -620,6 +620,12 @@ table.dataTable thead tr.col-filter-row th{
 .oc-pbtn:disabled{opacity:.35;cursor:not-allowed}
 .oc-empty{text-align:center;padding:28px 10px!important;color:var(--ink2);font-weight:700}
 @media(max-width:640px){.oc-stats{grid-template-columns:repeat(2,1fr);padding:10px 14px 0}.oc-mtools{padding:10px 14px 2px}}
+#ownerCallsTable tr.oc-row{cursor:pointer}
+#ownerCallsTable tr.has-new td{background:#fffbeb}
+#ownerCallsTable .oc-call,#ownerCallsTable .oc-wa{padding:5px 11px;font-size:.78rem}
+#ownerCallsTable .oc-done{padding:5px 10px;font-size:.76rem}
+.oc-rowact{display:inline-flex;gap:6px;align-items:center;flex-wrap:nowrap}
+.oc-pill.bk{background:#fee2e2;color:#991b1b}
 .oc-chev{transition:transform .15s;color:var(--ink2)}
 .oc-card.open .oc-chev{transform:rotate(180deg)}
 @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
@@ -4931,12 +4937,39 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
       <button class="cat-tab-btn" data-tab="called" onclick="ocSwitch('called')"><i class="fas fa-circle-check"></i><span class="cat-tab-btn-label" data-mobile="Called">Called</span><span class="cat-count" id="oc-count-called">—</span></button>
     </div>
     <div class="card">
-      <div class="oc-toolbar">
-        <input type="text" id="ocSearch" class="col-filter-input oc-search" placeholder="Search owner, number, property ID, location…" oninput="ocRender()">
-        <button type="button" class="bulk-btn" onclick="ocReload()" title="Reload properties"><i class="fas fa-rotate"></i> <span class="bulk-btn-label" data-mobile="Reload">Reload</span></button>
+      <div class="card-header gcf-card-header">
+        <div class="card-header-left">
+          <div class="col-toggle-wrap" id="ownerCallColToggleWrap">
+            <button type="button" class="col-toggle-btn" id="ownerCallColToggleBtn" onclick="toggleColMenu('ownerCall')">
+              <i class="fas fa-table-columns"></i> <span class="bulk-btn-label" data-mobile="Columns">Columns</span>
+            </button>
+            <div class="col-toggle-menu" id="ownerCallColToggleMenu"></div>
+          </div>
+          <button class="bulk-btn bulk-btn-clear" id="ocClearFiltersBtn" style="display:none" onclick="clearGcf('ownerCall')" title="Clear all filters">
+            <i class="fas fa-filter-circle-xmark"></i> <span class="bulk-btn-label" data-mobile="Clear">Clear filters</span>
+          </button>
+          <button type="button" class="bulk-btn" onclick="ocReload()" title="Reload properties"><i class="fas fa-rotate"></i> <span class="bulk-btn-label" data-mobile="Reload">Reload</span></button>
+        </div>
         <span class="oc-summary" id="ocSummary"></span>
       </div>
-      <div id="ocList" class="oc-list"><div class="empty-state"><i class="fas fa-circle-notch fa-spin"></i>Loading…</div></div>
+      <div class="table-wrapper" id="ocList">
+        <table id="ownerCallsTable" class="display nowrap" style="width:100%">
+          <thead>
+            <tr><th>S.No</th><th>Owner</th><th>Phone</th><th>Properties</th><th>Available</th><th>Booked</th><th>Last called</th><th>Action</th></tr>
+            <tr class="col-filter-row">
+              <th></th>
+              <th><input type="text" class="col-filter-input" data-gcf-key="ownerCall" placeholder="Search…" oninput="onGcfFilter('ownerCall',1,this.value,this)"></th>
+              <th><input type="text" class="col-filter-input" data-gcf-key="ownerCall" placeholder="Search…" oninput="onGcfFilter('ownerCall',2,this.value,this)"></th>
+              <th><input type="text" class="col-filter-input" data-gcf-key="ownerCall" placeholder="ID / title / area…" title="Search property ID, title or location" oninput="onGcfFilter('ownerCall',3,this.value,this)"></th>
+              <th><input type="text" class="col-filter-input" data-gcf-key="ownerCall" placeholder="e.g. 2" oninput="onGcfFilter('ownerCall',4,this.value,this)"></th>
+              <th><input type="text" class="col-filter-input" data-gcf-key="ownerCall" placeholder="e.g. 0" oninput="onGcfFilter('ownerCall',5,this.value,this)"></th>
+              <th><input type="text" class="col-filter-input" data-gcf-key="ownerCall" placeholder="Never / date…" oninput="onGcfFilter('ownerCall',6,this.value,this)"></th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
     </div>
   </div>
 
@@ -6751,49 +6784,94 @@ function ocGroups(){
     b.latest - a.latest);
   return out;
 }
+let _ocDT = null;
+function ocBuildTable(){
+  if(_ocDT || !window.jQuery || !$.fn.DataTable) return;
+  const lastTs = g => (g.rec && g.rec.ts) ? g.rec.ts : 0;
+  _ocDT = $('#ownerCallsTable').DataTable({
+    data: [],
+    columns:[
+      /* 0 – S.No */
+      { data:null, orderable:false, className:'dt-body-center', render:()=>'' },
+      /* 1 – Owner */
+      { data:null, render:(d,t,g)=>{
+          const nm = g.name || 'Unnamed owner';
+          if(t !== 'display') return nm;
+          return '<b>' + escapeHtml(nm) + '</b>' + (g.newProps.length ? ' <span class="oc-pill new"><i class="fas fa-bell"></i> ' + g.newProps.length + ' new</span>' : '');
+      }},
+      /* 2 – Phone (primary + alternates) */
+      { data:null, render:(d,t,g)=>{
+          const nums = [g.key !== 'none' ? g.number : ''].concat(Array.from(g.alts)).filter(Boolean);
+          if(t !== 'display') return nums.join(' ');
+          if(!nums.length) return '<span class="oc-pill">No number</span>';
+          return nums.map((n, i) => '<a class="oc-call' + (i ? ' alt' : '') + '" href="tel:' + escapeHtml(n) + '" data-oc="call" data-key="' + g.key + '" title="' + (i ? 'Call alternate number' : 'Call this owner') + '"><i class="fas fa-phone"></i> ' + escapeHtml(n) + '</a>').join(' ');
+      }},
+      /* 3 – Properties (opens the owner popup) */
+      { data:null, className:'dt-body-center', render:(d,t,g)=>{
+          if(t === 'filter') return g.props.map(p => [p.propertyId, p.title, p.loc, p.city].join(' ')).join(' ');
+          if(t !== 'display') return g.props.length;
+          return '<button type="button" class="views-badge" data-oc="toggle" data-key="' + g.key + '" title="Open this owner\'s properties"><i class="fas fa-house"></i><span>' + g.props.length + '</span></button>';
+      }},
+      /* 4 – Available */
+      { data:null, className:'dt-body-center', render:(d,t,g)=>{ const n = g.props.filter(p => !p.booked).length; return t === 'display' ? '<span class="oc-pill ok">' + n + '</span>' : n; }},
+      /* 5 – Booked */
+      { data:null, className:'dt-body-center', render:(d,t,g)=>{ const n = g.props.filter(p => p.booked).length; return t === 'display' ? (n ? '<span class="oc-pill bk">' + n + '</span>' : '0') : n; }},
+      /* 6 – Last called */
+      { data:null, render:(d,t,g)=>{
+          const ts = lastTs(g);
+          if(t === 'sort') return ts || 0;
+          if(t === 'filter') return ts ? plainDateTime(ts) : 'Never';
+          return ts ? plainDateTime(ts) : '<span class="oc-pill">Never</span>';
+      }},
+      /* 7 – Action */
+      { data:null, orderable:false, className:'dt-body-center', render:(d,t,g)=>{
+          if(t !== 'display') return '';
+          const wa = g.key !== 'none' ? '<a class="oc-wa" href="https://wa.me/91' + ocDigits(g.number) + '" target="_blank" rel="noopener" title="Chat on WhatsApp"><i class="fab fa-whatsapp"></i> WhatsApp</a>' : '';
+          const done = _ocTab === 'called'
+            ? '<button type="button" class="oc-done" data-oc="undo" data-key="' + g.key + '" title="Move this owner back to the To Call list">↩ To Call</button>'
+            : '<button type="button" class="oc-done" data-oc="done" data-key="' + g.key + '" title="Mark as called and reviewed. Moves the owner to Called.">✓ Mark called</button>';
+          return '<div class="oc-rowact">' + wa + done + '<button type="button" class="oc-pbtn" data-oc="toggle" data-key="' + g.key + '" title="View properties"><i class="fas fa-eye"></i></button></div>';
+      }}
+    ],
+    order:[],
+    orderCellsTop:true,
+    dom:'rt<"bottom-controls"i>',
+    pageLength:-1,
+    scrollX:true,
+    createdRow:function(tr, g){
+      tr.setAttribute('data-oc', 'toggle'); tr.setAttribute('data-key', g.key);
+      tr.classList.add('oc-row'); if(g.newProps.length) tr.classList.add('has-new');
+    },
+    drawCallback:function(){
+      try{ const api = this.api(); let n = 1; api.column(0, {order:'applied', search:'applied'}).nodes().each(function(c){ c.innerHTML = String(n++); }); }catch(e){}
+    },
+    language:{
+      emptyTable:'<div class="empty-state"><i class="fas fa-phone"></i>Nobody here</div>',
+      zeroRecords:'<div class="empty-state"><i class="fas fa-magnifying-glass"></i>No matching owners</div>',
+      info:'Showing all _TOTAL_ owners',
+      paginate:{previous:'‹ Prev',next:'Next ›'}
+    }
+  });
+  initColumnToggle('ownerCall');
+}
 function ocRender(){
-  const list = document.getElementById('ocList');
-  if(!list) return;
-  if(!_ocLoaded){
-    list.innerHTML = '<div class="empty-state"><i class="fas fa-circle-notch fa-spin"></i>Loading…</div>';
-    return;
-  }
-  const q = (document.getElementById('ocSearch').value || '').trim().toLowerCase();
+  if(!_ocLoaded) return;
   const all = ocGroups();
   const isCalled = g => !!g.rec && !g.newProps.length;   // called and nothing new since
   const nCalled = all.filter(isCalled).length;
   const setC = (id, n) => { const el = document.getElementById(id); if(el) el.textContent = n; };
   setC('oc-count-todo', all.length - nCalled); setC('oc-count-called', nCalled);
-  const rows = all.filter(g => {
-    if((_ocTab === 'called') !== isCalled(g)) return false;
-    if(!q) return true;
-    const hay = [g.name, g.number, Array.from(g.alts).join(' ')]
-      .concat(g.props.map(p => [p.propertyId, p.title, p.loc, p.city].join(' '))).join(' ').toLowerCase();
-    return hay.includes(q);
-  });
+  const cnt = document.getElementById('tab-owner-calls-count'); if(cnt) cnt.textContent = all.length;
+  const rows = all.filter(g => (_ocTab === 'called') === isCalled(g));
   const newOwners = all.filter(g => g.newProps.length).length;
   const never = all.filter(g => !g.rec).length;
   document.getElementById('ocSummary').textContent = rows.length + ' owners' + (_ocTab === 'todo' ? ' · ' + never + ' never called · ' + newOwners + ' with new' : '');
-  const cnt = document.getElementById('tab-owner-calls-count'); if(cnt) cnt.textContent = all.length;
-  if(!rows.length){ list.innerHTML = '<div class="empty-state">' + (_ocTab === 'called' ? 'No called owners yet.' : 'Nobody left to call.') + '</div>'; return; }
-  list.innerHTML = rows.map(g => {
-    const hasNum = g.key !== 'none';
-    const last = g.rec && g.rec.ts ? plainDateTime(g.rec.ts) : '';
-    const call = hasNum ? `<a class="oc-call" href="tel:${escapeHtml(g.number)}" data-oc="call" data-key="${g.key}" title="Call this owner"><i class="fas fa-phone"></i> ${escapeHtml(g.number)}</a>` : '<span class="oc-pill">No number</span>';
-    const alts = Array.from(g.alts).map(a => `<a class="oc-call alt" href="tel:${escapeHtml(a)}" data-oc="call" data-key="${g.key}" title="Call alternate number"><i class="fas fa-phone"></i> ${escapeHtml(a)}</a>`).join('');
-    const wa = hasNum ? `<a class="oc-wa" href="https://wa.me/91${ocDigits(g.number)}" target="_blank" rel="noopener" title="Chat on WhatsApp"><i class="fab fa-whatsapp"></i> WhatsApp</a>` : '';
-    return `<div class="oc-card ${g.newProps.length ? 'has-new' : ''}" data-oc="toggle" data-key="${g.key}">
-      <div class="oc-head" data-oc="toggle" data-key="${g.key}">
-        <div class="oc-who"><div class="oc-name">${escapeHtml(g.name || 'Unnamed owner')}</div>
-          <div class="oc-sub">${g.props.length} propert${g.props.length === 1 ? 'y' : 'ies'}${last ? ' · last called ' + last : ' · never called'}</div></div>
-        ${g.newProps.length ? `<span class="oc-pill new"><i class="fas fa-bell"></i> ${g.newProps.length} new</span>` : ''}
-        <div class="oc-actions">${call}${alts}${wa}
-          ${_ocTab === 'called'
-            ? `<button type="button" class="oc-done" data-oc="undo" data-key="${g.key}" title="Move this owner back to the To Call list">↩ Move to To Call</button>`
-            : `<button type="button" class="oc-done" data-oc="done" data-key="${g.key}" title="Mark as called and reviewed. Moves the owner to Called.">✓ Mark called</button>`}</div>
-      </div>
-    </div>`;
-  }).join('');
+  const panel = document.getElementById('panel-owner-calls');
+  if(!_ocDT && !(panel && panel.classList.contains('active'))) return;   // build once the tab is visible (scrollX needs real widths)
+  ocBuildTable();
+  if(!_ocDT) return;
+  _ocDT.clear().rows.add(rows).draw(false);
+  _ocDT.columns.adjust();
 }
 /* Owner details modal: all property IDs of one owner, with call buttons and Booked toggles. */
 let _ocModalKey = null;
@@ -14506,6 +14584,7 @@ const _GCF = {
   honestReview: { tableId:'honestReviewsTable', table:()=>honestReviewsTable, wrap:'honestReviewsTable_wrapper', clearBtn:'reviewClearFiltersBtn',  dateField:'createdAt', vals:{}, dates:{} },
   userReview:   { tableId:'userReviewsTable',   table:()=>userReviewsTable,   wrap:'userReviewsTable_wrapper',   clearBtn:'urClearFiltersBtn',      dateField:'createdAt', vals:{}, dates:{} },
   partner:      { tableId:'partnersTable',      table:()=>partnersTable,      wrap:'partnersTable_wrapper',      clearBtn:'partnerClearFiltersBtn', dateField:'createdAt', vals:{}, dates:{} },
+  ownerCall:    { tableId:'ownerCallsTable',   table:()=>_ocDT,            wrap:'ownerCallsTable_wrapper',   clearBtn:'ocClearFiltersBtn',      dateField:'createdAt', vals:{}, dates:{} },
   referral:     { tableId:'referralsTable',     table:()=>referralsTable,     wrap:'referralsTable_wrapper',     clearBtn:'referralClearFiltersBtn',dateField:'createdAt', vals:{}, dates:{} }
 };
 function _gcfEsc(v){ return String(v).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
@@ -16235,6 +16314,13 @@ const COL_TOGGLE_CONFIGS = {
     storageKey:'rip_admin_partnerColVisibility',
     tableSel:'#partnersTable', actionStorageKey:'rip_admin_partnerActionVisibility_v1',
     actions:[ {key:'edit', label:'View'}, {key:'delete', label:'Delete'} ]
+  },
+  ownerCall: {
+    getTable: ()=>_ocDT,
+    cols: [ {idx:2, label:'Phone'}, {idx:3, label:'Properties'}, {idx:4, label:'Available'}, {idx:5, label:'Booked'}, {idx:6, label:'Last called'} ],
+    menuId:'ownerCallColToggleMenu', btnId:'ownerCallColToggleBtn', wrapId:'ownerCallColToggleWrap',
+    storageKey:'rip_admin_ownerCallColVisibility',
+    tableSel:'#ownerCallsTable'
   },
   referral: {
     getTable: ()=>referralsTable,
