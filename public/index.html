@@ -10881,6 +10881,62 @@ function setEmptyStateContent() {
   }
 }
 
+// Empty state: put the message in the exact middle of the SCREEN (not of the area between the bars).
+// The header/filter bars on top and the bottom nav are different heights, so pure CSS can't land on
+// the screen's middle: measure where the message sits and nudge it with translateY (re-run on resize / tab change).
+// Every tab is centred using the SAME reference block (icon + title + 3-line text + button row), so the icon and
+// title sit at exactly the same spot on all tabs, including ones with no buttons (Builders) or shorter text.
+function centerEmptyStateOnScreen() {
+  const es = document.getElementById('emptyState');
+  if (!es) return;
+  const main = es.parentElement;
+  if (!es.classList.contains('show') || (main && main.classList.contains('empty-with-booked'))) {
+    if (es.style.transform) es.style.transform = '';
+    return;
+  }
+  es.style.transform = '';
+  const kids = Array.from(es.children).filter(c => getComputedStyle(c).display !== 'none');
+  if (!kids.length) return;
+  const icon = es.querySelector('.empty-state-icon') || kids[0];
+  const textEl = document.getElementById('emptyStateText');
+  const act = document.getElementById('emptyStateActions');
+  const rects = kids.map(c => c.getBoundingClientRect());
+  const top = icon.getBoundingClientRect().top;
+  const bot = Math.max.apply(null, rects.map(r => r.bottom));
+  let refH = bot - top;
+  // reference = 3 lines of text ...
+  if (textEl && getComputedStyle(textEl).display !== 'none') {
+    const lh = parseFloat(getComputedStyle(textEl).lineHeight) || 20;
+    const lines = Math.max(1, Math.round(textEl.getBoundingClientRect().height / lh));
+    if (lines < 3) refH += (3 - lines) * lh;
+  }
+  // ... plus the Call us / WhatsApp row (even when this tab hides it)
+  if (act && getComputedStyle(act).display === 'none') {
+    const keep = act.style.display;
+    act.style.display = '';
+    refH += act.getBoundingClientRect().height + (parseFloat(getComputedStyle(act).marginTop) || 0);
+    act.style.display = keep;
+  }
+  const box = es.getBoundingClientRect();
+  let dy = (window.innerHeight / 2) - refH / 2 - top;        // reference block's middle -> screen's middle
+  dy = Math.max(dy, box.top - top);                           // never up into the tab pill / bars
+  dy = Math.min(dy, box.bottom - bot);                        // never down past the bottom of the area
+  dy = Math.round(dy * 2) / 2;
+  es.dataset.dy = String(dy);
+  es.style.transform = Math.abs(dy) > 0.25 ? 'translateY(' + dy + 'px)' : '';
+}
+(function initEmptyStateCentering() {
+  let raf = 0;
+  const run = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(centerEmptyStateOnScreen); };
+  const es = document.getElementById('emptyState');
+  if (es && window.MutationObserver) new MutationObserver(run).observe(es, { attributes: true, attributeFilter: ['class'], childList: true, subtree: true, characterData: true });
+  window.addEventListener('resize', run);
+  window.addEventListener('orientationchange', run);
+  window.addEventListener('load', run);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(run);
+  run();
+})();
+
 // Auto-gliding strips: Promoted, Pre-available, Booked and Viewed all share ONE
 // motion engine so they behave identically. Each strip glides at a steady pace
 // to one end, eases down to a crawl, turns around and eases back up (no hard
@@ -24192,30 +24248,33 @@ body::before,body::after{background:none !important}
 .prop-card:hover,.prop-card.prop-card-promoted:hover{border-color:#f0506e !important}
 .prop-body{background:transparent}
 
-/* ═══ Empty state: dead-centre of the visible content area ═══
+/* ═══ Empty state: dead-centre of the space BELOW the tab pill ═══
    The area runs from the bottom of the sticky bars to the top of the bottom
-   nav (mobile) or the bottom of the viewport (desktop). */
+   nav (mobile) or the bottom of the viewport (desktop). The tab pill
+   (section divider) stays at the top; the message is centred horizontally and
+   vertically in whatever space is left under it, so it sits exactly in the
+   middle for every tab regardless of how long its text is. */
 main.main:has(> .empty-state.show){
-  position:relative;
+  display:flex;
+  flex-direction:column;
   padding:0 !important;
   min-height:calc(100vh - var(--nav-h) - var(--filter-h));
   min-height:calc(100dvh - var(--nav-h) - var(--filter-h));
 }
 main.main:has(> .empty-state.show) > .empty-state.show{
-  position:absolute;
-  inset:0;
+  position:static;
+  flex:1 1 auto;                 /* fill all the space under the tab pill */
+  width:100%;
   display:flex;
   flex-direction:column;
   align-items:center;
   justify-content:center;
-  padding:0 20px;
-  pointer-events:none;           /* never blocks the section divider above */
+  text-align:center;
+  padding:16px 20px;             /* equal top / bottom / left / right */
 }
-main.main:has(> .empty-state.show) > .empty-state.show .empty-state-actions,
-main.main:has(> .empty-state.show) > .empty-state.show button{pointer-events:auto}
 /* Booked cards are showing above the empty message: stack it in normal flow below them (no overlay) */
 main.main.empty-with-booked:has(> .empty-state.show){min-height:0;padding-bottom:24px !important}
-main.main.empty-with-booked:has(> .empty-state.show) > .empty-state.show{position:static;inset:auto;padding:32px 20px 16px;pointer-events:auto}
+main.main.empty-with-booked:has(> .empty-state.show) > .empty-state.show{position:static;inset:auto;flex:none;justify-content:flex-start;padding:32px 20px 16px;pointer-events:auto}
 @media (max-width:640px){
   main.main:has(> .empty-state.show){
     min-height:calc(100vh - var(--qmb-h) - var(--filter-h) - 56px - env(safe-area-inset-bottom));
