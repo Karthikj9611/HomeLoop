@@ -3639,6 +3639,7 @@ main.tab-explore .empty-state{display:none !important}
 .view-hdr-act{display:none;align-items:center;gap:6px;height:32px;padding:0 12px;border-radius:16px;border:1.5px solid var(--border-2);background:var(--bg);color:var(--text);font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;white-space:nowrap}
 .view-hdr-act svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;flex-shrink:0}
 .view-hdr-act:hover{border-color:var(--brand);color:var(--brand)}
+.view-hdr-act.booked-active{border-color:#e04444;background:#fdecec;color:#e04444}
 @media (max-width:420px){.view-hdr-act{padding:0;width:32px;justify-content:center}.view-hdr-act span{display:none}}
 #scheduleModal{z-index:360}
 #paymentModal{z-index:361}
@@ -7469,6 +7470,7 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
       <button type="button" id="viewShareHeaderBtn" class="view-share-hdr" aria-label="Share" title="Share" style="display:none"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z"/></svg></button>
       <button type="button" id="viewCloneBtn" class="view-hdr-act" title="Clone - start a new listing pre-filled with these details" style="display:none"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><span>Clone</span></button>
       <button type="button" id="viewEditBtn" class="view-hdr-act" title="Edit this listing" style="display:none"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg><span>Edit</span></button>
+      <button type="button" id="viewBookedBtn" class="view-hdr-act" title="Mark as booked" style="display:none"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg><span>Booked</span></button>
       <button type="button" id="clearFormBtn" onclick="confirmClearAddModalDraft()" style="background:transparent;border:1.5px solid rgba(255,255,255,.4);color:#fff;border-radius:16px;padding:0 12px;height:32px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">Clear form</button>
       <button class="modal-close" style="position:static;background:var(--brand);border:none;color:#fff;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;box-shadow:0 3px 8px rgba(0,0,0,.25);transition:background .15s,transform .15s" onmouseover="this.style.background='var(--brand-hover)';this.style.transform='scale(1.06)'" onmouseout="this.style.background='var(--brand)';this.style.transform='scale(1)'" onclick="closeAddModal()" aria-label="Close">
         <svg viewBox="0 0 24 24" aria-hidden="true" stroke="#fff" style="width:16px;height:16px;stroke-width:2.6;stroke:#fff !important"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -15067,6 +15069,15 @@ function openDetailReal(id) {
   document.getElementById('viewEditBtn').style.display  = _isMine ? 'inline-flex' : 'none';
   document.getElementById('viewCloneBtn').onclick = () => manageListingFromView(p.id, p.propertyId, 'clone');
   document.getElementById('viewEditBtn').onclick  = () => manageListingFromView(p.id, p.propertyId, 'edit');
+  { // Agents (HomeLoop employees) can mark ANY listing booked / available again straight from the view
+    const _bb = document.getElementById('viewBookedBtn');
+    _bb.style.display = isAgentUser() ? 'inline-flex' : 'none';
+    const _isB = isBookedProp(p);
+    _bb.title = _isB ? 'Mark as available again' : 'Mark as booked';
+    _bb.querySelector('span').textContent = _isB ? 'Available' : 'Booked';
+    _bb.classList.toggle('booked-active', _isB);
+    _bb.onclick = () => markBookedFromView(p.id, p.propertyId, _isB);
+  }
   const _footerHasContent = ['viewActionsRow', 'viewActionsRow2', 'viewUnlockRow', 'viewOwnerMainRow', 'viewOwnerAltRow', 'viewOwnerCareRow', 'viewNavigateRow']
     .some(id => document.getElementById(id).style.display !== 'none');
   footerEl.style.display = _footerHasContent ? 'block' : 'none';
@@ -15532,6 +15543,40 @@ function manageListingFromView(id, propertyLabel, kind) {
     if (kind === 'edit') editMyListing(id, propertyLabel || ''); else cloneMyListing(id, propertyLabel || '');
   });
 }
+/* Agents: mark a listing booked (or available again) directly from the property view. */
+async function markBookedFromView(id, propertyLabel, isBooked) {
+  if (!isAgentUser()) return;
+  const label = propertyLabel || 'this listing';
+  const msg = isBooked
+    ? `Mark ${label} as available again? It will show on the website again.`
+    : `Mark ${label} as booked? It will be removed from the website.`;
+  if (!confirm(msg)) return;
+  const btn = document.getElementById('viewBookedBtn');
+  if (btn) btn.disabled = true;
+  try {
+    const res = await fetch(`/api/user/listings/${id}/booked`, {
+      method: 'PATCH',
+      headers: userAuthHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({ booked: !isBooked })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) { alert(data.message || 'Could not update booked status.'); return; }
+    const nowBooked = typeof data.booked === 'boolean' ? data.booked : !isBooked;
+    const mine = (typeof MY_LISTINGS_CACHE !== 'undefined') && MY_LISTINGS_CACHE.find(x => x.id === id);
+    if (mine) { mine.booked = nowBooked; mine.bookedAt = nowBooked ? new Date().toISOString() : null; }
+    closeDetail();
+    showToast(nowBooked ? `${label} marked as booked` : `${label} is available again`, 'success');
+    // Listing moves between the public grid and the Booked section, so reload both lists.
+    const [ok] = await Promise.all([fetchProperties(false), fetchBookedProperties(false)]);
+    if (ok) { buildFilterOptions(); renderCards(); }
+    renderBookedSections();
+    if (document.getElementById('profileModal').classList.contains('open')) renderMyListings();
+  } catch (err) {
+    alert('⚠️ Could not connect to server.');
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
 function closeDetail() {
   const _wasOpen = document.getElementById('addModal').classList.contains('open');
   document.getElementById('addModal').classList.remove('open');
@@ -15560,6 +15605,7 @@ function closeDetail() {
     document.getElementById('viewActionsRow2').style.display = 'none';
     document.getElementById('viewCloneBtn').style.display = 'none';
     document.getElementById('viewEditBtn').style.display = 'none';
+    { const _vb = document.getElementById('viewBookedBtn'); if (_vb) _vb.style.display = 'none'; }
     document.getElementById('viewActionsFooter').style.display = 'none';
     clearDeepLinkUrl();
   });
