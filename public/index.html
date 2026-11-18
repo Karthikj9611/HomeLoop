@@ -10806,6 +10806,8 @@ function tabRawCount(tab) {
 
 // Shown when a category has no listings at all: invites the right kind of poster to list.
 // add = preset for the list form ('' = account's own type, null = no button).
+// Fee cards (Listing fee / Live for ...) under each tab's pitch. Hidden for now; set to true to show them again.
+const SHOW_EMPTY_PITCH_CHARGES = false;
 const EMPTY_PITCH = {
   All:         { t: 'No Listings Yet \u2014 List Your Property', x: 'Owners, brokers and builders can post their properties on HomeLoop. Tenants and buyers contact you directly.', add: '' },
   Rent:        { t: 'Rent \u2014 List Your Property', x: 'Owners and brokers can post their rental homes on HomeLoop. Tenants contact you directly.', add: 'Rent', charges: [['Listing & live', 'Free', 'no charge'], ['Once we fill it', '5% rent', 'per placement']] },
@@ -10816,7 +10818,7 @@ const EMPTY_PITCH = {
   ShortStay:   { t: 'Short Stay \u2014 List Your Stay', x: 'Hosts can list short stay homes and rooms on HomeLoop. Guests contact you directly.', add: 'ShortStay' },
   Sell:        { t: 'Sell \u2014 List Your Property', x: 'Owners, brokers and builders can post their properties for sale on HomeLoop. Buyers contact you directly.', add: 'Sell' },
   Broker:      { t: 'Brokers \u2014 List Your Properties', x: 'Brokers can post their listings on HomeLoop. Tenants contact you directly.', add: '', charges: [['Listing fee', '\u20b91,000', 'per listing'], ['Live for', '1 month', 'from date listed']] },
-  Builder:     { t: 'Builders \u2014 List Your Properties', x: 'Builders can post their properties on HomeLoop. Buyers and tenants contact you directly.', add: '', charges: [['Promote listing', '\u20b91,000', 'flat fee'], ['Promoted for', '1 month', 'from date listed']] },
+  Builder:     { t: 'Builders \u2014 Coming Soon', x: 'This feature is being developed and will be available by 1 January 2027 or ASAP.', add: null, soon: true },
   Maintenance: { t: 'PG & Coliving \u2014 List Your Space', x: 'PG and co-living operators can list their rooms and beds on HomeLoop. Tenants contact you directly.', add: 'PG', charges: [['Listing fee', '\u20b91,000', 'per listing'], ['Live for', '3 months', 'from date listed']] },
 };
 
@@ -10848,13 +10850,15 @@ function setEmptyStateContent() {
   const showPitch = (pitch) => {
     title.textContent = pitch.t;
     text.textContent = pitch.x;
+    // "Coming soon" notice: message only — no fees card, no Call / WhatsApp buttons.
+    if (pitch.soon) { actions.style.display = 'none'; return; }
     // The floating "+ List property" button (and the mobile + tab) already offer listing,
     // so this only adds a way to contact HomeLoop: Call + WhatsApp on the in-house line.
     actions.innerHTML =
       '<a class="empty-state-btn primary" href="tel:+91' + COORDINATOR_PHONE + '" style="text-decoration:none">Call us</a>' +
       '<a class="empty-state-btn secondary" href="https://wa.me/91' + COORDINATOR_PHONE + '" target="_blank" rel="noopener" style="text-decoration:none">WhatsApp</a>';
     actions.style.display = '';
-    if (chargesEl && pitch.charges) {
+    if (SHOW_EMPTY_PITCH_CHARGES && chargesEl && pitch.charges) {
       chargesEl.innerHTML = pitch.charges.map(c => '<div class="empty-state-charge"><span class="empty-state-charge-label">' + c[0] + '</span><span class="empty-state-charge-value">' + c[1] + '</span><span class="empty-state-charge-note">' + c[2] + '</span></div>').join('');
       chargesEl.style.display = '';
     }
