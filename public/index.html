@@ -2867,12 +2867,19 @@ main.tab-explore .empty-state{display:none !important}
 }
 .viewer-meta{font-size:11.5px;color:var(--text-3);margin-top:1px}
 /* Agent-only: viewer's phone number + tap-to-call button */
-.viewer-phone-row{display:flex;align-items:center;gap:10px;margin-top:3px}
+.viewer-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.viewer-top .viewer-name{min-width:0;flex:1}
+.viewer-phone-row{display:flex;align-items:center;gap:8px;margin-top:6px}
+.viewer-call-btn{
+  font-size:11px;font-weight:700;color:var(--brand);background:var(--brand-light);
+  padding:4px 16px;border-radius:99px;text-decoration:none;
+}
+.viewer-call-btn:hover{filter:brightness(.95)}
 .viewer-phone-num{font-size:12.5px;font-weight:700;color:var(--text-2);letter-spacing:.01em;text-decoration:none}
 .viewer-phone-num:hover{text-decoration:underline}
 .viewer-wa-link{
   font-size:11px;font-weight:700;color:#189e50;background:rgba(24,158,80,.1);
-  padding:2px 9px;border-radius:99px;text-decoration:none;
+  padding:4px 16px;border-radius:99px;text-decoration:none;
 }
 .viewer-wa-link:hover{background:rgba(24,158,80,.18)}
 .viewer-time-pill{
@@ -10411,16 +10418,18 @@ function renderViewersModal(data) {
     // so this block simply never renders for non-agents.
     const _digits = String(v.mobile || '').replace(/\D/g, '').slice(-10);
     const phoneHtml = _digits.length === 10
-      ? `<div class="viewer-phone-row"><a class="viewer-phone-num" href="tel:+91${_digits}" onclick="event.stopPropagation()">${_digits}</a><a class="viewer-wa-link" href="https://wa.me/91${_digits}" target="_blank" rel="noopener" onclick="event.stopPropagation()">WhatsApp</a></div>`
+      ? `<div class="viewer-phone-row"><a class="viewer-call-btn" href="tel:+91${_digits}" onclick="event.stopPropagation()">Call</a><a class="viewer-wa-link" href="https://wa.me/91${_digits}" target="_blank" rel="noopener" onclick="event.stopPropagation()">WhatsApp</a></div>`
       : '';
     return `<div class="viewer-row viewer-row-noavatar" style="animation-delay:${Math.min(i, 8) * 0.045}s">
       <div class="viewer-info">
-        <div class="viewer-name">
-          ${roleBadge(v.accountType)}${esc(name)}${liveDot}
+        <div class="viewer-top">
+          <div class="viewer-name">
+            ${roleBadge(v.accountType)}${esc(name)}${liveDot}
+          </div>
+          <span class="viewer-time-pill">${esc(viewerDateTime(v.lastViewed))}</span>
         </div>
         ${phoneHtml}
       </div>
-      <span class="viewer-time-pill">${esc(viewerDateTime(v.lastViewed))}</span>
     </div>`;
   }).join('');
 

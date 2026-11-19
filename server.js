@@ -2518,12 +2518,19 @@ app.get('/api/properties/:id/viewers', attachUserIfPresent, async (req, res) => 
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
       return res.status(400).json({ message: 'Invalid property id' });
     }
-    // AGENT accounts (HomeLoop employees) also get each viewer's mobile number so they can call them.
+    // AGENT accounts (HomeLoop employees), and owner/pg/builder/broker accounts with admin Public call on (own listings only), also get each viewer's mobile number so they can call them.
     // Everyone else (guests, tenants, owners) gets exactly the same response as before — no numbers.
     let _isAgent = false;
     if (req.userId) {
-      const _me = await User.findById(req.userId).select('accountType').lean();
-      _isAgent = !!(_me && _me.accountType === 'agent');
+      const _me = await User.findById(req.userId).select('accountType publicCall').lean();
+      // Agents always; owner-side accounts (owner / pg / builder / broker) only when admin enabled Public call for them.
+      if (_me && _me.accountType === 'agent') {
+        _isAgent = true;
+      } else if (_me && _me.publicCall === true && ACCT_OWNER_SIDE.includes(_me.accountType)) {
+        // Only for THEIR OWN listing (userId match, or their mobile as owner/alt/agent number).
+        const { doc: _own } = await findUserListingById(req.params.id, req.userId, { lean: true });
+        _isAgent = !!_own;
+      }
     }
     const rawViewers = await PropertyViewer.find({ propertyId: req.params.id })
       .sort({ lastViewedAt: -1 })
