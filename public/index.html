@@ -14928,8 +14928,8 @@ function propDistanceText(p) {
   if (isNaN(la) || isNaN(ln) || (!la && !ln)) { la = parseFloat(l.distLat); ln = parseFloat(l.distLng); }
   if (isNaN(la) || isNaN(ln) || (!la && !ln)) return '';
   const d = haversineKm(userCoords.lat, userCoords.lng, la, ln);
-  if (p.distApprox) return d < 1 ? '<1 km' : '~' + Math.round(d) + ' km'; // coarse position (~1 km): whole km only
-  return '~' + d.toFixed(1) + ' km';
+  if (p.distApprox) return d < 1 ? '<1 km' : Math.round(d) + ' km'; // coarse position (~1 km): whole km only
+  return d.toFixed(1) + ' km';
 }
 /* Distance is shown on every non-booked listing that has a position: exact + road distance where the owner contact is
    public (Call/WhatsApp/Navigate icons), otherwise an approximate whole-km straight-line value. Used by cards,
