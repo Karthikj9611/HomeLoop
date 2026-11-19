@@ -3381,6 +3381,15 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
 .tab-new.on{display:inline-flex;animation:tabNewPop .35s ease}
 @keyframes tabNewPop{0%{transform:scale(.4)}70%{transform:scale(1.2)}100%{transform:scale(1)}}
 .notif-bell-btn.push-on{color:var(--green,#1e9e57);border-color:var(--green,#1e9e57)}
+/* A tab (main group or sub-tab) with unread notifications turns completely red until it is opened */
+.tab-btn.tab-alert:not(.active),
+.tab-btn.tab-alert:not(.active):hover{
+  background:var(--red,#dc2626)!important;border-color:var(--red,#dc2626)!important;color:#fff!important;
+  animation:tabAlertPulse 1.6s ease-in-out infinite;
+}
+.tab-btn.tab-alert:not(.active) i{color:#fff!important}
+.tab-btn.tab-alert:not(.active) .tab-count{background:#fff!important;color:var(--red,#dc2626)!important}
+@keyframes tabAlertPulse{0%,100%{box-shadow:0 0 0 0 rgba(220,38,38,.45)}50%{box-shadow:0 0 0 6px rgba(220,38,38,0)}}
 
 /* ── ADMIN NOTIFICATIONS TAB (list + manual delete) ── */
 .nf-filters{display:flex;flex-direction:column;gap:10px;padding:14px 16px;border-bottom:1px solid var(--border)}
@@ -6432,10 +6441,12 @@ function ensureTabNewBadge(btnId){
   return el;
 }
 function setBadge(btnId, n){
-  const el = ensureTabNewBadge(btnId);
-  if(!el) return;
-  if(n > 0){ const txt = n > 99 ? '99+' : String(n); if(el.textContent !== txt){ el.textContent = txt; } el.title = n + ' new'; el.classList.add('on'); }
-  else { el.classList.remove('on'); el.textContent = ''; }
+  // No count bubble any more: the whole tab turns red while it has unread notifications.
+  const btn = document.getElementById(btnId);
+  if(!btn) return;
+  btn.classList.toggle('tab-alert', n > 0);
+  if(n > 0) btn.title = n + ' new';
+  else if(/ new$/.test(btn.title || '')) btn.removeAttribute('title');
 }
 function renderTabBadges(){
   Object.keys(NOTIF_TAB_TYPES).forEach(tab => {
