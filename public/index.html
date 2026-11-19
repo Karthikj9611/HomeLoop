@@ -4270,6 +4270,17 @@ main.tab-explore .empty-state{display:none !important}
 #myListingsContent > .ag-owner-row .ag-owner-count{background:var(--brand-light);color:var(--brand);font-size:12px;padding:5px 11px}
 #myListingsContent > .ag-owner-row .ag-owner-chev{width:30px;height:30px;padding:7px;border-radius:50%;background:#f5f6f8;stroke:var(--text-2);transition:background .18s,stroke .18s,transform .18s}
 #myListingsContent > .ag-owner-row:hover .ag-owner-chev{background:var(--brand);stroke:#fff;transform:translateX(2px)}
+.ag-owner-edit{flex:none;width:28px;height:28px;border-radius:50%;border:1px solid var(--border);background:#fff;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0;transition:background .15s,border-color .15s}
+.ag-owner-edit svg{width:14px;height:14px;fill:none;stroke:var(--text-2);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.ag-owner-edit:hover{background:var(--brand-light);border-color:var(--brand)}
+.ag-owner-edit:hover svg{stroke:var(--brand)}
+.ag-owner-name-row{display:flex;align-items:center;gap:8px;overflow:visible}
+.ag-owner-name-row span{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.ag-name-edit{display:flex;align-items:center;gap:6px}
+.ag-name-input{flex:1;min-width:0;height:36px;padding:0 12px;border:1.5px solid var(--brand);border-radius:10px;font:600 14px inherit;font-family:inherit;color:var(--text);background:#fff;outline:none;box-shadow:0 0 0 3px rgba(224,58,82,.12)}
+.ag-name-btn{flex:none;width:34px;height:34px;border-radius:50%;border:1px solid var(--border);background:#fff;color:var(--text-2);font-size:15px;font-weight:800;cursor:pointer}
+.ag-name-btn.ok{background:var(--brand);border-color:var(--brand);color:#fff}
+.ag-name-btn:disabled{opacity:.6}
 .ag-owner-match{font-size:12px;font-weight:700;color:var(--brand);margin-top:3px;line-height:1.35;overflow-wrap:anywhere}
 /* owner view = ONE panel: header, filters and every property card sit inside the owner's own container */
 .ag-owner-panel{position:relative;border:1.5px solid var(--brand);border-radius:18px;background:linear-gradient(180deg,var(--brand-light),var(--bg) 140px);padding:12px;box-shadow:0 6px 20px rgba(224,58,82,.10)}
@@ -18314,14 +18325,35 @@ function agentOwnerGroups(list) {
   return groups.sort((a, b) => a.name.localeCompare(b.name) || a.key.localeCompare(b.key));
 }
 function openAgentOwner(key) { window._agOwner = key; window._agFilter = 'all'; renderMyListings(); const t = document.getElementById('profilePanelListings'); if (t) t.scrollTop = 0; }
-function closeAgentOwner() { window._agOwner = null; renderMyListings(); }
+function closeAgentOwner() { window._agOwner = null; window._agEdit = false; renderMyListings(); }
+window._agEdit = false;
+function startAgentOwnerEdit(key) { if (key) window._agOwner = key; window._agEdit = true; renderMyListings(); setTimeout(() => { const i = document.getElementById('agOwnerNameInput'); if (i) { i.focus(); i.select(); } }, 30); }
+function cancelAgentOwnerEdit() { window._agEdit = false; renderMyListings(); }
+async function saveAgentOwnerName() {
+  const inp = document.getElementById('agOwnerNameInput'); if (!inp) return;
+  const name = inp.value.replace(/\s+/g, ' ').trim();
+  if (name.length < 2) { showToast('Enter the owner name (min 2 letters).', 'warning'); return; }
+  const g = agentOwnerGroups(MY_LISTINGS_CACHE).find(x => x.key === window._agOwner); if (!g) return;
+  const ids = g.items.map(p => p.id);
+  const btn = document.getElementById('agOwnerNameSave'); if (btn) btn.disabled = true;
+  try {
+    const res = await fetch('/api/user/owners/name', { method: 'PATCH', headers: userAuthHeaders({ 'Content-Type': 'application/json' }), body: JSON.stringify({ ids, name }) });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) { showToast(data.message || 'Could not update the owner name.', 'error'); if (btn) btn.disabled = false; return; }
+    g.items.forEach(p => { p.owner = p.owner || {}; p.owner.name = name; });
+    window._agEdit = false;
+    renderMyListings();
+    showToast('Owner name updated.', 'success');
+  } catch (e) { showToast('Network error. Try again.', 'error'); if (btn) btn.disabled = false; }
+}
 function agentOwnerListHtml(groups) {
   if (!groups.length) return '<div class="profile-list-empty">No listings yet.</div>';
   const chev = '<svg class="ag-owner-chev" viewBox="0 0 24 24" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg>';
+  const pen = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>';
   return groups.map(g => `<div class="ag-owner-row" onclick="openAgentOwner('${g.key}')">
     <div class="ag-owner-av">${esc((g.name.trim()[0] || '?').toUpperCase())}</div>
     <div class="ag-owner-main"><div class="ag-owner-name">${esc(g.name)}</div><div class="ag-owner-num">${g.digits || 'No number'}</div><div class="ag-owner-stats"><span class="ag-st ag-st-av"><i></i>${g.items.filter(p => !p.booked).length} available</span><span class="ag-st ag-st-bk"><i></i>${g.items.filter(p => p.booked).length} booked</span></div>${g.matched ? `<div class="ag-owner-match">${g.matched.slice(0, 3).map(p => esc(((p.owner && p.owner.propertyName) || 'Property') + ' · ' + (p.propertyId || ''))).join(' &nbsp;|&nbsp; ')}${g.matched.length > 3 ? ' +' + (g.matched.length - 3) + ' more' : ''}</div>` : ''}</div>
-    <div class="ag-owner-count">${g.items.length} propert${g.items.length === 1 ? 'y' : 'ies'}</div>${chev}</div>`).join('');
+    <div class="ag-owner-count">${g.items.length} propert${g.items.length === 1 ? 'y' : 'ies'}</div><button type="button" class="ag-owner-edit" title="Edit owner name" aria-label="Edit owner name" onclick="event.stopPropagation();startAgentOwnerEdit('${g.key}')">${pen}</button>${chev}</div>`).join('');
 }
 window._agFilter = 'all';
 function setAgentFilter(f) { window._agFilter = f; renderMyListings(); }
@@ -18340,7 +18372,9 @@ function agentOwnerDetailHtml(g) {
   const _acts = _nums.length ? `<div class="ag-owner-acts">${_nums.map(d => `<a class="ag-ico ag-ico-call" href="tel:+91${d}" title="Call ${d}" aria-label="Call ${d}">${_ph}</a><a class="ag-ico ag-ico-wa" href="https://wa.me/91${d}" target="_blank" rel="noopener" title="WhatsApp ${d}" aria-label="WhatsApp ${d}">${_wa}</a>`).join('')}</div>` : '';
   return `<div class="ag-owner-panel"><div class="ag-owner-head"><button type="button" class="ag-owner-back" onclick="closeAgentOwner()" aria-label="Back to owners">${back}</button>
     <div class="ag-owner-av">${esc((g.name.trim()[0] || '?').toUpperCase())}</div>
-    <div class="ag-owner-head-t"><div class="ag-owner-name">${esc(g.name)}</div><div class="ag-owner-num">${g.digits || 'No number'}</div></div>${_acts}</div>`
+    <div class="ag-owner-head-t">${window._agEdit
+      ? `<div class="ag-name-edit"><input id="agOwnerNameInput" class="ag-name-input" type="text" maxlength="80" value="${esc(g.names && Object.keys(g.names).length ? g.name : '')}" placeholder="Owner name" onkeydown="if(event.key==='Enter')saveAgentOwnerName();else if(event.key==='Escape')cancelAgentOwnerEdit()"><button type="button" id="agOwnerNameSave" class="ag-name-btn ok" onclick="saveAgentOwnerName()" aria-label="Save name">&#10003;</button><button type="button" class="ag-name-btn" onclick="cancelAgentOwnerEdit()" aria-label="Cancel">&#10005;</button></div>`
+      : `<div class="ag-owner-name ag-owner-name-row"><span>${esc(g.name)}</span><button type="button" class="ag-owner-edit" title="Edit owner name" aria-label="Edit owner name" onclick="startAgentOwnerEdit()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></button></div>`}<div class="ag-owner-num">${g.digits || 'No number'}</div></div>${window._agEdit ? '' : _acts}</div>`
     + chips + (_shown.length ? _shown.map(p => myListingCardHtml(p, 'noPhones')).join('') : '<div class="profile-list-empty">No listings here.</div>') + '</div>';
 }
 

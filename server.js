@@ -3100,6 +3100,27 @@ app.put('/api/user/listings/:id', listingWriteLimiter, requireUser, requireAgent
   }
 });
 
+// ── PATCH /api/user/owners/name (agents only: rename the owner on a set of listings) ──
+// Body: { ids: [listingId, ...], name }. The agent's owner list groups listings by owner mobile
+// number; this sets owner.name on every listing in that group so the name is consistent everywhere.
+app.patch('/api/user/owners/name', listingWriteLimiter, requireUser, requireAgent, async (req, res) => {
+  try {
+    const name = String((req.body || {}).name || '').replace(/\s+/g, ' ').trim();
+    const ids = Array.isArray((req.body || {}).ids) ? req.body.ids.filter(id => mongoose.Types.ObjectId.isValid(id)).slice(0, 500) : [];
+    if (name.length < 2 || name.length > 80) return res.status(400).json({ message: 'Owner name must be 2–80 characters.' });
+    if (!ids.length) return res.status(400).json({ message: 'No listings given.' });
+    let updated = 0;
+    for (const M of LISTING_MODEL_LIST) {
+      const r = await M.updateMany({ _id: { $in: ids } }, { $set: { 'owner.name': name } });
+      updated += (r && (r.modifiedCount != null ? r.modifiedCount : r.nModified)) || 0;
+    }
+    res.json({ message: 'Owner name updated', name, updated });
+  } catch (err) {
+    console.error('PATCH /api/user/owners/name error:', err);
+    res.status(500).json({ message: 'Error updating owner name' });
+  }
+});
+
 // ── PATCH /api/user/listings/:id/booked (owner: toggle booked flag on their own listing) ──
 // Mirrors the admin booked toggle (admin.js), but scoped to the requesting
 // owner — findOneAndUpdate is always filtered by { _id, userId } together so
