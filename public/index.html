@@ -4229,6 +4229,17 @@ main.tab-explore .empty-state{display:none !important}
 .ag-chip{padding:6px 12px;border-radius:999px;border:1px solid var(--border);background:var(--bg);font:600 12.5px inherit;font-family:inherit;color:var(--text);cursor:pointer}
 .ag-chip b{margin-left:2px}
 .ag-chip.active{background:var(--text);border-color:var(--text);color:#fff}
+/* owner view header + filter: one tidy row, edges line up with the cards below */
+.ag-owner-head{display:flex;align-items:center;gap:12px;margin:0 0 12px;padding:0}
+.ag-owner-back{width:36px;height:36px;flex:none}
+.ag-owner-head-t{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;gap:2px}
+.ag-owner-head-t .ag-owner-name{font-size:15px;line-height:1.2}
+.ag-owner-head-t .ag-owner-num{font-size:12.5px;line-height:1.2;margin:0;color:var(--text-2)}
+.ag-owner-acts{display:flex;align-items:center;gap:8px;flex:none;margin-left:auto}
+.ag-ico{width:36px;height:36px;flex:none}
+.ag-chips{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:0 0 12px}
+.ag-chip{display:flex;align-items:center;justify-content:center;gap:5px;height:36px;padding:0 8px;font-size:12.5px;white-space:nowrap}
+.ag-chip b{margin:0;font-weight:800}
 .ag-owner-acts{display:flex;gap:8px;flex:none}
 .ag-ico{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:1px solid var(--border);background:var(--bg);text-decoration:none}
 .ag-ico svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
@@ -4359,8 +4370,16 @@ main.tab-explore .empty-state{display:none !important}
 }
 .pm-compact .pm-emo{font-size:14px;line-height:1;flex-shrink:0;filter:drop-shadow(0 1px 1.5px rgba(0,0,0,.22))}
 
-.pm-compact .pm-line3.pm-line3-n{grid-template-columns:minmax(0,1.5fr) repeat(5,minmax(0,1fr))}
-.pm-compact .pm-line3 > .pm-d-name .pm-v{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.profile-mini-card.pm-st-booked{background:#fdecec;border-color:#f3b9b9}
+.profile-mini-card.pm-st-booked:hover{background:#fbe0e0;border-color:#e88a8a;box-shadow:none;transform:none}
+.profile-mini-card.pm-st-avail{background:#eaf8ef;border-color:#b9e4c6}
+.profile-mini-card.pm-st-avail:hover{background:#dff3e6;border-color:#85cf9d;box-shadow:none;transform:none}
+.pm-compact .pm-line3.pm-line3-n{grid-template-columns:repeat(6,minmax(0,1fr))}
+.pm-compact .pm-line3.pm-line3-n .pm-lf{display:none}
+.pm-compact .pm-line3.pm-line3-n .pm-ls{display:inline}
+.pm-compact .pm-line3.pm-line3-n > .pm-d{align-items:flex-start;text-align:left;padding:0 8px}
+.pm-compact .pm-line3.pm-line3-n > .pm-d:first-child{padding-left:0}
+.pm-compact .pm-line3 > .pm-d-name .pm-v{max-width:100%;white-space:normal;word-break:break-word;line-height:1.25}
 .pm-compact .pm-line-phones{margin-top:5px;gap:12px;flex-wrap:wrap}
 .pm-phone{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;font-weight:700;color:#16a34a;text-decoration:none;letter-spacing:.2px}
 .pm-phone svg{width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2.2;flex-shrink:0}
@@ -4530,14 +4549,14 @@ main.tab-explore .empty-state{display:none !important}
 
 /* ─── Refer & Earn Modal ───────────────────────── */
 .refer-hero{
-  text-align:center;padding:26px 10px 20px;
+  text-align:center;padding:8px 12px 8px;
   background:linear-gradient(135deg,var(--brand-light) 0%,#fff 100%);
-  border-radius:var(--radius-lg);margin-bottom:16px;
+  border-radius:var(--radius-lg);margin-bottom:12px;
 }
 .refer-hero svg{width:46px;height:46px;stroke:var(--brand);fill:none;stroke-width:1.4;margin:0 auto 10px}
-.refer-hero-badge{font-size:34px;font-weight:800;color:var(--brand);line-height:1;margin-bottom:6px}
-.refer-hero-title{font-size:15px;font-weight:700;color:var(--text)}
-.refer-hero-sub{font-size:12.5px;color:var(--text-2);margin-top:6px;line-height:1.5}
+.refer-hero-badge{font-size:34px;font-weight:800;color:var(--brand);line-height:1;margin-bottom:3px}
+.refer-hero-title{font-size:16px;font-weight:700;color:var(--text);line-height:1.2}
+.refer-hero-sub{font-size:13px;color:var(--text-2);margin-top:1px;line-height:1.25}
 .refer-points{display:flex;gap:8px;margin-bottom:18px}
 .refer-point{
   flex:1;display:flex;flex-direction:column;align-items:center;gap:7px;
@@ -8460,10 +8479,6 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
     <div class="profile-body-scroll">
 
       <div class="profile-tabs">
-        <div class="profile-tab active" id="profileTabInfo" onclick="switchProfileTab('info')">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>
-          Profile
-        </div>
         <div class="profile-tab" id="profileTabListings" onclick="switchProfileTab('listings')">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9l9-7 9 7v11a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/></svg>
           Listings
@@ -8475,6 +8490,10 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
         <div class="profile-tab" id="profileTabSaved" onclick="switchProfileTab('saved')">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
           Shortlist
+        </div>
+        <div class="profile-tab active" id="profileTabInfo" onclick="switchProfileTab('info')">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>
+          Profile
         </div>
       </div>
 
@@ -8842,7 +8861,7 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
 
     <span id="referCodeText" style="display:none">HOMELOOP-GUEST24</span>
     <!-- Referrer details: pre-filled when logged in, typed in by guests. All fields are required so the reward can be credited. -->
-    <div id="referGuestFields">
+    <div id="referGuestFields" class="form-row"><!-- 2 columns on desktop and mobile -->
       <div class="form-group">
         <label class="form-label">Your name</label>
         <input class="form-input" type="text" id="refer-name" />
@@ -8853,6 +8872,7 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
       </div>
     </div>
 
+    <div class="form-row">
     <div class="form-group">
       <label class="form-label">Tenant's name</label>
       <input class="form-input" type="text" id="refer-tenant-name" />
@@ -8865,6 +8885,7 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
         </button>
       </div>
+    </div>
     </div>
     <button class="form-submit" id="referSubmitBtn" onclick="inviteAndRegisterReferral()">Share invite link</button>
   </div>
@@ -17082,7 +17103,7 @@ function openProfileModal() {
   if (bookedTabEl) bookedTabEl.style.display = (canList && user.accountType !== 'agent') ? '' : 'none'; // agents see booked inside Listings
   document.getElementById('profileModal').classList.add('open');
   lockBodyScroll();
-  switchProfileTab('info');
+  switchProfileTab(canList ? 'listings' : 'saved'); // Profile is the last tab now; open on the first one
 }
 function closeProfileModal() {
   document.getElementById('profileModal').classList.remove('open');
@@ -18071,36 +18092,35 @@ function myListingCardHtml(p, _opt) {
     const thumb = img ? `style="background-image:url('${safeUrl(img)}')"` : '';
     const rent = p.price?.rent != null ? fmtRupee(p.price.rent) : '—';
     const daysLive = p.createdAt ? Math.max(0, Math.floor((Date.now() - new Date(p.createdAt).getTime()) / 86400000)) : null;
-    return `<div class="profile-mini-card pm-compact" onclick="openDetail('${p.id}')"><div class="pm-row">
+    return `<div class="profile-mini-card pm-compact${_noPhones ? (p.booked ? ' pm-st-booked' : ' pm-st-avail') : ''}" onclick="openDetail('${p.id}')"><div class="pm-row">
       <div class="profile-mini-thumb" ${thumb}>${img ? '' : 'No photo'}</div>
       <div class="profile-mini-body">
         <div class="pm-line pm-line2 pm-line-main">
           ${(p.basic?.status && p.basic.status !== 'For Rent') ? `<span class="profile-status-pill">${esc(p.basic.status)}</span>` : ''}
-          ${p.booked ? `<span class="profile-status-pill booked-pill">Booked</span>` : ''}
+          ${(p.booked && !_noPhones) ? `<span class="profile-status-pill booked-pill">Booked</span>` : ''}
           <span class="pm-id">${esc(p.propertyId) || 'Untitled listing'}</span>
-          ${(() => { const _nm = p.owner?.propertyName; return (_nm && !_noPhones) ? `<span class="pm-nm">${esc(_nm)}</span>` : ''; })()}
+          ${(() => { const _nm = p.owner?.propertyName; return _nm ? `<span class="pm-nm">${esc(_nm)}</span>` : ''; })()}
           <span class="pm-loc">${esc(p.location?.area)}</span>
           ${(() => { const _b = String(p.property?.bhk || '').replace(/\s*BHK\s*$/i, '').trim(); return _b ? `<span class="pm-nm pm-bhk">${esc(_b)} BHK</span>` : ''; })()}
           ${p.visitCount > 0 ? `<span class="profile-status-pill" style="background:var(--brand-light);color:var(--brand)">${p.visitCount} visit${p.visitCount===1?'':'s'}</span>` : ''}
         </div>
         ${(() => {
           const _fd = v => { const t = v ? formatDateDisplay(v) : ''; return t ? esc(t) : ''; };
-          const bookedD = p.booked ? _fd(p.bookedAt || p.bookedOn) : '';
+          const bookedD = (p.booked && !_noPhones) ? _fd(p.bookedAt || p.bookedOn) : '';
           const _isPG = p.basic?.status === 'PG';
           const _bike = parseInt(_isPG ? p.pg?.bike : p.property?.bike, 10) || 0;
           const _car = parseInt(_isPG ? p.pg?.car : p.property?.car, 10) || 0;
           const _money = v => (v != null && v !== '' && Number(v) > 0) ? fmtRupee(v) : '—';
           const parts = [];
           const _e = ch => _noPhones ? '' : `<span class="pm-emo" aria-hidden="true">${ch}</span>`; // owner view: plain text, no emoji icons
-          const _pn = String(p.owner?.propertyName || '').trim();
-          if (_noPhones && _pn) parts.push(`<span class="pm-d pm-d-name" title="Property name"><span class="pm-k"><b>Property</b></span><span class="pm-v">${esc(_pn)}</span></span>`);
           parts.push(`<span class="pm-d" title="Rent"><span class="pm-k">${_e('🏠')}<b>Rent</b></span><span class="pm-v"><span class="pm-rent">${rent}</span></span></span>`);
           parts.push(`<span class="pm-d" title="Deposit"><span class="pm-k">${_e('💰')}<b>Deposit</b></span><span class="pm-v">${_money(p.price?.deposit)}</span></span>`);
           parts.push(`<span class="pm-d" title="Maintenance"><span class="pm-k">${_e('🛠️')}<b><span class="pm-lf">Maintenance</span><span class="pm-ls">Maint</span></b></span><span class="pm-v">${_money(p.price?.maintenance)}</span></span>`);
           parts.push(`<span class="pm-d" title="Bike parking"><span class="pm-k">${_e('🏍️')}<b>Bike</b></span><span class="pm-v">${_bike}</span></span>`);
           parts.push(`<span class="pm-d" title="Car parking"><span class="pm-k">${_e('🚗')}<b>Car</b></span><span class="pm-v">${_car}</span></span>`);
+          if (_noPhones) parts.push(`<span class="pm-d" title="Lift"><span class="pm-k"><b>Lift</b></span><span class="pm-v">${pLiftCount(p)}</span></span>`);
           if (bookedD) parts.push(`<span class="pm-d pm-d-booked"><b>Booked:</b> ${bookedD}</span>`);
-          return parts.length ? `<div class="pm-line pm-line3${(_noPhones && _pn) ? ' pm-line3-n' : ''}">${parts.join('')}</div>` : '';
+          return parts.length ? `<div class="pm-line pm-line3${_noPhones ? ' pm-line3-n' : ''}">${parts.join('')}</div>` : '';
         })()}
         ${p.media?.desc ? `<div class="pm-desc">${esc(p.media.desc)}</div>` : ''}
       </div>
@@ -18163,13 +18183,12 @@ function agentOwnerDetailHtml(g) {
   const back = '<svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="15 6 9 12 15 18"/></svg>';
   const _ph = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.8 19.8 0 0 1 1.61 3.4 2 2 0 0 1 3.59 1.22h3a2 2 0 0 1 2 1.72 12.8 12.8 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 8.78a16 16 0 0 0 6.29 6.29l1.14-1.14a2 2 0 0 1 2.11-.45 12.8 12.8 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>';
   const _wa = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>';
-  const _cnt = `${g.items.length} propert${g.items.length === 1 ? 'y' : 'ies'}`;
   const _nums = [];
   g.items.forEach(p => ownerDirectNumbers(p).forEach(n => { if (!_nums.includes(n.digits)) _nums.push(n.digits); }));
   if (g.digits && !_nums.includes(g.digits)) _nums.unshift(g.digits);
   const _acts = _nums.length ? `<div class="ag-owner-acts">${_nums.map(d => `<a class="ag-ico ag-ico-call" href="tel:+91${d}" title="Call ${d}" aria-label="Call ${d}">${_ph}</a><a class="ag-ico ag-ico-wa" href="https://wa.me/91${d}" target="_blank" rel="noopener" title="WhatsApp ${d}" aria-label="WhatsApp ${d}">${_wa}</a>`).join('')}</div>` : '';
   return `<div class="ag-owner-head"><button type="button" class="ag-owner-back" onclick="closeAgentOwner()" aria-label="Back to owners">${back}</button>
-    <div class="ag-owner-head-t"><div class="ag-owner-name">${esc(g.name)}</div><div class="ag-owner-num">${g.digits || 'No number'} · ${_cnt}</div></div>${_acts}</div>`
+    <div class="ag-owner-head-t"><div class="ag-owner-name">${esc(g.name)}</div><div class="ag-owner-num">${g.digits || 'No number'}</div></div>${_acts}</div>`
     + chips + (_shown.length ? _shown.map(p => myListingCardHtml(p, 'noPhones')).join('') : '<div class="profile-list-empty">No listings here.</div>');
 }
 
@@ -21013,6 +21032,8 @@ document.addEventListener('DOMContentLoaded', function() {
         openCompareModal();
       }
     }
+    // ── Refresh: put the visitor back where they were (My Account tab/owner, open property) ──
+    if (!_chParam && !_dlParam && !_cmpParam && typeof window.hlRestoreUi === 'function') window.hlRestoreUi();
     // Pre-Available welcome modal (skips itself on deep links / already shown)
     if (typeof showPreAvailModal === 'function') showPreAvailModal();
   })();
@@ -22865,6 +22886,72 @@ function closeImgZoom(){
 document.addEventListener('keydown',function(e){
   if(e.key==='Escape') closeImgZoom();
 });
+</script>
+
+<script>
+/* ═══════════════════════════════════════════════
+   KEEP MY PLACE ON REFRESH — My Account (tab / owner / filter) and an open property.
+   Stored per browser tab in sessionStorage; cleared on logout. The main tab + filters
+   are already restored by restoreFilterStateBeforeBuild().
+═══════════════════════════════════════════════ */
+(function () {
+  var KEY = 'hl_ui_state';
+  function load() { try { return JSON.parse(sessionStorage.getItem(KEY)) || {}; } catch (e) { return {}; } }
+  function save(fn) {
+    if (window.__hlRestoring) return;
+    try { var st = load(); fn(st); sessionStorage.setItem(KEY, JSON.stringify(st)); } catch (e) { /* storage unavailable */ }
+  }
+  function wrap(name, after, before) {
+    var orig = window[name];
+    if (typeof orig !== 'function') return;
+    window[name] = function () {
+      if (before) before.apply(this, arguments);
+      var r = orig.apply(this, arguments);
+      if (after) after.apply(this, arguments);
+      return r;
+    };
+  }
+  // a restore must not count as a fresh property view
+  wrap('incrementViews', null, null);
+  (function () { var o = window.incrementViews; if (typeof o === 'function') window.incrementViews = function () { if (window.__hlRestoring) return; return o.apply(this, arguments); }; })();
+
+  wrap('openProfileModal', function () {
+    var ids = { profileTabInfo: 'info', profileTabListings: 'listings', profileTabBooked: 'booked', profileTabSaved: 'saved' };
+    var el = document.querySelector('#profileModal .profile-tab.active');
+    save(function (st) { st.profile = { tab: (el && ids[el.id]) || 'info' }; });
+  });
+  wrap('closeProfileModal', function () { save(function (st) { delete st.profile; delete st.detail; }); });
+  wrap('switchProfileTab', function (tab) {
+    save(function (st) {
+      if (!st.profile) return;
+      st.profile.tab = tab;
+      if (tab !== 'listings') { delete st.profile.owner; delete st.profile.filter; }
+    });
+  });
+  wrap('openAgentOwner', function (key) { save(function (st) { if (st.profile) { st.profile.owner = key; st.profile.filter = 'all'; } }); });
+  wrap('closeAgentOwner', function () { save(function (st) { if (st.profile) { delete st.profile.owner; delete st.profile.filter; } }); });
+  wrap('setAgentFilter', function (f) { save(function (st) { if (st.profile) st.profile.filter = f; }); });
+  wrap('openDetailReal', function (id) { save(function (st) { st.detail = String(id); }); });
+  wrap('closeDetail', function () { save(function (st) { delete st.detail; }); });
+  wrap('logoutUser', null, function () { try { sessionStorage.removeItem(KEY); } catch (e) {} });
+
+  // Called once from the page INIT, after listings have loaded (skipped when the URL is a deep link).
+  window.hlRestoreUi = function () {
+    var st = load();
+    if (!st || (!st.profile && !st.detail)) return;
+    if (typeof getLoggedInUser !== 'function' || !getLoggedInUser()) return;
+    window.__hlRestoring = true;
+    try {
+      if (st.profile) {
+        if (st.profile.owner) { window._agOwner = st.profile.owner; window._agFilter = st.profile.filter || 'all'; }
+        openProfileModal();
+        if (st.profile.tab) switchProfileTab(st.profile.tab);
+      }
+      if (st.detail) openDetailReal(st.detail);
+    } catch (e) { /* never block the page */ }
+    finally { window.__hlRestoring = false; }
+  };
+})();
 </script>
 
 <!-- ── Image Zoom Lightbox ── -->
