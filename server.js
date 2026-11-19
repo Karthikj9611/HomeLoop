@@ -283,7 +283,12 @@ const profileUpdateLimiter = rateLimit({
 // handed back on login/signup, sent on later requests as 'x-user-key',
 // matched here. Survives restarts and cold starts.
 // ────────────────────────────────────────────────────────────────────────────
-const USER_SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+// Rolling ("sliding") session: every time the logged-in user uses the site the
+// expiry is pushed out again, so someone who keeps visiting and never logs out
+// stays logged in. They are only signed out by logging out, by a password reset
+// / admin "Force logout", or after this many days of NOT visiting at all.
+const USER_SESSION_TTL_MS = 90 * 24 * 60 * 60 * 1000; // 90 days of inactivity
+const USER_SESSION_RENEW_AFTER_MS = 24 * 60 * 60 * 1000; // renew at most once a day (keeps DB writes low)
 
 const UserSessionSchema = new mongoose.Schema({
   key:            { type: String, required: true, unique: true, index: true },
@@ -317,9 +322,22 @@ async function hasActiveUserSession(userObjectId) {
   return !!existing;
 }
 
+// Pushes a session's expiry out to a full TTL from now (sliding session).
+// Fire-and-forget and throttled to once per RENEW_AFTER window.
+function renewUserSession(session) {
+  try {
+    if (!session) return;
+    const left = new Date(session.expiresAt).getTime() - Date.now();
+    if (left > USER_SESSION_TTL_MS - USER_SESSION_RENEW_AFTER_MS) return; // renewed recently
+    UserSession.updateOne({ _id: session._id }, { expiresAt: new Date(Date.now() + USER_SESSION_TTL_MS) })
+      .catch(err => console.error('renewUserSession error:', err.message));
+  } catch (e) { /* never break a request over this */ }
+}
+
 async function getUserIdFromSession(key) {
   if (!key) return null;
   const session = await UserSession.findOne({ key, expiresAt: { $gt: new Date() } }).lean();
+  if (session) renewUserSession(session);
   return session ? String(session.userObjectId) : null;
 }
 
@@ -331,6 +349,7 @@ async function getSessionUserIds(key) {
   if (!key) return { userId: null, userReadableId: null };
   const session = await UserSession.findOne({ key, expiresAt: { $gt: new Date() } }).lean();
   if (!session) return { userId: null, userReadableId: null };
+  renewUserSession(session);
   return { userId: String(session.userObjectId), userReadableId: session.userId || null };
 }
 
@@ -2925,6 +2944,9 @@ app.get('/api/user/my-visits', requireUser, async (req, res) => {
 // ── GET /api/user/notifications (logged-in user's notification feed) ──
 app.get('/api/user/notifications', requireUser, async (req, res) => {
   try {
+    // Read notifications are no longer kept: this also sweeps up any that were
+    // marked read before deletion-on-read existed.
+    await Notification.deleteMany({ userId: req.userId, read: true });
     const notifications = await Notification.find({ userId: req.userId })
       .sort({ createdAt: -1 })
       .limit(50)
@@ -2948,27 +2970,25 @@ app.get('/api/user/notifications/unread-count', requireUser, async (req, res) =>
   }
 });
 
-// ── PATCH /api/user/notifications/:id/read (marks a single notification as read) ──
+// ── PATCH /api/user/notifications/:id/read (marks a single notification as read — and deletes it) ──
+// Once a notification has been read it has served its purpose, so it is removed
+// from the database instead of being kept with read:true.
 app.patch('/api/user/notifications/:id/read', requireUser, async (req, res) => {
   try {
-    const notif = await Notification.findOneAndUpdate(
-      { _id: req.params.id, userId: req.userId },
-      { read: true },
-      { new: true }
-    );
+    const notif = await Notification.findOneAndDelete({ _id: req.params.id, userId: req.userId });
     if (!notif) return res.status(404).json({ message: 'Notification not found' });
-    res.json({ message: 'Marked as read', notification: notif });
+    res.json({ message: 'Marked as read and deleted' });
   } catch (err) {
     console.error('PATCH /api/user/notifications/:id/read error:', err);
     res.status(500).json({ message: 'Error marking notification as read' });
   }
 });
 
-// ── PATCH /api/user/notifications/read-all (marks every notification as read) ──
+// ── PATCH /api/user/notifications/read-all (marks every notification as read — and deletes them) ──
 app.patch('/api/user/notifications/read-all', requireUser, async (req, res) => {
   try {
-    await Notification.updateMany({ userId: req.userId, read: false }, { read: true });
-    res.json({ message: 'All notifications marked as read' });
+    await Notification.deleteMany({ userId: req.userId });
+    res.json({ message: 'All notifications marked as read and deleted' });
   } catch (err) {
     console.error('PATCH /api/user/notifications/read-all error:', err);
     res.status(500).json({ message: 'Error marking notifications as read' });

@@ -3382,6 +3382,41 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
 @keyframes tabNewPop{0%{transform:scale(.4)}70%{transform:scale(1.2)}100%{transform:scale(1)}}
 .notif-bell-btn.push-on{color:var(--green,#1e9e57);border-color:var(--green,#1e9e57)}
 
+/* ── ADMIN NOTIFICATIONS TAB (list + manual delete) ── */
+.nf-filters{display:flex;flex-direction:column;gap:10px;padding:14px 16px;border-bottom:1px solid var(--border)}
+.nf-search{width:100%;max-width:340px;padding:9px 12px;border:1.5px solid var(--border);border-radius:10px;font:inherit;font-size:0.85rem;background:var(--surface);color:var(--ink)}
+.nf-search:focus{outline:none;border-color:var(--gold)}
+.nf-chips{display:flex;flex-wrap:wrap;gap:6px}
+.nf-chip{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border:1.5px solid var(--border);border-radius:99px;background:var(--surface);color:var(--ink2);font:inherit;font-size:0.78rem;font-weight:600;cursor:pointer;transition:all .15s}
+.nf-chip:hover{background:#faebd3;color:#7c4a1d;border-color:#e3c89d}
+.nf-chip.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+.nf-chip b{font-weight:800;font-size:0.7rem;padding:1px 7px;border-radius:99px;background:#fff;color:var(--gold-dark)}
+.nf-selbar{display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid var(--border);font-size:0.8rem;color:var(--ink3)}
+.nf-selbar label{display:inline-flex;align-items:center;gap:8px;cursor:pointer;font-weight:600;color:var(--ink2)}
+.nf-row{display:flex;align-items:flex-start;gap:12px;padding:13px 16px;border-bottom:1px solid var(--border);transition:background .15s}
+.nf-row:last-child{border-bottom:none}
+.nf-row:hover{background:var(--surface2)}
+.nf-row.unread{background:#fff8ec}
+.nf-row input[type=checkbox],.nf-selbar input[type=checkbox]{width:16px;height:16px;margin-top:11px;cursor:pointer;accent-color:var(--ink)}
+.nf-selbar input[type=checkbox]{margin-top:0}
+.nf-ico{flex:0 0 38px;width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--ink);color:var(--gold2,#e8c16a);font-size:0.9rem}
+.nf-body{flex:1;min-width:0}
+.nf-title{font-size:0.88rem;color:var(--ink);font-weight:600;line-height:1.35;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.nf-row.unread .nf-title{font-weight:800}
+.nf-dot{width:8px;height:8px;border-radius:50%;background:var(--red,#dc2626);flex-shrink:0}
+.nf-msg{font-size:0.82rem;color:var(--ink2);margin-top:2px;line-height:1.45;word-break:break-word}
+.nf-meta{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:6px;font-size:0.72rem;color:var(--ink3)}
+.nf-type{padding:2px 9px;border-radius:99px;background:var(--surface2);border:1px solid var(--border);font-weight:700;color:var(--ink2)}
+.nf-actions{display:flex;gap:6px;flex-shrink:0}
+.nf-act{display:inline-flex;align-items:center;gap:5px;padding:6px 10px;border:1.5px solid var(--border);border-radius:8px;background:var(--surface);color:var(--ink2);font:inherit;font-size:0.74rem;font-weight:700;cursor:pointer;transition:all .15s}
+.nf-act:hover{background:var(--surface2);color:var(--ink)}
+.nf-act.danger{color:var(--red,#dc2626)}
+.nf-act.danger:hover{background:var(--red,#dc2626);color:#fff;border-color:var(--red,#dc2626)}
+@media(max-width:640px){
+  .nf-row{flex-wrap:wrap}
+  .nf-actions{width:100%;justify-content:flex-end}
+}
+
 /* ── CONFIRM MODAL ── */
 #confirmOverlay,#alertOverlay,#sharePickOverlay{
   display:none;position:fixed;inset:0;z-index:10000;
@@ -3961,6 +3996,11 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
       <span class="tab-btn-label" data-mobile="Reviews">Reviews</span>
       <span class="tab-count" id="grp-reviews-count">—</span>
     </button>
+    <button class="tab-btn grp-btn" id="grp-notifications" onclick="switchGroup('notifications')">
+      <i class="fas fa-bell"></i>
+      <span class="tab-btn-label" data-mobile="Alerts">Notifications</span>
+      <span class="tab-count" id="grp-notifications-count">—</span>
+    </button>
     <button class="tab-btn grp-btn" id="grp-admin-access" onclick="switchGroup('admin-access')" style="display:none">
       <i class="fas fa-user-shield"></i>
       <span class="tab-btn-label" data-mobile="Access">Admin Access</span>
@@ -4024,6 +4064,11 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
       <i class="fas fa-video"></i>
       <span class="tab-btn-label" data-mobile="Reviews">Honest Reviews</span>
       <span class="tab-count" id="tab-honest-reviews-count">—</span>
+    </button>
+    <button class="tab-btn" id="tab-notifications" onclick="switchTab('notifications')">
+      <i class="fas fa-bell"></i>
+      <span class="tab-btn-label" data-mobile="Alerts">Notifications</span>
+      <span class="tab-count" id="tab-notifications-count">—</span>
     </button>
     <!-- Only shown to the primary admin (ADMIN_EMAIL) — see applyAdminAccessUI() -->
     <button class="tab-btn" id="tab-admin-access" onclick="switchTab('admin-access')" style="display:none">
@@ -4987,6 +5032,38 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
     </div>
     <div class="card">
       <div class="wsh-grid" id="wishGrid">
+        <div class="empty-state"><i class="fas fa-circle-notch fa-spin"></i>Loading…</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tab-panel" id="panel-notifications">
+    <div class="bulk-toolbar" id="nfToolbar">
+      <div class="bulk-toolbar-left">
+        <button class="bulk-btn" onclick="loadNotifFeed()" title="Refresh" aria-label="Refresh">
+          <i class="fas fa-rotate"></i> <span class="bulk-btn-label" data-mobile="Refresh">Refresh</span>
+        </button>
+        <button class="bulk-btn" id="nfMarkAllBtn" onclick="nfMarkAllRead()" title="Mark all as read" aria-label="Mark all as read">
+          <i class="fas fa-check-double"></i> <span class="bulk-btn-label" data-mobile="Read all">Mark all read</span>
+        </button>
+        <button type="button" class="bulk-btn bulk-btn-danger" id="nfDeleteSelBtn" style="display:none" onclick="nfDeleteSelected()">
+          <i class="fas fa-trash"></i> <span class="bulk-btn-label" data-mobile="Delete">Delete selected (<span id="nfSelNum">0</span>)</span>
+        </button>
+        <button type="button" class="bulk-btn bulk-btn-danger" id="nfClearAllBtn" onclick="nfClearAll()">
+          <i class="fas fa-trash-can"></i> <span class="bulk-btn-label" data-mobile="Clear">Delete all</span>
+        </button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="nf-filters">
+        <input type="search" class="nf-search" id="nfSearch" placeholder="Search notifications…" oninput="nfSetSearch(this.value)" autocomplete="off">
+        <div class="nf-chips" id="nfChips"></div>
+      </div>
+      <div class="nf-selbar" id="nfSelBar" style="display:none">
+        <label><input type="checkbox" id="nfSelAll" onchange="nfToggleAll(this.checked)"> Select all shown</label>
+        <span id="nfShownInfo"></span>
+      </div>
+      <div id="nfList">
         <div class="empty-state"><i class="fas fa-circle-notch fa-spin"></i>Loading…</div>
       </div>
     </div>
@@ -6521,10 +6598,174 @@ async function fetchNotifications(){
       if(active && tabUnread[active]) markTabSeen(active);
     }
     renderTabBadges();
+    if(!document.hidden && typeof _activeTabId === 'function' && _activeTabId() === 'notifications' && typeof loadNotifFeed === 'function') loadNotifFeed(true);
   } catch(e){ /* ignore — next poll will retry */ }
 }
 
 document.addEventListener('visibilitychange', () => { if(!document.hidden) fetchNotifications(); });
+
+/* ── NOTIFICATIONS TAB ──
+   Full list of admin notifications (GET /api/admin/notifications, newest 200) with
+   type filter + search. Rows can be marked read or deleted manually — one by one,
+   a multi-select, or everything. Auto-refreshes with the 5s poll while open. */
+const NF_TYPES = {
+  user_registered:         { label:'New user',        icon:'fa-user-plus' },
+  property_listed:         { label:'Property listed', icon:'fa-building' },
+  appointment_booked:      { label:'Appointment',     icon:'fa-calendar-days' },
+  review_posted:           { label:'Review',          icon:'fa-star' },
+  honest_review_submitted: { label:'Honest review',   icon:'fa-video' },
+  referral_submitted:      { label:'Referral',        icon:'fa-share-nodes' },
+  partner_added:           { label:'Partner',         icon:'fa-handshake' },
+  payment_submitted:       { label:'Payment',         icon:'fa-credit-card' },
+};
+let nfCache = [], nfFilter = 'all', nfSearchText = '', nfSel = new Set(), nfBusy = false;
+function nfMeta(t){ return NF_TYPES[t] || { label: String(t || 'other').replace(/_/g,' '), icon:'fa-bell' }; }
+function nfWhen(c){ if(!c) return '—'; const d = new Date(c); return fmtDateDMY(d) + ' · ' + fmtTimeHM(d); }
+function nfVisible(){
+  const q = nfSearchText.trim().toLowerCase();
+  return nfCache.filter(n =>
+    (nfFilter === 'all' || n.type === nfFilter) &&
+    (!q || ((n.title || '') + ' ' + (n.message || '') + ' ' + nfMeta(n.type).label).toLowerCase().includes(q))
+  );
+}
+async function loadNotifFeed(silent){
+  if(!ADMIN_KEY || nfBusy) return;
+  const list = document.getElementById('nfList');
+  try{
+    const res = await fetch(BASE + '/api/admin/notifications', { headers: authHeaders() });
+    const data = await res.json().catch(() => ({}));
+    if(!res.ok){
+      if(!silent && list) list.innerHTML = '<div class="empty-state"><i class="fas fa-triangle-exclamation"></i>' + esc(data.message || 'Could not load notifications') + '</div>';
+      return;
+    }
+    nfCache = data.notifications || [];
+    const ids = new Set(nfCache.map(n => String(n._id)));
+    nfSel.forEach(id => { if(!ids.has(id)) nfSel.delete(id); });
+    const cnt = document.getElementById('tab-notifications-count');
+    if(cnt) cnt.innerText = nfCache.length;
+    nfRender();
+  }catch(e){
+    if(!silent && list) list.innerHTML = '<div class="empty-state"><i class="fas fa-triangle-exclamation"></i>Could not load notifications. Please try again.</div>';
+  }
+}
+function nfRender(){
+  const list = document.getElementById('nfList');
+  if(!list) return;
+  const canEdit = canAct('notifications');
+
+  // type chips (with counts)
+  const counts = {};
+  nfCache.forEach(n => { counts[n.type] = (counts[n.type] || 0) + 1; });
+  if(nfFilter !== 'all' && !counts[nfFilter]) nfFilter = 'all';
+  const chips = document.getElementById('nfChips');
+  if(chips){
+    chips.innerHTML = '<button type="button" class="nf-chip' + (nfFilter === 'all' ? ' active' : '') + '" onclick="nfSetFilter(\'all\')">All <b>' + nfCache.length + '</b></button>' +
+      Object.keys(counts).sort((a, b) => counts[b] - counts[a]).map(t =>
+        '<button type="button" class="nf-chip' + (nfFilter === t ? ' active' : '') + '" onclick="nfSetFilter(\'' + esc(t) + '\')"><i class="fas ' + nfMeta(t).icon + '"></i> ' + esc(nfMeta(t).label) + ' <b>' + counts[t] + '</b></button>'
+      ).join('');
+  }
+
+  const rows = nfVisible();
+  const unread = nfCache.filter(n => !n.read).length;
+  const markBtn = document.getElementById('nfMarkAllBtn');
+  if(markBtn){ markBtn.style.display = canEdit ? '' : 'none'; markBtn.disabled = unread === 0; }
+  const clearBtn = document.getElementById('nfClearAllBtn');
+  if(clearBtn){ clearBtn.style.display = (canEdit && nfCache.length) ? '' : 'none'; }
+  const selBar = document.getElementById('nfSelBar');
+  if(selBar) selBar.style.display = (canEdit && rows.length) ? '' : 'none';
+  const info = document.getElementById('nfShownInfo');
+  if(info) info.textContent = rows.length + ' shown · ' + unread + ' unread';
+
+  if(!rows.length){
+    list.innerHTML = '<div class="empty-state"><i class="fas fa-bell-slash"></i>' + (nfCache.length ? 'No notifications match your filter.' : 'No notifications.') + '</div>';
+    nfUpdateSel();
+    return;
+  }
+  list.innerHTML = rows.map(n => {
+    const id = esc(n._id), m = nfMeta(n.type);
+    return '<div class="nf-row' + (n.read ? '' : ' unread') + '" data-id="' + id + '">' +
+      (canEdit ? '<input type="checkbox" ' + (nfSel.has(String(n._id)) ? 'checked ' : '') + 'onchange="nfToggle(\'' + id + '\', this.checked)" aria-label="Select notification">' : '') +
+      '<div class="nf-ico"><i class="fas ' + m.icon + '"></i></div>' +
+      '<div class="nf-body">' +
+        '<div class="nf-title">' + (n.read ? '' : '<span class="nf-dot" title="Unread"></span>') + esc(n.title) + '</div>' +
+        (n.message ? '<div class="nf-msg">' + esc(n.message) + '</div>' : '') +
+        '<div class="nf-meta"><span class="nf-type">' + esc(m.label) + '</span><span><i class="far fa-clock"></i> ' + nfWhen(n.createdAt) + '</span></div>' +
+      '</div>' +
+      (canEdit ? '<div class="nf-actions">' +
+        (n.read ? '' : '<button type="button" class="nf-act" onclick="nfMarkRead(\'' + id + '\')"><i class="fas fa-check"></i> Mark read</button>') +
+        '<button type="button" class="nf-act danger" onclick="nfDelete(\'' + id + '\')"><i class="fas fa-trash"></i> Delete</button>' +
+      '</div>' : '') +
+    '</div>';
+  }).join('');
+  nfUpdateSel();
+}
+function nfUpdateSel(){
+  const n = nfSel.size;
+  const b = document.getElementById('nfDeleteSelBtn'); if(b) b.style.display = n ? '' : 'none';
+  const num = document.getElementById('nfSelNum'); if(num) num.textContent = n;
+  const all = document.getElementById('nfSelAll');
+  if(all){ const vis = nfVisible(); all.checked = vis.length > 0 && vis.every(x => nfSel.has(String(x._id))); }
+}
+function nfSetFilter(t){ nfFilter = t; nfRender(); }
+function nfSetSearch(v){ nfSearchText = v || ''; nfRender(); }
+function nfToggle(id, on){ if(on) nfSel.add(String(id)); else nfSel.delete(String(id)); nfUpdateSel(); }
+function nfToggleAll(on){
+  nfVisible().forEach(n => { if(on) nfSel.add(String(n._id)); else nfSel.delete(String(n._id)); });
+  nfRender();
+}
+async function nfCall(url, method, body){
+  nfBusy = true;
+  try{
+    const res = await fetch(BASE + url, { method, headers: authHeaders(body ? { 'Content-Type':'application/json' } : undefined), body: body ? JSON.stringify(body) : undefined });
+    const data = await res.json().catch(() => ({}));
+    return { ok: res.ok, status: res.status, data };
+  }catch(e){ return { ok:false, status:0, data:{ message:'Network error' } }; }
+  finally{ nfBusy = false; }
+}
+function nfFail(r){ showAlertModal((r.data && r.data.message) || 'Something went wrong. Please try again.', { variant:'error', title:'Could not update' }); }
+async function nfMarkRead(id){
+  if(blockIfViewOnly('notifications')) return;
+  const r = await nfCall('/api/admin/notifications/' + encodeURIComponent(id) + '/read', 'PATCH');
+  if(!r.ok) return nfFail(r);
+  const n = nfCache.find(x => String(x._id) === String(id)); if(n) n.read = true;
+  nfRender(); fetchNotifications();
+}
+async function nfMarkAllRead(){
+  if(blockIfViewOnly('notifications')) return;
+  const r = await nfCall('/api/admin/notifications/mark-all-read', 'POST');
+  if(!r.ok) return nfFail(r);
+  nfCache.forEach(n => { n.read = true; });
+  nfRender(); fetchNotifications();
+}
+async function nfDelete(id){
+  if(blockIfViewOnly('notifications')) return;
+  const r = await nfCall('/api/admin/notifications/' + encodeURIComponent(id), 'DELETE');
+  if(!r.ok && r.status !== 404) return nfFail(r);
+  nfDropLocal([String(id)]);
+}
+async function nfDeleteSelected(){
+  if(blockIfViewOnly('notifications')) return;
+  const ids = Array.from(nfSel);
+  if(!ids.length) return;
+  if(!await showConfirmModal({ title:'Delete notifications?', message:'Delete ' + ids.length + ' selected notification' + (ids.length > 1 ? 's' : '') + '? This cannot be undone.', okText:'Delete' })) return;
+  const r = await nfCall('/api/admin/notifications/delete-many', 'POST', { ids });
+  if(!r.ok) return nfFail(r);
+  nfDropLocal(ids);
+}
+async function nfClearAll(){
+  if(blockIfViewOnly('notifications')) return;
+  if(!await showConfirmModal({ title:'Delete all notifications?', message:'This permanently deletes every notification (' + nfCache.length + '), read and unread. This cannot be undone.', okText:'Delete all' })) return;
+  const r = await nfCall('/api/admin/notifications/clear-all', 'POST');
+  if(!r.ok) return nfFail(r);
+  nfDropLocal(nfCache.map(n => String(n._id)));
+}
+function nfDropLocal(ids){
+  const gone = new Set(ids);
+  nfCache = nfCache.filter(n => !gone.has(String(n._id)));
+  ids.forEach(id => nfSel.delete(id));
+  const cnt = document.getElementById('tab-notifications-count'); if(cnt) cnt.innerText = nfCache.length;
+  nfRender(); fetchNotifications(); // fetchNotifications refreshes the red tab badges
+}
 
 /* ── WEB PUSH (alerts in the phone/desktop notification shade) ──
    Registers /admin-sw.js, asks permission, and sends the browser's push
@@ -7153,6 +7394,7 @@ var TAB_GROUPS = {
   'leads':        ['owner-calls','brokers','appointments'],
   'payments':     ['payments'],
   'marketing':    ['referrals','partners','wishes'],
+  'notifications':['notifications'],
   'reviews':      ['user-reviews','honest-reviews'],
   'admin-access': ['admin-access']
 };
@@ -7254,6 +7496,9 @@ function switchTab(tab){
   if(tab === 'wishes'){
     loadWishes();
   }
+  if(tab === 'notifications'){
+    loadNotifFeed();
+  }
   if(tab === 'owner-calls'){
     ocRender();
   }
@@ -7278,6 +7523,7 @@ const TAB_MODULE_MAP = {
   'brokers': 'brokers',
   'appointments': 'appointments',
   'honest-reviews': 'reviews',
+  'notifications': 'notifications',
 };
 // Icon shown next to each module in the Admin Access panel — matches the
 // icon used for that feature's own tab button in the main nav where one exists.

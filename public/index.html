@@ -19571,18 +19571,25 @@ async function openNotifModal() {
     list.innerHTML = '<div class="notif-empty">Couldn\'t load notifications</div>';
   }
 }
-// Marks one notification as read in place — unbolds its text, drops its
-// "Mark as read" link, and updates the header/footer/badge accordingly.
+// Shows the "No notifications yet" empty state (used once the last item is removed).
+function showNotifEmptyState() {
+  const container = document.getElementById('notifList');
+  if (!container) return;
+  container.innerHTML = `<div class="notif-empty">
+      <svg viewBox="0 0 24 24" width="34" height="34" stroke-width="1.5" aria-hidden="true"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+      No notifications yet
+    </div>`;
+}
+// Marks one notification as read — the server deletes it, so it is removed
+// from the list here too and the header/footer/badge are updated.
 async function markNotifRead(id, el) {
   const item = el.closest('.notif-item');
   try {
-    await fetch(`/api/user/notifications/${id}/read`, { method: 'PATCH', headers: userAuthHeaders() });
-    if (item) {
-      item.classList.remove('unread');
-      const b = item.querySelector('.notif-text b');
-      if (b) b.replaceWith(document.createTextNode(b.textContent));
-      el.remove();
-    }
+    const res = await fetch(`/api/user/notifications/${id}/read`, { method: 'PATCH', headers: userAuthHeaders() });
+    if (!res.ok && res.status !== 404) return; // keep it visible if the delete failed (404 = already gone)
+    if (item) item.remove();
+    const remaining = document.querySelectorAll('#notifList .notif-item').length;
+    if (!remaining) showNotifEmptyState();
     updateNotifChrome(document.querySelectorAll('#notifList .notif-item.unread').length);
     refreshNotifCount();
   } catch (err) { /* best-effort */ }
@@ -19590,11 +19597,10 @@ async function markNotifRead(id, el) {
 async function markAllNotifsRead() {
   if (!getLoggedInUser()) return;
   try {
-    await fetch('/api/user/notifications/read-all', { method: 'PATCH', headers: userAuthHeaders() });
+    const res = await fetch('/api/user/notifications/read-all', { method: 'PATCH', headers: userAuthHeaders() });
+    if (!res.ok) return; // keep the list as-is if the delete failed
     updateNotifBadge(0);
-    document.querySelectorAll('#notifList .notif-item.unread').forEach(item => item.classList.remove('unread'));
-    document.querySelectorAll('#notifList .notif-text b').forEach(b => b.replaceWith(document.createTextNode(b.textContent)));
-    document.querySelectorAll('#notifList .notif-mark-read').forEach(el => el.remove());
+    showNotifEmptyState();
     updateNotifChrome(0);
   } catch (err) { /* best-effort */ }
 }
@@ -19697,6 +19703,14 @@ async function inviteAndRegisterReferral() {
 
   const canRegister = referrerName && isValidIndianMobile(referrerPhone) && tenantName && isValidIndianMobile(tenantPhone);
 
+  // Open the WhatsApp tab right now, while we're still inside the tap, so the
+  // browser's popup blocker doesn't stop it after the network call below.
+  // It is pointed at the invite link once the referral is saved.
+  let waWin = null;
+  try { waWin = window.open('', '_blank'); } catch (e) { waWin = null; }
+  const dropWaWin = () => { try { if (waWin && !waWin.closed) waWin.close(); } catch (e) {} waWin = null; };
+
+  let registered = false;
   if (canRegister) {
     try {
       const res = await fetch('/api/referrals', {
@@ -19705,14 +19719,13 @@ async function inviteAndRegisterReferral() {
         body: JSON.stringify({ referrerName, referrerPhone, tenantName, tenantPhone })
       });
       if (res.ok) {
-        _pendingReferralShare = { tenantName, tenantPhone };
-        openReferDetailsModal({ referrerName, referrerPhone, tenantName, tenantPhone });
-        return; // share happens from the details modal's "Continue" action
+        registered = true; // saved — share straight away (no extra confirmation step)
       }
       if (res.status === 409 || res.status === 400) {
         let body = {};
         try { body = await res.json(); } catch (e) {}
         if (body && body.duplicate) {
+          dropWaWin();
           _pendingReferralShare = { tenantName, tenantPhone };
           openReferDuplicateModal({ tenantName, tenantPhone });
           return; // share happens from the duplicate modal's "Share anyway" action
@@ -19721,6 +19734,7 @@ async function inviteAndRegisterReferral() {
         // caught this, but a normalization difference server-side (or a
         // stale/pre-filled field) could still slip one through.
         if (body && body.selfReferral) {
+          dropWaWin();
           openReferSelfModal({ tenantName, tenantPhone });
           return; // share happens from the self-referral modal's "Share anyway" action
         }
@@ -19732,13 +19746,15 @@ async function inviteAndRegisterReferral() {
   }
 
   if (isValidIndianMobile(tenantPhone)) {
-    shareToTenantWhatsApp(tenantPhone, tenantName);
+    shareToTenantWhatsApp(tenantPhone, tenantName, waWin);
   } else {
+    dropWaWin();
     shareReferralCode(tenantName);
   }
   document.getElementById('refer-tenant-name').value = '';
   document.getElementById('refer-tenant-phone').value = '';
   closeReferModal();
+  if (registered) showToast("Referral registered — you'll get credit for the reward!", 'success');
 }
 
 // Swaps the entry form for the confirmation modal without releasing the
@@ -19840,9 +19856,12 @@ const INVITE_WEBSITE = "https://homeloop.in";
 function buildInviteMessage(tenantName) {
   return `Find verified Rentals at www.homeloop.in\n${INVITE_WEBSITE}`;
 }
-function shareToTenantWhatsApp(tenantPhone, tenantName) {
+function shareToTenantWhatsApp(tenantPhone, tenantName, preOpenedWin) {
   const text = buildInviteMessage(tenantName);
-  window.open(`https://wa.me/91${tenantPhone}?text=${encodeURIComponent(text)}`, '_blank');
+  const url = `https://wa.me/91${tenantPhone}?text=${encodeURIComponent(text)}`;
+  // Reuse the tab opened at tap time when there is one (avoids popup blockers).
+  if (preOpenedWin && !preOpenedWin.closed) { preOpenedWin.location.href = url; return; }
+  window.open(url, '_blank');
 }
 function copyVideoLink(url) {
   if (!url) return;

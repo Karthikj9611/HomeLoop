@@ -930,6 +930,20 @@ self.addEventListener('notificationclick', event => {
     }
   });
 
+  // POST /api/admin/notifications/delete-many { ids: [...] } — remove the selected notifications.
+  app.post('/api/admin/notifications/delete-many', requireAdmin, requireModuleAction('notifications'), async (req, res) => {
+    try {
+      const ids = Array.isArray(req.body && req.body.ids)
+        ? req.body.ids.filter(id => typeof id === 'string' && mongoose.Types.ObjectId.isValid(id)).slice(0, 500) : [];
+      if (!ids.length) return res.status(400).json({ message: 'ids required' });
+      const result = await AdminNotification.deleteMany({ _id: { $in: ids } });
+      res.json({ message: 'Notifications deleted', deleted: result.deletedCount || 0 });
+    } catch (err) {
+      console.error('POST /api/admin/notifications/delete-many error:', err.message);
+      res.status(500).json({ message: 'Error deleting notifications' });
+    }
+  });
+
   // DELETE /api/admin/notifications/:id — remove a single notification.
   app.delete('/api/admin/notifications/:id', requireAdmin, requireModuleAction('notifications'), async (req, res) => {
     try {
