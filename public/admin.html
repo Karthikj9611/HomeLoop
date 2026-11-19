@@ -6432,6 +6432,19 @@ const NOTIF_TYPE_TAB = {
 const NOTIF_TAB_TYPES = {};
 Object.keys(NOTIF_TYPE_TAB).forEach(t => { (NOTIF_TAB_TYPES[NOTIF_TYPE_TAB[t]] = NOTIF_TAB_TYPES[NOTIF_TYPE_TAB[t]] || []).push(t); });
 let tabUnread = {};   // tab id -> unread count
+// The Notifications tab itself turns red when a notification newer than the last time
+// it was opened exists. Tracked by time (not by read flag) so opening it does not mark
+// other tabs' notifications as read.
+let nfLatestAll = 0;
+let nfSeenAt = 0;
+try { nfSeenAt = Number(localStorage.getItem('kr_notif_tab_seen')) || 0; } catch(e){}
+function nfMarkTabSeen(){
+  if(!nfLatestAll || nfLatestAll <= nfSeenAt) return;
+  nfSeenAt = nfLatestAll;
+  try { localStorage.setItem('kr_notif_tab_seen', String(nfSeenAt)); } catch(e){}
+  tabUnread.notifications = 0;
+  renderTabBadges();
+}
 
 function ensureTabNewBadge(btnId){
   const btn = document.getElementById(btnId);
@@ -6449,6 +6462,7 @@ function setBadge(btnId, n){
   else if(/ new$/.test(btn.title || '')) btn.removeAttribute('title');
 }
 function renderTabBadges(){
+  setBadge('tab-notifications', ((typeof canViewTab === 'function') ? canViewTab('notifications') : true) ? (tabUnread.notifications || 0) : 0);
   Object.keys(NOTIF_TAB_TYPES).forEach(tab => {
     const usable = (typeof canViewTab === 'function') ? canViewTab(tab) : true;
     setBadge('tab-' + tab, usable ? (tabUnread[tab] || 0) : 0);
@@ -6461,6 +6475,7 @@ function renderTabBadges(){
 
 // Opening a tab = "seen": clear its badge locally and tell the server.
 function markTabSeen(tab){
+  if(tab === 'notifications'){ nfMarkTabSeen(); return; }
   const types = NOTIF_TAB_TYPES[tab];
   if(!types || !ADMIN_KEY) return;
   if(!tabUnread[tab]) return;
@@ -6601,6 +6616,15 @@ async function fetchNotifications(){
       const tab = NOTIF_TYPE_TAB[t];
       if(tab) next[tab] = (next[tab] || 0) + counts[t].count;
     });
+    // Notifications tab: red when anything arrived since it was last opened.
+    let nfTotal = 0, nfLatest = 0;
+    Object.keys(counts).forEach(t => {
+      nfTotal += counts[t].count || 0;
+      const ts = new Date(counts[t].latest).getTime();
+      if(ts > nfLatest) nfLatest = ts;
+    });
+    nfLatestAll = nfLatest;
+    if(nfLatest > nfSeenAt) next.notifications = nfTotal;
     tabUnread = next;
     // The admin is already looking at this tab (and the grid just refreshed),
     // so it counts as seen — no badge.
@@ -7441,8 +7465,16 @@ function syncGroupUI(tab){
 function switchGroup(k){
   var kids = TAB_GROUPS[k] || [];
   if(kids.indexOf(_activeTabId()) > -1) return;
+  var usable = kids.filter(_tabUsable);
   var back = _lastTabInGroup[k];
-  var target = (back && _tabUsable(back)) ? back : kids.filter(_tabUsable)[0];
+  // Tapping a main tab must NOT silently "see" a sub-tab that has new notifications —
+  // that sub-tab stays red until the admin clicks it. So open a sub-tab with nothing new
+  // when there is one (the last-used one first); only if every sub-tab has something new
+  // (or there is just one) do we open the last-used / first one.
+  var unread = {}; try{ unread = tabUnread || {}; }catch(e){}
+  var backOk = back && _tabUsable(back);
+  var clean = usable.filter(function(t){ return !unread[t]; });
+  var target = (backOk && !unread[back]) ? back : (clean[0] || (backOk ? back : usable[0]));
   if(target) switchTab(target);
 }
 (function(){
