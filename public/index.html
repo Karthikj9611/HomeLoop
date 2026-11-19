@@ -6112,6 +6112,48 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
 }
 </style>
 <style></style>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<style id="hl-premium">
+/* ===== HomeLoop premium theme (override layer, safe to remove) ===== */
+:root{
+  --brand:#D92D4A; --brand-hover:#B8223D; --brand-light:#FDEEF1;
+  --ink:#121826; --text:#121826; --text-2:#2B3345; --text-3:#5B6475;
+  --bg:#FFFFFF; --bg-2:#F6F7F9; --bg-3:#EEF0F4;
+  --border:#E4E7EC; --border-2:#CBD0DA;
+  --radius:12px; --radius-lg:16px; --radius-xl:22px;
+  --shadow:0 1px 2px rgba(18,24,38,.05),0 2px 8px rgba(18,24,38,.04);
+  --shadow-md:0 10px 30px -8px rgba(18,24,38,.18),0 2px 6px rgba(18,24,38,.05);
+  --hl-display:'Bricolage Grotesque','Plus Jakarta Sans',system-ui,sans-serif;
+}
+html,body,input,button,select,textarea{font-family:'Plus Jakarta Sans','Inter',system-ui,sans-serif}
+body{background:var(--bg-2);color:var(--text);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+h1,h2,h3,.logo-word,.section-title{font-family:var(--hl-display);letter-spacing:-.02em}
+
+/* Navigation: frosted glass, hairline edge */
+.topnav{background:rgba(255,255,255,.82);-webkit-backdrop-filter:saturate(1.5) blur(16px);backdrop-filter:saturate(1.5) blur(16px);border-bottom:1px solid rgba(18,24,38,.07);box-shadow:none}
+.logo-word{font-weight:800;color:var(--ink)}
+.nav-tab{font-weight:600;letter-spacing:-.005em;transition:color .2s ease,background-color .2s ease}
+.bottom-nav{background:rgba(255,255,255,.9);-webkit-backdrop-filter:saturate(1.5) blur(16px);backdrop-filter:saturate(1.5) blur(16px);border-top:1px solid rgba(18,24,38,.07)}
+
+/* Search: raised, softly lit */
+.searchbar{border-radius:999px;border:1px solid var(--border);box-shadow:var(--shadow-md);background:#fff}
+
+/* Listing cards: one confident hover, richer type for price */
+.prop-card{border-radius:var(--radius-lg);border:1px solid rgba(18,24,38,.06);box-shadow:var(--shadow)}
+.prop-card:hover{transform:translateY(-3px);box-shadow:var(--shadow-md);border-color:rgba(18,24,38,.1)}
+.prop-img img{transition:transform .6s cubic-bezier(.2,.7,.3,1)}
+.prop-card:hover .prop-img img{transform:scale(1.04)}
+.prop-price{font-family:var(--hl-display);font-weight:700;letter-spacing:-.025em}
+.prop-title{font-weight:600;letter-spacing:-.01em;color:var(--ink)}
+
+/* Modals and sheets: larger radius, deeper shadow */
+.modal,.add-modal,.fm-box,.sort-sheet{border-radius:var(--radius-xl);box-shadow:0 30px 80px -20px rgba(18,24,38,.35)}
+.modal-overlay{-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+
+/* Quality floor: keyboard focus, reduced motion */
+:focus-visible{outline:2px solid var(--brand);outline-offset:2px;border-radius:8px}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{transition-duration:.01ms !important;animation-duration:.01ms !important;scroll-behavior:auto !important}}
+</style>
 </head>
 <body>
 
