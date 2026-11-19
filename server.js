@@ -2161,7 +2161,17 @@ app.get('/api/properties', attachUserIfPresent, async (req, res) => {
         doc.currentLocationLink = String(doc.location.currentLocationLink).trim();
       }
       if (_viewerIsAgentAcct) return; // agent accounts keep the full address, lat/lng and map links
+      // Building Address: besides agent accounts, ONLY the listing's own owner gets it — a logged-in owner-side
+      // account whose mobile matches this listing's owner / alt / agent number. Nobody else ever receives it.
+      const _addrKeep = doc.location.address;
+      let _ownerAddr = false;
+      if (_viewerOwnerSide && _viewerMobile && _addrKeep) {
+        const _d10 = x => String(x || '').replace(/\D/g, '').slice(-10);
+        const _oo = doc.owner || {};
+        _ownerAddr = [_oo.phone, _oo.altPhone, _oo.agentPhone].some(n => n && _d10(n) === _viewerMobile.slice(-10));
+      }
       delete doc.location.address;
+      if (_ownerAddr) doc.location.address = _addrKeep;
       delete doc.location.lat;
       delete doc.location.lng;
       delete doc.location.mapLink;
