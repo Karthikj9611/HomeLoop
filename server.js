@@ -970,7 +970,7 @@ const BasicSchema = new mongoose.Schema({
 const LocationSchema = new mongoose.Schema({
   area:    { type: String, required: true },
   city:    { type: String, default: 'Bangalore' },
-  address: { type: String, default: '' },
+  address: { type: String, default: '' }, // optional free-text Building Address (never required, hidden from the public API)
   // 6-digit Indian PIN code, captured separately from the free-text address
   // (auto-extracted from it on the frontend, editable by the owner) so
   // listings can be matched/filtered by postcode without regex-parsing
@@ -1544,6 +1544,18 @@ const MAX_LENGTHS = {
 };
 
 function validatePropertyFields(fields) {
+  // Building Address (location.address) is optional free text. Reject non-string values (they would
+  // otherwise blow up Mongoose casting with a 500), strip control characters and tidy whitespace.
+  // `fields.location` is the same object the create/edit routes go on to save, so this normalises it in place.
+  if (fields.location && fields.location.address !== undefined && fields.location.address !== null) {
+    if (typeof fields.location.address !== 'string') return `Field 'location.address' must be text.`;
+    fields.location.address = fields.location.address
+      .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '')
+      .replace(/\r\n?/g, '\n')
+      .replace(/[ \t]+\n/g, '\n')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
+  }
   for (const [section, urlKeys] of Object.entries(URL_FIELDS_BY_SECTION)) {
     const obj = fields[section] || {};
     for (const k of urlKeys) {
@@ -1620,7 +1632,7 @@ function isEmptyValue(v) {
 
 // Required for every listing type — area/price.rent are already checked (with a
 // type-specific label) right before this runs, so they're deliberately left out
-// here to avoid a duplicate message. Property Name, Owner name and Building live address
+// here to avoid a duplicate message. Property Name, Owner name and Building Address (location.address)
 // are optional; in Property Location only Area, Pincode and the Building
 // Location Link (currentLocationLink) are mandatory.
 const BASE_REQUIRED_FIELDS = [

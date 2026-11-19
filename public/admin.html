@@ -5519,13 +5519,9 @@ tr.nf-flash td{animation:nfFlash 3s ease-out}
       <label class="form-label">Property Name</label>
       <input class="form-input" type="text" id="f-title" autocapitalize="words" onblur="capitalizeWordsInput(this)" oninput="capitalizeWordsInput(this)" />
     </div>
-      <div class="form-group" id="currentLocGroup" style="grid-column:1 / -1">
-        <label class="form-label">Building Location Link <span style="color:var(--brand)">*</span></label>
-        <div style="display:flex;gap:7px;align-items:stretch">
-          <input class="form-input" style="flex:1;min-width:0" type="url" id="f-currentLocationLink" inputmode="url" autocomplete="off" oninput="this.value=this.value.trim()" onchange="onBuildingLinkChange(this)" onpaste="var t=this;setTimeout(function(){onBuildingLinkChange(t)},0)" />
-          <button type="button" onclick="window.open('https://www.google.com/maps','_blank','noopener')" class="loc-act-btn" aria-label="Maps" title="Open Google Maps" style="display:inline-flex;align-items:center;justify-content:center;gap:6px;flex-shrink:0;padding:0 12px;border-radius:9px;border:1.5px solid var(--text);background:var(--bg);color:var(--text);font-size:12px;font-weight:700;cursor:pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg><span class="loc-btn-txt">Maps</span></button>
-          <button type="button" onclick="openCurrentLocLink()" class="loc-act-btn" aria-label="Open in Google Maps" title="Open in Google Maps" style="display:inline-flex;align-items:center;justify-content:center;gap:6px;flex-shrink:0;padding:0 12px;border-radius:9px;border:1.5px solid var(--text);background:var(--bg);color:var(--text);font-size:12px;font-weight:700;cursor:pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg><span class="loc-btn-txt">Navigate</span></button>
-        </div>
+      <div class="form-group" id="buildingAddressGroup" style="grid-column:1 / -1">
+        <label class="form-label">Building Address</label>
+        <textarea class="form-input" id="f-address" rows="3" maxlength="500" autocomplete="off" style="resize:vertical;min-height:72px"></textarea>
       </div>
       <div class="form-group">
         <label class="form-label">Area <span style="color:var(--brand)">*</span></label>
@@ -5538,6 +5534,14 @@ tr.nf-flash td{animation:nfFlash 3s ease-out}
       <div class="form-group" id="pincodeGroup">
         <label class="form-label">Pincode</label>
         <input class="form-input" type="text" id="f-pincode" inputmode="numeric" maxlength="6" oninput="onPincodeInput(this)"/>
+      </div>
+      <div class="form-group" id="currentLocGroup" style="grid-column:1 / -1">
+        <label class="form-label">Building Location Link <span style="color:var(--brand)">*</span></label>
+        <div style="display:flex;gap:7px;align-items:stretch">
+          <input class="form-input" style="flex:1;min-width:0" type="url" id="f-currentLocationLink" inputmode="url" autocomplete="off" oninput="this.value=this.value.trim()" onchange="onBuildingLinkChange(this)" onpaste="var t=this;setTimeout(function(){onBuildingLinkChange(t)},0)" />
+          <button type="button" onclick="window.open('https://www.google.com/maps','_blank','noopener')" class="loc-act-btn" aria-label="Maps" title="Open Google Maps" style="display:inline-flex;align-items:center;justify-content:center;gap:6px;flex-shrink:0;padding:0 12px;border-radius:9px;border:1.5px solid var(--text);background:var(--bg);color:var(--text);font-size:12px;font-weight:700;cursor:pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg><span class="loc-btn-txt">Maps</span></button>
+          <button type="button" onclick="openCurrentLocLink()" class="loc-act-btn" aria-label="Open in Google Maps" title="Open in Google Maps" style="display:inline-flex;align-items:center;justify-content:center;gap:6px;flex-shrink:0;padding:0 12px;border-radius:9px;border:1.5px solid var(--text);background:var(--bg);color:var(--text);font-size:12px;font-weight:700;cursor:pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg><span class="loc-btn-txt">Navigate</span></button>
+        </div>
       </div>
     </div>
     </div>
@@ -18602,7 +18606,7 @@ function cloneAdminProperty(id) {
   resetListingForm();
   applyImportedProperty(full);
   // Of the location details a clone keeps ONLY the Building Location Link (and Property Name).
-  ['f-location', 'f-pincode', 'f-latitude', 'f-longitude']
+  ['f-location', 'f-pincode', 'f-address', 'f-latitude', 'f-longitude']
     .forEach(fid => { const el = document.getElementById(fid); if (el) el.value = ''; });
   onFTypeChange(document.getElementById('f-type').value);
 
@@ -18882,6 +18886,7 @@ function applyImportedProperty(p) {
   if (location.lat != null) sv('f-latitude', location.lat);
   if (location.lng != null) sv('f-longitude', location.lng);
   sv('f-currentLocationLink', location.currentLocationLink);
+  sv('f-address', location.address);
 
   sv('f-title', owner.propertyName);
   sv('f-ownerName', owner.name);
@@ -19048,6 +19053,7 @@ var WA_KEY_MAP = {
   propertyname: 'f-title', buildingname: 'f-title', title: 'f-title',
   area: 'f-location', locality: 'f-location', city: 'f-city',
   pincode: 'f-pincode', pin: 'f-pincode',
+  buildingaddress: 'f-address', fulladdress: 'f-address', address: 'f-address',
   googlemapslocationlink: 'f-currentLocationLink', googlemapslink: 'f-currentLocationLink',
   locationlink: 'f-currentLocationLink', currentlocationlink: 'f-currentLocationLink', maplink: 'f-currentLocationLink',
   ownername: 'f-ownerName', name: 'f-ownerName', phone: 'f-ownerPhone', phonenumber: 'f-ownerPhone', mobile: 'f-ownerPhone',
@@ -19068,7 +19074,7 @@ var WA_KEY_MAP = {
   amenities: 'amenities', videotourlink: 'f-videoUrl', videolink: 'f-videoUrl', description: 'f-desc'
 };
 var WA_LABELS = {
-  'f-listedBy': 'Listed by', 'f-title': 'Property name', 'f-location': 'Area', 'f-city': 'City', 'f-pincode': 'Pincode',
+  'f-listedBy': 'Listed by', 'f-title': 'Property name', 'f-location': 'Area', 'f-city': 'City', 'f-pincode': 'Pincode', 'f-address': 'Building address',
   'f-currentLocationLink': 'Location link', 'f-ownerName': 'Owner name', 'f-ownerPhone': 'Phone', 'f-ownerAltPhone': 'Alternate number',
   'f-ownerCaretakerPhone': 'Caretaker number', 'f-ownerEmail': 'Email', 'f-contactTime': 'Contact time', 'f-sameAsBuildingAddress': 'Owner in same building',
   'f-rent': 'Monthly rent', 'f-deposit': 'Security deposit', 'f-maintenance': 'Maintenance', 'f-escalation': 'Escalation',
@@ -20001,7 +20007,7 @@ async function watermarkImageFile(file) {
 const OPTIONAL_FIELD_IDS = new Set([
   'f-importFile', 'f-importText',
   // Property Location: only Area, Pincode and Building Location Link are mandatory
-  'f-title',
+  'f-title', 'f-address',   // Building Address is optional
   'f-latitude', 'f-longitude',
   'f-imgFileInput', 'f-imgCameraInput',
   'f-amenities-extra', 'f-desc',   // description is optional (same as index.html)
@@ -20577,7 +20583,8 @@ async function adminSubmitListing() {
       area:    loc,
       city:    document.getElementById('f-city').value.trim() || 'Bangalore',
       pincode: gv('f-pincode') || null,
-      // address / lat / lng / mapLink are not collected or sent (same as the user form): new listings
+      address: (document.getElementById('f-address') ? document.getElementById('f-address').value.trim() : ''),
+      // lat / lng / mapLink are not collected or sent (same as the user form): new listings
       // store them empty, and on edit the server merge keeps whatever the listing already has.
       currentLocationLink: gv('f-currentLocationLink'),
     },

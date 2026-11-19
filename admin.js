@@ -2354,6 +2354,7 @@ self.addEventListener('notificationclick', event => {
           displayPrice: formatPrice(price.rent, basic.status),
           city:         location.city || '',
           loc:          location.area || '',
+          address:      location.address || '', // optional Building Address (free text)
           facing:       property.facing || '',
           age:          property.age || '',
           views:        doc.views != null ? doc.views : 0,
