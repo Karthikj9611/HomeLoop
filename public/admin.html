@@ -18201,7 +18201,17 @@ function openAdminAddPropertyModal() {
   lockBodyScroll();
 }
 
-function openAdminListingModal(id, mode, opts) {
+async function openAdminListingModal(id, mode, opts) {
+  // Booked (or otherwise not-yet-cached) listings: load the full admin list once so they can still be viewed.
+  if (!_adminPropCache[id] || !_adminPropCache[id].full) {
+    try {
+      const res = await fetch(BASE + '/api/admin/properties', { headers: authHeaders() });
+      if (res.ok) {
+        const all = await res.json();
+        (Array.isArray(all) ? all : []).forEach(x => { if (x && x._id) _adminPropCache[x._id] = x; });
+      }
+    } catch (err) { /* fall through to the not-found message */ }
+  }
   const p = _adminPropCache[id];
   if (!p) { alert('Could not find that listing'); return; }
   const full = p.full || {};

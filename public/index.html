@@ -3649,7 +3649,7 @@ main.tab-explore .empty-state{display:none !important}
 .view-hdr-act svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;flex-shrink:0}
 .view-hdr-act:hover{border-color:var(--brand);color:var(--brand)}
 .view-hdr-act.booked-active{border-color:#e04444;background:#fdecec;color:#e04444}
-@media (max-width:420px){.view-hdr-act{padding:0;width:32px;justify-content:center}.view-hdr-act span{display:none}}
+@media (max-width:640px){.view-hdr-act{padding:0;width:34px;height:34px;justify-content:center}.view-hdr-act span{display:none}.view-hdr-act svg{width:16px;height:16px}}
 #scheduleModal{z-index:360}
 #paymentModal{z-index:361}
 /* The login/sign-up prompt can now pop up over a property's photo zoom
@@ -4336,6 +4336,11 @@ main.tab-explore .empty-state{display:none !important}
 .pm-compact .pm-nm{font-size:11.5px;font-weight:600;color:var(--text-2);min-width:0;overflow:hidden;text-overflow:ellipsis;flex:0 1 auto}
 .pm-compact .pm-bhk{flex-shrink:0;font-weight:700}
 .pm-compact .pm-line-main > .pm-nm::before,.pm-compact .pm-line-main > .pm-bhk::before{content:"-";color:var(--text-3);font-weight:500;margin-right:6px}
+/* 2-line header: line 1 = property name - id, line 2 = location - BHK (dash only between the two) */
+.pm-compact .pm-line-sub .pm-loc::before{content:none !important;margin:0 !important}
+.pm-compact .pm-line-sub > .pm-bhk::before{content:none}
+.pm-compact .pm-line-sub .pm-loc:not(:empty) + .pm-bhk::before{content:"-";color:var(--text-3);font-weight:500;margin-right:6px}
+.pm-compact .pm-line-sub{margin-top:2px}
 .pm-compact .pm-rent{font-weight:800;color:var(--brand)}
 .pm-compact .pm-desc{margin-top:5px;font-size:11.5px;line-height:1.4;color:var(--text-2);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;white-space:normal;word-break:break-word}
 .pm-compact .pm-d{display:inline-flex;align-items:center;gap:4px}
@@ -4380,6 +4385,22 @@ main.tab-explore .empty-state{display:none !important}
 .pm-compact .pm-line3.pm-line3-n > .pm-d{align-items:flex-start;text-align:left;padding:0 8px}
 .pm-compact .pm-line3.pm-line3-n > .pm-d:first-child{padding-left:0}
 .pm-compact .pm-line3 > .pm-d-name .pm-v{max-width:100%;white-space:normal;word-break:break-word;line-height:1.25}
+/* Stats row as a real table: bordered grid, shaded label header row, value row beneath */
+.pm-compact .pm-line3.pm-line3{gap:0;border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-top:6px}
+.pm-compact .pm-line3.pm-line3 > .pm-d{display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;text-align:center;gap:0;padding:0;min-width:0;border-left:1px solid var(--border)}
+.pm-compact .pm-line3.pm-line3 > .pm-d:first-child{border-left:0;padding:0}
+.pm-compact .pm-line3.pm-line3 > .pm-d .pm-k{display:block;order:0;background:rgba(128,128,128,.10);padding:4px 3px;text-align:center}
+.pm-compact .pm-line3.pm-line3 > .pm-d .pm-k b{display:inline;order:0;font-size:10.5px;font-weight:700;color:var(--text-3);margin:0}
+.pm-compact .pm-line3.pm-line3 > .pm-d .pm-emo{font-size:12px;margin-right:3px}
+.pm-compact .pm-line3.pm-line3 > .pm-d .pm-v{order:1;display:block;padding:6px 3px;border-top:1px solid var(--border);text-align:center;font-size:13px}
+.pm-compact .pm-line3.pm-line3 > .pm-d-booked{grid-column:1/-1;flex-direction:row;justify-content:flex-start;text-align:left;border-left:0;border-top:1px solid var(--border);padding:5px 8px}
+/* Left alignment: name/id line, location/BHK line, stats table and description all start on the same left edge */
+.pm-compact .profile-mini-body > *{margin-left:0;padding-left:0;text-indent:0}
+.pm-compact .pm-line{justify-content:flex-start}
+.pm-compact .pm-line > :empty{display:none}
+.pm-compact .pm-line > :first-child,.pm-compact .pm-line > :first-child::before{margin-left:0;padding-left:0}
+.pm-compact .pm-line3.pm-line3{margin-left:0;margin-right:0}
+.pm-compact .pm-desc{margin-left:0;padding-left:0}
 .pm-compact .pm-line-phones{margin-top:5px;gap:12px;flex-wrap:wrap}
 .pm-phone{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;font-weight:700;color:#16a34a;text-decoration:none;letter-spacing:.2px}
 .pm-phone svg{width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2.2;flex-shrink:0}
@@ -15103,7 +15124,10 @@ function openDetail(id) {
 }
 function openDetailReal(id) {
   syncViewerOwnerClass();
-  const p = PROPERTIES.find(x => x.id === id) || BOOKED_PROPERTIES.find(x => x.id === id);
+  const p = PROPERTIES.find(x => x.id === id) || BOOKED_PROPERTIES.find(x => x.id === id)
+    // Booked listings in My Account may not be in either list — fall back to the user's own listings / saved items so they can still be viewed
+    || ((typeof MY_LISTINGS_CACHE !== 'undefined' && Array.isArray(MY_LISTINGS_CACHE)) ? MY_LISTINGS_CACHE.find(x => String(x.id) === String(id)) : null)
+    || ((typeof shortlistedData !== 'undefined' && shortlistedData) ? shortlistedData[id] : null);
   if (!p) return;
   closeAllFd();        // clicks that reach here (card body, or an image/icon
                         // whose own onclick stopped propagation) may never
@@ -18098,12 +18122,13 @@ function myListingCardHtml(p, _opt) {
         <div class="pm-line pm-line2 pm-line-main">
           ${(p.basic?.status && p.basic.status !== 'For Rent') ? `<span class="profile-status-pill">${esc(p.basic.status)}</span>` : ''}
           ${(p.booked && !_noPhones) ? `<span class="profile-status-pill booked-pill">Booked</span>` : ''}
-          <span class="pm-id">${esc(p.propertyId) || 'Untitled listing'}</span>
-          ${(() => { const _nm = p.owner?.propertyName; return _nm ? `<span class="pm-nm">${esc(_nm)}</span>` : ''; })()}
-          <span class="pm-loc">${esc(p.location?.area)}</span>
-          ${(() => { const _b = String(p.property?.bhk || '').replace(/\s*BHK\s*$/i, '').trim(); return _b ? `<span class="pm-nm pm-bhk">${esc(_b)} BHK</span>` : ''; })()}
+          ${(() => { const _nm = p.owner?.propertyName; return _nm
+            ? `<span class="pm-id">${esc(_nm)}</span><span class="pm-nm pm-pid">${esc(p.propertyId)}</span>`
+            : `<span class="pm-id">${esc(p.propertyId) || 'Untitled listing'}</span>`; })()}
           ${p.visitCount > 0 ? `<span class="profile-status-pill" style="background:var(--brand-light);color:var(--brand)">${p.visitCount} visit${p.visitCount===1?'':'s'}</span>` : ''}
         </div>
+        ${(() => { const _b = String(p.property?.bhk || '').replace(/\s*BHK\s*$/i, '').trim(); const _l = p.location?.area;
+          return (_l || _b) ? `<div class="pm-line pm-line2 pm-line-main pm-line-sub"><span class="pm-loc">${esc(_l)}</span>${_b ? `<span class="pm-nm pm-bhk">${esc(_b)} BHK</span>` : ''}</div>` : ''; })()}
         ${(() => {
           const _fd = v => { const t = v ? formatDateDisplay(v) : ''; return t ? esc(t) : ''; };
           const bookedD = (p.booked && !_noPhones) ? _fd(p.bookedAt || p.bookedOn) : '';
