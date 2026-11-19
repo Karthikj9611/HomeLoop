@@ -1866,6 +1866,7 @@ app.get('/api/properties', attachUserIfPresent, async (req, res) => {
     // Logged-in tenant with admin "Public call" ON → owner numbers on listings (applied below).
     // If the tenant also subscribed for ONE BHK type, ONLY that BHK's listings are loaded at all.
     let _viewerPublicCall = false;
+    let _viewerOwnerPublic = false;
     let _viewerIsAgent = false; // agent account with admin Public call ON: call details on every listing, no plan filters
     let _viewerIsAgentAcct = false; // ANY logged-in agent account (HomeLoop employee): gets the COMPLETE listing, hidden fields included (owner, address, lat/lng, map links…)
     let _viewerBhk = '';
@@ -1885,6 +1886,8 @@ app.get('/api/properties', attachUserIfPresent, async (req, res) => {
       _viewerOwnerSide = !!(_viewer && ACCT_OWNER_SIDE.includes(_viewer.accountType) && _viewer.accountType !== 'agent');
       _viewerMobile = (_viewer && _viewer.mobile) ? normalizeMobile(_viewer.mobile) : '';
       _viewerIsAgent = !!(_viewer && _viewer.accountType === 'agent' && _viewer.publicCall); // admin Public call toggle on an agent = works like a subscription, but no plan/filters/subscription record
+      // owner / pg / builder / broker with admin Public call ON: call details + navigate on THEIR OWN listings only
+      _viewerOwnerPublic = !!(_viewer && _viewer.publicCall && ACCT_OWNER_SIDE.includes(_viewer.accountType) && _viewer.accountType !== 'agent');
       _viewerPublicCall = !!(_viewer && _viewer.publicCall && (_viewer.accountType || 'customer') === 'customer');
       // Plan just started but the 1-minute start sweep hasn't switched Public call on yet → treat it as ON now.
       if (_viewer && !_viewerPublicCall && (_viewer.accountType || 'customer') === 'customer' && !_viewer.subscriptionStartHandled) {
@@ -2031,6 +2034,18 @@ app.get('/api/properties', attachUserIfPresent, async (req, res) => {
     //    and live-location link on EVERY listing — like a subscription, but no subscription record and
     //    no plan filters (agents always see all listings). Toggle OFF → normal behaviour.
     if (_viewerIsAgent) docs.forEach(d => { d.ownerPhoneCall = true; d.ownerDirectCall = true; });
+
+    // 3b) Owner-side switch: an owner / pg / builder / broker with Public call ON gets call details + navigate
+    //     ONLY on listings that are theirs (posted from their account, or their login mobile is the owner / alt / agent number).
+    if (_viewerOwnerPublic && req.userId) {
+      const _m10 = String(_viewerMobile || '').replace(/\D/g, '').slice(-10);
+      docs.forEach(d => {
+        const o = d.owner || {};
+        const mine = (d.userId && String(d.userId) === String(req.userId)) ||
+          (_m10.length === 10 && [o.phone, o.altPhone, o.agentPhone].some(n => n && String(n).replace(/\D/g, '').slice(-10) === _m10));
+        if (mine) { d.ownerPhoneCall = true; d.ownerDirectCall = true; }
+      });
+    }
 
     // 4) Single Property Plan: a logged-in user whose ₹150 payment for a listing was verified gets that ONE
     //    listing's owner number(s) + Navigate/location link — nothing else changes for other listings.
@@ -2200,9 +2215,9 @@ app.get('/api/properties', attachUserIfPresent, async (req, res) => {
     // entitled tenant is private + uncached, and every response varies by session key so a shared cache
     // can never hand one viewer's response to another.
     res.vary('x-user-key');
-    res.set('Cache-Control', (_viewerPublicCall || _viewerIsAgent || _viewerIsAgentAcct || _singleUnlocked) ? 'private, no-store' : 'private, max-age=30');
+    res.set('Cache-Control', (_viewerPublicCall || _viewerIsAgent || _viewerOwnerPublic || _viewerIsAgentAcct || _singleUnlocked) ? 'private, no-store' : 'private, max-age=30');
     // bhkFilter: which BHK restriction was applied for this viewer ('' = none) — handy for checking in DevTools → Network.
-    res.json({ properties: mapped, total: mapped.length, bhkFilter: _viewerBhk, subscriptionFrom: _viewerSubFrom, subscriptionTo: _viewerSubTo, agentPublicCall: !!_viewerIsAgent });
+    res.json({ properties: mapped, total: mapped.length, bhkFilter: _viewerBhk, subscriptionFrom: _viewerSubFrom, subscriptionTo: _viewerSubTo, agentPublicCall: !!_viewerIsAgent, ownerPublicCall: !!_viewerOwnerPublic });
   } catch (err) {
     console.error('GET /api/properties error:', err);
     res.status(500).json({ message: 'Error fetching properties' });
