@@ -4256,6 +4256,29 @@ main.tab-explore .empty-state{display:none !important}
 .ag-owner-back{flex:none;width:34px;height:34px;border-radius:50%;border:1px solid var(--border);background:var(--bg);display:flex;align-items:center;justify-content:center;cursor:pointer}
 .ag-owner-back svg{width:16px;height:16px;stroke:var(--text);fill:none;stroke-width:2.2}
 .ag-owner-head-t{flex:1;min-width:0}
+/* modern owner list rows */
+#myListingsContent > .ag-owner-row{gap:14px;padding:14px 16px;margin-bottom:10px;border:1px solid rgba(17,24,39,.07);border-radius:18px;background:#fff;box-shadow:0 1px 2px rgba(17,24,39,.04),0 6px 16px rgba(17,24,39,.05);transition:transform .18s,box-shadow .18s,border-color .18s,background .18s}
+#myListingsContent > .ag-owner-row:hover,#myListingsContent > .ag-owner-row:active{background:#fff;border-color:rgba(224,58,82,.35);transform:translateY(-2px);box-shadow:0 10px 26px rgba(224,58,82,.14)}
+#myListingsContent > .ag-owner-row .ag-owner-av{width:46px;height:46px;font-size:17px;color:#fff;background:linear-gradient(135deg,#ff7a8c,var(--brand));box-shadow:0 4px 10px rgba(224,58,82,.28)}
+#myListingsContent > .ag-owner-row .ag-owner-name{font-size:15px;letter-spacing:-.01em}
+#myListingsContent > .ag-owner-row .ag-owner-num{font-size:12.5px;color:var(--text-3,#6b7280);letter-spacing:.02em;margin-top:2px}
+.ag-owner-stats{display:flex;gap:6px;margin-top:7px;flex-wrap:wrap}
+.ag-st{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px}
+.ag-st i{width:6px;height:6px;border-radius:50%;background:currentColor}
+.ag-st-av{background:#e8f8ee;color:#16a34a}
+.ag-st-bk{background:#f1f3f6;color:#6b7280}
+#myListingsContent > .ag-owner-row .ag-owner-count{background:var(--brand-light);color:var(--brand);font-size:12px;padding:5px 11px}
+#myListingsContent > .ag-owner-row .ag-owner-chev{width:30px;height:30px;padding:7px;border-radius:50%;background:#f5f6f8;stroke:var(--text-2);transition:background .18s,stroke .18s,transform .18s}
+#myListingsContent > .ag-owner-row:hover .ag-owner-chev{background:var(--brand);stroke:#fff;transform:translateX(2px)}
+.ag-owner-match{font-size:12px;font-weight:700;color:var(--brand);margin-top:3px;line-height:1.35;overflow-wrap:anywhere}
+/* owner view = ONE panel: header, filters and every property card sit inside the owner's own container */
+.ag-owner-panel{position:relative;border:1.5px solid var(--brand);border-radius:18px;background:linear-gradient(180deg,var(--brand-light),var(--bg) 140px);padding:12px;box-shadow:0 6px 20px rgba(224,58,82,.10)}
+.ag-owner-panel .ag-owner-head{margin:0 0 10px;padding:0 0 12px;border-bottom:1px dashed rgba(224,58,82,.35)}
+.ag-owner-panel .ag-owner-av{width:42px;height:42px;background:var(--brand);color:#fff;font-size:17px}
+.ag-owner-panel .ag-owner-head-t .ag-owner-num{margin-top:3px}
+.ag-owner-panel .ag-owner-sum{font-size:11.5px;font-weight:700;color:var(--brand);margin-top:2px}
+.ag-owner-panel .profile-mini-card:last-child{margin-bottom:0}
+.ag-owner-panel .profile-list-empty{margin:0}
 .profile-mini-card{
   display:flex;gap:13px;align-items:center;padding:13px;
   border:1.5px solid var(--border);border-radius:15px;margin-bottom:11px;
@@ -8655,7 +8678,7 @@ h1,h2,h3,.logo-word,.section-title{font-family:var(--hl-display);letter-spacing:
       <!-- ── Tab: My Listings ── -->
       <div class="profile-tab-panel" id="profilePanelListings">
         <div id="myListingsSummary"></div>
-        <div class="pm-search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input id="myListingsSearch" type="search" placeholder="Search by property ID or mobile number" autocomplete="off" oninput="renderMyListings()" /></div>
+        <div class="pm-search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input id="myListingsSearch" type="search" placeholder="Search by property ID, name, owner or mobile" autocomplete="off" oninput="renderMyListings()" /></div>
         <div id="myListingsContent">
           <div class="profile-loading">Loading your listings…</div>
         </div>
@@ -8664,7 +8687,7 @@ h1,h2,h3,.logo-word,.section-title{font-family:var(--hl-display);letter-spacing:
       <!-- ── Tab: Booked ── -->
       <div class="profile-tab-panel" id="profilePanelBooked">
         <div id="myBookedSummary"></div>
-        <div class="pm-search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input id="myBookedSearch" type="search" placeholder="Search booked by property ID or mobile number" autocomplete="off" oninput="renderMyListings()" /></div>
+        <div class="pm-search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input id="myBookedSearch" type="search" placeholder="Search booked by property ID, name, owner or mobile" autocomplete="off" oninput="renderMyListings()" /></div>
         <div id="myBookedContent">
           <div class="profile-loading">Loading booked listings…</div>
         </div>
@@ -18297,7 +18320,7 @@ function agentOwnerListHtml(groups) {
   const chev = '<svg class="ag-owner-chev" viewBox="0 0 24 24" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg>';
   return groups.map(g => `<div class="ag-owner-row" onclick="openAgentOwner('${g.key}')">
     <div class="ag-owner-av">${esc((g.name.trim()[0] || '?').toUpperCase())}</div>
-    <div class="ag-owner-main"><div class="ag-owner-name">${esc(g.name)}</div><div class="ag-owner-num">${g.digits || 'No number'} · ${g.items.filter(p => !p.booked).length} available · ${g.items.filter(p => p.booked).length} booked</div></div>
+    <div class="ag-owner-main"><div class="ag-owner-name">${esc(g.name)}</div><div class="ag-owner-num">${g.digits || 'No number'}</div><div class="ag-owner-stats"><span class="ag-st ag-st-av"><i></i>${g.items.filter(p => !p.booked).length} available</span><span class="ag-st ag-st-bk"><i></i>${g.items.filter(p => p.booked).length} booked</span></div>${g.matched ? `<div class="ag-owner-match">${g.matched.slice(0, 3).map(p => esc(((p.owner && p.owner.propertyName) || 'Property') + ' · ' + (p.propertyId || ''))).join(' &nbsp;|&nbsp; ')}${g.matched.length > 3 ? ' +' + (g.matched.length - 3) + ' more' : ''}</div>` : ''}</div>
     <div class="ag-owner-count">${g.items.length} propert${g.items.length === 1 ? 'y' : 'ies'}</div>${chev}</div>`).join('');
 }
 window._agFilter = 'all';
@@ -18315,9 +18338,10 @@ function agentOwnerDetailHtml(g) {
   g.items.forEach(p => ownerDirectNumbers(p).forEach(n => { if (!_nums.includes(n.digits)) _nums.push(n.digits); }));
   if (g.digits && !_nums.includes(g.digits)) _nums.unshift(g.digits);
   const _acts = _nums.length ? `<div class="ag-owner-acts">${_nums.map(d => `<a class="ag-ico ag-ico-call" href="tel:+91${d}" title="Call ${d}" aria-label="Call ${d}">${_ph}</a><a class="ag-ico ag-ico-wa" href="https://wa.me/91${d}" target="_blank" rel="noopener" title="WhatsApp ${d}" aria-label="WhatsApp ${d}">${_wa}</a>`).join('')}</div>` : '';
-  return `<div class="ag-owner-head"><button type="button" class="ag-owner-back" onclick="closeAgentOwner()" aria-label="Back to owners">${back}</button>
+  return `<div class="ag-owner-panel"><div class="ag-owner-head"><button type="button" class="ag-owner-back" onclick="closeAgentOwner()" aria-label="Back to owners">${back}</button>
+    <div class="ag-owner-av">${esc((g.name.trim()[0] || '?').toUpperCase())}</div>
     <div class="ag-owner-head-t"><div class="ag-owner-name">${esc(g.name)}</div><div class="ag-owner-num">${g.digits || 'No number'}</div></div>${_acts}</div>`
-    + chips + (_shown.length ? _shown.map(p => myListingCardHtml(p, 'noPhones')).join('') : '<div class="profile-list-empty">No listings here.</div>');
+    + chips + (_shown.length ? _shown.map(p => myListingCardHtml(p, 'noPhones')).join('') : '<div class="profile-list-empty">No listings here.</div>') + '</div>';
 }
 
 function renderMyListings() {
@@ -18364,8 +18388,10 @@ function renderMyListings() {
   const _match = (p, q) => {
     if (!q) return true;
     if (String(p.propertyId || '').toLowerCase().includes(q)) return true;
+    if (String((p.owner && p.owner.propertyName) || '').toLowerCase().includes(q)) return true;
+    if (String((p.owner && p.owner.name) || '').toLowerCase().includes(q)) return true;
     const qd = q.replace(/\D/g, '');
-    return _isAg && qd.length >= 2 && ownerDirectNumbers(p).some(n => n.digits.includes(qd));
+    return _isAg && qd.length >= 2 && [p.owner && p.owner.phone, p.owner && p.owner.altPhone, p.owner && p.owner.caretakerPhone].some(n => String(n || '').replace(/\D/g, '').includes(qd));
   };
   const _active = MY_LISTINGS_CACHE.filter(p => !p.booked).sort((a, b) => (new Date(a.createdAt || 0).getTime() || 0) - (new Date(b.createdAt || 0).getTime() || 0)); // oldest listed first, newest last
   const _bt = p => new Date(p.bookedAt || p.bookedOn || p.createdAt || 0).getTime() || 0; // when it was booked (falls back to listed date)
@@ -18380,12 +18406,17 @@ function renderMyListings() {
       ? shown.map(myListingCardHtml).join('')
       : `<div class="profile-list-empty">${q ? 'No listing found for “' + esc(q) + '”.' : emptyMsg}</div>`;
   };
-  if (_isAg && !_q) {
+  if (_isAg) {
     const _all = [..._active, ...MY_LISTINGS_CACHE.filter(p => p.booked).sort((a, b) => (_bt(b) - _bt(a)) || (new Date(b.createdAt || 0) - new Date(a.createdAt || 0)))];
     const _groups = agentOwnerGroups(_all);
     const _sel = window._agOwner && _groups.find(g => g.key === window._agOwner);
     if (!_sel) window._agOwner = null;
-    wrap.innerHTML = _sel ? agentOwnerDetailHtml(_sel) : agentOwnerListHtml(_groups);
+    if (_sel) wrap.innerHTML = agentOwnerDetailHtml(_sel);
+    else if (_q) {
+      // searching: still grouped by owner; each owner shows which of their properties matched
+      const _hits = _groups.map(g => { const m = g.items.filter(p => _match(p, _q)); return m.length ? Object.assign({}, g, { matched: m }) : null; }).filter(Boolean);
+      wrap.innerHTML = _hits.length ? agentOwnerListHtml(_hits) : `<div class="profile-list-empty">No listing found for “${esc(_q)}”.</div>`;
+    } else wrap.innerHTML = agentOwnerListHtml(_groups);
   } else {
     _fill(wrap, _isAg ? [..._active, ...MY_LISTINGS_CACHE.filter(p => p.booked).sort((a, b) => _bt(b) - _bt(a))] : _active, _q, 'No active listings. Booked listings are in the Booked tab.');
   }
