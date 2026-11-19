@@ -1845,7 +1845,7 @@ app.post('/api/properties', listingLimiter, requireUser, requireOwner, requireVe
       type:    'property_listed',
       title:   'New property listed',
       message: `${fields.owner.propertyName || 'Untitled'} — ${fields.location.area || ''} (${status}), ${propertyId}`,
-      meta:    { propertyId, status, userId: req.userId || null },
+      meta:    { propertyId, mongoId: String(saved._id), status, userId: req.userId || null },
     }); // fire-and-forget; notifyAdmin swallows its own errors, doesn't block the response
 
     res.status(201).json({ message: 'Property added successfully!', property: saved });

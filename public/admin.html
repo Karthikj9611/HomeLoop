@@ -3406,6 +3406,10 @@ table.dataTable thead .sorting_desc{background-image:none!important;padding-righ
 .nf-row:last-child{border-bottom:none}
 .nf-row:hover{background:var(--surface2)}
 .nf-row.unread{background:#fff8ec}
+.nf-body.nf-clickable{cursor:pointer}
+.nf-act.view{color:var(--ink);border-color:var(--ink)}
+tr.nf-flash td{animation:nfFlash 3s ease-out}
+@keyframes nfFlash{0%,60%{background:#ffe9a8!important}100%{}}
 .nf-row input[type=checkbox],.nf-selbar input[type=checkbox]{width:16px;height:16px;margin-top:11px;cursor:pointer;accent-color:var(--ink)}
 .nf-selbar input[type=checkbox]{margin-top:0}
 .nf-ico{flex:0 0 38px;width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--ink);color:var(--gold2,#e8c16a);font-size:0.9rem}
@@ -6721,15 +6725,16 @@ function nfRender(){
     return '<div class="nf-row' + (n.read ? '' : ' unread') + '" data-id="' + id + '">' +
       (canEdit ? '<input type="checkbox" ' + (nfSel.has(String(n._id)) ? 'checked ' : '') + 'onchange="nfToggle(\'' + id + '\', this.checked)" aria-label="Select notification">' : '') +
       '<div class="nf-ico"><i class="fas ' + m.icon + '"></i></div>' +
-      '<div class="nf-body">' +
+      '<div class="nf-body nf-clickable" onclick="nfView(\'' + id + '\')" title="Open record">' +
         '<div class="nf-title">' + (n.read ? '' : '<span class="nf-dot" title="Unread"></span>') + esc(n.title) + '</div>' +
         (n.message ? '<div class="nf-msg">' + esc(n.message) + '</div>' : '') +
         '<div class="nf-meta"><span class="nf-type">' + esc(m.label) + '</span><span><i class="far fa-clock"></i> ' + nfWhen(n.createdAt) + '</span></div>' +
       '</div>' +
-      (canEdit ? '<div class="nf-actions">' +
-        (n.read ? '' : '<button type="button" class="nf-act" onclick="nfMarkRead(\'' + id + '\')"><i class="fas fa-check"></i> Mark read</button>') +
-        '<button type="button" class="nf-act danger" onclick="nfDelete(\'' + id + '\')"><i class="fas fa-trash"></i> Delete</button>' +
-      '</div>' : '') +
+      '<div class="nf-actions">' +
+        (nfTarget(n) ? '<button type="button" class="nf-act view" onclick="nfView(\'' + id + '\')"><i class="fas fa-arrow-up-right-from-square"></i> View</button>' : '') +
+        (canEdit ? (n.read ? '' : '<button type="button" class="nf-act" onclick="nfMarkRead(\'' + id + '\')"><i class="fas fa-check"></i> Mark read</button>') +
+        '<button type="button" class="nf-act danger" onclick="nfDelete(\'' + id + '\')"><i class="fas fa-trash"></i> Delete</button>' : '') +
+      '</div>' +
     '</div>';
   }).join('');
   nfUpdateSel();
@@ -6740,6 +6745,59 @@ function nfUpdateSel(){
   const num = document.getElementById('nfSelNum'); if(num) num.textContent = n;
   const all = document.getElementById('nfSelAll');
   if(all){ const vis = nfVisible(); all.checked = vis.length > 0 && vis.every(x => nfSel.has(String(x._id))); }
+}
+/* ── OPEN THE RECORD BEHIND A NOTIFICATION ──
+   View jumps to the tab, finds the row (by Mongo _id from notification.meta; property
+   falls back to the readable property code for older notifications), opens the detail
+   modal where one exists, otherwise scrolls to and flashes the row. */
+const NF_TARGETS = {
+  user_registered:         { tab:'customers',      table:() => dataTable,          match:(r,m) => String(r._id) === String(m.userId || m.mongoId) || (m.userReadableId && r.userId === m.userReadableId), open:r => openCustomerModal(r.mobile || r._id) },
+  property_listed:         { tab:'properties',     table:() => propTable,          match:(r,m) => (m.mongoId && String(r._id) === String(m.mongoId)) || (m.propertyId && r.propertyId === m.propertyId), open:r => openAdminPropModal(r._id) },
+  appointment_booked:      { tab:'appointments',   table:() => apptTable,          match:(r,m) => String(r._id) === String(m.mongoId), open:r => { _apptCache[r._id] = r; openApptModal(r._id); } },
+  review_posted:           { tab:'user-reviews',   table:() => userReviewsTable,   match:(r,m) => String(r._id) === String(m.mongoId) },
+  honest_review_submitted: { tab:'honest-reviews', table:() => honestReviewsTable, match:(r,m) => String(r._id) === String(m.mongoId) },
+  referral_submitted:      { tab:'referrals',      table:() => referralsTable,     match:(r,m) => String(r._id) === String(m.mongoId) },
+  partner_added:           { tab:'partners',       table:() => partnersTable,      match:(r,m) => String(r._id) === String(m.mongoId) },
+  payment_submitted:       { tab:'payments',       table:() => paymentsTable,      match:(r,m) => String(r._id) === String(m.mongoId) },
+};
+function nfTarget(n){
+  const t = NF_TARGETS[n.type];
+  if(!t) return null;
+  try{ if(typeof canViewTab === 'function' && !canViewTab(t.tab)) return null; }catch(e){}
+  return t;
+}
+function nfFindRow(table, t, meta){
+  let found = null;
+  table.rows().every(function(){ if(!found && t.match(this.data(), meta)) found = { idx:this.index(), data:this.data() }; });
+  return found;
+}
+async function nfView(id){
+  const n = nfCache.find(x => String(x._id) === String(id));
+  const t = n && nfTarget(n);
+  if(!t) return;
+  const meta = n.meta || {};
+  if(!n.read && canAct('notifications')) nfCall('/api/admin/notifications/' + encodeURIComponent(id) + '/read', 'PATCH').then(() => { n.read = true; nfRender(); fetchNotifications(); });
+  switchTab(t.tab);
+  const table = t.table();
+  if(!table){ showAlertModal('That table has not loaded yet. Try again in a moment.', { variant:'error', title:'Could not open' }); return; }
+  let hit = nfFindRow(table, t, meta);
+  if(!hit){ // new record may not be in the loaded data yet — reload and look again
+    await new Promise(res => { try{ table.ajax.reload(res, false); }catch(e){ res(); } });
+    hit = nfFindRow(table, t, meta);
+  }
+  if(!hit){ showAlertModal('This record could not be found. It may have been deleted.', { title:'Not found' }); return; }
+  if(t.open){ t.open(hit.data); return; }
+  const pos = () => table.rows({ order:'current', search:'applied' }).indexes().toArray().indexOf(hit.idx);
+  if(pos() < 0){ table.search('').columns().search('').draw(); }
+  const len = table.page.len(), p = pos();
+  if(len > 0 && p >= 0) table.page(Math.floor(p / len)).draw(false);
+  setTimeout(() => {
+    const node = table.row(hit.idx).node();
+    if(!node) return;
+    node.scrollIntoView({ behavior:'smooth', block:'center' });
+    node.classList.add('nf-flash');
+    setTimeout(() => node.classList.remove('nf-flash'), 3200);
+  }, 120);
 }
 function nfSetFilter(t){ nfFilter = t; nfRender(); }
 function nfSetSearch(v){ nfSearchText = v || ''; nfRender(); }
