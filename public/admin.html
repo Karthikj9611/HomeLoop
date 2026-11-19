@@ -13122,6 +13122,10 @@ $(document).ready(function(){
   /* ════════════════════════════════════
      CUSTOMERS TABLE
   ════════════════════════════════════ */
+  // Sort key: 0 = has a live session, 1 = not. Used via orderFixed so online users stay on top.
+  $.fn.dataTable.ext.order['cust-online'] = function(settings){
+    return settings.aoData.map(function(r){ return (r._aData && r._aData.isLoggedIn) ? 0 : 1; });
+  };
   try{
   dataTable = $('#bookingTable').DataTable({
     ajax:{
@@ -13144,7 +13148,7 @@ $(document).ready(function(){
           return `<input type="checkbox" class="cust-row-check" data-id="${id}" onchange="onCustRowCheck(this,'${id}')" ${checked}>`;
       }},
       /* 1 – S.No (serial number) */
-      { data:null, orderable:false, className:'dt-body-center', render:(d,t,row,meta)=> String(meta.row+1) },
+      { data:null, orderable:false, orderDataType:'cust-online', className:'dt-body-center', render:(d,t,row,meta)=> String(meta.row+1) },
       /* 2 – Customer name */
       { data:null, render:(d,t,row)=> t==='display' ? renderName(row) : ((row.firstName||'')+' '+(row.lastName||'')).trim() },
       /* 3 – Type (customer looking for a home, or property owner) */
@@ -13245,6 +13249,7 @@ $(document).ready(function(){
 		}
     ],
     order:[[10,'desc']],
+    orderFixed:{ pre:[[1,'asc']] }, // currently logged-in customers always first
     orderCellsTop:true,
     pageLength:-1,
     scrollX:true,
