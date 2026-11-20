@@ -4441,6 +4441,10 @@ main.tab-explore .empty-state{display:none !important}
 .pm-compact .pm-line > :first-child,.pm-compact .pm-line > :first-child::before{margin-left:0;padding-left:0}
 .pm-compact .pm-line3.pm-line3{margin-left:0;margin-right:0}
 .pm-compact .pm-desc{margin-left:0;padding-left:0}
+.pm-check-btn{display:inline-flex;align-items:center;gap:6px;margin-top:8px;padding:7px 12px;border-radius:999px;border:1px solid #bbe5c9;background:#fff;color:#128c4a;font:700 12px inherit;font-family:inherit;cursor:pointer;transition:background .15s,border-color .15s}
+.pm-check-btn svg{width:14px;height:14px;fill:currentColor;stroke:none;flex:none}
+.pm-check-btn.pm-check-global{display:flex;width:100%;justify-content:center;margin:0 0 10px;padding:10px 14px;font-size:13.5px}
+.pm-check-btn:hover,.pm-check-btn:active{background:#25d366;border-color:#25d366;color:#fff}
 .pm-compact .pm-line-phones{margin-top:5px;gap:12px;flex-wrap:wrap}
 .pm-phone{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;font-weight:700;color:#16a34a;text-decoration:none;letter-spacing:.2px}
 .pm-phone svg{width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2.2;flex-shrink:0}
@@ -18664,7 +18668,7 @@ function agentOwnerDetailHtml(g) {
     <div class="ag-owner-head-t">${window._agEdit
       ? `<div class="ag-name-edit"><input id="agOwnerNameInput" class="ag-name-input" type="text" maxlength="80" value="${esc(g.names && Object.keys(g.names).length ? g.name : '')}" placeholder="Owner name" onkeydown="if(event.key==='Enter')saveAgentOwnerName();else if(event.key==='Escape')cancelAgentOwnerEdit()"><button type="button" id="agOwnerNameSave" class="ag-name-btn ok" onclick="saveAgentOwnerName()" aria-label="Save name">&#10003;</button><button type="button" class="ag-name-btn" onclick="cancelAgentOwnerEdit()" aria-label="Cancel">&#10005;</button></div>`
       : `<div class="ag-owner-name">${esc(g.name)}</div>`}<div class="ag-owner-num">${g.digits || 'No number'}</div></div>${window._agEdit ? '' : _acts}</div>`
-    + chips + (_shown.length ? _shown.map(p => myListingCardHtml(p, 'noPhones')).join('') : '<div class="profile-list-empty">No listings here.</div>') + '</div>';
+    + chips + ((_f === 'available' || _f === 'booked') && _shown.length && _nums.length ? `<button type="button" class="pm-check-btn pm-check-global" onclick="checkOwnerAvailability('${_f}')" aria-label="Check availability on WhatsApp"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg> ${_f === 'booked' ? 'Ask for vacant properties' : 'Check availability (' + _shown.length + ')'}</button>` : '') + (_shown.length ? _shown.map(p => myListingCardHtml(p, 'noPhones')).join('') : '<div class="profile-list-empty">No listings here.</div>') + '</div>';
 }
 
 function renderMyListings() {
@@ -18800,6 +18804,47 @@ function ownerDirectNumbers(p) {
     if (d.length === 10 && d !== SUPPORT_LINE_DIGITS && !out.some(o => o.digits === d)) out.push({ which, digits: d });
   });
   return out;
+}
+/* Agents: "Check availability" WhatsApp message to the owner (Available + Booked cards in the owner view).
+   One plain line - title, BHK, price, location, property ID - with the link on the next line. */
+function availabilityLine(p) {
+  const pt = pTypeLabel(p);
+  const prop = p.property || {};
+  const bhk = (pt === 'PG' || pt === 'ShortStay') ? '' : String(prop.bhk || '').replace(/\s*BHK\s*$/i, '').trim();
+  const type = bhk && parseFloat(bhk) > 0 ? bhk + ' BHK' : '';
+  const furnish = String(prop.furnish ?? (p.pg && p.pg.furnish) ?? (p.shortStay && p.shortStay.furnish) ?? '').replace(/[\s-]*furnished$/i, '').trim().toLowerCase();
+  const amt = shortPrice(p.price && p.price.rent);
+  const price = amt ? '\u20B9' + amt + (pt === 'Sell' ? '' : pt === 'ShortStay' ? '/D' : '/M') : '';
+  const dep = shortPrice(p.price && p.price.deposit);
+  return [p.propertyId, p.owner && p.owner.propertyName, type, furnish, price, dep ? dep + ' deposit' : '', p.location && p.location.area]
+    .map(v => String(v == null ? '' : v).trim()).filter(Boolean).join(', ');
+}
+function buildAvailabilityCheckMessage(p) {
+  return `Hi! Is this property still available?\n${availabilityLine(p)}\n${window.location.origin}/property/${p.id}\nAny other vacant properties?\nList free at www.homeloop.in \u2013 we\u2019ll verify them!`;
+}
+/* Global check (one WhatsApp message per owner, covering every property in the current tab).
+   Available tab: "are these still available?"  Booked tab: "is any getting vacated / any vacant to list?" */
+function buildBulkAvailabilityMessage(items, mode) {
+  const list = items.map((p, i) => (i + 1) + '. ' + availabilityLine(p) + (mode === 'available' ? '\n' + window.location.origin + '/property/' + p.id : '')).join('\n');
+  if (mode === 'booked') return `Hi! Hope you\u2019re doing well. Do you have any vacant rental property (or one getting vacant soon) that you\u2019d like to list with us?\nList free at www.homeloop.in \u2013 we\u2019ll verify it!`;
+  return `Hi! Are these properties still available?\n${list}\nAny other vacant properties?\nList free at www.homeloop.in \u2013 we\u2019ll verify them!`;
+}
+function checkOwnerAvailability(mode) {
+  if (!isAgentUser()) return;
+  const groups = agentOwnerGroups(MY_LISTINGS_CACHE);
+  const g = groups.find(x => x.key === window._agOwner); if (!g) return;
+  const items = g.items.filter(p => mode === 'booked' ? p.booked : !p.booked);
+  if (!items.length) { showToast('No properties to check.', 'warning'); return; }
+  const n = g.digits || (ownerDirectNumbers(items[0])[0] || {}).digits;
+  if (!n) { showToast('Owner number not available.', 'warning'); return; }
+  window.open('https://wa.me/91' + n + '?text=' + encodeURIComponent(buildBulkAvailabilityMessage(items, mode)), '_blank', 'noopener');
+}
+function checkListingAvailability(id) {
+  if (!isAgentUser()) return;
+  const p = MY_LISTINGS_CACHE.find(x => x.id === id); if (!p) return;
+  const n = ownerDirectNumbers(p)[0];
+  if (!n) { showToast("Owner number not available.", 'warning'); return; }
+  window.open('https://wa.me/91' + n.digits + '?text=' + encodeURIComponent(buildAvailabilityCheckMessage(p)), '_blank', 'noopener');
 }
 function callListingOwner(id, which) {
   const p = MY_LISTINGS_CACHE.find(x => x.id === id); if (!p) return;
