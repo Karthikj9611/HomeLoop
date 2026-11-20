@@ -11867,7 +11867,7 @@ function buildMinimalVideoEmbed(url) {
   if (!info) return '';
   let media = '';
   if (info.type === 'file') {
-    media = `<video class="vid-media" data-kind="file" muted playsinline loop preload="auto" oncanplay="vidCanPlay(this)" ontimeupdate="vidTick(this)" onloadedmetadata="vidTick(this)" ondurationchange="vidTick(this)" onplay="vidSync(this)" onpause="vidSync(this)" disablepictureinpicture disableremoteplayback controlslist="nodownload nofullscreen noremoteplayback noplaybackrate" src="${safeUrl(info.src)}"></video>`;
+    media = `<video class="vid-media" data-kind="file" muted playsinline loop preload="auto" onerror="vidError(this)" oncanplay="vidCanPlay(this)" ontimeupdate="vidTick(this)" onloadedmetadata="vidTick(this)" ondurationchange="vidTick(this)" onplay="vidSync(this)" onpause="vidSync(this)" disablepictureinpicture disableremoteplayback controlslist="nodownload nofullscreen noremoteplayback noplaybackrate" src="${safeUrl(info.src)}"></video>`;
   } else if (info.type === 'youtube') {
     media = `<iframe class="vid-media" data-kind="yt" title="Video tour" referrerpolicy="strict-origin-when-cross-origin" allow="autoplay; encrypted-media" src="https://www.youtube-nocookie.com/embed/${info.id}?controls=0&mute=1&modestbranding=1&rel=0&playsinline=1&disablekb=1&fs=0&iv_load_policy=3&loop=1&playlist=${info.id}&enablejsapi=1"></iframe>`;
   } else if (info.type === 'vimeo') {
@@ -11878,7 +11878,7 @@ function buildMinimalVideoEmbed(url) {
     ? `<input type="range" class="vid-seek" min="0" max="1000" value="0" step="1" aria-label="Seek" oninput="vidSeek(this)"><span class="vid-time">0:00 / 0:00</span>`
     : '';
   const bar = prog ? `<div class="vid-bar" onclick="event.stopPropagation()" onpointerdown="event.stopPropagation()" onmousedown="event.stopPropagation()" ontouchstart="event.stopPropagation()" ontouchmove="event.stopPropagation()">${prog}</div>` : '';
-  return `<div class="vid-wrap" data-playing="0">${media}<div class="vid-hit" onclick="event.stopPropagation();toggleGalleryVideo(this.parentNode)"></div>${btn}${bar}</div>`;
+  return `<div class="vid-wrap" data-playing="0">${media}<div class="vid-hit"></div></div>`; // autoplay, muted, no controls / timeline
 }
 function vidCanPlay(v) {
   const w = v.closest('.vid-wrap');
@@ -11891,6 +11891,7 @@ function vidTick(v) {
   const d = v.duration || 0;
   if (sk && !sk.dataset.drag) { sk.value = d ? Math.round(v.currentTime / d * 1000) : 0; sk.style.setProperty('--p', (sk.value / 10) + '%'); }
   if (tm) tm.textContent = vidFmt(v.currentTime) + ' / ' + vidFmt(d);
+  const _bt = v.closest('.prop-img') && v.closest('.prop-img').querySelector('.vid-badge-time'); if (_bt) _bt.textContent = vidFmt(v.currentTime);
 }
 function vidSeek(sk) {
   const w = sk.closest('.vid-wrap'), v = w && w.querySelector('video'); if (!v || !v.duration) return;
@@ -11906,6 +11907,19 @@ function vidSync(v) {
 }
 /* Auto play / pause the gallery video when its slide is reached / left (called from slideGo).
    File videos play immediately (muted); YouTube / Vimeo players get the command again after they have loaded. */
+function vidError(v) {
+  const w = v.closest('.vid-wrap'); if (!w) return;
+  const u = v.currentSrc || v.getAttribute('src') || '';
+  w.innerHTML = `<div class="video-slide-fallback"><a href="${esc(u)}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">Watch video tour</a></div>`;
+}
+/* Video slides are injected only when swiped to, so let the player itself autoplay (muted) - postMessage
+   commands alone are dropped when the YouTube/Vimeo player is not ready yet. */
+function vidWithAutoplay(html) {
+  return String(html)
+    .replace(/(youtube-nocookie\.com\/embed\/[^"?]*\?)/, '$1autoplay=1&')
+    .replace(/(player\.vimeo\.com\/video\/[^"?]*\?)/, '$1autoplay=1&api=1&')
+    .replace('<video class="vid-media"', '<video autoplay class="vid-media"');
+}
 function vidAutoCmd(wrap, play, tries) {
   if (!wrap) return;
   const m = wrap.querySelector('.vid-media'); if (!m) return;
@@ -11934,7 +11948,7 @@ function vidAutoCmd(wrap, play, tries) {
   send();
   if (play) {
     m.addEventListener('load', send, { once: true });   // player still loading: send again once it is ready
-    [400, 1000, 2000].forEach(t => setTimeout(send, t));
+    [400, 1000, 2000, 3500, 5000].forEach(t => setTimeout(send, t));
   }
 }
 function toggleGalleryVideo(wrap) {
@@ -12092,10 +12106,14 @@ function slideGo(uid, idx) {
   const _photos = _all.filter(s => !s.classList.contains('video-slide'));
   const _act = _all[idx];
   const _own = c.dataset.own === '1'; // owner viewing his own listing, or a listing unlocked by a verified Single Property Plan: nothing is locked
-  const _vidLocked = !!(_act && _act.classList.contains('video-slide') && _act.dataset.vh && !_own && !hasActivePlan());
-  if (_act && _act.dataset && _act.dataset.vh && (_own || hasActivePlan()) && !_act.firstElementChild) {
-    _act.innerHTML = decodeURIComponent(_act.dataset.vh);
-  }
+  const _vidLocked = false; // video tour is open for everyone
+  // Video slide: load it as soon as it is within two swipes (so metadata/duration are ready when reached);
+  // the player autoplays only once it is the active slide.
+  _all.forEach((vs, vi) => {
+    if (!vs.dataset || !vs.dataset.vh || vs.firstElementChild) return;
+    if (vs === _act) vs.innerHTML = vidWithAutoplay(decodeURIComponent(vs.dataset.vh));
+    else if (vi - idx >= 0 && vi - idx <= 2) vs.innerHTML = decodeURIComponent(vs.dataset.vh);
+  });
   const _photoLocked = _photos.length && !_own && lastItemLocked(_photos.length) && _act === _photos[_photos.length - 1];
   if (_photoLocked || _vidLocked) {
     const lk = document.createElement('div');
@@ -12109,6 +12127,28 @@ function slideGo(uid, idx) {
     const w = vs.querySelector('.vid-wrap'); if (!w) return;
     vidAutoCmd(w, vs === _act && !_vidLocked);
   });
+  // Video icon: bottom of the right icon column (same size / x-position as the eye, heart, WhatsApp icons), just above the price strip.
+  if (c.parentElement) {
+    const _pe = c.parentElement; let _vb = _pe.querySelector(':scope > .vid-badge');
+    const _isVid = !!(_act && _act.classList.contains('video-slide'));
+    if (_isVid) {
+      if (!_vb) {
+        _vb = document.createElement('span'); _vb.className = 'vid-badge'; _vb.setAttribute('aria-hidden', 'true');
+        _vb.innerHTML = '<svg viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg><span class=\"vid-badge-time\">0:00</span>';
+        _pe.appendChild(_vb);
+      }
+      const pr = _pe.getBoundingClientRect();
+      const ic = [..._pe.querySelectorAll('.prop-right-badges .prop-icon-badge')].map(e => e.getBoundingClientRect()).filter(r => r.width > 0).pop();
+      const pc = _pe.querySelector(':scope > .prop-img-price');
+      const gap = pc ? Math.max(0, pr.bottom - pc.getBoundingClientRect().top) : 0;
+      const sz = ic ? Math.round(ic.width) : 30;
+      _vb.style.width = _vb.style.height = sz + 'px';
+      _vb.style.right = (ic ? Math.max(0, Math.round(pr.right - ic.right)) : 10) + 'px';
+      _vb.style.bottom = (gap + 8) + 'px';
+      { const _v = _act.querySelector('video'), _t = _vb.querySelector('.vid-badge-time'); if (_v && _t) _t.textContent = vidFmt(_v.currentTime); }
+      const sv = _vb.firstElementChild; if (sv) { sv.style.width = sv.style.height = Math.round(sz * 0.52) + 'px'; }
+    } else if (_vb) _vb.remove();
+  }
   const cardDots = c.parentElement && c.parentElement.querySelector(':scope > .card-slide-dots');
   if (cardDots) {
     cardDots.querySelectorAll('span').forEach((d,i) => d.classList.toggle('active', i===idx));
@@ -12399,7 +12439,7 @@ function lightboxLockedIdx() {
 }
 
 function lightboxVideoLocked() {
-  return !!(lightboxPropertyMode && lightboxVideoHtml && lightboxImgs.length >= 1 && !lightboxOwn && !hasActivePlan());
+  return false; // video tour is open for everyone
 }
 
 function lightboxTotal() {
@@ -12703,7 +12743,7 @@ function _cardHTMLRaw(p, compact, extraLeftBadge, showAvail) {
   const availAccentClass = availableInfo ? (availableInfo.cls === 'prop-loc-avail-past' ? ' avail-past' : ' avail-future') : '';
   return `<div class="prop-card${listClass}${compactClass}${promotedClass}${directClass} type-${pType.toLowerCase()}${availAccentClass}" data-property-id="${p.id}" onclick="openDetail('${p.id}')">
     <div class="prop-img" style="background:${bg}" data-idx="0">
-      ${buildImgSlider(p, fg, '-grid')}
+      ${buildImgSlider(p, fg, '-grid', (p.media?.images?.length ? buildVideoSlideHtml(p) : ''))}
       ${priceChipsHTML(p, pType, deposit, maintenance, leaseDur, {ribbon:true})}
       <span class="prop-img-id-badge">${esc(p.propertyId || '')}</span>
       <div class="prop-card-top-row">
@@ -12860,7 +12900,7 @@ function shortlistCardHTML(p) {
   const availAccentClassSL = availableInfo ? (availableInfo.cls === 'prop-loc-avail-past' ? ' avail-past' : ' avail-future') : '';
   return `<div class="prop-card type-${pType.toLowerCase()}${availAccentClassSL}" data-property-id="${p.id}" onclick="toggleShortlistPanel();openDetail('${p.id}')">
     <div class="prop-img" style="background:${bg}" data-idx="0">
-      ${buildImgSlider(p, fg, '-sl')}
+      ${buildImgSlider(p, fg, '-sl', (p.media?.images?.length ? buildVideoSlideHtml(p) : ''))}
       ${priceChipsHTML(p, pType, deposit, maintenance, leaseDur, {ribbon:true})}
       <div class="prop-card-top-row" style="justify-content:flex-end">
         ${propDistanceBadgeHTML(p) ? '<div class="prop-left-badges" style="margin-right:auto">' + propDistanceBadgeHTML(p) + '</div>' : ''}
@@ -15561,7 +15601,7 @@ function openDetailReal(id) {
       if (_sl && _pi) {
         // Load the video in the background right away (hidden) so it plays instantly when its slide is reached.
         const _vs = _sl.querySelector('.video-slide');
-        if (_vs && _vs.dataset.vh && !_vs.firstElementChild && (_sl.dataset.own === '1' || hasActivePlan())) _vs.innerHTML = decodeURIComponent(_vs.dataset.vh);
+        if (_vs && _vs.dataset.vh && !_vs.firstElementChild) _vs.innerHTML = decodeURIComponent(_vs.dataset.vh);
       }
     }
     observeCardImgs(gallerySlot);
@@ -25321,6 +25361,9 @@ main.main.empty-with-booked:has(> .empty-state.show) > .empty-state.show{positio
 #chargesModal .add-modal-header .modal-close{right:14px !important}
 #chargesModal .charges-share-btn{right:62px !important}
 #chargesModal .charges-share-btn svg{width:18px !important;height:18px !important}
+.vid-badge{position:absolute;right:10px;bottom:10px;width:30px;height:30px;border-radius:50%;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:6;pointer-events:none}
+.vid-badge svg{width:16px;height:16px;fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.vid-badge-time{position:absolute;top:-6px;left:-8px;min-width:15px;height:15px;padding:0 4px;border-radius:99px;background:var(--brand);color:#fff;font-size:8.5px;font-weight:700;display:flex;align-items:center;justify-content:center;line-height:1;box-shadow:0 0 0 1.5px #fff;font-variant-numeric:tabular-nums}
 </style>
 <script>
 /* ── One tab only ─────────────────────────────────────────────────────────────
