@@ -6905,7 +6905,7 @@ h1,h2,h3,.logo-word,.section-title{font-family:var(--hl-display);letter-spacing:
 
 
   <!-- Bar right side: total count + clear all -->
-  <div class="fd-bar-right">
+  <div class="fd-bar-right" style="display:none">
     <span class="fd-total-badge" id="fdTotalBadge"></span>
     <button class="fd-clear-all" id="fdClearAll" onclick="clearFilters()" style="display:none">Clear all</button>
   </div>
@@ -14343,6 +14343,9 @@ function refreshTotalBadge() {
   const clearBtn = document.getElementById('fdClearAll');
   if (badge) { badge.textContent = total; badge.classList.toggle('show', total > 0); }
   if (clearBtn) clearBtn.style.display = total > 0 ? '' : 'none';
+  // Nothing selected: hide the whole right-hand block (border, padding, fade) so the bar looks like it has no extra section.
+  const barRight = document.querySelector('.fd-bar-right');
+  if (barRight) barRight.style.display = total > 0 ? '' : 'none';
 }
 
 /* Live-filters a dropdown's option pills as the owner types in its search
@@ -24292,6 +24295,11 @@ document.addEventListener('keydown', function(e){
 .fd-apply-btn{background:var(--warm-grad) !important;color:#fff;border:none;border-radius:10px;box-shadow:var(--warm-btn-shadow)}
 .fd-apply-btn:hover{background:var(--warm-grad-hover) !important}
 .fd-bar-right{border-left:1px solid rgba(240,120,100,.25)}
+/* Desktop: keep the count + Clear all pinned to the right edge while the filter pills scroll underneath */
+@media (min-width:900px){
+  .filter-dd-bar{padding-right:0}
+  .fd-bar-right{position:sticky;right:0;z-index:3;align-self:stretch;margin:0 0 0 auto;padding:0 16px 0 12px;background:var(--bg);box-shadow:-14px 0 12px -4px var(--bg)}
+}
 .fd-total-badge{background:var(--warm-grad)}
 /* ─── PAGE / CARD-AREA BACKGROUND: warm peach-ivory instead of flat grey ─── */
 :root{--bg-2:#fff6ef;--bg-3:#fdebe0}
