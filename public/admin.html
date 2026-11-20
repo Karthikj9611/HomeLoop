@@ -2252,6 +2252,21 @@ body.pact-hide-booked #propertyTable .pact-booked{display:none!important}
    visually mirrors Edit. (Scoped to #aeAdminMetaSlot, not the base class,
    since Appointments/Honest Reviews modals share these same classes.) */
 #aeAdminMetaSlot .prop-modal-detail-val{color:var(--brand)}
+/* One customer modal for View + Edit: View = the same form, locked, plus a few stats */
+#customerEditModalBox.ce-view .form-input{background:#f6f6f8;border-color:transparent;pointer-events:none;-webkit-appearance:none;appearance:none}
+#customerEditModalBox.ce-view select.form-input{background-image:none}
+.ce-stats{display:none;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:2px 0 16px;padding-top:14px;border-top:1px solid var(--border)}
+#customerEditModalBox.ce-view .ce-stats{display:grid}
+.ce-stat{background:var(--surface2);border-radius:10px;padding:9px 12px}
+.ce-stat b{display:block;font-size:.66rem;letter-spacing:.05em;text-transform:uppercase;color:var(--ink3);font-weight:700}
+.ce-stat span{display:block;margin-top:2px;font-size:.9rem;font-weight:600;color:var(--ink)}
+/* (old separate view modal styles below are no longer used) */
+/* Customer modal: plain label / value pairs, two per row (equal columns) */
+#customerModal #customerModalDetails{display:grid !important;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:28px;row-gap:0}
+#customerModal #customerModalDetails .prop-modal-detail{display:block !important;background:none;border:0;border-bottom:1px solid var(--border);border-radius:0;padding:12px 2px;min-width:0}
+#customerModal #customerModalDetails .prop-modal-detail-label{display:block;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--ink3)}
+#customerModal #customerModalDetails .prop-modal-detail-val{display:block;margin:3px 0 0;text-align:left;font-size:.92rem;font-weight:600;white-space:pre-line;overflow-wrap:anywhere}
+@media(max-width:420px){#customerModal #customerModalDetails{grid-template-columns:1fr}}
 .prop-modal-desc-box{
   background:var(--surface2);border-radius:10px;
   padding:12px 14px;font-size:0.83rem;color:var(--ink2);
@@ -3824,7 +3839,7 @@ tr.nf-flash td{animation:nfFlash 3s ease-out}
 <div class="add-modal-overlay" id="customerEditModal" role="dialog" aria-modal="true" aria-label="Edit customer">
   <div class="add-modal" id="customerEditModalBox" style="max-width:420px">
     <div class="std-hdr" style="margin:-24px -24px 18px;position:static">
-      <div class="std-hdr-text"><div class="std-hdr-title">Edit Customer</div></div>
+      <div class="std-hdr-text"><div class="std-hdr-title" id="ceTitle">Edit Customer</div><div class="std-hdr-sub" id="ceSub" style="display:none"></div></div>
       <div class="std-hdr-actions"><button type="button" class="std-hdr-close" onclick="closeCustomerEditModal()" aria-label="Close">&#10005;</button></div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
@@ -3840,7 +3855,7 @@ tr.nf-flash td{animation:nfFlash 3s ease-out}
     <div class="form-group" style="margin-top:14px">
       <label class="form-label" for="ceMobile">Mobile number *</label>
       <input class="form-input" type="tel" id="ceMobile" inputmode="numeric" maxlength="10" autocomplete="off" />
-      <div style="font-size:11.5px;color:#888;margin-top:5px;line-height:1.5">Listings and visits are matched to a customer by mobile number, so changing it changes what shows as theirs.</div>
+      <div id="ceMobileHint" style="font-size:11.5px;color:#888;margin-top:5px;line-height:1.5">Listings and visits are matched to a customer by mobile number, so changing it changes what shows as theirs.</div>
     </div>
     <div class="form-group">
       <label class="form-label" for="ceEmail">Email</label>
@@ -3857,10 +3872,14 @@ tr.nf-flash td{animation:nfFlash 3s ease-out}
         <option value="builder">Builder</option>
       </select>
     </div>
+    <div id="ceStats" class="ce-stats"></div>
     <div class="share-links-footer">
-      <button class="confirm-cancel-btn" onclick="closeCustomerEditModal()" style="flex:1">Cancel</button>
+      <button class="confirm-cancel-btn" id="ceCancelBtn" onclick="customerEditCancel()" style="flex:1">Cancel</button>
       <button class="confirm-ok-btn success" id="ceSaveBtn" onclick="saveCustomerEdit()" style="flex:1">
         <i class="fas fa-check"></i> Save
+      </button>
+      <button class="confirm-ok-btn success" id="ceEditBtn" type="button" onclick="customerEditStart()" style="flex:1;display:none">
+        <i class="fas fa-pen"></i> Edit
       </button>
     </div>
   </div>
@@ -9414,11 +9433,22 @@ window.saveSubscription = async function(){
 /* EDIT CUSTOMER
    Prefills from _customerCache, saves via PATCH /api/users/:id, then reloads the grid. */
 let _customerEditTargetId = null;
-window.openCustomerEditModal = function(key){
-  if(blockIfViewOnly('customers')) return;
-  const c = _customerCache[key];
-  if(!c){ alert('Customer details not loaded yet - please retry.'); return; }
-  _customerEditTargetId = c._id;
+let _customerEditKey = null;
+/* mode: 'view' (locked form + stats) or 'edit' (editable form). The grid's View button opens it in view mode;
+   the Edit button inside switches the SAME modal to edit mode, so View and Edit are one and the same screen. */
+function _ceSetMode(mode){
+  const box = document.getElementById('customerEditModalBox');
+  const view = mode === 'view';
+  box.classList.toggle('ce-view', view);
+  ['ceFirstName','ceLastName','ceMobile','ceEmail','ceAccountType'].forEach(id => { document.getElementById(id).disabled = view; });
+  document.getElementById('ceTitle').textContent = view ? 'Customer' : 'Edit Customer';
+  document.getElementById('ceMobileHint').style.display = view ? 'none' : '';
+  document.getElementById('ceSaveBtn').style.display = view ? 'none' : '';
+  document.getElementById('ceEditBtn').style.display = (view && canAct('customers')) ? '' : 'none';
+  document.getElementById('ceCancelBtn').textContent = view ? 'Close' : 'Cancel';
+  box.dataset.mode = mode;
+}
+function _ceFill(c){
   let first = c.firstName || '', last = c.lastName || '';
   if(!first && !last && c.name){ const parts = String(c.name).trim().split(/\s+/); first = parts.shift() || ''; last = parts.join(' '); }
   document.getElementById('ceFirstName').value = first;
@@ -9426,8 +9456,38 @@ window.openCustomerEditModal = function(key){
   document.getElementById('ceMobile').value = String(c.mobile || '').replace(/\D/g,'').slice(-10);
   document.getElementById('ceEmail').value = c.email || '';
   document.getElementById('ceAccountType').value = (ACCT_OWNER_SIDE.includes(c.accountType)) ? c.accountType : 'customer';
-  document.getElementById('customerEditModal').classList.add('open');
-  lockBodyScroll();
+  const stat = (k, v) => '<div class="ce-stat"><b>' + _adminModalEsc(k) + '</b><span>' + _adminModalEsc(v) + '</span></div>';
+  const reg = c.createdAt ? fmtDateDMY(new Date(c.createdAt)) + ' ' + fmtTimeHM(new Date(c.createdAt)) : '—';
+  document.getElementById('ceStats').innerHTML =
+    stat('Status', c.isVerified ? ('Verified' + (c.verifiedAt ? ' · ' + fmtDateDMY(new Date(c.verifiedAt)) : '')) : 'Pending verification') +
+    stat('Registered', reg) +
+    stat('Listings', String(c.listingsCount ?? 0)) +
+    stat('Visit requests', String(c.visitsCount ?? 0)) +
+    stat('Views on listings', String(c.viewsCount ?? 0));
+}
+window.openCustomerEditModal = function(key, mode){
+  mode = mode === 'view' ? 'view' : 'edit';
+  if(mode === 'edit' && blockIfViewOnly('customers')) return;
+  const c = _customerCache[key];
+  if(!c){ alert('Customer details not loaded yet - please retry.'); return; }
+  _customerEditTargetId = c._id;
+  _customerEditKey = key;
+  _ceFill(c);
+  _ceSetMode(mode);
+  const m = document.getElementById('customerEditModal');
+  if(!m.classList.contains('open')){ m.classList.add('open'); lockBodyScroll(); }
+};
+window.customerEditStart = function(){
+  if(blockIfViewOnly('customers')) return;
+  _ceSetMode('edit');
+};
+window.customerEditCancel = function(){
+  const box = document.getElementById('customerEditModalBox');
+  // Cancel while editing a customer opened from View goes back to the locked view; Close closes.
+  if(box.dataset.mode === 'edit' && box.dataset.from === 'view' && _customerCache[_customerEditKey]){
+    _ceFill(_customerCache[_customerEditKey]); _ceSetMode('view'); return;
+  }
+  closeCustomerEditModal();
 };
 window.closeCustomerEditModal = function(){
   document.getElementById('customerEditModal').classList.remove('open');
@@ -13560,8 +13620,6 @@ $(document).ready(function(){
 			return `
 			  <div style="display:inline-flex;gap:6px;flex-wrap:nowrap;justify-content:center;align-items:center;white-space:nowrap">
 
-				<span class="pact pact-verified">${verifiedBadge(isVerified, row._id)}</span>
-
 				<span class="pact pact-view"><button class="btn-view btn-action-view" onclick="openCustomerModal('${row.mobile || row._id}')">
 				  <i class="fas fa-eye"></i><span class="btn-label"> View</span>
 				</button></span>
@@ -13570,13 +13628,16 @@ $(document).ready(function(){
 				  <i class="fab fa-whatsapp"></i><span class="btn-label"> WhatsApp</span>
 				</button></span>
 
+				<span class="pact pact-verified">${verifiedBadge(isVerified, row._id)}</span>
+
 				${`<span class="pact pact-subscription"><button class="btn-view btn-action-sub${ACCT_OWNER_SIDE.includes(row.accountType) ? ' is-disabled' : ((row.subscriptionFrom || row.subscriptionAt) ? ' is-set' : '')}"${ACCT_OWNER_SIDE.includes(row.accountType) ? ' disabled aria-disabled="true"' : ` onclick="openSubscriptionModal('${row.mobile || row._id}')"`} title="${ACCT_OWNER_SIDE.includes(row.accountType) ? 'Subscription is not available for ' + row.accountType + ' accounts' : (row.subscriptionFrom || row.subscriptionAt) ? 'Subscribed: ' + plainDateTime(row.subscriptionFrom || row.subscriptionAt) + (row.subscriptionTo ? ' → ' + plainDateTime(row.subscriptionTo) : '') + ((row.subscriptions || []).length > 1 ? '  (' + row.subscriptions.length + ' subscriptions — click to view / add)' : '  (click to add another)') : 'Set subscription From – To'}">
 				  <i class="fas fa-calendar-check"></i><span class="btn-label"> Subscription</span>
 				</button></span>`}
 
-				<span class="pact pact-delete"><button class="btn-view btn-action-delete" onclick="deleteBooking('${row.mobile || row._id}')" title="Delete this customer">
-				  <i class="fas fa-trash"></i><span class="btn-label"> Delete</span>
-				</button></span>
+				${(() => { const _pcOk = isVerified; return `<span class="pact pact-publiccall"><label class="mini-toggle-wrap altcall-wrap" title="${!_pcOk ? 'Verify this user to enable public call' : ACCT_OWNER_SIDE.includes(row.accountType) ? 'When ON, all of this ' + row.accountType + '\u2019s listings show their number(s) to every visitor' : 'When ON, this tenant sees owner numbers on all listings while logged in'}"><span class="mini-toggle altcall-toggle">
+				  <input type="checkbox" ${row.publicCall?'checked':''} ${(canAct('customers') && _pcOk)?'':'disabled'} onchange="toggleUserPublicCall('${row._id}',this,'${ACCT_OWNER_SIDE.includes(row.accountType)?row.accountType:'customer'}')">
+				  <span class="slider"></span>
+				</span></label></span>`; })()}
 
 				<span class="pact pact-logout"><button class="btn-view btn-action-logout" onclick="forceLogoutUser('${row._id}')" title="Clear their active session so they can log in on another device right away">
 				  <i class="fas fa-right-from-bracket"></i><span class="btn-label"> Force logout</span>
@@ -13590,10 +13651,9 @@ $(document).ready(function(){
 				  <i class="fas fa-rotate-left"></i><span class="btn-label"> Reset views</span>
 				</button></span>
 
-				${(isVerified || row.accountType === 'agent') ? `<span class="pact pact-publiccall"><label class="mini-toggle-wrap altcall-wrap" title="${ACCT_OWNER_SIDE.includes(row.accountType) ? 'When ON, all of this ' + row.accountType + '\u2019s listings show their number(s) to every visitor' : 'When ON, this tenant sees owner numbers on all listings while logged in'}"><span class="mini-toggle altcall-toggle">
-				  <input type="checkbox" ${row.publicCall?'checked':''} ${canAct('customers')?'':'disabled'} onchange="toggleUserPublicCall('${row._id}',this,'${ACCT_OWNER_SIDE.includes(row.accountType)?row.accountType:'customer'}')">
-				  <span class="slider"></span>
-				</span></label></span>` : ''}
+				<span class="pact pact-delete"><button class="btn-view btn-action-delete" onclick="deleteBooking('${row.mobile || row._id}')" title="Delete this customer">
+				  <i class="fas fa-trash"></i><span class="btn-label"> Delete</span>
+				</button></span>
 
 			  </div>
 			`;
@@ -17304,6 +17364,11 @@ $.fn.dataTable.ext.search.push(function(settings, data, dataIndex){
 
 
 function openCustomerModal(id){
+  const box = document.getElementById('customerEditModalBox');
+  if(box) box.dataset.from = 'view';
+  openCustomerEditModal(id, 'view');
+}
+function _openCustomerModalOld(id){
 
   const c = _customerCache[id];
   if(!c) return;
@@ -17325,78 +17390,27 @@ function openCustomerModal(id){
       : `<i class="fas fa-user"></i>`;
   }
 
+  // Simple view: name + mobile are already in the header, so only the useful bits are listed here.
+  const _rem = (()=>{
+    const r = c.remarks;
+    if(Array.isArray(r) && r.length)
+      return r.filter(x=>x&&(x.remark||'').trim()).map((x,i)=>`${i+1}. ${x.remark.trim()}`).join('\n') || '';
+    if(typeof r === 'string' && r.trim()) return r.trim();
+    return '';
+  })();
   const details = [
-    {
-      label:'User ID',
-      value:c.userId || '—'
-    },
-    {
-      label:'Full Name',
-      value:c.name || fullName || '—'
-    },
-    {
-      label:'First Name',
-      value:c.firstName || '—'
-    },
-    {
-      label:'Last Name',
-      value:c.lastName || '—'
-    },
-    {
-      label:'Mobile Number',
-      value:c.mobile || '—'
-    },
-    {
-      label:'Email Address',
-      value:c.email || '—'
-    },
-    {
-      label:'Verification Status',
-      value:c.isVerified
-        ? ('Verified' + (c.verifiedAt ? ' on ' + fmtDateDMY(new Date(c.verifiedAt)) : ''))
-        : 'Pending — cannot submit listings, visits, bookings, reviews or payments yet'
-    },
-    {
-      label:'Property Listings',
-      value:String(c.listingsCount ?? 0)
-    },
-    {
-      label:'Visit Requests',
-      value:String(c.visitsCount ?? 0)
-    },
-    {
-      label:'Total Views on Listings',
-      value:String(c.viewsCount ?? 0)
-    },
-    {
-      label:'Properties Viewed',
-      value:String(c.propertiesViewed ?? 0)
-    },
-    {
-      label:'Remarks',
-      value:(()=>{
-        const r = c.remarks;
-        if(Array.isArray(r) && r.length)
-          return r.filter(x=>x&&(x.remark||'').trim()).map((x,i)=>`${i+1}. ${x.remark.trim()}`).join('\n') || '—';
-        if(typeof r === 'string' && r.trim()) return r.trim();
-        return '—';
-      })()
-    },
-    {
-      label:'Registered On',
-      value:c.createdAt
-        ? fmtDateDMY(new Date(c.createdAt)) + ' ' + fmtTimeHM(new Date(c.createdAt))
-        : '—'
-    },
-    {
-      label:'Database ID',
-      value:c._id || '—'
-    }
-  ];
+    { label:'Email',          value:c.email || '' },
+    { label:'Status',         value:c.isVerified ? ('Verified' + (c.verifiedAt ? ' · ' + fmtDateDMY(new Date(c.verifiedAt)) : '')) : 'Pending verification' },
+    { label:'Listings',       value:String(c.listingsCount ?? 0) },
+    { label:'Visit requests', value:String(c.visitsCount ?? 0) },
+    { label:'Views on listings', value:String(c.viewsCount ?? 0) },
+    { label:'Registered',     value:c.createdAt ? fmtDateDMY(new Date(c.createdAt)) + ' ' + fmtTimeHM(new Date(c.createdAt)) : '' },
+    { label:'Remarks',        value:_rem }
+  ].filter(d => d.value !== '');
 
   document.getElementById('customerModalDetails').innerHTML =
     details.map(d => `
-      <div class="prop-modal-detail">
+      <div class="prop-modal-detail"${d.label === 'Remarks' ? ' style="grid-column:1/-1"' : ''}>
 
         <div class="prop-modal-detail-label">
           ${_adminModalEsc(d.label)}
@@ -17411,7 +17425,6 @@ function openCustomerModal(id){
 
   document.getElementById('customerModal').classList.add('open');
   document.body.style.overflow = 'hidden';
-  loadCustomerViewedProperties(c);
 }
 
 /* Fills the "Properties viewed" box in the customer modal with the listings (readable Property ID,
@@ -18172,7 +18185,8 @@ function editFromCustomerModal(){
   const key = window._custModalKey;
   if(!key) return;
   closeCustomerModal();
-  openCustomerEditModal(key);
+  const box = document.getElementById('customerEditModalBox'); if(box) box.dataset.from = '';
+  openCustomerEditModal(key, 'edit');
 }
 
 function closeCustomerModal(){
@@ -20828,8 +20842,6 @@ markRequiredLabels();
       <!-- Details -->
       <div class="prop-modal-grid" id="customerModalDetails"></div>
 
-      <!-- Properties this customer has viewed (filled by loadCustomerViewedProperties) -->
-      <div id="customerModalViewed" class="cust-viewed-box"></div>
 
     </div>
 
