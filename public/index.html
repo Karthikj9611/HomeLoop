@@ -14722,6 +14722,44 @@ document.addEventListener('keydown', function (e) {
   }, true);   // capture: the filter popovers call stopPropagation() on click, so a normal (bubbling) listener never sees it
 })();
 
+/* Auto-advance for Min/Max range filters (Price, Deposit, Maintenance...): once the person has
+   typed a value and finished (Enter / Go on the keyboard, or leaving the Max box), glide to the next
+   filter. It never fires while they are still typing, and stays put on the last filter. */
+(function () {
+  const body = document.getElementById('fmSubBody');
+  if (!body) return;
+  let timer = null;
+  function advance(input) {
+    clearTimeout(timer);
+    const fromId = _fmSub && _fmSub.id;
+    if (!fromId) return;
+    timer = setTimeout(() => {
+      const sub = document.getElementById('fmSubModal');
+      if (!_fmSub || _fmSub.id !== fromId || !sub || !sub.classList.contains('open')) return;   // moved on / closed
+      if (fmCountFor(_fmSub.pop) === 0) return;                                                // nothing entered -> stay
+      const i = _fmRows.findIndex(r => r.id === fromId);
+      if (i < 0 || i >= _fmRows.length - 1) return;                                            // last filter: stay
+      if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); // close the keyboard
+      fmSubGo(1);
+    }, 350);
+  }
+  body.addEventListener('keydown', function (e) {
+    const el = e.target;
+    if (e.key !== 'Enter' || !_fmSub || !el || !el.matches || !el.matches('input.fd-range-input')) return;
+    if (el.value === '') return;
+    e.preventDefault();
+    advance(el);
+  }, true);
+  body.addEventListener('change', function (e) {
+    const el = e.target;
+    if (!_fmSub || !el || !el.matches || !el.matches('input.fd-range-input') || el.value === '') return;
+    // 'change' fires when the field is left; only the LAST input of the pair (Max) advances on its own,
+    // so tabbing from Min to Max doesn't jump away before Max is typed.
+    const all = body.querySelectorAll('input.fd-range-input');
+    if (el === all[all.length - 1]) advance(el);
+  }, true);
+})();
+
 /* Close dropdowns on outside click */
 document.addEventListener('click', function(e) {
   if (!e.target.closest('.fd-btn') && !e.target.closest('.fd-pop')) closeAllFd();
