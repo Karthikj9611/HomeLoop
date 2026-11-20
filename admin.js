@@ -107,6 +107,10 @@ module.exports = function registerAdminRoutes(app, deps) {
     ? Number(process.env.ADMIN_SESSION_TZ_OFFSET_MIN) : 330;
   const LEGACY_SESSION_TTL_MS = 180 * 24 * 60 * 60 * 1000; // old sessions had no createdAt; they were issued with this TTL
 
+  // NO daily forced logout any more: a session now lasts ADMIN_SESSION_DAYS (default 30) from login,
+  // or until the admin signs out. The old 7 AM reset helpers below are kept but no longer used.
+  const SESSION_TTL_MS = (Number(process.env.ADMIN_SESSION_DAYS) || 30) * 24 * 60 * 60 * 1000;
+
   // The most recent 7:00 AM (local) at or before `now`, as a UTC Date.
   function lastResetBefore(now) {
     const off = SESSION_TZ_OFFSET_MIN * 60000;
@@ -142,7 +146,7 @@ module.exports = function registerAdminRoutes(app, deps) {
 
   async function issueAdminSession(email, single) {
     const key = crypto.randomBytes(32).toString('hex');
-    await AdminSession.create({ key, email: email || '', single: !!single, createdAt: new Date(), expiresAt: nextReset(new Date()) });
+    await AdminSession.create({ key, email: email || '', single: !!single, createdAt: new Date(), expiresAt: new Date(Date.now() + SESSION_TTL_MS) });
     return key;
   }
 
@@ -158,10 +162,6 @@ module.exports = function registerAdminRoutes(app, deps) {
     const now = new Date();
     const session = await AdminSession.findOne({ key, expiresAt: { $gt: now } }).lean();
     if (!session) return null;
-    const issuedAt = session.createdAt
-      ? new Date(session.createdAt).getTime()
-      : new Date(session.expiresAt).getTime() - LEGACY_SESSION_TTL_MS;
-    if (issuedAt < lastResetBefore(now).getTime()) return null;
     return session;
   }
 
@@ -439,7 +439,7 @@ module.exports = function registerAdminRoutes(app, deps) {
   // second login is refused until that session logs out or hits the 7 AM reset.
   async function findActiveAdminSessions(email, sortAsc) {
     const now = new Date();
-    const q = AdminSession.find({ email, expiresAt: { $gt: now }, createdAt: { $gte: lastResetBefore(now) } });
+    const q = AdminSession.find({ email, expiresAt: { $gt: now } });
     return sortAsc ? q.sort({ createdAt: 1, _id: 1 }).lean() : q.lean();
   }
   const ADMIN_ALREADY_LOGGED_IN = {
