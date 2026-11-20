@@ -23444,6 +23444,12 @@ document.addEventListener('keydown',function(e){
 .wk-head{position:relative;display:flex;align-items:center;gap:10px;flex-wrap:nowrap;min-height:52px;padding:10px 56px 10px 16px;border-bottom:1px solid rgba(224,58,82,.10)}
 .wk-title{margin:0;flex:0 1 auto;min-width:0;font-size:17px;line-height:1.2;font-weight:800;letter-spacing:-.015em;white-space:nowrap;background:linear-gradient(90deg,#E03A52 0%,#F0623F 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent}
 .wk-count{display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;min-width:22px;height:20px;padding:0 6px;border-radius:99px;background:var(--warm-grad,linear-gradient(135deg,#ff8a5c,#f0506e 55%,#e0365d));color:#fff;font-size:12px;font-weight:700;box-shadow:0 6px 14px -6px rgba(232,54,93,.6)}
+.preav-skip{margin-left:auto;flex:0 0 auto;display:inline-flex;align-items:center;gap:7px;height:38px;padding:0 16px 0 13px;border:1px solid rgba(224,58,82,.22);border-radius:99px;background:linear-gradient(180deg,#fff 0%,#fff4f2 100%);color:#D13A4D;font-family:inherit;font-size:13px;font-weight:700;letter-spacing:.01em;line-height:1;white-space:nowrap;cursor:pointer;box-shadow:0 6px 16px -8px rgba(224,58,82,.45),inset 0 1px 0 rgba(255,255,255,.9);transition:transform .18s,box-shadow .18s,background .18s,color .18s,border-color .18s}
+.preav-skip svg{width:15px;height:15px;flex:0 0 auto;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.preav-skip:hover{background:linear-gradient(135deg,#F0623F,#E03A52);color:#fff;border-color:transparent;transform:translateY(-1px);box-shadow:0 10px 20px -8px rgba(224,58,82,.65)}
+.preav-skip:active{transform:translateY(0) scale(.97)}
+.preav-skip:focus-visible{outline:2px solid #E03A52;outline-offset:2px}
+@media (max-width:430px){.preav-skip{height:32px;padding:0 11px 0 9px;gap:5px;font-size:12px}.preav-skip svg{width:13px;height:13px}}
 .wk-head .preav-close{top:50% !important;bottom:auto !important;right:12px !important;margin:0 !important;transform:translateY(-50%)}
 .wk-head .preav-close:hover{transform:translateY(-50%) rotate(90deg) !important}
 @media (max-width:430px){
@@ -23458,6 +23464,7 @@ document.addEventListener('keydown',function(e){
       <div class="wk-head">
         <h2 class="wk-title">New Listings</h2>
         <span class="wk-count" id="preavCount"></span>
+        <button type="button" class="preav-skip" id="preavSkip" aria-label="Skip New Listings for today"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4l10 8-10 8V4z"/><line x1="19" y1="5" x2="19" y2="19"/></svg><span>Skip for today</span></button>
         <button class="preav-close" id="preavClose" aria-label="Close New Listings">
           <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
@@ -23470,10 +23477,15 @@ document.addEventListener('keydown',function(e){
 // Opens on first visit per session when this month's listings exist.
 // Skipped on deep links (shared property / compare / charges).
 var _preavLocked = false;
+var PREAV_SKIP_KEY = 'hl_preav_skip_date';
+function preavToday() { var d = new Date(); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); } // local date
+function preavSkippedToday() { try { return localStorage.getItem(PREAV_SKIP_KEY) === preavToday(); } catch (e) { return false; } }
+function preavSkipToday() { try { localStorage.setItem(PREAV_SKIP_KEY, preavToday()); } catch (e) {} closePreAvailModal(); }
 function showPreAvailModal() {
   var q = new URLSearchParams(window.location.search);
   if (q.has('compare') || q.has('property') || q.has('charges')) return;
   if (/^\/property\/[a-fA-F0-9]{24}$/.test(window.location.pathname)) return;
+  if (preavSkippedToday()) return; // user chose "Skip for today"
   // Only listings created this calendar month: 1st 12:00am through the last day 11:59:59pm (local time), sorted by property ID ascending.
   var now = new Date();
   var weekStart = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0); // 1st of the month 00:00
@@ -23524,6 +23536,7 @@ function preavAutoStart() {}
 function preavAutoStop() {}
 function preavAutoPause() {}
 document.getElementById('preavClose').addEventListener('click', closePreAvailModal);
+document.getElementById('preavSkip').addEventListener('click', preavSkipToday);
 document.getElementById('preavBackdrop').addEventListener('click', closePreAvailModal);
 // Card click opens the detail modal (inline onclick). The panel stays open underneath
 // (the detail modal's z-index is higher), so closing the detail returns to This Month's Listings.
