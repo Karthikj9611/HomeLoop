@@ -1878,6 +1878,7 @@ footer i{color:var(--gold)}
 
 .btn-view.btn-action-sub{background:#f3f0fd;color:#6c4fd6;border-color:rgba(108,79,214,0.25)}
 .btn-view.btn-action-sub:hover{background:#6c4fd6;color:#fff;box-shadow:0 4px 12px rgba(108,79,214,0.3)}
+.btn-view.btn-action-sub.is-disabled,.btn-view.btn-action-sub.is-disabled:hover{background:#f1f1f4;color:#a3a3ad;border-color:rgba(0,0,0,0.08);box-shadow:none;cursor:not-allowed;opacity:.65}
 .btn-view.btn-action-sub.is-set{background:var(--green-light);color:var(--green);border-color:rgba(5,150,105,0.25)}
 .btn-view.btn-action-sub.is-set:hover{background:var(--green);color:#fff;box-shadow:0 4px 12px rgba(5,150,105,0.3)}
 
@@ -13569,7 +13570,7 @@ $(document).ready(function(){
 				  <i class="fab fa-whatsapp"></i><span class="btn-label"> WhatsApp</span>
 				</button></span>
 
-				${(ACCT_OWNER_SIDE.includes(row.accountType) && row.accountType !== 'owner') ? '' : `<span class="pact pact-subscription"><button class="btn-view btn-action-sub${(row.subscriptionFrom || row.subscriptionAt) ? ' is-set' : ''}" onclick="openSubscriptionModal('${row.mobile || row._id}')" title="${(row.subscriptionFrom || row.subscriptionAt) ? 'Subscribed: ' + plainDateTime(row.subscriptionFrom || row.subscriptionAt) + (row.subscriptionTo ? ' → ' + plainDateTime(row.subscriptionTo) : '') + ((row.subscriptions || []).length > 1 ? '  (' + row.subscriptions.length + ' subscriptions — click to view / add)' : '  (click to add another)') : 'Set subscription From – To'}">
+				${`<span class="pact pact-subscription"><button class="btn-view btn-action-sub${ACCT_OWNER_SIDE.includes(row.accountType) ? ' is-disabled' : ((row.subscriptionFrom || row.subscriptionAt) ? ' is-set' : '')}"${ACCT_OWNER_SIDE.includes(row.accountType) ? ' disabled aria-disabled="true"' : ` onclick="openSubscriptionModal('${row.mobile || row._id}')"`} title="${ACCT_OWNER_SIDE.includes(row.accountType) ? 'Subscription is not available for ' + row.accountType + ' accounts' : (row.subscriptionFrom || row.subscriptionAt) ? 'Subscribed: ' + plainDateTime(row.subscriptionFrom || row.subscriptionAt) + (row.subscriptionTo ? ' → ' + plainDateTime(row.subscriptionTo) : '') + ((row.subscriptions || []).length > 1 ? '  (' + row.subscriptions.length + ' subscriptions — click to view / add)' : '  (click to add another)') : 'Set subscription From – To'}">
 				  <i class="fas fa-calendar-check"></i><span class="btn-label"> Subscription</span>
 				</button></span>`}
 
@@ -13589,10 +13590,10 @@ $(document).ready(function(){
 				  <i class="fas fa-rotate-left"></i><span class="btn-label"> Reset views</span>
 				</button></span>
 
-				<span class="pact pact-publiccall"><label class="mini-toggle-wrap altcall-wrap" title="${ACCT_OWNER_SIDE.includes(row.accountType) ? 'When ON, all of this ' + row.accountType + '\u2019s listings show their number(s) to every visitor' : 'When ON, this tenant sees owner numbers on all listings while logged in'}"><span class="mini-toggle altcall-toggle">
+				${(isVerified || row.accountType === 'agent') ? `<span class="pact pact-publiccall"><label class="mini-toggle-wrap altcall-wrap" title="${ACCT_OWNER_SIDE.includes(row.accountType) ? 'When ON, all of this ' + row.accountType + '\u2019s listings show their number(s) to every visitor' : 'When ON, this tenant sees owner numbers on all listings while logged in'}"><span class="mini-toggle altcall-toggle">
 				  <input type="checkbox" ${row.publicCall?'checked':''} ${canAct('customers')?'':'disabled'} onchange="toggleUserPublicCall('${row._id}',this,'${ACCT_OWNER_SIDE.includes(row.accountType)?row.accountType:'customer'}')">
 				  <span class="slider"></span>
-				</span><span class="altcall-label">${acctLabel(row.accountType)} public call</span></label></span>
+				</span></label></span>` : ''}
 
 			  </div>
 			`;
