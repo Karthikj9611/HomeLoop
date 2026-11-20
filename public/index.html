@@ -11891,7 +11891,6 @@ function vidTick(v) {
   const d = v.duration || 0;
   if (sk && !sk.dataset.drag) { sk.value = d ? Math.round(v.currentTime / d * 1000) : 0; sk.style.setProperty('--p', (sk.value / 10) + '%'); }
   if (tm) tm.textContent = vidFmt(v.currentTime) + ' / ' + vidFmt(d);
-  const _bt = v.closest('.prop-img') && v.closest('.prop-img').querySelector('.vid-badge-time'); if (_bt) _bt.textContent = vidFmt(v.currentTime);
 }
 function vidSeek(sk) {
   const w = sk.closest('.vid-wrap'), v = w && w.querySelector('video'); if (!v || !v.duration) return;
@@ -12134,18 +12133,17 @@ function slideGo(uid, idx) {
     if (_isVid) {
       if (!_vb) {
         _vb = document.createElement('span'); _vb.className = 'vid-badge'; _vb.setAttribute('aria-hidden', 'true');
-        _vb.innerHTML = '<svg viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg><span class=\"vid-badge-time\">0:00</span>';
+        _vb.innerHTML = '<svg viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>';
         _pe.appendChild(_vb);
       }
       const pr = _pe.getBoundingClientRect();
       const ic = [..._pe.querySelectorAll('.prop-right-badges .prop-icon-badge')].map(e => e.getBoundingClientRect()).filter(r => r.width > 0).pop();
-      const pc = _pe.querySelector(':scope > .prop-img-price');
-      const gap = pc ? Math.max(0, pr.bottom - pc.getBoundingClientRect().top) : 0;
-      const sz = ic ? Math.round(ic.width) : 30;
+      const lb = [..._pe.querySelectorAll('.prop-left-badges > *')].map(e => e.getBoundingClientRect()).filter(r => r.width > 0);
+      const lbBottom = lb.length ? Math.max(...lb.map(r => r.bottom)) - pr.top : 36;
+      const sz = 28;
       _vb.style.width = _vb.style.height = sz + 'px';
-      _vb.style.right = (ic ? Math.max(0, Math.round(pr.right - ic.right)) : 10) + 'px';
-      _vb.style.bottom = (gap + 8) + 'px';
-      { const _v = _act.querySelector('video'), _t = _vb.querySelector('.vid-badge-time'); if (_v && _t) _t.textContent = vidFmt(_v.currentTime); }
+      _vb.style.left = '8px'; _vb.style.right = 'auto'; _vb.style.bottom = 'auto';
+      _vb.style.top = Math.round(lbBottom + 6) + 'px';
       const sv = _vb.firstElementChild; if (sv) { sv.style.width = sv.style.height = Math.round(sz * 0.52) + 'px'; }
     } else if (_vb) _vb.remove();
   }
@@ -25363,7 +25361,6 @@ main.main.empty-with-booked:has(> .empty-state.show) > .empty-state.show{positio
 #chargesModal .charges-share-btn svg{width:18px !important;height:18px !important}
 .vid-badge{position:absolute;right:10px;bottom:10px;width:30px;height:30px;border-radius:50%;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:6;pointer-events:none}
 .vid-badge svg{width:16px;height:16px;fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.vid-badge-time{position:absolute;top:-6px;left:-8px;min-width:15px;height:15px;padding:0 4px;border-radius:99px;background:var(--brand);color:#fff;font-size:8.5px;font-weight:700;display:flex;align-items:center;justify-content:center;line-height:1;box-shadow:0 0 0 1.5px #fff;font-variant-numeric:tabular-nums}
 </style>
 <script>
 /* ── One tab only ─────────────────────────────────────────────────────────────
