@@ -1894,6 +1894,26 @@ footer i{color:var(--gold)}
 .btn-view.btn-action-resetviews{background:rgba(220,38,38,0.08);color:var(--red);border-color:rgba(220,38,38,0.25)}
 .btn-view.btn-action-resetviews:hover{background:var(--red);color:#fff}
 .btn-view.btn-action-resetviews:disabled{opacity:0.45;cursor:not-allowed}
+.cfab{position:fixed;right:16px;bottom:16px;z-index:900;display:none;flex-direction:column;align-items:flex-end;gap:5px}
+.cfab.show{display:flex}
+.cfab-list{display:flex;flex-direction:column;gap:5px;width:max-content;min-width:170px}
+.cfab.collapsed .cfab-list{display:none}
+.cfab-btn{display:flex;align-items:center;gap:8px;height:30px;padding:0 14px;border:0;border-radius:10px;color:#fff;font-family:inherit;font-size:.76rem;font-weight:700;white-space:nowrap;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.22);transition:transform .12s,filter .12s}
+.cfab-btn:hover{filter:brightness(1.08);transform:translateY(-1px)}
+.cfab-btn i{font-size:.85rem;width:16px;text-align:center}
+.cfab-btn .cfab-n{margin-left:auto;padding-left:14px;font-weight:700}
+.cfab-btn.pos{background:#059669}
+.cfab-btn.neg{background:#dc2626}
+.cfab-btn:disabled{opacity:.45;cursor:not-allowed;transform:none;filter:none}
+.cfab-toggle{width:32px;height:32px;border-radius:50%;border:1px solid var(--border);background:var(--surface,#fff);color:var(--ink);box-shadow:0 4px 14px rgba(0,0,0,.22);cursor:pointer;display:flex;align-items:center;justify-content:center}
+.cfab-toggle i{transition:transform .2s}
+.cfab.collapsed .cfab-toggle i{transform:rotate(180deg)}
+@media(max-width:768px){.cfab{right:14px;bottom:14px}}
+/* Customers grid: every action button is green (positive) or red (negative) */
+#bookingTable .btn-view.btn-action-view,#bookingTable .btn-view.btn-action-wa,#bookingTable .btn-view.btn-action-sub:not(.is-disabled){background:var(--green-light);color:var(--green);border-color:rgba(5,150,105,0.3)}
+#bookingTable .btn-view.btn-action-view:hover,#bookingTable .btn-view.btn-action-wa:hover,#bookingTable .btn-view.btn-action-sub:not(.is-disabled):hover{background:var(--green);color:#fff;box-shadow:0 4px 12px rgba(5,150,105,0.3)}
+#bookingTable .btn-view.btn-action-logout,#bookingTable .btn-view.btn-action-block,#bookingTable .btn-view.btn-action-resetviews,#bookingTable .btn-view.btn-action-delete{background:var(--red-light);color:var(--red);border-color:rgba(220,38,38,0.3)}
+#bookingTable .btn-view.btn-action-logout:hover,#bookingTable .btn-view.btn-action-block:hover,#bookingTable .btn-view.btn-action-block.is-blocked,#bookingTable .btn-view.btn-action-resetviews:hover,#bookingTable .btn-view.btn-action-delete:hover{background:var(--red);color:#fff;box-shadow:0 4px 12px rgba(220,38,38,0.3)}
 
 /* ── EDIT BUTTON ── */
 .btn-edit{
@@ -4255,6 +4275,19 @@ tr.nf-flash td{animation:nfFlash 3s ease-out}
             <button type="button" class="bulk-btn bulk-btn-danger" id="custDeleteSelectedBtn" style="display:none" onclick="deleteSelectedCustomers()">
               <i class="fas fa-trash"></i> <span class="bulk-btn-label" data-mobile="Delete">Delete (<span id="custDeleteCount">0</span>)</span>
             </button>
+            <div class="cfab" id="custBulkFab">
+              <div class="cfab-list">
+                <button type="button" class="cfab-btn pos" onclick="runCustBulk('verify')" title="Verify all selected customers"><i class="fas fa-user-check"></i><span>Verify</span><b class="cfab-n">0</b></button>
+                <button type="button" class="cfab-btn neg" onclick="runCustBulk('unverify')" title="Unverify all selected customers"><i class="fas fa-user-xmark"></i><span>Unverify</span><b class="cfab-n">0</b></button>
+                <button type="button" class="cfab-btn pos" onclick="runCustBulk('callOn')" title="Turn public call ON for the selected (verified) customers"><i class="fas fa-phone"></i><span>Call ON</span><b class="cfab-n">0</b></button>
+                <button type="button" class="cfab-btn neg" onclick="runCustBulk('callOff')" title="Turn public call OFF for the selected (verified) customers"><i class="fas fa-phone-slash"></i><span>Call OFF</span><b class="cfab-n">0</b></button>
+                <button type="button" class="cfab-btn pos" onclick="runCustBulk('unblock')" title="Unblock all selected customers"><i class="fas fa-lock-open"></i><span>Unblock</span><b class="cfab-n">0</b></button>
+                <button type="button" class="cfab-btn neg" onclick="runCustBulk('block')" title="Block all selected customers"><i class="fas fa-ban"></i><span>Block</span><b class="cfab-n">0</b></button>
+                <button type="button" class="cfab-btn neg" onclick="runCustBulk('logout')" title="Force logout all selected customers"><i class="fas fa-right-from-bracket"></i><span>Logout</span><b class="cfab-n">0</b></button>
+                <button type="button" class="cfab-btn neg" id="cfabResetViews" onclick="runCustBulk('resetViews')" title="Reset views for all selected customers (super admin only)"><i class="fas fa-rotate-left"></i><span>Reset Views</span><b class="cfab-n">0</b></button>
+              </div>
+              <button type="button" class="cfab-toggle" id="custFabToggle" onclick="toggleCustFab()" aria-label="Hide actions" title="Hide actions"><i class="fas fa-chevron-down"></i></button>
+            </div>
           </div>
           <div class="bulk-toolbar-right">
             <div class="col-toggle-wrap" id="custColToggleWrap">
@@ -4531,7 +4564,7 @@ tr.nf-flash td{animation:nfFlash 3s ease-out}
               <th><select class="col-filter-select" data-filter-key="reason" onchange="onPropColumnFilter('reason', this.value, this)"><option value="">All</option><option value="Already rented">Already rented</option><option value="Wrong details">Wrong details</option><option value="Photos missing">Photos missing</option><option value="Price too high">Price too high</option><option value="Duplicate listing">Duplicate listing</option><option value="Fake listing">Fake listing</option><option value="Location mismatch">Location mismatch</option><option value="Under renovation">Under renovation</option><option value="Callback">Callback</option><option value="Not answered">Not answered</option><option value="Switched off">Switched off</option><option value="Shifted through us">Shifted through us</option></select></th>
               <th><input type="text" class="col-filter-input" data-filter-key="remarks" placeholder="Search…" oninput="onPropColumnFilter('remarks', this.value, this)"></th>
               <th></th>
-              <th><input type="number" min="0" step="0.1" class="col-filter-input" data-filter-key="maxDistanceKm" placeholder="≤ km" title="Show only listings within this many km of your current location (needs location access, used by the Directions button)" oninput="onPropColumnFilter('maxDistanceKm', this.value, this)"></th>
+              <th><div class="act-ms col-filter-input" tabindex="0" onclick="openPropActionPanel(this)" title="Pick one or more actions"></div></th>
             </tr>
           </thead>
           <tbody>
@@ -13004,6 +13037,12 @@ function updateCustBulkToolbarUI(){
   if (show && _selAllBlocksDelete(syncCustSelectAllCheckbox, 'cust-select-all-checkbox', n)){ if (delBtn) delBtn.style.display = 'none'; if (countEl) countEl.style.display = 'none'; }
   numEl.textContent = n;
   if (delCountEl) delCountEl.textContent = n;
+  const fab = document.getElementById('custBulkFab');
+  if (fab){
+    fab.classList.toggle('show', n > 0);
+    fab.querySelectorAll('.cfab-n').forEach(el => { el.textContent = n; });
+    const rv = document.getElementById('cfabResetViews'); if (rv) rv.disabled = !!window.DISABLE_RESET_VIEWS_BTN;
+  }
 }
 
 window.clearCustSelection = function(){
@@ -13012,6 +13051,79 @@ window.clearCustSelection = function(){
   updateCustBulkToolbarUI();
   syncCustSelectionUI();
   setTimeout(syncCustSelectionUI, 0);
+};
+
+/* ── BULK ACTIONS for the selected customers ──
+   Uses the same per-customer endpoints as the row buttons, one request per selected customer, then reports
+   how many worked / were skipped / failed. (Bulk delete stays disabled, as before.) */
+window.toggleCustFab = function(){
+  const f = document.getElementById('custBulkFab'), b = document.getElementById('custFabToggle');
+  const collapsed = f.classList.toggle('collapsed');
+  b.setAttribute('aria-label', collapsed ? 'Show actions' : 'Hide actions'); b.title = collapsed ? 'Show actions' : 'Hide actions';
+};
+window.runCustBulk = async function(action){
+  if(blockIfViewOnly('customers')) return;
+  const keys = Array.from(_selectedCustIds);
+  if(!keys.length) return;
+  // Look the rows up in the table's own data (selected rows may be on another page).
+  const byKey = {};
+  dataTable.rows().data().toArray().forEach(r => { byKey[r.mobile || r._id] = r; });
+  const rows = keys.map(k => byKey[k]).filter(Boolean);
+  if(!rows.length) return;
+  if(action === 'resetViews' && window.DISABLE_RESET_VIEWS_BTN){ alert('Only the super admin can reset views.'); return; }
+
+  const CFG = {
+    verify:     { title:'Verify',            okText:'Verify',        variant:'success', skip:r => !!r.isVerified,  skipWhy:'already verified',
+                  msg:'They\'ll be able to submit listings, visit requests, bookings, reviews and payments.',
+                  call:r => fetch(`${BASE}/api/users/${r._id}/verify`, { method:'PATCH', headers:{ ...authHeaders(), 'Content-Type':'application/json' }, body: JSON.stringify({ verified:true }) }) },
+    unverify:   { title:'Unverify',          okText:'Unverify',      variant:'info',    skip:r => !r.isVerified,  skipWhy:'not verified',
+                  msg:'They will no longer be able to submit listings, visit requests, bookings, reviews or payments.',
+                  call:r => fetch(`${BASE}/api/users/${r._id}/verify`, { method:'PATCH', headers:{ ...authHeaders(), 'Content-Type':'application/json' }, body: JSON.stringify({ verified:false }) }) },
+    callOn:     { title:'Turn public call ON for', okText:'Turn ON',  variant:'info',    skip:r => !r.isVerified || !!r.publicCall, skipWhy:'not verified or already ON',
+                  msg:'Only verified customers are changed. Owner-side accounts show their listings\' numbers to every visitor; tenants see owner numbers on every listing while logged in.',
+                  call:r => fetch(`${BASE}/api/users/${r._id}/publicCall`, { method:'PATCH', headers:{ ...authHeaders(), 'Content-Type':'application/json' }, body: JSON.stringify({ publicCall:true }) }) },
+    callOff:    { title:'Turn public call OFF for', okText:'Turn OFF', variant:'info',   skip:r => !r.isVerified || !r.publicCall,  skipWhy:'not verified or already OFF',
+                  msg:'Only verified customers are changed.',
+                  call:r => fetch(`${BASE}/api/users/${r._id}/publicCall`, { method:'PATCH', headers:{ ...authHeaders(), 'Content-Type':'application/json' }, body: JSON.stringify({ publicCall:false }) }) },
+    block:      { title:'Block',             okText:'Block',         variant:'danger',  skip:r => !!r.isBlocked,  skipWhy:'already blocked',
+                  msg:'They will be logged out on all devices right away and cannot log in until unblocked.',
+                  call:r => fetch(`${BASE}/api/users/${r._id}/block`, { method:'PATCH', headers:{ ...authHeaders(), 'Content-Type':'application/json' }, body: JSON.stringify({ blocked:true }) }) },
+    unblock:    { title:'Unblock',           okText:'Unblock',       variant:'info',    skip:r => !r.isBlocked,   skipWhy:'not blocked',
+                  msg:'They will be able to log in again.',
+                  call:r => fetch(`${BASE}/api/users/${r._id}/block`, { method:'PATCH', headers:{ ...authHeaders(), 'Content-Type':'application/json' }, body: JSON.stringify({ blocked:false }) }) },
+    logout:     { title:'Force logout',      okText:'Log out',       variant:'info',    skip:() => false,         skipWhy:'',
+                  msg:'Clears their active session so they can log in on a new device right away. Does nothing for anyone not logged in.',
+                  call:r => fetch(`${BASE}/api/users/${r._id}/session`, { method:'DELETE', headers: authHeaders() }) },
+    resetViews: { title:'Reset views for',   okText:'Reset views',   variant:'danger',  skip:r => !r.isVerified,  skipWhy:'not verified',
+                  msg:'Deletes every view record for these accounts: listings they viewed (counts go down by one each) and all views on listings they own (set back to 0). This cannot be undone.',
+                  call:r => fetch(`${BASE}/api/users/${r._id}/views`, { method:'DELETE', headers: authHeaders() }) }
+  }[action];
+  if(!CFG) return;
+
+  const todo = rows.filter(r => !CFG.skip(r));
+  const skipped = rows.length - todo.length;
+  if(!todo.length){ alert('Nothing to do: all ' + rows.length + ' selected customer' + (rows.length === 1 ? ' is' : 's are') + ' ' + CFG.skipWhy + '.'); return; }
+
+  const ok = await showConfirmModal({
+    title: `${CFG.title} ${todo.length} customer${todo.length === 1 ? '' : 's'}?`,
+    message: CFG.msg + (skipped ? `\n\n${skipped} selected will be skipped (${CFG.skipWhy}).` : ''),
+    okText: CFG.okText,
+    variant: CFG.variant
+  });
+  if(!ok) return;
+
+  let done = 0, failed = 0;
+  for(let i = 0; i < todo.length; i += 5){                       // 5 at a time
+    const results = await Promise.all(todo.slice(i, i + 5).map(async r => {
+      try{ const res = await CFG.call(r); return res.ok; } catch(e){ return false; }
+    }));
+    results.forEach(okk => okk ? done++ : failed++);
+  }
+  _selectedCustIds.clear();
+  try{ dataTable.ajax.reload(null, false); }catch(e){}
+  updateCustBulkToolbarUI();
+  syncCustSelectionUI();
+  alert(`${done} done` + (skipped ? `, ${skipped} skipped` : '') + (failed ? `, ${failed} failed` : '') + '.');
 };
 
 // There's no bulk-delete endpoint for customers on the backend, so this
@@ -13624,13 +13736,13 @@ $(document).ready(function(){
 				  <i class="fas fa-eye"></i><span class="btn-label"> View</span>
 				</button></span>
 
+				<span class="pact pact-verified">${verifiedBadge(isVerified, row._id)}</span>
+
 				<span class="pact pact-whatsapp"><button class="btn-view btn-action-wa" onclick="openCustomerWhatsApp('${row.mobile || row._id}')" title="Open a WhatsApp chat with this ${(ACCT_OWNER_SIDE.includes(row.accountType) ? row.accountType : 'tenant')}">
 				  <i class="fab fa-whatsapp"></i><span class="btn-label"> WhatsApp</span>
 				</button></span>
 
-				<span class="pact pact-verified">${verifiedBadge(isVerified, row._id)}</span>
-
-				${`<span class="pact pact-subscription"><button class="btn-view btn-action-sub${ACCT_OWNER_SIDE.includes(row.accountType) ? ' is-disabled' : ((row.subscriptionFrom || row.subscriptionAt) ? ' is-set' : '')}"${ACCT_OWNER_SIDE.includes(row.accountType) ? ' disabled aria-disabled="true"' : ` onclick="openSubscriptionModal('${row.mobile || row._id}')"`} title="${ACCT_OWNER_SIDE.includes(row.accountType) ? 'Subscription is not available for ' + row.accountType + ' accounts' : (row.subscriptionFrom || row.subscriptionAt) ? 'Subscribed: ' + plainDateTime(row.subscriptionFrom || row.subscriptionAt) + (row.subscriptionTo ? ' → ' + plainDateTime(row.subscriptionTo) : '') + ((row.subscriptions || []).length > 1 ? '  (' + row.subscriptions.length + ' subscriptions — click to view / add)' : '  (click to add another)') : 'Set subscription From – To'}">
+				${`<span class="pact pact-subscription"><button class="btn-view btn-action-sub${(ACCT_OWNER_SIDE.includes(row.accountType) || !isVerified) ? ' is-disabled' : ((row.subscriptionFrom || row.subscriptionAt) ? ' is-set' : '')}"${(ACCT_OWNER_SIDE.includes(row.accountType) || !isVerified) ? ' disabled aria-disabled="true"' : ` onclick="openSubscriptionModal('${row.mobile || row._id}')"`} title="${ACCT_OWNER_SIDE.includes(row.accountType) ? 'Subscription is not available for ' + row.accountType + ' accounts' : !isVerified ? 'Verify this customer to enable subscription' : (row.subscriptionFrom || row.subscriptionAt) ? 'Subscribed: ' + plainDateTime(row.subscriptionFrom || row.subscriptionAt) + (row.subscriptionTo ? ' → ' + plainDateTime(row.subscriptionTo) : '') + ((row.subscriptions || []).length > 1 ? '  (' + row.subscriptions.length + ' subscriptions — click to view / add)' : '  (click to add another)') : 'Set subscription From – To'}">
 				  <i class="fas fa-calendar-check"></i><span class="btn-label"> Subscription</span>
 				</button></span>`}
 
@@ -13647,7 +13759,7 @@ $(document).ready(function(){
 				  <i class="fas ${row.isBlocked ? 'fa-lock-open' : 'fa-ban'}"></i><span class="btn-label"> ${row.isBlocked ? 'Unblock' : 'Block'}</span>
 				</button></span>
 
-				<span class="pact pact-resetviews"><button class="btn-view btn-action-resetviews" onclick="resetUserViews('${row._id}')" title="Delete this customer's viewed-property records and the views on their own listings" ${(window.DISABLE_RESET_VIEWS_BTN || !canAct('customers'))?'disabled':''}>
+				<span class="pact pact-resetviews"><button class="btn-view btn-action-resetviews" onclick="resetUserViews('${row._id}')" title="${isVerified ? 'Delete this customer\'s viewed-property records and the views on their own listings' : 'Verify this customer to enable reset views'}" ${(window.DISABLE_RESET_VIEWS_BTN || !canAct('customers') || !isVerified)?'disabled':''}>
 				  <i class="fas fa-rotate-left"></i><span class="btn-label"> Reset views</span>
 				</button></span>
 
@@ -14322,6 +14434,7 @@ $(document).ready(function(){
     syncPropColToggleCheckbox(column, state);
   });
   restoreFilterInputsUI('propertyTable_wrapper', _propColumnFilters);
+  if(typeof renderPropActionMS === 'function') renderPropActionMS();
   updateFilterBadge(_propColumnFilters, 'propFilterBadge', 'propFilterCount', 'propClearFiltersBtn');
   } catch(e){ console.error('Properties table failed to initialize:', e); }
 
@@ -16202,7 +16315,7 @@ const _propColumnFilters = {
   ssRoomType:'', ssAvailable24hrs:'', ssCancellation:'', ssCouplesAllowed:'',
   visitCount:'', views:'', propertyId:'', userId:'', promotedPriority:'',
   listedOnStart:'', listedOnEnd:'', promoted:'', verified:'', booked:'', remarks:'', reason:'', amenities:'',
-  maxDistanceKm:''
+  action:''
 };
 
 // ── QUICK DATE-RANGE PRESETS ──
@@ -16266,7 +16379,8 @@ const PROP_FILTER_STORAGE_KEY = 'rip_admin_propFilters';
 loadFilterState(PROP_FILTER_STORAGE_KEY, _propColumnFilters);
 
 window.clearPropFilters = function(){
-  clearFiltersGeneric('propertyTable_wrapper', _propColumnFilters, propTable, PROP_FILTER_STORAGE_KEY, 'propFilterBadge', 'propFilterCount', 'propClearFiltersBtn');
+  clearFiltersGeneric('propertyTable_wrapper', _propColumnFilters, propTable, PROP_FILTER_STORAGE_KEY, 'propFilterBadge', 'propFilterCount', 'propClearFiltersBtn');
+  renderPropActionMS();
 };
 
 window.onPropColumnFilter = function(field, value, inputEl){
@@ -17067,6 +17181,125 @@ function updatePropCategoryCounts(data){
   });
 }
 
+// ── Action multi-select (chips) ──
+// Each action can be On (has it / enabled) or Off. Match "all" chips or "any" chip.
+const PROP_ACT_OPTS = [
+  {k:'verified',    l:'Verified'},
+  {k:'promoted',    l:'Promoted'},
+  {k:'priority',    l:'Priority'},
+  {k:'booked',      l:'Booked'},
+  {k:'public call', l:'Public call'}
+];
+let _propActAny = /^any:/i.test(String(_propColumnFilters.action||''));
+(function(){
+  const st = document.createElement('style');
+  st.textContent = `
+  .act-ms{display:flex;flex-wrap:wrap;align-items:center;gap:4px;min-height:30px;cursor:pointer;padding:3px 24px 3px 6px;position:relative;white-space:normal}
+  .act-ms::after{content:'\\25BE';position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:.8rem;color:var(--ink3)}
+  .act-ms .act-ph{color:var(--ink3);font-weight:400}
+  .act-chip{display:inline-flex;align-items:center;gap:4px;padding:2px 4px 2px 8px;border-radius:999px;background:#e8f7ef;color:#0a7a4b;border:1px solid rgba(10,122,75,.3);font-size:.7rem;font-weight:600}
+  .act-chip.neg{background:#fde8e8;color:#b42318;border-color:rgba(180,35,24,.3)}
+  .act-chip .act-x{cursor:pointer;width:16px;height:16px;line-height:15px;text-align:center;border-radius:50%;font-weight:700}
+  .act-chip .act-x:hover{background:rgba(0,0,0,.12)}
+  #propActPanel{position:fixed;z-index:99999;background:#fff;border:1.3px solid var(--gold);border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.2);padding:6px;min-width:240px;font-family:'Inter',sans-serif;font-size:.78rem}
+  #propActPanel .act-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 10px;border-radius:7px;font-weight:500;color:var(--ink)}
+  #propActPanel .act-row:hover{background:var(--gold-light)}
+  #propActPanel .act-seg{display:inline-flex;border:1px solid var(--border);border-radius:999px;overflow:hidden}
+  #propActPanel .act-seg button{border:0;background:#fff;padding:3px 12px;font-size:.72rem;font-weight:600;cursor:pointer;color:var(--ink3)}
+  #propActPanel .act-seg button.on-yes{background:#0a7a4b;color:#fff}
+  #propActPanel .act-seg button.on-no{background:#b42318;color:#fff}
+  #propActPanel .act-mode{display:flex;align-items:center;justify-content:space-between;padding:6px 10px;border-top:1px solid var(--border);margin-top:4px;font-size:.72rem;color:var(--ink3)}
+  #propActPanel .act-mode a{cursor:pointer;font-weight:600;color:var(--gold-dark)}
+  #propActPanel .act-mode button.m-on{background:var(--ink);color:#fff}
+  #propActPanel .act-mode button{border:1px solid var(--border);background:#fff;border-radius:999px;padding:3px 10px;font-size:.72rem;font-weight:600;cursor:pointer;margin-left:4px}`;
+  document.head.appendChild(st);
+})();
+function propActParse(){
+  return String(_propColumnFilters.action||'').replace(/^any:/i,'').split(',').map(t=>t.trim().toLowerCase()).filter(Boolean).map(t=>{
+    const neg = /^not\s+/.test(t); const k = t.replace(/^not\s+/,'');
+    return {k, neg};
+  }).filter(o=>PROP_ACT_OPTS.some(x=>x.k===o.k));
+}
+function propActSave(list){
+  const v = list.length ? (_propActAny ? 'any: ' : '') + list.map(o=>(o.neg?'not ':'')+o.k).join(', ') : '';
+  onPropColumnFilter('action', v, null);
+  renderPropActionMS();
+}
+function renderPropActionMS(){
+  const list = propActParse();
+  const label = k => (PROP_ACT_OPTS.find(x=>x.k===k)||{}).l || k;
+  const html = list.length ? list.map(o=>`<span class="act-chip${o.neg?' neg':''}" title="Click to switch On / Off" onclick="event.stopPropagation();flipPropAction('${o.k}')">${o.neg?'Not ':''}${label(o.k)}<span class="act-x" title="Remove" onclick="event.stopPropagation();removePropAction('${o.k}')">&times;</span></span>`).join('')
+                           : '<span class="act-ph">Select actions…</span>';
+  document.querySelectorAll('.act-ms').forEach(el=>{ el.innerHTML = html; el.classList.toggle('active-col-filter', list.length>0); });
+  const panel = document.getElementById('propActPanel');
+  if(panel){
+    panel.querySelectorAll('.act-row').forEach(row=>{
+      const k = row.getAttribute('data-k'); const cur = list.find(o=>o.k===k);
+      row.querySelector('[data-v="yes"]').className = (cur && !cur.neg) ? 'on-yes' : '';
+      row.querySelector('[data-v="no"]').className  = (cur && cur.neg)  ? 'on-no'  : '';
+    });
+    panel.querySelectorAll('.act-mode button').forEach(b=> b.classList.toggle('m-on', (b.getAttribute('data-m')==='any') === _propActAny));
+  }
+}
+window.removePropAction = function(k){ propActSave(propActParse().filter(o=>o.k!==k)); };
+window.flipPropAction = function(k){ propActSave(propActParse().map(o=>o.k===k?{k:o.k,neg:!o.neg}:o)); };
+// v = 'yes' | 'no'; clicking the active one again clears it
+window.setPropAction = function(k, v){
+  const list = propActParse(); const cur = list.find(o=>o.k===k);
+  const want = (v==='no');
+  const rest = list.filter(o=>o.k!==k);
+  if(!(cur && cur.neg===want)) rest.push({k, neg:want});
+  propActSave(rest);
+};
+window.setPropActMode = function(m){ _propActAny = (m==='any'); propActSave(propActParse()); };
+function closePropActionPanel(){ const p=document.getElementById('propActPanel'); if(p) p.remove(); }
+window.openPropActionPanel = function(el){
+  if(document.getElementById('propActPanel')){ closePropActionPanel(); return; }
+  const r = el.getBoundingClientRect();
+  const p = document.createElement('div');
+  p.id = 'propActPanel';
+  p.style.left = Math.max(8, Math.min(r.left, window.innerWidth-260)) + 'px';
+  p.style.top = (r.bottom + 4) + 'px';
+  p.style.minWidth = Math.max(240, r.width) + 'px';
+  p.innerHTML = PROP_ACT_OPTS.map(o=>`<div class="act-row" data-k="${o.k}"><span>${o.l}</span><span class="act-seg"><button data-v="yes" onclick="setPropAction('${o.k}','yes')">On</button><button data-v="no" onclick="setPropAction('${o.k}','no')">Off</button></span></div>`).join('')
+    + '<div class="act-mode"><span>Match <button data-m="all" onclick="setPropActMode(\'all\')">All</button><button data-m="any" onclick="setPropActMode(\'any\')">Any</button></span><a onclick="propActSave([])">Clear</a></div>';
+  document.body.appendChild(p);
+  renderPropActionMS();
+  setTimeout(()=>{
+    const off = e => { if(!p.contains(e.target) && !e.target.closest('.act-ms')){ closePropActionPanel(); document.removeEventListener('mousedown', off, true); window.removeEventListener('scroll', closePropActionPanel, true); } };
+    document.addEventListener('mousedown', off, true);
+    window.addEventListener('scroll', closePropActionPanel, true);
+  }, 0);
+};
+
+// Action-column search: each entry = names the user may type + whether that
+// action is available/on for a row. Typing "not <name>" (or "!<name>") inverts it.
+const PROP_ACTION_SEARCH = [
+  {n:['verified'],               t:r=>!!r.verified},
+  {n:['promoted'],               t:r=>!!r.promoted},
+  {n:['priority'],               t:r=>!!(r.full && r.full.promotedPriority > 0)},
+  {n:['booked'],                 t:r=>!!r.booked},
+  {n:['public call','call'],     t:r=>!!(r.ownerPhoneCall || r.ownerDirectCall)}
+];
+function propActionMatches(row, query){
+  // Several terms separated by comma. Default: row must satisfy ALL; "any:" prefix: ANY one.
+  let qs = String(query||'');
+  const any = /^\s*any:/i.test(qs);
+  qs = qs.replace(/^\s*any:/i,'');
+  const terms = qs.split(/[,;+]+/).map(t=>t.trim().toLowerCase()).filter(Boolean);
+  if(!terms.length) return true;
+  const test = term=>{
+    let q = term, neg = false;
+    const m = q.match(/^(?:not\s+|no\s+|!\s*)(.*)$/);
+    if(m){ neg = true; q = m[1].trim(); }
+    if(!q) return true;
+    const hits = PROP_ACTION_SEARCH.filter(a => a.n.some(x => x.includes(q)));
+    if(!hits.length) return false;
+    return hits.some(a => neg ? !a.t(row) : a.t(row));
+  };
+  return any ? terms.some(test) : terms.every(test);
+}
+
 $.fn.dataTable.ext.search.push(function(settings, data, dataIndex){
   if(settings.nTable.id !== 'propertyTable') return true;
   const row = propTable ? propTable.row(dataIndex).data() : null;
@@ -17149,13 +17382,7 @@ $.fn.dataTable.ext.search.push(function(settings, data, dataIndex){
   if(cf.remarks && !contains(flattenRemarks(row.remarks||[]), cf.remarks)) return false;
   if(cf.reason && (row.reason||'') !== cf.reason) return false;
   if(cf.amenities && !contains((Array.isArray(row.amenities)?row.amenities:[]).join(', '), cf.amenities)) return false;
-  if(cf.maxDistanceKm){
-    const maxKm = parseFloat(cf.maxDistanceKm);
-    if(!isNaN(maxKm)){
-      const km = computeDistanceKm(row);
-      if(km === null || km > maxKm) return false;
-    }
-  }
+  if(cf.action && !propActionMatches(row, cf.action)) return false;
 
   return true;
 });
