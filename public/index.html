@@ -12022,8 +12022,9 @@ function buildImgSlider(p, fg, uidSuffix, videoSlideHtml) {
   // approach, which fired for every rendered card regardless of scroll
   // position and congested the network enough to blank out the very
   // images that were actually scrolling into view.
+  const _videoFirst = !!(videoSlideHtml && imgs.length >= 1);
   const imgSlides = imgs.map((url, i) =>
-    `<img class="img-slide${i===0?' active':''}" ${i===0?`src="${safeUrl(url)}" loading="lazy"`:`data-src="${safeUrl(url)}"`} decoding="sync" alt="" draggable="false" onclick="event.stopPropagation();handleCardImgClick(this,'${p.id}',${i})" />`
+    `<img class="img-slide${(i===0 && !_videoFirst)?' active':''}" ${(i===0 && !_videoFirst)?`src="${safeUrl(url)}" loading="lazy"`:`data-src="${safeUrl(url)}"`} decoding="sync" alt="" draggable="false" onclick="event.stopPropagation();handleCardImgClick(this,'${p.id}',${i})" />`
   ).join('');
   // Video tour, when present, always comes after every photo — the last
   // slide in the same swipeable gallery rather than a separate section.
@@ -12031,7 +12032,7 @@ function buildImgSlider(p, fg, uidSuffix, videoSlideHtml) {
   // out of the DOM (data-vh) and only injected by slideGo() once a plan is active.
   const videoSlide = videoSlideHtml
     ? (imgs.length >= 1
-        ? `<div class="img-slide video-slide" data-vh="${encodeURIComponent(videoSlideHtml)}"></div>`
+        ? `<div class="img-slide video-slide active" data-vh="${encodeURIComponent(videoSlideHtml)}"></div>`
         : `<div class="img-slide video-slide active">${videoSlideHtml}</div>`)
     : '';
   const _slideCount = imgs.length + (videoSlideHtml && imgs.length >= 1 ? 1 : 0);
@@ -12039,7 +12040,7 @@ function buildImgSlider(p, fg, uidSuffix, videoSlideHtml) {
   if (_slideCount >= 2 && uidSuffix !== '-cmp') {
     dots = `<div class="card-slide-dots${_slideCount > 10 ? ' tiny' : ''}" aria-hidden="true">${Array.from({length:_slideCount},(_,i)=>`<span class="${i===0?'active':''}"></span>`).join('')}</div>`;
   }
-  return `<div class="img-slides" id="${uid}" data-pid="${p.id}"${(p.ownListing || p.singleUnlocked) ? ' data-own="1"' : ''}>${imgSlides}${videoSlide}</div>${dots}`;
+  return `<div class="img-slides" id="${uid}" data-pid="${p.id}"${(p.ownListing || p.singleUnlocked) ? ' data-own="1"' : ''}>${videoSlide}${imgSlides}</div>${dots}`;
 }
 
 // Loads a card's non-first slides (see the data-src comment in
@@ -12076,6 +12077,28 @@ function observeCardImgs(root) {
   }
   (root || document).querySelectorAll('.img-slides').forEach(el => {
     if (el.querySelector('.img-slide[data-src], img.img-slide[loading=lazy]')) _cardImgObserver.observe(el);
+  });
+  observeCardVideos(root);
+}
+/* Video-first galleries: the video plays (muted) while its card is on screen and pauses when it scrolls away. */
+let _cardVidObserver = null;
+function observeCardVideos(root) {
+  if (!('IntersectionObserver' in window)) return;
+  if (!_cardVidObserver) {
+    _cardVidObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        const c = entry.target; if (!c.isConnected) { _cardVidObserver.unobserve(c); return; }
+        const slides = [...c.querySelectorAll('.img-slide')];
+        const idx = Math.max(0, slides.findIndex(sl => sl.classList.contains('active')));
+        if (!slides[idx] || !slides[idx].classList.contains('video-slide')) return;
+        if (entry.intersectionRatio >= 0.4) slideGo(c.id, idx);
+        else { const w = slides[idx].querySelector('.vid-wrap'); if (w) vidAutoCmd(w, false); }
+      });
+    }, { threshold: [0, 0.4] });
+  }
+  (root || document).querySelectorAll('.img-slides').forEach(el => {
+    const f = el.querySelector('.img-slide');
+    if (f && f.classList.contains('video-slide') && el.querySelectorAll('.img-slide').length > 1) _cardVidObserver.observe(el);
   });
 }
 
@@ -12367,8 +12390,9 @@ function preloadLightboxNeighbors() {
   const locked = lightboxLockedIdx();
   const all = lightboxTotal();
   [(lightboxIdx + 1) % all, (lightboxIdx - 1 + all) % all].forEach(n => {
-    // skip the video slot (index >= photo count) and the locked photo
-    if (n < lightboxImgs.length && n !== locked) preloadLightboxImage(lightboxImgs[n]);
+    // skip the video slot (slot 0) and the locked photo
+    const pi = n - (lightboxVideoHtml ? 1 : 0);
+    if (pi >= 0 && pi < lightboxImgs.length && n !== locked) preloadLightboxImage(lightboxImgs[pi]);
   });
 }
 
@@ -12404,7 +12428,7 @@ function openLightboxReal(propId, idx) {
   lightboxOwn = !!(p.ownListing || p.singleUnlocked); // own listing, or unlocked via a verified Single Property Plan
   lightboxPropertyMode = true;
   lightboxPropId = String(propId);
-  lightboxIdx = idx || 0;
+  lightboxIdx = (idx || 0) + (lightboxVideoHtml ? 1 : 0); // video is slot 0, photos follow
   lightboxPreloaded.clear();
   renderLightbox();
   document.getElementById('lightboxOverlay').classList.add('open');
@@ -12433,7 +12457,7 @@ function openLightboxSimple(urls, idx) {
 
 // Index of the locked photo (the last PHOTO, never the video), or -1 when nothing is locked.
 function lightboxLockedIdx() {
-  return (lightboxPropertyMode && !lightboxOwn && lastItemLocked(lightboxImgs.length)) ? lightboxImgs.length - 1 : -1;
+  return (lightboxPropertyMode && !lightboxOwn && lastItemLocked(lightboxImgs.length)) ? lightboxImgs.length - 1 + (lightboxVideoHtml ? 1 : 0) : -1;
 }
 
 function lightboxVideoLocked() {
@@ -12465,7 +12489,8 @@ function lightboxGo(idx) {
 function renderLightbox() {
   const total = lightboxTotal();
   if (!total) return;
-  const isVideo = lightboxIdx >= lightboxImgs.length;
+  const _vo = lightboxVideoHtml ? 1 : 0;
+  const isVideo = !!_vo && lightboxIdx === 0;
   const imgEl = document.getElementById('lightboxImg');
   const videoEl = document.getElementById('lightboxVideo');
   const lockedIdx = lightboxLockedIdx();
@@ -12497,15 +12522,15 @@ function renderLightbox() {
     videoEl.style.display = 'none';
     videoEl.innerHTML = '';
     imgEl.style.display = 'block';
-    imgEl.src = safeUrl(lightboxImgs[lightboxIdx]);
+    imgEl.src = safeUrl(lightboxImgs[lightboxIdx - _vo]);
   }
   document.getElementById('lightboxCounter').textContent = (lightboxIdx + 1) + ' / ' + total;
   const multi = total > 1;
   document.getElementById('lightboxThumbs').innerHTML = multi
-    ? lightboxImgs.map((url, i) => i===lockedIdx
+    ? (lightboxVideoHtml ? `<div class="lightbox-thumb video-thumb${isVideo?' active':''}" onclick="lightboxGo(0)"><svg viewBox="0 0 24 24" aria-hidden="true"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg></div>` : '')
+      + lightboxImgs.map((url, pi) => { const i = pi + _vo; return i===lockedIdx
         ? `<div class="lightbox-thumb locked${i===lightboxIdx?' active':''}" onclick="lightboxGo(${i})">\uD83D\uDD12</div>`
-        : `<div class="lightbox-thumb${i===lightboxIdx?' active':''}" style="background-image:url('${safeUrl(url)}')" onclick="lightboxGo(${i})"></div>`).join('')
-      + (lightboxVideoHtml ? `<div class="lightbox-thumb video-thumb${isVideo?' active':''}" onclick="lightboxGo(${lightboxImgs.length})"><svg viewBox="0 0 24 24" aria-hidden="true"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg></div>` : '')
+        : `<div class="lightbox-thumb${i===lightboxIdx?' active':''}" style="background-image:url('${safeUrl(url)}')" onclick="lightboxGo(${i})"></div>`; }).join('')
     : '';
   preloadLightboxNeighbors();
 }
@@ -15597,9 +15622,7 @@ function openDetailReal(id) {
     if (videoSlideHtml) {
       const _sl = gallerySlot.querySelector('.img-slides'), _pi = gallerySlot.querySelector('.prop-img');
       if (_sl && _pi) {
-        // Load the video in the background right away (hidden) so it plays instantly when its slide is reached.
-        const _vs = _sl.querySelector('.video-slide');
-        if (_vs && _vs.dataset.vh && !_vs.firstElementChild) _vs.innerHTML = decodeURIComponent(_vs.dataset.vh);
+        // Video is the first slide: observeCardVideos() starts it (muted autoplay) once the gallery is visible.
       }
     }
     observeCardImgs(gallerySlot);
