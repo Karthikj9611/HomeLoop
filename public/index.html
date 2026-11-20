@@ -15484,7 +15484,7 @@ function openDetailReal(id) {
     `${p.propertyId} - ${pTypeLabel(p)} - ${(p.location && p.location.area) || ''}`.trim().replace(/ - $/, ''));
   const _isMine = isAgentUser() || (typeof MY_LISTINGS_CACHE !== 'undefined' && MY_LISTINGS_CACHE.some(x => x.id === p.id)); // agents (HomeLoop employees) can edit / clone ANY listing
   document.getElementById('viewCloneBtn').style.display = _isMine ? 'inline-flex' : 'none';
-  document.getElementById('viewEditBtn').style.display  = _isMine ? 'inline-flex' : 'none';
+  document.getElementById('viewEditBtn').style.display  = isAgentUser() ? 'inline-flex' : 'none'; // only agents can edit
   document.getElementById('viewCloneBtn').onclick = () => manageListingFromView(p.id, p.propertyId, 'clone');
   document.getElementById('viewEditBtn').onclick  = () => manageListingFromView(p.id, p.propertyId, 'edit');
   { // Agents (HomeLoop employees) can mark ANY listing booked / available again straight from the view
@@ -18668,6 +18668,7 @@ function openListingActions(id) {
   };
   const pid = p.propertyId || '';
   const items = [];
+  if (!isAgentUser()) return; // only agents can edit / mark booked
   items.push({ i: ic.lock, t: p.booked ? 'Mark as Available' : 'Mark as Booked', d: p.booked ? 'Show this listing on the website again' : 'Take it off the website once a tenant is finalised', c: 'la-booked', f: () => confirmToggleBooked(id, document.createElement('button')) });
   _laFns = items.map(x => x.f);
   _laKeep = items.map(x => !!x.keep);
