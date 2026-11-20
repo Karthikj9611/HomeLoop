@@ -4340,7 +4340,7 @@ tr.nf-flash td{animation:nfFlash 3s ease-out}
               </div></th>
               <th><select class="col-filter-select" data-filter-key="reason" onchange="onCustColumnFilter('reason', this.value, this)"><option value="">All</option><option value="Not interested">Not interested</option><option value="Found elsewhere">Found elsewhere</option><option value="Spam / fake">Spam / fake</option><option value="Not serviceable location">Not serviceable location</option><option value="Not reachable">Not reachable</option><option value="Verification pending">Verification pending</option><option value="Duplicate account">Duplicate account</option><option value="Wants to delist">Wants to delist</option><option value="Rent expectation high">Rent expectation high</option><option value="Agent / broker">Agent / broker</option><option value="Callback">Callback</option><option value="Not answered">Not answered</option><option value="Switched off">Switched off</option><option value="Shifted through us">Shifted through us</option></select></th>
               <th><input type="text" class="col-filter-input" data-filter-key="remarks" placeholder="Search…" oninput="onCustColumnFilter('remarks', this.value, this)"></th>
-              <th></th>
+              <th><div class="act-ms col-filter-input" data-act="cust" tabindex="0" onclick="openActPanel('cust',this)" title="Pick one or more actions"></div></th>
             </tr>
           </thead>
           <tbody>
@@ -4564,7 +4564,7 @@ tr.nf-flash td{animation:nfFlash 3s ease-out}
               <th><select class="col-filter-select" data-filter-key="reason" onchange="onPropColumnFilter('reason', this.value, this)"><option value="">All</option><option value="Already rented">Already rented</option><option value="Wrong details">Wrong details</option><option value="Photos missing">Photos missing</option><option value="Price too high">Price too high</option><option value="Duplicate listing">Duplicate listing</option><option value="Fake listing">Fake listing</option><option value="Location mismatch">Location mismatch</option><option value="Under renovation">Under renovation</option><option value="Callback">Callback</option><option value="Not answered">Not answered</option><option value="Switched off">Switched off</option><option value="Shifted through us">Shifted through us</option></select></th>
               <th><input type="text" class="col-filter-input" data-filter-key="remarks" placeholder="Search…" oninput="onPropColumnFilter('remarks', this.value, this)"></th>
               <th></th>
-              <th><div class="act-ms col-filter-input" tabindex="0" onclick="openPropActionPanel(this)" title="Pick one or more actions"></div></th>
+              <th><div class="act-ms col-filter-input" data-act="prop" tabindex="0" onclick="openActPanel('prop',this)" title="Pick one or more actions"></div></th>
             </tr>
           </thead>
           <tbody>
@@ -8556,7 +8556,7 @@ function reconcileDateRange(container, filterObj, startKey, endKey){
   }
 }
 
-const _custColumnFilters = { name:'', userId:'', mobile:'', email:'', accountType:'', listings:'', visits:'', views:'', registeredStart:'', registeredEnd:'', remarks:'', reason:'' };
+const _custColumnFilters = { name:'', userId:'', mobile:'', email:'', accountType:'', listings:'', visits:'', views:'', registeredStart:'', registeredEnd:'', remarks:'', reason:'', action:'' };
 const CUST_FILTER_STORAGE_KEY = 'rip_admin_custFilters';
 loadFilterState(CUST_FILTER_STORAGE_KEY, _custColumnFilters);
 _custColumnFilters.accountType = ''; // type is now chosen via the Tenants / Owners sub-tabs
@@ -8892,7 +8892,8 @@ window.setPropOwnersData = async function(props){
 };
 
 window.clearCustFilters = function(){
-  clearFiltersGeneric('bookingTable_wrapper', _custColumnFilters, dataTable, CUST_FILTER_STORAGE_KEY, 'custFilterBadge', 'custFilterCount', 'custClearFiltersBtn');
+  clearFiltersGeneric('bookingTable_wrapper', _custColumnFilters, dataTable, CUST_FILTER_STORAGE_KEY, 'custFilterBadge', 'custFilterCount', 'custClearFiltersBtn');
+  renderActMS();
 };
 
 window.onCustColumnFilter = function(field, value, inputEl){
@@ -8921,6 +8922,7 @@ $.fn.dataTable.ext.search.push(function(settings, data, dataIndex){
   const row = dataTable ? dataTable.row(dataIndex).data() : null;
   if(!row) return true;
   const cf = _custColumnFilters;
+  if(cf.action && !actMatches('cust', row, cf.action)) return false;
   if(_custTypeTab !== 'all' && custRowType(row) !== _custTypeTab) return false;
   if(_custStatusTab !== 'all' && custRowStatus(row) !== _custStatusTab) return false;
   const contains = (val, needle) => String(val||'').toLowerCase().includes(needle.toLowerCase());
@@ -13880,6 +13882,7 @@ $(document).ready(function(){
   initColumnToggle('cust');
   applyCustTypeColumns();
   restoreFilterInputsUI('bookingTable_wrapper', _custColumnFilters);
+  if(typeof renderActMS === 'function') renderActMS();
   updateFilterBadge(_custColumnFilters, 'custFilterBadge', 'custFilterCount', 'custClearFiltersBtn');
   } catch(e){ console.error('Customers table failed to initialize:', e); }
 
@@ -14434,7 +14437,7 @@ $(document).ready(function(){
     syncPropColToggleCheckbox(column, state);
   });
   restoreFilterInputsUI('propertyTable_wrapper', _propColumnFilters);
-  if(typeof renderPropActionMS === 'function') renderPropActionMS();
+  if(typeof renderActMS === 'function') renderActMS();
   updateFilterBadge(_propColumnFilters, 'propFilterBadge', 'propFilterCount', 'propClearFiltersBtn');
   } catch(e){ console.error('Properties table failed to initialize:', e); }
 
@@ -16380,7 +16383,7 @@ loadFilterState(PROP_FILTER_STORAGE_KEY, _propColumnFilters);
 
 window.clearPropFilters = function(){
   clearFiltersGeneric('propertyTable_wrapper', _propColumnFilters, propTable, PROP_FILTER_STORAGE_KEY, 'propFilterBadge', 'propFilterCount', 'propClearFiltersBtn');
-  renderPropActionMS();
+  renderActMS();
 };
 
 window.onPropColumnFilter = function(field, value, inputEl){
@@ -17181,16 +17184,29 @@ function updatePropCategoryCounts(data){
   });
 }
 
-// ── Action multi-select (chips) ──
+// ── Action multi-select (chips) — shared by Properties + Customers ──
 // Each action can be On (has it / enabled) or Off. Match "all" chips or "any" chip.
-const PROP_ACT_OPTS = [
-  {k:'verified',    l:'Verified'},
-  {k:'promoted',    l:'Promoted'},
-  {k:'priority',    l:'Priority'},
-  {k:'booked',      l:'Booked'},
-  {k:'public call', l:'Public call'}
-];
-let _propActAny = /^any:/i.test(String(_propColumnFilters.action||''));
+// Saved in the tab's filter object as e.g. "verified, not booked" (prefix "any: " = match any).
+const ACT_DEFS = {
+  prop: [
+    {k:'verified',    l:'Verified',    y:'Verified',     o:'Unverified',   n:['verified'],           t:r=>!!r.verified},
+    {k:'promoted',    l:'Promoted',    y:'Promoted',     o:'Not promoted', n:['promoted'],           t:r=>!!r.promoted},
+    {k:'priority',    l:'Priority',    y:'Has priority', o:'No priority',  n:['priority'],           t:r=>!!(r.full && r.full.promotedPriority > 0)},
+    {k:'booked',      l:'Booked',      y:'Booked',       o:'Unbooked',     n:['booked'],             t:r=>!!r.booked},
+    {k:'public call', l:'Public call', y:'Public call on', o:'Public call off', n:['public call','call'], t:r=>!!(r.ownerPhoneCall || r.ownerDirectCall)}
+  ],
+  cust: [
+    {k:'verified',     l:'Verified',     y:'Verified',      o:'Unverified',   n:['verified'],           t:r=>!!r.isVerified},
+    {k:'subscription', l:'Subscription', y:'Subscribed',    o:'Not subscribed', n:['subscription'],       t:r=>!!(r.subscriptionFrom || r.subscriptionAt)},
+    {k:'public call',  l:'Public call',  y:'Public call on', o:'Public call off', n:['public call','call'], t:r=>!!r.publicCall},
+    {k:'blocked',      l:'Blocked',      y:'Blocked',       o:'Unblocked',    n:['blocked','block'],    t:r=>!!r.isBlocked}
+  ]
+};
+const ACT_TABS = {
+  prop: { filters:()=>_propColumnFilters, save:v=>onPropColumnFilter('action', v, null), any:false },
+  cust: { filters:()=>_custColumnFilters, save:v=>onCustColumnFilter('action', v, null), any:false }
+};
+Object.keys(ACT_TABS).forEach(t=>{ ACT_TABS[t].any = /^any:/i.test(String(ACT_TABS[t].filters().action||'')); });
 (function(){
   const st = document.createElement('style');
   st.textContent = `
@@ -17201,104 +17217,111 @@ let _propActAny = /^any:/i.test(String(_propColumnFilters.action||''));
   .act-chip.neg{background:#fde8e8;color:#b42318;border-color:rgba(180,35,24,.3)}
   .act-chip .act-x{cursor:pointer;width:16px;height:16px;line-height:15px;text-align:center;border-radius:50%;font-weight:700}
   .act-chip .act-x:hover{background:rgba(0,0,0,.12)}
-  #propActPanel{position:fixed;z-index:99999;background:#fff;border:1.3px solid var(--gold);border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.2);padding:6px;min-width:240px;font-family:'Inter',sans-serif;font-size:.78rem}
-  #propActPanel .act-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 10px;border-radius:7px;font-weight:500;color:var(--ink)}
-  #propActPanel .act-row:hover{background:var(--gold-light)}
-  #propActPanel .act-seg{display:inline-flex;border:1px solid var(--border);border-radius:999px;overflow:hidden}
-  #propActPanel .act-seg button{border:0;background:#fff;padding:3px 12px;font-size:.72rem;font-weight:600;cursor:pointer;color:var(--ink3)}
-  #propActPanel .act-seg button.on-yes{background:#0a7a4b;color:#fff}
-  #propActPanel .act-seg button.on-no{background:#b42318;color:#fff}
-  #propActPanel .act-mode{display:flex;align-items:center;justify-content:space-between;padding:6px 10px;border-top:1px solid var(--border);margin-top:4px;font-size:.72rem;color:var(--ink3)}
-  #propActPanel .act-mode a{cursor:pointer;font-weight:600;color:var(--gold-dark)}
-  #propActPanel .act-mode button.m-on{background:var(--ink);color:#fff}
-  #propActPanel .act-mode button{border:1px solid var(--border);background:#fff;border-radius:999px;padding:3px 10px;font-size:.72rem;font-weight:600;cursor:pointer;margin-left:4px}`;
+  #actPanel{position:fixed;z-index:99999;background:#fff;border:1.3px solid var(--gold);border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.2);padding:6px;min-width:240px;font-family:'Inter',sans-serif;font-size:.78rem}
+  #actPanel .act-row{display:flex;align-items:center;justify-content:flex-start;gap:10px;padding:6px 10px;border-radius:7px;font-weight:500;color:var(--ink)}
+  #actPanel .act-row:hover{background:var(--gold-light)}
+  #actPanel .act-seg{display:inline-flex;border:1px solid var(--border);border-radius:999px;overflow:hidden}
+  #actPanel .act-seg button{border:0;background:#fff;padding:5px 14px;white-space:nowrap;font-size:.72rem;font-weight:600;cursor:pointer;color:var(--ink3)}
+  #actPanel .act-seg{gap:0;border-color:transparent;background:transparent;overflow:visible}
+  #actPanel .act-seg button[data-v="yes"]{background:#e8f7ef;color:#0a7a4b;border:1px solid rgba(10,122,75,.35);border-radius:999px 0 0 999px}
+  #actPanel .act-seg button[data-v="no"]{background:#fde8e8;color:#b42318;border:1px solid rgba(180,35,24,.35);border-left:0;border-radius:0 999px 999px 0}
+  #actPanel .act-seg button[data-v="yes"]:hover{background:#cfeedd}
+  #actPanel .act-seg button[data-v="no"]:hover{background:#facaca}
+  #actPanel .act-seg button.on-yes{background:#0a7a4b;color:#fff;border-color:#0a7a4b}
+  #actPanel .act-seg button.on-no{background:#b42318;color:#fff;border-color:#b42318}
+  #actPanel .act-mode{display:flex;align-items:center;justify-content:space-between;padding:6px 10px;border-top:1px solid var(--border);margin-top:4px;font-size:.72rem;color:var(--ink3)}
+  #actPanel .act-mode a{cursor:pointer;font-weight:600;color:var(--gold-dark)}
+  #actPanel .act-mode button.m-on{background:var(--ink);color:#fff}
+  #actPanel .act-mode button{border:1px solid var(--border);background:#fff;border-radius:999px;padding:3px 10px;font-size:.72rem;font-weight:600;cursor:pointer;margin-left:4px}`;
   document.head.appendChild(st);
 })();
-function propActParse(){
-  return String(_propColumnFilters.action||'').replace(/^any:/i,'').split(',').map(t=>t.trim().toLowerCase()).filter(Boolean).map(t=>{
+function actParse(tab){
+  const defs = ACT_DEFS[tab];
+  return String(ACT_TABS[tab].filters().action||'').replace(/^any:/i,'').split(',').map(t=>t.trim().toLowerCase()).filter(Boolean).map(t=>{
     const neg = /^not\s+/.test(t); const k = t.replace(/^not\s+/,'');
     return {k, neg};
-  }).filter(o=>PROP_ACT_OPTS.some(x=>x.k===o.k));
+  }).filter(o=>defs.some(x=>x.k===o.k));
 }
-function propActSave(list){
-  const v = list.length ? (_propActAny ? 'any: ' : '') + list.map(o=>(o.neg?'not ':'')+o.k).join(', ') : '';
-  onPropColumnFilter('action', v, null);
-  renderPropActionMS();
+function actSave(tab, list){
+  const T = ACT_TABS[tab];
+  const v = list.length ? (T.any ? 'any: ' : '') + list.map(o=>(o.neg?'not ':'')+o.k).join(', ') : '';
+  T.filters().action = v;          // update state + chips instantly
+  renderActMS();
+  clearTimeout(T._tm);             // redraw/save once after quick successive clicks
+  T._tm = setTimeout(()=>T.save(v), 60);
 }
-function renderPropActionMS(){
-  const list = propActParse();
-  const label = k => (PROP_ACT_OPTS.find(x=>x.k===k)||{}).l || k;
-  const html = list.length ? list.map(o=>`<span class="act-chip${o.neg?' neg':''}" title="Click to switch On / Off" onclick="event.stopPropagation();flipPropAction('${o.k}')">${o.neg?'Not ':''}${label(o.k)}<span class="act-x" title="Remove" onclick="event.stopPropagation();removePropAction('${o.k}')">&times;</span></span>`).join('')
-                           : '<span class="act-ph">Select actions…</span>';
-  document.querySelectorAll('.act-ms').forEach(el=>{ el.innerHTML = html; el.classList.toggle('active-col-filter', list.length>0); });
-  const panel = document.getElementById('propActPanel');
-  if(panel){
-    panel.querySelectorAll('.act-row').forEach(row=>{
-      const k = row.getAttribute('data-k'); const cur = list.find(o=>o.k===k);
-      row.querySelector('[data-v="yes"]').className = (cur && !cur.neg) ? 'on-yes' : '';
-      row.querySelector('[data-v="no"]').className  = (cur && cur.neg)  ? 'on-no'  : '';
-    });
-    panel.querySelectorAll('.act-mode button').forEach(b=> b.classList.toggle('m-on', (b.getAttribute('data-m')==='any') === _propActAny));
-  }
+function renderActMS(){
+  Object.keys(ACT_TABS).forEach(tab=>{
+    const list = actParse(tab), defs = ACT_DEFS[tab];
+    const label = (k,neg) => { const d = defs.find(x=>x.k===k)||{}; return (neg ? d.o : d.y) || ((neg?'Not ':'')+(d.l||k)); };
+    const html = list.length ? list.map(o=>`<span class="act-chip${o.neg?' neg':''}" title="Click to flip" onclick="event.stopPropagation();actFlip('${tab}','${o.k}')">${label(o.k,o.neg)}<span class="act-x" title="Remove" onclick="event.stopPropagation();actRemove('${tab}','${o.k}')">&times;</span></span>`).join('')
+                             : '<span class="act-ph">Select actions…</span>';
+    document.querySelectorAll('.act-ms[data-act="'+tab+'"]').forEach(el=>{ el.innerHTML = html; el.classList.toggle('active-col-filter', list.length>0); });
+    const panel = document.getElementById('actPanel');
+    if(panel && panel.getAttribute('data-tab')===tab){
+      panel.querySelectorAll('.act-row').forEach(row=>{
+        const k = row.getAttribute('data-k'); const cur = list.find(o=>o.k===k);
+        row.querySelector('[data-v="yes"]').className = (cur && !cur.neg) ? 'on-yes' : '';
+        row.querySelector('[data-v="no"]').className  = (cur && cur.neg)  ? 'on-no'  : '';
+      });
+      panel.querySelectorAll('.act-mode button').forEach(b=> b.classList.toggle('m-on', (b.getAttribute('data-m')==='any') === ACT_TABS[tab].any));
+    }
+  });
 }
-window.removePropAction = function(k){ propActSave(propActParse().filter(o=>o.k!==k)); };
-window.flipPropAction = function(k){ propActSave(propActParse().map(o=>o.k===k?{k:o.k,neg:!o.neg}:o)); };
+window.actRemove = function(tab,k){ actSave(tab, actParse(tab).filter(o=>o.k!==k)); };
+window.actFlip = function(tab,k){ actSave(tab, actParse(tab).map(o=>o.k===k?{k:o.k,neg:!o.neg}:o)); };
 // v = 'yes' | 'no'; clicking the active one again clears it
-window.setPropAction = function(k, v){
-  const list = propActParse(); const cur = list.find(o=>o.k===k);
+window.actSet = function(tab,k,v){
+  const list = actParse(tab); const cur = list.find(o=>o.k===k);
   const want = (v==='no');
   const rest = list.filter(o=>o.k!==k);
   if(!(cur && cur.neg===want)) rest.push({k, neg:want});
-  propActSave(rest);
+  actSave(tab, rest);
 };
-window.setPropActMode = function(m){ _propActAny = (m==='any'); propActSave(propActParse()); };
-function closePropActionPanel(){ const p=document.getElementById('propActPanel'); if(p) p.remove(); }
-window.openPropActionPanel = function(el){
-  if(document.getElementById('propActPanel')){ closePropActionPanel(); return; }
+window.actSetMode = function(tab,m){ ACT_TABS[tab].any = (m==='any'); actSave(tab, actParse(tab)); };
+function closeActPanel(){ const p=document.getElementById('actPanel'); if(p) p.remove(); }
+window.openActPanel = function(tab, el){
+  const had = document.getElementById('actPanel');
+  if(had){ const same = had.getAttribute('data-tab')===tab; closeActPanel(); if(same) return; }
   const r = el.getBoundingClientRect();
   const p = document.createElement('div');
-  p.id = 'propActPanel';
+  p.id = 'actPanel'; p.setAttribute('data-tab', tab);
   p.style.left = Math.max(8, Math.min(r.left, window.innerWidth-260)) + 'px';
   p.style.top = (r.bottom + 4) + 'px';
-  p.style.minWidth = Math.max(240, r.width) + 'px';
-  p.innerHTML = PROP_ACT_OPTS.map(o=>`<div class="act-row" data-k="${o.k}"><span>${o.l}</span><span class="act-seg"><button data-v="yes" onclick="setPropAction('${o.k}','yes')">On</button><button data-v="no" onclick="setPropAction('${o.k}','no')">Off</button></span></div>`).join('')
-    + '<div class="act-mode"><span>Match <button data-m="all" onclick="setPropActMode(\'all\')">All</button><button data-m="any" onclick="setPropActMode(\'any\')">Any</button></span><a onclick="propActSave([])">Clear</a></div>';
+  p.style.minWidth = '300px';
+  p.innerHTML = ACT_DEFS[tab].map(o=>`<div class="act-row" data-k="${o.k}"><span class="act-seg"><button data-v="yes" onclick="actSet('${tab}','${o.k}','yes')">${o.y}</button><button data-v="no" onclick="actSet('${tab}','${o.k}','no')">${o.o}</button></span></div>`).join('')
+    + `<div class="act-mode"><span>Match <button data-m="all" onclick="actSetMode('${tab}','all')">All</button><button data-m="any" onclick="actSetMode('${tab}','any')">Any</button></span><a onclick="actSave('${tab}',[])">Clear</a></div>`;
   document.body.appendChild(p);
-  renderPropActionMS();
+  renderActMS();
   setTimeout(()=>{
-    const off = e => { if(!p.contains(e.target) && !e.target.closest('.act-ms')){ closePropActionPanel(); document.removeEventListener('mousedown', off, true); window.removeEventListener('scroll', closePropActionPanel, true); } };
+    const off = e => { if(!p.contains(e.target) && !e.target.closest('.act-ms')){ closeActPanel(); document.removeEventListener('mousedown', off, true); window.removeEventListener('scroll', closeActPanel, true); } };
     document.addEventListener('mousedown', off, true);
-    window.addEventListener('scroll', closePropActionPanel, true);
+    window.addEventListener('scroll', closeActPanel, true);
   }, 0);
 };
-
-// Action-column search: each entry = names the user may type + whether that
-// action is available/on for a row. Typing "not <name>" (or "!<name>") inverts it.
-const PROP_ACTION_SEARCH = [
-  {n:['verified'],               t:r=>!!r.verified},
-  {n:['promoted'],               t:r=>!!r.promoted},
-  {n:['priority'],               t:r=>!!(r.full && r.full.promotedPriority > 0)},
-  {n:['booked'],                 t:r=>!!r.booked},
-  {n:['public call','call'],     t:r=>!!(r.ownerPhoneCall || r.ownerDirectCall)}
-];
-function propActionMatches(row, query){
-  // Several terms separated by comma. Default: row must satisfy ALL; "any:" prefix: ANY one.
+// Row test: several terms separated by comma. Default: ALL must hold; "any:" prefix: ANY one.
+const _actCache = {};
+function actCompile(tab, query){
+  const key = tab + '|' + query;
+  if(_actCache[key]) return _actCache[key];
+  const defs = ACT_DEFS[tab];
   let qs = String(query||'');
   const any = /^\s*any:/i.test(qs);
   qs = qs.replace(/^\s*any:/i,'');
-  const terms = qs.split(/[,;+]+/).map(t=>t.trim().toLowerCase()).filter(Boolean);
-  if(!terms.length) return true;
-  const test = term=>{
+  const tests = qs.split(/[,;+]+/).map(t=>t.trim().toLowerCase()).filter(Boolean).map(term=>{
     let q = term, neg = false;
     const m = q.match(/^(?:not\s+|no\s+|!\s*)(.*)$/);
     if(m){ neg = true; q = m[1].trim(); }
-    if(!q) return true;
-    const hits = PROP_ACTION_SEARCH.filter(a => a.n.some(x => x.includes(q)));
-    if(!hits.length) return false;
-    return hits.some(a => neg ? !a.t(row) : a.t(row));
-  };
-  return any ? terms.some(test) : terms.every(test);
+    if(!q) return ()=>true;
+    const hits = defs.filter(a => a.n.some(x => x.includes(q)));
+    if(!hits.length) return ()=>false;
+    return neg ? r=>hits.some(a=>!a.t(r)) : r=>hits.some(a=>a.t(r));
+  });
+  const fn = !tests.length ? ()=>true : any ? r=>tests.some(f=>f(r)) : r=>tests.every(f=>f(r));
+  return (_actCache[key] = fn);
 }
+function actMatches(tab, row, query){ return actCompile(tab, query)(row); }
+function propActionMatches(row, query){ return actMatches('prop', row, query); }
 
 $.fn.dataTable.ext.search.push(function(settings, data, dataIndex){
   if(settings.nTable.id !== 'propertyTable') return true;
@@ -17320,6 +17343,7 @@ $.fn.dataTable.ext.search.push(function(settings, data, dataIndex){
     if(propCategoryOf(row.status) !== _propCategoryState) return false;
   }
   const cf = _propColumnFilters;
+  if(cf.action && !actMatches('prop', row, cf.action)) return false;
   const contains = (val, needle) => String(val||'').toLowerCase().includes(needle.toLowerCase());
   if(cf.title && !contains(row.title, cf.title)) return false;
   if(cf.status && (row.status||'') !== cf.status) return false;
@@ -17382,7 +17406,6 @@ $.fn.dataTable.ext.search.push(function(settings, data, dataIndex){
   if(cf.remarks && !contains(flattenRemarks(row.remarks||[]), cf.remarks)) return false;
   if(cf.reason && (row.reason||'') !== cf.reason) return false;
   if(cf.amenities && !contains((Array.isArray(row.amenities)?row.amenities:[]).join(', '), cf.amenities)) return false;
-  if(cf.action && !propActionMatches(row, cf.action)) return false;
 
   return true;
 });
