@@ -1782,6 +1782,7 @@ self.addEventListener('notificationclick', event => {
     const tenants = [], owners = [];
     byUser.forEach((meta, uid) => {
       const u = userMap[uid];
+      if (u && u.accountType === 'agent') return; // agent (HomeLoop employee) views are never shown
       const _rawType = (u ? u.accountType : meta.snapType);
       const accountType = (ACCT_OWNER_SIDE.includes(_rawType)) ? 'owner' : 'customer';
       const row = {
@@ -4129,7 +4130,7 @@ self.addEventListener('notificationclick', event => {
       if (req.params.type === 'propertyView') {
         const since = new Date(Date.now() - 36 * 60 * 60 * 1000); // wide window, exact day filtered below
         const [viewerRows, viewRows] = await Promise.all([
-          PropertyViewer.find({ lastViewedAt: { $gte: since } }).select('lastViewedAt').lean(),
+          PropertyViewer.find({ lastViewedAt: { $gte: since } }).select('lastViewedAt userId').lean(),
           PropertyView.find({ createdAt: { $gte: since } }).select('fingerprint createdAt').lean(),
         ]);
         resetAt = (todayDoc && todayDoc.resetAt) ? new Date(todayDoc.resetAt) : null;
@@ -4137,7 +4138,10 @@ self.addEventListener('notificationclick', event => {
         // Logged-in views = one PropertyViewer row per user per listing (last viewed today).
         // Guest views = PropertyView rows with a device fingerprint (the 'user:' rows mirror the
         // PropertyViewer ones, so they are skipped to avoid double counting).
-        liveToday = viewerRows.filter(v => isToday(v.lastViewedAt)).length
+        // Agent accounts are excluded from the count.
+        const _vIds = [...new Set(viewerRows.map(v => String(v.userId)))].filter(x => mongoose.Types.ObjectId.isValid(x));
+        const _agentSet = new Set(_vIds.length ? (await User.find({ _id: { $in: _vIds }, accountType: 'agent' }).select('_id').lean()).map(u => String(u._id)) : []);
+        liveToday = viewerRows.filter(v => isToday(v.lastViewedAt) && !_agentSet.has(String(v.userId))).length
                   + viewRows.filter(v => !String(v.fingerprint || '').startsWith('user:') && isToday(v.createdAt)).length;
       }
 

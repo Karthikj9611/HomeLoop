@@ -10708,7 +10708,9 @@ function renderViewersModal(data) {
     // the name, plus a live dot for the single most recent viewer. The date
     // and time sit in their own pill flush to the right, so the row spreads
     // across the modal's full width instead of bunching everything on the left.
-    const liveDot = i === 0
+    // "Most recent" = the latest viewer, and only if they viewed within the last 7 days.
+    const _lv = parseFlexibleDate(v.lastViewed);
+    const liveDot = (i === 0 && !isNaN(_lv) && (Date.now() - _lv.getTime()) <= 7 * 24 * 60 * 60 * 1000)
       ? '<span class="viewer-live-dot-inline" title="Most recent"></span>'
       : '';
     // Agents only: the server sends `mobile` for agent accounts and omits it for everyone else,
@@ -23451,6 +23453,10 @@ document.addEventListener('keydown',function(e){
 .preav-skip:focus-visible{outline:2px solid #E03A52;outline-offset:2px}
 @media (max-width:430px){.preav-skip{height:32px;padding:0 11px 0 9px;gap:5px;font-size:12px}.preav-skip svg{width:13px;height:13px}}
 .wk-head .preav-close{top:50% !important;bottom:auto !important;right:12px !important;margin:0 !important;transform:translateY(-50%)}
+/* Skip pill and close button: same height, same centre line */
+.wk-head .preav-close{width:38px !important;height:38px !important;min-width:38px !important}
+.wk-head .preav-skip{height:38px;margin-top:0;margin-bottom:0;align-self:center}
+@media (max-width:430px){.wk-head .preav-close{width:32px !important;height:32px !important;min-width:32px !important}.wk-head .preav-skip{height:32px}.wk-head{padding-right:52px}}
 .wk-head .preav-close:hover{transform:translateY(-50%) rotate(90deg) !important}
 @media (max-width:430px){
   .wk-head{gap:8px;padding:8px 48px 8px 12px;min-height:46px}
@@ -23464,7 +23470,7 @@ document.addEventListener('keydown',function(e){
       <div class="wk-head">
         <h2 class="wk-title">New Listings</h2>
         <span class="wk-count" id="preavCount"></span>
-        <button type="button" class="preav-skip" id="preavSkip" aria-label="Skip New Listings for today"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4l10 8-10 8V4z"/><line x1="19" y1="5" x2="19" y2="19"/></svg><span>Skip for today</span></button>
+        <button type="button" class="preav-skip" id="preavSkip" aria-label="Skip New Listings for today" title="Don't show again today"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 14l4-4l-4-4"/><path d="M19 10h-11a4 4 0 1 0 0 8h1"/></svg><span>Skip</span></button>
         <button class="preav-close" id="preavClose" aria-label="Close New Listings">
           <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>

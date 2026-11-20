@@ -2475,6 +2475,19 @@ app.post('/api/properties/:id/view', viewLimiter, attachUserIfPresent, async (re
     // opening this listing from a second browser/device/incognito window
     // still counts as just the one view already on file for them, matching
     // PropertyViewer's one-row-per-user list below exactly.
+    // Agent accounts (HomeLoop employees) browse listings as part of their job: their opens must
+    // never raise the view count, today's total, or show up in the "Viewed by" list. Return the
+    // current count untouched.
+    if (req.userId) {
+      const _vu = await User.findById(req.userId).select('accountType').lean();
+      if (_vu && _vu.accountType === 'agent') {
+        let _cur = null;
+        for (const M of LISTING_MODEL_LIST) { _cur = await M.findById(req.params.id).select('views').lean(); if (_cur) break; }
+        if (!_cur) return res.status(404).json({ message: 'Property not found' });
+        return res.json({ views: _cur.views || 0 });
+      }
+    }
+
     const fingerprint = req.userId ? `user:${req.userId}` : visitorFingerprint(req);
     if (req.userId) linkVisitorToUser(req, req.userId); // fire-and-forget: tag this device's visitor record with the account
 
@@ -2594,6 +2607,17 @@ app.get('/api/properties/:id/viewers', attachUserIfPresent, async (req, res) => 
       .select('userId userName userPhoto userAccountType firstViewedAt lastViewedAt')
       .lean();
 
+    // Hide agent accounts (HomeLoop employees) from the list — including rows saved before agent views
+    // stopped being recorded. Each hidden agent also had at most one counted view, so take it off the total.
+    let _agentHidden = 0;
+    if (rawViewers.length) {
+      const _agentIds = new Set((await User.find({ _id: { $in: [...new Set(rawViewers.map(v => String(v.userId)))] }, accountType: 'agent' }).select('_id').lean()).map(u => String(u._id)));
+      if (_agentIds.size) {
+        _agentHidden = _agentIds.size;
+        for (let i = rawViewers.length - 1; i >= 0; i--) if (_agentIds.has(String(rawViewers[i].userId))) rawViewers.splice(i, 1);
+      }
+    }
+
     // Safety net: one entry per user account, no matter what's in the DB.
     // Rows are already newest-first, so the first one seen per user is the latest.
     const seenUsers = new Set();
@@ -2607,7 +2631,7 @@ app.get('/api/properties/:id/viewers', attachUserIfPresent, async (req, res) => 
     }
 
     const { doc: property } = await findListingById(req.params.id, { lean: true });
-    const totalViews = property ? (property.views || 0) : 0;
+    const totalViews = property ? Math.max(0, (property.views || 0) - _agentHidden) : 0;
 
     // Agents only: look up the viewers' mobile numbers in ONE query (never stored on PropertyViewer, so a
     // changed number is always current).
