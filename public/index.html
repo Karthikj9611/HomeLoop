@@ -6212,7 +6212,29 @@ button,[onclick],.modal-close,.wish-modal-close,.preav-close,.viewers-modal-clos
   touch-action:manipulation;-webkit-tap-highlight-color:transparent;
 }
 </style>
-<style></style>
+<style>
+
+#chargesModal .svc-how{margin-top:12px;font-size:12px;line-height:1.5;color:#1f2937}
+#chargesModal .svc-how-title{font-size:14px;font-weight:800;margin-bottom:6px;color:#111827}
+#chargesModal .svc-how-list{margin:0;padding-left:20px}
+#chargesModal .svc-how-list li{margin:0 0 5px}
+#chargesModal .svc-how-warn{margin-top:12px;padding:10px 12px;background:#fef2f2;border:1px solid #fecaca;border-radius:10px;color:#7f1d1d}
+#chargesModal .svc-how-warn-title{font-weight:800;font-size:13px;margin-bottom:4px;color:#b91c1c}
+#chargesModal .svc-how-warn p{margin:0 0 6px}
+#chargesModal .svc-how-warn ul{margin:0 0 6px;padding-left:18px;list-style:disc}
+#chargesModal .svc-how-warn li{margin:0 0 3px}
+#chargesModal .svc-how-tip{margin-top:10px;padding:10px 12px;background:#fffbeb;border:1px solid #fde68a;border-radius:10px;color:#78350f}
+#chargesModal .svc-how-tip-title{font-weight:800;font-size:13px;margin-bottom:4px;color:#b45309}
+#chargesModal .svc-how-tip p{margin:0}
+#chargesModal .svc-info-btn{display:inline-flex;align-items:center;justify-content:center;vertical-align:middle;width:22px;height:22px;padding:0;margin-left:4px;border:0;border-radius:50%;background:rgba(255,255,255,.25);cursor:pointer;transition:background .15s,transform .15s}
+#chargesModal .svc-info-btn:hover{background:rgba(255,255,255,.45);transform:scale(1.08)}
+#chargesModal .svc-info-btn svg{width:16px;height:16px;stroke:#fff;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+/* TEMP HIDDEN: Single Property Plan + Multi Properties Plan.
+   To show them again, delete this rule (or the 4 selectors below). */
+#planSingle, #planDirect, #planGuestTenantSingle, #planGuestTenantDirect { display: none !important; }
+/* TEMP HIDDEN: Payment Safety Notice button. Delete this rule to show it again. */
+#chargesModal .charges-notice-btn { display: none !important; }
+</style>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 <style id="hl-premium">
 /* ===== HomeLoop premium theme (override layer, safe to remove) ===== */
@@ -9050,7 +9072,7 @@ h1,h2,h3,.logo-word,.section-title{font-family:var(--hl-display);letter-spacing:
             <option value="2" data-amount="2000">2 BHK — ₹2,000</option>
             <option value="3" data-amount="2000">3 BHK — ₹2,000</option>
             <option value="4" data-amount="2000">4 BHK &amp; above — ₹2,000</option>
-            <option value="bundle" data-amount="0">4–6 Properties — meet us first</option>
+            <option value="bundle" data-amount="0">Up to 4 Properties — meet us first</option>
           </select>
         </div>
         <div class="payment-detail-row" style="margin-bottom:16px" id="pay-contact-amount-row">
@@ -9591,19 +9613,19 @@ h1,h2,h3,.logo-word,.section-title{font-family:var(--hl-display);letter-spacing:
       
 
 <div class="svc-price-note charges-refer-note"><strong>Note:</strong>
-<ul class="charges-note-list">
-<li><b>Shortlist up to 6 properties</b> and meet us.</li>
-<li>Pay <b>₹2,000 only after the meeting</b> — it’s <b>adjusted against the 20% service fee</b>.</li>
-<li>We arrange <b>guided visits</b>, help you <b>negotiate the rent</b> and handle the <b>rental agreement</b>.</li>
-<li>Pay the <b>balance only after the deal is closed</b>.</li>
-</ul></div>
+<ol class="charges-note-list" style="list-style:decimal">
+<li>Choose <b>up to 4 properties</b> from our listings that you are interested in.</li>
+<li><b>Meet us directly</b>, then <b>pay ₹2,000</b> to get started — <b>not before meeting us</b>. <button type="button" class="svc-info-btn" aria-label="Important – ₹2,000 payment details" title="Important – Please Read" onclick="openRefundNoteModal()"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></button></li>
+<li>Visit the selected properties with our assistance. We arrange the visits, help you <b>negotiate the rent</b> and assist with the <b>rental agreement</b>.</li>
+<li>On the day you <b>sign the agreement and move into the house</b>, the <b>₹2,000 you paid is deducted from the service fee</b> — pay the <b>remaining amount</b>.</li>
+</ol></div>
+<div class="svc-how">
+<div class="svc-how-tip"><div class="svc-how-tip-title">Prefer not to pay anything?</div>
+<p>That’s absolutely fine! You’re always welcome to <b>search for a property on your own</b>. However, finding a suitable home independently will require <b>your own time and effort</b>.</p><p style="margin-top:6px">We kindly request that you proceed with our service <b>only if you are genuinely interested in moving forward</b>. Our team invests time and effort in arranging property visits and assisting you, so we appreciate your understanding and respect for our time as well.</p></div>
+</div>
 </div></div>
       </div>
 
-      <div class="svc-price-note charges-refer-note"><strong>Note:</strong>
-<ul class="charges-note-list">
-<li><b>Rental agreement preparation</b> is available at an affordable additional cost across all plans.</li>
-</ul></div>
       <button type="button" class="charges-notice-btn" onclick="openChargesNoticeModal()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>Payment Safety Notice</button>
 
 
@@ -9762,18 +9784,18 @@ h1,h2,h3,.logo-word,.section-title{font-family:var(--hl-display);letter-spacing:
         
 
 <div class="svc-price-note charges-refer-note"><strong>Note:</strong>
-<ul class="charges-note-list">
-<li><b>Shortlist up to 6 properties</b> and meet us.</li>
-<li>Pay <b>₹2,000 only after the meeting</b> — it’s <b>adjusted against the 20% service fee</b>.</li>
-<li>We arrange <b>guided visits</b>, help you <b>negotiate the rent</b> and handle the <b>rental agreement</b>.</li>
-<li>Pay the <b>balance only after the deal is closed</b>.</li>
-</ul></div>
+<ol class="charges-note-list" style="list-style:decimal">
+<li>Choose <b>up to 4 properties</b> from our listings that you are interested in.</li>
+<li><b>Meet us directly</b>, then <b>pay ₹2,000</b> to get started — <b>not before meeting us</b>. <button type="button" class="svc-info-btn" aria-label="Important – ₹2,000 payment details" title="Important – Please Read" onclick="openRefundNoteModal()"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></button></li>
+<li>Visit the selected properties with our assistance. We arrange the visits, help you <b>negotiate the rent</b> and assist with the <b>rental agreement</b>.</li>
+<li>On the day you <b>sign the agreement and move into the house</b>, the <b>₹2,000 you paid is deducted from the service fee</b> — pay the <b>remaining amount</b>.</li>
+</ol></div>
+<div class="svc-how">
+<div class="svc-how-tip"><div class="svc-how-tip-title">Prefer not to pay anything?</div>
+<p>That’s absolutely fine! You’re always welcome to <b>search for a property on your own</b>. However, finding a suitable home independently will require <b>your own time and effort</b>.</p><p style="margin-top:6px">We kindly request that you proceed with our service <b>only if you are genuinely interested in moving forward</b>. Our team invests time and effort in arranging property visits and assisting you, so we appreciate your understanding and respect for our time as well.</p></div>
+</div>
 </div></div>
 </div>
-        <div class="svc-price-note charges-refer-note"><strong>Note:</strong>
-<ul class="charges-note-list">
-<li><b>Rental agreement preparation</b> is available at an affordable additional cost across all plans.</li>
-</ul></div>
       <button type="button" class="charges-notice-btn" onclick="openChargesNoticeModal()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>Payment Safety Notice</button>
 
       </div>
@@ -10252,7 +10274,7 @@ h1,h2,h3,.logo-word,.section-title{font-family:var(--hl-display);letter-spacing:
     <div class="panel-empty">No shortlisted properties yet.<br>Tap the ♥ on any listing to save it.</div>
   </div>
   <div class="panel-enquire" id="panelEnquire" hidden>
-    <div class="panel-enquire-hint">Tap ♥ on up to 6 listings, then enquire once to confirm availability with the agent.</div>
+    <div class="panel-enquire-hint">Tap ♥ on up to 4 listings, then enquire once to confirm availability with the agent.</div>
     <button class="panel-enquire-btn" id="panelEnquireBtn" onclick="enquireShortlistAtOnce()"></button>
     <div class="panel-enquire-agents" id="panelEnquireAgents" hidden></div>
   </div>
@@ -13009,7 +13031,7 @@ function shortlistCardHTML(p) {
 /* ═══════════════════════════════════════════════
    SHORTLIST
 ═══════════════════════════════════════════════ */
-const SHORTLIST_MAX = 6;
+const SHORTLIST_MAX = 4;
 function toggleShortlist(id, el) {
   id = String(id);
   if (shortlisted.has(id)) {
@@ -13068,7 +13090,7 @@ function _shortlistEnquiryGroups() {
   });
   return { total: ids.length, groups };
 }
-const ENQUIRE_MIN = 1, ENQUIRE_MAX = 6;
+const ENQUIRE_MIN = 1, ENQUIRE_MAX = 4;
 function updateShortlistEnquire() {
   const box = document.getElementById('panelEnquire');
   if (!box) return;
@@ -19428,7 +19450,7 @@ function handleContactTierChange() {
 
   if (tier === 'bundle') {
     amountRow.style.display = 'none';
-    hint.textContent = "4–6 properties: meet us first — owner details are shared only after, never before payment. Tap \"Got a question? Contact us\" to arrange it.";
+    hint.textContent = "Up to 4 properties: meet us first — owner details are shared only after, never before payment. Tap \"Got a question? Contact us\" to arrange it.";
     amt.value = '';
     amt.readOnly = true;
     amt.classList.add('identity-locked');
@@ -20470,6 +20492,38 @@ function openChargesNoticeModal() {
         '</button>' +
       '</div>' +
       '<div class="plan-body"><div class="plan-body-inner">' + items + '</div></div>' +
+    '</div>';
+  pop.addEventListener('click', function (ev) { if (ev.target === pop) closePlanPopup(); });
+  host.appendChild(pop);
+  requestAnimationFrame(function () { pop.classList.add('open'); });
+}
+function openRefundNoteModal() {
+  var host = document.getElementById('chargesModal');
+  if (!host) return;
+  closePlanPopup();
+  var pop = document.createElement('div');
+  pop.className = 'plan-popup';
+  pop.id = 'planPopup';
+  pop.setAttribute('role', 'dialog');
+  pop.setAttribute('aria-modal', 'true');
+  pop.innerHTML =
+    '<div class="plan-panel plan-managed open plan-popup-card">' +
+      '<div class="plan-popup-head">' +
+        '<div class="charges-audience-head"><div class="charges-audience-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></div><div class="charges-audience-name">Important – Please Read</div></div>' +
+        '<button type="button" class="plan-popup-close" aria-label="Close" onclick="closePlanPopup()">' +
+          '<svg viewBox="0 0 24 24"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>' +
+        '</button>' +
+      '</div>' +
+      '<div class="plan-body"><div class="plan-body-inner">' +
+        '<div class="svc-how"><div class="svc-how-warn">' +
+          '<p>The <b>₹2,000 payment is non-refundable</b>. Once paid, it will not be refunded, even if:</p>' +
+          '<ul>' +
+            '<li>You visit all 4 properties and do not like any of them.</li>' +
+            '<li>You decide not to rent any of the properties.</li>' +
+            '<li>You change your mind and decide not to proceed.</li>' +
+          '</ul>' +
+        '</div></div>' +
+      '</div></div>' +
     '</div>';
   pop.addEventListener('click', function (ev) { if (ev.target === pop) closePlanPopup(); });
   host.appendChild(pop);
