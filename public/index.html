@@ -18886,7 +18886,7 @@ function buildAvailabilityCheckMessage(p) {
    Available tab: "are these still available?"  Booked tab: "is any getting vacated / any vacant to list?" */
 function buildBulkAvailabilityMessage(items, mode) {
   const list = items.map((p, i) => (i + 1) + '. ' + availabilityLine(p) + (mode === 'available' ? '\n' + window.location.origin + '/property/' + p.id : '')).join('\n');
-  if (mode === 'booked') return `Hi! Hope you\u2019re doing well. Do you have any vacant rental property (or one getting vacant soon) that you\u2019d like to list with us?\nList free at www.homeloop.in \u2013 we\u2019ll verify it!`;
+  if (mode === 'booked') return `Hi! Hope you\u2019re doing well. Do you have any vacant rental property (or one getting vacant soon) that you\u2019d like to list with us?\nList free at www.homeloop.in \u2013 we\u2019ll verify it!\nOr\nJust share a video of the house, a building photo, the location and basic details, and we\u2019ll list it for you.`;
   return `Hi! Are these properties still available?\n${list}\nAny other vacant properties?\nList free at www.homeloop.in \u2013 we\u2019ll verify them!`;
 }
 function checkOwnerAvailability(mode) {
