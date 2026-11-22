@@ -8201,9 +8201,8 @@ h1,h2,h3,.logo-word,.section-title{font-family:var(--hl-display);letter-spacing:
       <div class="form-group" id="f-brokerageWrap">
         <label class="form-label">Brokerage Fee</label>
         <select class="form-select" id="f-brokerage" onchange="onBrokerageChange()">
-          <option value="50% of rent">50% of rent</option>
-          <option value="75% of rent">75% of rent</option>
-          <option value="100% of rent">100% of rent</option>
+          <option value="1/2 Month">1/2 Month</option>
+          <option value="1 Month">1 Month</option>
           <option value="Fixed amount">Fixed amount</option>
         </select>
       </div>
@@ -17393,7 +17392,10 @@ function applyImportedProperty(p) {
     onMaintenanceChange();
   }
   // Older listings used day-based fees — show the equivalent percentage (15 days = 50%, 1 month = 100%).
-  sv('f-brokerage', ({ '15 Days rent': '50% of rent', '1 Month rent': '100% of rent' })[price.brokerage] || price.brokerage);
+  { const _bm = { '50% of rent': '1/2 Month', '100% of rent': '1 Month', '15 Days rent': '1/2 Month', 'Half Month': '1/2 Month', '1 Month rent': '1 Month' };
+    const _bv = _bm[price.brokerage] || price.brokerage, _bs = document.getElementById('f-brokerage');
+    if (_bs && _bv && ![..._bs.options].some(o => o.value === _bv)) _bs.add(new Option(_bv, _bv)); // keep any other older saved value (e.g. 75% of rent) editable
+    sv('f-brokerage', _bv); }
   sv('f-brokerageAmount', price.brokerageAmount);
   updateBrokerageFields();
 
@@ -22361,7 +22363,7 @@ async function watermarkImageFile(file) {
 function updateBrokerageFields() {
   const lb = document.getElementById('f-listedBy');
   const blk = document.getElementById('f-brokerageBlock');
-  if (blk) blk.style.display = 'none'; // brokers / builders use the same form as owners — no separate brokerage-fee block
+  if (blk) blk.style.display = (lb && lb.value === 'Broker') ? '' : 'none'; // brokerage fee block only for Broker listings
   const agentBlk = document.getElementById('agentDetailsSection');
   if (agentBlk) agentBlk.style.display = (lb && lb.value === 'Agent') ? '' : 'none';
   onBrokerageChange();
@@ -23117,6 +23119,11 @@ function buildListingPayload() {
       overlooking:     gv('f-sellOverlooking') || null,
     } : {},
   };
+  // Broker listings: brokerage fee option (+ amount when "Fixed amount").
+  if (newProp.basic.listedBy === 'Broker' && newProp.price) {
+    newProp.price.brokerage = gv('f-brokerage') || null;
+    newProp.price.brokerageAmount = gv('f-brokerage') === 'Fixed amount' ? (parseInt(gv('f-brokerageAmount')) || null) : null;
+  }
   return newProp;
 }
 
