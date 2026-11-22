@@ -4198,7 +4198,8 @@ self.addEventListener('notificationclick', event => {
   // indexes kept — see emptyCollection above):
   //   - 'visit'          → empties the Visitor collection (same reasoning as
   //                        total-visits/reset above).
-  //   - 'propertyView'   → empties the PropertyView and PropertyViewer collections.
+  //   - 'propertyView'   → empties the PropertyView and PropertyViewer collections AND sets every
+  //                        listing's `views` count to 0.
   //   - 'registration'   → has no dedup collection, and its rows are kept (at
   //                        count 0) rather than deleted, since this endpoint
   //                        is only meant to wipe visit/view tracking data.
@@ -4211,7 +4212,12 @@ self.addEventListener('notificationclick', event => {
         await emptyCollection(Visitor);
       } else if (type === 'propertyView') {
         await DailyStat.deleteMany({ type });
-        await Promise.all([emptyCollection(PropertyView), emptyCollection(PropertyViewer)]);
+        // Also zero every listing's own `views` counter (the number shown on the property cards / detail view),
+        // not just the daily log and the dedup collections.
+        await Promise.all([
+          ...LISTING_MODEL_LIST.map(M => M.updateMany({}, { $set: { views: 0 } })),
+          emptyCollection(PropertyView), emptyCollection(PropertyViewer),
+        ]);
       } else {
         await DailyStat.updateMany({ type }, { $set: { count: 0 } });
       }

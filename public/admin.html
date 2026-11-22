@@ -9817,7 +9817,9 @@ window.resetDailyStat = async function(type){
   const meta = DAILY_STAT_LABELS[type];
   const message = type === 'visit'
     ? 'This clears the visit count of EVERY day in EVERY month, not just today, and forgets all visitors, so devices that already counted will count again. To reset only today, use "Reset Count" on the Today\'s site visits card. This cannot be undone.'
-    : 'This clears the count of EVERY day in EVERY month, not just today. This cannot be undone.';
+    : type === 'propertyView'
+      ? 'This clears the property view count of EVERY day in EVERY month AND sets the view count of EVERY property to 0 (the numbers shown on the property cards). This cannot be undone.'
+      : 'This clears the count of EVERY day in EVERY month, not just today. This cannot be undone.';
   const ok = await showConfirmModal({ title:`Reset ALL days of ${meta.label}?`, message, okText:'Reset all days' });
   if(!ok) return;
   try{
