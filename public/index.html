@@ -25166,6 +25166,9 @@ document.addEventListener('click', function(e){
 /* Card videos fill the full card width (crop instead of letterbox) */
 .prop-img .vid-wrap .vid-media{object-fit:cover !important}
 #detailGallerySlot .vid-hit{cursor:zoom-in}
+/* Views (eye icon + count) hidden everywhere: cards, list view, recently viewed, compare, property view */
+.prop-views-float,.prop-icon-badge.prop-views-float,.prop-views,.prop-views-icon,.prop-views-badge,.prop-views-float-badge,
+.detail-rail .prop-views-float{display:none !important}
 .vid-pct{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:none;z-index:2;pointer-events:none;font:700 11px/1 inherit;font-family:inherit;color:#fff;letter-spacing:-.01em}
 .prop-img .vid-pct{color:#E03A52}
 .vid-wrap[data-loading="1"] .vid-pct{display:block}
