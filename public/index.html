@@ -25125,6 +25125,20 @@ body{background:radial-gradient(80% 50% at 100% 0%,rgba(255,150,110,.26) 0%,rgba
   scan(document.body);
 })();
 </script>
+<script>
+/* Property view: tapping the video opens it in the zoom lightbox (same as photos). The play/pause button and seek bar keep their own behaviour. */
+document.addEventListener('click', function(e){
+  var t = e.target;
+  if (!t || !t.closest) return;
+  var slot = t.closest('#detailGallerySlot'); if (!slot) return;
+  var wrap = t.closest('.vid-wrap'); if (!wrap) return;
+  if (t.closest('.vid-toggle, .vid-bar, .video-slide-actions, a')) return;
+  var sl = wrap.closest('.img-slides'); if (!sl || !sl.dataset.pid) return;
+  e.stopPropagation();
+  try { if (wrap.dataset.playing === '1' && typeof toggleGalleryVideo === 'function') toggleGalleryVideo(wrap); } catch (_) {}  // pause the inline copy, the lightbox plays its own
+  openLightboxReal(sl.dataset.pid, -1);   // -1 → video slot of the lightbox
+}, true);
+</script>
 <style id="video-minimal">
 /* Gallery video: no native controls / volume / fullscreen / menu / link chips — one play-pause button, muted */
 .vid-wrap{position:absolute;inset:0;background:#000}
@@ -25138,6 +25152,9 @@ body{background:radial-gradient(80% 50% at 100% 0%,rgba(255,150,110,.26) 0%,rgba
 .prop-img .vid-wrap,
 .prop-img .vid-wrap .vid-media{background:linear-gradient(135deg,#fde8ec 0%,#f9c6d0 55%,#f4a6b5 100%) !important}
 .prop-img .vid-loader{border-color:rgba(224,58,82,.22);border-top-color:#E03A52}
+/* Card videos fill the full card width (crop instead of letterbox) */
+.prop-img .vid-wrap .vid-media{object-fit:cover !important}
+#detailGallerySlot .vid-hit{cursor:zoom-in}
 .vid-pct{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:none;z-index:2;pointer-events:none;font:700 11px/1 inherit;font-family:inherit;color:#fff;letter-spacing:-.01em}
 .prop-img .vid-pct{color:#E03A52}
 .vid-wrap[data-loading="1"] .vid-pct{display:block}
