@@ -1141,10 +1141,10 @@ async function nextSequenceId(prefix) {
 
 // Property ID prefix by listing type. Broker / Builder win over the status (same idea as
 // modelForStatus: a broker-listed PG is still a Broker listing), then the status decides.
-//   Rent → RENT001 · PG & Co-living → PG001 · Lease → LEASE001 · Broker (shown as Agent) → AGENT001 · Builder → BUILDER001
+//   Rent → RENT001 · PG & Co-living → PG001 · Lease → LEASE001 · Broker → BROKER001 · Builder → BUILDER001
 // Stored in UPPERCASE on purpose: the subscription "direct access" lookups upper-case the ids they search for.
 function propertyIdPrefix(status, listedBy) {
-  if (listedBy === 'Broker')  return 'AGENT'; // Broker-tab listings are shown and numbered as Agent (AGENT001, AGENT002 ...)
+  if (listedBy === 'Broker')  return 'BROKER';
   if (listedBy === 'Builder') return 'BUILDER';
   if (status === 'Lease')      return 'LEASE';
   if (status === 'PG')         return 'PG';
@@ -1153,7 +1153,7 @@ function propertyIdPrefix(status, listedBy) {
 
 async function nextPropertyId(status, listedBy) {
   // Each prefix has its own atomic counter (key 'PROPERTY_RENT', 'PROPERTY_PG', ...), so RENT, PG, LEASE,
-  // AGENT and BUILDER each count 001, 002, 003 ... independently. $inc is atomic, so two simultaneous
+  // BROKER and BUILDER each count 001, 002, 003 ... independently. $inc is atomic, so two simultaneous
   // submissions can never get the same number. Older random ids (e.g. QWR123) are untouched.
   const prefix = propertyIdPrefix(status, listedBy);
   for (let attempt = 0; attempt < 10; attempt++) {
@@ -1162,7 +1162,7 @@ async function nextPropertyId(status, listedBy) {
       { $inc: { seq: 1 } },
       { new: true, upsert: true }
     );
-    const id = `${prefix}${String(counter.seq).padStart(3, '0')}`; // e.g. RENT001, PG012, AGENT104
+    const id = `${prefix}${String(counter.seq).padStart(3, '0')}`; // e.g. RENT001, PG012, BROKER104
     // Safety net: skip a number if a listing already carries it (e.g. an id typed in by hand).
     const taken = (await Promise.all(LISTING_MODEL_LIST.map(M => M.exists({ propertyId: id })))).some(Boolean);
     if (!taken) return id;
@@ -2146,9 +2146,12 @@ app.get('/api/properties', attachUserIfPresent, async (req, res) => {
           if (_c && _c.exact) { doc.location.distLat = _c.lat; doc.location.distLng = _c.lng; doc.distTok = distToken(doc._id, req.userId); }
           else if (_c) { doc.location.distLat = Math.round(_c.lat * 100) / 100; doc.location.distLng = Math.round(_c.lng * 100) / 100; doc.distApprox = true; } // area centre only
         }
+      } else if (!_viewerIsAgentAcct) {
+        // Contact not public: still give the card an APPROXIMATE position (2 decimals ≈ 1.1 km, no token, no road routing)
+        // so it can show "~N km". Exact lat/lng / link / address stay hidden.
+        const _c = resolveDocPosition(doc);
+        if (_c) { doc.location.distLat = Math.round(_c.lat * 100) / 100; doc.location.distLng = Math.round(_c.lng * 100) / 100; doc.distApprox = true; }
       }
-      // Contact not public (and viewer is not an agent account): NO position is sent, so no distance pill is shown.
-      // Agent accounts receive the complete listing (lat/lng) above, so they still get a distance on every listing.
       // Full free-text address itself is still never sent to the public
       // frontend — only the derived pincode above survives past this point.
       // Pasted Google Maps link (owner's live location) — ONLY for a logged-in tenant whose
@@ -3085,8 +3088,8 @@ app.put('/api/user/listings/:id', listingWriteLimiter, requireUser, requireAgent
     }, {});
 
     // Broker accounts stay locked to 'Broker' on edit; owners can change it.
-    // Agents (employees) edit other people's listings too: their account type must NOT overwrite listedBy, and they may change it to Owner / Broker / Builder / Agent.
-    if (body.basic && typeof body.basic === 'object') { const _lb = await requiredListedBy(req.userId); if (_lb === 'Agent') { if (!['Owner', 'Broker', 'Builder', 'Agent'].includes(fields.basic.listedBy)) delete fields.basic.listedBy; /* agent accounts may change "Listed by" to any valid value */ } else if (_lb) fields.basic.listedBy = _lb; }
+    // Agents (employees) edit other people's listings too, so their account type must NOT overwrite listedBy.
+    if (body.basic && typeof body.basic === 'object') { const _lb = await requiredListedBy(req.userId); if (_lb === 'Agent') delete fields.basic.listedBy; else if (_lb) fields.basic.listedBy = _lb; }
 
     // Only validate/apply sections the client actually sent something for,
     // so a partial edit (e.g. just price) doesn't get wiped by empty objects.
@@ -3702,6 +3705,7 @@ app.post('/api/upload-images', uploadLimiter, attachUserIfPresent, upload.array(
 // <video> can seek / start playing before the whole file has downloaded. The resulting path
 // (e.g. /videos/64f...a1.mp4) is what gets saved in media.video, exactly like a pasted link.
 // ────────────────────────────────────────────────────────────────────────────
+const VIDEO_CHUNK_BYTES = 1024 * 1024; // max bytes per open-ended range response (browser asks for the next chunk itself)
 const VIDEO_MAX_BYTES = 50 * 1024 * 1024; // 50 MB per video — raise here (and in index.html) if needed
 const VIDEO_EXT_BY_TYPE = { 'video/mp4': 'mp4', 'video/webm': 'webm', 'video/quicktime': 'mov', 'video/ogg': 'ogg' };
 const VIDEO_TYPE_BY_EXT = { mp4: 'video/mp4', webm: 'video/webm', mov: 'video/quicktime', ogg: 'video/ogg' };
@@ -3780,7 +3784,8 @@ app.get('/videos/:id', async (req, res) => {
       const m = /^bytes=(\d*)-(\d*)$/.exec(range);
       if (!m || (m[1] === '' && m[2] === '')) { res.set('Content-Range', `bytes */${total}`); return res.status(416).end(); }
       if (m[1] === '') { start = Math.max(0, total - parseInt(m[2], 10)); }          // "last N bytes"
-      else { start = parseInt(m[1], 10); if (m[2] !== '') end = Math.min(parseInt(m[2], 10), total - 1); }
+      else { start = parseInt(m[1], 10); if (m[2] !== '') end = Math.min(parseInt(m[2], 10), total - 1);
+             else end = Math.min(total - 1, start + VIDEO_CHUNK_BYTES - 1); } // open-ended (bytes=N-): send one chunk, not the whole file, so parallel cards don't hog connections / GridFS
       if (start > end || start >= total) { res.set('Content-Range', `bytes */${total}`); return res.status(416).end(); }
       status = 206;
       res.set('Content-Range', `bytes ${start}-${end}/${total}`);
@@ -3794,6 +3799,7 @@ app.get('/videos/:id', async (req, res) => {
       'Cache-Control': 'public, max-age=31536000, immutable',
       'X-Content-Type-Options': 'nosniff',
     });
+    console.log('[VID]', req.params.id, 'status', status, 'range', req.headers.range || '-', 'type', file.contentType, 'size', total, 'ua', (req.headers['user-agent'] || '').slice(0, 80));
     if (total === 0) return res.end();
     const dl = getVideoBucket().openDownloadStream(_id, { start, end: end + 1 }); // GridFS `end` is exclusive
     dl.on('error', () => res.destroy());
