@@ -17246,13 +17246,7 @@ function lockListedByToAccount() {
     Array.from(sel.options).forEach(o => { if (o.value === 'Agent') { o.hidden = !_isAgentAcct; o.disabled = !_isAgentAcct; } });
     if (!_isAgentAcct && sel.value === 'Agent') sel.value = locked || 'Owner';
   }
-  if (editingPropertyId && u.accountType === 'agent') { // employee editing any listing: keep its own "Listed by"
-    sel.disabled = true;
-    sel.title = 'Listed by cannot be changed while editing';
-    updateBrokerageFields();
-    return;
-  }
-  if (u.accountType === 'agent') { // agents list on behalf of owners / brokers / builders: they pick "Listed by" themselves
+  if (u.accountType === 'agent') { // agents (adding OR editing) pick "Listed by" themselves: Owner / Broker / Builder / Agent
     sel.disabled = false;
     sel.title = '';
     updateBrokerageFields();

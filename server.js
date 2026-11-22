@@ -3085,8 +3085,8 @@ app.put('/api/user/listings/:id', listingWriteLimiter, requireUser, requireAgent
     }, {});
 
     // Broker accounts stay locked to 'Broker' on edit; owners can change it.
-    // Agents (employees) edit other people's listings too, so their account type must NOT overwrite listedBy.
-    if (body.basic && typeof body.basic === 'object') { const _lb = await requiredListedBy(req.userId); if (_lb === 'Agent') delete fields.basic.listedBy; else if (_lb) fields.basic.listedBy = _lb; }
+    // Agents (employees) edit other people's listings too: their account type must NOT overwrite listedBy, and they may change it to Owner / Broker / Builder / Agent.
+    if (body.basic && typeof body.basic === 'object') { const _lb = await requiredListedBy(req.userId); if (_lb === 'Agent') { if (!['Owner', 'Broker', 'Builder', 'Agent'].includes(fields.basic.listedBy)) delete fields.basic.listedBy; /* agent accounts may change "Listed by" to any valid value */ } else if (_lb) fields.basic.listedBy = _lb; }
 
     // Only validate/apply sections the client actually sent something for,
     // so a partial edit (e.g. just price) doesn't get wiped by empty objects.
