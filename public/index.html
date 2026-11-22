@@ -11890,23 +11890,26 @@ function buildVideoSlideHtml(p) {
 // Gallery video: muted, no native controls, a single play/pause button.
 const VID_ICON_PLAY = '<svg viewBox="0 0 24 24" aria-hidden="true"><polygon points="7 4 20 12 7 20 7 4" fill="currentColor" stroke="none"/></svg>';
 const VID_ICON_PAUSE = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="4" width="4" height="16" rx="1" fill="currentColor" stroke="none"/><rect x="14" y="4" width="4" height="16" rx="1" fill="currentColor" stroke="none"/></svg>';
+const _vidLoaded = new Set();   // videos that already loaded once: re-rendered copies skip the spinner/percentage and come from the browser cache
 function buildMinimalVideoEmbed(url) {
   const info = getVideoEmbedInfo(url);
   if (!info) return '';
   let media = '';
+  const _vk = String(info.src || info.id || url);
+  const _done = _vidLoaded.has(_vk);
   if (info.type === 'file') {
-    media = `<video class="vid-media" data-kind="file" muted playsinline loop preload="metadata" onerror="vidError(this)" oncanplay="vidCanPlay(this)" onloadeddata="vidLoad(this,0)" onplaying="vidLoad(this,0)" onwaiting="vidLoad(this,1)" ontimeupdate="vidTick(this)" onloadedmetadata="vidTick(this)" ondurationchange="vidTick(this)" onplay="vidSync(this)" onpause="vidSync(this)" disablepictureinpicture disableremoteplayback controlslist="nodownload nofullscreen noremoteplayback noplaybackrate" src="${safeUrl(info.src)}"></video>`;
+    media = `<video class="vid-media" data-kind="file" data-vkey="${esc(_vk)}" muted playsinline loop preload="${_done ? 'auto' : 'metadata'}" onerror="vidError(this)" oncanplay="vidCanPlay(this)" onloadeddata="vidLoad(this,0)" onplaying="vidLoad(this,0)" onwaiting="vidLoad(this,1)" ontimeupdate="vidTick(this)" onloadedmetadata="vidTick(this)" ondurationchange="vidTick(this)" onplay="vidSync(this)" onpause="vidSync(this)" disablepictureinpicture disableremoteplayback controlslist="nodownload nofullscreen noremoteplayback noplaybackrate" src="${safeUrl(info.src)}"></video>`;
   } else if (info.type === 'youtube') {
-    media = `<iframe class="vid-media" data-kind="yt" onload="vidLoad(this,0)" title="Video tour" referrerpolicy="strict-origin-when-cross-origin" allow="autoplay; encrypted-media" src="https://www.youtube-nocookie.com/embed/${info.id}?controls=0&mute=1&modestbranding=1&rel=0&playsinline=1&disablekb=1&fs=0&iv_load_policy=3&loop=1&playlist=${info.id}&enablejsapi=1"></iframe>`;
+    media = `<iframe class="vid-media" data-kind="yt" data-vkey="${esc(_vk)}" onload="vidLoad(this,0)" title="Video tour" referrerpolicy="strict-origin-when-cross-origin" allow="autoplay; encrypted-media" src="https://www.youtube-nocookie.com/embed/${info.id}?controls=0&mute=1&modestbranding=1&rel=0&playsinline=1&disablekb=1&fs=0&iv_load_policy=3&loop=1&playlist=${info.id}&enablejsapi=1"></iframe>`;
   } else if (info.type === 'vimeo') {
-    media = `<iframe class="vid-media" data-kind="vimeo" onload="vidLoad(this,0)" title="Video tour" allow="autoplay" src="https://player.vimeo.com/video/${info.id}?controls=0&muted=1&title=0&byline=0&portrait=0&playsinline=1&loop=1"></iframe>`;
+    media = `<iframe class="vid-media" data-kind="vimeo" data-vkey="${esc(_vk)}" onload="vidLoad(this,0)" title="Video tour" allow="autoplay" src="https://player.vimeo.com/video/${info.id}?controls=0&muted=1&title=0&byline=0&portrait=0&playsinline=1&loop=1"></iframe>`;
   } else return '';
   const btn = `<button type="button" class="vid-toggle" onclick="event.stopPropagation();toggleGalleryVideo(this.closest('.vid-wrap'))" aria-label="Play video" title="Play / pause">${VID_ICON_PLAY}</button>`;
   const prog = info.type === 'file'
     ? `<input type="range" class="vid-seek" min="0" max="1000" value="0" step="1" aria-label="Seek" oninput="vidSeek(this)"><span class="vid-time">0:00 / 0:00</span>`
     : '';
   const bar = prog ? `<div class="vid-bar" onclick="event.stopPropagation()" onpointerdown="event.stopPropagation()" onmousedown="event.stopPropagation()" ontouchstart="event.stopPropagation()" ontouchmove="event.stopPropagation()">${prog}</div>` : '';
-  return `<div class="vid-wrap" data-playing="0" data-loading="1">${media}<div class="vid-loader" aria-hidden="true"></div><div class="vid-pct" aria-hidden="true">0%</div><div class="vid-hit"></div></div>`; // autoplay, muted, no controls / timeline
+  return `<div class="vid-wrap" data-playing="0" data-loading="${_done ? 0 : 1}">${media}<div class="vid-loader" aria-hidden="true"></div><div class="vid-pct" aria-hidden="true">0%</div><div class="vid-hit"></div></div>`; // autoplay, muted, no controls / timeline
 }
 function vidCanPlay(v) {
   const w = v.closest('.vid-wrap');
@@ -11938,7 +11941,7 @@ function vidCanPlay(v) {
   }
   setInterval(tick, 200);
 })();
-function vidLoad(el, on) { const w = el && el.closest && el.closest('.vid-wrap'); if (w) w.dataset.loading = on ? '1' : '0'; }
+function vidLoad(el, on) { const w = el && el.closest && el.closest('.vid-wrap'); if (w) w.dataset.loading = on ? '1' : '0'; if (!on && el && el.dataset && el.dataset.vkey) _vidLoaded.add(el.dataset.vkey); }
 function vidFmt(t) { t = Math.max(0, Math.floor(t || 0)); return Math.floor(t / 60) + ':' + String(t % 60).padStart(2, '0'); }
 function vidTick(v) {
   const w = v.closest('.vid-wrap'); if (!w) return;
@@ -11981,7 +11984,7 @@ function vidAutoCmd(wrap, play, tries) {
   wrap.__want = play;
   if (kind === 'file') {
     m.muted = true;
-    if (play && m.readyState < 2) vidLoad(m, 1);
+    if (play && m.readyState < 2 && !(m.dataset.vkey && _vidLoaded.has(m.dataset.vkey))) vidLoad(m, 1);
     if (play) { if (m.error || m.networkState === 3) m.load(); const r = m.play(); if (r && r.catch) r.catch(() => {}); }
     else m.pause();
     return;
@@ -25074,6 +25077,13 @@ body{background:radial-gradient(80% 50% at 100% 0%,rgba(255,150,110,.26) 0%,rgba
   function fit(){
     try{
       var pi=slot.querySelector('.prop-img'); if(!pi) return;
+      /* Video slide showing (it opens first): use the full tall box straight away, same as after swiping to a photo and back, instead of the short default box */
+      if(slot.querySelector('.img-slide.video-slide.active')){
+        pi.style.setProperty('height',Math.round(window.innerHeight*0.78)+'px','important');
+        pi.style.setProperty('aspect-ratio','auto','important');
+        pi.style.transition='height .25s ease';
+        return;
+      }
       var img=slot.querySelector('img.img-slide.active'); if(!img||!img.naturalWidth) return;
       var w=pi.clientWidth; if(!w) return;
       var want=w*img.naturalHeight/img.naturalWidth;
