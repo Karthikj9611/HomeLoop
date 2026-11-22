@@ -1141,10 +1141,10 @@ async function nextSequenceId(prefix) {
 
 // Property ID prefix by listing type. Broker / Builder win over the status (same idea as
 // modelForStatus: a broker-listed PG is still a Broker listing), then the status decides.
-//   Rent → RENT001 · PG & Co-living → PG001 · Lease → LEASE001 · Broker → BROKER001 · Builder → BUILDER001
+//   Rent → RENT001 · PG & Co-living → PG001 · Lease → LEASE001 · Broker (shown as Agent) → AGENT001 · Builder → BUILDER001
 // Stored in UPPERCASE on purpose: the subscription "direct access" lookups upper-case the ids they search for.
 function propertyIdPrefix(status, listedBy) {
-  if (listedBy === 'Broker')  return 'BROKER';
+  if (listedBy === 'Broker')  return 'AGENT'; // Broker-tab listings are shown and numbered as Agent (AGENT001, AGENT002 ...)
   if (listedBy === 'Builder') return 'BUILDER';
   if (status === 'Lease')      return 'LEASE';
   if (status === 'PG')         return 'PG';
@@ -1153,7 +1153,7 @@ function propertyIdPrefix(status, listedBy) {
 
 async function nextPropertyId(status, listedBy) {
   // Each prefix has its own atomic counter (key 'PROPERTY_RENT', 'PROPERTY_PG', ...), so RENT, PG, LEASE,
-  // BROKER and BUILDER each count 001, 002, 003 ... independently. $inc is atomic, so two simultaneous
+  // AGENT and BUILDER each count 001, 002, 003 ... independently. $inc is atomic, so two simultaneous
   // submissions can never get the same number. Older random ids (e.g. QWR123) are untouched.
   const prefix = propertyIdPrefix(status, listedBy);
   for (let attempt = 0; attempt < 10; attempt++) {
@@ -1162,7 +1162,7 @@ async function nextPropertyId(status, listedBy) {
       { $inc: { seq: 1 } },
       { new: true, upsert: true }
     );
-    const id = `${prefix}${String(counter.seq).padStart(3, '0')}`; // e.g. RENT001, PG012, BROKER104
+    const id = `${prefix}${String(counter.seq).padStart(3, '0')}`; // e.g. RENT001, PG012, AGENT104
     // Safety net: skip a number if a listing already carries it (e.g. an id typed in by hand).
     const taken = (await Promise.all(LISTING_MODEL_LIST.map(M => M.exists({ propertyId: id })))).some(Boolean);
     if (!taken) return id;
@@ -2146,12 +2146,9 @@ app.get('/api/properties', attachUserIfPresent, async (req, res) => {
           if (_c && _c.exact) { doc.location.distLat = _c.lat; doc.location.distLng = _c.lng; doc.distTok = distToken(doc._id, req.userId); }
           else if (_c) { doc.location.distLat = Math.round(_c.lat * 100) / 100; doc.location.distLng = Math.round(_c.lng * 100) / 100; doc.distApprox = true; } // area centre only
         }
-      } else if (!_viewerIsAgentAcct) {
-        // Contact not public: still give the card an APPROXIMATE position (2 decimals ≈ 1.1 km, no token, no road routing)
-        // so it can show "~N km". Exact lat/lng / link / address stay hidden.
-        const _c = resolveDocPosition(doc);
-        if (_c) { doc.location.distLat = Math.round(_c.lat * 100) / 100; doc.location.distLng = Math.round(_c.lng * 100) / 100; doc.distApprox = true; }
       }
+      // Contact not public (and viewer is not an agent account): NO position is sent, so no distance pill is shown.
+      // Agent accounts receive the complete listing (lat/lng) above, so they still get a distance on every listing.
       // Full free-text address itself is still never sent to the public
       // frontend — only the derived pincode above survives past this point.
       // Pasted Google Maps link (owner's live location) — ONLY for a logged-in tenant whose
@@ -3088,8 +3085,8 @@ app.put('/api/user/listings/:id', listingWriteLimiter, requireUser, requireAgent
     }, {});
 
     // Broker accounts stay locked to 'Broker' on edit; owners can change it.
-    // Agents (employees) edit other people's listings too, so their account type must NOT overwrite listedBy.
-    if (body.basic && typeof body.basic === 'object') { const _lb = await requiredListedBy(req.userId); if (_lb === 'Agent') delete fields.basic.listedBy; else if (_lb) fields.basic.listedBy = _lb; }
+    // Agents (employees) edit other people's listings too: their account type must NOT overwrite listedBy, and they may change it to Owner / Broker / Builder / Agent.
+    if (body.basic && typeof body.basic === 'object') { const _lb = await requiredListedBy(req.userId); if (_lb === 'Agent') { if (!['Owner', 'Broker', 'Builder', 'Agent'].includes(fields.basic.listedBy)) delete fields.basic.listedBy; /* agent accounts may change "Listed by" to any valid value */ } else if (_lb) fields.basic.listedBy = _lb; }
 
     // Only validate/apply sections the client actually sent something for,
     // so a partial edit (e.g. just price) doesn't get wiped by empty objects.

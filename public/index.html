@@ -1135,11 +1135,11 @@ main.tab-explore .empty-state{display:none !important}
   position:relative;overflow:hidden;isolation:isolate;
   display:inline-flex;align-items:center;gap:5px;flex-shrink:0;height:26px;padding:0 10px 0 3px;margin:0;
   border-radius:99px;box-sizing:border-box;
-  background:linear-gradient(135deg,#34d37a 0%,#12a455 50%,#0b7d3e 100%);color:#fff;
+  background:var(--pbd-bg,linear-gradient(135deg,#34d37a 0%,#12a455 50%,#0b7d3e 100%));color:#fff;
   border:1px solid rgba(255,255,255,.75);
   font-size:10.5px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;line-height:1;white-space:nowrap;
-  text-shadow:0 1px 2px rgba(0,60,25,.45);
-  box-shadow:0 2px 8px rgba(18,164,85,.5),inset 0 1px 0 rgba(255,255,255,.5),inset 0 -2px 4px rgba(0,70,30,.25);
+  text-shadow:0 1px 2px var(--pbd-ts,rgba(0,60,25,.45));
+  box-shadow:0 2px 8px var(--pbd-a,rgba(18,164,85,.5)),inset 0 1px 0 rgba(255,255,255,.5),inset 0 -2px 4px var(--pbd-in,rgba(0,70,30,.25));
   pointer-events:none;animation:pbdGlow 2.8s ease-in-out infinite;
 }
 .prop-badge-direct::before{ /* glossy top highlight */
@@ -1156,11 +1156,15 @@ main.tab-explore .empty-state{display:none !important}
   display:inline-flex;align-items:center;justify-content:center;
   background:#fff;box-shadow:0 1px 3px rgba(0,60,25,.35);
 }
-.prop-badge-direct .pbd-ico svg{width:12px;height:12px;fill:none;stroke:#0b7d3e;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
+.prop-badge-direct .pbd-ico svg{width:12px;height:12px;fill:none;stroke:var(--pbd-ink,#0b7d3e);stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
 .prop-badge-direct .pbd-txt{position:relative}
 @keyframes pbdShine{0%,55%{left:-60%}100%{left:130%}}
-@keyframes pbdGlow{0%,100%{box-shadow:0 2px 8px rgba(18,164,85,.5),inset 0 1px 0 rgba(255,255,255,.5),inset 0 -2px 4px rgba(0,70,30,.25)}
-  50%{box-shadow:0 2px 12px rgba(18,164,85,.8),inset 0 1px 0 rgba(255,255,255,.5),inset 0 -2px 4px rgba(0,70,30,.25)}}
+@keyframes pbdGlow{0%,100%{box-shadow:0 2px 8px var(--pbd-a,rgba(18,164,85,.5)),inset 0 1px 0 rgba(255,255,255,.5),inset 0 -2px 4px var(--pbd-in,rgba(0,70,30,.25))}
+  50%{box-shadow:0 2px 12px var(--pbd-b,rgba(18,164,85,.8)),inset 0 1px 0 rgba(255,255,255,.5),inset 0 -2px 4px var(--pbd-in,rgba(0,70,30,.25))}}
+/* Each role tag has its own colour: Owner = green (default), Agent = blue, Builder = orange. */
+.prop-badge-direct.pbd-agent{--pbd-bg:linear-gradient(135deg,#5db3ff 0%,#2f7de1 50%,#1a4fb0 100%);--pbd-a:rgba(47,125,225,.5);--pbd-b:rgba(47,125,225,.8);--pbd-in:rgba(10,40,110,.28);--pbd-ink:#1a4fb0;--pbd-ts:rgba(8,30,90,.5)}
+.prop-badge-direct.pbd-builder{--pbd-bg:linear-gradient(135deg,#ffbe5c 0%,#f58a1f 50%,#c8610a 100%);--pbd-a:rgba(245,138,31,.5);--pbd-b:rgba(245,138,31,.8);--pbd-in:rgba(120,55,0,.28);--pbd-ink:#c8610a;--pbd-ts:rgba(110,50,0,.5)}
+
 @media (prefers-reduced-motion:reduce){.prop-badge-direct,.prop-badge-direct::after{animation:none}}
 .prop-card.prop-card-direct:not(.prop-card-promoted){
   border-color:rgba(46,158,85,.55);
@@ -1364,16 +1368,16 @@ main.tab-explore .empty-state{display:none !important}
   order:4;position:relative;overflow:hidden;isolation:isolate;
   display:inline-flex;align-items:center;gap:5px;flex-shrink:0;height:26px;box-sizing:border-box;
   margin-left:-10px;padding:0 11px 0 9px;border-radius:0 99px 99px 0;
-  background:linear-gradient(135deg,#34d37a 0%,#12a455 50%,#0b7d3e 100%);color:#fff;
+  background:linear-gradient(135deg,#b58cff 0%,#8450e0 50%,#5b2bb5 100%);color:#fff;
   border:1px solid rgba(255,255,255,.75);border-left:0;
   font-size:11.5px;font-weight:800;letter-spacing:.03em;line-height:1;white-space:nowrap;
-  text-shadow:0 1px 2px rgba(0,60,25,.45);
-  box-shadow:0 2px 8px rgba(18,164,85,.5),inset 0 1px 0 rgba(255,255,255,.5),inset 0 -2px 4px rgba(0,70,30,.25);
+  text-shadow:0 1px 2px rgba(50,20,110,.5);
+  box-shadow:0 2px 8px rgba(132,80,224,.5),inset 0 1px 0 rgba(255,255,255,.5),inset 0 -2px 4px rgba(50,20,110,.28);
   pointer-events:none;
 }
 .prop-dist-badge::before{content:'';position:absolute;left:0;right:0;top:0;height:48%;z-index:-1;background:linear-gradient(180deg,rgba(255,255,255,.38),rgba(255,255,255,0))}
-.prop-dist-badge .pdb-ico{width:20px;height:20px;border-radius:50%;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;background:#fff;box-shadow:0 1px 3px rgba(0,60,25,.35)}
-.prop-dist-badge .pdb-ico svg{width:12px;height:12px;fill:none;stroke:#0b7d3e;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
+.prop-dist-badge .pdb-ico{width:20px;height:20px;border-radius:50%;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;background:#fff;box-shadow:0 1px 3px rgba(50,20,110,.35)}
+.prop-dist-badge .pdb-ico svg{width:12px;height:12px;fill:none;stroke:#5b2bb5;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
 .prop-dist-badge .pdb-txt{position:relative}
 @media(max-width:640px){
   .prop-dist-badge{height:20px;font-size:9.5px;padding:0 8px 0 5px;gap:4px}
@@ -6310,8 +6314,8 @@ h1,h2,h3,.logo-word,.section-title{font-family:var(--hl-display);letter-spacing:
       Sell
     </div>
     <div class="nav-tab" data-tab="Broker" role="tab" onclick="switchTab(this)" tabindex="0">
-      <span class="nav-tab-icon"><svg viewBox="11 6 46 38" preserveAspectRatio="xMidYMid meet" aria-hidden="true" style="width:30px;height:30px;flex:none;display:block;overflow:visible"><g transform="translate(23 20)"><path d="M-10 22v-5a10 6.5 0 0 1 20 0v5z" fill="#F4F1E8"/><path d="M-10 22v-5a10 6.5 0 0 1 4-5l2 10zM10 22v-5a10 6.5 0 0 0-4-5l-2 10z" fill="#3b6ea5"/><path d="M-3.5 12.5L0 16l3.5-3.5" stroke="#fff" stroke-width="1" fill="none" opacity=".7"/><path d="M-4 10.5h8v2.5h-8z" fill="#C68E62"/><circle r="9.5" fill="#C68E62"/><path d="M-10 0C-12-13 12-13 10 0C9-5 5-7-1-6.5C-5-5.5-8-3-10 0Z" fill="#1f1a17"/><ellipse cx="-3.6" cy="1.8" rx="1.4" ry="1.7" fill="#2b1b12"/><ellipse cx="3.6" cy="1.8" rx="1.4" ry="1.7" fill="#2b1b12"/><path d="M-5.5 5.2Q-2.5 3.6 0 4.8Q2.5 3.6 5.5 5.2Q2.5 6.8 0 5.9Q-2.5 6.8-5.5 5.2Z" fill="#1f1a17"/><path d="M-2.2 7.8Q0 9.2 2.2 7.8" stroke="#2b1b12" stroke-width=".9" fill="none" stroke-linecap="round"/></g><g transform="translate(45 20)"><path d="M-10 22v-5a10 6.5 0 0 1 20 0v5z" fill="#F4F1E8"/><path d="M-10 22v-5a10 6.5 0 0 1 4-5l2 10zM10 22v-5a10 6.5 0 0 0-4-5l-2 10z" fill="#2f7d5b"/><path d="M-3.5 12.5L0 16l3.5-3.5" stroke="#fff" stroke-width="1" fill="none" opacity=".7"/><path d="M-4 10.5h8v2.5h-8z" fill="#B07A50"/><circle r="9.5" fill="#B07A50"/><path d="M-10-1.5L-9.5-8Q0-12 9.5-8L10-1.5L7-4.5Q0-6.5-7-4.5Z" fill="#F4F1E8"/><path d="M-10-1.5L10-1.5" stroke="#d8d3c2" stroke-width="1"/><ellipse cx="-3.6" cy="1.8" rx="1.4" ry="1.7" fill="#2b1b12"/><ellipse cx="3.6" cy="1.8" rx="1.4" ry="1.7" fill="#2b1b12"/><path d="M-5.5 5.2Q-2.5 3.6 0 4.8Q2.5 3.6 5.5 5.2Q2.5 6.8 0 5.9Q-2.5 6.8-5.5 5.2Z" fill="#1f1a17"/><path d="M-2.2 7.8Q0 9.2 2.2 7.8" stroke="#2b1b12" stroke-width=".9" fill="none" stroke-linecap="round"/></g></svg></span>
-      Brokers
+      <span class="nav-tab-icon"><svg viewBox="0 0 24 24" preserveAspectRatio="xMidYMid meet" aria-hidden="true" style="width:30px;height:30px;flex:none;display:block;overflow:visible"><circle cx="12" cy="8.2" r="4" fill="#C68E62"/><path d="M3.5 23v-3.2a8.5 6.2 0 0 1 17 0V23z" fill="#3b6ea5"/><path d="M9.6 14.6L12 17.4l2.4-2.8z" fill="#fff"/><path d="M12 17l-1 2.4 1 2.2 1-2.2z" fill="#c0392b"/><path d="M7.6 8.4a4.4 4.4 0 0 1 8.8 0" fill="none" stroke="#2b2b2b" stroke-width="1.4" stroke-linecap="round"/><rect x="6.2" y="7.6" width="2" height="3.4" rx="1" fill="#2b2b2b"/><rect x="15.8" y="7.6" width="2" height="3.4" rx="1" fill="#2b2b2b"/></svg></span>
+      Agents
     </div>
     <div class="nav-tab" data-tab="Builder" role="tab" onclick="switchTab(this)" tabindex="0">
       <span class="nav-tab-icon">🏗️</span>
@@ -7373,7 +7377,7 @@ h1,h2,h3,.logo-word,.section-title{font-family:var(--hl-display);letter-spacing:
         <li><span onclick="document.querySelector('.nav-tab[data-tab=&quot;Promoted&quot;]').click(); window.scrollTo({top:0,behavior:'smooth'})">Promoted</span></li>
         <li><span onclick="document.querySelector('.nav-tab[data-tab=&quot;Rent&quot;]').click(); window.scrollTo({top:0,behavior:'smooth'})">Rent</span></li>
         <li><span onclick="document.querySelector('.nav-tab[data-tab=&quot;Upcoming&quot;]').click(); window.scrollTo({top:0,behavior:'smooth'})">Upcoming</span></li>
-        <li><span onclick="document.querySelector('.nav-tab[data-tab=&quot;Broker&quot;]').click(); window.scrollTo({top:0,behavior:'smooth'})">Brokers</span></li>
+        <li><span onclick="document.querySelector('.nav-tab[data-tab=&quot;Broker&quot;]').click(); window.scrollTo({top:0,behavior:'smooth'})">Agents</span></li>
         <li><span onclick="document.querySelector('.nav-tab[data-tab=&quot;Builder&quot;]').click(); window.scrollTo({top:0,behavior:'smooth'})">Builders</span></li>
         <li><span onclick="document.querySelector('.nav-tab[data-tab=&quot;Maintenance&quot;]').click(); window.scrollTo({top:0,behavior:'smooth'})">PG &amp; Coliving</span></li>
         <li style="display:none"><span onclick="document.querySelector('.nav-tab[data-tab=&quot;All&quot;]').click(); window.scrollTo({top:0,behavior:'smooth'})">Review</span></li>
@@ -7606,8 +7610,8 @@ h1,h2,h3,.logo-word,.section-title{font-family:var(--hl-display);letter-spacing:
     List
   </div>
   <div class="bottom-tab" data-tab="Broker" onclick="switchTabMobile(this)">
-    <span class="bottom-tab-icon"><svg viewBox="11 6 46 38" preserveAspectRatio="xMidYMid meet" aria-hidden="true" ><g transform="translate(23 20)"><path d="M-10 22v-5a10 6.5 0 0 1 20 0v5z" fill="#F4F1E8"/><path d="M-10 22v-5a10 6.5 0 0 1 4-5l2 10zM10 22v-5a10 6.5 0 0 0-4-5l-2 10z" fill="#3b6ea5"/><path d="M-3.5 12.5L0 16l3.5-3.5" stroke="#fff" stroke-width="1" fill="none" opacity=".7"/><path d="M-4 10.5h8v2.5h-8z" fill="#C68E62"/><circle r="9.5" fill="#C68E62"/><path d="M-10 0C-12-13 12-13 10 0C9-5 5-7-1-6.5C-5-5.5-8-3-10 0Z" fill="#1f1a17"/><ellipse cx="-3.6" cy="1.8" rx="1.4" ry="1.7" fill="#2b1b12"/><ellipse cx="3.6" cy="1.8" rx="1.4" ry="1.7" fill="#2b1b12"/><path d="M-5.5 5.2Q-2.5 3.6 0 4.8Q2.5 3.6 5.5 5.2Q2.5 6.8 0 5.9Q-2.5 6.8-5.5 5.2Z" fill="#1f1a17"/><path d="M-2.2 7.8Q0 9.2 2.2 7.8" stroke="#2b1b12" stroke-width=".9" fill="none" stroke-linecap="round"/></g><g transform="translate(45 20)"><path d="M-10 22v-5a10 6.5 0 0 1 20 0v5z" fill="#F4F1E8"/><path d="M-10 22v-5a10 6.5 0 0 1 4-5l2 10zM10 22v-5a10 6.5 0 0 0-4-5l-2 10z" fill="#2f7d5b"/><path d="M-3.5 12.5L0 16l3.5-3.5" stroke="#fff" stroke-width="1" fill="none" opacity=".7"/><path d="M-4 10.5h8v2.5h-8z" fill="#B07A50"/><circle r="9.5" fill="#B07A50"/><path d="M-10-1.5L-9.5-8Q0-12 9.5-8L10-1.5L7-4.5Q0-6.5-7-4.5Z" fill="#F4F1E8"/><path d="M-10-1.5L10-1.5" stroke="#d8d3c2" stroke-width="1"/><ellipse cx="-3.6" cy="1.8" rx="1.4" ry="1.7" fill="#2b1b12"/><ellipse cx="3.6" cy="1.8" rx="1.4" ry="1.7" fill="#2b1b12"/><path d="M-5.5 5.2Q-2.5 3.6 0 4.8Q2.5 3.6 5.5 5.2Q2.5 6.8 0 5.9Q-2.5 6.8-5.5 5.2Z" fill="#1f1a17"/><path d="M-2.2 7.8Q0 9.2 2.2 7.8" stroke="#2b1b12" stroke-width=".9" fill="none" stroke-linecap="round"/></g></svg></span>
-    Brokers
+    <span class="bottom-tab-icon"><svg viewBox="0 0 24 24" preserveAspectRatio="xMidYMid meet" aria-hidden="true" ><circle cx="12" cy="8.2" r="4" fill="#C68E62"/><path d="M3.5 23v-3.2a8.5 6.2 0 0 1 17 0V23z" fill="#3b6ea5"/><path d="M9.6 14.6L12 17.4l2.4-2.8z" fill="#fff"/><path d="M12 17l-1 2.4 1 2.2 1-2.2z" fill="#c0392b"/><path d="M7.6 8.4a4.4 4.4 0 0 1 8.8 0" fill="none" stroke="#2b2b2b" stroke-width="1.4" stroke-linecap="round"/><rect x="6.2" y="7.6" width="2" height="3.4" rx="1" fill="#2b2b2b"/><rect x="15.8" y="7.6" width="2" height="3.4" rx="1" fill="#2b2b2b"/></svg></span>
+    Agents
   </div>
   <div class="bottom-tab" data-tab="Builder" onclick="switchTabMobile(this)">
     <span class="bottom-tab-icon">🏗️</span>
@@ -8201,9 +8205,8 @@ h1,h2,h3,.logo-word,.section-title{font-family:var(--hl-display);letter-spacing:
       <div class="form-group" id="f-brokerageWrap">
         <label class="form-label">Brokerage Fee</label>
         <select class="form-select" id="f-brokerage" onchange="onBrokerageChange()">
-          <option value="50% of rent">50% of rent</option>
-          <option value="75% of rent">75% of rent</option>
-          <option value="100% of rent">100% of rent</option>
+          <option value="1/2 Month">1/2 Month</option>
+          <option value="1 Month">1 Month</option>
           <option value="Fixed amount">Fixed amount</option>
         </select>
       </div>
@@ -11358,7 +11361,7 @@ function centerEmptyStateOnScreen() {
 // eases it back up; touching / horizontal wheel hands control to the user at
 // once and the glide fades back in shortly after. Vertical page scrolling over
 // a strip no longer freezes it. Off-screen strips cost nothing.
-function promoSliderTab() { return currentTab === 'Rent' || currentTab === 'Promoted' || currentTab === 'All' || currentTab === 'Broker'; }
+function promoSliderTab() { return currentTab === 'Rent' || currentTab === 'All' || currentTab === 'Broker'; } // Promoted tab itself is a normal grid (all promoted listings, no pagination)
 const GLIDE_SPEED = 0.04;     // px per millisecond (~40px/s)
 const GLIDE_EDGE  = 70;       // px over which speed eases near each end
 const GLIDE_FLOOR = 0.25;     // never slower than 25% of cruise speed at an end
@@ -11524,7 +11527,7 @@ function renderCards() {
       if (_c) _c.textContent = '0';
     }
     // Brokers / Builders / PG & Coliving have no section of their own, so give them the same header line.
-    const _extra = { Broker:['🤝','Brokers'], Builder:['🏗️','Builders'], Maintenance:['🛏️','PG & Coliving'] }[currentTab];
+    const _extra = { Broker:['🧑‍💼','Agents'], Builder:['🏗️','Builders'], Maintenance:['🛏️','PG & Coliving'] }[currentTab];
     const _ed = document.getElementById('emptyTabDivider');
     if (_ed) {
       if (_extra && _initialPropertiesFetchDone) {
@@ -11601,6 +11604,9 @@ function renderCards() {
     groups.pg.sort(byPromotedPriority);
     groups.shortstay.sort(byPromotedPriority);
     groups.sell.sort(byPromotedPriority);
+    // Promoted tab = ONE list of every promoted listing (no Rent / Upcoming / Lease / PG sub-sections), in priority order.
+    groups.promoted = list.slice().sort(byPromotedPriority);
+    ['rent', 'upcoming', 'lease', 'pg', 'shortstay', 'sell'].forEach(k => { groups[k] = []; });
   }
 
   const gridClass = 'prop-grid' + (isListView ? ' list-view' : '');
@@ -11635,20 +11641,20 @@ function renderCards() {
     divider.style.display = '';
     document.getElementById(key + 'Count').textContent = items.length;
 
-    if (noPagination || (currentTab === 'Broker' && key === 'promoted')) {
+    if (noPagination || (currentTab === 'Broker' && key === 'promoted') || (currentTab === 'Promoted' && key === 'promoted')) {
       // Long lists: paint the first screenful immediately, stream the rest in
       // small chunks over the next frames so filtering feels instant.
       const FIRST = 24, CHUNK = 40;
       if (items.length <= FIRST + 8) {
-        grid.innerHTML = items.map(p => cardHTML(p, key !== 'promoted', undefined, key === 'upcoming')).join('');
+        grid.innerHTML = items.map(p => cardHTML(p, key !== 'promoted', undefined, key === 'upcoming' || (currentTab === 'Promoted' && isUpcomingRent(p)))).join('');
         return;
       }
-      grid.innerHTML = items.slice(0, FIRST).map(p => cardHTML(p, key !== 'promoted', undefined, key === 'upcoming')).join('');
+      grid.innerHTML = items.slice(0, FIRST).map(p => cardHTML(p, key !== 'promoted', undefined, key === 'upcoming' || (currentTab === 'Promoted' && isUpcomingRent(p)))).join('');
       const tok = _renderToken;
       let i = FIRST;
       const step = () => {
         if (tok !== _renderToken) return; // a newer render superseded this one
-        grid.insertAdjacentHTML('beforeend', items.slice(i, i + CHUNK).map(p => cardHTML(p, key !== 'promoted', undefined, key === 'upcoming')).join(''));
+        grid.insertAdjacentHTML('beforeend', items.slice(i, i + CHUNK).map(p => cardHTML(p, key !== 'promoted', undefined, key === 'upcoming' || (currentTab === 'Promoted' && isUpcomingRent(p)))).join(''));
         observeCardImgs(grid);
   grid.scrollLeft = 0;
   requestAnimationFrame(function(){ grid.scrollLeft = 0; preavSyncNav(); });
@@ -11663,7 +11669,7 @@ function renderCards() {
     let page = Math.min(pageGetters[key](), Math.floor((items.length - 1) / PAGE_SIZE));
     pageSetters[key](page);
     const slice = items.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
-    grid.innerHTML = slice.map(p => cardHTML(p, key !== 'promoted', undefined, key === 'upcoming')).join('') +
+    grid.innerHTML = slice.map(p => cardHTML(p, key !== 'promoted', undefined, key === 'upcoming' || (currentTab === 'Promoted' && isUpcomingRent(p)))).join('') +
       paginationHTML(key, page, items.length);
   });
 
@@ -12071,8 +12077,19 @@ function buildImgSlider(p, fg, uidSuffix, videoSlideHtml) {
 // slides are ready by the time the card is actually visible, so swiping
 // still feels instant — without fetching photos for cards the user hasn't
 // scrolled anywhere near yet.
+/* Galleries with exactly one photo (and no video): that photo is also the last one, so draw its lock panel right away
+   (slideGo only runs on swipe / video autoplay otherwise). Owners and single-property-unlocked listings are skipped. */
+function lockSinglePhotoSlides(root) {
+  if (!lastItemLocked(1)) return;
+  (root || document).querySelectorAll('.img-slides').forEach(el => {
+    if (!el.id || el.dataset.own === '1' || el.querySelector(':scope > .plan-lock')) return;
+    const slides = el.querySelectorAll('.img-slide');
+    if (slides.length === 1 && !slides[0].classList.contains('video-slide')) slideGo(el.id, 0);
+  });
+}
 let _cardImgObserver = null;
 function observeCardImgs(root) {
+  lockSinglePhotoSlides(root);
   if (!_cardImgObserver) {
     if (!('IntersectionObserver' in window)) {
       // No IntersectionObserver support — fall back to loading everything
@@ -12181,14 +12198,11 @@ function slideGo(uid, idx) {
         _vb.innerHTML = '<svg viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>';
         _pe.appendChild(_vb);
       }
-      const pr = _pe.getBoundingClientRect();
-      const ic = [..._pe.querySelectorAll('.prop-right-badges .prop-icon-badge')].map(e => e.getBoundingClientRect()).filter(r => r.width > 0).pop();
-      const lb = [..._pe.querySelectorAll('.prop-left-badges > *')].map(e => e.getBoundingClientRect()).filter(r => r.width > 0);
-      const lbBottom = lb.length ? Math.max(...lb.map(r => r.bottom)) - pr.top : 36;
       const sz = 28;
       _vb.style.width = _vb.style.height = sz + 'px';
-      _vb.style.left = '8px'; _vb.style.right = 'auto'; _vb.style.bottom = 'auto';
-      _vb.style.top = Math.round(lbBottom + 6) + 'px';
+      // Bottom-left of the photo, just above the price strip (same height the slide dots sit at).
+      _vb.style.left = '8px'; _vb.style.right = 'auto'; _vb.style.top = 'auto';
+      _vb.style.bottom = 'calc(var(--rib-h, 32px) + 6px)';
       const sv = _vb.firstElementChild; if (sv) { sv.style.width = sv.style.height = Math.round(sz * 0.52) + 'px'; }
     } else if (_vb) _vb.remove();
   }
@@ -12224,8 +12238,8 @@ function hasActivePlan() {
 }
 /* The LAST photo/video of a listing is a subscriber-only item. Without an active plan it is
    replaced by a lock panel with a button that opens the Pricing & Charges (subscription plans)
-   modal. Needs 2+ items so a single-photo listing is never fully hidden. */
-function lastItemLocked(total) { return total >= 2 && !hasActivePlan(); }
+   modal. A listing with only ONE photo has that photo as both its first and last photo, so it is locked too. */
+function lastItemLocked(total) { return total >= 1 && !hasActivePlan(); }
 window._lastSwipeTs = 0;
 function openPlansFromLock(ev) {
   if (ev) { ev.stopPropagation(); ev.preventDefault(); }
@@ -12618,9 +12632,9 @@ function pTypeLabel(p) {
    centralises the special-casing so every tab-filtered list (cards,
    recently-viewed, shortlist panel) stays in sync. */
 function matchesTab(p, tab) {
-  // Broker listings (promoted, booked or not) live ONLY in the Brokers tab —
-  // hidden from Explore/All, Promoted, Rent, Lease, PG, Sell, etc.
-  if (tab !== 'Broker' && p.basic?.listedBy === 'Broker') return false;
+  // Broker (Agent) listings live ONLY in the Agents tab — hidden from Explore/All, Rent, Lease, PG, Sell, etc.
+  // EXCEPT when promoted: a promoted Agent listing appears everywhere promoted listings do (Promoted tab, All, and its type tab).
+  if (tab !== 'Broker' && p.basic?.listedBy === 'Broker' && !p.promoted) return false;
   // Same for Builder listings: they live ONLY in the Builders tab.
   if (tab !== 'Builder' && p.basic?.listedBy === 'Builder') return false;
   if (tab === 'All') return true;
@@ -12738,10 +12752,12 @@ function roleTagProp(p) {
   return (p && p.verified && (lb === 'Broker' || lb === 'Builder')) ? lb : '';
 }
 function roleTagHTML(role) {
+  // Broker-tab listings are presented as "Agent" (internal value stays 'Broker').
+  var label = role === 'Broker' ? 'Agent' : role;
   const ico = role === 'Builder'
     ? '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="1"/><path d="M9 8h2M13 8h2M9 12h2M13 12h2M10 21v-4h4v4"/></svg>'
-    : '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a1 1 0 011-1h4a1 1 0 011 1v2M3 13h18"/></svg>';
-  return '<div class="prop-badge-direct" title="' + role + ' — verified by our team"><span class="pbd-ico">' + ico + '</span><span class="pbd-txt">' + role + '</span></div>';
+    : '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.4"/><path d="M5 20.5c.6-3.6 3.4-5.6 7-5.6s6.4 2 7 5.6"/><path d="M12 15l-1.2 2.2L12 20.5l1.2-3.3z"/></svg>';
+  return '<div class="prop-badge-direct ' + (role === 'Builder' ? 'pbd-builder' : 'pbd-agent') + '" title="' + label + ' — verified by our team"><span class="pbd-ico">' + ico + '</span><span class="pbd-txt">' + label + '</span></div>';
 }
 function cardHTML(p, compact, extraLeftBadge, showAvail) {
   try { return _cardHTMLRaw(p, compact, extraLeftBadge, showAvail); }
@@ -12796,7 +12812,6 @@ function _cardHTMLRaw(p, compact, extraLeftBadge, showAvail) {
           ${(roleTagProp(p) && !isBookedProp(p)) ? roleTagHTML(roleTagProp(p)) : ''}
           ${propDistanceBadgeHTML(p)}
           ${(SHOW_OWNER_BADGE && cardCallOn(p) && !isBookedProp(p) && !(p.basic && (p.basic.listedBy === 'Broker' || p.basic.listedBy === 'Builder'))) ? '<div class="prop-badge-direct" title="Owner — contact the owner directly, no brokerage"><span class="pbd-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.6"/><path d="M4.8 20c.6-3.8 3.6-6 7.2-6s6.6 2.2 7.2 6"/></svg></span><span class="pbd-txt">Owner</span></div>' : ''}
-          ${(!compact && !['Rent','Upcoming','Lease','PG','ShortStay'].includes(currentTab)) ? `<span class="prop-badge-type-letter${pTypeLetter.length>1?' wide':''} badge-${pType.toLowerCase()}" title="${pType}">${pTypeLetter}</span>` : ''}
           ${(!p.verified && !isBookedProp(p)) ? '<div class="prop-unverified" title="Unverified — yet to be verified by our team"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5"/><path d="M12 16.3h.01"/></svg>Yet to verify</div>' : ''}
         </div>
         <div class="prop-right-badges">
@@ -15429,8 +15444,8 @@ function propDistanceText(p) {
   if (p.distApprox) return d < 1 ? '<1 km' : Math.round(d) + ' km'; // coarse position (~1 km): whole km only
   return d.toFixed(1) + ' km';
 }
-/* Distance is shown on every non-booked listing that has a position: exact + road distance where the owner contact is
-   public (Call/WhatsApp/Navigate icons), otherwise an approximate whole-km straight-line value. Used by cards,
+/* Distance is shown only on non-booked listings whose owner contact is public (Public call ON), or on every listing
+   for a logged-in agent account. Used by cards,
    shortlist, compare and the view modal. */
 function propDistanceKm(p) {
   if (!userCoords || !p) return null;
@@ -15443,7 +15458,8 @@ function propDistanceKm(p) {
   return haversineKm(userCoords.lat, userCoords.lng, la, ln);
 }
 function propDistanceGated(p) {
-  return !!p && !isBookedProp(p) && !!(cardCallOn(p) || p.currentLocationLink || p.navigateUrl || (p.location && p.location.distLat != null));
+  // Distance only for Public-call listings (the server sends distLat/distLng only for those), plus every listing for a logged-in agent account.
+  return !!p && !isBookedProp(p) && (isAgentViewer() || !!(p.location && p.location.distLat != null));
 }
 function propDistanceBadgeHTML(p) {
   if (!propDistanceGated(p)) return '';
@@ -17233,13 +17249,7 @@ function lockListedByToAccount() {
     Array.from(sel.options).forEach(o => { if (o.value === 'Agent') { o.hidden = !_isAgentAcct; o.disabled = !_isAgentAcct; } });
     if (!_isAgentAcct && sel.value === 'Agent') sel.value = locked || 'Owner';
   }
-  if (editingPropertyId && u.accountType === 'agent') { // employee editing any listing: keep its own "Listed by"
-    sel.disabled = true;
-    sel.title = 'Listed by cannot be changed while editing';
-    updateBrokerageFields();
-    return;
-  }
-  if (u.accountType === 'agent') { // agents list on behalf of owners / brokers / builders: they pick "Listed by" themselves
+  if (u.accountType === 'agent') { // agents (adding OR editing) pick "Listed by" themselves: Owner / Broker / Builder / Agent
     sel.disabled = false;
     sel.title = '';
     updateBrokerageFields();
@@ -17379,7 +17389,10 @@ function applyImportedProperty(p) {
     onMaintenanceChange();
   }
   // Older listings used day-based fees — show the equivalent percentage (15 days = 50%, 1 month = 100%).
-  sv('f-brokerage', ({ '15 Days rent': '50% of rent', '1 Month rent': '100% of rent' })[price.brokerage] || price.brokerage);
+  { const _bm = { '50% of rent': '1/2 Month', '100% of rent': '1 Month', '15 Days rent': '1/2 Month', 'Half Month': '1/2 Month', '1 Month rent': '1 Month' };
+    const _bv = _bm[price.brokerage] || price.brokerage, _bs = document.getElementById('f-brokerage');
+    if (_bs && _bv && ![..._bs.options].some(o => o.value === _bv)) _bs.add(new Option(_bv, _bv)); // keep any other older saved value (e.g. 75% of rent) editable
+    sv('f-brokerage', _bv); }
   sv('f-brokerageAmount', price.brokerageAmount);
   updateBrokerageFields();
 
@@ -22347,7 +22360,7 @@ async function watermarkImageFile(file) {
 function updateBrokerageFields() {
   const lb = document.getElementById('f-listedBy');
   const blk = document.getElementById('f-brokerageBlock');
-  if (blk) blk.style.display = 'none'; // brokers / builders use the same form as owners — no separate brokerage-fee block
+  if (blk) blk.style.display = (lb && lb.value === 'Broker') ? '' : 'none'; // brokerage fee block only for Broker listings
   const agentBlk = document.getElementById('agentDetailsSection');
   if (agentBlk) agentBlk.style.display = (lb && lb.value === 'Agent') ? '' : 'none';
   onBrokerageChange();
@@ -23103,6 +23116,11 @@ function buildListingPayload() {
       overlooking:     gv('f-sellOverlooking') || null,
     } : {},
   };
+  // Broker listings: brokerage fee option (+ amount when "Fixed amount").
+  if (newProp.basic.listedBy === 'Broker' && newProp.price) {
+    newProp.price.brokerage = gv('f-brokerage') || null;
+    newProp.price.brokerageAmount = gv('f-brokerage') === 'Fixed amount' ? (parseInt(gv('f-brokerageAmount')) || null) : null;
+  }
   return newProp;
 }
 
@@ -23703,7 +23721,7 @@ function showPreAvailModal() {
     if (!p.createdAt) return false;
     var c = new Date(p.createdAt);
     if (isNaN(c) || c < weekStart || c >= weekEnd) return false;
-    if (p.basic?.listedBy === 'Broker') return false; // broker listings show only in the Brokers tab
+    // Broker and Builder listings are included too: New Listings shows every type (Rent, Lease, PG, Builder, Broker) created this month.
     if (typeof SHORT_STAY_ENABLED !== 'undefined' && !SHORT_STAY_ENABLED && pTypeLabel(p) === 'ShortStay') return false;
     return true;
   }).sort(function(a, b){
