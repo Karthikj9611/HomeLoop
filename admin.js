@@ -4,6 +4,7 @@ const crypto    = require('crypto');
 const bcrypt    = require('bcryptjs');
 const rateLimit = require('express-rate-limit');
 const multer    = require('multer');
+const { faststart } = require('./faststart');
 const sharp     = require('sharp');
 
 // ── Admin routes ──
@@ -550,7 +551,7 @@ module.exports = function registerAdminRoutes(app, deps) {
       await new Promise((resolve, reject) => {
         stream.on('error', reject);
         stream.on('finish', resolve);
-        stream.end(file.buffer);
+        stream.end(faststart(file.buffer));
       });
       res.status(201).json({ message: 'Video uploaded successfully', url: `/videos/${stream.id}.${ext}` });
     } catch (err) {

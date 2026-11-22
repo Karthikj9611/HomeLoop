@@ -2,6 +2,7 @@ require('dotenv').config();
 
 const express    = require('express');
 const compression = require('compression');
+const { faststart } = require('./faststart'); // moov-first remux for uploaded mp4/mov
 const helmet     = require('helmet');
 const mongoose   = require('mongoose');
 const cors       = require('cors');
@@ -3754,7 +3755,7 @@ app.post('/api/upload-video', videoUploadLimiter, requireUser, requireOwner, upl
     await new Promise((resolve, reject) => {
       stream.on('error', reject);
       stream.on('finish', resolve);
-      stream.end(file.buffer);
+      stream.end(faststart(file.buffer));
     });
 
     res.status(201).json({ message: 'Video uploaded successfully', url: `/videos/${stream.id}.${ext}` });
