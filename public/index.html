@@ -11357,7 +11357,7 @@ function centerEmptyStateOnScreen() {
 // eases it back up; touching / horizontal wheel hands control to the user at
 // once and the glide fades back in shortly after. Vertical page scrolling over
 // a strip no longer freezes it. Off-screen strips cost nothing.
-function promoSliderTab() { return currentTab === 'Rent' || currentTab === 'Promoted' || currentTab === 'All' || currentTab === 'Broker'; }
+function promoSliderTab() { return currentTab === 'Rent' || currentTab === 'All' || currentTab === 'Broker'; } // Promoted tab itself is a normal grid (all promoted listings, no pagination)
 const GLIDE_SPEED = 0.04;     // px per millisecond (~40px/s)
 const GLIDE_EDGE  = 70;       // px over which speed eases near each end
 const GLIDE_FLOOR = 0.25;     // never slower than 25% of cruise speed at an end
@@ -11600,6 +11600,9 @@ function renderCards() {
     groups.pg.sort(byPromotedPriority);
     groups.shortstay.sort(byPromotedPriority);
     groups.sell.sort(byPromotedPriority);
+    // Promoted tab = ONE list of every promoted listing (no Rent / Upcoming / Lease / PG sub-sections), in priority order.
+    groups.promoted = list.slice().sort(byPromotedPriority);
+    ['rent', 'upcoming', 'lease', 'pg', 'shortstay', 'sell'].forEach(k => { groups[k] = []; });
   }
 
   const gridClass = 'prop-grid' + (isListView ? ' list-view' : '');
@@ -11634,20 +11637,20 @@ function renderCards() {
     divider.style.display = '';
     document.getElementById(key + 'Count').textContent = items.length;
 
-    if (noPagination || (currentTab === 'Broker' && key === 'promoted')) {
+    if (noPagination || (currentTab === 'Broker' && key === 'promoted') || (currentTab === 'Promoted' && key === 'promoted')) {
       // Long lists: paint the first screenful immediately, stream the rest in
       // small chunks over the next frames so filtering feels instant.
       const FIRST = 24, CHUNK = 40;
       if (items.length <= FIRST + 8) {
-        grid.innerHTML = items.map(p => cardHTML(p, key !== 'promoted', undefined, key === 'upcoming')).join('');
+        grid.innerHTML = items.map(p => cardHTML(p, key !== 'promoted', undefined, key === 'upcoming' || (currentTab === 'Promoted' && isUpcomingRent(p)))).join('');
         return;
       }
-      grid.innerHTML = items.slice(0, FIRST).map(p => cardHTML(p, key !== 'promoted', undefined, key === 'upcoming')).join('');
+      grid.innerHTML = items.slice(0, FIRST).map(p => cardHTML(p, key !== 'promoted', undefined, key === 'upcoming' || (currentTab === 'Promoted' && isUpcomingRent(p)))).join('');
       const tok = _renderToken;
       let i = FIRST;
       const step = () => {
         if (tok !== _renderToken) return; // a newer render superseded this one
-        grid.insertAdjacentHTML('beforeend', items.slice(i, i + CHUNK).map(p => cardHTML(p, key !== 'promoted', undefined, key === 'upcoming')).join(''));
+        grid.insertAdjacentHTML('beforeend', items.slice(i, i + CHUNK).map(p => cardHTML(p, key !== 'promoted', undefined, key === 'upcoming' || (currentTab === 'Promoted' && isUpcomingRent(p)))).join(''));
         observeCardImgs(grid);
   grid.scrollLeft = 0;
   requestAnimationFrame(function(){ grid.scrollLeft = 0; preavSyncNav(); });
@@ -11662,7 +11665,7 @@ function renderCards() {
     let page = Math.min(pageGetters[key](), Math.floor((items.length - 1) / PAGE_SIZE));
     pageSetters[key](page);
     const slice = items.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
-    grid.innerHTML = slice.map(p => cardHTML(p, key !== 'promoted', undefined, key === 'upcoming')).join('') +
+    grid.innerHTML = slice.map(p => cardHTML(p, key !== 'promoted', undefined, key === 'upcoming' || (currentTab === 'Promoted' && isUpcomingRent(p)))).join('') +
       paginationHTML(key, page, items.length);
   });
 
@@ -12191,14 +12194,11 @@ function slideGo(uid, idx) {
         _vb.innerHTML = '<svg viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>';
         _pe.appendChild(_vb);
       }
-      const pr = _pe.getBoundingClientRect();
-      const ic = [..._pe.querySelectorAll('.prop-right-badges .prop-icon-badge')].map(e => e.getBoundingClientRect()).filter(r => r.width > 0).pop();
-      const lb = [..._pe.querySelectorAll('.prop-left-badges > *')].map(e => e.getBoundingClientRect()).filter(r => r.width > 0);
-      const lbBottom = lb.length ? Math.max(...lb.map(r => r.bottom)) - pr.top : 36;
       const sz = 28;
       _vb.style.width = _vb.style.height = sz + 'px';
-      _vb.style.left = '8px'; _vb.style.right = 'auto'; _vb.style.bottom = 'auto';
-      _vb.style.top = Math.round(lbBottom + 6) + 'px';
+      // Bottom-left of the photo, just above the price strip (same height the slide dots sit at).
+      _vb.style.left = '8px'; _vb.style.right = 'auto'; _vb.style.top = 'auto';
+      _vb.style.bottom = 'calc(var(--rib-h, 32px) + 6px)';
       const sv = _vb.firstElementChild; if (sv) { sv.style.width = sv.style.height = Math.round(sz * 0.52) + 'px'; }
     } else if (_vb) _vb.remove();
   }
@@ -12808,7 +12808,7 @@ function _cardHTMLRaw(p, compact, extraLeftBadge, showAvail) {
           ${(roleTagProp(p) && !isBookedProp(p)) ? roleTagHTML(roleTagProp(p)) : ''}
           ${propDistanceBadgeHTML(p)}
           ${(SHOW_OWNER_BADGE && cardCallOn(p) && !isBookedProp(p) && !(p.basic && (p.basic.listedBy === 'Broker' || p.basic.listedBy === 'Builder'))) ? '<div class="prop-badge-direct" title="Owner — contact the owner directly, no brokerage"><span class="pbd-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.6"/><path d="M4.8 20c.6-3.8 3.6-6 7.2-6s6.6 2.2 7.2 6"/></svg></span><span class="pbd-txt">Owner</span></div>' : ''}
-          ${(!compact && !['Rent','Upcoming','Lease','PG','ShortStay'].includes(currentTab)) ? `<span class="prop-badge-type-letter${pTypeLetter.length>1?' wide':''} badge-${pType.toLowerCase()}" title="${pType}">${pTypeLetter}</span>` : ''}
+          ${(!compact && !['Rent','Upcoming','Promoted','Lease','PG','ShortStay'].includes(currentTab)) ? `<span class="prop-badge-type-letter${pTypeLetter.length>1?' wide':''} badge-${pType.toLowerCase()}" title="${pType}">${pTypeLetter}</span>` : ''}
           ${(!p.verified && !isBookedProp(p)) ? '<div class="prop-unverified" title="Unverified — yet to be verified by our team"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5"/><path d="M12 16.3h.01"/></svg>Yet to verify</div>' : ''}
         </div>
         <div class="prop-right-badges">
