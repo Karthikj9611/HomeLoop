@@ -15633,9 +15633,9 @@ let propertyViewMode = false;
 // means the form is in its normal "create a new listing" mode.
 let editingPropertyId = null;
 
-// Public entry point. Every property view first shows the login/sign-up prompt to
-// logged-out visitors, but it is SKIPPABLE: dismissing it (X, backdrop, Escape) opens the
-// property as a guest (see closeAuthModal), and logging in opens it after the reload.
+// Public entry point. Property details need a login: logged-out visitors get the login/sign-up
+// prompt, dismissing it (X, backdrop, Escape) does NOT open the property (see closeAuthModal),
+// and logging in opens it after the reload.
 function openDetail(id) {
   if (window.__hlHandedOff) return; // this tab's link was handed to an already-open tab
   if (!getLoggedInUser()) {
@@ -15647,6 +15647,7 @@ function openDetail(id) {
   openDetailReal(id);
 }
 function openDetailReal(id) {
+  if (!getLoggedInUser()) { openDetail(id); return; }   // login is mandatory to view property details, whatever the entry point
   syncViewerOwnerClass();
   const p = PROPERTIES.find(x => x.id === id) || BOOKED_PROPERTIES.find(x => x.id === id)
     // Booked listings in My Account may not be in either list — fall back to the user's own listings / saved items so they can still be viewed
@@ -17626,11 +17627,11 @@ function closeAuthModal() {
   if (!getLoggedInUser()) {
     try { localStorage.setItem('homeloop_auth_skipped', '1'); } catch (e) { /* ignore */ }
     clearTimeout(_authSkipTimer);
-    // Dismissed without logging in — continue as a guest: open the property they clicked.
+    // Login is mandatory to view property details: dismissing the prompt does NOT open the property.
     try { sessionStorage.removeItem('homeloop_open_after_login'); } catch (e) { /* ignore */ }
     const _pending = pendingBrowseAction;
     pendingBrowseAction = null;
-    if (typeof _pending === 'function') { try { _pending(); } catch (e) { console.error(e); } }
+    if (typeof _pending === 'function') { try { showToast('Please log in to view property details', 'warning'); } catch (e) { /* ignore */ } }
   } else {
     pendingBrowseAction = null;
   }
