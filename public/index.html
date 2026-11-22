@@ -1135,11 +1135,11 @@ main.tab-explore .empty-state{display:none !important}
   position:relative;overflow:hidden;isolation:isolate;
   display:inline-flex;align-items:center;gap:5px;flex-shrink:0;height:26px;padding:0 10px 0 3px;margin:0;
   border-radius:99px;box-sizing:border-box;
-  background:linear-gradient(135deg,#34d37a 0%,#12a455 50%,#0b7d3e 100%);color:#fff;
+  background:var(--pbd-bg,linear-gradient(135deg,#34d37a 0%,#12a455 50%,#0b7d3e 100%));color:#fff;
   border:1px solid rgba(255,255,255,.75);
   font-size:10.5px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;line-height:1;white-space:nowrap;
-  text-shadow:0 1px 2px rgba(0,60,25,.45);
-  box-shadow:0 2px 8px rgba(18,164,85,.5),inset 0 1px 0 rgba(255,255,255,.5),inset 0 -2px 4px rgba(0,70,30,.25);
+  text-shadow:0 1px 2px var(--pbd-ts,rgba(0,60,25,.45));
+  box-shadow:0 2px 8px var(--pbd-a,rgba(18,164,85,.5)),inset 0 1px 0 rgba(255,255,255,.5),inset 0 -2px 4px var(--pbd-in,rgba(0,70,30,.25));
   pointer-events:none;animation:pbdGlow 2.8s ease-in-out infinite;
 }
 .prop-badge-direct::before{ /* glossy top highlight */
@@ -1156,11 +1156,15 @@ main.tab-explore .empty-state{display:none !important}
   display:inline-flex;align-items:center;justify-content:center;
   background:#fff;box-shadow:0 1px 3px rgba(0,60,25,.35);
 }
-.prop-badge-direct .pbd-ico svg{width:12px;height:12px;fill:none;stroke:#0b7d3e;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
+.prop-badge-direct .pbd-ico svg{width:12px;height:12px;fill:none;stroke:var(--pbd-ink,#0b7d3e);stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
 .prop-badge-direct .pbd-txt{position:relative}
 @keyframes pbdShine{0%,55%{left:-60%}100%{left:130%}}
-@keyframes pbdGlow{0%,100%{box-shadow:0 2px 8px rgba(18,164,85,.5),inset 0 1px 0 rgba(255,255,255,.5),inset 0 -2px 4px rgba(0,70,30,.25)}
-  50%{box-shadow:0 2px 12px rgba(18,164,85,.8),inset 0 1px 0 rgba(255,255,255,.5),inset 0 -2px 4px rgba(0,70,30,.25)}}
+@keyframes pbdGlow{0%,100%{box-shadow:0 2px 8px var(--pbd-a,rgba(18,164,85,.5)),inset 0 1px 0 rgba(255,255,255,.5),inset 0 -2px 4px var(--pbd-in,rgba(0,70,30,.25))}
+  50%{box-shadow:0 2px 12px var(--pbd-b,rgba(18,164,85,.8)),inset 0 1px 0 rgba(255,255,255,.5),inset 0 -2px 4px var(--pbd-in,rgba(0,70,30,.25))}}
+/* Each role tag has its own colour: Owner = green (default), Agent = blue, Builder = orange. */
+.prop-badge-direct.pbd-agent{--pbd-bg:linear-gradient(135deg,#5db3ff 0%,#2f7de1 50%,#1a4fb0 100%);--pbd-a:rgba(47,125,225,.5);--pbd-b:rgba(47,125,225,.8);--pbd-in:rgba(10,40,110,.28);--pbd-ink:#1a4fb0;--pbd-ts:rgba(8,30,90,.5)}
+.prop-badge-direct.pbd-builder{--pbd-bg:linear-gradient(135deg,#ffbe5c 0%,#f58a1f 50%,#c8610a 100%);--pbd-a:rgba(245,138,31,.5);--pbd-b:rgba(245,138,31,.8);--pbd-in:rgba(120,55,0,.28);--pbd-ink:#c8610a;--pbd-ts:rgba(110,50,0,.5)}
+
 @media (prefers-reduced-motion:reduce){.prop-badge-direct,.prop-badge-direct::after{animation:none}}
 .prop-card.prop-card-direct:not(.prop-card-promoted){
   border-color:rgba(46,158,85,.55);
@@ -1364,16 +1368,16 @@ main.tab-explore .empty-state{display:none !important}
   order:4;position:relative;overflow:hidden;isolation:isolate;
   display:inline-flex;align-items:center;gap:5px;flex-shrink:0;height:26px;box-sizing:border-box;
   margin-left:-10px;padding:0 11px 0 9px;border-radius:0 99px 99px 0;
-  background:linear-gradient(135deg,#34d37a 0%,#12a455 50%,#0b7d3e 100%);color:#fff;
+  background:linear-gradient(135deg,#b58cff 0%,#8450e0 50%,#5b2bb5 100%);color:#fff;
   border:1px solid rgba(255,255,255,.75);border-left:0;
   font-size:11.5px;font-weight:800;letter-spacing:.03em;line-height:1;white-space:nowrap;
-  text-shadow:0 1px 2px rgba(0,60,25,.45);
-  box-shadow:0 2px 8px rgba(18,164,85,.5),inset 0 1px 0 rgba(255,255,255,.5),inset 0 -2px 4px rgba(0,70,30,.25);
+  text-shadow:0 1px 2px rgba(50,20,110,.5);
+  box-shadow:0 2px 8px rgba(132,80,224,.5),inset 0 1px 0 rgba(255,255,255,.5),inset 0 -2px 4px rgba(50,20,110,.28);
   pointer-events:none;
 }
 .prop-dist-badge::before{content:'';position:absolute;left:0;right:0;top:0;height:48%;z-index:-1;background:linear-gradient(180deg,rgba(255,255,255,.38),rgba(255,255,255,0))}
-.prop-dist-badge .pdb-ico{width:20px;height:20px;border-radius:50%;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;background:#fff;box-shadow:0 1px 3px rgba(0,60,25,.35)}
-.prop-dist-badge .pdb-ico svg{width:12px;height:12px;fill:none;stroke:#0b7d3e;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
+.prop-dist-badge .pdb-ico{width:20px;height:20px;border-radius:50%;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;background:#fff;box-shadow:0 1px 3px rgba(50,20,110,.35)}
+.prop-dist-badge .pdb-ico svg{width:12px;height:12px;fill:none;stroke:#5b2bb5;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
 .prop-dist-badge .pdb-txt{position:relative}
 @media(max-width:640px){
   .prop-dist-badge{height:20px;font-size:9.5px;padding:0 8px 0 5px;gap:4px}
@@ -12753,7 +12757,7 @@ function roleTagHTML(role) {
   const ico = role === 'Builder'
     ? '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="1"/><path d="M9 8h2M13 8h2M9 12h2M13 12h2M10 21v-4h4v4"/></svg>'
     : '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.4"/><path d="M5 20.5c.6-3.6 3.4-5.6 7-5.6s6.4 2 7 5.6"/><path d="M12 15l-1.2 2.2L12 20.5l1.2-3.3z"/></svg>';
-  return '<div class="prop-badge-direct" title="' + label + ' — verified by our team"><span class="pbd-ico">' + ico + '</span><span class="pbd-txt">' + label + '</span></div>';
+  return '<div class="prop-badge-direct ' + (role === 'Builder' ? 'pbd-builder' : 'pbd-agent') + '" title="' + label + ' — verified by our team"><span class="pbd-ico">' + ico + '</span><span class="pbd-txt">' + label + '</span></div>';
 }
 function cardHTML(p, compact, extraLeftBadge, showAvail) {
   try { return _cardHTMLRaw(p, compact, extraLeftBadge, showAvail); }
