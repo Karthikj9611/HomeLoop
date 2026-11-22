@@ -2,7 +2,6 @@ require('dotenv').config();
 
 const express    = require('express');
 const compression = require('compression');
-const { faststart } = require('./faststart'); // moov-first remux for uploaded mp4/mov
 const helmet     = require('helmet');
 const mongoose   = require('mongoose');
 const cors       = require('cors');
@@ -3748,14 +3747,13 @@ app.post('/api/upload-video', videoUploadLimiter, requireUser, requireOwner, upl
     if (!looksLikeVideo(file.buffer, ext)) return res.status(400).json({ message: 'That file does not look like a valid video' });
 
     const stream = getVideoBucket().openUploadStream(`${Date.now()}.${ext}`, {
-      chunkSizeBytes: 1024 * 1024, // 1 MB chunks (default 255 KB): ~4x fewer Mongo round-trips when streaming
       contentType: file.mimetype,
       metadata: { userId: req.userId, userReadableId: req.userReadableId || null, uploadedAt: new Date() },
     });
     await new Promise((resolve, reject) => {
       stream.on('error', reject);
       stream.on('finish', resolve);
-      stream.end(faststart(file.buffer));
+      stream.end(file.buffer);
     });
 
     res.status(201).json({ message: 'Video uploaded successfully', url: `/videos/${stream.id}.${ext}` });
@@ -3767,20 +3765,13 @@ app.post('/api/upload-video', videoUploadLimiter, requireUser, requireOwner, upl
 
 // Public — anyone viewing a listing needs to play it. Supports Range requests (seeking / iOS Safari
 // refuses to play video from a server that ignores them). Bytes never change per id → cache hard.
-const _videoMetaCache = new Map(); // id -> {length, contentType}; bytes never change per id, so skip the DB lookup on every Range request
 app.get('/videos/:id', async (req, res) => {
   try {
     const rawId = req.params.id.replace(/\.[a-zA-Z0-9]+$/, '');
     if (!mongoose.Types.ObjectId.isValid(rawId)) return res.status(404).end();
     const _id = new mongoose.Types.ObjectId(rawId);
-    let file = _videoMetaCache.get(rawId);
-    if (!file) {
-      const [f] = await getVideoBucket().find({ _id }).limit(1).toArray();
-      if (!f) return res.status(404).end();
-      file = { length: f.length, contentType: f.contentType };
-      _videoMetaCache.set(rawId, file);
-      if (_videoMetaCache.size > 500) _videoMetaCache.delete(_videoMetaCache.keys().next().value);
-    }
+    const [file] = await getVideoBucket().find({ _id }).limit(1).toArray();
+    if (!file) return res.status(404).end();
 
     const total = file.length;
     let start = 0, end = total - 1, status = 200;
@@ -3804,7 +3795,6 @@ app.get('/videos/:id', async (req, res) => {
       'X-Content-Type-Options': 'nosniff',
     });
     if (total === 0) return res.end();
-    res.flushHeaders(); // headers out immediately; the player can start parsing before the first chunk is read
     const dl = getVideoBucket().openDownloadStream(_id, { start, end: end + 1 }); // GridFS `end` is exclusive
     dl.on('error', () => res.destroy());
     req.on('close', () => dl.destroy());
