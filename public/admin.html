@@ -5751,9 +5751,8 @@ tr.nf-flash td{animation:nfFlash 3s ease-out}
       <div class="form-group" id="f-brokerageWrap">
         <label class="form-label">Brokerage Fee</label>
         <select class="form-select" id="f-brokerage" onchange="onBrokerageChange()">
-          <option value="50% of rent">50% of rent</option>
-          <option value="75% of rent">75% of rent</option>
-          <option value="100% of rent">100% of rent</option>
+          <option value="1/2 Month">1/2 Month</option>
+          <option value="1 Month">1 Month</option>
           <option value="Fixed amount">Fixed amount</option>
         </select>
       </div>
@@ -19179,7 +19178,10 @@ function applyImportedProperty(p) {
     sv('f-negotiable', (price.negotiable || '').toLowerCase() === 'yes' ? 'yes' : (price.negotiable || '').toLowerCase() === 'no' ? 'no' : '');
     onMaintenanceChange();
   }
-  sv('f-brokerage', price.brokerage);
+  { const _bm = { '50% of rent': '1/2 Month', '100% of rent': '1 Month', '15 Days rent': '1/2 Month', 'Half Month': '1/2 Month', '1 Month rent': '1 Month' };
+    const _bv = _bm[price.brokerage] || price.brokerage, _bs = document.getElementById('f-brokerage');
+    if (_bs && _bv && ![..._bs.options].some(o => o.value === _bv)) _bs.add(new Option(_bv, _bv)); // keep any other older saved value (e.g. 75% of rent) editable
+    sv('f-brokerage', _bv); }
   sv('f-brokerageAmount', price.brokerageAmount);
   updateBrokerageFields();
 
