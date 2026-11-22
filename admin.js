@@ -543,6 +543,7 @@ module.exports = function registerAdminRoutes(app, deps) {
       const ext = VIDEO_EXT_BY_TYPE[file.mimetype];
       if (!looksLikeVideo(file.buffer, ext)) return res.status(400).json({ message: 'That file does not look like a valid video' });
       const stream = getVideoBucket().openUploadStream(`${Date.now()}.${ext}`, {
+        chunkSizeBytes: 1024 * 1024,
         contentType: file.mimetype,
         metadata: { uploadedByAdmin: req.adminEmail || true, uploadedAt: new Date() },
       });

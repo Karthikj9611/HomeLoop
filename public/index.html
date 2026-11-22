@@ -11895,11 +11895,11 @@ function buildMinimalVideoEmbed(url) {
   if (!info) return '';
   let media = '';
   if (info.type === 'file') {
-    media = `<video class="vid-media" data-kind="file" muted playsinline loop preload="auto" onerror="vidError(this)" oncanplay="vidCanPlay(this)" ontimeupdate="vidTick(this)" onloadedmetadata="vidTick(this)" ondurationchange="vidTick(this)" onplay="vidSync(this)" onpause="vidSync(this)" disablepictureinpicture disableremoteplayback controlslist="nodownload nofullscreen noremoteplayback noplaybackrate" src="${safeUrl(info.src)}"></video>`;
+    media = `<video class="vid-media" data-kind="file" muted playsinline loop preload="none" onerror="vidError(this)" oncanplay="vidCanPlay(this)" ontimeupdate="vidTick(this)" onloadedmetadata="vidTick(this)" ondurationchange="vidTick(this)" onplay="vidSync(this)" onpause="vidSync(this)" disablepictureinpicture disableremoteplayback controlslist="nodownload nofullscreen noremoteplayback noplaybackrate" data-src="${safeUrl(info.src)}#t=0.001"></video>`;
   } else if (info.type === 'youtube') {
-    media = `<iframe class="vid-media" data-kind="yt" title="Video tour" referrerpolicy="strict-origin-when-cross-origin" allow="autoplay; encrypted-media" src="https://www.youtube-nocookie.com/embed/${info.id}?controls=0&mute=1&modestbranding=1&rel=0&playsinline=1&disablekb=1&fs=0&iv_load_policy=3&loop=1&playlist=${info.id}&enablejsapi=1"></iframe>`;
+    media = `<iframe class="vid-media" data-kind="yt" loading="lazy" title="Video tour" referrerpolicy="strict-origin-when-cross-origin" allow="autoplay; encrypted-media" src="https://www.youtube-nocookie.com/embed/${info.id}?controls=0&mute=1&modestbranding=1&rel=0&playsinline=1&disablekb=1&fs=0&iv_load_policy=3&loop=1&playlist=${info.id}&enablejsapi=1"></iframe>`;
   } else if (info.type === 'vimeo') {
-    media = `<iframe class="vid-media" data-kind="vimeo" title="Video tour" allow="autoplay" src="https://player.vimeo.com/video/${info.id}?controls=0&muted=1&title=0&byline=0&portrait=0&playsinline=1&loop=1"></iframe>`;
+    media = `<iframe class="vid-media" data-kind="vimeo" loading="lazy" title="Video tour" allow="autoplay" src="https://player.vimeo.com/video/${info.id}?controls=0&muted=1&title=0&byline=0&portrait=0&playsinline=1&loop=1"></iframe>`;
   } else return '';
   const btn = `<button type="button" class="vid-toggle" onclick="event.stopPropagation();toggleGalleryVideo(this.closest('.vid-wrap'))" aria-label="Play video" title="Play / pause">${VID_ICON_PLAY}</button>`;
   const prog = info.type === 'file'
@@ -11954,7 +11954,7 @@ function vidAutoCmd(wrap, play, tries) {
   wrap.__want = play;
   if (kind === 'file') {
     m.muted = true;
-    if (play) { if (m.error || m.networkState === 3) m.load(); const r = m.play(); if (r && r.catch) r.catch(() => {}); }
+    if (play) { vidLoad(m); if (m.error) m.load(); const r = m.play(); if (r && r.catch) r.catch(() => {}); }
     else m.pause();
     return;
   }
@@ -11986,7 +11986,7 @@ function toggleGalleryVideo(wrap) {
   const kind = m.dataset.kind;
   if (kind === 'file') {
     m.muted = true; m.controls = false;
-    if (play) { const r = m.play(); if (r && r.catch) r.catch(() => {}); } else m.pause();
+    if (play) { vidLoad(m); const r = m.play(); if (r && r.catch) r.catch(() => {}); } else m.pause();
   } else if (kind === 'yt') {
     m.contentWindow.postMessage(JSON.stringify({ event: 'command', func: play ? 'playVideo' : 'pauseVideo', args: [] }), '*');
     if (play) m.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'mute', args: [] }), '*');
@@ -12060,7 +12060,7 @@ function buildImgSlider(p, fg, uidSuffix, videoSlideHtml) {
   // out of the DOM (data-vh) and only injected by slideGo() once a plan is active.
   const videoSlide = videoSlideHtml
     ? (imgs.length >= 1
-        ? `<div class="img-slide video-slide active" data-vh="${encodeURIComponent(videoSlideHtml)}"></div>`
+        ? `<div class="img-slide video-slide active">${videoSlideHtml}</div>`
         : `<div class="img-slide video-slide active">${videoSlideHtml}</div>`)
     : '';
   const _slideCount = imgs.length + (videoSlideHtml && imgs.length >= 1 ? 1 : 0);
@@ -12121,8 +12121,27 @@ function observeCardImgs(root) {
 }
 /* Video-first galleries: the video plays (muted) while its card is on screen and pauses when it scrolls away. */
 let _cardVidObserver = null;
+/* File videos carry data-src (no network until needed). vidLoad() attaches the source; the preload observer does it
+   ~1200px before the card scrolls in, so the first frame is already buffered when playback starts. */
+function vidLoad(m) {
+  if (!m || !m.dataset || !m.dataset.src) return;
+  m.preload = 'auto';
+  m.src = m.dataset.src;
+  m.removeAttribute('data-src');
+}
+let _vidPreObs = null;
+function vidPreloadObserve(el) {
+  if (!el.querySelector('video.vid-media[data-src]')) return;
+  if (!('IntersectionObserver' in window)) { el.querySelectorAll('video.vid-media[data-src]').forEach(vidLoad); return; }
+  if (!_vidPreObs) _vidPreObs = new IntersectionObserver(es => es.forEach(en => {
+    if (!en.isIntersecting) return;
+    en.target.querySelectorAll('video.vid-media[data-src]').forEach(vidLoad);
+    _vidPreObs.unobserve(en.target);
+  }), { rootMargin: '1200px 0px' });
+  _vidPreObs.observe(el);
+}
 function observeCardVideos(root) {
-  if (!('IntersectionObserver' in window)) return;
+  if (!('IntersectionObserver' in window)) { (root || document).querySelectorAll('video.vid-media[data-src]').forEach(vidLoad); return; }
   if (!_cardVidObserver) {
     _cardVidObserver = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
@@ -12130,14 +12149,15 @@ function observeCardVideos(root) {
         const slides = [...c.querySelectorAll('.img-slide')];
         const idx = Math.max(0, slides.findIndex(sl => sl.classList.contains('active')));
         if (!slides[idx] || !slides[idx].classList.contains('video-slide')) return;
-        if (entry.intersectionRatio >= 0.4) slideGo(c.id, idx);
+        if (entry.intersectionRatio >= 0.25) slideGo(c.id, idx);
         else { const w = slides[idx].querySelector('.vid-wrap'); if (w) vidAutoCmd(w, false); }
       });
-    }, { threshold: [0, 0.4] });
+    }, { threshold: [0, 0.25] });
   }
   (root || document).querySelectorAll('.img-slides').forEach(el => {
+    vidPreloadObserve(el);
     const f = el.querySelector('.img-slide');
-    if (f && f.classList.contains('video-slide') && el.querySelectorAll('.img-slide').length > 1) _cardVidObserver.observe(el);
+    if (f && f.classList.contains('video-slide')) _cardVidObserver.observe(el); // video-only listings too
   });
 }
 
@@ -12471,6 +12491,7 @@ function openLightboxReal(propId, idx) {
 }
 
 function closeLightbox() {
+  { const _lv = document.getElementById('lightboxVideo'); if (_lv) _lv.innerHTML = ''; }
   document.getElementById('lightboxOverlay').classList.remove('open');
 }
 
@@ -12496,6 +12517,15 @@ function lightboxLockedIdx() {
   return (lightboxPropertyMode && !lightboxOwn && lastItemLocked(lightboxImgs.length)) ? lightboxImgs.length - 1 + (lightboxVideoHtml ? 1 : 0) : -1;
 }
 
+(function(){
+  const v = document.getElementById('lightboxVideo');
+  if (!v || v.__tg) return; v.__tg = 1;
+  v.addEventListener('click', function(e){
+    e.stopPropagation();
+    if (Date.now() - (window._lastSwipeTs || 0) < 400) return;
+    const w = v.querySelector('.vid-wrap'); if (w) vidAutoCmd(w, w.dataset.playing !== '1');
+  });
+})();
 function lightboxVideoLocked() {
   return false; // video tour is open for everyone
 }
@@ -12553,6 +12583,7 @@ function renderLightbox() {
     imgEl.style.display = 'none';
     videoEl.style.display = 'block';
     videoEl.innerHTML = lightboxVideoHtml;
+    { const _w = videoEl.querySelector('.vid-wrap'); if (_w) { vidLoad(_w.querySelector('video.vid-media')); vidAutoCmd(_w, true); } }
   } else {
     if (lockEl) lockEl.style.display = 'none';
     videoEl.style.display = 'none';
