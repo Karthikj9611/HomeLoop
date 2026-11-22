@@ -11895,23 +11895,50 @@ function buildMinimalVideoEmbed(url) {
   if (!info) return '';
   let media = '';
   if (info.type === 'file') {
-    media = `<video class="vid-media" data-kind="file" muted playsinline loop preload="metadata" onerror="vidError(this)" oncanplay="vidCanPlay(this)" ontimeupdate="vidTick(this)" onloadedmetadata="vidTick(this)" ondurationchange="vidTick(this)" onplay="vidSync(this)" onpause="vidSync(this)" disablepictureinpicture disableremoteplayback controlslist="nodownload nofullscreen noremoteplayback noplaybackrate" src="${safeUrl(info.src)}"></video>`;
+    media = `<video class="vid-media" data-kind="file" muted playsinline loop preload="metadata" onerror="vidError(this)" oncanplay="vidCanPlay(this)" onloadeddata="vidLoad(this,0)" onplaying="vidLoad(this,0)" onwaiting="vidLoad(this,1)" ontimeupdate="vidTick(this)" onloadedmetadata="vidTick(this)" ondurationchange="vidTick(this)" onplay="vidSync(this)" onpause="vidSync(this)" disablepictureinpicture disableremoteplayback controlslist="nodownload nofullscreen noremoteplayback noplaybackrate" src="${safeUrl(info.src)}"></video>`;
   } else if (info.type === 'youtube') {
-    media = `<iframe class="vid-media" data-kind="yt" title="Video tour" referrerpolicy="strict-origin-when-cross-origin" allow="autoplay; encrypted-media" src="https://www.youtube-nocookie.com/embed/${info.id}?controls=0&mute=1&modestbranding=1&rel=0&playsinline=1&disablekb=1&fs=0&iv_load_policy=3&loop=1&playlist=${info.id}&enablejsapi=1"></iframe>`;
+    media = `<iframe class="vid-media" data-kind="yt" onload="vidLoad(this,0)" title="Video tour" referrerpolicy="strict-origin-when-cross-origin" allow="autoplay; encrypted-media" src="https://www.youtube-nocookie.com/embed/${info.id}?controls=0&mute=1&modestbranding=1&rel=0&playsinline=1&disablekb=1&fs=0&iv_load_policy=3&loop=1&playlist=${info.id}&enablejsapi=1"></iframe>`;
   } else if (info.type === 'vimeo') {
-    media = `<iframe class="vid-media" data-kind="vimeo" title="Video tour" allow="autoplay" src="https://player.vimeo.com/video/${info.id}?controls=0&muted=1&title=0&byline=0&portrait=0&playsinline=1&loop=1"></iframe>`;
+    media = `<iframe class="vid-media" data-kind="vimeo" onload="vidLoad(this,0)" title="Video tour" allow="autoplay" src="https://player.vimeo.com/video/${info.id}?controls=0&muted=1&title=0&byline=0&portrait=0&playsinline=1&loop=1"></iframe>`;
   } else return '';
   const btn = `<button type="button" class="vid-toggle" onclick="event.stopPropagation();toggleGalleryVideo(this.closest('.vid-wrap'))" aria-label="Play video" title="Play / pause">${VID_ICON_PLAY}</button>`;
   const prog = info.type === 'file'
     ? `<input type="range" class="vid-seek" min="0" max="1000" value="0" step="1" aria-label="Seek" oninput="vidSeek(this)"><span class="vid-time">0:00 / 0:00</span>`
     : '';
   const bar = prog ? `<div class="vid-bar" onclick="event.stopPropagation()" onpointerdown="event.stopPropagation()" onmousedown="event.stopPropagation()" ontouchstart="event.stopPropagation()" ontouchmove="event.stopPropagation()">${prog}</div>` : '';
-  return `<div class="vid-wrap" data-playing="0">${media}<div class="vid-hit"></div></div>`; // autoplay, muted, no controls / timeline
+  return `<div class="vid-wrap" data-playing="0" data-loading="1">${media}<div class="vid-loader" aria-hidden="true"></div><div class="vid-pct" aria-hidden="true">0%</div><div class="vid-hit"></div></div>`; // autoplay, muted, no controls / timeline
 }
 function vidCanPlay(v) {
   const w = v.closest('.vid-wrap');
   if (w && w.__want && v.paused) { v.muted = true; const r = v.play(); if (r && r.catch) r.catch(() => {}); }
 }
+/* Centered loading spinner while the video has no picture yet (data-loading="1"); cleared on first frame / player load. */
+/* Loading percentage: real buffered % for video files, estimated % for YouTube/Vimeo embeds (they expose no progress). */
+(function(){
+  const t0 = new WeakMap();
+  function tick(){
+    document.querySelectorAll('.vid-wrap[data-loading="1"]').forEach(w => {
+      const lbl = w.querySelector('.vid-pct'); if (!lbl) return;
+      if (!t0.has(w)) t0.set(w, Date.now());
+      const m = w.querySelector('video.vid-media');
+      let pct;
+      if (m) {
+        const d = m.duration, b = m.buffered;
+        if (d && isFinite(d) && b && b.length) pct = b.end(b.length - 1) / d * 100;
+        else pct = 0;
+        // estimate until real buffering info arrives, so the number never sits at 0%
+        const est = 90 * (1 - Math.exp(-(Date.now() - t0.get(w)) / 3000));
+        pct = Math.max(pct, m.readyState >= 2 ? Math.max(est, 60) : est * 0.5);
+      } else {
+        pct = 90 * (1 - Math.exp(-(Date.now() - t0.get(w)) / 3000));
+      }
+      pct = Math.min(99, Math.max(parseInt(lbl.dataset.v || '0', 10), Math.floor(pct)));
+      lbl.dataset.v = pct; lbl.textContent = pct + '%';
+    });
+  }
+  setInterval(tick, 200);
+})();
+function vidLoad(el, on) { const w = el && el.closest && el.closest('.vid-wrap'); if (w) w.dataset.loading = on ? '1' : '0'; }
 function vidFmt(t) { t = Math.max(0, Math.floor(t || 0)); return Math.floor(t / 60) + ':' + String(t % 60).padStart(2, '0'); }
 function vidTick(v) {
   const w = v.closest('.vid-wrap'); if (!w) return;
@@ -11954,6 +11981,7 @@ function vidAutoCmd(wrap, play, tries) {
   wrap.__want = play;
   if (kind === 'file') {
     m.muted = true;
+    if (play && m.readyState < 2) vidLoad(m, 1);
     if (play) { if (m.error || m.networkState === 3) m.load(); const r = m.play(); if (r && r.catch) r.catch(() => {}); }
     else m.pause();
     return;
@@ -25100,8 +25128,20 @@ body{background:radial-gradient(80% 50% at 100% 0%,rgba(255,150,110,.26) 0%,rgba
 <style id="video-minimal">
 /* Gallery video: no native controls / volume / fullscreen / menu / link chips — one play-pause button, muted */
 .vid-wrap{position:absolute;inset:0;background:#000}
+.vid-loader{position:absolute;left:50%;top:50%;width:40px;height:40px;margin:-20px 0 0 -20px;border-radius:50%;border:3px solid rgba(255,255,255,.25);border-top-color:#fff;box-sizing:border-box;animation:vidSpin .8s linear infinite;display:none;z-index:2;pointer-events:none}
+.vid-wrap[data-loading="1"] .vid-loader{display:block}
+@keyframes vidSpin{to{transform:rotate(360deg)}}
 .vid-wrap .vid-media{position:absolute;inset:0;width:100%;height:100%;border:0;object-fit:contain;background:#000;pointer-events:none}
 .vid-wrap video::-webkit-media-controls,.vid-wrap video::-webkit-media-controls-enclosure{display:none !important}
+/* Property cards: soft brand-rose video backdrop instead of black */
+.prop-img .img-slide.video-slide,
+.prop-img .vid-wrap,
+.prop-img .vid-wrap .vid-media{background:linear-gradient(135deg,#fde8ec 0%,#f9c6d0 55%,#f4a6b5 100%) !important}
+.prop-img .vid-loader{border-color:rgba(224,58,82,.22);border-top-color:#E03A52}
+.vid-pct{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:none;z-index:2;pointer-events:none;font:700 11px/1 inherit;font-family:inherit;color:#fff;letter-spacing:-.01em}
+.prop-img .vid-pct{color:#E03A52}
+.vid-wrap[data-loading="1"] .vid-pct{display:block}
+
 .vid-hit{position:absolute;inset:0;z-index:1;cursor:pointer}
 .vid-bar{position:absolute;left:12px;right:12px;bottom:32px;z-index:2;display:flex;align-items:center;gap:10px;padding:6px 14px;border-radius:999px;background:rgba(0,0,0,.5);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);color:#fff}
 .vid-seek{flex:1;min-width:0;height:18px;margin:0;-webkit-appearance:none;appearance:none;background:transparent;cursor:pointer}
