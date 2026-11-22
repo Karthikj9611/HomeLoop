@@ -11890,7 +11890,13 @@ function buildVideoSlideHtml(p) {
 // Gallery video: muted, no native controls, a single play/pause button.
 const VID_ICON_PLAY = '<svg viewBox="0 0 24 24" aria-hidden="true"><polygon points="7 4 20 12 7 20 7 4" fill="currentColor" stroke="none"/></svg>';
 const VID_ICON_PAUSE = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="4" width="4" height="16" rx="1" fill="currentColor" stroke="none"/><rect x="14" y="4" width="4" height="16" rx="1" fill="currentColor" stroke="none"/></svg>';
-const _vidLoaded = new Set();   // videos that already loaded once: re-rendered copies skip the spinner/percentage and come from the browser cache
+const _VID_LS_KEY = 'hl_vid_loaded';
+const _vidLoaded = new Set((function(){ try { return JSON.parse(localStorage.getItem(_VID_LS_KEY) || '[]'); } catch (e) { return []; } })());   // survives refresh
+function _vidMarkLoaded(k) {
+  if (!k || _vidLoaded.has(k)) return;
+  _vidLoaded.add(k);
+  try { localStorage.setItem(_VID_LS_KEY, JSON.stringify(Array.from(_vidLoaded).slice(-300))); } catch (e) { /* storage full / blocked */ }
+}   // videos that already loaded once: re-rendered copies skip the spinner/percentage and come from the browser cache
 function buildMinimalVideoEmbed(url) {
   const info = getVideoEmbedInfo(url);
   if (!info) return '';
@@ -11935,13 +11941,14 @@ function vidCanPlay(v) {
       } else {
         pct = 90 * (1 - Math.exp(-(Date.now() - t0.get(w)) / 3000));
       }
+      { const rp = (m && window._vidProg) ? window._vidProg.get(m.dataset.orig) : null; if (rp != null) pct = rp; }   // real download progress
       pct = Math.min(99, Math.max(parseInt(lbl.dataset.v || '0', 10), Math.floor(pct)));
       lbl.dataset.v = pct; lbl.textContent = pct + '%';
     });
   }
   setInterval(tick, 200);
 })();
-function vidLoad(el, on) { const w = el && el.closest && el.closest('.vid-wrap'); if (w) w.dataset.loading = on ? '1' : '0'; if (!on && el && el.dataset && el.dataset.vkey) _vidLoaded.add(el.dataset.vkey); }
+function vidLoad(el, on) { const w = el && el.closest && el.closest('.vid-wrap'); if (w) w.dataset.loading = on ? '1' : '0'; if (!on && el && el.dataset && el.dataset.vkey) _vidMarkLoaded(el.dataset.vkey); }
 function vidFmt(t) { t = Math.max(0, Math.floor(t || 0)); return Math.floor(t / 60) + ':' + String(t % 60).padStart(2, '0'); }
 function vidTick(v) {
   const w = v.closest('.vid-wrap'); if (!w) return;
@@ -25149,6 +25156,84 @@ document.addEventListener('click', function(e){
   try { if (wrap.dataset.playing === '1' && typeof toggleGalleryVideo === 'function') toggleGalleryVideo(wrap); } catch (_) {}  // pause the inline copy, the lightbox plays its own
   openLightboxReal(sl.dataset.pid, -1);   // -1 → video slot of the lightbox
 }, true);
+</script>
+<script>
+/* Video cache: the first time a video file is opened it downloads with a REAL percentage and is saved in the browser (Cache Storage).
+   After that (even after a refresh) it plays straight from the saved copy, instantly. Falls back to normal loading if the host blocks CORS / storage is unavailable. */
+(function(){
+  if (!('caches' in window) || !window.fetch || !window.URL) return;
+  var CACHE='hl-video-cache-v1', IDX='hl_vid_cache_idx', MAX_ITEMS=25, MAX_BYTES=120*1024*1024;
+  var prog = window._vidProg = new Map();   // src -> % (0-99)
+  var urls = new Map();                      // src -> blob: URL (this page load)
+  var inflight = new Map();                  // src -> Promise<blob: URL | null>
+  function idxGet(){ try{ return JSON.parse(localStorage.getItem(IDX)||'[]'); }catch(e){ return []; } }
+  function idxSet(a){ try{ localStorage.setItem(IDX, JSON.stringify(a)); }catch(e){} }
+  function touch(c, src){
+    var a = idxGet().filter(function(k){ return k!==src; }); a.push(src);
+    while (a.length > MAX_ITEMS) { var old = a.shift(); c.delete(old).catch(function(){}); }
+    idxSet(a);
+  }
+  var ACTIVE=0, WAITING=[], MAX_PARALLEL=2;   // download 2 videos at a time, in the order they were opened: the first ones finish (and play) first
+  function limit(fn){
+    return new Promise(function(res, rej){
+      function go(){ ACTIVE++; fn().then(res, rej).then(function(){ ACTIVE--; var n=WAITING.shift(); if (n) n(); }); }
+      if (ACTIVE < MAX_PARALLEL) go(); else WAITING.push(go);
+    });
+  }
+  function get(src){
+    if (urls.has(src)) return Promise.resolve({url: urls.get(src), cached: true});
+    if (inflight.has(src)) return inflight.get(src);
+    var pr = caches.open(CACHE).then(function(c){
+      return c.match(src).then(function(hit){
+        if (hit) return hit.blob().then(function(b){ var u=URL.createObjectURL(b); urls.set(src,u); touch(c,src); return {url:u, cached:true}; });
+        prog.set(src, 0);
+        return limit(function(){ return fetch(src, {mode:'cors', credentials:'omit'}).then(function(r){
+          if (!r.ok || !r.body) throw new Error('no stream');
+          var total = +r.headers.get('content-length') || 0;
+          if (total > MAX_BYTES) throw new Error('too big');
+          var type = r.headers.get('content-type') || 'video/mp4', rd = r.body.getReader(), chunks = [], got = 0;
+          function pump(){
+            return rd.read().then(function(x){
+              if (x.done) return;
+              chunks.push(x.value); got += x.value.length;
+              if (got > MAX_BYTES) throw new Error('too big');
+              if (total) prog.set(src, Math.min(99, Math.floor(got/total*100)));
+              return pump();
+            });
+          }
+          return pump().then(function(){
+            var blob = new Blob(chunks, {type:type});
+            var u = URL.createObjectURL(blob); urls.set(src,u);
+            c.put(src, new Response(blob, {headers:{'Content-Type':type}})).then(function(){ touch(c,src); }).catch(function(){});
+            return {url:u, cached:false};
+          });
+        }); });
+      });
+    }).catch(function(){ return null; }).then(function(v){ prog.delete(src); inflight.delete(src); return v; });
+    inflight.set(src, pr); return pr;
+  }
+  function handle(v){
+    if (v.dataset.hlc) return; v.dataset.hlc = '1';
+    var src = v.getAttribute('src'); if (!src || src.indexOf('blob:')===0) return;
+    v.dataset.orig = src;
+    var wrap = v.closest('.vid-wrap');
+    if (urls.has(src)) { v.src = urls.get(src); return; }          // already have it in memory: instant
+    v.removeAttribute('src'); try{ v.load(); }catch(e){}            // stop the plain download; we fetch it ourselves
+    if (wrap) wrap.dataset.loading = '1';
+    get(src).then(function(r){
+      if (!v.isConnected) { if (r) {} return; }
+      if (r && r.url) { v.src = r.url; try{ v.load(); }catch(e){} }
+      else { v.src = src; }                                         // CORS/storage problem: normal loading
+    });
+  }
+  function scan(root){
+    if (!root || root.nodeType!==1) return;
+    var l = root.matches && root.matches('video.vid-media[data-kind="file"]') ? [root] : (root.querySelectorAll ? root.querySelectorAll('video.vid-media[data-kind="file"]') : []);
+    Array.prototype.forEach.call(l, handle);
+  }
+  new MutationObserver(function(ms){ ms.forEach(function(m){ for (var i=0;i<m.addedNodes.length;i++) scan(m.addedNodes[i]); }); }).observe(document.documentElement,{childList:true,subtree:true});
+  scan(document.body);
+})();
 </script>
 <style id="video-minimal">
 /* Gallery video: no native controls / volume / fullscreen / menu / link chips — one play-pause button, muted */
