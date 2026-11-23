@@ -1209,6 +1209,22 @@ main.tab-explore .empty-state{display:none !important}
   .prop-left-badges .prop-badge-direct .pbd-ico{width:15px;height:15px}
   .prop-left-badges .prop-badge-direct .pbd-ico svg{width:9px;height:9px}
 }
+/* Booked section hidden on the public listing pages */
+#bookedSection{display:none !important}
+/* Agent commission tag — sits directly below the AGENT tag, same flush-left pill style */
+.prop-left-badges .prop-badge-comm{
+  order:1;display:inline-flex;align-items:center;gap:5px;flex-shrink:0;height:24px;padding:0 11px 0 9px;margin-left:-10px;
+  border-radius:0 99px 99px 0;box-sizing:border-box;border:1px solid rgba(255,255,255,.75);border-left:0;
+  background:linear-gradient(135deg,#ffd166 0%,#f4a300 55%,#c77a00 100%);color:#4a2c00;
+  font-size:10px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;line-height:1;white-space:nowrap;
+  box-shadow:0 2px 8px rgba(244,163,0,.45),inset 0 1px 0 rgba(255,255,255,.55);pointer-events:none;
+}
+.prop-badge-comm .pbc-ico{width:15px;height:15px;border-radius:50%;background:#fff;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;font-size:9px;font-weight:900;color:#c77a00;letter-spacing:0}
+.prop-badge-comm .pbc-amt{font-weight:900}
+@media(max-width:640px){
+  .prop-left-badges .prop-badge-comm{height:18px;padding:0 8px 0 5px;gap:3px;font-size:7.8px;letter-spacing:.03em}
+  .prop-badge-comm .pbc-ico{width:12px;height:12px;font-size:7px}
+}
 .prop-icon-verified svg{width:15px;height:15px;fill:#fff;stroke:none}
 .prop-card.prop-card-promoted .prop-icon-promoted{background:linear-gradient(135deg,#ffd166,#f4a300)}
 .prop-card.prop-card-promoted .prop-icon-promoted svg{fill:#7a4a00}
@@ -12789,6 +12805,21 @@ function roleTagProp(p) {
   const lb = p && p.basic && p.basic.listedBy;
   return (p && p.verified && (lb === 'Broker' || lb === 'Builder')) ? lb : '';
 }
+// Agent (Broker-tab) listings show the broker's commission as a second tag under the AGENT tag.
+function commissionTagHTML(p) {
+  if (!p || roleTagProp(p) !== 'Broker' || !p.price || !p.price.brokerage) return '';
+  const b = p.price.brokerage;
+  let amt;
+  if (b === 'Fixed amount') {
+    if (p.price.brokerageAmount == null || p.price.brokerageAmount === '') return '';
+    amt = fmtRupee(p.price.brokerageAmount);
+  } else {
+    const m = { '1/2 Month': '½ Month', '50% of rent': '½ Month', '15 Days rent': '½ Month', 'Half Month': '½ Month',
+                '1 Month': '1 Month', '100% of rent': '1 Month', '1 Month rent': '1 Month' };
+    amt = m[b] || b;
+  }
+  return '<div class="prop-badge-comm" title="Agent commission: ' + esc(amt) + '"><span class="pbc-ico">₹</span><span class="pbc-amt">' + esc(amt) + '</span></div>';
+}
 function roleTagHTML(role) {
   // Broker-tab listings are presented as "Agent" (internal value stays 'Broker').
   var label = role === 'Broker' ? 'Agent' : role;
@@ -12848,6 +12879,7 @@ function _cardHTMLRaw(p, compact, extraLeftBadge, showAvail) {
       <div class="prop-card-top-row">
         <div class="prop-left-badges">
           ${(roleTagProp(p) && !isBookedProp(p)) ? roleTagHTML(roleTagProp(p)) : ''}
+          ${!isBookedProp(p) ? commissionTagHTML(p) : ''}
           ${propDistanceBadgeHTML(p)}
           ${(SHOW_OWNER_BADGE && cardCallOn(p) && !isBookedProp(p) && !(p.basic && (p.basic.listedBy === 'Broker' || p.basic.listedBy === 'Builder'))) ? '<div class="prop-badge-direct" title="Owner — contact the owner directly, no brokerage"><span class="pbd-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.6"/><path d="M4.8 20c.6-3.8 3.6-6 7.2-6s6.6 2.2 7.2 6"/></svg></span><span class="pbd-txt">Owner</span></div>' : ''}
           ${(!p.verified && !isBookedProp(p)) ? '<div class="prop-unverified" title="Unverified — yet to be verified by our team"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5"/><path d="M12 16.3h.01"/></svg>Yet to verify</div>' : ''}
