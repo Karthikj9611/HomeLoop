@@ -22113,16 +22113,27 @@ let _videoUploading = false;
 
 function updateVideoUploadUI() {
   const input = document.getElementById('f-videoUrl');
+  // A pasted link must be a single URL (no several links separated by space/comma/newline).
+  if (input && /[\s,;]/.test(input.value.trim())) {
+    input.value = input.value.trim().split(/[\s,;]+/)[0];
+    if (typeof showToast === 'function') showToast('Only one video link is allowed.', 'warning');
+  }
   const status = document.getElementById('f-videoStatus');
   const removeBtn = document.getElementById('f-videoRemoveBtn');
   const uploadBtn = document.getElementById('f-videoUploadBtn');
   if (!input || !status) return;
   if (_videoUploading) return; // progress text is being shown
-  const isUploaded = OWN_VIDEO_PATH_RE.test(input.value.trim());
-  status.textContent = isUploaded ? '✅ Video uploaded' : '';
+  const val = input.value.trim();
+  const isUploaded = OWN_VIDEO_PATH_RE.test(val);
+  const hasVideo = !!val;
+  const recordBtn = document.getElementById('f-videoRecordBtn');
+  status.textContent = isUploaded ? '✅ Video uploaded (only one video is allowed — remove it to add a different one)'
+    : (hasVideo ? 'Only one video is allowed per listing.' : '');
   status.style.color = isUploaded ? 'var(--green, #16a34a)' : 'var(--text-3)';
-  if (removeBtn) removeBtn.style.display = isUploaded ? '' : 'none';
-  if (uploadBtn) uploadBtn.textContent = isUploaded ? '🎥 Replace' : '🎥 Upload';
+  if (removeBtn) removeBtn.style.display = hasVideo ? '' : 'none';
+  // One video per listing: lock Upload / Record while a video (file or link) is present.
+  if (uploadBtn) { uploadBtn.textContent = '🎥 Upload'; uploadBtn.disabled = hasVideo; uploadBtn.style.opacity = hasVideo ? '.5' : ''; }
+  if (recordBtn) { recordBtn.disabled = hasVideo; recordBtn.style.opacity = hasVideo ? '.5' : ''; }
   renderVideoPreview();
 }
 
@@ -22174,13 +22185,25 @@ function removeUploadedVideo() {
 }
 
 function uploadListingVideo(fileInput) {
-  const file = (fileInput.files || [])[0];
+  const files = fileInput.files || [];
+  const file = files[0];
+  const multiple = files.length > 1;
   fileInput.value = '';
   if (!file || _videoUploading) return;
 
   const status = document.getElementById('f-videoStatus');
   const uploadBtn = document.getElementById('f-videoUploadBtn');
   const input = document.getElementById('f-videoUrl');
+
+  // Only ONE video is allowed per listing.
+  if (multiple) {
+    showToast('You can upload only one video per listing.', 'warning');
+    return;
+  }
+  if (input && input.value.trim()) {
+    showToast('Only one video is allowed. Remove the existing video first.', 'warning');
+    return;
+  }
 
   if (LISTING_VIDEO_TYPES.indexOf(file.type) < 0) {
     showToast('Please choose an MP4, WebM, MOV or OGG video.', 'error');
