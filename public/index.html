@@ -20485,8 +20485,8 @@ function showChargesModal(tab, fromLink) {
   else if (fromLink && tab === 'all') { visible = ['tenant', 'owner', 'pg', 'builder', 'broker']; tab = 'tenant'; } // common share link (guest): every tab
   else if (fromLink && tab) visible = [tab];
   else visible = ['tenant', 'owner', 'pg', 'builder', 'broker'];
-  // Builders charges tab hidden for now - delete this line to re-enable
-  visible = visible.filter(k => k !== 'builder'); if (!visible.length) { visible = ['tenant']; tab = null; }
+  // Builders, Owners, PG and Brokers charges tabs hidden for now - delete this line to re-enable
+  visible = visible.filter(k => k === 'tenant'); if (!visible.length) { visible = ['tenant']; tab = null; }
   ['tenant', 'owner', 'pg', 'builder', 'broker'].forEach(k => {
     document.getElementById('chargesTabBtn-' + k).style.display = visible.includes(k) ? '' : 'none';
   });
