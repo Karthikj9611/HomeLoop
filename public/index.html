@@ -6334,8 +6334,8 @@ h1,h2,h3,.logo-word,.section-title{font-family:var(--hl-display);letter-spacing:
       Agents
     </div>
     <div class="nav-tab" data-tab="Builder" role="tab" onclick="switchTab(this)" tabindex="0">
-      <span class="nav-tab-icon">🏗️</span>
-      Builders
+      <span class="nav-tab-icon">🏢</span>
+      Managed By
     </div>
     <div class="nav-tab nav-tab-wide" data-tab="Maintenance" role="tab" onclick="switchTab(this)" tabindex="0">
       <span class="nav-tab-icon">🛏️</span>
@@ -7378,7 +7378,7 @@ h1,h2,h3,.logo-word,.section-title{font-family:var(--hl-display);letter-spacing:
   <div class="site-footer-grid">
     <div class="sf-col">
       <span class="brandname" style="font-size:19px">Home<span class="bn-accent">Loop</span></span>
-      <p class="sf-brand-desc">Rent, Lease, Brokers, Builders, and PG &amp; Coliving — all in one place.</p>
+      <p class="sf-brand-desc">Rent, Lease, Brokers, Managed By, and PG &amp; Coliving — all in one place.</p>
       <div class="sf-contact-row">
         <a href="https://wa.me/919035205230" target="_blank" class="sf-contact-btn" style="background:#25d366">
           <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M17.6 6.32A8.86 8.86 0 0 0 12.05 4C7.4 4 3.6 7.8 3.6 12.45c0 1.6.45 3.13 1.27 4.45L4 21l4.2-1.1a8.83 8.83 0 0 0 4.07.99h.01c4.65 0 8.45-3.8 8.45-8.45a8.4 8.4 0 0 0-2.93-5.62zM12.06 19.5a7.05 7.05 0 0 1-3.6-.99l-.26-.15-2.67.7.71-2.6-.17-.27a6.99 6.99 0 0 1-1.08-3.74c0-3.86 3.15-7 7.04-7 1.88 0 3.64.73 4.97 2.06a6.96 6.96 0 0 1 2.06 4.96c0 3.87-3.16 7.03-7 7.03zm3.86-5.27c-.21-.1-1.24-.62-1.43-.68-.19-.07-.33-.1-.47.1-.14.21-.54.68-.66.81-.12.14-.24.16-.45.05-.21-.1-.87-.32-1.66-1.03-.61-.55-1.03-1.22-1.15-1.43-.12-.21-.01-.32.1-.43.1-.1.21-.26.32-.39.1-.13.14-.21.21-.36.07-.14.04-.27-.02-.38-.07-.1-.62-1.49-.85-2.04-.18-.43-.36-.37-.5-.38h-.42c-.14 0-.38.05-.58.27-.21.21-.79.77-.79 1.88 0 1.1.81 2.18.92 2.33.12.14 1.58 2.42 3.83 3.3 1.9.75 2.28.6 2.7.56.42-.04 1.36-.55 1.55-1.09.19-.53.19-.98.13-1.08-.05-.1-.21-.16-.43-.27z"/></svg>
@@ -7394,7 +7394,7 @@ h1,h2,h3,.logo-word,.section-title{font-family:var(--hl-display);letter-spacing:
         <li><span onclick="document.querySelector('.nav-tab[data-tab=&quot;Rent&quot;]').click(); window.scrollTo({top:0,behavior:'smooth'})">Rent</span></li>
         <li><span onclick="document.querySelector('.nav-tab[data-tab=&quot;Upcoming&quot;]').click(); window.scrollTo({top:0,behavior:'smooth'})">Upcoming</span></li>
         <li><span onclick="document.querySelector('.nav-tab[data-tab=&quot;Broker&quot;]').click(); window.scrollTo({top:0,behavior:'smooth'})">Agents</span></li>
-        <li><span onclick="document.querySelector('.nav-tab[data-tab=&quot;Builder&quot;]').click(); window.scrollTo({top:0,behavior:'smooth'})">Builders</span></li>
+        <li><span onclick="document.querySelector('.nav-tab[data-tab=&quot;Builder&quot;]').click(); window.scrollTo({top:0,behavior:'smooth'})">Managed By</span></li>
         <li><span onclick="document.querySelector('.nav-tab[data-tab=&quot;Maintenance&quot;]').click(); window.scrollTo({top:0,behavior:'smooth'})">PG &amp; Coliving</span></li>
         <li style="display:none"><span onclick="document.querySelector('.nav-tab[data-tab=&quot;All&quot;]').click(); window.scrollTo({top:0,behavior:'smooth'})">Review</span></li>
         <li style="display:none"><span onclick="document.querySelector('.nav-tab[data-tab=&quot;Lease&quot;]').click(); window.scrollTo({top:0,behavior:'smooth'})">Lease</span></li>
@@ -7630,8 +7630,8 @@ h1,h2,h3,.logo-word,.section-title{font-family:var(--hl-display);letter-spacing:
     Agents
   </div>
   <div class="bottom-tab" data-tab="Builder" onclick="switchTabMobile(this)">
-    <span class="bottom-tab-icon">🏗️</span>
-    Builders
+    <span class="bottom-tab-icon">🏢</span>
+    Managed By
   </div>
   <div class="bottom-tab bottom-tab-wide" data-tab="Maintenance" onclick="switchTabMobile(this)">
     <span class="bottom-tab-icon">🛏️</span>
@@ -8682,12 +8682,14 @@ h1,h2,h3,.logo-word,.section-title{font-family:var(--hl-display);letter-spacing:
             <option value="" disabled selected>Select one</option>
             <option value="customer">Tenant</option>
             <option value="owner">Property owner</option>
+            <!-- Hidden for now (only Tenant and Property owner can sign up): re-enable by uncommenting
             <option value="pg">PG / Co-living owner</option>
             <option value="broker">Broker</option>
             <option value="builder">Builder</option>
+            -->
           </select>
         </div>
-        <div class="field-error-text" id="authTypeError" style="display:none;margin:-10px 0 12px">Please select whether you're looking for a home, a property owner, a broker or a builder</div>
+        <div class="field-error-text" id="authTypeError" style="display:none;margin:-10px 0 12px">Please select whether you're a tenant or a property owner</div>
       </div>
       <!-- Profile photo on signup — commented out for now, keep markup for later re-enable
       <div id="authSignupPhotoField" style="display:none">
@@ -9140,9 +9142,9 @@ h1,h2,h3,.logo-word,.section-title{font-family:var(--hl-display);letter-spacing:
     <button class="modal-close cs-close" onclick="closeComingSoonModal()" aria-label="Close">
       <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
     </button>
-    <div class="cs-icon" id="comingSoonIcon">🏗️</div>
+    <div class="cs-icon" id="comingSoonIcon">🏢</div>
     <div class="cs-badge" id="comingSoonBadge">Coming soon</div>
-    <h3 class="cs-title" id="comingSoonTitle">Builders</h3>
+    <h3 class="cs-title" id="comingSoonTitle">Managed By</h3>
     <p class="cs-text cs-def" id="comingSoonDef"></p>
     <p class="cs-text cs-dev" id="comingSoonText">This feature is being developed.</p>
     <button type="button" class="cs-btn" onclick="closeComingSoonModal()">Got it</button>
@@ -11251,7 +11253,7 @@ const EMPTY_PITCH = {
   ShortStay:   { t: 'Short Stay \u2014 List Your Stay', x: 'Hosts can list short stay homes and rooms on HomeLoop. Guests contact you directly.', add: 'ShortStay' },
   Sell:        { t: 'Sell \u2014 List Your Property', x: 'Owners, brokers and builders can post their properties for sale on HomeLoop. Buyers contact you directly.', add: 'Sell' },
   Broker:      { t: 'Brokers \u2014 List Your Properties', x: 'Brokers can post their listings on HomeLoop. Tenants contact you directly.', add: '', charges: [['Listing fee', '\u20b91,000', 'per listing'], ['Live for', '1 month', 'from date listed']] },
-  Builder:     { t: 'Builders \u2014 Coming Soon', x: 'This feature is being developed and will be available by 1 January 2027 or ASAP.', add: null, soon: true },
+  Builder:     { t: 'Managed By \u2014 Coming Soon', x: '', add: null, soon: true },
   Maintenance: { t: 'PG & Coliving \u2014 List Your Space', x: 'PG and co-living operators can list their rooms and beds on HomeLoop. Tenants contact you directly.', add: 'PG', charges: [['Listing fee', '\u20b91,000', 'per listing'], ['Live for', '3 months', 'from date listed']] },
 };
 
@@ -11543,7 +11545,7 @@ function renderCards() {
       if (_c) _c.textContent = '0';
     }
     // Brokers / Builders / PG & Coliving have no section of their own, so give them the same header line.
-    const _extra = { Broker:['🧑‍💼','Agents'], Builder:['🏗️','Builders'], Maintenance:['🛏️','PG & Coliving'] }[currentTab];
+    const _extra = { Broker:['🧑‍💼','Agents'], Builder:['🏢','Managed By'], Maintenance:['🛏️','PG & Coliving'] }[currentTab];
     const _ed = document.getElementById('emptyTabDivider');
     if (_ed) {
       if (_extra && _initialPropertiesFetchDone) {
