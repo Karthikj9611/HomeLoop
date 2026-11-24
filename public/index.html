@@ -10591,6 +10591,7 @@ function updateCardViews(p) {
   });
 }
 function incrementViews(p) {
+  if (typeof isAgentViewer === 'function' && isAgentViewer()) return p.views; // agent accounts never add views (server ignores them too)
   const key = String(p.id);
   const alreadyCountedThisBrowser = viewedSeen.has(key);
   if (!alreadyCountedThisBrowser) {
