@@ -3750,6 +3750,12 @@ main.tab-explore .empty-state{display:none !important}
 /* Video tour now lives as the LAST slide of the same swipeable gallery
    (see buildImgSlider's videoSlideHtml param / buildVideoSlideHtml()),
    not as a separate card below it. */
+/* Link video slide (Drive / Instagram): the first photo with a play badge; tapping opens the link in a new tab. */
+.img-slide.link-slide{background:#000}
+.link-video-slide{position:absolute;inset:0;display:block;background:linear-gradient(135deg,#fde8ec 0%,#f9c6d0 55%,#f4a6b5 100%)}
+.link-video-slide img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+.link-video-play{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:54px;height:54px;border-radius:50%;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 10px rgba(0,0,0,.35)}
+.link-video-play svg{width:24px;height:24px;fill:#fff;stroke:none;margin-left:3px}
 .img-slide.video-slide{background:#000}
 .img-slide.video-slide iframe,
 .img-slide.video-slide video{
@@ -8551,7 +8557,7 @@ h1,h2,h3,.logo-word,.section-title{font-family:var(--hl-display);letter-spacing:
     <div id="mediaSection">
     <div class="lm-section" id="mediaSectionHeader">📸 Media &amp; Description</div>
     <div class="form-group" id="videoUrlGroup">
-      <label class="form-label">Video Tour (Upload / YouTube link)</label>
+      <label class="form-label">Video Tour (Upload)</label>
       <input class="form-input" type="text" inputmode="url" id="f-videoUrl" oninput="updateVideoUploadUI()" />
       <div class="img-row" id="videoUploadRow" style="margin-top:8px">
         <div class="img-btns">
@@ -8566,7 +8572,7 @@ h1,h2,h3,.logo-word,.section-title{font-family:var(--hl-display);letter-spacing:
       <div id="f-videoPreview" class="f-video-preview" style="display:none"></div>
     </div>
     <div class="form-group" id="driveLinkGroup">
-      <label class="form-label">Drive / Instagram Link</label>
+      <label class="form-label">Video Link (Drive / Instagram / YouTube)</label>
       <input class="form-input" type="text" inputmode="url" id="f-driveLink" />
     </div>
     <div class="form-group" id="imgFormGroup">
@@ -11923,6 +11929,18 @@ function buildVideoSlideHtml(p) {
     </div>`;
 }
 
+// Link video (Drive / Instagram / YouTube / Vimeo link from the "Video Link" field). It is the FIRST slide of the
+// gallery. YouTube / Vimeo / direct-file links play inline; Drive and Instagram links can't be embedded, so they show
+// the first photo with a play badge and open the link in a new tab when tapped.
+function buildLinkVideoSlideHtml(p) {
+  const url = safeUrl(p.media?.driveLink || '');
+  if (!url) return '';
+  const embed = buildMinimalVideoEmbed(url);
+  if (embed) return embed;
+  const first = (p.media?.images && p.media.images[0]) ? safeUrl(p.media.images[0]) : '';
+  return `<a class="link-video-slide" href="${esc(url)}" target="_blank" rel="noopener noreferrer" aria-label="Watch video" onclick="event.stopPropagation()">${first ? `<img src="${esc(first)}" alt="" draggable="false" />` : ''}<span class="link-video-play"><svg viewBox="0 0 24 24" aria-hidden="true"><polygon points="6 3 20 12 6 21 6 3"/></svg></span></a>`;
+}
+
 // Gallery video: muted, no native controls, a single play/pause button.
 const VID_ICON_PLAY = '<svg viewBox="0 0 24 24" aria-hidden="true"><polygon points="7 4 20 12 7 20 7 4" fill="currentColor" stroke="none"/></svg>';
 const VID_ICON_PAUSE = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="4" width="4" height="16" rx="1" fill="currentColor" stroke="none"/><rect x="14" y="4" width="4" height="16" rx="1" fill="currentColor" stroke="none"/></svg>';
@@ -12105,9 +12123,9 @@ function handleCardImgClick(el, id, idx) {
 // unique regardless of how many times the same property gets drawn on the
 // page.
 let _imgSliderSeq = 0;
-function buildImgSlider(p, fg, uidSuffix, videoSlideHtml) {
+function buildImgSlider(p, fg, uidSuffix, videoSlideHtml, linkSlideHtml) {
   const imgs = (p.media?.images && p.media.images.length) ? p.media.images : [];
-  if (imgs.length === 0 && !videoSlideHtml) {
+  if (imgs.length === 0 && !videoSlideHtml && !linkSlideHtml) {
     return `<div class="prop-img-placeholder"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" stroke="${fg}" opacity=".3"/><polyline points="9 22 9 12 15 12 15 22" stroke="${fg}" opacity=".3"/></svg></div>`;
   }
   const uid = 'sl' + p.id + (uidSuffix || '') + '-' + (_imgSliderSeq++);
@@ -12124,7 +12142,7 @@ function buildImgSlider(p, fg, uidSuffix, videoSlideHtml) {
   // approach, which fired for every rendered card regardless of scroll
   // position and congested the network enough to blank out the very
   // images that were actually scrolling into view.
-  const _videoFirst = !!(videoSlideHtml && imgs.length >= 1);
+  const _videoFirst = !!((videoSlideHtml && imgs.length >= 1) || linkSlideHtml);
   const imgSlides = imgs.map((url, i) =>
     `<img class="img-slide${(i===0 && !_videoFirst)?' active':''}" ${(i===0 && !_videoFirst)?`src="${safeUrl(url)}" loading="lazy"`:`data-src="${safeUrl(url)}"`} decoding="sync" alt="" draggable="false" onclick="event.stopPropagation();handleCardImgClick(this,'${p.id}',${i})" />`
   ).join('');
@@ -12134,15 +12152,21 @@ function buildImgSlider(p, fg, uidSuffix, videoSlideHtml) {
   // out of the DOM (data-vh) and only injected by slideGo() once a plan is active.
   const videoSlide = videoSlideHtml
     ? (imgs.length >= 1
-        ? `<div class="img-slide video-slide active" data-vh="${encodeURIComponent(videoSlideHtml)}"></div>`
-        : `<div class="img-slide video-slide active">${videoSlideHtml}</div>`)
+        ? `<div class="img-slide video-slide${linkSlideHtml ? '' : ' active'}" data-vh="${encodeURIComponent(videoSlideHtml)}"></div>`
+        : `<div class="img-slide video-slide${linkSlideHtml ? '' : ' active'}">${videoSlideHtml}</div>`)
     : '';
-  const _slideCount = imgs.length + (videoSlideHtml && imgs.length >= 1 ? 1 : 0);
+  // Link video (Drive / Insta / YouTube) always leads: link video -> uploaded video -> photos.
+  const linkSlide = linkSlideHtml
+    ? (imgs.length >= 1
+        ? `<div class="img-slide video-slide link-slide active" data-vh="${encodeURIComponent(linkSlideHtml)}"></div>`
+        : `<div class="img-slide video-slide link-slide active">${linkSlideHtml}</div>`)
+    : '';
+  const _slideCount = imgs.length + (videoSlideHtml && imgs.length >= 1 ? 1 : 0) + (linkSlideHtml ? (videoSlideHtml && imgs.length === 0 ? 2 : 1) : 0);
   let dots = '';
   if (_slideCount >= 2 && uidSuffix !== '-cmp') {
     dots = `<div class="card-slide-dots${_slideCount > 10 ? ' tiny' : ''}" aria-hidden="true">${Array.from({length:_slideCount},(_,i)=>`<span class="${i===0?'active':''}"></span>`).join('')}</div>`;
   }
-  return `<div class="img-slides" id="${uid}" data-pid="${p.id}"${(p.ownListing || p.singleUnlocked) ? ' data-own="1"' : ''}>${videoSlide}${imgSlides}</div>${dots}`;
+  return `<div class="img-slides" id="${uid}" data-pid="${p.id}"${(p.ownListing || p.singleUnlocked) ? ' data-own="1"' : ''}>${linkSlide}${videoSlide}${imgSlides}</div>${dots}`;
 }
 
 // Loads a card's non-first slides (see the data-src comment in
@@ -12893,7 +12917,7 @@ function _cardHTMLRaw(p, compact, extraLeftBadge, showAvail) {
   const availAccentClass = availableInfo ? (availableInfo.cls === 'prop-loc-avail-past' ? ' avail-past' : ' avail-future') : '';
   return `<div class="prop-card${listClass}${compactClass}${promotedClass}${directClass} type-${pType.toLowerCase()}${availAccentClass}" data-property-id="${p.id}" onclick="openDetail('${p.id}')">
     <div class="prop-img" style="background:${bg}" data-idx="0">
-      ${buildImgSlider(p, fg, '-grid', (p.media?.images?.length ? buildVideoSlideHtml(p) : ''))}
+      ${buildImgSlider(p, fg, '-grid', (p.media?.images?.length ? buildVideoSlideHtml(p) : ''), buildLinkVideoSlideHtml(p))}
       ${priceChipsHTML(p, pType, deposit, maintenance, leaseDur, {ribbon:true})}
       <span class="prop-img-id-badge">${esc(p.propertyId || '')}</span>
       <div class="prop-card-top-row">
@@ -13050,7 +13074,7 @@ function shortlistCardHTML(p) {
   const availAccentClassSL = availableInfo ? (availableInfo.cls === 'prop-loc-avail-past' ? ' avail-past' : ' avail-future') : '';
   return `<div class="prop-card type-${pType.toLowerCase()}${availAccentClassSL}" data-property-id="${p.id}" onclick="toggleShortlistPanel();openDetail('${p.id}')">
     <div class="prop-img" style="background:${bg}" data-idx="0">
-      ${buildImgSlider(p, fg, '-sl', (p.media?.images?.length ? buildVideoSlideHtml(p) : ''))}
+      ${buildImgSlider(p, fg, '-sl', (p.media?.images?.length ? buildVideoSlideHtml(p) : ''), buildLinkVideoSlideHtml(p))}
       ${priceChipsHTML(p, pType, deposit, maintenance, leaseDur, {ribbon:true})}
       <div class="prop-card-top-row" style="justify-content:flex-end">
         ${propDistanceBadgeHTML(p) ? '<div class="prop-left-badges" style="margin-right:auto">' + propDistanceBadgeHTML(p) + '</div>' : ''}
@@ -15747,7 +15771,7 @@ function openDetailReal(id) {
     const colors = {Rent:'#e8f5ee:#1a6640',Lease:'#dde9fa:#1a4680',PG:'#eee8fa:#4a2a9a',ShortStay:'#e0f7fa:#00646e',Sell:'#fdf1e0:#a15c00'};
     const [gbg, gfg] = (colors[pType]||'#f0f0f0:#333').split(':');
     const videoSlideHtml = buildVideoSlideHtml(p);
-    gallerySlot.innerHTML = `<div class="prop-img" style="background:${gbg}" data-idx="0">${buildImgSlider(p, gfg, '-detail', videoSlideHtml)}</div>${detailRailHTML(p)}`;
+    gallerySlot.innerHTML = `<div class="prop-img" style="background:${gbg}" data-idx="0">${buildImgSlider(p, gfg, '-detail', videoSlideHtml, buildLinkVideoSlideHtml(p))}</div>${detailRailHTML(p)}`;
     if (videoSlideHtml) {
       const _sl = gallerySlot.querySelector('.img-slides'), _pi = gallerySlot.querySelector('.prop-img');
       if (_sl && _pi) {
