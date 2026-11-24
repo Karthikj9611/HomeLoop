@@ -3754,6 +3754,8 @@ main.tab-explore .empty-state{display:none !important}
 .img-slide.link-slide{background:#000}
 .link-video-slide{position:absolute;inset:0;display:block;background:linear-gradient(135deg,#fde8ec 0%,#f9c6d0 55%,#f4a6b5 100%)}
 .link-video-slide img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+.link-video-slide.link-ig{background:linear-gradient(135deg,#feda75 0%,#fa7e1e 25%,#d62976 50%,#962fbf 75%,#4f5bd5 100%)}
+.link-video-slide.link-drive{background:linear-gradient(135deg,#e8f0fe 0%,#c6dafc 100%)}
 .link-video-play{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:54px;height:54px;border-radius:50%;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 10px rgba(0,0,0,.35)}
 .link-video-play svg{width:24px;height:24px;fill:#fff;stroke:none;margin-left:3px}
 .img-slide.video-slide{background:#000}
@@ -11937,8 +11939,18 @@ function buildLinkVideoSlideHtml(p) {
   if (!url) return '';
   const embed = buildMinimalVideoEmbed(url);
   if (embed) return embed;
-  const first = (p.media?.images && p.media.images[0]) ? safeUrl(p.media.images[0]) : '';
-  return `<a class="link-video-slide" href="${esc(url)}" target="_blank" rel="noopener noreferrer" aria-label="Watch video" onclick="event.stopPropagation()">${first ? `<img src="${esc(first)}" alt="" draggable="false" />` : ''}<span class="link-video-play"><svg viewBox="0 0 24 24" aria-hidden="true"><polygon points="6 3 20 12 6 21 6 3"/></svg></span></a>`;
+  // Poster comes from the LINK itself, never from the property photos: Google Drive files expose a public thumbnail;
+  // Instagram (and any other site) has no thumbnail we can fetch, so it gets a plain coloured background + play badge.
+  let thumb = '', kind = 'other';
+  try {
+    const u = new URL(url); const host = u.hostname.replace(/^www\./, '');
+    if (host === 'drive.google.com' || host === 'docs.google.com') {
+      kind = 'drive';
+      const m = u.pathname.match(/\/d\/([\w-]{10,})/) || [null, u.searchParams.get('id')];
+      if (m && m[1]) thumb = 'https://drive.google.com/thumbnail?id=' + encodeURIComponent(m[1]) + '&sz=w800';
+    } else if (host === 'instagram.com' || host === 'instagr.am') kind = 'ig';
+  } catch (e) { /* keep defaults */ }
+  return `<a class="link-video-slide link-${kind}" href="${esc(url)}" target="_blank" rel="noopener noreferrer" aria-label="Watch video" onclick="event.stopPropagation()">${thumb ? `<img src="${esc(thumb)}" alt="" draggable="false" referrerpolicy="no-referrer" onerror="this.remove()" />` : ''}<span class="link-video-play"><svg viewBox="0 0 24 24" aria-hidden="true"><polygon points="6 3 20 12 6 21 6 3"/></svg></span></a>`;
 }
 
 // Gallery video: muted, no native controls, a single play/pause button.
