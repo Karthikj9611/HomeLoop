@@ -23368,8 +23368,8 @@ function submitListing() {
       fetchProperties();    // refresh the public grid so the edit shows up there too
       return;
     }
-    // Owner/Agent listings go live immediately with a "Yet to verify" tag on the card (removed once admin verifies it).
-    // Broker/Builder listings stay hidden until admin verifies them. Refresh the public grid so it shows up now.
+    // Agent listings go live immediately with a "Yet to verify" tag on the card (removed once admin verifies it).
+    // Owner/Broker/Builder listings stay hidden until admin verifies them. Refresh the public grid so it shows up now.
     clearListingDraft();
     resetListingForm();
     document.getElementById('addModal').classList.remove('open');
@@ -23378,7 +23378,7 @@ function submitListing() {
     if (document.getElementById('profileModal').classList.contains('open')) loadMyListings(); // My Account stayed open underneath
     var _u = getLoggedInUser(); var _acct = (_u && _u.accountType) || '';
     var _lb2 = (newProp.basic && newProp.basic.listedBy) || '';
-    showToast((_acct === 'broker' || _acct === 'builder' || _lb2 === 'Broker' || _lb2 === 'Builder' || (newProp.basic && newProp.basic.status === 'PG'))
+    showToast((_acct !== 'agent' || (_lb2 && _lb2 !== 'Agent') || (newProp.basic && newProp.basic.status === 'PG'))
       ? "Your listing has been submitted. It will go live once our team verifies it."
       : "Your listing is live! It shows a Yet to verify tag until our team verifies it.");
   })

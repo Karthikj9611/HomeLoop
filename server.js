@@ -1887,12 +1887,12 @@ app.get('/api/properties', attachUserIfPresent, async (req, res) => {
     // can show a separate "Booked" section per type without ever mixing the two.
     const filter = booked === 'true'
       ? { booked: true, blocked: { $ne: true } }
-      : { booked: { $ne: true }, blocked: { $ne: true } }; // Owner/Agent listings go live as soon as they are submitted (not-yet-verified ones carry verified:false and the frontend shows a "Yet to verify" tag); Broker/Builder listings need admin verification first (see visibility gate below); they disappear once marked booked or blocked
+      : { booked: { $ne: true }, blocked: { $ne: true } }; // Agent listings go live as soon as they are submitted (not-yet-verified ones carry verified:false and the frontend shows a "Yet to verify" tag); Broker/Builder listings need admin verification first (see visibility gate below); they disappear once marked booked or blocked
     if (status && typeof status === 'string') filter['basic.status'] = status;
     // Visibility gate: admin-verified listings are always public. NOT-yet-verified listings go live (with the
-    // "Yet to verify" tag) ONLY when posted by an Owner or Agent AND not PG & Coliving. Broker / Builder / PG & Coliving listings stay hidden until admin verifies them.
-    // `null` in $in also matches legacy docs with no basic.listedBy (schema default is 'Owner'). Uses $and so the q-search $or below can't overwrite it.
-    filter.$and = (filter.$and || []).concat([{ $or: [{ verified: true }, { 'basic.listedBy': { $in: ['Owner', 'Agent', null] }, 'basic.status': { $ne: 'PG' } }] }]);
+    // "Yet to verify" tag) ONLY when posted by an Agent AND not PG & Coliving. Owner / Broker / Builder / PG & Coliving listings stay hidden until admin verifies them.
+    // Legacy docs with no basic.listedBy count as Owner (schema default), so they need verification too. Uses $and so the q-search $or below can't overwrite it.
+    filter.$and = (filter.$and || []).concat([{ $or: [{ verified: true }, { 'basic.listedBy': 'Agent', 'basic.status': { $ne: 'PG' } }] }]);
 
     // Logged-in tenant with admin "Public call" ON → owner numbers on listings (applied below).
     // If the tenant also subscribed for ONE BHK type, ONLY that BHK's listings are loaded at all.
@@ -2421,7 +2421,7 @@ app.post('/api/properties/road-distance', roadDistanceLimiter, attachUserIfPrese
     if (todo.length) {
       // Same public-visibility rules as GET /api/properties: never reveal anything about hidden/booked/blocked listings.
       const filter = { _id: { $in: todo }, booked: { $ne: true }, blocked: { $ne: true },
-        $or: [{ verified: true }, { 'basic.listedBy': { $in: ['Owner', 'Agent', null] }, 'basic.status': { $ne: 'PG' } }] };
+        $or: [{ verified: true }, { 'basic.listedBy': 'Agent', 'basic.status': { $ne: 'PG' } }] };
       const arrays = await Promise.all(LISTING_MODEL_LIST.map(M => M.find(filter).select('location.lat location.lng location.currentLocationLink').lean()));
       await warmShortLinks(arrays.flat());
       const pts = arrays.flat().map(d => ({ id: String(d._id), c: listingCoordsFromLoc(d.location) })).filter(x => x.c);
