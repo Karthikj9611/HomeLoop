@@ -16828,6 +16828,56 @@ function requireLoginForContact(message) {
   openAuthModal();
   return true;
 }
+/* ═══ PROPERTY CARDS — LOGIN MANDATORY FOR EVERY ACTION ═══
+   Guests can browse the grid, but nothing on a card works until they log in: heart, compare,
+   call, WhatsApp, book, schedule visit, views list, photo zoom/carousel, video, and the card
+   itself. One capture-phase listener covers every card variant (grid, shortlist panel, rail,
+   promo popup); the wrappers below cover the same actions when called from anywhere else. */
+const CARD_LOGIN_MSG = 'Please log in to view property details';
+function requireLoginForCard() {
+  if (getLoggedInUser()) return false;
+  showToast(CARD_LOGIN_MSG, 'warning');
+  openAuthModal();
+  return true;
+}
+document.addEventListener('click', function (e) {
+  if (getLoggedInUser()) return;
+  const card = e.target.closest && e.target.closest('.prop-card');
+  if (!card) return;
+  const actionEl = e.target.closest('[onclick]');
+  e.preventDefault();
+  e.stopImmediatePropagation();
+  if (!actionEl || actionEl === card) {
+    // Plain card tap: keep the existing flow (login prompt, then open this property after login).
+    const id = card.getAttribute('data-property-id');
+    if (id) openDetail(id); else requireLoginForCard();
+  } else {
+    requireLoginForCard();
+  }
+}, true);
+document.addEventListener('DOMContentLoaded', function () {
+  ['toggleShortlist', 'toggleShortlistFromRail', 'toggleShortlistFromModal', 'toggleCompare',
+   'openCardCall', 'openCall', 'openWhatsApp', 'openBookingModal', 'openScheduleModal',
+   'openViewersModal', 'openLightbox', 'openLightboxSimple', 'sharePropertyWhatsApp'
+  ].forEach(function (name) {
+    const orig = window[name];
+    if (typeof orig !== 'function') return;
+    window[name] = function () {
+      if (requireLoginForCard()) return;
+      // Any card action by a logged-in user also counts as a view (server dedups per user, so repeats don't inflate it).
+      if (name !== 'openLightbox' && name !== 'openLightboxSimple') {
+        try {
+          const pid = arguments[0];
+          if (typeof pid === 'string' || typeof pid === 'number') {
+            const prop = PROPERTIES.find(x => String(x.id) === String(pid)) || BOOKED_PROPERTIES.find(x => String(x.id) === String(pid));
+            if (prop) incrementViews(prop);
+          }
+        } catch (e) { /* view count is best-effort */ }
+      }
+      return orig.apply(this, arguments);
+    };
+  });
+});
 function capitalizeSentencesInput(el) {
   const v = el.value;
   const out = v.replace(/(^|[.!?]\s+|\n\s*)(\p{Ll})/gu, (m, a, b) => a + b.toUpperCase());
@@ -17776,7 +17826,7 @@ function closeAuthModal() {
     try { sessionStorage.removeItem('homeloop_open_after_login'); } catch (e) { /* ignore */ }
     const _pending = pendingBrowseAction;
     pendingBrowseAction = null;
-    if (typeof _pending === 'function') { try { showToast('Please log in to view property details', 'warning'); } catch (e) { /* ignore */ } }
+    if (typeof _pending === 'function') { try { showToast(CARD_LOGIN_MSG, 'warning'); } catch (e) { /* ignore */ } }
   } else {
     pendingBrowseAction = null;
   }
