@@ -12161,12 +12161,18 @@ function buildImgSlider(p, fg, uidSuffix, videoSlideHtml, linkSlideHtml) {
         ? `<div class="img-slide video-slide link-slide active" data-vh="${encodeURIComponent(linkSlideHtml)}"></div>`
         : `<div class="img-slide video-slide link-slide active">${linkSlideHtml}</div>`)
     : '';
+  // Uploaded video file + link video: remember the file URL so it can replace the link slide once fully downloaded.
+  let _swapSrc = '';
+  if (linkSlideHtml && videoSlideHtml && /data-kind="file"/.test(videoSlideHtml)) {
+    const _m = String(videoSlideHtml).match(/<video[^>]*?\ssrc="([^"]+)"/);
+    if (_m) _swapSrc = _m[1].replace(/&amp;/g, '&');
+  }
   const _slideCount = imgs.length + (videoSlideHtml && imgs.length >= 1 ? 1 : 0) + (linkSlideHtml ? (videoSlideHtml && imgs.length === 0 ? 2 : 1) : 0);
   let dots = '';
   if (_slideCount >= 2 && uidSuffix !== '-cmp') {
     dots = `<div class="card-slide-dots${_slideCount > 10 ? ' tiny' : ''}" aria-hidden="true">${Array.from({length:_slideCount},(_,i)=>`<span class="${i===0?'active':''}"></span>`).join('')}</div>`;
   }
-  return `<div class="img-slides" id="${uid}" data-pid="${p.id}"${(p.ownListing || p.singleUnlocked) ? ' data-own="1"' : ''}>${linkSlide}${videoSlide}${imgSlides}</div>${dots}`;
+  return `<div class="img-slides" id="${uid}" data-pid="${p.id}"${_swapSrc ? ` data-swap-src="${esc(_swapSrc)}"` : ''}${(p.ownListing || p.singleUnlocked) ? ' data-own="1"' : ''}>${linkSlide}${videoSlide}${imgSlides}</div>${dots}`;
 }
 
 // Loads a card's non-first slides (see the data-src comment in
@@ -12217,6 +12223,40 @@ function observeCardImgs(root) {
   });
   observeCardVideos(root);
 }
+/* Link video -> uploaded video swap. When a card has BOTH a link video (first slide) and an uploaded video file,
+   the link video shows first; the uploaded file is downloaded completely in the background (fetch -> blob), and only
+   then does it replace the link slide as the first slide (it plays from the local copy, so it starts instantly). */
+const _vidBlobCache = new Map();   // src -> Promise<objectURL | null>
+function _fetchVideoBlob(src) {
+  if (!_vidBlobCache.has(src)) {
+    _vidBlobCache.set(src, fetch(src, { credentials: 'same-origin' })
+      .then(r => { if (!r.ok) throw new Error('bad status'); return r.blob(); })
+      .then(b => (b && b.size) ? URL.createObjectURL(b) : null)
+      .catch(() => null));
+  }
+  return _vidBlobCache.get(src);
+}
+function startVideoSwap(c) {
+  const src = c && c.dataset && c.dataset.swapSrc;
+  if (!src || c.dataset.swapState) return;
+  c.dataset.swapState = 'loading';
+  _fetchVideoBlob(src).then(blobUrl => {
+    if (!c.isConnected) return;
+    const slides = [...c.querySelectorAll(':scope > .img-slide')];
+    const linkIdx = slides.findIndex(s => s.classList.contains('link-slide'));
+    const vidSlide = slides.find(s => s.classList.contains('video-slide') && !s.classList.contains('link-slide'));
+    if (!blobUrl || linkIdx < 0 || !vidSlide) { c.dataset.swapState = blobUrl ? 'done' : 'failed'; return; }
+    // Point the uploaded video at the fully downloaded local copy.
+    if (vidSlide.dataset.vh) vidSlide.dataset.vh = encodeURIComponent(decodeURIComponent(vidSlide.dataset.vh).replace(/(<video[^>]*?\ssrc=")[^"]*(")/, '$1' + blobUrl + '$2'));
+    const vEl = vidSlide.querySelector('video'); if (vEl) { vEl.src = blobUrl; }
+    const curIdx = slides.findIndex(s => s.classList.contains('active'));
+    slides[linkIdx].remove();                                   // the link video is replaced by the uploaded one
+    const dots = c.parentElement && c.parentElement.querySelector(':scope > .card-slide-dots');
+    if (dots) { const sp = dots.querySelectorAll('span'); if (sp.length) sp[sp.length - 1].remove(); if (dots.querySelectorAll('span').length < 2) dots.remove(); }
+    c.dataset.swapState = 'done';
+    slideGo(c.id, curIdx <= linkIdx ? 0 : curIdx - 1);          // on the link slide -> show the uploaded video; else stay on the same slide
+  });
+}
 /* Video-first galleries: the video plays (muted) while its card is on screen and pauses when it scrolls away. */
 let _cardVidObserver = null;
 function observeCardVideos(root) {
@@ -12225,6 +12265,7 @@ function observeCardVideos(root) {
     _cardVidObserver = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
         const c = entry.target; if (!c.isConnected) { _cardVidObserver.unobserve(c); return; }
+        if (entry.isIntersecting && c.dataset.swapSrc) startVideoSwap(c);   // start downloading the uploaded video once the card is on screen
         const slides = [...c.querySelectorAll('.img-slide')];
         const idx = Math.max(0, slides.findIndex(sl => sl.classList.contains('active')));
         if (!slides[idx] || !slides[idx].classList.contains('video-slide')) return;
