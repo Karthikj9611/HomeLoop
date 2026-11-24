@@ -1050,6 +1050,7 @@ const RulesSchema = new mongoose.Schema({
 
 const MediaSchema = new mongoose.Schema({
   video:  { type: String, default: '' },
+  driveLink: { type: String, default: '' },   // Google Drive / Instagram link, kept separate from the uploaded / YouTube video
   desc:   { type: String, default: '' },
   images: { type: [String], default: [] },
 }, { _id: false });
@@ -1522,7 +1523,7 @@ function formatPostedDateTime(date) {
 // Top-level keys accepted from the client, matching the nested submission shape exactly.
 const NESTED_SECTIONS = ['basic','location','owner','price','property','amenities','terms','rules','media','pg','shortStay','sale'];
 
-const URL_FIELDS_BY_SECTION = { location: ['mapLink', 'currentLocationLink'], media: ['video'] };
+const URL_FIELDS_BY_SECTION = { location: ['mapLink', 'currentLocationLink'], media: ['video', 'driveLink'] };
 // Videos uploaded through POST /api/upload-video are stored in GridFS and served from /videos/<id>.<ext>
 // (relative path, same idea as /uploads/<id> for images) — allowed in media.video alongside http(s) links.
 const OWN_VIDEO_PATH_RE = /^\/videos\/[a-f0-9]{24}\.(mp4|webm|mov|ogg)$/i;

@@ -6074,7 +6074,7 @@ tr.nf-flash td{animation:nfFlash 3s ease-out}
     <div id="mediaSection">
     <div class="lm-section" id="mediaSectionHeader">📸 Media &amp; Description</div>
     <div class="form-group" id="videoUrlGroup">
-      <label class="form-label">Video Tour</label>
+      <label class="form-label">Video Tour (Upload / YouTube link)</label>
       <input class="form-input" type="text" inputmode="url" id="f-videoUrl" oninput="updateVideoUploadUI()" />
       <div class="img-row" id="videoUploadRow" style="margin-top:8px">
         <div class="img-btns">
@@ -6087,6 +6087,10 @@ tr.nf-flash td{animation:nfFlash 3s ease-out}
       </div>
       <div id="f-videoStatus" style="font-size:12px;color:var(--text-3);margin-top:6px"></div>
       <div id="f-videoPreview" class="f-video-preview" style="display:none"></div>
+    </div>
+    <div class="form-group" id="driveLinkGroup">
+      <label class="form-label">Drive / Instagram Link</label>
+      <input class="form-input" type="text" inputmode="url" id="f-driveLink" />
     </div>
     <div class="form-group" id="imgFormGroup">
       <label class="form-label">Property Images</label>
@@ -16246,6 +16250,7 @@ function buildPropertyDataText(row, full){   // full=true → also include ID, a
   add('Amenities', amenities);
   add('Additional amenities', am.extra);
   add('Video tour link', media.video);
+  add('Drive / Instagram link', media.driveLink);
   if (full) add('Description', media.desc);
   return L.join('\r\n');
 }
@@ -19247,6 +19252,7 @@ function applyImportedProperty(p) {
   }
 
   sv('f-videoUrl', media.video);
+  sv('f-driveLink', media.driveLink);
   updateVideoUploadUI();
   sv('f-desc', media.desc);
   if (Array.isArray(media.images) && media.images.length) {
@@ -20280,7 +20286,7 @@ const OPTIONAL_FIELD_IDS = new Set([
   'f-latitude', 'f-longitude',
   'f-imgFileInput', 'f-imgCameraInput',
   'f-amenities-extra', 'f-desc',   // description is optional (same as index.html)
-  'f-ownerCaretakerPhone', 'f-ownerEmail', 'f-videoUrl', 'f-age', 'f-area',
+  'f-ownerCaretakerPhone', 'f-ownerEmail', 'f-videoUrl', 'f-driveLink', 'f-age', 'f-area',
   'f-areaType', 'f-maxPersons', 'f-kitchenType',   // optional
   'f-maintenance', 'f-leaseMaintenance',
   'f-sellPossessionDate', 'f-sellReraId', 'f-pricePerSqft',
@@ -20937,6 +20943,7 @@ async function adminSubmitListing() {
     }),
     media: {
       video: gv('f-videoUrl') || null,
+      driveLink: gv('f-driveLink') || null,
       desc:  document.getElementById('f-desc').value.trim(),
       images: images,
     },

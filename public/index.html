@@ -8551,7 +8551,7 @@ h1,h2,h3,.logo-word,.section-title{font-family:var(--hl-display);letter-spacing:
     <div id="mediaSection">
     <div class="lm-section" id="mediaSectionHeader">📸 Media &amp; Description</div>
     <div class="form-group" id="videoUrlGroup">
-      <label class="form-label">Video Tour</label>
+      <label class="form-label">Video Tour (Upload / YouTube link)</label>
       <input class="form-input" type="text" inputmode="url" id="f-videoUrl" oninput="updateVideoUploadUI()" />
       <div class="img-row" id="videoUploadRow" style="margin-top:8px">
         <div class="img-btns">
@@ -8564,6 +8564,10 @@ h1,h2,h3,.logo-word,.section-title{font-family:var(--hl-display);letter-spacing:
       </div>
       <div id="f-videoStatus" style="font-size:12px;color:var(--text-3);margin-top:6px"></div>
       <div id="f-videoPreview" class="f-video-preview" style="display:none"></div>
+    </div>
+    <div class="form-group" id="driveLinkGroup">
+      <label class="form-label">Drive / Instagram Link</label>
+      <input class="form-input" type="text" inputmode="url" id="f-driveLink" />
     </div>
     <div class="form-group" id="imgFormGroup">
       <label class="form-label">Property Images</label>
@@ -17548,6 +17552,7 @@ function applyImportedProperty(p) {
 
   // Media
   sv('f-videoUrl', media.video);
+  sv('f-driveLink', media.driveLink);
   if (typeof updateVideoUploadUI === 'function') updateVideoUploadUI();
   sv('f-desc', media.desc);
   if (Array.isArray(media.images) && media.images.length) {
@@ -22677,7 +22682,7 @@ const OPTIONAL_FIELD_IDS = new Set([
   'f-latitude', 'f-longitude',
   'f-imgFileInput', 'f-imgCameraInput',
   'f-amenities-extra', 'f-desc',   // description is optional
-  'f-videoUrl', 'f-videoFileInput', 'f-videoCameraInput', 'f-age', 'f-area',
+  'f-videoUrl', 'f-driveLink', 'f-videoFileInput', 'f-videoCameraInput', 'f-age', 'f-area',
   'f-ownerAltPhone', 'f-ownerCaretakerPhone', 'f-ownerEmail', 'f-areaType', 'f-maxPersons', 'f-kitchenType',   // optional
   'f-maintenance', 'f-leaseMaintenance',
   'f-sellPossessionDate', 'f-sellReraId', 'f-pricePerSqft',
@@ -23193,6 +23198,7 @@ function buildListingPayload() {
     }),
     media: {
       video: gv('f-videoUrl') || null,
+      driveLink: gv('f-driveLink') || null,
       desc:  document.getElementById('f-desc').value.trim(),
       images: images,
     },
