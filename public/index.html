@@ -3756,8 +3756,8 @@ main.tab-explore .empty-state{display:none !important}
 .link-video-slide img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
 .link-video-slide.link-ig{background:linear-gradient(135deg,#feda75 0%,#fa7e1e 25%,#d62976 50%,#962fbf 75%,#4f5bd5 100%)}
 .link-video-slide.link-drive{background:linear-gradient(135deg,#e8f0fe 0%,#c6dafc 100%)}
-.link-video-play{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:54px;height:54px;border-radius:50%;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 10px rgba(0,0,0,.35)}
-.link-video-play svg{width:24px;height:24px;fill:#fff;stroke:none;margin-left:3px}
+.link-video-play{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:40px;height:40px;border-radius:50%;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 10px rgba(0,0,0,.35)}
+.link-video-play svg{width:16px;height:16px;fill:#fff;stroke:none;margin-left:2px}
 .img-slide.video-slide{background:#000}
 .img-slide.video-slide iframe,
 .img-slide.video-slide video{
@@ -10495,7 +10495,7 @@ function buildVideoEmbed(url) {
     return `<iframe src="https://player.vimeo.com/video/${info.id}" title="Video tour" loading="lazy" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>`;
   }
   if (info.type === 'file') {
-    return `<video controls preload="metadata" src="${safeUrl(info.src)}"></video>`;
+    return `<video controls controlsList="nodownload noplaybackrate" disablePictureInPicture disableRemotePlayback oncontextmenu="return false" preload="metadata" src="${safeUrl(info.src)}"></video>`;
   }
   return '';
 }
@@ -11934,6 +11934,14 @@ function buildVideoSlideHtml(p) {
 // Link video (Drive / Instagram / YouTube / Vimeo link from the "Video Link" field). It is the FIRST slide of the
 // gallery. YouTube / Vimeo / direct-file links play inline; Drive and Instagram links can't be embedded, so they show
 // the first photo with a play badge and open the link in a new tab when tapped.
+// Tapping a Drive / Instagram link slide: guests are asked to log in first; logged-in users open the link in a new tab.
+function openLinkVideo(e, a) {
+  e.preventDefault(); e.stopPropagation();
+  if (requireLoginForContact('Please log in to watch the video')) return false;
+  const u = a.getAttribute('data-url');
+  if (u) window.open(u, '_blank', 'noopener,noreferrer');
+  return false;
+}
 function buildLinkVideoSlideHtml(p) {
   const url = safeUrl(p.media?.driveLink || '');
   if (!url) return '';
@@ -11950,7 +11958,7 @@ function buildLinkVideoSlideHtml(p) {
       if (m && m[1]) thumb = 'https://drive.google.com/thumbnail?id=' + encodeURIComponent(m[1]) + '&sz=w800';
     } else if (host === 'instagram.com' || host === 'instagr.am') kind = 'ig';
   } catch (e) { /* keep defaults */ }
-  return `<a class="link-video-slide link-${kind}" href="${esc(url)}" target="_blank" rel="noopener noreferrer" aria-label="Watch video" onclick="event.stopPropagation()">${thumb ? `<img src="${esc(thumb)}" alt="" draggable="false" referrerpolicy="no-referrer" onerror="this.remove()" />` : ''}<span class="link-video-play"><svg viewBox="0 0 24 24" aria-hidden="true"><polygon points="6 3 20 12 6 21 6 3"/></svg></span></a>`;
+  return `<a class="link-video-slide link-${kind}" href="#" data-url="${esc(url)}" aria-label="Watch video" onclick="return openLinkVideo(event,this)">${thumb ? `<img src="${esc(thumb)}" alt="" draggable="false" referrerpolicy="no-referrer" onerror="this.remove()" />` : ''}<span class="link-video-play"><svg viewBox="0 0 24 24" aria-hidden="true"><polygon points="6 3 20 12 6 21 6 3"/></svg></span></a>`;
 }
 
 // Gallery video: muted, no native controls, a single play/pause button.
@@ -11970,7 +11978,7 @@ function buildMinimalVideoEmbed(url) {
   const _vk = String(info.src || info.id || url);
   const _done = _vidLoaded.has(_vk);
   if (info.type === 'file') {
-    media = `<video class="vid-media" data-kind="file" data-vkey="${esc(_vk)}" muted playsinline loop preload="${_done ? 'auto' : 'metadata'}" onerror="vidError(this)" oncanplay="vidCanPlay(this)" onloadeddata="vidLoad(this,0)" onplaying="vidLoad(this,0)" onwaiting="vidLoad(this,1)" ontimeupdate="vidTick(this)" onloadedmetadata="vidTick(this)" ondurationchange="vidTick(this)" onplay="vidSync(this)" onpause="vidSync(this)" disablepictureinpicture disableremoteplayback controlslist="nodownload nofullscreen noremoteplayback noplaybackrate" src="${safeUrl(info.src)}"></video>`;
+    media = `<video class="vid-media" controlsList="nodownload noplaybackrate" disablePictureInPicture disableRemotePlayback oncontextmenu="return false" data-kind="file" data-vkey="${esc(_vk)}" muted playsinline loop preload="${_done ? 'auto' : 'metadata'}" onerror="vidError(this)" oncanplay="vidCanPlay(this)" onloadeddata="vidLoad(this,0)" onplaying="vidLoad(this,0)" onwaiting="vidLoad(this,1)" ontimeupdate="vidTick(this)" onloadedmetadata="vidTick(this)" ondurationchange="vidTick(this)" onplay="vidSync(this)" onpause="vidSync(this)" disablepictureinpicture disableremoteplayback controlslist="nodownload nofullscreen noremoteplayback noplaybackrate" src="${safeUrl(info.src)}"></video>`;
   } else if (info.type === 'youtube') {
     media = `<iframe class="vid-media" data-kind="yt" data-vkey="${esc(_vk)}" onload="vidLoad(this,0)" title="Video tour" referrerpolicy="strict-origin-when-cross-origin" allow="autoplay; encrypted-media" src="https://www.youtube-nocookie.com/embed/${info.id}?controls=0&mute=1&modestbranding=1&rel=0&playsinline=1&disablekb=1&fs=0&iv_load_policy=3&loop=1&playlist=${info.id}&enablejsapi=1"></iframe>`;
   } else if (info.type === 'vimeo') {
@@ -25453,6 +25461,9 @@ document.addEventListener('click', function(e){
 .vid-toggle{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:2;width:64px;height:64px;border-radius:50%;border:2px solid rgba(255,255,255,.85);background:rgba(0,0,0,.45);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px)}
 .vid-toggle:hover{background:rgba(0,0,0,.75)}
 .vid-toggle svg{width:20px;height:20px}
+/* Smaller centre play button on gallery / card videos */
+.img-slides .vid-toggle{width:40px;height:40px;border-width:1.5px}
+.img-slides .vid-toggle svg{width:16px;height:16px}
 .video-slide-actions{display:none !important}
 </style>
 <style id="scroll-blank-fix">
