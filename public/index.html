@@ -2248,6 +2248,9 @@ main.tab-explore .empty-state{display:none !important}
 .lightbox-video iframe,
 .lightbox-video video{position:absolute;inset:0;width:100%;height:100%;border:0;display:block}
 .lightbox-video .video-slide-fallback{color:#fff}
+.lightbox-dl{position:absolute;top:10px;right:56px;z-index:5;width:38px;height:38px;border-radius:50%;background:rgba(0,0,0,.6);border:1.5px solid #fff;display:none;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.35)}
+.lightbox-dl:hover{background:rgba(0,0,0,.8)}
+.lightbox-dl svg{width:18px;height:18px;stroke:#fff;fill:none;stroke-width:2.2}
 .lightbox-close{
   position:absolute;top:10px;right:10px;z-index:5;
   width:38px;height:38px;border-radius:50%;
@@ -7720,6 +7723,9 @@ h1,h2,h3,.logo-word,.section-title{font-family:var(--hl-display);letter-spacing:
     <button class="lightbox-close" onclick="closeLightbox()" aria-label="Close image viewer">
       <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
     </button>
+    <button class="lightbox-dl" id="lightboxDl" onclick="lightboxDownload()" aria-label="Download (agents only)" title="Download (agents only)">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12"/><polyline points="7 11 12 16 17 11"/><path d="M4 20h16"/></svg>
+    </button>
     <div class="lightbox-counter" id="lightboxCounter"></div>
     <div class="lightbox-thumbs" id="lightboxThumbs"></div>
   </div>
@@ -12600,7 +12606,45 @@ function renderLightbox() {
         ? `<div class="lightbox-thumb locked${i===lightboxIdx?' active':''}" onclick="lightboxGo(${i})">\uD83D\uDD12</div>`
         : `<div class="lightbox-thumb${i===lightboxIdx?' active':''}" style="background-image:url('${safeUrl(url)}')" onclick="lightboxGo(${i})"></div>`; }).join('')
     : '';
+  updateLightboxDl(isVideo, lockedIdx);
   preloadLightboxNeighbors();
+}
+
+// Agent-only: save the photo / uploaded video currently shown in the lightbox. The server enforces this
+// too (?download=1 needs an agent session), so the button is only a convenience.
+function lightboxCurrentFileUrl() {
+  const _vo = lightboxVideoHtml ? 1 : 0;
+  let u = '';
+  if (_vo && lightboxIdx === 0) {
+    const p = PROPERTIES.find(x => String(x.id) === String(lightboxPropId)) || BOOKED_PROPERTIES.find(x => String(x.id) === String(lightboxPropId));
+    u = (p && p.media && p.media.video) || '';
+  } else {
+    u = lightboxImgs[lightboxIdx - _vo] || '';
+  }
+  return /^\/(uploads|videos)\/[A-Za-z0-9._-]+$/.test(u) ? u : ''; // only files stored on this site
+}
+function updateLightboxDl(isVideo, lockedIdx) {
+  const b = document.getElementById('lightboxDl');
+  if (!b) return;
+  b.style.display = (isAgentViewer() && lightboxIdx !== lockedIdx && lightboxCurrentFileUrl()) ? 'flex' : 'none';
+}
+async function lightboxDownload() {
+  if (!isAgentViewer()) { showToast('Only agent accounts can download.', 'warning'); return; }
+  const u = lightboxCurrentFileUrl();
+  if (!u) return;
+  try {
+    const res = await fetch(u + '?download=1', { headers: userAuthHeaders() });
+    if (!res.ok) { let m = ''; try { m = (await res.json()).message; } catch (e) {} throw new Error(m || 'Download failed'); }
+    const blob = await res.blob();
+    const cd = res.headers.get('Content-Disposition') || '';
+    const name = (/filename="([^"]+)"/.exec(cd) || [])[1] || u.split('/').pop();
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+  } catch (err) {
+    showToast(err.message || 'Could not download the file.', 'error');
+  }
 }
 
 /* Swipe-to-change-photo inside the fullscreen lightbox — separate from the

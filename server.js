@@ -3631,6 +3631,32 @@ const ImageAssetSchema = new mongoose.Schema({
 });
 const ImageAsset = mongoose.model('ImageAsset', ImageAssetSchema);
 
+// ── Photo / video download gate ──
+// Viewing stays public (listing pages need it), but SAVING is agent-only:
+//   • GET /uploads/:id?download=1 and /videos/:id?download=1 need an AGENT session (x-user-key header)
+//     and are served as attachments. The site's agent-only Download button uses these.
+//   • Opening a photo/video URL directly as a page (address bar, new tab, iframe) is refused,
+//     which is what "Save as…" relies on. <img>/<video> embeds and the site's own fetches are unaffected.
+// Screenshots / dev-tools capture of what is on screen can't be blocked by any website.
+async function mediaDownloadGate(req, res, isMedia, filename) {
+  const wantsDownload = req.query.download === '1';
+  const dest = String(req.headers['sec-fetch-dest'] || '').toLowerCase();
+  const navigating = ['document', 'iframe', 'embed', 'object'].includes(dest);
+  res.vary('Sec-Fetch-Dest');
+  if (!wantsDownload && !(navigating && isMedia)) return true;
+  let agent = false;
+  try {
+    const { userId } = await getSessionUserIds((req.headers['x-user-key'] || '').toString());
+    if (userId) { const u = await User.findById(userId).select('accountType').lean(); agent = !!u && u.accountType === 'agent'; }
+  } catch (e) { /* treated as not-agent */ }
+  if (!agent || !wantsDownload) {
+    res.status(403).json({ message: 'Only agent accounts can download photos and videos.' });
+    return false;
+  }
+  res.set('Content-Disposition', `attachment; filename="${filename}"`);
+  return true;
+}
+
 // Public — anyone viewing a listing needs to load these, no auth required.
 // Cached hard since each id's bytes never change (a re-upload creates a new id).
 app.get('/uploads/:id', async (req, res) => {
@@ -3643,8 +3669,10 @@ app.get('/uploads/:id', async (req, res) => {
     const rawId = req.params.id.replace(/\.[a-zA-Z0-9]+$/, '');
     const img = await ImageAsset.findById(rawId).lean();
     if (!img) return res.status(404).end();
+    const _imgExt = (img.contentType.split('/')[1] || 'bin').split(';')[0];
+    if (!(await mediaDownloadGate(req, res, /^image\//.test(img.contentType), `homeloop-${rawId}.${_imgExt}`))) return;
     res.set('Content-Type', img.contentType);
-    res.set('Cache-Control', 'public, max-age=31536000, immutable');
+    res.set('Cache-Control', req.query.download === '1' ? 'private, no-store' : 'public, max-age=31536000, immutable');
     res.send(Buffer.isBuffer(img.data) ? img.data : Buffer.from(img.data.buffer || img.data));
   } catch (err) {
     // Malformed/non-ObjectId id, etc. — just 404 rather than 500.
@@ -3771,6 +3799,8 @@ app.get('/videos/:id', async (req, res) => {
     const _id = new mongoose.Types.ObjectId(rawId);
     const [file] = await getVideoBucket().find({ _id }).limit(1).toArray();
     if (!file) return res.status(404).end();
+    const _vExt = (req.params.id.match(/\.([a-zA-Z0-9]+)$/) || [])[1] || 'mp4';
+    if (!(await mediaDownloadGate(req, res, true, `homeloop-${rawId}.${_vExt}`))) return;
 
     const total = file.length;
     let start = 0, end = total - 1, status = 200;
@@ -3791,7 +3821,7 @@ app.get('/videos/:id', async (req, res) => {
       'Content-Type': file.contentType || 'video/mp4',
       'Content-Length': String(end - start + 1),
       'Accept-Ranges': 'bytes',
-      'Cache-Control': 'public, max-age=31536000, immutable',
+      'Cache-Control': req.query.download === '1' ? 'private, no-store' : 'public, max-age=31536000, immutable',
       'X-Content-Type-Options': 'nosniff',
     });
     console.log('[VID]', req.params.id, 'status', status, 'range', req.headers.range || '-', 'type', file.contentType, 'size', total, 'ua', (req.headers['user-agent'] || '').slice(0, 80));
