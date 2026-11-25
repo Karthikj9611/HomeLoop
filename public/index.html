@@ -22240,8 +22240,9 @@ function uploadListingVideo(fileInput) {
   if (recordBtn) recordBtn.disabled = true;
   if (status) { status.style.color = 'var(--text-3)'; status.textContent = 'Uploading… 0%'; }
 
+  const sendVideo = (upFile) => {
   const form = new FormData();
-  form.append('video', file);
+  form.append('video', upFile);
 
   // XHR rather than fetch so we can show real upload progress for a large file.
   const xhr = new XMLHttpRequest();
@@ -22274,6 +22275,14 @@ function uploadListingVideo(fileInput) {
   xhr.onerror = function () { finish(false, 'Network error while uploading the video.'); };
   xhr.onabort = function () { finish(false, 'Video upload cancelled.'); };
   xhr.send(form);
+  };
+
+  // Burn the same "homeloop.in" watermark into the video (as photos get) before it leaves the device.
+  const wmStatus = (p) => { if (status) status.textContent = 'Adding watermark… ' + Math.round(p * 100) + '% (keep this tab open)'; };
+  wmStatus(0);
+  watermarkVideoFile(file, wmStatus)
+    .catch(err => { console.warn('Video watermark failed, uploading original:', err); showToast('Could not add the watermark on this device — uploading the original video.', 'warning'); return file; })
+    .then(f => { if (status) status.textContent = 'Uploading… 0%'; sendVideo(f); });
 }
 
 /* ═══════════════════════════════════════════════
@@ -22418,6 +22427,157 @@ function getWatermarkLogo() {
   return _watermarkLogoPromise;
 }
 
+// Paints the centered "homeloop.in" mark (golden-ring logo badge + wordmark)
+// onto ctx. Shared by the photo and video watermarkers so both look identical.
+function paintHomeLoopWatermark(ctx, w, h, logo) {
+    // Small logo icon + brand name side by side, centered on the photo
+    // as one group — like a NoBroker-style mark rather than the logo
+    // alone taking up a big chunk of the middle of the photo.
+    const iconSize = Math.min(w, h) * 0.09;
+    const fontSize = iconSize * 0.62;
+    const gap = iconSize * 0.06;
+    const label = 'homeloop.in';
+
+    ctx.font = `700 ${fontSize}px Inter, system-ui, sans-serif`;
+    const textWidth = ctx.measureText(label).width;
+    const groupWidth = iconSize + gap + textWidth;
+    const groupX = (w - groupWidth) / 2;
+    const cy = h / 2;
+
+    ctx.save();
+    ctx.globalAlpha = 0.6;
+    ctx.shadowColor = 'rgba(0,0,0,.35)';
+    ctx.shadowBlur = iconSize * 0.12;
+
+    // Circular badge matching the header's .logo-mark-wrap: a golden
+    // conic-gradient ring behind a white-bordered, circularly-clipped
+    // logo image — not just the raw square logo artwork.
+    const iconCX = groupX + iconSize / 2;
+    const iconCY = cy;
+    const iconR = iconSize / 2;
+    ctx.beginPath();
+    ctx.arc(iconCX, iconCY, iconR, 0, Math.PI * 2);
+    if (ctx.createConicGradient) {
+      const ringGrad = ctx.createConicGradient(220 * Math.PI / 180, iconCX, iconCY);
+      ringGrad.addColorStop(0, '#d4af6a');
+      ringGrad.addColorStop(0.33, '#a97a2f');
+      ringGrad.addColorStop(0.66, '#7a5a22');
+      ringGrad.addColorStop(1, '#d4af6a');
+      ctx.fillStyle = ringGrad;
+    } else {
+      ctx.fillStyle = '#a97a2f'; // flat fallback if conic gradients aren't supported
+    }
+    ctx.fill();
+
+    // White inset "padding" ring (mirrors the wrap's padding + the
+    // .logo-mark's own white border), then the logo clipped to a circle
+    // and cover-fit inside it.
+    const innerR = iconR * 0.86;
+    ctx.beginPath();
+    ctx.arc(iconCX, iconCY, innerR, 0, Math.PI * 2);
+    ctx.fillStyle = '#fdfcf9';
+    ctx.fill();
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(iconCX, iconCY, innerR * 0.92, 0, Math.PI * 2);
+    ctx.clip();
+    const side = innerR * 0.92 * 2;
+    if (logo) ctx.drawImage(logo, iconCX - side / 2, iconCY - side / 2, side, side);
+    ctx.restore();
+
+    ctx.fillStyle = 'rgba(255,255,255,.92)';
+    ctx.font = `700 ${fontSize}px Inter, system-ui, sans-serif`;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(label, groupX + iconSize + gap, cy + fontSize * 0.03);
+    ctx.restore();
+}
+
+// Re-encodes a video through a canvas so the same watermark is burned into every
+// frame (audio is kept). Runs in real time (a 30 s clip takes ~30 s), entirely on
+// the device, so the server only ever receives the watermarked file. Output is
+// MP4 where the browser can record it, else WebM, capped to 1280 px on the long
+// side with the bitrate chosen to stay under the upload size limit.
+// Rejects if the browser can't do it; the caller then falls back to the original.
+async function watermarkVideoFile(file, onProgress) {
+  if (!window.MediaRecorder || !HTMLCanvasElement.prototype.captureStream) throw new Error('video watermark unsupported');
+  const logo = await getWatermarkLogo().catch(() => { _watermarkLogoPromise = null; return null; });
+  const url = URL.createObjectURL(file);
+  const video = document.createElement('video');
+  video.playsInline = true; video.setAttribute('playsinline', ''); video.preload = 'auto';
+  let actx = null, stream = null, timer = 0, stopDraw = false;
+  const cleanup = () => {
+    stopDraw = true; clearInterval(timer);
+    try { stream && stream.getTracks().forEach(t => t.stop()); } catch (e) {}
+    try { actx && actx.close(); } catch (e) {}
+    try { video.pause(); video.removeAttribute('src'); video.load(); } catch (e) {}
+    URL.revokeObjectURL(url);
+  };
+  try {
+    video.src = url;
+    await new Promise((res, rej) => { video.onloadedmetadata = res; video.onerror = () => rej(new Error('video load failed')); });
+    const dur = video.duration;
+    if (!isFinite(dur) || dur <= 0 || !video.videoWidth || !video.videoHeight) throw new Error('video metadata unavailable');
+
+    const scale = Math.min(1, 1280 / Math.max(video.videoWidth, video.videoHeight));
+    const w = Math.max(2, Math.round(video.videoWidth * scale / 2) * 2);
+    const h = Math.max(2, Math.round(video.videoHeight * scale / 2) * 2);
+    const canvas = document.createElement('canvas'); canvas.width = w; canvas.height = h;
+    const ctx = canvas.getContext('2d');
+    const overlay = document.createElement('canvas'); overlay.width = w; overlay.height = h;
+    paintHomeLoopWatermark(overlay.getContext('2d'), w, h, logo); // painted once, stamped per frame
+
+    stream = canvas.captureStream(30);
+    try { // route the audio into the recording without playing it out loud
+      const AC = window.AudioContext || window.webkitAudioContext;
+      actx = new AC();
+      const src = actx.createMediaElementSource(video);
+      const dest = actx.createMediaStreamDestination();
+      src.connect(dest);
+      dest.stream.getAudioTracks().forEach(t => stream.addTrack(t));
+      if (actx.state === 'suspended') actx.resume();
+    } catch (e) { console.warn('Video watermark: audio capture unavailable', e); }
+
+    const mime = ['video/mp4;codecs=avc1.42E01E,mp4a.40.2', 'video/mp4', 'video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm']
+      .find(m => MediaRecorder.isTypeSupported(m));
+    if (!mime) throw new Error('no supported recording format');
+    const budgetBps = (LISTING_VIDEO_MAX_MB * 1024 * 1024 * 8 * 0.85) / dur - 128000;
+    const vbps = Math.max(300000, Math.min(w * h * 30 * 0.07, 4000000, budgetBps));
+    const rec = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: vbps, audioBitsPerSecond: 128000 });
+    const chunks = [];
+    rec.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); };
+    const stopped = new Promise((res, rej) => { rec.onstop = res; rec.onerror = e => rej((e && e.error) || new Error('recording failed')); });
+
+    const drawFrame = () => {
+      ctx.drawImage(video, 0, 0, w, h);
+      ctx.drawImage(overlay, 0, 0);
+      if (onProgress) onProgress(Math.min(1, video.currentTime / dur));
+    };
+    drawFrame();
+    timer = setInterval(drawFrame, 1000 / 30);
+
+    const ended = new Promise((res, rej) => { video.onended = res; video.onerror = () => rej(new Error('video playback failed')); });
+    rec.start(1000);
+    try { await video.play(); }
+    catch (e) { video.muted = true; await video.play(); } // autoplay policy: still watermark, audio lost
+    await ended;
+    drawFrame();
+    await new Promise(r => setTimeout(r, 150)); // let the last frame reach the encoder
+    if (rec.state !== 'inactive') rec.stop();
+    await stopped;
+    if (onProgress) onProgress(1);
+
+    const type = mime.split(';')[0];
+    const blob = new Blob(chunks, { type });
+    if (!blob.size) throw new Error('empty recording');
+    const ext = type === 'video/mp4' ? 'mp4' : 'webm';
+    return new File([blob], (file.name || 'video').replace(/\.[^.]+$/, '') + '.' + ext, { type });
+  } finally {
+    cleanup();
+  }
+}
+
 async function watermarkImageFile(file) {
   const logo = await getWatermarkLogo();
   return new Promise((resolve, reject) => {
@@ -22431,68 +22591,7 @@ async function watermarkImageFile(file) {
         const ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0, w, h);
 
-        // Small logo icon + brand name side by side, centered on the photo
-        // as one group — like a NoBroker-style mark rather than the logo
-        // alone taking up a big chunk of the middle of the photo.
-        const iconSize = Math.min(w, h) * 0.09;
-        const fontSize = iconSize * 0.62;
-        const gap = iconSize * 0.06;
-        const label = 'homeloop.in';
-
-        ctx.font = `700 ${fontSize}px Inter, system-ui, sans-serif`;
-        const textWidth = ctx.measureText(label).width;
-        const groupWidth = iconSize + gap + textWidth;
-        const groupX = (w - groupWidth) / 2;
-        const cy = h / 2;
-
-        ctx.save();
-        ctx.globalAlpha = 0.6;
-        ctx.shadowColor = 'rgba(0,0,0,.35)';
-        ctx.shadowBlur = iconSize * 0.12;
-
-        // Circular badge matching the header's .logo-mark-wrap: a golden
-        // conic-gradient ring behind a white-bordered, circularly-clipped
-        // logo image — not just the raw square logo artwork.
-        const iconCX = groupX + iconSize / 2;
-        const iconCY = cy;
-        const iconR = iconSize / 2;
-        ctx.beginPath();
-        ctx.arc(iconCX, iconCY, iconR, 0, Math.PI * 2);
-        if (ctx.createConicGradient) {
-          const ringGrad = ctx.createConicGradient(220 * Math.PI / 180, iconCX, iconCY);
-          ringGrad.addColorStop(0, '#d4af6a');
-          ringGrad.addColorStop(0.33, '#a97a2f');
-          ringGrad.addColorStop(0.66, '#7a5a22');
-          ringGrad.addColorStop(1, '#d4af6a');
-          ctx.fillStyle = ringGrad;
-        } else {
-          ctx.fillStyle = '#a97a2f'; // flat fallback if conic gradients aren't supported
-        }
-        ctx.fill();
-
-        // White inset "padding" ring (mirrors the wrap's padding + the
-        // .logo-mark's own white border), then the logo clipped to a circle
-        // and cover-fit inside it.
-        const innerR = iconR * 0.86;
-        ctx.beginPath();
-        ctx.arc(iconCX, iconCY, innerR, 0, Math.PI * 2);
-        ctx.fillStyle = '#fdfcf9';
-        ctx.fill();
-
-        ctx.save();
-        ctx.beginPath();
-        ctx.arc(iconCX, iconCY, innerR * 0.92, 0, Math.PI * 2);
-        ctx.clip();
-        const side = innerR * 0.92 * 2;
-        ctx.drawImage(logo, iconCX - side / 2, iconCY - side / 2, side, side);
-        ctx.restore();
-
-        ctx.fillStyle = 'rgba(255,255,255,.92)';
-        ctx.font = `700 ${fontSize}px Inter, system-ui, sans-serif`;
-        ctx.textAlign = 'left';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(label, groupX + iconSize + gap, cy + fontSize * 0.03);
-        ctx.restore();
+        paintHomeLoopWatermark(ctx, w, h, logo);
 
         canvas.toBlob(blob => {
           URL.revokeObjectURL(url);
