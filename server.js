@@ -115,7 +115,7 @@ const UserSchema = new mongoose.Schema({
   lastName:  { type: String, trim: true },
   email:     { type: String, trim: true, lowercase: true, sparse: true, unique: true },
   mobile:    { type: String, trim: true, sparse: true, unique: true },
-  password:  { type: String, default: '' }, // legacy — login/signup are passwordless now (mobile number only); old hashes are kept but unused
+  password:  { type: String, default: '' }, // bcrypt hash — required at signup and login. Accounts created while login was passwordless have '' and must set one via Forgot password.
   // URL of the user's avatar, e.g. '/uploads/<ImageAsset id>' — set at signup
   // (or later via PUT /api/user/me) using the same image pipeline as listing
   // photos. Empty string means "no photo", and the UI falls back to initials.
@@ -566,10 +566,18 @@ app.post('/api/user/signup/verify-otp', otpLimiter, async (req, res) => {
   }
 });
 
+// Shared password rule for signup (bcrypt only uses the first 72 bytes, so cap there).
+function passwordProblem(pw) {
+  if (typeof pw !== 'string' || !pw) return 'Password is required';
+  if (pw.length < 6) return 'Password must be at least 6 characters';
+  if (Buffer.byteLength(pw, 'utf8') > 72) return 'Password is too long (max 72 characters)';
+  return null;
+}
+
 // ── User Signup ──
 app.post('/api/user/signup', userAuthLimiter, async (req, res) => {
   try {
-    const { firstName, lastName, email, mobile, accountType, profilePic } = req.body || {};
+    const { firstName, lastName, email, mobile, password, confirmPassword, accountType, profilePic } = req.body || {};
 
     if (!firstName || !String(firstName).trim()) return res.status(400).json({ message: 'First name is required' });
     // Names: English letters only (no spaces/digits/specials); first name 3–30 letters, last name optional (max 30).
@@ -583,6 +591,10 @@ app.post('/api/user/signup', userAuthLimiter, async (req, res) => {
     }
     if (!mobile    || !String(mobile).trim())    return res.status(400).json({ message: 'Mobile number is required' });
     if (!/^[\d+\-\s]{7,15}$/.test(String(mobile).trim())) return res.status(400).json({ message: 'Please enter a valid mobile number' });
+
+    const pwErr = passwordProblem(password);
+    if (pwErr) return res.status(400).json({ message: pwErr });
+    if (password !== confirmPassword) return res.status(400).json({ message: 'Passwords do not match' });
 
     const cleanAccountType = (accountType === 'owner' || accountType === 'pg' || accountType === 'broker' || accountType === 'builder') ? accountType : 'customer';
 
@@ -602,7 +614,7 @@ app.post('/api/user/signup', userAuthLimiter, async (req, res) => {
     // signup. If the person did go through send-otp/verify-otp and it
     // succeeded, that's honored (and the doc is cleared below); if OTP was
     // skipped, failed to send, entered wrong, or never attempted, the
-    // account is still created here (no password — mobile number is the login).
+    // account is still created here.
 
     // Only trust a photo URL that actually points at an image we generated via
     // /api/upload-images — never store an arbitrary attacker-supplied URL here.
@@ -615,6 +627,7 @@ app.post('/api/user/signup', userAuthLimiter, async (req, res) => {
     const cleanFirstName = capFirst(String(firstName).trim());
     const cleanLastName = lastName ? capFirst(String(lastName).trim()) : '';
     const name = `${cleanFirstName} ${cleanLastName}`.trim();
+    const passwordHash = await bcrypt.hash(password, 10);
     const user = await User.create({
       firstName: cleanFirstName,
       lastName:  cleanLastName,
@@ -622,6 +635,7 @@ app.post('/api/user/signup', userAuthLimiter, async (req, res) => {
       // Omit the field entirely when no email was given (email index is sparse+unique, so "" would collide)
       ...(hasEmail ? { email: cleanEmail } : {}),
       mobile:    cleanMobile,
+      password:  passwordHash,
       accountType: cleanAccountType,
       profilePhoto: cleanProfilePhoto,
       userId,
@@ -654,16 +668,24 @@ app.post('/api/user/signup', userAuthLimiter, async (req, res) => {
 // ── User Login ──
 app.post('/api/user/login', userAuthLimiter, async (req, res) => {
   try {
-    const { mobile } = req.body || {};
+    const { mobile, password } = req.body || {};
     if (!mobile || !String(mobile).trim()) return res.status(400).json({ message: 'Please enter your phone number' });
+    if (typeof password !== 'string' || !password) return res.status(400).json({ message: 'Please enter your password' });
 
-    // Mobile-number-only login (email no longer required).
+    // Mobile number + password login.
     const cleanMobile = normalizeMobile(mobile);
     // A malformed value must never reach the query (e.g. '' matching a legacy blank-mobile row).
     if (!/^\d{10}$/.test(cleanMobile)) return res.status(400).json({ message: 'Please enter a valid 10-digit mobile number' });
     const user = await User.findOne({ mobile: cleanMobile });
-    // Passwordless login: the mobile number just has to match an existing account.
     if (!user) return res.status(401).json({ message: 'No account found. Please sign up.' });
+
+    // No password on file (account made while login was passwordless, or password cleared):
+    // the mobile number itself is the password until they set a new one in Profile.
+    const mustChangePassword = !user.password;
+    const passwordOk = mustChangePassword
+      ? normalizeMobile(password) === cleanMobile
+      : await bcrypt.compare(password, user.password);
+    if (!passwordOk) return res.status(401).json({ message: 'Incorrect password' });
 
     // Blocked by admin — checked before the single-device check so they always see this message.
     if (user.isBlocked) {
@@ -688,6 +710,7 @@ app.post('/api/user/login', userAuthLimiter, async (req, res) => {
       profilePhoto: user.profilePhoto || '',
       agentArea: user.agentArea || '',
       isVerified: !!user.isVerified,
+      mustChangePassword,
       userKey,
     });
   } catch (err) {
@@ -792,13 +815,20 @@ app.put('/api/user/password', requireUser, userAuthLimiter, async (req, res) => 
   try {
     const { currentPassword, newPassword } = req.body || {};
     if (!currentPassword || !newPassword) return res.status(400).json({ message: 'Current and new password are required' });
-    if (newPassword.length < 6) return res.status(400).json({ message: 'New password must be at least 6 characters' });
+    const newPwErr = passwordProblem(newPassword);
+    if (newPwErr) return res.status(400).json({ message: newPwErr.replace('Password', 'New password') });
 
     const user = await User.findById(req.userId);
     if (!user) return res.status(404).json({ message: 'User not found' });
 
-    const match = await bcrypt.compare(currentPassword, user.password);
+    // No password on file → the current "password" is their mobile number.
+    const match = user.password
+      ? await bcrypt.compare(currentPassword, user.password)
+      : normalizeMobile(currentPassword) === user.mobile;
     if (!match) return res.status(401).json({ message: 'Current password is incorrect' });
+    if (newPassword === currentPassword || (!user.password && normalizeMobile(newPassword) === user.mobile)) {
+      return res.status(400).json({ message: 'New password must be different from your current password' });
+    }
 
     user.password = await bcrypt.hash(newPassword, 10);
     await user.save();

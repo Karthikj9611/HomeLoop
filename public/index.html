@@ -4088,6 +4088,7 @@ main.tab-explore .empty-state{display:none !important}
 
 #authModal .auth-foot{margin-top:18px;font-size:12.5px;color:var(--text-3)}
 #authModal .auth-foot a{transition:opacity .12s}
+.pw-wrap{position:relative}.pw-wrap .form-input{padding-right:42px;width:100%;box-sizing:border-box}.pw-eye{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:0;cursor:pointer;padding:4px;color:var(--text-3);display:flex}.pw-eye:hover{color:var(--brand)}
 #authModal .auth-foot a:hover{opacity:.75}
 
 /* Login required: while logged out the auth modal cannot be dismissed. Background stays
@@ -8615,7 +8616,11 @@ h1,h2,h3,.logo-word,.section-title{font-family:var(--hl-display);letter-spacing:
           <label class="form-label">Phone number <span style="color:var(--brand)">*</span></label>
           <input class="form-input" type="tel" id="auth-contact" inputmode="numeric" maxlength="10" autocomplete="tel-national" oninput="sanitizeMobileInput(this)" />
         </div>
-        <input type="hidden" id="auth-login-email" />
+        <div class="form-group">
+          <label class="form-label">Password <span style="color:var(--brand)">*</span></label>
+          <div class="pw-wrap"><input class="form-input" type="password" id="auth-login-password" autocomplete="current-password" onkeydown="if(event.key==='Enter')submitAuth()" /><button type="button" class="pw-eye" onclick="togglePw(this,'auth-login-password')" aria-label="Show or hide password" tabindex="-1"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
+        </div>
+        <div class="auth-foot" style="text-align:right;margin:-6px 0 12px"><a onclick="openForgotPassword()">Forgot password?</a></div>
       </div>
       <div id="authSignupContactFields" style="display:none">
         <div class="form-row">
@@ -8626,6 +8631,16 @@ h1,h2,h3,.logo-word,.section-title{font-family:var(--hl-display);letter-spacing:
           <div class="form-group">
             <label class="form-label">Email</label>
             <input class="form-input" type="email" id="auth-email" oninput="saveSignupDraft()" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Password <span style="color:var(--brand)">*</span></label>
+            <div class="pw-wrap"><input class="form-input" type="password" id="auth-password" minlength="6" maxlength="72" autocomplete="new-password" /><button type="button" class="pw-eye" onclick="togglePw(this,'signup')" aria-label="Show or hide password" tabindex="-1"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Retype password <span style="color:var(--brand)">*</span></label>
+            <div class="pw-wrap"><input class="form-input" type="password" id="auth-confirm-password" minlength="6" maxlength="72" autocomplete="new-password" onkeydown="if(event.key==='Enter')submitAuth()" /><button type="button" class="pw-eye" onclick="togglePw(this,'signup')" aria-label="Show or hide password" tabindex="-1"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
           </div>
         </div>
       </div>
@@ -8656,52 +8671,12 @@ h1,h2,h3,.logo-word,.section-title{font-family:var(--hl-display);letter-spacing:
       <div class="auth-foot" id="authFoot">New to <span class="brandname">Home<span class="bn-accent">Loop</span></span>? <a onclick="switchAuthTab('signup')">Sign up</a></div>
     </div>
 
-    <!-- ── Forgot password — separate inline view within the same modal.
-         Three stages shown/hidden via forgotStage: 'email' → 'otp' → 'newpass'.
-         Kept apart from #authFormStep (rather than reusing the login fields)
-         since it needs its own back/resend affordances at each stage. ── -->
+    <!-- ── Forgot password — no email reset; person WhatsApps support. ── -->
     <div id="authForgotStep" style="display:none">
-      <div id="forgotStageEmail">
-        <p style="font-size:12.5px;color:var(--text-2);margin:2px 0 14px;line-height:1.5">
-          Enter the email on your account and we'll send you a reset code.
-        </p>
-        <div class="form-group">
-          <label class="form-label">Email</label>
-          <input class="form-input" type="email" id="forgot-email" />
-        </div>
-        <button class="form-submit" id="forgotSendBtn" onclick="sendForgotOtp()">Send reset code</button>
-      </div>
-
-      <div id="forgotStageOtp" style="display:none">
-        <p style="font-size:12.5px;color:var(--text-2);margin:2px 0 14px;line-height:1.5">
-          Code sent to <strong id="forgotOtpEmailLabel"></strong>, if an account exists for it.
-        </p>
-        <div class="form-group">
-          <label class="form-label">Verification code</label>
-          <input class="form-input" type="text" id="forgot-otp" inputmode="numeric" maxlength="6"
-                 style="letter-spacing:6px;font-weight:700;text-align:center"
-                 oninput="this.value=this.value.replace(/\D/g,'').slice(0,6)" />
-        </div>
-        <button class="form-submit" id="forgotVerifyBtn" onclick="verifyForgotOtp()">Verify code</button>
-        <div class="auth-foot" style="display:flex;justify-content:space-between;gap:10px;margin-top:10px">
-          <a onclick="backToForgotEmail()">&larr; Edit email</a>
-          <a id="forgotResendLink" onclick="resendForgotOtp()">Resend code</a>
-        </div>
-      </div>
-
-      <div id="forgotStageNewPass" style="display:none">
-        <p style="font-size:12.5px;color:var(--text-2);margin:2px 0 14px;line-height:1.5">Choose a new password.</p>
-        <div class="form-group">
-          <label class="form-label">New password</label>
-          <input class="form-input" type="password" id="forgot-newpassword" />
-        </div>
-        <div class="form-group">
-          <label class="form-label">Re-enter new password</label>
-          <input class="form-input" type="password" id="forgot-confirmpassword" />
-        </div>
-        <button class="form-submit" id="forgotResetBtn" onclick="submitNewPassword()">Reset password</button>
-      </div>
-
+      <p style="font-size:12.5px;color:var(--text-2);margin:2px 0 14px;line-height:1.5">
+        Forgot your password? WhatsApp us on <strong>9035205230</strong> and we'll reset it for you.
+      </p>
+      <button class="form-submit" type="button" onclick="whatsappForgotPassword()">WhatsApp 9035205230</button>
       <div class="auth-foot" style="margin-top:14px">
         <a onclick="cancelForgotPassword()">&larr; Back to log in</a>
       </div>
@@ -8736,6 +8711,10 @@ h1,h2,h3,.logo-word,.section-title{font-family:var(--hl-display);letter-spacing:
     <div class="profile-body-scroll">
 
       <div class="profile-tabs">
+        <div class="profile-tab active" id="profileTabInfo" onclick="switchProfileTab('info')">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>
+          Profile
+        </div>
         <div class="profile-tab" id="profileTabListings" onclick="switchProfileTab('listings')">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9l9-7 9 7v11a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/></svg>
           Listings
@@ -8748,10 +8727,6 @@ h1,h2,h3,.logo-word,.section-title{font-family:var(--hl-display);letter-spacing:
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
           Shortlist
         </div>
-        <div class="profile-tab active" id="profileTabInfo" onclick="switchProfileTab('info')">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>
-          Profile
-        </div>
       </div>
 
       <!-- ── Tab: Profile info / edit / password ── -->
@@ -8760,10 +8735,6 @@ h1,h2,h3,.logo-word,.section-title{font-family:var(--hl-display);letter-spacing:
         <div id="profileViewMode">
           <div class="profile-edit-row">
             <span class="profile-section-label" style="margin:0">Account details</span>
-            <button class="profile-link-btn" onclick="editProfileDetails()">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-              Edit
-            </button>
           </div>
 
           <div class="profile-info-tile-row">
@@ -8796,6 +8767,11 @@ h1,h2,h3,.logo-word,.section-title{font-family:var(--hl-display);letter-spacing:
             </div>
           </div>
 
+          <div class="profile-edit-row" style="margin-top:14px">
+            <span class="profile-section-label" style="margin:0">Password</span>
+            <button class="profile-link-btn" onclick="enterPasswordEditMode()">Change password</button>
+          </div>
+
         </div>
 
         <div id="profileEditMode" style="display:none">
@@ -8820,13 +8796,14 @@ h1,h2,h3,.logo-word,.section-title{font-family:var(--hl-display);letter-spacing:
 
         <div id="passwordEditMode" style="display:none">
           <div class="profile-section-label">Change password</div>
+          <p style="font-size:12px;color:var(--text-2);margin:0 0 10px;line-height:1.5">Forgot it, or never set one? Your current password is your mobile number.</p>
           <div class="form-group">
             <label class="form-label">Current password</label>
-            <input class="form-input" type="password" id="profile-current-password" />
+            <div class="pw-wrap"><input class="form-input" type="password" id="profile-current-password" /><button type="button" class="pw-eye" onclick="togglePw(this,'profile-current-password')" aria-label="Show or hide password" tabindex="-1"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
           </div>
           <div class="form-group">
             <label class="form-label">New password</label>
-            <input class="form-input" type="password" id="profile-new-password" />
+            <div class="pw-wrap"><input class="form-input" type="password" id="profile-new-password" /><button type="button" class="pw-eye" onclick="togglePw(this,'profile-new-password')" aria-label="Show or hide password" tabindex="-1"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
           </div>
           <div class="profile-save-row">
             <button class="profile-btn-secondary" onclick="exitPasswordEditMode()">Cancel</button>
@@ -17767,7 +17744,7 @@ function openProfileModal() {
   if (bookedTabEl) bookedTabEl.style.display = (canList && user.accountType !== 'agent') ? '' : 'none'; // agents see booked inside Listings
   document.getElementById('profileModal').classList.add('open');
   lockBodyScroll();
-  switchProfileTab(canList ? 'listings' : 'saved'); // Profile is the last tab now; open on the first one
+  switchProfileTab('info'); // Profile is the first tab; open on it
 }
 function closeProfileModal() {
   document.getElementById('profileModal').classList.remove('open');
@@ -18192,10 +18169,31 @@ function restoreSignupDraft() {
   }
 }
 
-// OTP verification is disabled for signup — the account is created directly
-// (no password). pendingSignupBody/verifySignupOtp() etc. below are kept
+// OTP verification is disabled for signup — the account is created directly.
+// pendingSignupBody/verifySignupOtp() etc. below are kept
 // (unused) in case OTP is turned back on later.
 let pendingSignupBody = null;
+
+// Logged in with the mobile number as password → remind them once to set a real one.
+window.addEventListener('load', () => {
+  try {
+    if (localStorage.getItem('homeloop_pw_nudge')) {
+      localStorage.removeItem('homeloop_pw_nudge');
+      showToast("You logged in with your mobile number as password. Please set a new password in Profile → Change password.", 'warning');
+    }
+  } catch (e) {}
+});
+
+// Eye button: shows/hides the password. On signup ('signup') it flips both fields together.
+function togglePw(btn, target) {
+  const ids = target === 'signup' ? ['auth-password', 'auth-confirm-password'] : [target];
+  const show = document.getElementById(ids[0]).type === 'password';
+  ids.forEach(id => { const el = document.getElementById(id); if (el) el.type = show ? 'text' : 'password'; });
+  btn.style.color = show ? 'var(--brand)' : '';
+  document.querySelectorAll('#authModal .pw-eye').forEach(b => {
+    if (b === btn || (target === 'signup' && b.getAttribute('onclick').includes("'signup'"))) b.style.color = show ? 'var(--brand)' : '';
+  });
+}
 
 async function submitAuth() {
   const btn = document.getElementById('authSubmitBtn');
@@ -18209,7 +18207,9 @@ async function submitAuth() {
     const mobile = document.getElementById('auth-contact').value.trim();
     if (!mobile) { showToast("Please enter your phone number.", 'warning'); return; }
     if (!isValidIndianMobile(mobile)) { showToast("Please enter a valid 10-digit mobile number starting with 6, 7, 8 or 9.", 'warning'); return; }
-    body = { mobile };
+    const password = document.getElementById('auth-login-password').value;
+    if (!password) { showToast("Please enter your password.", 'warning'); return; }
+    body = { mobile, password };
   } else {
     if (!selectedAccountType) {
       document.getElementById('authTypeTabsRow').classList.add('has-error');
@@ -18229,7 +18229,13 @@ async function submitAuth() {
     if (email && !/^[A-Za-z0-9._%+\-]+@[A-Za-z0-9\-]+(?:\.[A-Za-z0-9\-]+)*\.[A-Za-z]{2,}$/.test(email)) { showToast("Please enter a valid email address.", 'warning'); return; }
     if (!mobile) { showToast("Please enter your mobile number.", 'warning'); return; }
     if (!isValidIndianMobile(mobile)) { showToast("Please enter a valid 10-digit mobile number starting with 6, 7, 8 or 9.", 'warning'); return; }
-    body = { firstName, lastName, email, mobile, accountType: selectedAccountType, profilePic: authProfilePicUrl || null };
+    const password        = document.getElementById('auth-password').value;
+    const confirmPassword = document.getElementById('auth-confirm-password').value;
+    if (!password) { showToast("Please enter a password.", 'warning'); return; }
+    if (password.length < 6) { showToast("Password must be at least 6 characters.", 'warning'); return; }
+    if (!confirmPassword) { showToast("Please retype your password.", 'warning'); return; }
+    if (password !== confirmPassword) { showToast("Passwords do not match.", 'warning'); return; }
+    body = { firstName, lastName, email, mobile, password, confirmPassword, accountType: selectedAccountType, profilePic: authProfilePicUrl || null };
   }
 
   btn.disabled = true;
@@ -18286,6 +18292,7 @@ function finishAuthSuccess(data) {
     isVerified: !!data.isVerified,
     userKey: data.userKey
   }));
+  try { if (data.mustChangePassword) localStorage.setItem('homeloop_pw_nudge', '1'); } catch (e) {}
   clearSignupDraft();
   // Reload so every fetch on the page (listings, reviews, partners, etc.) picks up
   // the new session and any personalized/owner-only data it unlocks.
@@ -18384,6 +18391,8 @@ function backToSignupForm() {
   restoreSignupDraft();
   document.getElementById('authSignupOtpField').style.display = 'none';
   setSignupFieldsDisabled(false);
+  ['auth-password', 'auth-confirm-password', 'auth-login-password'].forEach(id => { const el = document.getElementById(id); if (el) { el.value = ''; el.type = 'password'; } });
+  document.querySelectorAll('#authModal .pw-eye').forEach(b => { b.style.color = ''; });
   const isLogin = document.getElementById('authTabLogin')?.classList.contains('active');
   document.getElementById('authModalTitle').textContent = isLogin ? 'Welcome back' : 'Create your account';
   document.getElementById('authSubmitBtn').textContent = isLogin ? 'Log in' : 'Sign up';
@@ -18392,163 +18401,33 @@ function backToSignupForm() {
 
 /* ═══════════════════════════════════════════════
    AUTH MODAL — FORGOT PASSWORD
-   Inline 3-stage view within #authModal: email → otp → new password.
-   forgotEmail/forgotResetToken hold state between stages (mirrors
-   pendingSignupBody's role in the signup OTP flow above).
+   No email reset: the person WhatsApps support (9035205230) and we reset it.
 ═══════════════════════════════════════════════ */
-let forgotEmail = null;
-let forgotResetToken = null;
-
-function resetForgotPasswordView() {
-  forgotEmail = null;
-  forgotResetToken = null;
-  document.getElementById('authFormStep').style.display = '';
-  document.getElementById('authForgotStep').style.display = 'none';
-  document.getElementById('forgotStageEmail').style.display = '';
-  document.getElementById('forgotStageOtp').style.display = 'none';
-  document.getElementById('forgotStageNewPass').style.display = 'none';
-  document.getElementById('forgot-email').value = '';
-  document.getElementById('forgot-otp').value = '';
-  document.getElementById('forgot-newpassword').value = '';
-  document.getElementById('forgot-confirmpassword').value = '';
-}
+const SUPPORT_WHATSAPP = '919035205230';
 
 function openForgotPassword() {
-  resetForgotPasswordView();
-  // Carry over whatever was already typed into the login "Phone or email"
-  // field, if it looks like an email — saves retyping it.
-  const contact = (document.getElementById('auth-login-email').value || '').trim();
-  if (contact.includes('@')) document.getElementById('forgot-email').value = contact;
   document.getElementById('authFormStep').style.display = 'none';
   document.getElementById('authForgotStep').style.display = '';
-  document.getElementById('authModalTitle').textContent = 'Reset your password';
+  const tabs = document.getElementById('authTabsRow'); if (tabs) tabs.style.display = 'none';
+  document.getElementById('authModalTitle').textContent = 'Forgot password?';
+}
+
+function resetForgotPasswordView() {
+  document.getElementById('authFormStep').style.display = '';
+  document.getElementById('authForgotStep').style.display = 'none';
+  const tabs = document.getElementById('authTabsRow'); if (tabs) tabs.style.display = '';
 }
 
 function cancelForgotPassword() {
   resetForgotPasswordView();
-  document.getElementById('authFormStep').style.display = '';
-  document.getElementById('authForgotStep').style.display = 'none';
   const isLogin = document.getElementById('authTabLogin')?.classList.contains('active');
   document.getElementById('authModalTitle').textContent = isLogin ? 'Welcome back' : 'Create your account';
 }
 
-async function sendForgotOtp() {
-  const btn = document.getElementById('forgotSendBtn');
-  if (btn.disabled) return;
-  const email = document.getElementById('forgot-email').value.trim();
-  if (!email) { showToast("Please enter your email address.", 'warning'); return; }
-
-  btn.disabled = true;
-  btn.textContent = 'Sending…';
-  try {
-    const res  = await fetch('/api/user/password/forgot', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email })
-    });
-    const data = await res.json();
-    if (!res.ok) { showToast(data.message || 'Something went wrong', 'error'); return; }
-
-    forgotEmail = email;
-    document.getElementById('forgotOtpEmailLabel').textContent = email;
-    document.getElementById('forgot-otp').value = '';
-    document.getElementById('forgotStageEmail').style.display = 'none';
-    document.getElementById('forgotStageOtp').style.display = '';
-    showToast(data.message);
-  } catch (err) {
-    showToast("Unable to connect. Please check your internet connection and try again.", 'error');
-  } finally {
-    btn.disabled = false;
-    btn.textContent = 'Send reset code';
-  }
-}
-
-async function resendForgotOtp() {
-  if (!forgotEmail) return;
-  const link = document.getElementById('forgotResendLink');
-  if (link.style.pointerEvents === 'none') return;
-  link.style.pointerEvents = 'none';
-  link.style.opacity = '0.5';
-  try {
-    const res  = await fetch('/api/user/password/forgot', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: forgotEmail })
-    });
-    const data = await res.json();
-    showToast(res.ok ? 'Code resent' : (data.message || 'Could not resend code'), res.ok ? 'success' : 'error');
-  } catch (err) {
-    showToast("Unable to connect. Please check your internet connection and try again.", 'error');
-  } finally {
-    setTimeout(() => { link.style.pointerEvents = ''; link.style.opacity = ''; }, 15000);
-  }
-}
-
-function backToForgotEmail() {
-  document.getElementById('forgotStageOtp').style.display = 'none';
-  document.getElementById('forgotStageEmail').style.display = '';
-}
-
-async function verifyForgotOtp() {
-  const btn = document.getElementById('forgotVerifyBtn');
-  if (btn.disabled) return;
-  if (!forgotEmail) { cancelForgotPassword(); return; }
-  const otp = document.getElementById('forgot-otp').value.trim();
-  if (!/^\d{6}$/.test(otp)) { showToast("Please enter the 6-digit code sent to your email.", 'warning'); return; }
-
-  btn.disabled = true;
-  btn.textContent = 'Verifying…';
-  try {
-    const res  = await fetch('/api/user/password/forgot/verify-otp', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: forgotEmail, otp })
-    });
-    const data = await res.json();
-    if (!res.ok) { showToast(data.message || 'Incorrect code', 'error'); return; }
-
-    forgotResetToken = data.resetToken;
-    document.getElementById('forgotStageOtp').style.display = 'none';
-    document.getElementById('forgotStageNewPass').style.display = '';
-  } catch (err) {
-    showToast("Unable to connect. Please check your internet connection and try again.", 'error');
-  } finally {
-    btn.disabled = false;
-    btn.textContent = 'Verify code';
-  }
-}
-
-async function submitNewPassword() {
-  const btn = document.getElementById('forgotResetBtn');
-  if (btn.disabled) return;
-  if (!forgotEmail || !forgotResetToken) { cancelForgotPassword(); return; }
-
-  const newPassword     = document.getElementById('forgot-newpassword').value;
-  const confirmPassword = document.getElementById('forgot-confirmpassword').value;
-  if (!newPassword || newPassword.length < 6) { showToast("Your new password must be at least 6 characters long.", 'warning'); return; }
-  if (newPassword !== confirmPassword) { showToast("The passwords do not match.", 'warning'); return; }
-
-  btn.disabled = true;
-  btn.textContent = 'Resetting…';
-  try {
-    const res  = await fetch('/api/user/password/reset', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: forgotEmail, resetToken: forgotResetToken, newPassword })
-    });
-    const data = await res.json();
-    if (!res.ok) { showToast(data.message || 'Something went wrong', 'error'); return; }
-
-    showToast(data.message);
-    cancelForgotPassword();
-    switchAuthTab('login');
-    document.getElementById('auth-login-email').value = forgotEmail || '';
-  } catch (err) {
-    showToast("Unable to connect. Please check your internet connection and try again.", 'error');
-  } finally {
-    btn.disabled = false;
-    btn.textContent = 'Reset password';
-  }
+function whatsappForgotPassword() {
+  const mobile = (document.getElementById('auth-contact').value || '').trim();
+  const msg = 'Hi, I forgot my HomeLoop password.' + (mobile ? ' My registered mobile number is ' + mobile + '.' : '') + ' Please help me reset it.';
+  window.open('https://wa.me/' + SUPPORT_WHATSAPP + '?text=' + encodeURIComponent(msg), '_blank', 'noopener');
 }
 
 /* ═══════════════════════════════════════════════
@@ -18700,6 +18579,8 @@ async function saveProfileEdits() {
 function enterPasswordEditMode() {
   document.getElementById('profile-current-password').value = '';
   document.getElementById('profile-new-password').value = '';
+  ['profile-current-password', 'profile-new-password'].forEach(id => { document.getElementById(id).type = 'password'; });
+  document.querySelectorAll('#passwordEditMode .pw-eye').forEach(b => { b.style.color = ''; });
   document.getElementById('profileViewMode').style.display = 'none';
   document.getElementById('profileEditMode').style.display = 'none';
   document.getElementById('passwordEditMode').style.display = '';
@@ -18713,6 +18594,7 @@ async function savePasswordChange() {
   const newPassword     = document.getElementById('profile-new-password').value;
   if (!currentPassword || !newPassword) { showToast("Please fill in both password fields.", 'warning'); return; }
   if (newPassword.length < 6) { showToast("Your new password must be at least 6 characters long.", 'warning'); return; }
+  if (newPassword === currentPassword) { showToast("Your new password must be different from your current password.", 'warning'); return; }
 
   const btn = document.getElementById('profilePasswordBtn');
   btn.disabled = true;
