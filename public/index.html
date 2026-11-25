@@ -12048,6 +12048,18 @@ function vidSync(v) {
    File videos play immediately (muted); YouTube / Vimeo players get the command again after they have loaded. */
 function vidError(v) {
   const w = v.closest('.vid-wrap'); if (!w) return;
+  // Uploaded video (not the link-video slide) failed -> drop its slide so the gallery becomes link video -> photos.
+  // Kept as a fallback (not removed) when the card would be left with no other slide.
+  const _slide = v.closest('.img-slide.video-slide');
+  const _slides = _slide && _slide.closest('.img-slides');
+  if (_slide && _slides && !_slide.classList.contains('link-slide') && _slides.querySelectorAll('.img-slide').length > 1) {
+    const _wasActive = _slide.classList.contains('active');
+    _slide.remove();
+    const _dots = _slides.parentElement && _slides.parentElement.querySelector(':scope > .card-slide-dots');
+    if (_dots && _dots.lastElementChild) _dots.lastElementChild.remove();
+    if (_wasActive) slideGo(_slides.id, 0);
+    return;
+  }
   const u = v.currentSrc || v.getAttribute('src') || '';
   w.innerHTML = `<div class="video-slide-fallback"><a href="${esc(u)}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">Watch video tour</a></div>`;
 }
