@@ -1697,17 +1697,15 @@ const TYPE_REQUIRED_FIELDS = {
   // isn't enforced here, same as it isn't for 'For Rent'. Sale-specific
   // fields (ownership, possession, RERA, total floors, balconies) mirror
   // what NoBroker/Housing/99acres collect for a resale listing.
+  // NOTE: the Sell form no longer has the Sale Details / Legal & Ownership /
+  // Structure & Site sections, so the sale.* fields (ownership, possession,
+  // RERA, khata, loan status, total floors, balconies) are no longer required.
   'For Sale': [
     ['property.type',      'Property type'],
     ['property.bhk',       'BHK'],
     ['property.floor',     'Floor'],
     ['property.area',      'Area (sqft)'],
     ['property.age',       'Age of property'],
-    ['sale.totalFloors',   'Total floors in building'],
-    ['sale.balconies',     'Balconies'],
-    ['sale.ownership',     'Ownership type'],
-    ['sale.possession',    'Possession status'],
-    ['sale.reraRegistered','RERA registered'],
     // Added per KR's NoBroker/Housing/99acres comparison. khataType and
     // loanStatus are core resale-trust questions (mirrors ownership/
     // possession above); areaType clarifies which area figure was entered.
@@ -1715,8 +1713,6 @@ const TYPE_REQUIRED_FIELDS = {
     // structural details (flooring/water/boundary/road width/open sides/
     // corner/overlooking) are deliberately left optional — same reasoning
     // as reraId above, many legit resale listings won't have a tidy answer.
-    ['sale.khataType',     'Khata type'],
-    ['sale.loanStatus',    'Loan status'],
   ],
 };
 
@@ -1775,6 +1771,7 @@ app.post('/api/properties', listingLimiter, requireUser, requireOwner, requireVe
         if (!['Owner', 'Broker', 'Builder', 'Agent'].includes(fields.basic.listedBy)) fields.basic.listedBy = 'Agent';
       } else if (_lb) fields.basic.listedBy = _lb; // owner / broker / builder accounts stay locked to their own type
     }
+    if (fields.basic.listedBy === 'Builder') fields.basic.status = 'For Sale'; // Builder listings are always Sell (Managed By tab)
     const validationError = validatePropertyFields(fields);
     if (validationError) return res.status(400).json({ message: validationError });
 
@@ -3087,7 +3084,7 @@ app.put('/api/user/listings/:id', listingWriteLimiter, requireUser, requireAgent
 
     // Broker accounts stay locked to 'Broker' on edit; owners can change it.
     // Agents (employees) edit other people's listings too: their account type must NOT overwrite listedBy, and they may change it to Owner / Broker / Builder / Agent.
-    if (body.basic && typeof body.basic === 'object') { const _lb = await requiredListedBy(req.userId); if (_lb === 'Agent') { if (!['Owner', 'Broker', 'Builder', 'Agent'].includes(fields.basic.listedBy)) delete fields.basic.listedBy; /* agent accounts may change "Listed by" to any valid value */ } else if (_lb) fields.basic.listedBy = _lb; }
+    if (body.basic && typeof body.basic === 'object') { const _lb = await requiredListedBy(req.userId); if (_lb === 'Agent') { if (!['Owner', 'Broker', 'Builder', 'Agent'].includes(fields.basic.listedBy)) delete fields.basic.listedBy; /* agent accounts may change "Listed by" to any valid value */ } else if (_lb) fields.basic.listedBy = _lb; if (fields.basic.listedBy === 'Builder') fields.basic.status = 'For Sale'; /* Builder listings are always Sell */ }
 
     // Only validate/apply sections the client actually sent something for,
     // so a partial edit (e.g. just price) doesn't get wiped by empty objects.

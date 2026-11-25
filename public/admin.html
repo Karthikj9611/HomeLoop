@@ -5886,137 +5886,6 @@ tr.nf-flash td{animation:nfFlash 3s ease-out}
       </div>
     </div>
 
-    <!-- ===== 6d. SELL-ONLY FIELDS ===== -->
-    <!-- Modeled on the resale-specific fields NoBroker/Housing/99acres all
-         collect on top of the shared Property Details section above
-         (type/BHK/floor/area/age etc. — reused as-is for Sell). -->
-    <div id="addSellSection" style="display:none">
-      <div class="lm-section">🏷️ Sale Details</div>
-      <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
-        <div class="form-group" id="f-sellTotalFloorsWrap">
-          <label class="form-label">Total Floors</label>
-          <select class="form-select" id="f-sellTotalFloors">
-            <option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option>9</option><option>10</option><option>10+</option>
-          </select>
-        </div>
-        <div class="form-group" id="f-sellBalconiesWrap">
-          <label class="form-label">Balconies</label>
-          <select class="form-select" id="f-sellBalconies"><option>0</option><option>1</option><option>2</option><option>3</option><option>4+</option></select>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Ownership Type</label>
-          <select class="form-select" id="f-sellOwnership">
-            <option>Co-operative Society</option><option>Freehold</option><option>Leasehold</option><option>Power of Attorney</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Possession Status</label>
-          <select class="form-select" id="f-sellPossession"><option>Ready to Move</option><option>Under Construction</option></select>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Possession Date</label>
-          <input class="form-input" type="date" id="f-sellPossessionDate" />
-        </div>
-        <div class="form-group">
-          <label class="form-label">RERA Registered</label>
-          <select class="form-select" id="f-sellRera"><option>No</option><option>Yes</option></select>
-        </div>
-        <div class="form-group">
-          <label class="form-label">RERA ID</label>
-          <input class="form-input" type="text" id="f-sellReraId" maxlength="50" />
-        </div>
-      </div>
-
-      <!-- Legal/trust fields buyers check before anything else on a resale —
-           modeled on the same NoBroker/Housing/99acres comparison. Khata type
-           and property tax status are Bangalore-specific; OC/CC and loan
-           status are asked everywhere. previousOwners and projectName are
-           lower-stakes discovery/trust details, kept optional (see
-           OPTIONAL_FIELD_IDS) since many legit resale listings won't have a
-           tidy answer (old independent houses, no defined "project" name). -->
-      <div class="lm-section">🏛️ Legal &amp; Ownership Details</div>
-      <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
-        <div class="form-group">
-          <label class="form-label">Khata Type</label>
-          <select class="form-select" id="f-sellKhataType"><option>A Khata</option><option>B Khata</option><option>Not Applicable</option></select>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Property Tax Paid</label>
-          <select class="form-select" id="f-sellTaxPaid"><option value=""></option><option>Yes</option><option>No</option></select>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Loan Status</label>
-          <select class="form-select" id="f-sellLoanStatus"><option>Free &amp; Clear (No Loan)</option><option>Home Loan Cleared Before Sale</option><option>Bank Loan Pending / To Be Transferred</option></select>
-        </div>
-        <div class="form-group" id="f-sellOcAvailableWrap">
-          <label class="form-label">OC Available</label>
-          <select class="form-select" id="f-sellOcAvailable"><option value=""></option><option>Yes</option><option>No</option></select>
-        </div>
-        <div class="form-group" id="f-sellCcAvailableWrap">
-          <label class="form-label">CC Available</label>
-          <select class="form-select" id="f-sellCcAvailable"><option value=""></option><option>Yes</option><option>No</option></select>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Previous Owners</label>
-          <select class="form-select" id="f-sellPreviousOwners"><option value=""></option><option>0 (First Owner)</option><option>1</option><option>2</option><option>3+</option></select>
-        </div>
-        <div class="form-group" style="grid-column:span 2">
-          <label class="form-label">Project Name</label>
-          <input class="form-input" type="text" id="f-sellProjectName" autocapitalize="words" onblur="capitalizeWordsInput(this)" oninput="capitalizeWordsInput(this)" maxlength="120" />
-        </div>
-      </div>
-
-      <!-- Structural/site details — same taxonomy 99acres uses (facing road
-           width, boundary wall None/Partial/Full, overlooking). Flooring and
-           OC/CC above don't apply to a vacant plot — hidden alongside the
-           existing BHK/floor/age exemptions in onSellPropertyTypeChange(). -->
-      <div class="lm-section">🧱 Structure &amp; Site Details</div>
-      <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
-        <div class="form-group" id="f-sellFlooringWrap">
-          <label class="form-label">Flooring Type</label>
-          <select class="form-select" id="f-sellFlooring"><option value=""></option><option>Vitrified Tiles</option><option>Marble</option><option>Wooden</option><option>Cement</option><option>Mosaic</option></select>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Water Source</label>
-          <select class="form-select" id="f-sellWaterSource"><option value=""></option><option>Corporation</option><option>Borewell</option><option>Both</option></select>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Boundary Wall</label>
-          <select class="form-select" id="f-sellBoundaryWall"><option value=""></option><option>Full</option><option>Partial</option><option>None</option></select>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Road Width (Ft)</label>
-          <input class="form-input" type="number" min="0" id="f-sellRoadWidth" />
-        </div>
-        <div class="form-group">
-          <label class="form-label">Open Sides</label>
-          <select class="form-select" id="f-sellOpenSides"><option value=""></option><option>1</option><option>2</option><option>3</option><option>4</option></select>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Corner Property</label>
-          <select class="form-select" id="f-sellCornerProperty"><option value=""></option><option>Yes</option><option>No</option></select>
-        </div>
-        <div class="form-group" style="grid-column:span 3" id="overlookingFormGroup">
-          <label class="form-label">Overlooking</label>
-          <div class="am-dd" id="overlookingDropdown">
-            <button type="button" class="am-dd-trigger" onclick="toggleOverlookingDropdown(event)">
-              <span><span class="am-dd-count" id="overlookingDdCount" style="display:none">0</span><span id="overlookingDdLabel"></span></span>
-              <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
-            </button>
-            <div class="am-dd-panel" id="overlookingDdPanel">
-              <div class="am-dd-grid" style="grid-template-columns:1fr">
-                <label class="am-dd-item"><input type="checkbox" id="ov-mainroad" onchange="onOverlookingCheck()"/> Main Road</label>
-                <label class="am-dd-item"><input type="checkbox" id="ov-gardenpark" onchange="onOverlookingCheck()"/> Garden / Park</label>
-                <label class="am-dd-item"><input type="checkbox" id="ov-pool" onchange="onOverlookingCheck()"/> Pool</label>
-                <label class="am-dd-item"><input type="checkbox" id="ov-club" onchange="onOverlookingCheck()"/> Club</label>
-              </div>
-            </div>
-          </div>
-          <input type="hidden" id="f-sellOverlooking" />
-        </div>
-      </div>
-    </div>
-
     <!-- ===== 7. AMENITIES ===== -->
     <div id="addAmenitiesSection">
     <div class="lm-section">✨ Amenities</div>
@@ -19146,7 +19015,7 @@ function applyImportedProperty(p) {
         media = p.media || {}, pg = p.pg || {}, shortStay = p.shortStay || {}, sale = p.sale || {};
 
   const reverseStatusMap = { 'For Rent': 'Rent', 'Lease': 'Lease', 'PG': 'PG', 'Short Stay': 'ShortStay', 'For Sale': 'Sell' };
-  const typeVal = reverseStatusMap[basic.status] || (basic.status || 'Rent');
+  const typeVal = basic.listedBy === 'Builder' ? 'Sell' : (reverseStatusMap[basic.status] || (basic.status || 'Rent')); // Builder listings are always Sell
   sv('f-type', typeVal);
   sv('f-listedBy', basic.listedBy);
   const isPG = typeVal === 'PG', isLease = typeVal === 'Lease', isShortStay = typeVal === 'ShortStay';
@@ -19658,7 +19527,25 @@ async function waSubmitMsg() {
 
 /* Brokerage fee block — shown only when "Listed by" = Broker. Broker listings
    are stored in their own collection server-side (see modelForStatus). */
+/* Builder listings are always Sell. When "Listed By" is Builder, Status is forced to Sell and the
+   other Status choices are disabled; any other "Listed By" restores them. Returns true if it
+   had to change the Status value. */
+function enforceBuilderSell() {
+  const lb = document.getElementById('f-listedBy');
+  const ft = document.getElementById('f-type');
+  if (!lb || !ft) return false;
+  const isBuilder = lb.value === 'Builder';
+  Array.from(ft.options).forEach(o => {
+    if (o.value === 'Sell') return;
+    o.disabled = isBuilder;
+    o.style.display = isBuilder ? 'none' : '';
+  });
+  ft.title = isBuilder ? 'Builder listings are always for Sell' : '';
+  if (isBuilder && ft.value !== 'Sell') { ft.value = 'Sell'; return true; }
+  return false;
+}
 function updateBrokerageFields() {
+  if (enforceBuilderSell()) { onFTypeChange(document.getElementById('f-type').value); return; }
   const lb = document.getElementById('f-listedBy');
   const blk = document.getElementById('f-brokerageBlock');
   if (blk) blk.style.display = (lb && (lb.value === 'Broker' || lb.value === 'Agent')) ? '' : 'none';
@@ -19675,6 +19562,7 @@ function onBrokerageChange() {
 function onFTypeChange(val) {
   setTimeout(lmAccApply, 0);
   updateBrokerageFields();
+  val = document.getElementById('f-type').value; // Builder listings may have just been forced to Sell
   waPasteToggle(val);
   const isPG = val === 'PG';
   const isLease = val === 'Lease';
@@ -19682,7 +19570,7 @@ function onFTypeChange(val) {
   const isSell = val === 'Sell';
   document.getElementById('addPgSection').style.display = isPG ? '' : 'none';
   document.getElementById('addShortStaySection').style.display = isShortStay ? '' : 'none';
-  document.getElementById('addSellSection').style.display = isSell ? '' : 'none';
+  { const _sellSec = document.getElementById('addSellSection'); if (_sellSec) _sellSec.style.display = isSell ? '' : 'none'; } // Sale Details / Legal & Ownership / Structure & Site sections were removed from the form
   // addRentSection doubles as the Rent-only "Terms & Rules" block (notice
   // period, contract term, pets, non-veg) — none of that applies to a sale.
   document.getElementById('addRentSection').style.display = (!isPG && !isLease && !isShortStay && !isSell) ? '' : 'none';
@@ -19837,6 +19725,7 @@ function renderOverlookingSelected() {
   const label = document.getElementById('overlookingDdLabel');
   const count = document.getElementById('overlookingDdCount');
   const hidden = document.getElementById('f-sellOverlooking');
+  if (!label || !count || !hidden) return; // Overlooking widget removed along with the Sell-only sections
   if (!label || !count || !hidden) return;
   const selected = OVERLOOKING_LIST.filter(([id]) => document.getElementById(id) && document.getElementById(id).checked).map(([, name]) => name);
   hidden.value = selected.join(', ');
